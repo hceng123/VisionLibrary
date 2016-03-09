@@ -23,11 +23,30 @@ namespace Vision
          Int16                  nStatus;
          std::vector<KeyPoint>  vecKeyPoint;
          cv::Mat                matDescritor;
+         cv::Mat                matTmpl;
+         Point                  ptCenter;
+     };
+
+     struct PR_FindObjCmd
+     {
+         cv::Mat                mat;
+         cv::Rect               rectSrchWindow;
+         std::vector<KeyPoint>  vecModelKeyPoint;
+         cv::Mat                matModelDescritor;
+     };
+
+     struct PR_FindObjRpy
+     {
+         Int16                  nStatus;
+         cv::Mat                matHomography;
+         cv::Point              ptObjPos;
+         cv::Size               szOffset;
      };
 
      struct PR_AlignCmd
      {
          cv::Mat                mat;
+         cv::Mat                matTmpl;
          cv::Rect               rectSrchWindow;
          std::vector<KeyPoint>  vecModelKeyPoint;
          cv::Mat                matModelDescritor;
@@ -37,6 +56,9 @@ namespace Vision
      {
          Int16                  nStatus;
          cv::Mat                matHomography;
+         cv::Point              ptObjPos;
+         cv::Size               szOffset;
+         float                  fRotation;
      };
 }
 }

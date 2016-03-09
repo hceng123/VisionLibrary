@@ -43,34 +43,59 @@ int VisionAlgorithm::learn(PR_LearnTmplCmd * const pLearnTmplCmd, PR_LearnTmplRp
     
     Ptr<SURF> detector = SURF::create(_constMinHessian);
     Mat matROI( pLearnTmplCmd->mat, pLearnTmplCmd->rectLrn );
-    detector->detectAndCompute ( matROI, pLearnTmplCmd->mask, pLearnTmplRpy->vecKeyPoint, pLearnTmplRpy->vecKeyPoint );
+    detector->detectAndCompute ( matROI, pLearnTmplCmd->mask, pLearnTmplRpy->vecKeyPoint, pLearnTmplRpy->matDescritor );
     if ( pLearnTmplRpy->vecKeyPoint.size() > _constLeastFeatures )
         pLearnTmplRpy->nStatus = 0;
-
+    pLearnTmplRpy->ptCenter.x = pLearnTmplCmd->rectLrn.x + pLearnTmplCmd->rectLrn.width / 2;
+    pLearnTmplRpy->ptCenter.y = pLearnTmplCmd->rectLrn.y + pLearnTmplCmd->rectLrn.height / 2;
+    matROI.copyTo ( pLearnTmplRpy->matTmpl );
+    //pLearnTmplRpy->matTmpl = matROI;
     return 0;
 }
 
-int VisionAlgorithm::align(PR_AlignCmd *const pAlignCmd, PR_AlignRpy *pAlignRpy)
+int VisionAlgorithm::findObject(PR_FindObjCmd *const pFindObjCmd, PR_FindObjRpy *pFindObjRpy)
 {
-    if ( NULL == pAlignCmd || NULL == pAlignRpy )
+    if ( NULL == pFindObjCmd || NULL == pFindObjRpy )
         return -1;
 
-    if ( pAlignCmd->mat.empty() )
+    if ( pFindObjCmd->mat.empty() )
         return -1;
 
-    if ( pAlignCmd->vecModelKeyPoint.empty() )
+    if ( pFindObjCmd->vecModelKeyPoint.empty() )
         return -1;
 
-    cv::Mat matSrchROI(pAlignCmd->mat, pAlignCmd->rectSrchWindow);
+    cv::Mat matSrchROI( pFindObjCmd->mat, pFindObjCmd->rectSrchWindow);
     Ptr<SURF> detector = SURF::create(_constMinHessian);
     
     std::vector<KeyPoint> vecKeypointScene;
     cv::Mat matDescriptorScene;
-    detector->detectAndCompute(matSrchROI, NULL, vecKeypointScene, matDescriptorScene);
+    Mat mask;
+    detector->detectAndCompute ( matSrchROI, mask, vecKeypointScene, matDescriptorScene );
+
+    VectorOfDMatch good_matches;
+
+    Ptr<flann::IndexParams> indexParams = new flann::KDTreeIndexParams;
+    Ptr<flann::SearchParams> searchParams = new flann::SearchParams;
 
     FlannBasedMatcher matcher;
-    std::vector< DMatch > matches;
-    matcher.match ( pAlignCmd->vecModelKeyPoint, vecKeypointScene, matches );
+
+    VectorOfVectorOfDMatch vecVecMatches;
+    vecVecMatches.reserve(2000);
+    matcher.knnMatch ( pFindObjCmd->matModelDescritor, matDescriptorScene, vecVecMatches, 2 );
+
+    for ( VectorOfVectorOfDMatch::iterator it = vecVecMatches.begin();  it != vecVecMatches.end(); ++ it )
+    {
+        VectorOfDMatch vecDMatch = *it;
+        if ( (vecDMatch[0].distance / vecDMatch[1].distance ) < 0.8 )
+        {
+            good_matches.push_back ( vecDMatch[0] );
+        }
+    }
+
+#ifdef NEARIST_NEIGHBOUR_MATCH
+    std::vector<DMatch> matches;
+    matches.reserve(1000);
+    matcher.match ( pAlignCmd->matModelDescritor, matDescriptorScene, matches );
 
     double max_dist = 0; double min_dist = 100.;
 
@@ -82,8 +107,7 @@ int VisionAlgorithm::align(PR_AlignCmd *const pAlignCmd, PR_AlignRpy *pAlignRpy)
         if (dist > max_dist) max_dist = dist;
     }
 
-    //-- Draw only "good" matches (i.e. whose distance is less than 3*min_dist )
-    std::vector< DMatch > good_matches;
+    //-- Draw only "good" matches (i.e. whose distance is less than 3*min_dist )    
 
     for (int i = 0; i < pAlignCmd->matModelDescritor.rows; ++ i)
     {
@@ -91,21 +115,38 @@ int VisionAlgorithm::align(PR_AlignCmd *const pAlignCmd, PR_AlignRpy *pAlignRpy)
         {
             good_matches.push_back(matches[i]);
         }
-    }
+    }    
+#endif
 
+    if ( good_matches.size() <= 0 )
+        return -1;
     //-- Localize the object
     std::vector<Point2f> obj;
     std::vector<Point2f> scene;
 
-    for (int i = 0; i < good_matches.size(); i++)
+    for (size_t i = 0; i < good_matches.size(); i++)
     {
         //-- Get the keypoints from the good matches
-        obj.push_back( pAlignCmd->vecModelKeyPoint[good_matches[i].queryIdx].pt);
-        scene.push_back(vecKeypointScene[good_matches[i].trainIdx].pt);
-    }
+        obj.push_back( pFindObjCmd->vecModelKeyPoint[good_matches[i].queryIdx].pt);
+        scene.push_back( vecKeypointScene[good_matches[i].trainIdx].pt);
+    }    
     
     //getHomographyMatrixFromMatchedFeatures
-    Mat H = findHomography(obj, scene, CV_RANSAC);
+    pFindObjRpy->matHomography = cv::findHomography ( obj, scene, CV_LMEDS);
+
+    return 0;
+}
+
+int VisionAlgorithm::align(PR_AlignCmd *const pAlignCmd, PR_AlignRpy *pAlignRpy )
+{
+     if ( NULL == pAlignCmd || NULL == pAlignRpy )
+        return -1;
+
+    if ( pAlignCmd->mat.empty() )
+        return -1;
+
+    if ( pAlignCmd->matTmpl.empty() )
+        return -1;
 
     return 0;
 }
