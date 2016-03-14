@@ -3,6 +3,7 @@
 #include "opencv2/xfeatures2d.hpp"
 #include "opencv2/xfeatures2d/nonfree.hpp"
 #include "opencv2/calib3d/calib3d.hpp"
+#include "opencv2/video/tracking.hpp"
 
 using namespace cv::xfeatures2d;
 
@@ -41,13 +42,17 @@ int VisionAlgorithm::learn(PR_LearnTmplCmd * const pLearnTmplCmd, PR_LearnTmplRp
     if ( pLearnTmplCmd->mat.empty() )
         return -1;
     
-    Ptr<SURF> detector = SURF::create(_constMinHessian);
+    Ptr<Feature2D> detector;
+    if (ALIGN_ALGORITHM_SIFT == pLearnTmplCmd->nAlgorithm)
+        detector = SIFT::create(_constMinHessian);
+    else
+        detector = SURF::create(_constMinHessian);
     Mat matROI( pLearnTmplCmd->mat, pLearnTmplCmd->rectLrn );
     detector->detectAndCompute ( matROI, pLearnTmplCmd->mask, pLearnTmplRpy->vecKeyPoint, pLearnTmplRpy->matDescritor );
     if ( pLearnTmplRpy->vecKeyPoint.size() > _constLeastFeatures )
         pLearnTmplRpy->nStatus = 0;
-    pLearnTmplRpy->ptCenter.x = pLearnTmplCmd->rectLrn.x + pLearnTmplCmd->rectLrn.width / 2;
-    pLearnTmplRpy->ptCenter.y = pLearnTmplCmd->rectLrn.y + pLearnTmplCmd->rectLrn.height / 2;
+    pLearnTmplRpy->ptCenter.x = pLearnTmplCmd->rectLrn.x + pLearnTmplCmd->rectLrn.width / 2.0f;
+    pLearnTmplRpy->ptCenter.y = pLearnTmplCmd->rectLrn.y + pLearnTmplCmd->rectLrn.height / 2.0f;
     matROI.copyTo ( pLearnTmplRpy->matTmpl );
     //pLearnTmplRpy->matTmpl = matROI;
     return 0;
@@ -65,7 +70,12 @@ int VisionAlgorithm::findObject(PR_FindObjCmd *const pFindObjCmd, PR_FindObjRpy 
         return -1;
 
     cv::Mat matSrchROI( pFindObjCmd->mat, pFindObjCmd->rectSrchWindow);
-    Ptr<SURF> detector = SURF::create(_constMinHessian);
+    
+    Ptr<Feature2D> detector;
+    if (ALIGN_ALGORITHM_SIFT == pFindObjCmd->nAlgorithm)
+        detector = SIFT::create(_constMinHessian);
+    else
+        detector = SURF::create(_constMinHessian);
     
     std::vector<KeyPoint> vecKeypointScene;
     cv::Mat matDescriptorScene;
@@ -83,7 +93,7 @@ int VisionAlgorithm::findObject(PR_FindObjCmd *const pFindObjCmd, PR_FindObjRpy 
     vecVecMatches.reserve(2000);
     matcher.knnMatch ( pFindObjCmd->matModelDescritor, matDescriptorScene, vecVecMatches, 2 );
 
-    for ( VectorOfVectorOfDMatch::iterator it = vecVecMatches.begin();  it != vecVecMatches.end(); ++ it )
+    for ( VectorOfVectorOfDMatch::const_iterator it = vecVecMatches.begin();  it != vecVecMatches.end(); ++ it )
     {
         VectorOfDMatch vecDMatch = *it;
         if ( (vecDMatch[0].distance / vecDMatch[1].distance ) < 0.8 )
@@ -124,7 +134,7 @@ int VisionAlgorithm::findObject(PR_FindObjCmd *const pFindObjCmd, PR_FindObjRpy 
     std::vector<Point2f> obj;
     std::vector<Point2f> scene;
 
-    for (size_t i = 0; i < good_matches.size(); i++)
+    for (size_t i = 0; i < good_matches.size(); ++ i )
     {
         //-- Get the keypoints from the good matches
         obj.push_back( pFindObjCmd->vecModelKeyPoint[good_matches[i].queryIdx].pt);
@@ -132,8 +142,21 @@ int VisionAlgorithm::findObject(PR_FindObjCmd *const pFindObjCmd, PR_FindObjRpy 
     }    
     
     //getHomographyMatrixFromMatchedFeatures
-    pFindObjRpy->matHomography = cv::findHomography ( obj, scene, CV_LMEDS);
+    pFindObjRpy->matHomography = cv::findHomography ( obj, scene, CV_LMEDS );
+    cv::Mat matOriginalPos ( 3, 1, CV_64F );
+    matOriginalPos.at<double>(0, 0) = pFindObjCmd->rectLrn.width / 2.f;
+    matOriginalPos.at<double>(1, 0) = pFindObjCmd->rectLrn.height / 2.f;
+    matOriginalPos.at<double>(2, 0) = 1.0;
 
+    Mat destPos ( 3, 1, CV_64F );
+
+    destPos = pFindObjRpy->matHomography * matOriginalPos;
+    pFindObjRpy->ptObjPos.x = (float) destPos.at<double>(0, 0);
+    pFindObjRpy->ptObjPos.y = (float) destPos.at<double>(1, 0);
+    pFindObjRpy->szOffset.width = pFindObjRpy->ptObjPos.x - pFindObjCmd->ptExpectedPos.x;
+    pFindObjRpy->szOffset.height = pFindObjRpy->ptObjPos.y - pFindObjCmd->ptExpectedPos.y;
+    pFindObjRpy->fRotation = (float)( pFindObjRpy->matHomography.at<double>( 1, 0 ) - pFindObjRpy->matHomography.at<double>(0, 1) ) / 2.0f;
+    
     return 0;
 }
 
@@ -142,11 +165,25 @@ int VisionAlgorithm::align(PR_AlignCmd *const pAlignCmd, PR_AlignRpy *pAlignRpy 
      if ( NULL == pAlignCmd || NULL == pAlignRpy )
         return -1;
 
-    if ( pAlignCmd->mat.empty() )
+    if ( pAlignCmd->matInput.empty() )
         return -1;
 
     if ( pAlignCmd->matTmpl.empty() )
         return -1;
+
+    cv::Mat matAffine ( 2, 3, CV_32F );
+    matAffine.setTo(Scalar(0));
+    matAffine.at<float>(0,0) = 1.0;
+    matAffine.at<float>(1,1) = 1.0;
+   
+    cv::Mat matSrchROI( pAlignCmd->matInput, pAlignCmd->rectSrchWindow );
+    cv::findTransformECC ( pAlignCmd->matTmpl, matSrchROI, matAffine, MOTION_AFFINE );
+    pAlignRpy->matAffine = matAffine;
+    pAlignRpy->szOffset.width = matAffine.at<float> ( 0, 2 );
+    pAlignRpy->szOffset.height = matAffine.at<float> ( 1, 2 );
+    pAlignRpy->fRotation = ( matAffine.at<float>( 1, 0 ) - matAffine.at<float>(0, 1) ) / 2.0f;
+    pAlignRpy->ptObjPos.x = pAlignCmd->ptOriginalPos.x + pAlignRpy->szOffset.width;
+    pAlignRpy->ptObjPos.y = pAlignCmd->ptOriginalPos.y + pAlignRpy->szOffset.height;
 
     return 0;
 }

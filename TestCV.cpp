@@ -374,26 +374,49 @@ int TestVisionAlgorithm()
 
     // Restore image I
     //warp_image(pGrayPhoto, pImgI, W);
-
+    short nAlgorithm = ALIGN_ALGORITHM_SURF;
     PR_LearnTmplCmd stLrnTmplCmd;
     PR_LearnTmplRpy stLrnTmplRpy;
     stLrnTmplCmd.mat = cvarrToMat ( pImgT, true );
     stLrnTmplCmd.rectLrn = omega;
+    stLrnTmplCmd.nAlgorithm = nAlgorithm;
     visionAlgorithm.learn ( &stLrnTmplCmd, &stLrnTmplRpy );
 
     PR_FindObjCmd stFindObjCmd;
-    PR_FindObjRpy stAlignRpy;
+    PR_FindObjRpy stFindObjRpy;
     stFindObjCmd.mat = cvarrToMat ( pImgI, true );
+    stFindObjCmd.rectLrn = omega;
     stFindObjCmd.vecModelKeyPoint = stLrnTmplRpy.vecKeyPoint;
     stFindObjCmd.matModelDescritor = stLrnTmplRpy.matDescritor;
+    stFindObjCmd.ptExpectedPos = stLrnTmplRpy.ptCenter;
     stFindObjCmd.rectSrchWindow = Rect ( 0, 0, stFindObjCmd.mat.cols, stFindObjCmd.mat.rows );
-    visionAlgorithm.findObject ( &stFindObjCmd, &stAlignRpy );
+    stFindObjCmd.nAlgorithm = nAlgorithm;
+
+    visionAlgorithm.findObject ( &stFindObjCmd, &stFindObjRpy );
     printf("SURF result \n");
-    printfMat<double>(stAlignRpy.matHomography);
+    printfMat<double>(stFindObjRpy.matHomography);
+
+
+    PR_AlignCmd stAlignCmd;
+    PR_AlignRpy stAlignRpy;
+    stAlignCmd.matInput = cvarrToMat ( pImgI, true );
+    stAlignCmd.rectSrchWindow.x = stFindObjRpy.ptObjPos.x - omega.width / 2.0f;
+    stAlignCmd.rectSrchWindow.y = stFindObjRpy.ptObjPos.y - omega.height / 2.0f;
+    stAlignCmd.rectSrchWindow.width = omega.width;
+    stAlignCmd.rectSrchWindow.height = omega.height;
+    Mat matT = cvarrToMat ( pImgT );
+    stAlignCmd.matTmpl = Mat ( matT, omega );
+    visionAlgorithm.align( &stAlignCmd, &stAlignRpy );
+
+    printf("SURF and findTransformECC result \n");
+    printfMat<float>(stAlignRpy.matAffine);
+
+    
     /* Lucas-Kanade */
     //align_image_forwards_additive(pImgT, omega, pImgI);
 
-    Mat matT = cvarrToMat ( pImgT );
+    //Mat matT = cvarrToMat ( pImgT );
+    Mat matLearn ( matT, omega );
     Mat matI = cvarrToMat ( pImgI );
     Mat resultW ( 2, 3, CV_32F);
     resultW.setTo(Scalar(0));
@@ -401,15 +424,27 @@ int TestVisionAlgorithm()
     resultW.at<float>(1,1) = 1.0;
     //resultW.at<float>(2,2) = 1.0;
     findTransformECC ( matT , matI, resultW, MOTION_AFFINE );
-    printf("resultW \n");
+
+    cv::Mat matOriginalPos ( 3, 1, CV_32F );
+    matOriginalPos.at<float>(0, 0) = omega.x + omega.width / 2.0f;
+    matOriginalPos.at<float>(1, 0) = omega.y + omega.height / 2.0f;
+    matOriginalPos.at<float>(2, 0) = 1.0;
+
+    Mat matDestPos ( 3, 1, CV_32F );
+    matDestPos = resultW * matOriginalPos;
+
+    Point2d pt2dDest;
+    pt2dDest.x = (float) matDestPos.at<float>(0, 0);
+    pt2dDest.y = (float) matDestPos.at<float>(1, 0);
+
+    printf("findTransformECC result \n");
     printfMat<float>(resultW);
 
     Mat resultW1 = estimateRigidTransform(matT, matI, false);
-    printf("resultW1 \n");
+    printf("estimateRigidTransform resultW \n");
     printfMat<double>(resultW1);
 
-    // Restore image I
-    
+    // Restore image I   
     
     
     //for ( short row = 0; row < stAlignRpy.matHomography.rows; ++ row )

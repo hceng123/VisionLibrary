@@ -9,13 +9,19 @@ namespace AOI
 {
 namespace Vision
 {
+    enum ALIGN_ALGORITHM
+    {
+          ALIGN_ALGORITHM_SIFT,
+          ALIGN_ALGORITHM_SURF,
+    };
 
     struct PR_LearnTmplCmd
     {
+        Int16                   nAlgorithm;
         cv::Mat                 mat;
         cv::Mat                 mask;
-        cv::Rect                rectLrn;
-        Int16                   nAlgorithm;
+        cv::Rect2f              rectLrn;
+        
     };
 
      struct PR_LearnTmplRpy
@@ -24,29 +30,34 @@ namespace Vision
          std::vector<KeyPoint>  vecKeyPoint;
          cv::Mat                matDescritor;
          cv::Mat                matTmpl;
-         Point                  ptCenter;
+         Point2f                ptCenter;
      };
 
      struct PR_FindObjCmd
      {
+         Int16                  nAlgorithm;
+         cv::Rect2f             rectLrn;
          cv::Mat                mat;
          cv::Rect               rectSrchWindow;
          std::vector<KeyPoint>  vecModelKeyPoint;
          cv::Mat                matModelDescritor;
+         cv::Point2f            ptExpectedPos;
      };
 
      struct PR_FindObjRpy
      {
          Int16                  nStatus;
          cv::Mat                matHomography;
-         cv::Point              ptObjPos;
-         cv::Size               szOffset;
+         cv::Point2f            ptObjPos;
+         cv::Size2f             szOffset;
+         float                  fRotation;
      };
 
      struct PR_AlignCmd
      {
-         cv::Mat                mat;
+         cv::Mat                matInput;
          cv::Mat                matTmpl;
+         cv::Point2f            ptOriginalPos;
          cv::Rect               rectSrchWindow;
          std::vector<KeyPoint>  vecModelKeyPoint;
          cv::Mat                matModelDescritor;
@@ -55,9 +66,9 @@ namespace Vision
      struct PR_AlignRpy
      {
          Int16                  nStatus;
-         cv::Mat                matHomography;
-         cv::Point              ptObjPos;
-         cv::Size               szOffset;
+         cv::Mat                matAffine;
+         cv::Point2f            ptObjPos;
+         cv::Size2f             szOffset;
          float                  fRotation;
      };
 }
