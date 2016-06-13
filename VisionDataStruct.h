@@ -87,9 +87,9 @@ struct PR_DefectCriteria
 
 struct PR_InspCmd
 {
-	cv::Mat					matInsp;
-	cv::Mat					matLearn;
+	cv::Mat					matInsp;	
 	cv::Mat					matTmpl;
+    cv::Mat					matMask;
 	cv::Rect2f				rectLrn;
 	cv::Point2f				ptObjPos;
 	float					fRotation;
@@ -99,7 +99,7 @@ struct PR_InspCmd
 
 struct PR_Defect
 {
-	Int16				n16Type;
+	PR_DEFECT_TYPE		enType;
 	float				fArea;
 	float				fRadius;
 	float				fLength;

@@ -261,13 +261,15 @@ int VisionAlgorithm::inspect(PR_InspCmd *const pInspCmd, PR_InspRpy *pInspRpy)
 	imshow("Masked Inspection", pInspCmd->matInsp );
 
 	cv::Mat matCmpResult = pInspCmd->matInsp - matRotatedTmpl;
+	cv::Mat matRevsCmdResult = matRotatedTmpl - pInspCmd->matInsp;
 
 	imshow("Rotated template", matRotatedTmpl);
 
 	imshow("Compare result", matCmpResult );
+    imshow("Compare result Reverse", matRevsCmdResult );
 	
 	pInspRpy->n16NDefect = 0;
-	_findBlob(matCmpResult, pInspCmd, pInspRpy);
+	_findBlob(matCmpResult, matRevsCmdResult, pInspCmd, pInspRpy);
 	_findLine(matCmpResult, pInspCmd, pInspRpy );
 
 	waitKey(0);
@@ -275,8 +277,11 @@ int VisionAlgorithm::inspect(PR_InspCmd *const pInspCmd, PR_InspRpy *pInspRpy)
 	return 0;
 }
 
-int VisionAlgorithm::_findBlob(const Mat &mat, PR_InspCmd *const pInspCmd, PR_InspRpy *pInspRpy)
+int VisionAlgorithm::_findBlob(const Mat &mat, const Mat &matRevs, PR_InspCmd *const pInspCmd, PR_InspRpy *pInspRpy)
 {
+	Mat im_with_keypoints(mat);
+	mat.copyTo(im_with_keypoints);
+
 	for (short nIndex = 0; nIndex < pInspCmd->u16NumOfDefectCriteria; ++nIndex)
 	{
 		PR_DefectCriteria stDefectCriteria = pInspCmd->astDefectCriteria[nIndex];
@@ -288,8 +293,8 @@ int VisionAlgorithm::_findBlob(const Mat &mat, PR_InspCmd *const pInspCmd, PR_In
 		// Change thresholds
 		params.blobColor = 0;
 
-		params.minThreshold = 0;
-		params.maxThreshold = stDefectCriteria.ubContrast;
+		params.minThreshold = stDefectCriteria.ubContrast;
+		params.maxThreshold = 255.f;
 
 		// Filter by Area.
 		params.filterByArea = true;
@@ -300,35 +305,49 @@ int VisionAlgorithm::_findBlob(const Mat &mat, PR_InspCmd *const pInspCmd, PR_In
 		//params.minCircularity = 0.1;
 
 		// Filter by Convexity
-		//params.filterByConvexity = true;
+		params.filterByConvexity = false;
 		//params.minConvexity = 0.87;
 
 		// Filter by Inertia
-		//params.filterByInertia = true;
-		//params.minInertiaRatio = 0.01;
+		params.filterByInertia = true;
+		params.minInertiaRatio = 0.05f;
+
+        params.filterByColor = false;
 
 		// Set up detector with params
 		Ptr<SimpleBlobDetector> detector = SimpleBlobDetector::create(params);
 
 		vector<Mat> vecInput;
-		vecInput.push_back(mat);
-
+		if ( PR_DEFECT_ATTRIBUTE::BRIGHT == stDefectCriteria.enAttribute )	{
+			vecInput.push_back(mat);
+		}else if ( PR_DEFECT_ATTRIBUTE::DARK == stDefectCriteria.enAttribute )	{
+			vecInput.push_back(matRevs);
+		}else if(PR_DEFECT_ATTRIBUTE::BOTH == stDefectCriteria.enAttribute ){
+            vecInput.push_back(mat);
+            vecInput.push_back(matRevs);
+		}	
+		
 		VectorOfVectorKeyPoint keyPoints;
-		detector->detect(vecInput, keyPoints);
+		detector->detect ( vecInput, keyPoints, pInspCmd->matMask );
 
-		VectorOfKeyPoint vecKeyPoint = keyPoints[0];
-		if ( vecKeyPoint.size() > 0 && pInspRpy->n16NDefect < MAX_NUM_OF_DEFECT_RESULT )	{
-			for ( VectorOfKeyPoint::const_iterator it = vecKeyPoint.begin(); it != vecKeyPoint.end(); ++ it )
-			{
-				pInspRpy->astDefect[pInspRpy->n16NDefect].n16Type = PR_DEFECT_BLOB;
-				float fRadius = it->size / 2;
-				pInspRpy->astDefect[pInspRpy->n16NDefect].fRadius = fRadius;
-				pInspRpy->astDefect[pInspRpy->n16NDefect].fArea = (float)CV_PI * fRadius * fRadius; //Area = PI * R * R
-				++ pInspRpy->n16NDefect;
-			}
-		}
+        //VectorOfKeyPoint vecKeyPoint = keyPoints[0];
+        for (const auto &vecKeyPoint : keyPoints)    {
+            if (vecKeyPoint.size() > 0 && pInspRpy->n16NDefect < MAX_NUM_OF_DEFECT_RESULT)	{
+                for ( const auto &keyPoint : vecKeyPoint )
+                {
+                    pInspRpy->astDefect[pInspRpy->n16NDefect].enType = PR_DEFECT_TYPE::BLOB;
+                    float fRadius = keyPoint.size / 2;
+                    pInspRpy->astDefect[pInspRpy->n16NDefect].fRadius = fRadius;
+                    pInspRpy->astDefect[pInspRpy->n16NDefect].fArea = (float)CV_PI * fRadius * fRadius; //Area = PI * R * R
+                    ++pInspRpy->n16NDefect;
+                }
+                drawKeypoints( im_with_keypoints, vecKeyPoint, im_with_keypoints, Scalar(0,0,255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );	
+            }
+        }			
 	}
 
+	imshow("Find blob result", im_with_keypoints);
+	waitKey(0);
 	return 0;
 }
 
@@ -375,18 +394,16 @@ int VisionAlgorithm::_findLine(const Mat &mat, PR_InspCmd *const pInspCmd, PR_In
 			Point2f pt2 ( (float)lines[i][2], (float)lines[i][3] );
 			PR_Line2f line(pt1, pt2 );
 			vecLines.push_back(line);
-			//line(color_dst, pt1, pt2, Scalar(0, 0, 255), 1, 8);
-
-			//if ( pInspRpy->n16NDefect < MAX_NUM_OF_DEFECT_RESULT )	{
-			//	pInspRpy->astDefect[pInspRpy->n16NDefect].n16Type = PR_DEFECT_LINE;
-			//	pInspRpy->astDefect[pInspRpy->n16NDefect].fLength = distanceOf2Point (pt1, pt2);
-			//	++pInspRpy->n16NDefect;
-			//}
 		}
 		_mergeLines ( vecLines, vecLinesAfterMerge );
 		for(const auto it:vecLinesAfterMerge)
 		{
-			line(color_dst, it.pt1, it.pt2, Scalar(0, 0, 255), 1, 8);
+			line(color_dst, it.pt1, it.pt2, Scalar(0, 0, 255), 3, 8);
+			if ( pInspRpy->n16NDefect < MAX_NUM_OF_DEFECT_RESULT )	{
+				pInspRpy->astDefect[pInspRpy->n16NDefect].enType = PR_DEFECT_TYPE::LINE;
+				pInspRpy->astDefect[pInspRpy->n16NDefect].fLength = distanceOf2Point(it.pt1, it.pt2);
+				++pInspRpy->n16NDefect;
+			}
 		}
 		imshow("Detected Lines", color_dst);
 		waitKey(0);
@@ -492,12 +509,6 @@ int VisionAlgorithm::_mergeLines(const vector<PR_Line2f> &vecLines, vector<PR_Li
 		return 0;
 
 	vector<int> vecMerged(vecLines.size(), false);
-
-	//vector<float> listLineSlope;
-	//for ( vector<PR_Line>::const_iterator it = vecLines.begin(); it != vecLines.end(); ++ it )	{
-	//	PR_Line line = *it;
-	//	listLineSlope.push_back ( (float)( line.pt2.y - line.pt1.y ) / ( line.pt2.x - line.pt1.x ) );
-	//}
 	
 	for ( size_t i = 0; i < vecLines.size(); ++ i )	{
 		if ( vecMerged[i] )

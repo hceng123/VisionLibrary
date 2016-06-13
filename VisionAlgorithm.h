@@ -36,7 +36,7 @@ public:
 	float distanceOf2Point(const cv::Point &pt1, const cv::Point &pt2);
 	float distanceOf2Point(const cv::Point2f &pt1, const cv::Point2f &pt2);
 protected:
-	int _findBlob(const Mat &mat, PR_InspCmd *const pInspCmd, PR_InspRpy *pInspRpy );
+	int _findBlob(const Mat &mat, const Mat &matRevs, PR_InspCmd *const pInspCmd, PR_InspRpy *pInspRpy );
 	int _findLine(const Mat &mat, PR_InspCmd *const pInspCmd, PR_InspRpy *pInspRpy );
 	int _mergeLines(const vector<PR_Line2f> &vecLines, vector<PR_Line2f> &vecResultLines);
 	int _merge2Line(const PR_Line2f &line1, const PR_Line2f &line2, PR_Line2f &lineResult);
