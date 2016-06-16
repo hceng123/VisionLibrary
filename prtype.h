@@ -6,10 +6,10 @@ namespace AOI
 namespace Vision
 {
 
-enum ALIGN_ALGORITHM
+enum class PR_ALIGN_ALGORITHM
 {
-	ALIGN_ALGORITHM_SIFT,
-	ALIGN_ALGORITHM_SURF,
+	SIFT,
+	SURF,
 };
 
 enum class PR_DEFECT_ATTRIBUTE

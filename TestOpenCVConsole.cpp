@@ -1131,12 +1131,12 @@ int TestVisionAlgorithm()
 
 	// Restore image I
 	//warp_image(pGrayPhoto, pImgI, W);
-	short nAlgorithm = ALIGN_ALGORITHM_SURF;
+	PR_ALIGN_ALGORITHM enAlgorithm = PR_ALIGN_ALGORITHM::SURF;
 	PR_LearnTmplCmd stLrnTmplCmd;
 	PR_LearnTmplRpy stLrnTmplRpy;
 	stLrnTmplCmd.mat = cvarrToMat(pImgT, true);
 	stLrnTmplCmd.rectLrn = omega;
-	stLrnTmplCmd.nAlgorithm = nAlgorithm;
+	stLrnTmplCmd.enAlgorithm = enAlgorithm;
 	visionAlgorithm.learn(&stLrnTmplCmd, &stLrnTmplRpy);
 
 	PR_FindObjCmd stFindObjCmd;
@@ -1148,7 +1148,7 @@ int TestVisionAlgorithm()
 	stFindObjCmd.ptExpectedPos = stLrnTmplRpy.ptCenter;
 	Rect rectSrchWindow ( 30, 30, stFindObjCmd.mat.cols - 30, stFindObjCmd.mat.rows - 30 );
 	stFindObjCmd.rectSrchWindow = rectSrchWindow;
-	stFindObjCmd.nAlgorithm = nAlgorithm;
+	stFindObjCmd.enAlgorithm = enAlgorithm;
 
 	CStopWatch stopWatch;
 	visionAlgorithm.findObject(&stFindObjCmd, &stFindObjRpy);
