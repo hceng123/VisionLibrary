@@ -19,7 +19,7 @@ namespace Vision
 
 struct PR_LearnTmplCmd
 {
-	Int16                   nAlgorithm;
+	PR_ALIGN_ALGORITHM      enAlgorithm;
 	cv::Mat                 mat;
 	cv::Mat                 mask;
 	cv::Rect2f              rectLrn;
@@ -37,7 +37,7 @@ struct PR_LearnTmplRpy
 
 struct PR_FindObjCmd
 {
-	Int16                  nAlgorithm;
+	PR_ALIGN_ALGORITHM     enAlgorithm;
 	cv::Rect2f             rectLrn;
 	cv::Mat                mat;
 	cv::Rect               rectSrchWindow;

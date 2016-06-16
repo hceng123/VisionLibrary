@@ -48,10 +48,10 @@ int VisionAlgorithm::learn(PR_LearnTmplCmd * const pLearnTmplCmd, PR_LearnTmplRp
         return -1;
     
     Ptr<Feature2D> detector;
-    if (ALIGN_ALGORITHM_SIFT == pLearnTmplCmd->nAlgorithm)
-        detector = SIFT::create(_constMinHessian);
+    if ( PR_ALIGN_ALGORITHM::SIFT == pLearnTmplCmd->enAlgorithm)
+        detector = SIFT::create (_constMinHessian, _constOctave, _constOctaveLayer );
     else
-        detector = SURF::create(_constMinHessian);
+        detector = SURF::create (_constMinHessian, _constOctave, _constOctaveLayer );
     Mat matROI( pLearnTmplCmd->mat, pLearnTmplCmd->rectLrn );
     detector->detectAndCompute ( matROI, pLearnTmplCmd->mask, pLearnTmplRpy->vecKeyPoint, pLearnTmplRpy->matDescritor );
     if ( pLearnTmplRpy->vecKeyPoint.size() > _constLeastFeatures )
@@ -77,15 +77,20 @@ int VisionAlgorithm::findObject(PR_FindObjCmd *const pFindObjCmd, PR_FindObjRpy 
     cv::Mat matSrchROI ( pFindObjCmd->mat, pFindObjCmd->rectSrchWindow );
     
     Ptr<Feature2D> detector;
-    if (ALIGN_ALGORITHM_SIFT == pFindObjCmd->nAlgorithm)
-        detector = SIFT::create(_constMinHessian);
+    if (PR_ALIGN_ALGORITHM::SIFT == pFindObjCmd->enAlgorithm)
+        detector = SIFT::create(_constMinHessian, _constOctave, _constOctaveLayer );
     else
-        detector = SURF::create(_constMinHessian);
+        detector = SURF::create(_constMinHessian, _constOctave, _constOctaveLayer );
     
     std::vector<KeyPoint> vecKeypointScene;
     cv::Mat matDescriptorScene;
     Mat mask;
+
+    CStopWatch stopWatch;
+
     detector->detectAndCompute ( matSrchROI, mask, vecKeypointScene, matDescriptorScene );
+
+    printf("detectAndCompute time consume %d us \n", stopWatch.NowInMicro() );
 
     VectorOfDMatch good_matches;
 
@@ -96,10 +101,9 @@ int VisionAlgorithm::findObject(PR_FindObjCmd *const pFindObjCmd, PR_FindObjRpy 
 
     VectorOfVectorOfDMatch vecVecMatches;
     vecVecMatches.reserve(2000);
-
-	CStopWatch stopWatch;
+	
     matcher.knnMatch ( pFindObjCmd->matModelDescritor, matDescriptorScene, vecVecMatches, 2 );
-	//printf("knnMatch time consume %d us \n", stopWatch.NowInMicro() );
+	printf("knnMatch time consume %d us \n", stopWatch.NowInMicro() );
 
 	double max_dist = 0; double min_dist = 100.;
 	int nScoreCount = 0;

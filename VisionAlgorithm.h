@@ -42,9 +42,12 @@ protected:
 	int _merge2Line(const PR_Line2f &line1, const PR_Line2f &line2, PR_Line2f &lineResult);
 	int _findLineCrossPoint(const PR_Line2f &line1, const PR_Line2f &line2, Point2f ptResult);
 protected:
-    const int       _constMinHessian    =      40;
-    const UInt32    _constLeastFeatures =      3;
+    const int       _constMinHessian    =       80;
+    const int       _constOctave        =       2;
+    const int       _constOctaveLayer   =       2;
+    const UInt32    _constLeastFeatures =       3;
     cv::Mat         _mat;
+    int             _debugMode = 1;
 };
 
 }

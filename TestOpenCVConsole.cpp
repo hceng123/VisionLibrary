@@ -1240,6 +1240,22 @@ int TestVisionAlgorithm()
 	return 0;
 }
 
+int SetProcessPriority()
+{
+    DWORD dwError;
+    if (!SetPriorityClass(GetCurrentProcess(), REALTIME_PRIORITY_CLASS ))
+    {
+        dwError = GetLastError();
+        if (ERROR_PROCESS_MODE_ALREADY_BACKGROUND == dwError)
+            _tprintf(TEXT("Already in background mode\n"));
+        else 
+            _tprintf(TEXT("Failed to enter background mode (%d)\n"), dwError);
+        return -1;
+    }
+    _tprintf(TEXT("Enter real time mode\n"));
+    return 0;
+}
+
 int TestHoughTransform()
 {
     Mat src, dst, color_dst;
@@ -1483,6 +1499,8 @@ int main()
 	//TestPolyline();
 
 	//TestImageZoom();
+
+    SetProcessPriority();
 
 	TestVisionAlgorithm();
 
