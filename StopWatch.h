@@ -3,50 +3,47 @@
 #ifndef _STOP_WATCH_
 #define _STOP_WATCH_
 #pragma once
-#include "stdafx.h"
-#include <Windows.h>
+
+#include <chrono>
+using namespace std::chrono;
 
 class CStopWatch
 {
 public:
 	CStopWatch()
 	{
-		QueryPerformanceFrequency( &m_liPerfFreq );
 		Start();
 	}
-	void Start() { QueryPerformanceCounter(&m_liPerfStart);}
+
+	void Start() 
+    { 
+        _tpStart = high_resolution_clock::now();
+    }
 
 	__int64 Now () const
 	{
-		LARGE_INTEGER liPerfNow;
-		QueryPerformanceCounter ( &liPerfNow );
-		return ( ( ( liPerfNow.QuadPart - m_liPerfStart.QuadPart ) * 1000) / m_liPerfFreq.QuadPart);
+		high_resolution_clock::time_point tpNow = high_resolution_clock::now();
+		return static_cast<__int64> ( std::chrono::duration<double, std::milli>( tpNow - _tpStart ).count() );
 	}
 
 	__int64 AbsNow () const
 	{
-		LARGE_INTEGER liPerfNow;
-		QueryPerformanceCounter ( &liPerfNow );
-		return ( ( liPerfNow.QuadPart * 1000 ) / m_liPerfFreq.QuadPart);
+		return duration_cast<milliseconds>( high_resolution_clock::now().time_since_epoch() ).count();
 	}
 
 	__int64 NowInMicro () const
 	{
-		LARGE_INTEGER liPerfNow;
-		QueryPerformanceCounter ( &liPerfNow );
-		return ( ( ( liPerfNow.QuadPart - m_liPerfStart.QuadPart ) * 1000000) / m_liPerfFreq.QuadPart);
+		high_resolution_clock::time_point tpNow = high_resolution_clock::now();
+		return static_cast<__int64> ( std::chrono::duration<double, std::micro>( tpNow - _tpStart).count() );
 	}
 
 	__int64 AbsNowInMicro () const
 	{
-		LARGE_INTEGER liPerfNow;
-		QueryPerformanceCounter ( &liPerfNow );
-		return ( ( liPerfNow.QuadPart * 1000000 ) / m_liPerfFreq.QuadPart);
+		return duration_cast<microseconds>( high_resolution_clock::now().time_since_epoch() ).count();
 	}
 
 private:
-	LARGE_INTEGER m_liPerfFreq;
-	LARGE_INTEGER m_liPerfStart;
+	high_resolution_clock::time_point _tpStart;
 };
 
 #endif

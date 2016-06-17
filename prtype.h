@@ -31,6 +31,13 @@ enum class PR_DEFECT_TYPE
 	END,
 };
 
+enum class PR_DEBUG_MODE
+{
+    DISABLED,
+    SHOW_IMAGE,
+    LOG_CASE,
+};
+
 }
 }
 

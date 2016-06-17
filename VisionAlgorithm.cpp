@@ -5,7 +5,7 @@
 #include "opencv2/calib3d/calib3d.hpp"
 #include "opencv2/video/tracking.hpp"
 #include "opencv2\highgui.hpp"
-#include <vector>
+#include <fstream>
 #include "StopWatch.h"
 #include "VisionStatus.h"
 
@@ -17,7 +17,10 @@ namespace AOI
 namespace Vision
 {
 
-VisionAlgorithm::VisionAlgorithm(const Mat &mat):_mat(mat)
+#define MARK_FUNCTION_START_TIME    __int64 functionStart = _stopWatch.AbsNow()
+#define MARK_FUNCTION_END_TIME      _addTimeLog( __FUNCTION__, _stopWatch.AbsNow() - functionStart )
+
+VisionAlgorithm::VisionAlgorithm(const cv::Mat &mat):_mat(mat)
 {
 }
 
@@ -25,15 +28,15 @@ VisionAlgorithm::VisionAlgorithm()
 {
 }
 
-int VisionAlgorithm::learn(const Rect &rect, const Mat &mask, int const nAlgorithm)
+int VisionAlgorithm::learn(const cv::Rect &rect, const cv::Mat &mask, int const nAlgorithm)
 {
     if ( _mat.empty() )
         return -1;
     
-    Ptr<SURF> detector = SURF::create(_constMinHessian);
-    Mat matROI(_mat, rect);
-    std::vector<KeyPoint> keypoints;
-    Mat matDescritor;
+    cv::Ptr<SURF> detector = SURF::create(_constMinHessian);
+    cv::Mat matROI(_mat, rect);
+    std::vector<cv::KeyPoint> keypoints;
+    cv::Mat matDescritor;
     detector->detectAndCompute ( matROI, mask, keypoints, matDescritor );
 
     return 0;
@@ -47,12 +50,12 @@ int VisionAlgorithm::learn(PR_LearnTmplCmd * const pLearnTmplCmd, PR_LearnTmplRp
     if ( pLearnTmplCmd->mat.empty() )
         return -1;
     
-    Ptr<Feature2D> detector;
+    cv::Ptr<cv::Feature2D> detector;
     if ( PR_ALIGN_ALGORITHM::SIFT == pLearnTmplCmd->enAlgorithm)
         detector = SIFT::create (_constMinHessian, _constOctave, _constOctaveLayer );
     else
         detector = SURF::create (_constMinHessian, _constOctave, _constOctaveLayer );
-    Mat matROI( pLearnTmplCmd->mat, pLearnTmplCmd->rectLrn );
+    cv::Mat matROI( pLearnTmplCmd->mat, pLearnTmplCmd->rectLrn );
     detector->detectAndCompute ( matROI, pLearnTmplCmd->mask, pLearnTmplRpy->vecKeyPoint, pLearnTmplRpy->matDescritor );
     if ( pLearnTmplRpy->vecKeyPoint.size() > _constLeastFeatures )
         pLearnTmplRpy->nStatus = 0;
@@ -74,36 +77,37 @@ int VisionAlgorithm::findObject(PR_FindObjCmd *const pFindObjCmd, PR_FindObjRpy 
     if ( pFindObjCmd->vecModelKeyPoint.empty() )
         return -1;
 
+    //__int64 functionStart = _stopWatch.AbsNow();
+    MARK_FUNCTION_START_TIME;
     cv::Mat matSrchROI ( pFindObjCmd->mat, pFindObjCmd->rectSrchWindow );
     
-    Ptr<Feature2D> detector;
+    cv::Ptr<cv::Feature2D> detector;
     if (PR_ALIGN_ALGORITHM::SIFT == pFindObjCmd->enAlgorithm)
         detector = SIFT::create(_constMinHessian, _constOctave, _constOctaveLayer );
     else
         detector = SURF::create(_constMinHessian, _constOctave, _constOctaveLayer );
     
-    std::vector<KeyPoint> vecKeypointScene;
+    std::vector<cv::KeyPoint> vecKeypointScene;
     cv::Mat matDescriptorScene;
-    Mat mask;
-
-    CStopWatch stopWatch;
-
+    cv::Mat mask;
+    
+    _stopWatch.Start();
     detector->detectAndCompute ( matSrchROI, mask, vecKeypointScene, matDescriptorScene );
-
-    printf("detectAndCompute time consume %d us \n", stopWatch.NowInMicro() );
+    _addTimeLog("detectAndCompute");
 
     VectorOfDMatch good_matches;
 
-    Ptr<flann::IndexParams> indexParams = new flann::KDTreeIndexParams;
-    Ptr<flann::SearchParams> searchParams = new flann::SearchParams;
+    cv::Ptr<cv::flann::IndexParams> indexParams = new cv::flann::KDTreeIndexParams;
+    cv::Ptr<cv::flann::SearchParams> searchParams = new cv::flann::SearchParams;
 
-    FlannBasedMatcher matcher;
+    cv::FlannBasedMatcher matcher;
 
     VectorOfVectorOfDMatch vecVecMatches;
     vecVecMatches.reserve(2000);
 	
+    _stopWatch.Start();
     matcher.knnMatch ( pFindObjCmd->matModelDescritor, matDescriptorScene, vecVecMatches, 2 );
-	printf("knnMatch time consume %d us \n", stopWatch.NowInMicro() );
+	_addTimeLog("knnMatch");
 
 	double max_dist = 0; double min_dist = 100.;
 	int nScoreCount = 0;
@@ -153,8 +157,8 @@ int VisionAlgorithm::findObject(PR_FindObjCmd *const pFindObjCmd, PR_FindObjRpy 
     if ( good_matches.size() <= 0 )
         return -1;
     //-- Localize the object
-    std::vector<Point2f> obj;
-    std::vector<Point2f> scene;
+    std::vector<cv::Point2f> obj;
+    std::vector<cv::Point2f> scene;
 
     for (size_t i = 0; i < good_matches.size(); ++ i )
     {
@@ -163,8 +167,10 @@ int VisionAlgorithm::findObject(PR_FindObjCmd *const pFindObjCmd, PR_FindObjRpy 
         scene.push_back( vecKeypointScene[good_matches[i].trainIdx].pt);
     }    
     
-    //getHomographyMatrixFromMatchedFeatures
+    _stopWatch.Start();
     pFindObjRpy->matHomography = cv::findHomography ( obj, scene, CV_LMEDS );
+    _addTimeLog("cv::findHomography");
+
 	pFindObjRpy->matHomography.at<double>(0, 2) += pFindObjCmd->rectSrchWindow.x;
 	pFindObjRpy->matHomography.at<double>(1, 2) += pFindObjCmd->rectSrchWindow.y;
 
@@ -173,7 +179,7 @@ int VisionAlgorithm::findObject(PR_FindObjCmd *const pFindObjCmd, PR_FindObjRpy 
     matOriginalPos.at<double>(1, 0) = pFindObjCmd->rectLrn.height / 2.f;
     matOriginalPos.at<double>(2, 0) = 1.0;
 
-    Mat destPos ( 3, 1, CV_64F );
+    cv::Mat destPos ( 3, 1, CV_64F );
 
     destPos = pFindObjRpy->matHomography * matOriginalPos;
     pFindObjRpy->ptObjPos.x = (float) destPos.at<double>(0, 0);
@@ -183,7 +189,9 @@ int VisionAlgorithm::findObject(PR_FindObjCmd *const pFindObjCmd, PR_FindObjRpy 
 	float fRotationValue = (float)(pFindObjRpy->matHomography.at<double>(1, 0) - pFindObjRpy->matHomography.at<double>(0, 1)) / 2.0f;
 	pFindObjRpy->fRotation = (float) RADIAN_2_DEGREE ( asin(fRotationValue) );
     
-    return 0;
+    //_addTimeLog( __FUNCTION__, _stopWatch.AbsNow() - functionStart );
+    MARK_FUNCTION_END_TIME;
+    return static_cast<int>(VisionStatus::OK);
 }
 
 int VisionAlgorithm::align(PR_AlignCmd *const pAlignCmd, PR_AlignRpy *pAlignRpy )
@@ -198,12 +206,12 @@ int VisionAlgorithm::align(PR_AlignCmd *const pAlignCmd, PR_AlignRpy *pAlignRpy 
         return -1;
 
     cv::Mat matAffine ( 2, 3, CV_32F );
-    matAffine.setTo(Scalar(0));
+    matAffine.setTo(cv::Scalar(0));
     matAffine.at<float>(0,0) = 1.0;
 	matAffine.at<float>(1, 1) = 1.0;
    
     cv::Mat matSrchROI( pAlignCmd->matInput, pAlignCmd->rectSrchWindow );
-    cv::findTransformECC ( pAlignCmd->matTmpl, matSrchROI, matAffine, MOTION_AFFINE );	//The result only support 32F in Opencv
+    cv::findTransformECC ( pAlignCmd->matTmpl, matSrchROI, matAffine, cv::MOTION_AFFINE );	//The result only support 32F in Opencv
 	matAffine.at<float>(0, 2) += pAlignCmd->rectSrchWindow.x;
 	matAffine.at<float>(1, 2) += pAlignCmd->rectSrchWindow.y;
 
@@ -214,7 +222,7 @@ int VisionAlgorithm::align(PR_AlignCmd *const pAlignCmd, PR_AlignRpy *pAlignRpy 
 	matOriginalPos.at<float>(1, 0) = pAlignCmd->rectLrn.height / 2.f;
 	matOriginalPos.at<float>(2, 0) = 1.0;
 
-	Mat destPos(3, 1, CV_32F);
+	cv::Mat destPos(3, 1, CV_32F);
 
 	destPos = pAlignRpy->matAffine * matOriginalPos;
 	pAlignRpy->ptObjPos.x = destPos.at<float>(0, 0);
@@ -252,38 +260,38 @@ int VisionAlgorithm::inspect(PR_InspCmd *const pInspCmd, PR_InspRpy *pInspRpy)
 	cv::Mat matMaskRoi ( matMask, rect2fInspROI );
 	matMaskRoi.setTo ( cv::Scalar(255,255,255) );
 
-	Mat matRotation = getRotationMatrix2D ( pInspCmd->ptObjPos, -pInspCmd->fRotation, 1 );
-	Mat matRotatedTmpl;
+	cv::Mat matRotation = getRotationMatrix2D ( pInspCmd->ptObjPos, -pInspCmd->fRotation, 1 );
+	cv::Mat matRotatedTmpl;
 	warpAffine( matTmplFullRange, matRotatedTmpl, matRotation, matTmplFullRange.size() );
 
-	Mat matRotatedMask;
+	cv::Mat matRotatedMask;
 	warpAffine( matMask, matRotatedMask, matRotation, matMask.size() );
 	matRotatedMask =  cv::Scalar::all(255) - matRotatedMask;
-	imshow("Mask", matRotatedMask );
+	cv::imshow("Mask", matRotatedMask );
 
 	pInspCmd->matInsp.setTo(cv::Scalar(0), matRotatedMask );
-	imshow("Masked Inspection", pInspCmd->matInsp );
+	cv::imshow("Masked Inspection", pInspCmd->matInsp );
 
 	cv::Mat matCmpResult = pInspCmd->matInsp - matRotatedTmpl;
 	cv::Mat matRevsCmdResult = matRotatedTmpl - pInspCmd->matInsp;
 
-	imshow("Rotated template", matRotatedTmpl);
+	cv::imshow("Rotated template", matRotatedTmpl);
 
-	imshow("Compare result", matCmpResult );
-    imshow("Compare result Reverse", matRevsCmdResult );
+	cv::imshow("Compare result", matCmpResult );
+    cv::imshow("Compare result Reverse", matRevsCmdResult );
 	
 	pInspRpy->n16NDefect = 0;
 	_findBlob(matCmpResult, matRevsCmdResult, pInspCmd, pInspRpy);
 	_findLine(matCmpResult, pInspCmd, pInspRpy );
 
-	waitKey(0);
+	cv::waitKey(0);
 
 	return 0;
 }
 
-int VisionAlgorithm::_findBlob(const Mat &mat, const Mat &matRevs, PR_InspCmd *const pInspCmd, PR_InspRpy *pInspRpy)
+int VisionAlgorithm::_findBlob(const cv::Mat &mat, const cv::Mat &matRevs, PR_InspCmd *const pInspCmd, PR_InspRpy *pInspRpy)
 {
-	Mat im_with_keypoints(mat);
+	cv::Mat im_with_keypoints(mat);
 	mat.copyTo(im_with_keypoints);
 
 	for (short nIndex = 0; nIndex < pInspCmd->u16NumOfDefectCriteria; ++nIndex)
@@ -292,7 +300,7 @@ int VisionAlgorithm::_findBlob(const Mat &mat, const Mat &matRevs, PR_InspCmd *c
 		if ( stDefectCriteria.fArea <= 0.f )
 			continue;
 
-		SimpleBlobDetector::Params params;
+		cv::SimpleBlobDetector::Params params;
 
 		// Change thresholds
 		params.blobColor = 0;
@@ -319,9 +327,9 @@ int VisionAlgorithm::_findBlob(const Mat &mat, const Mat &matRevs, PR_InspCmd *c
         params.filterByColor = false;
 
 		// Set up detector with params
-		Ptr<SimpleBlobDetector> detector = SimpleBlobDetector::create(params);
+		cv::Ptr<cv::SimpleBlobDetector> detector = cv::SimpleBlobDetector::create(params);
 
-		vector<Mat> vecInput;
+		vector<cv::Mat> vecInput;
 		if ( PR_DEFECT_ATTRIBUTE::BRIGHT == stDefectCriteria.enAttribute )	{
 			vecInput.push_back(mat);
 		}else if ( PR_DEFECT_ATTRIBUTE::DARK == stDefectCriteria.enAttribute )	{
@@ -345,18 +353,19 @@ int VisionAlgorithm::_findBlob(const Mat &mat, const Mat &matRevs, PR_InspCmd *c
                     pInspRpy->astDefect[pInspRpy->n16NDefect].fArea = (float)CV_PI * fRadius * fRadius; //Area = PI * R * R
                     ++pInspRpy->n16NDefect;
                 }
-                drawKeypoints( im_with_keypoints, vecKeyPoint, im_with_keypoints, Scalar(0,0,255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );	
+                drawKeypoints( im_with_keypoints, vecKeyPoint, im_with_keypoints, cv::Scalar(0,0,255), cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS );	
             }
         }			
 	}
 
-	imshow("Find blob result", im_with_keypoints);
-	waitKey(0);
+	cv::imshow("Find blob result", im_with_keypoints);
+	cv::waitKey(0);
 	return 0;
 }
 
-int VisionAlgorithm::_findLine(const Mat &mat, PR_InspCmd *const pInspCmd, PR_InspRpy *pInspRpy)
+int VisionAlgorithm::_findLine(const cv::Mat &mat, PR_InspCmd *const pInspCmd, PR_InspRpy *pInspRpy)
 {
+    MARK_FUNCTION_START_TIME;
 	for (short nIndex = 0; nIndex < pInspCmd->u16NumOfDefectCriteria; ++nIndex)
 	{
 		PR_DefectCriteria stDefectCriteria = pInspCmd->astDefectCriteria[nIndex];
@@ -364,15 +373,15 @@ int VisionAlgorithm::_findLine(const Mat &mat, PR_InspCmd *const pInspCmd, PR_In
 			continue;
 
 		cv::Mat matThreshold;
-		cv::threshold ( mat, matThreshold, stDefectCriteria.ubContrast, 255, THRESH_BINARY );
+		cv::threshold ( mat, matThreshold, stDefectCriteria.ubContrast, 255, cv::THRESH_BINARY );
 
-		Mat matSobelX, matSobelY;
+		cv::Mat matSobelX, matSobelY;
 		Sobel ( matThreshold, matSobelX, mat.depth(), 1, 0 );
 		Sobel ( matThreshold, matSobelY, mat.depth(), 0, 1 );
 
 		short depth = matSobelX.depth();
 
-		Mat matSobelResult(mat.size(), CV_8U);
+		cv::Mat matSobelResult(mat.size(), CV_8U);
 		for (short row = 0; row < mat.rows; ++row)
 		{
 			for (short col = 0; col < mat.cols; ++col)
@@ -383,35 +392,38 @@ int VisionAlgorithm::_findLine(const Mat &mat, PR_InspCmd *const pInspCmd, PR_In
 			}
 		}
 
-		imshow("Sobel Result", matSobelResult);
+        if (PR_DEBUG_MODE::SHOW_IMAGE == _enDebugMode)
+            cv::imshow("Sobel Result", matSobelResult);
+
 		cv::Mat color_dst;
 		cvtColor(matSobelResult, color_dst, CV_GRAY2BGR);
 
-		vector<Vec4i> lines;
+		vector<cv::Vec4i> lines;
 		HoughLinesP ( matSobelResult, lines, 1, CV_PI / 180, 30, stDefectCriteria.fLength, 10 );
 
 		//_mergeLines ( )
 		vector<PR_Line2f> vecLines, vecLinesAfterMerge;
 		for (size_t i = 0; i < lines.size(); i++)
 		{
-			Point2f pt1 ( (float)lines[i][0], (float)lines[i][1] );
-			Point2f pt2 ( (float)lines[i][2], (float)lines[i][3] );
+			cv::Point2f pt1 ( (float)lines[i][0], (float)lines[i][1] );
+			cv::Point2f pt2 ( (float)lines[i][2], (float)lines[i][3] );
 			PR_Line2f line(pt1, pt2 );
 			vecLines.push_back(line);
 		}
 		_mergeLines ( vecLines, vecLinesAfterMerge );
 		for(const auto it:vecLinesAfterMerge)
 		{
-			line(color_dst, it.pt1, it.pt2, Scalar(0, 0, 255), 3, 8);
+			line(color_dst, it.pt1, it.pt2, cv::Scalar(0, 0, 255), 3, 8);
 			if ( pInspRpy->n16NDefect < MAX_NUM_OF_DEFECT_RESULT )	{
 				pInspRpy->astDefect[pInspRpy->n16NDefect].enType = PR_DEFECT_TYPE::LINE;
 				pInspRpy->astDefect[pInspRpy->n16NDefect].fLength = distanceOf2Point(it.pt1, it.pt2);
 				++pInspRpy->n16NDefect;
 			}
 		}
-		imshow("Detected Lines", color_dst);
-		waitKey(0);
+        if (PR_DEBUG_MODE::SHOW_IMAGE == _enDebugMode)
+            cv::imshow("Detected Lines", color_dst);
 	}
+    MARK_FUNCTION_END_TIME;
 	return 0;
 }
 
@@ -445,7 +457,7 @@ int VisionAlgorithm::_merge2Line(const PR_Line2f &line1, const PR_Line2f &line2,
 	float fLineCrossWithY2 = fLineSlope2 * ( - line2.pt1.x) + line2.pt1.y;
 
 	float fPerpendicularLineSlope =  - 1.f / fLineSlope1;
-	Point2f ptCrossPointWithLine1, ptCrossPointWithLine2;
+	cv::Point2f ptCrossPointWithLine1, ptCrossPointWithLine2;
 
 	//Find perpendicular line, get the cross points with two lines, then can get the distance of two lines.
 	ptCrossPointWithLine1.x = fLineCrossWithY1 / ( fPerpendicularLineSlope - fLineSlope1 );
@@ -460,7 +472,7 @@ int VisionAlgorithm::_merge2Line(const PR_Line2f &line1, const PR_Line2f &line2,
 		return -1;
 	}
 
-	vector<Point> vecPoint;
+	vector<cv::Point> vecPoint;
 	vecPoint.push_back ( line1.pt1 );
 	vecPoint.push_back ( line1.pt2 );
 	vecPoint.push_back ( line2.pt1 );
@@ -491,7 +503,7 @@ int VisionAlgorithm::_merge2Line(const PR_Line2f &line1, const PR_Line2f &line2,
 			nMinIndex = i;
 		}
 	}
-	Point2f ptMidOfResult;
+	cv::Point2f ptMidOfResult;
 	ptMidOfResult.x = ( vecPoint[nMinIndex].x + vecPoint[nMaxIndex].x ) / 2.f;
 	ptMidOfResult.y = ( vecPoint[nMinIndex].y + vecPoint[nMaxIndex].y ) / 2.f;
 	float fLineLength = distanceOf2Point ( vecPoint[nMinIndex], vecPoint[nMaxIndex] );
@@ -532,7 +544,7 @@ int VisionAlgorithm::_mergeLines(const vector<PR_Line2f> &vecLines, vector<PR_Li
 	return 0;
 }
 
-int VisionAlgorithm::_findLineCrossPoint(const PR_Line2f &line1, const PR_Line2f &line2, Point2f ptResult)
+int VisionAlgorithm::_findLineCrossPoint(const PR_Line2f &line1, const PR_Line2f &line2, cv::Point2f ptResult)
 {
 	float fLineSlope1 = ( line1.pt2.y - line1.pt1.y ) / ( line1.pt2.x - line1.pt1.x );
 	float fLineSlope2 = ( line2.pt2.y - line2.pt1.y ) / ( line2.pt2.x - line2.pt1.x );
@@ -548,6 +560,42 @@ int VisionAlgorithm::_findLineCrossPoint(const PR_Line2f &line1, const PR_Line2f
 	ptResult.x = ( fLineCrossWithY2 - fLineCrossWithY1 ) / (fLineSlope1 - fLineSlope2);
 	ptResult.y = fLineSlope1 * ptResult.x + fLineCrossWithY1;
 	return 0;
+}
+
+void VisionAlgorithm::_addTimeLog(const std::string &strMsg)
+{
+    std::lock_guard<std::mutex> mutexTime(_mutexTimeLog);
+
+    if ( _vecStringTimeLog.size() > 5000 )
+        _vecStringTimeLog.clear();
+    std::string strLog = strMsg;
+    strLog += "\t" + std::to_string( _stopWatch.Now() );
+    _vecStringTimeLog.push_back(strLog);
+}
+
+void VisionAlgorithm::_addTimeLog(const std::string &strMsg, __int64 nTimeSpan)
+{
+     std::lock_guard<std::mutex> mutexTime(_mutexTimeLog);
+
+    if ( _vecStringTimeLog.size() > 5000 )
+        _vecStringTimeLog.clear();
+    std::string strLog = strMsg;
+    strLog += "\t" + std::to_string( nTimeSpan);
+    _vecStringTimeLog.push_back(strLog);
+}
+
+void VisionAlgorithm::dumpTimeLog(const std::string &strFilePath)
+{
+    std::ofstream file(strFilePath);
+    if ( ! file.is_open() )
+        return;
+
+    std::lock_guard<std::mutex> mutexTime(_mutexTimeLog);
+    for( const auto &strLog : _vecStringTimeLog )
+        file << strLog << endl;
+
+    _vecStringTimeLog.clear();
+    file.close();
 }
 
 }
