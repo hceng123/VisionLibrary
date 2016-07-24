@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Label="UserMacros">
+    <BoostFolder>boost_1_59_0</BoostFolder>
+    <BoostBootstrapToolset>vc12</BoostBootstrapToolset>
+    <BoostBuildToolset>msvc-12.0</BoostBuildToolset>
+    <BoostBuildOpts>-d0 --abbreviate-paths --build-dir=.\..\$(IntDir) --stagedir=.\..\$(IntDir) --layout=versioned --with-system --with-thread --with-filesystem --with-test --with-date_time --with-chrono toolset=$(BoostBuildToolset) threading=multi link=static address-model=32</BoostBuildOpts>
+    <BoostDllBuildOpts>-d0 --abbreviate-paths --build-dir=.\..\$(IntDir) --stagedir=.\..\$(IntDir) --layout=versioned --with-system --with-thread --with-filesystem --with-date_time --with-chrono toolset=$(BoostBuildToolset) threading=multi link=shared address-model=32</BoostDllBuildOpts>
+    <BoostLibMask>*boost*vc120*</BoostLibMask>
+  </PropertyGroup>
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.30319.1</_ProjectFileVersion>
+    <_PropertySheetDisplayName>2013_boost_1_59_0</_PropertySheetDisplayName>
+  </PropertyGroup>
+  <ItemGroup>
+    <BuildMacro Include="BoostFolder">
+      <Value>$(BoostFolder)</Value>
+    </BuildMacro>
+    <BuildMacro Include="BoostBootstrapToolset">
+      <Value>$(BoostBootstrapToolset)</Value>
+    </BuildMacro>
+    <BuildMacro Include="BoostBuildToolset">
+      <Value>$(BoostBuildToolset)</Value>
+    </BuildMacro>
+    <BuildMacro Include="BoostBuildOpts">
+      <Value>$(BoostBuildOpts)</Value>
+    </BuildMacro>
+    <BuildMacro Include="BoostDllBuildOpts">
+      <Value>$(BoostDllBuildOpts)</Value>
+    </BuildMacro>
+    <BuildMacro Include="BoostLibMask">
+      <Value>$(BoostLibMask)</Value>
+    </BuildMacro>
+  </ItemGroup>
+</Project>
