@@ -1,12 +1,12 @@
 #include "LogCase.h"
-#include "SimpleIni.h"
 #include <vector>
 #include <sstream>
-#include <ctime>
+//#include <ctime>
 #include "opencv2/highgui.hpp"
 #include "boost/format.hpp"
 #include "boost/filesystem.hpp"
 #include "StopWatch.h"
+#include "SimpleIni.h"
 
 namespace bfs = boost::filesystem;
 

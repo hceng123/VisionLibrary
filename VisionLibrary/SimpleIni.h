@@ -3245,7 +3245,7 @@ public:
 # endif
 #endif
 
-#include <windows.h>
+//#include <windows.h>
 #ifdef SI_NO_MBCS
 # define SI_NoCase   SI_GenericNoCase
 #else // !SI_NO_MBCS
@@ -3282,7 +3282,7 @@ struct SI_NoCase {
  */
 template<class SI_CHAR>
 class SI_ConvertW {
-    UINT m_uCodePage;
+    unsigned int m_uCodePage;
 protected:
     SI_ConvertW() { }
 public:

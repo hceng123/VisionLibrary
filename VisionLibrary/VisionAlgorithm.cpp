@@ -4,12 +4,14 @@
 #include "opencv2/xfeatures2d/nonfree.hpp"
 #include "opencv2/calib3d/calib3d.hpp"
 #include "opencv2/video/tracking.hpp"
-#include "opencv2\highgui.hpp"
+#include "opencv2/highgui.hpp"
 #include "TimeLog.h"
 #include "logcase.h"
 #include "boost/filesystem.hpp"
 #include "RecordManager.h"
 #include "Config.h"
+#include "CalcUtils.h"
+#include "Log.h"
 
 using namespace cv::xfeatures2d;
 using namespace std;
@@ -183,7 +185,7 @@ VisionStatus VisionAlgorithm::srchTmpl(PR_SRCH_TMPL_CMD *const pFindObjCmd, PR_S
     pFindObjRpy->szOffset.width = pFindObjRpy->ptObjPos.x - pFindObjCmd->ptExpectedPos.x;
     pFindObjRpy->szOffset.height = pFindObjRpy->ptObjPos.y - pFindObjCmd->ptExpectedPos.y;
 	float fRotationValue = (float)(pFindObjRpy->matHomography.at<double>(1, 0) - pFindObjRpy->matHomography.at<double>(0, 1)) / 2.0f;
-	pFindObjRpy->fRotation = (float) RADIAN_2_DEGREE ( asin(fRotationValue) );
+	pFindObjRpy->fRotation = (float) CalcUtils::radian2Degree ( asin(fRotationValue) );
     
     MARK_FUNCTION_END_TIME;
     return VisionStatus::OK;
@@ -231,42 +233,44 @@ namespace
         }
     }
 
-    int _findEdge(const cv::Mat &matInput, int nObjectLength, int &nObjectEdgeResult)
+    VisionStatus _findEdge(const cv::Mat &matProjection, int nObjectSize, int &nObjectEdgeResult)
     {
-        if (matInput.cols < nObjectLength)
-            return -1;
+        if (matProjection.cols < nObjectSize )
+            return VisionStatus::INVALID_PARAM;
+
         auto fMaxSumOfProjection = 0.f;
         nObjectEdgeResult = 0;
-        for (int nObjectStart = 0; nObjectStart < matInput.cols - nObjectLength; ++nObjectStart)
+        for (int nObjectStart = 0; nObjectStart < matProjection.cols - nObjectSize; ++nObjectStart)
         {
             auto fSumOfProjection = 0.f;
-            for (int nIndex = nObjectStart; nIndex < nObjectStart + nObjectLength; ++nIndex)
-                fSumOfProjection += matInput.at<float>(0, nIndex);
+            for (int nIndex = nObjectStart; nIndex < nObjectStart + nObjectSize; ++ nIndex)
+                fSumOfProjection += matProjection.at<float>(0, nIndex);
             if (fSumOfProjection > fMaxSumOfProjection) {
                 fMaxSumOfProjection = fSumOfProjection;
                 nObjectEdgeResult = nObjectStart;
             }
         }
-        return 0;
+        return VisionStatus::OK;
     }
 
-    int _findEdgeReverse(const cv::Mat &matInput, int nObjectLength, int &nObjectEdgeResult)
+    VisionStatus _findEdgeReverse(const cv::Mat &matProjection, int nObjectSize, int &nObjectEdgeResult)
     {
-        if (matInput.cols < nObjectLength)
-            return -1;
+        if (matProjection.cols < nObjectSize)
+            return VisionStatus::INVALID_PARAM;
+
         auto fMaxSumOfProjection = 0.f;
         nObjectEdgeResult = 0;
-        for (int nObjectStart = 0; nObjectStart < matInput.cols - nObjectLength; ++nObjectStart)
+        for (int nObjectStart = matProjection.cols - 1; nObjectStart > nObjectSize; --nObjectStart)
         {
             auto fSumOfProjection = 0.f;
-            for (int nIndex = nObjectStart; nIndex < nObjectStart + nObjectLength; ++nIndex)
-                fSumOfProjection += matInput.at<float>(0, nIndex);
+            for (int nIndex = nObjectStart - 1; nIndex > nObjectStart - nObjectSize; --nIndex)
+                fSumOfProjection += matProjection.at<float>(0, nIndex);
             if (fSumOfProjection > fMaxSumOfProjection) {
                 fMaxSumOfProjection = fSumOfProjection;
                 nObjectEdgeResult = nObjectStart;
             }
         }
-        return 0;
+        return VisionStatus::OK;
     }
 
     struct AOI_COUNTOUR {
@@ -274,50 +278,155 @@ namespace
         float       fArea;
     };
 
-    float distanceOf2Point(const cv::Point2f &pt1, const cv::Point2f &pt2)
-    {
-        float fOffsetX = (float)pt1.x - pt2.x;
-        float fOffsetY = (float)pt1.y - pt2.y;
-        float fDistance = sqrt(fOffsetX * fOffsetX + fOffsetY * fOffsetY);
-        return fDistance;
-    }
-
     bool _isSimilarContourExist(const std::vector<AOI_COUNTOUR> &vecAoiCountour, const AOI_COUNTOUR &stCountourInput)
     {
         for (auto stContour : vecAoiCountour)
         {
-            if (distanceOf2Point(stContour.ptCtr, stCountourInput.ptCtr) < 3
+            if (CalcUtils::distanceOf2Point<float>(stContour.ptCtr, stCountourInput.ptCtr) < 3.f
                 && fabs(stContour.fArea - stCountourInput.fArea) < 10)
                 return true;
         }
         return false;
+    }    
+}
+
+VisionStatus VisionAlgorithm::_findDeviceElectrode(const cv::Mat &matDeviceROI, VectorOfPoint &vecElectrodePos)
+{
+    cv::Mat canny_output;
+    vector<vector<cv::Point> > vecContours, vecContourAfterFilter;
+    vector<cv::Vec4i> hierarchy;
+    vecElectrodePos.clear();
+
+    /// Detect edges using canny
+    Canny(matDeviceROI, canny_output, 100, 255, 3);
+    /// Find contours
+    findContours(canny_output, vecContours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, cv::Point(0, 0));
+
+    /// Filter contours
+    cv::Mat drawing = cv::Mat::zeros(canny_output.size(), CV_8UC3);
+    std::vector<AOI_COUNTOUR> vecAoiContour;
+    for ( auto contour : vecContours )
+    {
+        auto area = cv::contourArea( contour );
+        if (area > 100){
+            AOI_COUNTOUR stAoiContour;
+            cv::Moments moment = cv::moments( contour );
+            stAoiContour.ptCtr.x = static_cast< float >(moment.m10 / moment.m00);
+            stAoiContour.ptCtr.y = static_cast< float >(moment.m01 / moment.m00);
+            if (!_isSimilarContourExist(vecAoiContour, stAoiContour))   {
+                vecAoiContour.push_back(stAoiContour);
+                vecElectrodePos.push_back(stAoiContour.ptCtr);
+            }
+        }
     }
+    if ( vecElectrodePos.size() != DEVICE_ELECTRODE_COUNT )   return VisionStatus::FIND_ELECTRODE_FAIL;
+    
+    return VisionStatus::OK;
+}
+
+VisionStatus VisionAlgorithm::_findDeviceEdge(const cv::Mat &matDeviceROI, const cv::Size2f &size, Rect &rectDeviceResult)
+{
+    cv::Mat matGray, matThreshold, matHorizontalProjection, matVerticalProjection;
+    Int32 nLeftEdge = 0, nRightEdge = 0, nTopEdge = 0, nBottomEdge = 0;
+
+    _calculateHorizontalProjection(matDeviceROI, matHorizontalProjection);
+    _expSmooth<float>(matHorizontalProjection, matHorizontalProjection, _constExpSmoothRatio);
+    _findEdge(matHorizontalProjection, static_cast< Int32 >(size.width), nLeftEdge);
+    _findEdgeReverse(matHorizontalProjection, static_cast< Int32 >(size.width), nRightEdge);
+    if ( ( nRightEdge - nLeftEdge ) < size.width / 2)
+        return VisionStatus::FIND_EDGE_FAIL;
+
+    _calculateVerticalProjection(matThreshold, matVerticalProjection);
+    _expSmooth<float>(matVerticalProjection, matVerticalProjection, _constExpSmoothRatio);
+    _findEdge(matHorizontalProjection, static_cast< Int32 >(size.height), nTopEdge);
+    _findEdgeReverse(matHorizontalProjection, static_cast< Int32 >(size.height), nBottomEdge);
+    if ( (nBottomEdge - nTopEdge ) < size.height / 2 )
+        return VisionStatus::FIND_EDGE_FAIL;
+
+    rectDeviceResult = cv::Rect ( cv::Point ( nLeftEdge, nTopEdge ), cv::Point ( nRightEdge, nBottomEdge ) );
+
+    return VisionStatus::OK;
 }
 
 VisionStatus VisionAlgorithm::inspDevice(PR_INSP_DEVICE_CMD *pstInspDeviceCmd, PR_INSP_DEVICE_RPY *pstInspDeivceRpy)
 {
-    if ( pstInspDeviceCmd == nullptr || pstInspDeivceRpy == nullptr )
+    char charrMsg[1000];
+    if ( pstInspDeviceCmd == nullptr || pstInspDeivceRpy == nullptr )   {
+        _snprintf(charrMsg, sizeof(charrMsg), "Input is invalid, pstInspDeviceCmd = %d, pstInspDeivceRpy = %d", pstInspDeviceCmd, pstInspDeivceRpy );
+        WriteLog(charrMsg);
         return VisionStatus::INVALID_PARAM;
-    if ( pstInspDeviceCmd->matInput.empty() )
+    }
+
+    if ( pstInspDeviceCmd->matInput.empty() )   {
+        WriteLog("Input image is empty");
         return VisionStatus::INVALID_PARAM;
+    }
 
     for (Int32 i = 0; i < pstInspDeviceCmd->nDeviceCount; ++i)   {
         cv::Mat matROI(pstInspDeviceCmd->matInput, pstInspDeviceCmd->astDeviceInfo[i].rectSrchWindow);
-        cv::Mat matGray, matThreshold, matHorizontalProjection, matVerticalProjection;
-        Int32 nLeftEdge = 0, nRightEdge = 0, nTopEdge = 0, nBottomEdge = 0;
+        cv::Mat matGray, matThreshold, matHorizontalProjection, matVerticalProjection;        
 
         cv::cvtColor( matROI, matGray, CV_BGR2GRAY);
-
         cv::threshold(matGray, matThreshold, pstInspDeviceCmd->nElectrodeThreshold, 255, cv::THRESH_BINARY);
 
-        _calculateHorizontalProjection(matThreshold, matHorizontalProjection);
-        _expSmooth<float>(matHorizontalProjection, matHorizontalProjection, _constExpSmoothRatio);
-        _findEdge(matHorizontalProjection, static_cast<Int32>(pstInspDeviceCmd->astDeviceInfo[i].stSize.width), nLeftEdge);
+        VectorOfPoint vecPtElectrode;
+        VisionStatus enStatus = _findDeviceElectrode ( matThreshold, vecPtElectrode );
+        if ( enStatus != VisionStatus::OK ) {
+            pstInspDeivceRpy->anDeviceStatus[i] = ToInt32(enStatus);
+            continue;
+        }
 
-        _calculateVerticalProjection(matThreshold, matVerticalProjection);
-        _expSmooth<float>(matVerticalProjection, matVerticalProjection, _constExpSmoothRatio );
-        _findEdge(matHorizontalProjection, static_cast<Int32>(pstInspDeviceCmd->astDeviceInfo[i].stSize.height), nTopEdge);
+        if (pstInspDeviceCmd->astDeviceInfo [ i ].stInspItem.bCheckRotation 
+            || pstInspDeviceCmd->astDeviceInfo [ i ].stInspItem.bCheckShift
+            || pstInspDeviceCmd->astDeviceInfo [ i ].stInspItem.bCheckScale )
+        {
+            if (0 > pstInspDeviceCmd->astDeviceInfo [ i ].nCriteriaNo || pstInspDeviceCmd->astDeviceInfo [ i ].nCriteriaNo >= PR_MAX_CRITERIA_COUNT) {
+                _snprintf(charrMsg, sizeof(charrMsg), "Device[ %d ] Input nCriteriaNo %d is invalid", i, pstInspDeviceCmd->astDeviceInfo [ i ].nCriteriaNo);
+                WriteLog(charrMsg);
+                return VisionStatus::INVALID_PARAM;
+            }
+        }
 
+        if (pstInspDeviceCmd->astDeviceInfo [ i ].stInspItem.bCheckRotation) {            
+            double fRotate = CalcUtils::calcSlopeDegree(vecPtElectrode [ 0 ], vecPtElectrode [ 1 ]);
+            if (fRotate > pstInspDeviceCmd->astCriteria [ pstInspDeviceCmd->astDeviceInfo [ i ].nCriteriaNo ].fMaxRotate) {
+                pstInspDeivceRpy->anDeviceStatus [ i ] = ToInt32(VisionStatus::OBJECT_ROTATE);
+                continue;
+            }
+        }
+
+        cv::Rect rectDevice;
+        enStatus = _findDeviceEdge ( matThreshold, pstInspDeviceCmd->astDeviceInfo [ i ].stSize, rectDevice );
+        if ( enStatus != VisionStatus::OK ) {
+            pstInspDeivceRpy->anDeviceStatus[i] = ToInt32(enStatus);
+            continue;
+        }
+
+        if (pstInspDeviceCmd->astDeviceInfo [ i ].stInspItem.bCheckShift) {
+            Point2f ptDeviceCtr ( ToFloat ( rectDevice.x ) + ToFloat ( rectDevice.width ) / 2, ToFloat ( rectDevice.y ) +  ToFloat ( rectDevice.height ) / 2 );
+            float fOffsetX = fabs ( ptDeviceCtr.x - pstInspDeviceCmd->astDeviceInfo [ i ].stCtrPos.x );
+            if (  fOffsetX > pstInspDeviceCmd->astCriteria [ pstInspDeviceCmd->astDeviceInfo [ i ].nCriteriaNo ].fMaxOffsetX )  {
+                pstInspDeivceRpy->anDeviceStatus [ i ] = ToInt32(VisionStatus::OBJECT_SHIFT);
+                continue;
+            }
+            float fOffsetY = fabs ( ptDeviceCtr.y - pstInspDeviceCmd->astDeviceInfo [ i ].stCtrPos.y );
+            if (  fOffsetY > pstInspDeviceCmd->astCriteria [ pstInspDeviceCmd->astDeviceInfo [ i ].nCriteriaNo ].fMaxOffsetY )  {
+                pstInspDeivceRpy->anDeviceStatus [ i ] = ToInt32(VisionStatus::OBJECT_SHIFT);
+                continue;
+            }
+        }
+
+        if ( pstInspDeviceCmd->astDeviceInfo [ i ].stInspItem.bCheckScale ) {
+            float fScaleX = ToFloat ( rectDevice.width ) / pstInspDeviceCmd->astDeviceInfo [ i ].stSize.width;
+            float fScaleY = ToFloat ( rectDevice.height ) / pstInspDeviceCmd->astDeviceInfo [ i ].stSize.height;
+            float fScaleMax = std::max<float> ( fScaleX, fScaleY );
+            float fScaleMin = std::min<float> ( fScaleX, fScaleY );
+            if ( fScaleMax > pstInspDeviceCmd->astCriteria [ pstInspDeviceCmd->astDeviceInfo [ i ].nCriteriaNo ].fMaxScale 
+                || fScaleMin < pstInspDeviceCmd->astCriteria [ pstInspDeviceCmd->astDeviceInfo [ i ].nCriteriaNo ].fMinScale )  {
+                pstInspDeivceRpy->anDeviceStatus [ i ] = ToInt32(VisionStatus::OBJECT_SCALE_FAIL);
+                continue;
+            }
+        }
     }
     return VisionStatus::OK;
 }
@@ -362,15 +471,15 @@ int VisionAlgorithm::align(PR_AlignCmd *const pAlignCmd, PR_AlignRpy *pAlignRpy 
 	pAlignRpy->szOffset.width = pAlignRpy->ptObjPos.x - pAlignCmd->ptExpectedPos.x;
 	pAlignRpy->szOffset.height = pAlignRpy->ptObjPos.y - pAlignCmd->ptExpectedPos.y;
 	float fRotationValue = ( matAffine.at<float>(1, 0) - matAffine.at<float>(0, 1) ) / 2.0f;
-	pAlignRpy->fRotation = (float) RADIAN_2_DEGREE(asin(fRotationValue));
+	pAlignRpy->fRotation = (float) CalcUtils::radian2Degree ( asin ( fRotationValue ) );
 
     return 0;
 }
 
-int VisionAlgorithm::inspect(PR_InspCmd *const pInspCmd, PR_InspRpy *pInspRpy)
+VisionStatus VisionAlgorithm::inspSurface(PR_INSP_SURFACE_CMD *const pInspCmd, PR_INSP_SURFACE_RPY *pInspRpy)
 {
 	if ( NULL == pInspCmd || NULL == pInspRpy )
-		return -1;
+		return VisionStatus::INVALID_PARAM;
 
 	cv::Mat matTmplROI( pInspCmd->matTmpl, pInspCmd->rectLrn );
 
@@ -394,30 +503,30 @@ int VisionAlgorithm::inspect(PR_InspCmd *const pInspCmd, PR_InspRpy *pInspRpy)
 
 	cv::Mat matRotatedMask;
 	warpAffine( matMask, matRotatedMask, matRotation, matMask.size() );
-	matRotatedMask =  cv::Scalar::all(255) - matRotatedMask;
-	cv::imshow("Mask", matRotatedMask );
+	matRotatedMask =  cv::Scalar::all(255) - matRotatedMask;	
 
-	pInspCmd->matInsp.setTo(cv::Scalar(0), matRotatedMask );
-	cv::imshow("Masked Inspection", pInspCmd->matInsp );
+	pInspCmd->matInsp.setTo(cv::Scalar(0), matRotatedMask );	
 
 	cv::Mat matCmpResult = pInspCmd->matInsp - matRotatedTmpl;
 	cv::Mat matRevsCmdResult = matRotatedTmpl - pInspCmd->matInsp;
 
-	cv::imshow("Rotated template", matRotatedTmpl);
+    if (Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE)   {
+        cv::imshow("Mask", matRotatedMask );
+        cv::imshow("Masked Inspection", pInspCmd->matInsp );
+        cv::imshow("Rotated template", matRotatedTmpl);
+        cv::imshow("Compare result", matCmpResult);
+        cv::imshow("Compare result Reverse", matRevsCmdResult);
+        cv::waitKey(0);
+    }
 
-	cv::imshow("Compare result", matCmpResult );
-    cv::imshow("Compare result Reverse", matRevsCmdResult );
-	
 	pInspRpy->n16NDefect = 0;
 	_findBlob(matCmpResult, matRevsCmdResult, pInspCmd, pInspRpy);
-	_findLine(matCmpResult, pInspCmd, pInspRpy );
+	_findLine(matCmpResult, pInspCmd, pInspRpy );	
 
-	cv::waitKey(0);
-
-	return 0;
+	return VisionStatus::OK;
 }
 
-int VisionAlgorithm::_findBlob(const cv::Mat &mat, const cv::Mat &matRevs, PR_InspCmd *const pInspCmd, PR_InspRpy *pInspRpy)
+int VisionAlgorithm::_findBlob(const cv::Mat &mat, const cv::Mat &matRevs, PR_INSP_SURFACE_CMD *const pInspCmd, PR_INSP_SURFACE_RPY *pInspRpy)
 {
 	cv::Mat im_with_keypoints(mat);
 	mat.copyTo(im_with_keypoints);
@@ -491,7 +600,7 @@ int VisionAlgorithm::_findBlob(const cv::Mat &mat, const cv::Mat &matRevs, PR_In
 	return 0;
 }
 
-int VisionAlgorithm::_findLine(const cv::Mat &mat, PR_InspCmd *const pInspCmd, PR_InspRpy *pInspRpy)
+int VisionAlgorithm::_findLine(const cv::Mat &mat, PR_INSP_SURFACE_CMD *const pInspCmd, PR_INSP_SURFACE_RPY *pInspRpy)
 {
     MARK_FUNCTION_START_TIME;
 	for (short nIndex = 0; nIndex < pInspCmd->u16NumOfDefectCriteria; ++nIndex)
@@ -520,8 +629,10 @@ int VisionAlgorithm::_findLine(const cv::Mat &mat, PR_InspCmd *const pInspCmd, P
 			}
 		}
 
-        if (PR_DEBUG_MODE::SHOW_IMAGE == _enDebugMode)
+        if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE )   {
             cv::imshow("Sobel Result", matSobelResult);
+            cv::waitKey(0);
+        }
 
 		cv::Mat color_dst;
 		cvtColor(matSobelResult, color_dst, CV_GRAY2BGR);
@@ -544,31 +655,17 @@ int VisionAlgorithm::_findLine(const cv::Mat &mat, PR_InspCmd *const pInspCmd, P
 			line(color_dst, it.pt1, it.pt2, cv::Scalar(0, 0, 255), 3, 8);
 			if ( pInspRpy->n16NDefect < MAX_NUM_OF_DEFECT_RESULT )	{
 				pInspRpy->astDefect[pInspRpy->n16NDefect].enType = PR_DEFECT_TYPE::LINE;
-				pInspRpy->astDefect[pInspRpy->n16NDefect].fLength = distanceOf2Point(it.pt1, it.pt2);
+				pInspRpy->astDefect[pInspRpy->n16NDefect].fLength = CalcUtils::distanceOf2Point<float>(it.pt1, it.pt2);
 				++pInspRpy->n16NDefect;
 			}
 		}
-        if (PR_DEBUG_MODE::SHOW_IMAGE == _enDebugMode)
+        if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE )   {
             cv::imshow("Detected Lines", color_dst);
+            cv::waitKey(0);
+        }
 	}
     MARK_FUNCTION_END_TIME;
 	return 0;
-}
-
-/*static*/ float VisionAlgorithm::distanceOf2Point(const cv::Point &pt1, const cv::Point &pt2)
-{
-    float fOffsetX = (float)pt1.x - pt2.x;
-    float fOffsetY = (float)pt1.y - pt2.y;
-    float fDistance = sqrt ( fOffsetX * fOffsetX + fOffsetY * fOffsetY );
-    return fDistance;
-}
-
-/*static*/ float VisionAlgorithm::distanceOf2Point(const cv::Point2f &pt1, const cv::Point2f &pt2)
-{
-    float fOffsetX = (float)pt1.x - pt2.x;
-    float fOffsetY = (float)pt1.y - pt2.y;
-    float fDistance = sqrt ( fOffsetX * fOffsetX + fOffsetY * fOffsetY );
-    return fDistance;
 }
 
 int VisionAlgorithm::_merge2Line(const PR_Line2f &line1, const PR_Line2f &line2, PR_Line2f &lineResult)
@@ -593,7 +690,7 @@ int VisionAlgorithm::_merge2Line(const PR_Line2f &line1, const PR_Line2f &line2,
 	ptCrossPointWithLine2.x = fLineCrossWithY2 / ( fPerpendicularLineSlope - fLineSlope2 );
 	ptCrossPointWithLine2.y = fPerpendicularLineSlope * ptCrossPointWithLine2.x;
 
-	float fDistanceOfLine = distanceOf2Point ( ptCrossPointWithLine1, ptCrossPointWithLine2 );
+	float fDistanceOfLine = CalcUtils::distanceOf2Point<float> ( ptCrossPointWithLine1, ptCrossPointWithLine2 );
 	if ( fDistanceOfLine > PARALLEL_LINE_MERGE_DIST_LMT ){
 		printf("Distance of the lines are too far, can not merge");
 		return -1;
@@ -633,7 +730,7 @@ int VisionAlgorithm::_merge2Line(const PR_Line2f &line1, const PR_Line2f &line2,
 	cv::Point2f ptMidOfResult;
 	ptMidOfResult.x = ( vecPoint[nMinIndex].x + vecPoint[nMaxIndex].x ) / 2.f;
 	ptMidOfResult.y = ( vecPoint[nMinIndex].y + vecPoint[nMaxIndex].y ) / 2.f;
-	float fLineLength = distanceOf2Point ( vecPoint[nMinIndex], vecPoint[nMaxIndex] );
+	float fLineLength = CalcUtils::distanceOf2Point<float>( vecPoint[nMinIndex], vecPoint[nMaxIndex] );
 	float fAverageSlope = ( fLineSlope1 + fLineSlope2 ) / 2;
 	float fHypotenuse = sqrt( 1 + fAverageSlope * fAverageSlope );
 	float fSin = fAverageSlope / fHypotenuse;

@@ -16,6 +16,9 @@ using VectorOfDMatch = std::vector<cv::DMatch> ;
 using VectorOfVectorOfDMatch = std::vector<VectorOfDMatch>;
 using VectorOfKeyPoint =  std::vector<cv::KeyPoint> ;
 using VectorOfVectorKeyPoint = std::vector<VectorOfKeyPoint> ;
+using VectorOfPoint = std::vector<cv::Point2f>;
+#define ToInt32(param)      (static_cast<Int32>(param))
+#define ToFloat(param)      (static_cast<float>(param))
 
 struct PR_LEARN_TMPL_CMD
 {
@@ -84,7 +87,7 @@ struct PR_DefectCriteria
 	float					fWidth;	// For noise removal. Note: unit is in 8192 coord sys (in old convention is phy coord sys, which is no good)
 };
 
-struct PR_InspCmd
+struct PR_INSP_SURFACE_CMD
 {
 	cv::Mat					matInsp;	
 	cv::Mat					matTmpl;
@@ -105,7 +108,7 @@ struct PR_Defect
 	Int16				n16Constrast;
 };
 
-struct PR_InspRpy
+struct PR_INSP_SURFACE_RPY
 {
 	Int16				nStatus;
 	Int16				n16NDefect;
@@ -143,6 +146,7 @@ struct PR_INSP_DEVICE_ITEM
 	bool        bCheckMissed;			//check if the device is missed
 	bool        bCheckShift;			//check if the device shift exceed tolerance
     bool        bCheckRotation;         //check if rotation exceed tolerance
+    bool        bCheckScale;
 };
 
 struct PR_SINGLE_DEVICE_INFO
@@ -181,7 +185,7 @@ struct PR_INSP_DEVICE_RPY
 {
     Int32                   nStatus;
     Int32                   nDeviceCount;
-    Int32                   anStatus[PR_MAX_DEVICE_COUNT];
+    Int32                   anDeviceStatus[PR_MAX_DEVICE_COUNT];
 };
 
 /******************************************

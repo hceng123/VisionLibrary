@@ -18,7 +18,6 @@ namespace Vision
     return &recordManager;
 }
 
-
 RecordManager::~RecordManager()
 {
 }

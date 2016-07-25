@@ -36,6 +36,16 @@ String Config::getRecordLogPrefix() const
     return _strRecordLogPrefix;
 }
 
+PR_DEBUG_MODE Config::getDebugMode() const
+{
+    return _enDebugMode;
+}
+
+void Config::setDebugMode(PR_DEBUG_MODE enDebugMode)
+{
+    _enDebugMode = enDebugMode;
+}
+
 void Config::load()
 {
 }

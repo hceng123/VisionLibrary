@@ -10,6 +10,7 @@ namespace Vision
 #define MAX_NUM_OF_DEFECT_RESULT				(20)
 #define PARALLEL_LINE_SLOPE_DIFF_LMT			(0.1)
 #define PARALLEL_LINE_MERGE_DIST_LMT			(20)
+#define DEVICE_ELECTRODE_COUNT                  (2)
 
 enum class PR_ALIGN_ALGORITHM
 {
@@ -40,7 +41,8 @@ enum class PR_DEBUG_MODE
 {
     DISABLED,
     SHOW_IMAGE,
-    LOG_CASE,
+    LOG_ALL_CASE,
+    LOG_FAIL_CASE,
 };
 
 enum class PR_RECORD_TYPE

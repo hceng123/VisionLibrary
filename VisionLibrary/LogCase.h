@@ -2,8 +2,7 @@
 #define _LOG_CASE_H_
 
 #include "BaseType.h"
-#include "VisionStruct.h"
-#include "VisionStatus.h"
+#include "VisionHeader.h"
 
 namespace AOI
 {

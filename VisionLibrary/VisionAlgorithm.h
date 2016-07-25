@@ -15,9 +15,6 @@ namespace AOI
 namespace Vision
 {
 
-#define RADIAN_2_DEGREE(RADIAN)	( RADIAN * 180.f / CV_PI )
-#define DEGREE_2_RADIAN(DEGREE) ( DEGREE * CV_PI / 180.f )
-
 class VisionAlgorithm : private Uncopyable
 {
 public:
@@ -27,15 +24,15 @@ public:
     VisionStatus srchTmpl(PR_SRCH_TMPL_CMD *const pFindObjCmd, PR_SRCH_TMPL_RPY *pFindObjRpy);
     VisionStatus inspDevice(PR_INSP_DEVICE_CMD *pstInspDeviceCmd, PR_INSP_DEVICE_RPY *pstInspDeivceRpy);
     int align(PR_AlignCmd *const pAlignCmd, PR_AlignRpy *pAlignRpy);
-	int inspect(PR_InspCmd *const pInspCmd, PR_InspRpy *pInspRpy);
-	static float distanceOf2Point(const cv::Point &pt1, const cv::Point &pt2);
-	static float distanceOf2Point(const cv::Point2f &pt1, const cv::Point2f &pt2);
+	VisionStatus inspSurface(PR_INSP_SURFACE_CMD *const pInspCmd, PR_INSP_SURFACE_RPY *pInspRpy);
 protected:
-	int _findBlob(const cv::Mat &mat, const cv::Mat &matRevs, PR_InspCmd *const pInspCmd, PR_InspRpy *pInspRpy );
-	int _findLine(const cv::Mat &mat, PR_InspCmd *const pInspCmd, PR_InspRpy *pInspRpy );
+	int _findBlob(const cv::Mat &mat, const cv::Mat &matRevs, PR_INSP_SURFACE_CMD *const pInspCmd, PR_INSP_SURFACE_RPY *pInspRpy );
+	int _findLine(const cv::Mat &mat, PR_INSP_SURFACE_CMD *const pInspCmd, PR_INSP_SURFACE_RPY *pInspRpy );
 	int _mergeLines(const vector<PR_Line2f> &vecLines, vector<PR_Line2f> &vecResultLines);
 	int _merge2Line(const PR_Line2f &line1, const PR_Line2f &line2, PR_Line2f &lineResult);
 	int _findLineCrossPoint(const PR_Line2f &line1, const PR_Line2f &line2, cv::Point2f ptResult);
+    VisionStatus _findDeviceElectrode(const cv::Mat &matDeviceROI, VectorOfPoint &vecElectrodePos);
+    VisionStatus _findDeviceEdge(const cv::Mat &matDeviceROI, const cv::Size2f &size, Rect &rectDeviceResult);
     VisionStatus _writeLrnTmplRecord(PR_LEARN_TMPL_RPY *pLearnTmplRpy);
 protected:
     const int       _constMinHessian        =       300;
