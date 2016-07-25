@@ -169,6 +169,17 @@ struct PR_INSP_DEVICE_CRITERIA
 
 struct PR_LRN_DEVICE_CMD
 {
+    cv::Mat                 matInput;
+    cv::Rect2f              rectDevice;
+    bool                    bAutoThreshold;
+    Int16                   nElectrodeThreshold;
+};
+
+struct PR_LRN_DEVICE_RPY
+{
+    Int32                   nStatus;
+    Int32                   nRecordID;
+    Int32                   nElectrodeThreshold;
 };
 
 struct PR_INSP_DEVICE_CMD
