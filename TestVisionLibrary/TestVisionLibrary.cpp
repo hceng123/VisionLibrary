@@ -124,23 +124,27 @@ int TestVisionAlgorithm()
     printf("Match score %.2f \n", stSrchTmplRpy.fMatchScore );
 	printfMat<double>(stSrchTmplRpy.matHomography);
 
-	//PR_InspCmd stInspCmd;
-	//PR_InspRpy stInspRpy;
-	//stInspCmd.matTmpl = cv::cvarrToMat(pImgT, true);
-	//stInspCmd.rectLrn = omega;
-	//stInspCmd.ptObjPos = stSrchTmplRpy.ptObjPos;
-	//stInspCmd.fRotation = stSrchTmplRpy.fRotation;
-	//stInspCmd.matInsp = matRotated;
-	//stInspCmd.u16NumOfDefectCriteria = 2;
-	//stInspCmd.astDefectCriteria[0].fArea = 50;
-	//stInspCmd.astDefectCriteria[0].fLength = 0.f;
-	//stInspCmd.astDefectCriteria[0].ubContrast = 20;
-	//stInspCmd.astDefectCriteria[0].enAttribute = PR_DEFECT_ATTRIBUTE::BOTH;
+	PR_INSP_SURFACE_CMD stInspCmd;
+	PR_INSP_SURFACE_RPY stInspRpy;
+	stInspCmd.matTmpl = cv::cvarrToMat(pImgT, true);
+	stInspCmd.rectLrn = omega;
+	stInspCmd.ptObjPos = stSrchTmplRpy.ptObjPos;
+	stInspCmd.fRotation = stSrchTmplRpy.fRotation;
+	stInspCmd.matInsp = matRotated;
+	stInspCmd.u16NumOfDefectCriteria = 2;
+	stInspCmd.astDefectCriteria[0].fArea = 50;
+	stInspCmd.astDefectCriteria[0].fLength = 0.f;
+	stInspCmd.astDefectCriteria[0].ubContrast = 20;
+	stInspCmd.astDefectCriteria[0].enAttribute = PR_DEFECT_ATTRIBUTE::BOTH;
 
-	//stInspCmd.astDefectCriteria[1].fLength = 50.0;
-	//stInspCmd.astDefectCriteria[1].fArea = 0.f;
-	//stInspCmd.astDefectCriteria[1].ubContrast = 20;
-	//visionAlgorithm.inspect ( &stInspCmd, &stInspRpy );
+    //PR_InspSurface(&stInspCmd, &stInspRpy);
+
+	stInspCmd.astDefectCriteria[1].fLength = 50.0;
+	stInspCmd.astDefectCriteria[1].fArea = 0.f;
+	stInspCmd.astDefectCriteria[1].ubContrast = 20;
+
+    PR_SetDebugMode(PR_DEBUG_MODE::SHOW_IMAGE);
+	PR_InspSurface ( &stInspCmd, &stInspRpy );
 
 	//PR_AlignCmd stAlignCmd;
 	//PR_AlignRpy stAlignRpy;
