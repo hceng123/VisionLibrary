@@ -12,6 +12,7 @@
 #include "Config.h"
 #include "CalcUtils.h"
 #include "Log.h"
+#include "FileUtils.h"
 
 using namespace cv::xfeatures2d;
 using namespace std;
@@ -34,32 +35,37 @@ VisionAlgorithm::VisionAlgorithm()
     return make_shared<VisionAlgorithm>();
 }
 
-VisionStatus VisionAlgorithm::lrnTmpl(PR_LEARN_TMPL_CMD * const pLearnTmplCmd, PR_LEARN_TMPL_RPY *pLearnTmplRpy)
+VisionStatus VisionAlgorithm::lrnTmpl(PR_LRN_TMPL_CMD * const pLrnTmplCmd, PR_LRN_TMPL_RPY *pLrnTmplRpy, bool bReplay)
 {
-    if ( NULL == pLearnTmplCmd || NULL == pLearnTmplRpy )
+    if ( NULL == pLrnTmplCmd || NULL == pLrnTmplRpy )
         return VisionStatus::INVALID_PARAM;
 
-    if ( pLearnTmplCmd->mat.empty() )
+    if ( pLrnTmplCmd->mat.empty() )
         return VisionStatus::INVALID_PARAM;
 
-    LogCaseLrnTmpl logCase(Config::GetInstance()->getLogCaseDir());
-    logCase.WriteCmd(pLearnTmplCmd);
+    std::unique_ptr<LogCaseLrnTmpl> pLogCase;
+    if ( ! bReplay )    {
+        pLogCase = std::make_unique<LogCaseLrnTmpl>( Config::GetInstance()->getLogCaseDir() );
+        pLogCase->WriteCmd ( pLrnTmplCmd );
+    }
 
     cv::Ptr<cv::Feature2D> detector;
-    if ( PR_ALIGN_ALGORITHM::SIFT == pLearnTmplCmd->enAlgorithm)
+    if ( PR_ALIGN_ALGORITHM::SIFT == pLrnTmplCmd->enAlgorithm)
         detector = SIFT::create (_constMinHessian, _constOctave, _constOctaveLayer );
     else
         detector = SURF::create (_constMinHessian, _constOctave, _constOctaveLayer );
-    cv::Mat matROI( pLearnTmplCmd->mat, pLearnTmplCmd->rectLrn );
-    detector->detectAndCompute ( matROI, pLearnTmplCmd->mask, pLearnTmplRpy->vecKeyPoint, pLearnTmplRpy->matDescritor );
-    if ( pLearnTmplRpy->vecKeyPoint.size() > _constLeastFeatures )
-        pLearnTmplRpy->nStatus = static_cast<int>(VisionStatus::OK);
-    pLearnTmplRpy->ptCenter.x = pLearnTmplCmd->rectLrn.x + pLearnTmplCmd->rectLrn.width / 2.0f;
-    pLearnTmplRpy->ptCenter.y = pLearnTmplCmd->rectLrn.y + pLearnTmplCmd->rectLrn.height / 2.0f;
-    matROI.copyTo ( pLearnTmplRpy->matTmpl );
-    _writeLrnTmplRecord(pLearnTmplRpy);
+    cv::Mat matROI( pLrnTmplCmd->mat, pLrnTmplCmd->rectLrn );
+    detector->detectAndCompute ( matROI, pLrnTmplCmd->mask, pLrnTmplRpy->vecKeyPoint, pLrnTmplRpy->matDescritor );
+    if ( pLrnTmplRpy->vecKeyPoint.size() > _constLeastFeatures )
+        pLrnTmplRpy->nStatus = ToInt32 ( VisionStatus::OK );
+    pLrnTmplRpy->ptCenter.x = pLrnTmplCmd->rectLrn.x + pLrnTmplCmd->rectLrn.width / 2.0f;
+    pLrnTmplRpy->ptCenter.y = pLrnTmplCmd->rectLrn.y + pLrnTmplCmd->rectLrn.height / 2.0f;
+    matROI.copyTo ( pLrnTmplRpy->matTmpl );
+    _writeLrnTmplRecord ( pLrnTmplRpy );
 
-    logCase.WriteRpy(pLearnTmplRpy);
+    if ( ! bReplay )
+        pLogCase->WriteRpy(pLrnTmplRpy);
+
     return VisionStatus::OK;
 }
 
@@ -287,7 +293,92 @@ namespace
                 return true;
         }
         return false;
-    }    
+    }
+}
+
+int VisionAlgorithm::_autoThreshold(const cv::Mat &mat)
+{
+    const int sbins = 32;
+    int channels[] = { 0 };
+    int histSize[] = { sbins };
+
+    // saturation varies from 0 (black-gray-white) to
+    // 255 (pure spectrum color)
+    float sranges[] = { 0, PR_MAX_GRAY_LEVEL };
+    const float* ranges[] = { sranges };
+
+    MatND hist;
+    calcHist(&mat, 1, channels, Mat(), // do not use mask
+        hist, 1, histSize, ranges,
+        true, // the histogram is uniform
+        false);  
+
+    if (Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE)   {
+        double maxVal = 0;
+        minMaxLoc ( hist, 0, &maxVal, 0, 0 );
+        int scale = 10;
+        Mat histImg = Mat::zeros(maxVal / 3, sbins * scale, CV_8UC3);
+
+        for (int s = 0; s < sbins; s++)
+        {
+            float binVal = hist.at<float>(s, 0);
+            int intensity = cvRound(binVal * 255 / maxVal);
+            rectangle(histImg, Point(s*scale, 0),
+                Point((s + 1)*scale - 1, binVal / 3),
+                Scalar::all(intensity),
+                CV_FILLED);
+        }
+        showImage("Image Histogram", histImg );
+    }
+
+    vector<float> vecH;
+    float fTotalPixel = (float)mat.rows * mat.cols;
+    for (int i = 0; i < sbins; ++i)
+        vecH.push_back(hist.at <float>(i, 0) / fTotalPixel);
+
+    float fSigmaSquareMin = 100000.f;
+    int nResultT = 0;
+    for (int T = sbins - 1; T >= 0; --T)  {
+        float fSigmaSquare = 0.f;
+        if (vecH[T] <= 0.0001f)
+            continue;
+        float fMu1 = 0.f, fMu2 = 0.f;
+        float fSumH_1 = 0.f, fSumH_2 = 0.f;
+        float fSumHxL_1 = 0.f, fSumHxL_2 = 0.f;
+
+        for (int i = 0; i < T; ++i)  {
+            fSumH_1 += vecH[i];
+            fSumHxL_1 += i * vecH[i];
+        }
+
+        for (int i = T; i < sbins; ++i)  {
+            fSumH_2 += vecH[i];
+            fSumHxL_2 += i * vecH[i];
+        }
+
+        if (fSumH_1 <= 0.00001f || fSumH_2 < 0.000001f)
+            continue;
+
+        fMu1 = fSumHxL_1 / fSumH_1;
+        fMu2 = fSumHxL_2 / fSumH_2;
+
+        for (int i = 0; i < sbins; ++i)  {
+            if (i < T)    {
+                fSigmaSquare += (i - fMu1) * (i - fMu1) * vecH[i];
+            }
+            else
+            {
+                fSigmaSquare += (i - fMu2) * (i - fMu2) * vecH[i];
+            }
+        }
+        if (fSigmaSquare < fSigmaSquareMin)   {
+            fSigmaSquareMin = fSigmaSquare;
+            nResultT = T;
+        }
+    }
+
+    int nThreshold = nResultT * PR_MAX_GRAY_LEVEL / sbins;
+    return nThreshold;
 }
 
 VisionStatus VisionAlgorithm::_findDeviceElectrode(const cv::Mat &matDeviceROI, VectorOfPoint &vecElectrodePos)
@@ -299,15 +390,28 @@ VisionStatus VisionAlgorithm::_findDeviceElectrode(const cv::Mat &matDeviceROI, 
 
     /// Detect edges using canny
     Canny(matDeviceROI, canny_output, 100, 255, 3);
+    if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE )   {
+        imshow("Canny Result", canny_output );
+        cv::waitKey(0);
+    }
+
     /// Find contours
     findContours(canny_output, vecContours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, cv::Point(0, 0));
 
     /// Filter contours
     cv::Mat drawing = cv::Mat::zeros(canny_output.size(), CV_8UC3);
     std::vector<AOI_COUNTOUR> vecAoiContour;
+    int index = 0;
     for ( auto contour : vecContours )
     {
-        auto area = cv::contourArea( contour );
+        if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE )   {
+            RNG rng(12345);
+            Scalar color = Scalar(rng.uniform(0, 255), rng.uniform(0, 255), rng.uniform(0, 255));
+            drawContours(drawing, vecContours, index ++ , color, 2, 8, hierarchy, 0, Point());
+        }
+        vector<Point> approx;
+        approxPolyDP(contour, approx, 3, true);
+        auto area = cv::contourArea ( approx );
         if (area > 100){
             AOI_COUNTOUR stAoiContour;
             cv::Moments moment = cv::moments( contour );
@@ -319,6 +423,9 @@ VisionStatus VisionAlgorithm::_findDeviceElectrode(const cv::Mat &matDeviceROI, 
             }
         }
     }
+    if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE ) 
+        showImage("Contours", drawing);
+
     if ( vecElectrodePos.size() != DEVICE_ELECTRODE_COUNT )   return VisionStatus::FIND_ELECTRODE_FAIL;
     
     return VisionStatus::OK;
@@ -348,8 +455,82 @@ VisionStatus VisionAlgorithm::_findDeviceEdge(const cv::Mat &matDeviceROI, const
     return VisionStatus::OK;
 }
 
+VisionStatus VisionAlgorithm::lrnDevice(PR_LRN_DEVICE_CMD *pstLrnDeviceCmd, PR_LRN_DEVICE_RPY *pstLrnDeivceRpy)
+{
+    char charrMsg[1000];
+    if ( nullptr == pstLrnDeviceCmd || nullptr == pstLrnDeivceRpy )   {
+        _snprintf(charrMsg, sizeof(charrMsg), "Input is invalid, pstLrnDeviceCmd = %d, pstLrnDeivceRpy = %d", pstLrnDeviceCmd, pstLrnDeivceRpy );
+        WriteLog(charrMsg);
+        return VisionStatus::INVALID_PARAM;
+    }
+
+    if ( pstLrnDeviceCmd->matInput.empty() )   {
+        WriteLog("Input image is empty");
+        return VisionStatus::INVALID_PARAM;
+    }
+
+    cv::Rect rectDeviceROI = CalcUtils::scaleRect<float> ( pstLrnDeviceCmd->rectDevice, 1.5 );
+    if ( rectDeviceROI.x < 0  ) rectDeviceROI.x = 0;
+    if ( rectDeviceROI.y < 0  ) rectDeviceROI.y = 0;
+    if ( ( rectDeviceROI.x + rectDeviceROI.width ) > pstLrnDeviceCmd->matInput.cols ) rectDeviceROI.width  = pstLrnDeviceCmd->matInput.cols - rectDeviceROI.x;
+    if ( ( rectDeviceROI.y + rectDeviceROI.height) > pstLrnDeviceCmd->matInput.rows ) rectDeviceROI.height = pstLrnDeviceCmd->matInput.rows - rectDeviceROI.y;
+
+    cv::Mat matDevice ( pstLrnDeviceCmd->matInput, rectDeviceROI );
+    cv::Mat matGray, matThreshold, matHorizontalProjection, matVerticalProjection;
+
+    std::vector<cv::Mat> vecChannels;
+    cv::split( matDevice, vecChannels );
+
+    matGray = vecChannels [ Config::GetInstance()->getDeviceInspChannel() ];
+    
+    if (Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE)
+        showImage ( "Learn channel image", matGray);
+
+    cv::Mat matBlur;
+    cv::blur ( matGray, matBlur, cv::Size(2, 2) );
+    if (Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE)
+        showImage("Blur image", matBlur);
+
+    if ( pstLrnDeviceCmd->bAutoThreshold )
+    {
+        pstLrnDeviceCmd->nElectrodeThreshold = _autoThreshold ( matBlur );
+    }
+    cv::threshold ( matBlur, matThreshold, pstLrnDeviceCmd->nElectrodeThreshold, 255, cv::THRESH_BINARY );
+    
+
+    VectorOfPoint vecPtElectrode;
+    VisionStatus enStatus = _findDeviceElectrode ( matThreshold, vecPtElectrode );
+    if (enStatus != VisionStatus::OK) {
+        pstLrnDeivceRpy->nStatus = ToInt32(enStatus);
+        return enStatus;
+    }    
+
+    cv::Rect rectFindDeviceResult;
+    enStatus = _findDeviceEdge ( matThreshold, cv::Size2f( pstLrnDeviceCmd->rectDevice.width, pstLrnDeviceCmd->rectDevice.height), rectFindDeviceResult );
+    if (enStatus != VisionStatus::OK) {
+        pstLrnDeivceRpy->nStatus = ToInt32(enStatus);
+        return enStatus;
+    }
+
+    float fScaleX = ToFloat(rectFindDeviceResult.width) / pstLrnDeviceCmd->rectDevice.width;
+    float fScaleY = ToFloat(rectFindDeviceResult.height) / pstLrnDeviceCmd->rectDevice.height;
+    float fScaleMax = std::max<float>(fScaleX, fScaleY);
+    float fScaleMin = std::min<float>(fScaleX, fScaleY);
+    if ( fScaleMax > 1.2f || fScaleMin < 0.8f )  {
+        pstLrnDeivceRpy->nStatus = ToInt32 ( VisionStatus::OBJECT_SCALE_FAIL );
+        return VisionStatus::OBJECT_SCALE_FAIL;
+    }
+
+    pstLrnDeivceRpy->nStatus = ToInt32 ( VisionStatus::OK );
+    pstLrnDeivceRpy->sizeDevice = cv::Size2f ( ToFloat ( rectFindDeviceResult.width ), ToFloat ( rectFindDeviceResult.height ) );
+    pstLrnDeivceRpy->nElectrodeThreshold = pstLrnDeviceCmd->nElectrodeThreshold;
+    _writeDeviceRecord ( pstLrnDeivceRpy );
+    return VisionStatus::OK;
+}
+
 VisionStatus VisionAlgorithm::inspDevice(PR_INSP_DEVICE_CMD *pstInspDeviceCmd, PR_INSP_DEVICE_RPY *pstInspDeivceRpy)
 {
+    MARK_FUNCTION_START_TIME;
     char charrMsg[1000];
     if ( pstInspDeviceCmd == nullptr || pstInspDeivceRpy == nullptr )   {
         _snprintf(charrMsg, sizeof(charrMsg), "Input is invalid, pstInspDeviceCmd = %d, pstInspDeivceRpy = %d", pstInspDeviceCmd, pstInspDeivceRpy );
@@ -362,17 +543,53 @@ VisionStatus VisionAlgorithm::inspDevice(PR_INSP_DEVICE_CMD *pstInspDeviceCmd, P
         return VisionStatus::INVALID_PARAM;
     }
 
-    for (Int32 i = 0; i < pstInspDeviceCmd->nDeviceCount; ++i)   {
-        cv::Mat matROI(pstInspDeviceCmd->matInput, pstInspDeviceCmd->astDeviceInfo[i].rectSrchWindow);
-        cv::Mat matGray, matThreshold, matHorizontalProjection, matVerticalProjection;        
+    pstInspDeivceRpy->nDeviceCount = pstInspDeviceCmd->nDeviceCount;
+    for (Int32 i = 0; i < pstInspDeviceCmd->nDeviceCount; ++ i)   {
+        if ( pstInspDeviceCmd->astDeviceInfo[i].stSize.area() < 1)   {
+            _snprintf(charrMsg, sizeof(charrMsg), "Device[ %d ] size is invalid", i );
+            WriteLog(charrMsg);
+            return VisionStatus::INVALID_PARAM;
+        }
 
-        cv::cvtColor( matROI, matGray, CV_BGR2GRAY);
-        cv::threshold(matGray, matThreshold, pstInspDeviceCmd->nElectrodeThreshold, 255, cv::THRESH_BINARY);
+        cv::Rect rectDeviceROI = pstInspDeviceCmd->astDeviceInfo[i].rectSrchWindow;
+        if (rectDeviceROI.x < 0) rectDeviceROI.x = 0;
+        if (rectDeviceROI.y < 0) rectDeviceROI.y = 0;
+        if ((rectDeviceROI.x + rectDeviceROI.width)  > pstInspDeviceCmd->matInput.cols) rectDeviceROI.width  = pstInspDeviceCmd->matInput.cols - rectDeviceROI.x;
+        if ((rectDeviceROI.y + rectDeviceROI.height) > pstInspDeviceCmd->matInput.rows) rectDeviceROI.height = pstInspDeviceCmd->matInput.rows - rectDeviceROI.y;
+
+        cv::Mat matROI(pstInspDeviceCmd->matInput, rectDeviceROI );
+        cv::Mat matGray, matThreshold, matHorizontalProjection, matVerticalProjection;
+
+        {   //Init inspection result
+            pstInspDeivceRpy->astDeviceResult[i].nStatus = ToInt32(VisionStatus::OK);
+            pstInspDeivceRpy->astDeviceResult[i].fRotation = 0.f;
+            pstInspDeivceRpy->astDeviceResult[i].fOffsetX = 0.f;
+            pstInspDeivceRpy->astDeviceResult[i].fOffsetY = 0.f;
+            pstInspDeivceRpy->astDeviceResult[i].fScale = 1.f;
+            pstInspDeivceRpy->astDeviceResult[i].ptPos = cv::Point2f(0.f, 0.f);
+        }
+
+        std::vector<cv::Mat> vecChannels;
+        cv::split( matROI, vecChannels );
+
+        matGray = vecChannels [ Config::GetInstance()->getDeviceInspChannel() ];
+
+        cv::Mat matBlur;
+        cv::blur ( matGray, matBlur, cv::Size(2, 2) );
+        if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE )
+            showImage("Blur image", matBlur );
+
+        //cv::cvtColor( matROI, matGray, CV_BGR2GRAY);
+        cv::threshold( matBlur, matThreshold, pstInspDeviceCmd->nElectrodeThreshold, 255, cv::THRESH_BINARY);
+        if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE )   {
+            cv::imshow("Threshold image", matThreshold );
+            cv::waitKey(0);
+        }
 
         VectorOfPoint vecPtElectrode;
         VisionStatus enStatus = _findDeviceElectrode ( matThreshold, vecPtElectrode );
         if ( enStatus != VisionStatus::OK ) {
-            pstInspDeivceRpy->anDeviceStatus[i] = ToInt32(enStatus);
+            pstInspDeivceRpy->astDeviceResult[i].nStatus = ToInt32(enStatus);
             continue;
         }
 
@@ -387,47 +604,56 @@ VisionStatus VisionAlgorithm::inspDevice(PR_INSP_DEVICE_CMD *pstInspDeviceCmd, P
             }
         }
 
+        double dRotate = CalcUtils::calcSlopeDegree ( vecPtElectrode [ 0 ], vecPtElectrode [ 1 ] );
+        pstInspDeivceRpy->astDeviceResult [ i ].fRotation = ToFloat ( dRotate );
         if (pstInspDeviceCmd->astDeviceInfo [ i ].stInspItem.bCheckRotation) {            
-            double fRotate = CalcUtils::calcSlopeDegree(vecPtElectrode [ 0 ], vecPtElectrode [ 1 ]);
-            if (fRotate > pstInspDeviceCmd->astCriteria [ pstInspDeviceCmd->astDeviceInfo [ i ].nCriteriaNo ].fMaxRotate) {
-                pstInspDeivceRpy->anDeviceStatus [ i ] = ToInt32(VisionStatus::OBJECT_ROTATE);
+            if ( fabs ( dRotate ) > pstInspDeviceCmd->astCriteria [ pstInspDeviceCmd->astDeviceInfo [ i ].nCriteriaNo ].fMaxRotate) {
+                pstInspDeivceRpy->astDeviceResult[ i ].nStatus = ToInt32(VisionStatus::OBJECT_ROTATE);
+                continue;
+            }
+        }
+
+        cv::Point2f ptDeviceCtr = CalcUtils::midOf2Points<float>( vecPtElectrode [ 0 ], vecPtElectrode [ 1 ] );
+        //Map the find result from ROI to the whole image.
+        ptDeviceCtr.x += rectDeviceROI.x;
+        ptDeviceCtr.y += rectDeviceROI.y;
+
+        pstInspDeivceRpy->astDeviceResult[i].ptPos = ptDeviceCtr;
+        pstInspDeivceRpy->astDeviceResult[i].fOffsetX = pstInspDeivceRpy->astDeviceResult[i].ptPos.x - pstInspDeviceCmd->astDeviceInfo [ i ].stCtrPos.x;
+        pstInspDeivceRpy->astDeviceResult[i].fOffsetY = pstInspDeivceRpy->astDeviceResult[i].ptPos.y - pstInspDeviceCmd->astDeviceInfo [ i ].stCtrPos.y;
+        if (pstInspDeviceCmd->astDeviceInfo [ i ].stInspItem.bCheckShift) {
+            if (  fabs ( pstInspDeivceRpy->astDeviceResult[i].fOffsetX ) > pstInspDeviceCmd->astCriteria [ pstInspDeviceCmd->astDeviceInfo [ i ].nCriteriaNo ].fMaxOffsetX )  {
+                pstInspDeivceRpy->astDeviceResult[i].nStatus = ToInt32(VisionStatus::OBJECT_SHIFT);
+                continue;
+            }
+            
+            if (  fabs ( pstInspDeivceRpy->astDeviceResult[i].fOffsetY ) > pstInspDeviceCmd->astCriteria [ pstInspDeviceCmd->astDeviceInfo [ i ].nCriteriaNo ].fMaxOffsetY )  {
+                pstInspDeivceRpy->astDeviceResult[i].nStatus = ToInt32(VisionStatus::OBJECT_SHIFT);
                 continue;
             }
         }
 
         cv::Rect rectDevice;
-        enStatus = _findDeviceEdge ( matThreshold, pstInspDeviceCmd->astDeviceInfo [ i ].stSize, rectDevice );
+        enStatus = _findDeviceEdge ( matThreshold, pstInspDeviceCmd->astDeviceInfo[i].stSize, rectDevice );
         if ( enStatus != VisionStatus::OK ) {
-            pstInspDeivceRpy->anDeviceStatus[i] = ToInt32(enStatus);
+            pstInspDeivceRpy->astDeviceResult[i].nStatus = ToInt32(enStatus);
             continue;
-        }
+        }                
 
-        if (pstInspDeviceCmd->astDeviceInfo [ i ].stInspItem.bCheckShift) {
-            Point2f ptDeviceCtr ( ToFloat ( rectDevice.x ) + ToFloat ( rectDevice.width ) / 2, ToFloat ( rectDevice.y ) +  ToFloat ( rectDevice.height ) / 2 );
-            float fOffsetX = fabs ( ptDeviceCtr.x - pstInspDeviceCmd->astDeviceInfo [ i ].stCtrPos.x );
-            if (  fOffsetX > pstInspDeviceCmd->astCriteria [ pstInspDeviceCmd->astDeviceInfo [ i ].nCriteriaNo ].fMaxOffsetX )  {
-                pstInspDeivceRpy->anDeviceStatus [ i ] = ToInt32(VisionStatus::OBJECT_SHIFT);
-                continue;
-            }
-            float fOffsetY = fabs ( ptDeviceCtr.y - pstInspDeviceCmd->astDeviceInfo [ i ].stCtrPos.y );
-            if (  fOffsetY > pstInspDeviceCmd->astCriteria [ pstInspDeviceCmd->astDeviceInfo [ i ].nCriteriaNo ].fMaxOffsetY )  {
-                pstInspDeivceRpy->anDeviceStatus [ i ] = ToInt32(VisionStatus::OBJECT_SHIFT);
-                continue;
-            }
-        }
-
-        if ( pstInspDeviceCmd->astDeviceInfo [ i ].stInspItem.bCheckScale ) {
-            float fScaleX = ToFloat ( rectDevice.width ) / pstInspDeviceCmd->astDeviceInfo [ i ].stSize.width;
-            float fScaleY = ToFloat ( rectDevice.height ) / pstInspDeviceCmd->astDeviceInfo [ i ].stSize.height;
-            float fScaleMax = std::max<float> ( fScaleX, fScaleY );
-            float fScaleMin = std::min<float> ( fScaleX, fScaleY );
-            if ( fScaleMax > pstInspDeviceCmd->astCriteria [ pstInspDeviceCmd->astDeviceInfo [ i ].nCriteriaNo ].fMaxScale 
-                || fScaleMin < pstInspDeviceCmd->astCriteria [ pstInspDeviceCmd->astDeviceInfo [ i ].nCriteriaNo ].fMinScale )  {
-                pstInspDeivceRpy->anDeviceStatus [ i ] = ToInt32(VisionStatus::OBJECT_SCALE_FAIL);
+        float fScaleX = ToFloat ( rectDevice.width ) / pstInspDeviceCmd->astDeviceInfo [ i ].stSize.width;
+        float fScaleY = ToFloat ( rectDevice.height ) / pstInspDeviceCmd->astDeviceInfo [ i ].stSize.height;
+        pstInspDeivceRpy->astDeviceResult[i].fScale = ( fScaleX + fScaleY ) / 2.f;
+        if ( pstInspDeviceCmd->astDeviceInfo [ i ].stInspItem.bCheckScale ) {            
+            //float fScaleMax = std::max<float> ( fScaleX, fScaleY );
+            //float fScaleMin = std::min<float> ( fScaleX, fScaleY );
+            if ( pstInspDeivceRpy->astDeviceResult[i].fScale > pstInspDeviceCmd->astCriteria [ pstInspDeviceCmd->astDeviceInfo [ i ].nCriteriaNo ].fMaxScale 
+                || pstInspDeivceRpy->astDeviceResult[i].fScale < pstInspDeviceCmd->astCriteria [ pstInspDeviceCmd->astDeviceInfo [ i ].nCriteriaNo ].fMinScale )  {
+                pstInspDeivceRpy->astDeviceResult[i].nStatus = ToInt32(VisionStatus::OBJECT_SCALE_FAIL);
                 continue;
             }
         }
     }
+    MARK_FUNCTION_END_TIME;
     return VisionStatus::OK;
 }
 
@@ -478,6 +704,7 @@ int VisionAlgorithm::align(PR_AlignCmd *const pAlignCmd, PR_AlignRpy *pAlignRpy 
 
 VisionStatus VisionAlgorithm::inspSurface(PR_INSP_SURFACE_CMD *const pInspCmd, PR_INSP_SURFACE_RPY *pInspRpy)
 {
+    MARK_FUNCTION_START_TIME;
 	if ( NULL == pInspCmd || NULL == pInspRpy )
 		return VisionStatus::INVALID_PARAM;
 
@@ -522,7 +749,7 @@ VisionStatus VisionAlgorithm::inspSurface(PR_INSP_SURFACE_CMD *const pInspCmd, P
 	pInspRpy->n16NDefect = 0;
 	_findBlob(matCmpResult, matRevsCmdResult, pInspCmd, pInspRpy);
 	_findLine(matCmpResult, pInspCmd, pInspRpy );	
-
+    MARK_FUNCTION_END_TIME;
 	return VisionStatus::OK;
 }
 
@@ -786,13 +1013,64 @@ int VisionAlgorithm::_findLineCrossPoint(const PR_Line2f &line1, const PR_Line2f
 	return 0;
 }
 
-VisionStatus VisionAlgorithm::_writeLrnTmplRecord(PR_LEARN_TMPL_RPY *pLearnTmplRpy)
+VisionStatus VisionAlgorithm::_writeLrnTmplRecord(PR_LRN_TMPL_RPY *pLrnTmplRpy)
 {
     TmplRecord *pRecord = new TmplRecord(PR_RECORD_TYPE::ALIGNMENT);
-    pRecord->setModelKeyPoint(pLearnTmplRpy->vecKeyPoint);
-    pRecord->setModelDescriptor(pLearnTmplRpy->matDescritor);
-    RecordManager::getInstance()->add(pRecord, pLearnTmplRpy->nRecordID);
+    pRecord->setModelKeyPoint(pLrnTmplRpy->vecKeyPoint);
+    pRecord->setModelDescriptor(pLrnTmplRpy->matDescritor);
+    RecordManager::getInstance()->add(pRecord, pLrnTmplRpy->nRecordID);
     return VisionStatus::OK;
+}
+
+VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRpy)
+{
+    DeviceRecord *pRecord = new DeviceRecord ( PR_RECORD_TYPE::DEVICE );
+    pRecord->setElectrodeThreshold ( pLrnDeviceRpy->nElectrodeThreshold );
+    pRecord->setSize ( pLrnDeviceRpy->sizeDevice );
+    RecordManager::getInstance()->add(pRecord, pLrnDeviceRpy->nRecordID);
+    return VisionStatus::OK;
+}
+
+void VisionAlgorithm::showImage(String windowName, const cv::Mat &mat)
+{
+    static Int32 nImageCount = 0;
+    String strWindowName = windowName + "_" + std::to_string(nImageCount ++ );
+    cv::namedWindow ( strWindowName );
+    cv::imshow( strWindowName, mat );
+    cv::waitKey(0);
+    cv::destroyWindow ( strWindowName );
+}
+
+VisionStatus VisionAlgorithm::runLogCase(const std::string &strPath)
+{
+    if ( strPath.length() < 2 )
+        return VisionStatus::INVALID_PARAM;
+
+    if (  ! bfs::exists ( strPath ) )
+        return VisionStatus::PATH_NOT_EXIST;
+
+    VisionStatus enStatus = VisionStatus::OK;
+    auto strLocalPath = strPath;
+    if ( strPath[ strPath.length() - 1 ] != '\\')
+        strLocalPath.append("\\");
+
+    auto pos = strLocalPath.rfind ( '\\', strLocalPath.length() - 2 );
+    if ( String::npos == pos )
+        return VisionStatus::INVALID_PARAM;
+
+    auto folderName = strLocalPath.substr ( pos + 1 );
+    pos = folderName.find('_');
+    auto folderPrefix = folderName.substr(0, pos);
+
+    std::shared_ptr<LogCase> pLogCase = nullptr;
+    if ( LogCaseLrnTmpl::FOLDER_PREFIX == folderPrefix )
+        pLogCase = std::make_shared <LogCaseLrnTmpl>( strLocalPath, true );
+    
+    if ( nullptr != pLogCase )
+        enStatus = pLogCase->RunLogCase();
+    else
+        enStatus = VisionStatus::INVALID_LOGCASE;
+    return enStatus;
 }
 
 }

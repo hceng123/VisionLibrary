@@ -20,7 +20,7 @@ using VectorOfPoint = std::vector<cv::Point2f>;
 #define ToInt32(param)      (static_cast<Int32>(param))
 #define ToFloat(param)      (static_cast<float>(param))
 
-struct PR_LEARN_TMPL_CMD
+struct PR_LRN_TMPL_CMD
 {
 	PR_ALIGN_ALGORITHM      enAlgorithm;
 	cv::Mat                 mat;
@@ -28,7 +28,7 @@ struct PR_LEARN_TMPL_CMD
 	cv::Rect2f              rectLrn;
 };
 
-struct PR_LEARN_TMPL_RPY
+struct PR_LRN_TMPL_RPY
 {
 	Int16                  nStatus;
 	std::vector<KeyPoint>  vecKeyPoint;
@@ -136,8 +136,8 @@ using PR_Line = PR_Line_<int>;
 using PR_Line2f = PR_Line_<float>;
 
 /******************************************
-* Device Inspection Section
-******************************************/ 
+* Device Inspection Section *
+******************************************/
 #define PR_MAX_DEVICE_COUNT         (100)
 #define PR_MAX_CRITERIA_COUNT       (5)
 
@@ -179,7 +179,8 @@ struct PR_LRN_DEVICE_RPY
 {
     Int32                   nStatus;
     Int32                   nRecordID;
-    Int32                   nElectrodeThreshold;
+    cv::Size2f              sizeDevice;
+    Int16                   nElectrodeThreshold;
 };
 
 struct PR_INSP_DEVICE_CMD
@@ -192,11 +193,21 @@ struct PR_INSP_DEVICE_CMD
     PR_INSP_DEVICE_CRITERIA astCriteria[PR_MAX_CRITERIA_COUNT];
 };
 
+struct PR_DEVICE_INSP_RESULT
+{
+    Int32                   nStatus;
+    cv::Point2f             ptPos;
+    float                   fRotation;    
+    float                   fOffsetX;
+    float                   fOffsetY;
+    float                   fScale;
+};
+
 struct PR_INSP_DEVICE_RPY
 {
     Int32                   nStatus;
     Int32                   nDeviceCount;
-    Int32                   anDeviceStatus[PR_MAX_DEVICE_COUNT];
+    PR_DEVICE_INSP_RESULT   astDeviceResult[PR_MAX_DEVICE_COUNT];
 };
 
 /******************************************

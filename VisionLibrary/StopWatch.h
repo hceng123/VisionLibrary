@@ -28,7 +28,7 @@ public:
 		return static_cast<__int64> ( std::chrono::duration<double, std::milli>( tpNow - _tpStart ).count() );
 	}
 
-	__int64 AbsNow () const
+	__int64 static AbsNow()
 	{
 		return duration_cast<milliseconds>( high_resolution_clock::now().time_since_epoch() ).count();
 	}
@@ -39,20 +39,20 @@ public:
 		return static_cast<__int64> ( std::chrono::duration<double, std::micro>( tpNow - _tpStart).count() );
 	}
 
-	__int64 AbsNowInMicro () const
+	__int64 static AbsNowInMicro()
 	{
 		return duration_cast<microseconds>( high_resolution_clock::now().time_since_epoch() ).count();
 	}
 
-    std::string GetLocalTimeStr()
+    std::string static GetLocalTimeStr()
     {
 		char szTime[100];
         struct tm  stTm;
         time_t     nTimeSeconds;
         time(&nTimeSeconds);
-        errno_t err = localtime_s( &stTm, &nTimeSeconds);
+        errno_t err = localtime_s ( &stTm, &nTimeSeconds);
         __int64 nMilliseconds = AbsNow () - nTimeSeconds * 1000;
-        _snprintf_s ( szTime, 100, "%02d:%02d:%02d.%03d", stTm.tm_hour, stTm.tm_min, stTm.tm_sec, nMilliseconds );
+        _snprintf_s ( szTime, 100, "%d-%02d-%02d %02d:%02d:%02d.%03d", stTm.tm_year + 1900, stTm.tm_mon + 1, stTm.tm_mday, stTm.tm_hour, stTm.tm_min, stTm.tm_sec, nMilliseconds );
         return std::string(szTime);
     }
 private:

@@ -54,6 +54,18 @@ VisionStatus RecordManager::free(Int32 nRecordID)
     return VisionStatus::OK;
 }
 
+VisionStatus RecordManager::freeAllRecord()
+{
+    for ( auto record : _mapRecord )
+    {
+       delete record.second;
+    }
+    _mapRecord.clear();
+    bfs::remove_all( Config::GetInstance()->getRecordDir() );
+    WriteLog("All log is cleared");
+    return VisionStatus::OK;
+}
+
 VisionStatus RecordManager::load()
 {
     auto strRecordDir = Config::GetInstance()->getRecordDir();
@@ -63,9 +75,9 @@ VisionStatus RecordManager::load()
     }
     Int32Vector vecRecord;
     for ( auto &p : bfs::directory_iterator(strRecordDir)) {
-        if ( ! bfs::is_directory ( p.status() ) ) 
+        if ( ! bfs::is_directory ( p.status() ) )
         {
-            _loadOneRecord ( p.path().string() );            
+            _loadOneRecord ( p.path().string() );
         }
     }
     return VisionStatus::OK;

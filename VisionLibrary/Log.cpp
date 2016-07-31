@@ -1,5 +1,6 @@
 #include "Log.h"
 #include <fstream>
+#include "StopWatch.h"
 
 namespace AOI
 {
@@ -22,10 +23,14 @@ void Log::SetLogPath(const String &strLogPath)
 void Log::Write(const String &strMsg, const char *filename, int line)
 {
     std::ofstream file;
-    file.open(_strLogPath);
+    file.open ( _strLogPath, std::ofstream::out | std::ofstream::app );
     if (!file.is_open())
         return;
-    file << strMsg << "\t" << filename << "\t" << line << "\n";
+    String strLocalMsg = strMsg;
+    if ( strLocalMsg.length() < STANDARD_MSG_LENGTH )
+        strLocalMsg.resize ( STANDARD_MSG_LENGTH, ' ');
+
+    file << strLocalMsg << "\t" << CStopWatch::GetLocalTimeStr() << "\t" << filename << "\t" << line << "\n";
     file.close();
 }
 

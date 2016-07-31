@@ -12,7 +12,8 @@ class Log
 {
 protected:
     Log();
-    String _strLogPath = "log.log";
+    String _strLogPath = ".\\Vision\\log.log";
+    const UInt32 STANDARD_MSG_LENGTH = 80;
 public:
     static Log *GetInstance();
     void SetLogPath(const String &strLogPath);

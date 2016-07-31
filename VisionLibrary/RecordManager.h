@@ -21,6 +21,7 @@ public:
     VisionStatus            add(IRecord *pRecord, Int32 &recordID);    
     IRecord*                get(Int32 nRecordID);
     VisionStatus            free(Int32 nRecordID);
+    VisionStatus            freeAllRecord();
     VisionStatus            load();
 protected:
     RecordManager() {};

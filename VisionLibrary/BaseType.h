@@ -4,6 +4,8 @@
 #include <string>
 #include <vector>
 
+#define SL(s) s
+
 namespace AOI
 {
     typedef unsigned __int8  Byte;

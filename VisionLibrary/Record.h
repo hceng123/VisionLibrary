@@ -36,6 +36,21 @@ protected:
 	cv::Mat                     _matModelDescritor;
 };
 
+class DeviceRecord:public IRecord
+{
+public:
+    DeviceRecord(PR_RECORD_TYPE enType):IRecord(enType)   {}
+    virtual VisionStatus load(cv::FileStorage &fileStorage) override;
+    virtual VisionStatus save(const String& strFilePath) override;
+    void setSize(const cv::Size2f &size);
+    const cv::Size2f& getSize() const;
+    void setElectrodeThreshold(Int16 nElectrodeThreshold);
+    Int16 getElectrodeThreshold() const;
+protected:
+    cv::Size2f          _size;
+    Int16               _nElectrodeThreshold;
+};
+
 }
 }
 

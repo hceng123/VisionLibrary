@@ -41,6 +41,11 @@ PR_DEBUG_MODE Config::getDebugMode() const
     return _enDebugMode;
 }
 
+Int16 Config::getDeviceInspChannel() const
+{
+    return _nDeviceInspChannel;
+}
+
 void Config::setDebugMode(PR_DEBUG_MODE enDebugMode)
 {
     _enDebugMode = enDebugMode;

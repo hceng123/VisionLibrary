@@ -34,6 +34,19 @@ public:
         return radian2Degree ( atan2f ( pt2.y - pt1.y, pt2.x - pt1.x ) );
     }
 
+    template<typename T>
+    static cv::Point_<T>midOf2Points(const cv::Point_<T> &pt1, const cv::Point_<T> &pt2)
+    {
+        return cv::Point_<T>( ( pt1.x + pt2.x ) / 2.f, ( pt1.y + pt2.y ) / 2.f );
+    }
+
+    template<typename T>
+    static cv::Rect_<T> scaleRect(const cv::Rect_<T> &rectInput, float fScale)
+    {
+        return cv::Rect_<T> (cv::Point_<T>(rectInput.x + ( 1.f - fScale ) * rectInput.width, rectInput.y + ( 1.f - fScale ) * rectInput.height ),
+            cv::Point_<T>(rectInput.x + ( 1.f + fScale ) * rectInput.width, rectInput.y + ( 1.f + fScale ) * rectInput.height ) );
+    }
+
     static double radian2Degree( double dRadian );
     static double degree2Radian( double dDegree );
 };

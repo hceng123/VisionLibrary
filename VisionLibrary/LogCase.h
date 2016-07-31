@@ -9,7 +9,7 @@ namespace AOI
 namespace Vision
 {
 
-class LogCase : private Uncopyable
+class LogCase
 {
 public:
     explicit LogCase(const String &strPath):_strLogCasePath(strPath)  {}
@@ -21,24 +21,35 @@ protected:
     Rect2f _parseRect(const String &strCoordinate);
     String _generateLogCaseName(const String &strFolderPrefix);
     String      _strLogCasePath;
-    const String _strCmdRpyFileName = "cmdrpy.log";
-    const String _strCmdSection = "CMD";
-    const String _strRpySection = "RPY";
+    const String _CMD_RPY_FILE_NAME = "cmdrpy.log";
+    const String _CMD_SECTION = "CMD";
+    const String _RPY_SECTION = "RPY";
 };
 
 class LogCaseLrnTmpl:public LogCase
 {
 public:
-    explicit LogCaseLrnTmpl(const String &strPath);
-    VisionStatus WriteCmd(PR_LEARN_TMPL_CMD *pLrnTmplCmd);
-    VisionStatus WriteRpy(PR_LEARN_TMPL_RPY *pLrnTmplRpy);
+    explicit LogCaseLrnTmpl(const String &strPath, bool bReplay = false);
+    VisionStatus WriteCmd(PR_LRN_TMPL_CMD *pLrnTmplCmd);
+    VisionStatus WriteRpy(PR_LRN_TMPL_RPY *pLrnTmplRpy);
     virtual VisionStatus RunLogCase() override;
-private:
-    const String _strFolderPrefix   =   "LrnTmpl";
+    const static String FOLDER_PREFIX;
+private:    
     const String _strKeyAlgorithm   =   "Algorithm";
     const String _strKeyLrnWindow   =   "LrnWindow";
     const String _strKeyStatus      =   "Status";
     const String _strKeyCenterPos   =   "Center";
+};
+
+class LogCaseLrnDevice:public LogCase
+{
+public:
+    explicit LogCaseLrnDevice(const String &strPath);
+    VisionStatus WriteCmd(PR_LRN_DEVICE_CMD *pLrnTmplCmd);
+    VisionStatus WriteRpy(PR_LRN_DEVICE_RPY *pLrnTmplRpy);
+    virtual VisionStatus RunLogCase() override;
+    const static String FOLDER_PREFIX;
+private:
 };
 
 }
