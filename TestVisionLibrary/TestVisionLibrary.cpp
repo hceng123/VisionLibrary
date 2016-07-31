@@ -6,6 +6,8 @@
 #include "opencv2/core/core.hpp"
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
+#include <ctime>
+#include <iostream>
 
 using namespace AOI::Vision;
 
@@ -28,7 +30,6 @@ int TestVisionAlgorithm()
 	printf("Please enter WZ, TX and TY, separated by space.\n");
 	printf("Example: -0.01 5 -3\n");
 	printf(">");
-	//scanf_s("%f %f %f", &WZ, &TX, &TY);
 
 	// Here we will store our images.
 	IplImage* pColorPhoto = 0; // Photo of a butterfly on a flower.
@@ -102,8 +103,8 @@ int TestVisionAlgorithm()
 	// Restore image I
 	//warp_image(pGrayPhoto, pImgI, W);
 	PR_ALIGN_ALGORITHM enAlgorithm = PR_ALIGN_ALGORITHM::SURF;
-	PR_LEARN_TMPL_CMD stLrnTmplCmd;
-	PR_LEARN_TMPL_RPY stLrnTmplRpy;
+	PR_LRN_TMPL_CMD stLrnTmplCmd;
+	PR_LRN_TMPL_RPY stLrnTmplRpy;
 	stLrnTmplCmd.mat = cv::cvarrToMat(pImgT, true);
 	stLrnTmplCmd.rectLrn = omega;
 	stLrnTmplCmd.enAlgorithm = enAlgorithm;
@@ -171,9 +172,79 @@ int TestVisionAlgorithm()
 	return 0;
 }
 
+void TestInspDevice()
+{
+    PR_FreeAllRecord();
+
+    VisionStatus enStatus;
+    PR_LRN_DEVICE_CMD stLrnDeviceCmd;
+    stLrnDeviceCmd.matInput = cv::imread(".\\data\\TmplResistor.png");
+    stLrnDeviceCmd.bAutoThreshold = true;
+    stLrnDeviceCmd.nElectrodeThreshold = 180;
+    stLrnDeviceCmd.rectDevice = cv::Rect2f( 38, 22, 78, 41 );
+    PR_LRN_DEVICE_RPY stLrnDeviceRpy;
+    
+    PR_SetDebugMode(PR_DEBUG_MODE::SHOW_IMAGE);
+    enStatus = PR_LrnDevice ( &stLrnDeviceCmd, &stLrnDeviceRpy );
+    if ( enStatus != VisionStatus::OK )
+    {
+        std::cout << "Failed to learn device" << std::endl;
+        return;
+    }
+
+    PR_INSP_DEVICE_CMD stInspDeviceCmd;
+    stInspDeviceCmd.matInput = cv::imread(".\\data\\RotatedDevice.png");
+    stInspDeviceCmd.nElectrodeThreshold = stLrnDeviceRpy.nElectrodeThreshold;
+    stInspDeviceCmd.nDeviceCount = 1;
+    stInspDeviceCmd.astDeviceInfo[0].nCriteriaNo = 0;
+    stInspDeviceCmd.astDeviceInfo[0].rectSrchWindow = cv::Rect ( 33, 18, 96, 76 );
+    stInspDeviceCmd.astDeviceInfo[0].stCtrPos = cv::Point(72,44);
+    stInspDeviceCmd.astDeviceInfo[0].stInspItem.bCheckMissed = true;
+    stInspDeviceCmd.astDeviceInfo[0].stInspItem.bCheckRotation = true;
+    stInspDeviceCmd.astDeviceInfo[0].stInspItem.bCheckScale = true;
+    stInspDeviceCmd.astDeviceInfo[0].stInspItem.bCheckShift = true;
+    stInspDeviceCmd.astDeviceInfo[0].stSize = stLrnDeviceRpy.sizeDevice;
+    stInspDeviceCmd.astCriteria[0].fMaxOffsetX = 15;
+    stInspDeviceCmd.astCriteria[0].fMaxOffsetY = 15;
+    stInspDeviceCmd.astCriteria[0].fMaxRotate = 5;
+    stInspDeviceCmd.astCriteria[0].fMaxScale = 1.3f;
+    stInspDeviceCmd.astCriteria[0].fMinScale = 0.7f;
+
+    PR_INSP_DEVICE_RPY stInspDeviceRpy;
+    
+    PR_InspDevice( &stInspDeviceCmd, &stInspDeviceRpy );
+    std::cout << "Device inspection status " << stInspDeviceRpy.astDeviceResult[0].nStatus << std::endl;
+
+    stInspDeviceCmd.matInput = cv::imread(".\\data\\ShiftedDevice.png");
+    stInspDeviceCmd.astDeviceInfo[0].stCtrPos = cv::Point(85, 48);
+    stInspDeviceCmd.astDeviceInfo[0].stSize = cv::Size2f(99, 52);
+    stInspDeviceCmd.astDeviceInfo[0].rectSrchWindow = cv::Rect ( 42, 16, 130, 100 );
+    
+    PR_InspDevice( &stInspDeviceCmd, &stInspDeviceRpy );
+    std::cout << "Device inspection status " << stInspDeviceRpy.astDeviceResult[0].nStatus << std::endl;
+}
+
+void TestRunLogcase()
+{
+    VisionStatus enStatus = PR_RunLogCase(".\\Vision\\Logcase\\LrnTmpl_2016_07_30_14_06_16_125\\");
+    std::cout << "Run logcase result " << static_cast<int> ( enStatus ) << std::endl;
+}
+
+String GetTime()
+{
+    std::time_t t; std::time(&t);
+    std::tm *p = std::localtime(&t);
+    String   s = std::asctime(p);
+    size_t   k = s.find_first_of("\r\n");
+    return (k == String::npos) ? s : s.substr(0, k);
+}
+
 int _tmain(int argc, _TCHAR* argv[])
 {
-    TestVisionAlgorithm();
+    //TestVisionAlgorithm();
+    std::cout << GetTime() << std::endl;
+    TestInspDevice();
+    TestRunLogcase();
 	return 0;
 }
 
