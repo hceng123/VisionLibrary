@@ -43,6 +43,7 @@ VisionStatus VisionAlgorithm::lrnTmpl(PR_LRN_TMPL_CMD * const pLrnTmplCmd, PR_LR
     if ( pLrnTmplCmd->mat.empty() )
         return VisionStatus::INVALID_PARAM;
 
+    VisionStatus enReturnStatus = VisionStatus::OK;
     std::unique_ptr<LogCaseLrnTmpl> pLogCase;
     if ( ! bReplay )    {
         pLogCase = std::make_unique<LogCaseLrnTmpl>( Config::GetInstance()->getLogCaseDir() );
@@ -56,17 +57,24 @@ VisionStatus VisionAlgorithm::lrnTmpl(PR_LRN_TMPL_CMD * const pLrnTmplCmd, PR_LR
         detector = SURF::create (_constMinHessian, _constOctave, _constOctaveLayer );
     cv::Mat matROI( pLrnTmplCmd->mat, pLrnTmplCmd->rectLrn );
     detector->detectAndCompute ( matROI, pLrnTmplCmd->mask, pLrnTmplRpy->vecKeyPoint, pLrnTmplRpy->matDescritor );
-    if ( pLrnTmplRpy->vecKeyPoint.size() > _constLeastFeatures )
-        pLrnTmplRpy->nStatus = ToInt32 ( VisionStatus::OK );
-    pLrnTmplRpy->ptCenter.x = pLrnTmplCmd->rectLrn.x + pLrnTmplCmd->rectLrn.width / 2.0f;
-    pLrnTmplRpy->ptCenter.y = pLrnTmplCmd->rectLrn.y + pLrnTmplCmd->rectLrn.height / 2.0f;
-    matROI.copyTo ( pLrnTmplRpy->matTmpl );
-    _writeLrnTmplRecord ( pLrnTmplRpy );
+
+    if (pLrnTmplRpy->vecKeyPoint.size() > _constLeastFeatures)    {
+        enReturnStatus = VisionStatus::OK;
+        pLrnTmplRpy->ptCenter.x = pLrnTmplCmd->rectLrn.x + pLrnTmplCmd->rectLrn.width / 2.0f;
+        pLrnTmplRpy->ptCenter.y = pLrnTmplCmd->rectLrn.y + pLrnTmplCmd->rectLrn.height / 2.0f;
+        matROI.copyTo(pLrnTmplRpy->matTmpl);
+        _writeLrnTmplRecord(pLrnTmplRpy);
+    }        
+    else
+    {
+        enReturnStatus = VisionStatus::LEARN_FAIL;
+    }    
 
     if ( ! bReplay )
         pLogCase->WriteRpy(pLrnTmplRpy);
 
-    return VisionStatus::OK;
+    pLrnTmplRpy->nStatus = ToInt32( enReturnStatus );
+    return enReturnStatus;
 }
 
 VisionStatus VisionAlgorithm::srchTmpl(PR_SRCH_TMPL_CMD *const pFindObjCmd, PR_SRCH_TMPL_RPY *pFindObjRpy)
@@ -159,8 +167,10 @@ VisionStatus VisionAlgorithm::srchTmpl(PR_SRCH_TMPL_CMD *const pFindObjCmd, PR_S
 
 	pFindObjRpy->fMatchScore = (float)nScoreCount * 100.f / vecVecMatches.size();
 
-    if ( good_matches.size() <= 0 )
+    if ( good_matches.size() <= 0 ) {
+        pFindObjRpy->nStatus = ToInt32 ( VisionStatus::SRCH_TMPL_FAIL );
         return VisionStatus::SRCH_TMPL_FAIL;
+    }
     //-- Localize the object
     std::vector<cv::Point2f> obj;
     std::vector<cv::Point2f> scene;
@@ -172,7 +182,7 @@ VisionStatus VisionAlgorithm::srchTmpl(PR_SRCH_TMPL_CMD *const pFindObjCmd, PR_S
         scene.push_back( vecKeypointScene[good_matches[i].trainIdx].pt);
     }    
     
-    pFindObjRpy->matHomography = cv::findHomography ( obj, scene, CV_LMEDS );
+    pFindObjRpy->matHomography = cv::findHomography ( obj, scene, CV_RANSAC );
     TimeLog::GetInstance()->addTimeLog("cv::findHomography");
 
 	pFindObjRpy->matHomography.at<double>(0, 2) += pFindObjCmd->rectSrchWindow.x;
@@ -194,6 +204,7 @@ VisionStatus VisionAlgorithm::srchTmpl(PR_SRCH_TMPL_CMD *const pFindObjCmd, PR_S
 	pFindObjRpy->fRotation = (float) CalcUtils::radian2Degree ( asin(fRotationValue) );
     
     MARK_FUNCTION_END_TIME;
+    pFindObjRpy->nStatus = ToInt32 ( VisionStatus::OK );
     return VisionStatus::OK;
 }
 
@@ -316,15 +327,16 @@ int VisionAlgorithm::_autoThreshold(const cv::Mat &mat)
     if (Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE)   {
         double maxVal = 0;
         minMaxLoc ( hist, 0, &maxVal, 0, 0 );
-        int scale = 10;
-        Mat histImg = Mat::zeros(maxVal / 3, sbins * scale, CV_8UC3);
+        const int scale = 10;
+        const int nDisplayRatio = 3;
+        Mat histImg = Mat::zeros ( ToInt32( maxVal / nDisplayRatio ), sbins * scale, CV_8UC3);
 
         for (int s = 0; s < sbins; s++)
         {
             float binVal = hist.at<float>(s, 0);
             int intensity = cvRound(binVal * 255 / maxVal);
             rectangle(histImg, Point(s*scale, 0),
-                Point((s + 1)*scale - 1, binVal / 3),
+                Point((s + 1)*scale - 1, ToInt32 ( binVal / nDisplayRatio ) ),
                 Scalar::all(intensity),
                 CV_FILLED);
         }

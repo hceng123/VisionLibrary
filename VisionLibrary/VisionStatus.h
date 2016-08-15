@@ -22,6 +22,7 @@ enum class VisionStatus
     NOT_SUPPORTED_OPTION,
     PATH_NOT_EXIST,
     INVALID_LOGCASE,
+    LEARN_FAIL,
 };
 
 }

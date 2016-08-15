@@ -172,6 +172,72 @@ int TestVisionAlgorithm()
 	return 0;
 }
 
+void TestSearchFiducialMark()
+{
+    PR_ALIGN_ALGORITHM enAlgorithm = PR_ALIGN_ALGORITHM::SURF;
+    cv::Rect2f omega = cv::Rect2f(311, 45, 300, 300 );
+	PR_LRN_TMPL_CMD stLrnTmplCmd;
+	PR_LRN_TMPL_RPY stLrnTmplRpy;
+	stLrnTmplCmd.mat = cv::imread(".\\data\\FiducialLrn.png");
+	stLrnTmplCmd.rectLrn = omega;
+	stLrnTmplCmd.enAlgorithm = enAlgorithm;
+	VisionStatus enStatus = PR_LearnTmpl(&stLrnTmplCmd, &stLrnTmplRpy);
+    if ( VisionStatus::OK != enStatus ) {
+        std::cout << "Learn fail with status " << static_cast<int>(enStatus) << std::endl;
+        return;
+    }
+
+	PR_SRCH_TMPL_CMD stSrchTmplCmd;
+	PR_SRCH_TMPL_RPY stSrchTmplRpy;
+	stSrchTmplCmd.mat = cv::imread(".\\data\\FiducialSrch_BK.png");
+	stSrchTmplCmd.rectLrn = omega;
+	stSrchTmplCmd.nRecordID = stLrnTmplRpy.nRecordID;
+	stSrchTmplCmd.ptExpectedPos = stLrnTmplRpy.ptCenter;
+	cv::Rect rectSrchWindow ( 40, 40, 390, 390 );
+	stSrchTmplCmd.rectSrchWindow = rectSrchWindow;
+	stSrchTmplCmd.enAlgorithm = enAlgorithm;
+
+	PR_SrchTmpl(&stSrchTmplCmd, &stSrchTmplRpy);
+
+    printf("Match score %.2f \n", stSrchTmplRpy.fMatchScore );
+	printfMat<double>(stSrchTmplRpy.matHomography);
+
+    PR_DumpTimeLog("PRTime.log");
+}
+
+void TestSearchFiducialMark_1()
+{
+    PR_ALIGN_ALGORITHM enAlgorithm = PR_ALIGN_ALGORITHM::SURF;
+    cv::Rect2f omega = cv::Rect2f(464, 591, 194, 194 );
+	PR_LRN_TMPL_CMD stLrnTmplCmd;
+	PR_LRN_TMPL_RPY stLrnTmplRpy;
+	stLrnTmplCmd.mat = cv::imread(".\\data\\PCB_FiducialMark1.jpg");
+	stLrnTmplCmd.rectLrn = omega;
+	stLrnTmplCmd.enAlgorithm = enAlgorithm;
+	VisionStatus enStatus = PR_LearnTmpl(&stLrnTmplCmd, &stLrnTmplRpy);
+    if ( VisionStatus::OK != enStatus ) {
+        std::cout << "Learn fail with status " << static_cast<int>(enStatus) << std::endl;
+        return;
+    }
+
+	PR_SRCH_TMPL_CMD stSrchTmplCmd;
+	PR_SRCH_TMPL_RPY stSrchTmplRpy;
+	stSrchTmplCmd.mat = cv::imread(".\\data\\PCB_FiducialMark2.jpg");
+	stSrchTmplCmd.rectLrn = omega;
+	stSrchTmplCmd.nRecordID = stLrnTmplRpy.nRecordID;
+	stSrchTmplCmd.ptExpectedPos = stLrnTmplRpy.ptCenter;
+	cv::Rect rectSrchWindow ( 300, 600, 270, 270 );
+	stSrchTmplCmd.rectSrchWindow = rectSrchWindow;
+	stSrchTmplCmd.enAlgorithm = enAlgorithm;
+
+	PR_SrchTmpl(&stSrchTmplCmd, &stSrchTmplRpy);
+
+    printf("Match score %.2f \n", stSrchTmplRpy.fMatchScore );
+	printfMat<double>(stSrchTmplRpy.matHomography);
+
+    PR_DumpTimeLog("PRTime.log");
+}
+
 void TestInspDevice()
 {
     PR_FreeAllRecord();
@@ -243,8 +309,10 @@ int _tmain(int argc, _TCHAR* argv[])
 {
     //TestVisionAlgorithm();
     std::cout << GetTime() << std::endl;
-    TestInspDevice();
-    TestRunLogcase();
+    //TestInspDevice();
+    //TestRunLogcase();
+    //TestSearchFiducialMark();
+    TestSearchFiducialMark_1();
 	return 0;
 }
 
