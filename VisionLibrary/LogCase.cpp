@@ -31,16 +31,16 @@ namespace
     }
 }
 
-String LogCase::_formatCoordinate(const Point2f &pt)
+String LogCase::_formatCoordinate(const cv::Point2f &pt)
 {
     char chArray[200];
     _snprintf( chArray, sizeof ( chArray), "%.4f, %.4f", pt.x, pt.y );
     return String (chArray);
 }
 
-Point2f LogCase::_parseCoordinate(const String &strCoordinate)
+cv::Point2f LogCase::_parseCoordinate(const String &strCoordinate)
 {
-    Point2f pt(0.f, 0.f);
+    cv::Point2f pt(0.f, 0.f);
     StringVector vecStrCoordinate = split(strCoordinate, ',');
     if ( vecStrCoordinate.size() == 2 ) {
         pt.x = std::stof ( vecStrCoordinate[0] );
@@ -49,16 +49,16 @@ Point2f LogCase::_parseCoordinate(const String &strCoordinate)
     return pt;
 }
 
-String LogCase::_formatRect(const Rect2f &pt)
+String LogCase::_formatRect(const cv::Rect2f &pt)
 {
     char chArray[200];
     _snprintf(chArray, sizeof(chArray), "%.4f, %.4f, %.4f, %.4f", pt.tl().x, pt.tl().y, pt.br().x, pt.br().y);
     return String(chArray);
 }
 
-Rect2f LogCase::_parseRect(const String &strCoordinate)
+cv::Rect2f LogCase::_parseRect(const String &strCoordinate)
 {
-    Point2f pt1(0.f, 0.f), pt2(0.f, 0.f);
+    cv::Point2f pt1(0.f, 0.f), pt2(0.f, 0.f);
     StringVector vecStrCoordinate = split(strCoordinate, ',');
     if ( vecStrCoordinate.size() == 4 ) {
         pt1.x = std::stof ( vecStrCoordinate[0] );
@@ -66,7 +66,7 @@ Rect2f LogCase::_parseRect(const String &strCoordinate)
         pt2.x = std::stof ( vecStrCoordinate[2] );
         pt2.y = std::stof ( vecStrCoordinate[3] );
     }
-    return Rect2f(pt1, pt2);
+    return cv::Rect2f(pt1, pt2);
 }
 
 String LogCase::_generateLogCaseName(const String &strFolderPrefix)

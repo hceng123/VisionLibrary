@@ -15,10 +15,10 @@ public:
     explicit LogCase(const String &strPath):_strLogCasePath(strPath)  {}
     virtual VisionStatus RunLogCase()  = 0;
 protected:
-    String _formatCoordinate(const Point2f &pt);
-    Point2f _parseCoordinate(const String &strCoordinate);
-    String _formatRect(const Rect2f &pt);
-    Rect2f _parseRect(const String &strCoordinate);
+    String _formatCoordinate(const cv::Point2f &pt);
+    cv::Point2f _parseCoordinate(const String &strCoordinate);
+    String _formatRect(const cv::Rect2f &pt);
+    cv::Rect2f _parseRect(const String &strCoordinate);
     String _generateLogCaseName(const String &strFolderPrefix);
     String      _strLogCasePath;
     const String _CMD_RPY_FILE_NAME = "cmdrpy.log";

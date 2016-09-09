@@ -20,7 +20,7 @@ VisionStatus TmplRecord::load(cv::FileStorage &fs)
 
 VisionStatus TmplRecord::save(const String& strFilePath)
 {
-    FileStorage fs(strFilePath, FileStorage::WRITE);
+    cv::FileStorage fs(strFilePath, cv::FileStorage::WRITE);
     if ( ! fs.isOpened() )
         return VisionStatus::OPEN_FILE_FAIL;
 
@@ -66,7 +66,7 @@ VisionStatus DeviceRecord::load(cv::FileStorage &fs)
 
 VisionStatus DeviceRecord::save(const String& strFilePath)
 {
-    FileStorage fs(strFilePath, FileStorage::WRITE);
+    cv::FileStorage fs(strFilePath, cv::FileStorage::WRITE);
     if ( ! fs.isOpened() )
         return VisionStatus::OPEN_FILE_FAIL;
 
