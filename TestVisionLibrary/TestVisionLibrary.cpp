@@ -12,7 +12,7 @@
 using namespace AOI::Vision;
 
 template<class T>
-void printfMat(const Mat &mat)
+void printfMat(const cv::Mat &mat)
 {
 	for (short row = 0; row < mat.rows; ++row)
 	{
@@ -296,13 +296,13 @@ void TestRunLogcase()
     std::cout << "Run logcase result " << static_cast<int> ( enStatus ) << std::endl;
 }
 
-String GetTime()
+std::string GetTime()
 {
     std::time_t t; std::time(&t);
     std::tm *p = std::localtime(&t);
-    String   s = std::asctime(p);
+    std::string   s = std::asctime(p);
     size_t   k = s.find_first_of("\r\n");
-    return (k == String::npos) ? s : s.substr(0, k);
+    return (k == std::string::npos) ? s : s.substr(0, k);
 }
 
 int _tmain(int argc, _TCHAR* argv[])

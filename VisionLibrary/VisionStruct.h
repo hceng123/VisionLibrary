@@ -5,8 +5,6 @@
 #include "opencv2/core/core.hpp"
 #include "BaseType.h"
 
-using namespace cv;
-
 namespace AOI
 {
 namespace Vision
@@ -30,12 +28,12 @@ struct PR_LRN_TMPL_CMD
 
 struct PR_LRN_TMPL_RPY
 {
-	Int16                  nStatus;
-	std::vector<KeyPoint>  vecKeyPoint;
-	cv::Mat                matDescritor;
-	cv::Mat                matTmpl;
-	Point2f                ptCenter;
-    Int32                  nRecordID;
+	Int16                       nStatus;
+	std::vector<cv::KeyPoint>   vecKeyPoint;
+	cv::Mat                     matDescritor;
+	cv::Mat                     matTmpl;
+	cv::Point2f                 ptCenter;
+    Int32                       nRecordID;
 };
 
 struct PR_SRCH_TMPL_CMD
@@ -60,13 +58,13 @@ struct PR_SRCH_TMPL_RPY
 
 struct PR_AlignCmd
 {
-	cv::Rect2f				rectLrn;
-	cv::Mat					matInput;
-	cv::Mat					matTmpl;
-	cv::Point2f				ptExpectedPos;
-	cv::Rect2f				rectSrchWindow;
-	std::vector<KeyPoint>	vecModelKeyPoint;
-	cv::Mat					matModelDescritor;
+	cv::Rect2f				    rectLrn;
+	cv::Mat					    matInput;
+	cv::Mat					    matTmpl;
+	cv::Point2f				    ptExpectedPos;
+	cv::Rect2f				    rectSrchWindow;
+	std::vector<cv::KeyPoint>	vecModelKeyPoint;
+	cv::Mat					    matModelDescritor;
 };
 
 struct PR_AlignRpy
@@ -125,11 +123,11 @@ public:
 		pt2.x = 0;
 		pt2.y = 0;
 	}
-	PR_Line_(Point_<_Tp> inPt1, Point_<_Tp> inPt2 ) : pt1( inPt1 ), pt2 ( inPt2)
+	PR_Line_(cv::Point_<_Tp> inPt1, cv::Point_<_Tp> inPt2 ) : pt1( inPt1 ), pt2 ( inPt2)
 	{
 	}
-	Point_<_Tp> pt1;
-	Point_<_Tp> pt2;
+	cv::Point_<_Tp> pt1;
+	cv::Point_<_Tp> pt2;
 };
 
 using PR_Line = PR_Line_<int>;

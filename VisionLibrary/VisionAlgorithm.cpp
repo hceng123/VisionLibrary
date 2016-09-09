@@ -1,4 +1,4 @@
-#include "VisionAlgorithm.h"
+﻿#include "VisionAlgorithm.h"
 #include "opencv2/features2d.hpp"
 #include "opencv2/xfeatures2d.hpp"
 #include "opencv2/xfeatures2d/nonfree.hpp"
@@ -291,7 +291,7 @@ namespace
     }
 
     struct AOI_COUNTOUR {
-        Point2f     ptCtr;
+        cv::Point2f     ptCtr;
         float       fArea;
     };
 
@@ -307,6 +307,14 @@ namespace
     }
 }
 
+/*******************************************************************************
+* Purpose:   Auto find the threshold to distinguish the feature need to extract. 
+* Algorithm: The method is come from paper: "A Visual Inspection System for 
+*            Surface Mounted Components Based on Color Features".
+* Input:     mat - The input image.
+* Output:    The calculated threshold.
+* Node:      Mu is name of greek symbol μ.
+*******************************************************************************/
 int VisionAlgorithm::_autoThreshold(const cv::Mat &mat)
 {
     const int sbins = 32;
@@ -318,26 +326,25 @@ int VisionAlgorithm::_autoThreshold(const cv::Mat &mat)
     float sranges[] = { 0, PR_MAX_GRAY_LEVEL };
     const float* ranges[] = { sranges };
 
-    MatND hist;
-    calcHist(&mat, 1, channels, Mat(), // do not use mask
-        hist, 1, histSize, ranges,
-        true, // the histogram is uniform
-        false);  
+    cv::MatND hist;
+    cv::calcHist(&mat, 1, channels, cv::Mat(), // do not use mask
+                 hist, 1, histSize, ranges,
+                 true, // the histogram is uniform
+                 false);
 
     if (Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE)   {
         double maxVal = 0;
-        minMaxLoc ( hist, 0, &maxVal, 0, 0 );
-        const int scale = 10;
-        const int nDisplayRatio = 3;
-        Mat histImg = Mat::zeros ( ToInt32( maxVal / nDisplayRatio ), sbins * scale, CV_8UC3);
+        cv::minMaxLoc ( hist, 0, &maxVal, 0, 0 );
+        int scale = 10;
+        cv::Mat histImg = cv::Mat::zeros ( ToInt32( maxVal / 3 ), ToInt32 ( sbins * scale ), CV_8UC3);
 
         for (int s = 0; s < sbins; s++)
         {
             float binVal = hist.at<float>(s, 0);
             int intensity = cvRound(binVal * 255 / maxVal);
-            rectangle(histImg, Point(s*scale, 0),
-                Point((s + 1)*scale - 1, ToInt32 ( binVal / nDisplayRatio ) ),
-                Scalar::all(intensity),
+            cv::rectangle(histImg, cv::Point(s*scale, 0),
+                cv::Point( ToInt32 ( ( s + 1 ) * scale ) - 1, ToInt32 ( binVal / 3 ) ),
+                cv::Scalar::all(intensity),
                 CV_FILLED);
         }
         showImage("Image Histogram", histImg );
@@ -417,11 +424,11 @@ VisionStatus VisionAlgorithm::_findDeviceElectrode(const cv::Mat &matDeviceROI, 
     for ( auto contour : vecContours )
     {
         if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE )   {
-            RNG rng(12345);
-            Scalar color = Scalar(rng.uniform(0, 255), rng.uniform(0, 255), rng.uniform(0, 255));
-            drawContours(drawing, vecContours, index ++ , color, 2, 8, hierarchy, 0, Point());
+            cv::RNG rng(12345);
+            cv::Scalar color = cv::Scalar(rng.uniform(0, 255), rng.uniform(0, 255), rng.uniform(0, 255));
+            drawContours ( drawing, vecContours, index ++ , color, 2, 8, hierarchy, 0, cv::Point() );
         }
-        vector<Point> approx;
+        vector<cv::Point> approx;
         approxPolyDP(contour, approx, 3, true);
         auto area = cv::contourArea ( approx );
         if (area > 100){
@@ -443,7 +450,7 @@ VisionStatus VisionAlgorithm::_findDeviceElectrode(const cv::Mat &matDeviceROI, 
     return VisionStatus::OK;
 }
 
-VisionStatus VisionAlgorithm::_findDeviceEdge(const cv::Mat &matDeviceROI, const cv::Size2f &size, Rect &rectDeviceResult)
+VisionStatus VisionAlgorithm::_findDeviceEdge(const cv::Mat &matDeviceROI, const cv::Size2f &size, cv::Rect &rectDeviceResult)
 {
     cv::Mat matGray, matThreshold, matHorizontalProjection, matVerticalProjection;
     Int32 nLeftEdge = 0, nRightEdge = 0, nTopEdge = 0, nBottomEdge = 0;
