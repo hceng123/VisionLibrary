@@ -24,6 +24,8 @@ VisionAPI VisionStatus  PR_LrnDevice(PR_LRN_DEVICE_CMD *pstLrnDeviceCmd, PR_LRN_
 VisionAPI VisionStatus  PR_InspDevice(PR_INSP_DEVICE_CMD *pstInspDeviceCmd, PR_INSP_DEVICE_RPY *pstInspDeivceRpy);
 VisionAPI void          PR_SetDebugMode(PR_DEBUG_MODE enDebugMode);
 VisionAPI VisionStatus  PR_RunLogCase(const std::string &strPath);
+VisionAPI VisionStatus  PR_SrchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd, PR_SRCH_FIDUCIAL_MARK_RPY *pstRpy);
+
 }
 }
 

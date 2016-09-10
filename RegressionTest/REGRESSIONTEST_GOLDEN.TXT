@@ -21,3 +21,9 @@ LOGCASE REGRESSION TEST #1 STARTING
 ------------------------------------------
 Run logcase result 0
 Run logcase result 0
+
+------------------------------------------
+TEMPLATE MATCH REGRESSION TEST #1 STARTING
+------------------------------------------
+Search fiducial status 0
+Search fiducial result 1676, 374.6

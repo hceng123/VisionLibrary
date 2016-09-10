@@ -69,5 +69,11 @@ VisionAPI VisionStatus  PR_RunLogCase(const std::string &strPath)
     return pVA->runLogCase ( strPath );
 }
 
+VisionAPI VisionStatus  PR_SrchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd, PR_SRCH_FIDUCIAL_MARK_RPY *pstRpy)
+{
+    std::shared_ptr<VisionAlgorithm> pVA = VisionAlgorithm::create();
+    return pVA->srchFiducialMark ( pstCmd, pstRpy );
+}
+
 }
 }

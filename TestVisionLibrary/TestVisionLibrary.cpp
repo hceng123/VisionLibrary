@@ -238,6 +238,26 @@ void TestSearchFiducialMark_1()
     PR_DumpTimeLog("PRTime.log");
 }
 
+void TestSearchFiducialMark_2()
+{
+    cv::Mat mat = cv::imread("./data/F6-313-1-Gray.bmp", cv::IMREAD_GRAYSCALE);
+    if ( mat.empty() )  {
+        std::cout << "Read input image fail" << std::endl;
+        return;
+    }
+
+    PR_SRCH_FIDUCIAL_MARK_CMD stCmd;
+    stCmd.enType = PR_FIDUCIAL_MARK_TYPE::SQUARE;
+    stCmd.fSize = 54;
+    stCmd.fMargin = 8;
+    stCmd.matInput = mat;
+    stCmd.rectSrchRange = cv::Rect(1459,155, 500, 500 );
+
+    PR_SRCH_FIDUCIAL_MARK_RPY stRpy;
+    VisionStatus enStatus = PR_SrchFiducialMark(&stCmd, &stRpy);
+    std::cout << "Srch fiducial result " << stRpy.ptPos.x << " " << stRpy.ptPos.y << std::endl; 
+}
+
 void TestInspDevice()
 {
     PR_FreeAllRecord();
@@ -312,7 +332,8 @@ int _tmain(int argc, _TCHAR* argv[])
     //TestInspDevice();
     //TestRunLogcase();
     //TestSearchFiducialMark();
-    TestSearchFiducialMark_1();
+    //TestSearchFiducialMark_1();
+    TestSearchFiducialMark_2();
 	return 0;
 }
 

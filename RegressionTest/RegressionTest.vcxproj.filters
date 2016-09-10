@@ -32,13 +32,16 @@
     <ClCompile Include="stdafx.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="RegresstionTest.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="TestInspDevice.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="TestLogCase.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RegressionTest.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TestSrchTmpl.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

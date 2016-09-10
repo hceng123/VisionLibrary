@@ -1,0 +1,29 @@
+
+***** VIDEOINPUT LIBRARY - 0.1995 - TFW07 *****
+
+
+------------------------------------------
+INSPECT DEVICE REGRESSION TEST #1 STARTING
+------------------------------------------
+Success to learn device
+Device inspection status 6
+Device inspection status 5
+
+---------------------------------------------------------
+INSPECT DEVICE AUTO THRESHOLD REGRESSION TEST #1 STARTING
+---------------------------------------------------------
+Success to learn device
+Device inspection status 6
+Device inspection status 5
+
+------------------------------------------
+LOGCASE REGRESSION TEST #1 STARTING
+------------------------------------------
+Run logcase result 0
+Run logcase result 0
+
+------------------------------------------
+TEMPLATE MATCH REGRESSION TEST #1 STARTING
+------------------------------------------
+Search fiducial status 0
+Search fiducial result 1676, 374.6

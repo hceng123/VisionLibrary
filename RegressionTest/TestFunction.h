@@ -5,5 +5,6 @@
 void TestInspDevice();
 void TestInspDeviceAutoThreshold();
 void TestRunLogcase();
+void TestTmplMatch();
 
 #endif

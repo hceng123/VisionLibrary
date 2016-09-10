@@ -98,6 +98,7 @@ FC /L $(ProjectDir)$(ProjectName)_golden.txt $(ProjectDir)$(ProjectName)_result.
     <ClCompile Include="stdafx.cpp" />
     <ClCompile Include="TestInspDevice.cpp" />
     <ClCompile Include="TestLogCase.cpp" />
+    <ClCompile Include="TestSrchTmpl.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\VisionLibrary\VisionLibrary.vcxproj">

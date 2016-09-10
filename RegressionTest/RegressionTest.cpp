@@ -16,6 +16,11 @@ int _tmain(int argc, _TCHAR* argv[])
     * Test Device Inspection *
     **************************/
     TestRunLogcase();
+
+    /*************************
+    * Test Template Matching *
+    **************************/
+    TestTmplMatch();
 	return 0;
 }
 

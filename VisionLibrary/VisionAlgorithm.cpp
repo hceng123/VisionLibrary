@@ -1092,5 +1092,138 @@ VisionStatus VisionAlgorithm::runLogCase(const std::string &strPath)
     return enStatus;
 }
 
+VisionStatus VisionAlgorithm::_refineSrchTemplate(const cv::Mat &mat, cv::Mat &matTmpl, cv::Point2f &ptResult)
+{
+    const float fRefineAccuracy = 0.1f;
+    const int nRefineMaxStep = 20;
+
+    cv::Mat matFloat, matTmplFloat;
+    mat.convertTo(matFloat, CV_32FC1);
+    matTmpl.convertTo(matTmplFloat, CV_32FC1 );
+
+    cv::Point2f ptStartPoint = cv::Point2f(ptResult.x - 0.5f + fRefineAccuracy, ptResult.y - 0.5f + fRefineAccuracy);
+    bool bFoundResult = false;
+    cv::Mat matSubPixel_1, matSubPixel_2, matSubPixel_3, matSubPixel_4;
+    cv::Mat matDiff_1, matDiff_2, matDiff_3, matDiff_4;
+    cv::Point2f ptRight, ptDown, ptRightDown;
+    double dDiff_1, dDiff_2, dDiff_3, dDiff_4;
+    int nIteratorCount = 0;
+    do
+    {
+        ptRight     = cv::Point2f( ptStartPoint.x + fRefineAccuracy, ptStartPoint.y );
+        ptDown      = cv::Point2f( ptStartPoint.x,                   ptStartPoint.y + fRefineAccuracy );
+        ptRightDown = cv::Point2f( ptStartPoint.x + fRefineAccuracy, ptStartPoint.y + fRefineAccuracy );
+
+        if (nIteratorCount == 0)    {
+            cv::getRectSubPix ( matFloat, matTmpl.size(), ptStartPoint, matSubPixel_1);
+            matDiff_1 = matTmplFloat - matSubPixel_1;
+            dDiff_1 = CalcUtils::MatSquareSum<float>(matDiff_1);
+        }
+        cv::getRectSubPix ( matFloat, matTmpl.size(), ptRight,     matSubPixel_2);
+        matDiff_2 = matTmplFloat - matSubPixel_2;
+        dDiff_2 = CalcUtils::MatSquareSum<float>(matDiff_2);
+
+        cv::getRectSubPix ( matFloat, matTmpl.size(), ptDown,      matSubPixel_3);
+        matDiff_3 = matTmplFloat - matSubPixel_3;
+        dDiff_3 = CalcUtils::MatSquareSum<float>(matDiff_3);
+
+        cv::getRectSubPix ( matFloat, matTmpl.size(), ptRightDown, matSubPixel_4 );
+        matDiff_4 = matTmplFloat - matSubPixel_4;
+        dDiff_4 = CalcUtils::MatSquareSum<float> ( matDiff_4 );
+
+        if ( dDiff_1 <= dDiff_2 && dDiff_1 <= dDiff_3 && dDiff_1 <= dDiff_4 )
+        {
+            bFoundResult = true;
+            ptResult = ptStartPoint;
+        }else if ( dDiff_2 < dDiff_1 && dDiff_2 < dDiff_3 && dDiff_2 < dDiff_4 )    {
+            ptStartPoint = ptRight;
+            dDiff_1 = dDiff_2;
+        }else if ( dDiff_3 < dDiff_1 && dDiff_3 < dDiff_2 && dDiff_3 < dDiff_4 )    {
+            ptStartPoint = ptDown;
+            dDiff_1 = dDiff_3;
+        }else if ( dDiff_4 < dDiff_1 && dDiff_4 < dDiff_2 && dDiff_4 < dDiff_3 )    {
+            ptStartPoint = ptRightDown;
+            dDiff_1 = dDiff_4;
+        }
+        ++ nIteratorCount;
+    }while ( ! bFoundResult && nIteratorCount < nRefineMaxStep );
+
+    return VisionStatus::OK;
+}
+
+VisionStatus VisionAlgorithm::matchTemplate(const cv::Mat &mat, cv::Mat &matTmpl, cv::Point2f &ptResult)
+{
+    cv::Mat img_display, matResult;
+    const int match_method = CV_TM_SQDIFF;
+
+    mat.copyTo(img_display);
+
+    /// Create the result matrix
+    int result_cols = mat.cols - matTmpl.cols + 1;
+    int result_rows = mat.rows - matTmpl.rows + 1;
+
+    matResult.create(result_rows, result_cols, CV_32FC1);
+
+    /// Do the Matching and Normalize
+    cv::matchTemplate(mat, matTmpl, matResult, match_method);
+    cv::normalize ( matResult, matResult, 0, 1, cv::NORM_MINMAX, -1, cv::Mat() );
+
+    /// Localizing the best match with minMaxLoc
+    double minVal; double maxVal;
+    cv::Point minLoc, maxLoc, matchLoc;
+
+    cv::minMaxLoc(matResult, &minVal, &maxVal, &minLoc, &maxLoc, cv::Mat());
+
+    /// For SQDIFF and SQDIFF_NORMED, the best matches are lower values. For all the other methods, the higher the better
+    if (match_method == CV_TM_SQDIFF || match_method == CV_TM_SQDIFF_NORMED)
+        matchLoc = minLoc;
+    else
+        matchLoc = maxLoc;
+
+    ptResult.x = (float)matchLoc.x + (float)matTmpl.cols / 2;
+    ptResult.y = (float)matchLoc.y + (float)matTmpl.rows / 2;
+
+    _refineSrchTemplate(mat, matTmpl, ptResult);
+    return VisionStatus::OK;
+}
+
+VisionStatus VisionAlgorithm::srchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd, PR_SRCH_FIDUCIAL_MARK_RPY *pstRpy)
+{
+    char charrMsg[1000];
+    VisionStatus enStatus;
+    cv::Point2f ptResult;
+
+    if ( NULL == pstCmd || NULL == pstRpy ) {
+        _snprintf(charrMsg, sizeof(charrMsg), "Input is invalid, pstCmd = %d, pstRpy = %d", pstCmd, pstRpy );
+        return VisionStatus::INVALID_PARAM;
+    }
+
+    if ( pstCmd->matInput.empty() ) {
+        WriteLog("Input image is empty");
+        return VisionStatus::INVALID_PARAM;
+    }
+
+    MARK_FUNCTION_START_TIME;
+
+    auto nTmplSize = ToInt32 ( pstCmd->fSize + pstCmd->fMargin * 2 );
+    cv::Mat matTmpl = cv::Mat::zeros(nTmplSize, nTmplSize, CV_8UC1);
+    cv::rectangle ( matTmpl,
+                    cv::Rect2f(pstCmd->fMargin, pstCmd->fMargin, pstCmd->fSize, pstCmd->fSize),
+                    cv::Scalar::all(256),
+                    -1);
+
+    cv::Mat matSrchROI( pstCmd->matInput, pstCmd->rectSrchRange );
+
+    enStatus = matchTemplate ( matSrchROI, matTmpl, ptResult );
+
+    pstRpy->ptPos.x = ptResult.x + pstCmd->rectSrchRange.x;
+    pstRpy->ptPos.y = ptResult.y + pstCmd->rectSrchRange.y;
+
+    pstRpy->nStatus = ToInt32 ( enStatus );
+    MARK_FUNCTION_END_TIME;
+
+    return enStatus;
+}
+
 }
 }

@@ -55,6 +55,12 @@ enum class PR_RECORD_TYPE
     LEAD,
 };
 
+enum class PR_FIDUCIAL_MARK_TYPE
+{
+    SQUARE,
+    CIRCLE,
+};
+
 }
 }
 

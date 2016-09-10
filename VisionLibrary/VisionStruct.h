@@ -123,7 +123,7 @@ public:
 		pt2.x = 0;
 		pt2.y = 0;
 	}
-	PR_Line_(cv::Point_<_Tp> inPt1, cv::Point_<_Tp> inPt2 ) : pt1( inPt1 ), pt2 ( inPt2)
+	PR_Line_(cv::Point_<_Tp> inPt1, cv::Point_<_Tp> inPt2 ) : pt1( inPt1 ), pt2 ( inPt2 )
 	{
 	}
 	cv::Point_<_Tp> pt1;
@@ -209,8 +209,23 @@ struct PR_INSP_DEVICE_RPY
 };
 
 /******************************************
-* Device Inspection Section
+* End of Device Inspection Section
 ******************************************/
+
+struct PR_SRCH_FIDUCIAL_MARK_CMD
+{
+    cv::Mat                 matInput;
+    cv::Rect                rectSrchRange;
+    PR_FIDUCIAL_MARK_TYPE   enType;
+    float                   fSize;
+    float                   fMargin;
+};
+
+struct PR_SRCH_FIDUCIAL_MARK_RPY
+{
+    Int32                   nStatus;
+    cv::Point2f             ptPos;
+};
 
 }
 }

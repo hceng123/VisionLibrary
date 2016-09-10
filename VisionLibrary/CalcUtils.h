@@ -47,6 +47,19 @@ public:
             cv::Point_<T>(rectInput.x + ( 1.f + fScale ) * rectInput.width, rectInput.y + ( 1.f + fScale ) * rectInput.height ) );
     }
 
+    template<typename T>
+    static double MatSquareSum(const cv::Mat &mat)
+    {
+        double dSum = 0;
+        for (int row = 0; row < mat.rows; ++row)
+            for (int col = 0; col < mat.cols; ++col)
+            {
+                float fValue = mat.at<T>(row, col);
+                dSum += fValue * fValue;
+            }
+        return dSum;
+    }
+
     static double radian2Degree( double dRadian );
     static double degree2Radian( double dDegree );
 };
