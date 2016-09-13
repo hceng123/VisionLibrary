@@ -258,6 +258,26 @@ void TestSearchFiducialMark_2()
     std::cout << "Srch fiducial result " << stRpy.ptPos.x << " " << stRpy.ptPos.y << std::endl; 
 }
 
+void TestSearchFiducialMark_3()
+{
+    cv::Mat mat = cv::imread("./data/CircleFiducialMark.png", cv::IMREAD_GRAYSCALE);
+    if ( mat.empty() )  {
+        std::cout << "Read input image fail" << std::endl;
+        return;
+    }
+
+    PR_SRCH_FIDUCIAL_MARK_CMD stCmd;
+    stCmd.enType = PR_FIDUCIAL_MARK_TYPE::CIRCLE;
+    stCmd.fSize = 64;
+    stCmd.fMargin = 8;
+    stCmd.matInput = mat;
+    stCmd.rectSrchRange = cv::Rect(0, 40, 250, 250 );
+
+    PR_SRCH_FIDUCIAL_MARK_RPY stRpy;
+    VisionStatus enStatus = PR_SrchFiducialMark(&stCmd, &stRpy);
+    std::cout << "Srch fiducial result " << stRpy.ptPos.x << " " << stRpy.ptPos.y << std::endl; 
+}
+
 void TestInspDevice()
 {
     PR_FreeAllRecord();
@@ -333,7 +353,8 @@ int _tmain(int argc, _TCHAR* argv[])
     //TestRunLogcase();
     //TestSearchFiducialMark();
     //TestSearchFiducialMark_1();
-    TestSearchFiducialMark_2();
+    //TestSearchFiducialMark_2();
+    TestSearchFiducialMark_3();
 	return 0;
 }
 
