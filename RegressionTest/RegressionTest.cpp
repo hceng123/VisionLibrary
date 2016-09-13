@@ -21,6 +21,8 @@ int _tmain(int argc, _TCHAR* argv[])
     * Test Template Matching *
     **************************/
     TestTmplMatch();
+    TestTmplMatch_Circle();
+
 	return 0;
 }
 

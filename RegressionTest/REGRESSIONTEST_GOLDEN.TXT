@@ -27,3 +27,9 @@ TEMPLATE MATCH REGRESSION TEST #1 STARTING
 ------------------------------------------
 Search fiducial status 0
 Search fiducial result 1676, 374.6
+
+------------------------------------------
+TEMPLATE MATCH REGRESSION TEST #2 STARTING
+------------------------------------------
+Search fiducial status 0
+Search fiducial result 127.6, 193.6

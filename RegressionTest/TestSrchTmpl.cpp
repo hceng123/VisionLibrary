@@ -23,10 +23,36 @@ void TestTmplMatch()
     stCmd.fSize = 54;
     stCmd.fMargin = 8;
     stCmd.matInput = mat;
-    stCmd.rectSrchRange = cv::Rect(1459,155, 500, 500 );
+    stCmd.rectSrchRange = cv::Rect(1459, 155, 500, 500 );
 
     PR_SRCH_FIDUCIAL_MARK_RPY stRpy;
     VisionStatus enStatus = PR_SrchFiducialMark(&stCmd, &stRpy);
     std::cout << "Search fiducial status " << stRpy.nStatus << std::endl; 
+    std::cout << "Search fiducial result " << stRpy.ptPos.x << ", " << stRpy.ptPos.y << std::endl;
+}
+
+void TestTmplMatch_Circle()
+{
+    std::cout << std::endl << "------------------------------------------";
+    std::cout << std::endl << "TEMPLATE MATCH REGRESSION TEST #2 STARTING";
+    std::cout << std::endl << "------------------------------------------";
+    std::cout << std::endl;
+
+    cv::Mat mat = cv::imread("./data/CircleFiducialMark.png", cv::IMREAD_GRAYSCALE);
+    if ( mat.empty() )  {
+        std::cout << "Read input image fail" << std::endl;
+        return;
+    }
+
+    PR_SRCH_FIDUCIAL_MARK_CMD stCmd;
+    stCmd.enType = PR_FIDUCIAL_MARK_TYPE::CIRCLE;
+    stCmd.fSize = 64;
+    stCmd.fMargin = 8;
+    stCmd.matInput = mat;
+    stCmd.rectSrchRange = cv::Rect(0, 40, 250, 250 );
+
+    PR_SRCH_FIDUCIAL_MARK_RPY stRpy;
+    VisionStatus enStatus = PR_SrchFiducialMark(&stCmd, &stRpy);
+    std::cout << "Search fiducial status " << stRpy.nStatus << std::endl;
     std::cout << "Search fiducial result " << stRpy.ptPos.x << ", " << stRpy.ptPos.y << std::endl;
 }
