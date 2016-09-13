@@ -1,8 +1,11 @@
 #include "Log.h"
 #include <fstream>
 #include "StopWatch.h"
+#include "FileUtils.h"
 
 namespace AOI
+{
+namespace Vision
 {
 
 Log::Log()
@@ -22,6 +25,10 @@ void Log::SetLogPath(const String &strLogPath)
 
 void Log::Write(const String &strMsg, const char *filename, int line)
 {
+    auto strParent = FileUtils::GetParentPathname( _strLogPath );
+    if (!FileUtils::Exists(strParent))
+        FileUtils::MakeDirectory(strParent);
+
     std::ofstream file;
     file.open ( _strLogPath, std::ofstream::out | std::ofstream::app );
     if (!file.is_open())
@@ -34,4 +41,5 @@ void Log::Write(const String &strMsg, const char *filename, int line)
     file.close();
 }
 
+}
 }

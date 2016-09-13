@@ -5,6 +5,8 @@
 
 namespace AOI
 {
+namespace Vision
+{
 
 #define WriteLog(strMsg)    Log::GetInstance()->Write(strMsg, __FILE__, __LINE__)
 
@@ -20,6 +22,7 @@ public:
     void Write(const String &strMsg, const char *filename, int line);
 };
 
+}
 }
 
 #endif

@@ -1195,6 +1195,7 @@ VisionStatus VisionAlgorithm::srchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd
 
     if ( NULL == pstCmd || NULL == pstRpy ) {
         _snprintf(charrMsg, sizeof(charrMsg), "Input is invalid, pstCmd = %d, pstRpy = %d", pstCmd, pstRpy );
+        WriteLog(charrMsg);
         return VisionStatus::INVALID_PARAM;
     }
 
@@ -1203,14 +1204,37 @@ VisionStatus VisionAlgorithm::srchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd
         return VisionStatus::INVALID_PARAM;
     }
 
+    if ( pstCmd->rectSrchRange.x < 0 ||
+         pstCmd->rectSrchRange.y < 0 ||
+        (pstCmd->rectSrchRange.x + pstCmd->rectSrchRange.width) > pstCmd->matInput.cols || 
+        (pstCmd->rectSrchRange.y + pstCmd->rectSrchRange.height) > pstCmd->matInput.rows )
+    {
+        _snprintf(charrMsg, sizeof(charrMsg), "Search range is invalid, rect x = %d, y = %d, width = %d, height = %d", 
+                  pstCmd->rectSrchRange.x, pstCmd->rectSrchRange.y, pstCmd->rectSrchRange.width, pstCmd->rectSrchRange.height );
+        WriteLog(charrMsg);
+        return VisionStatus::INVALID_PARAM;
+    }
+
     MARK_FUNCTION_START_TIME;
 
     auto nTmplSize = ToInt32 ( pstCmd->fSize + pstCmd->fMargin * 2 );
     cv::Mat matTmpl = cv::Mat::zeros(nTmplSize, nTmplSize, CV_8UC1);
-    cv::rectangle ( matTmpl,
-                    cv::Rect2f(pstCmd->fMargin, pstCmd->fMargin, pstCmd->fSize, pstCmd->fSize),
-                    cv::Scalar::all(256),
-                    -1);
+    if ( PR_FIDUCIAL_MARK_TYPE::SQUARE == pstCmd->enType )   {
+        cv::rectangle(matTmpl,
+                      cv::Rect2f(pstCmd->fMargin, pstCmd->fMargin, pstCmd->fSize, pstCmd->fSize),
+                      cv::Scalar::all(256),
+                      -1);
+    }
+    else if ( PR_FIDUCIAL_MARK_TYPE::CIRCLE == pstCmd->enType )
+    {
+        auto radius = ToInt32 ( pstCmd->fSize / 2.f );
+        cv::circle ( matTmpl, cv::Point( ToInt32 ( pstCmd->fMargin ) + radius, ToInt32 ( pstCmd->fMargin ) + radius ), radius, cv::Scalar::all(256), -1);
+    }
+    else
+    {
+        WriteLog("Not supported fiducial mark type");
+        return VisionStatus::INVALID_PARAM;
+    }        
 
     cv::Mat matSrchROI( pstCmd->matInput, pstCmd->rectSrchRange );
 
