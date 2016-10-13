@@ -255,7 +255,7 @@ void TestSearchFiducialMark_2()
 
     PR_SRCH_FIDUCIAL_MARK_RPY stRpy;
     VisionStatus enStatus = PR_SrchFiducialMark(&stCmd, &stRpy);
-    std::cout << "Srch fiducial result " << stRpy.ptPos.x << " " << stRpy.ptPos.y << std::endl; 
+    std::cout << "Srch fiducial result " << stRpy.ptPos.x << " " << stRpy.ptPos.y << std::endl;
 }
 
 void TestSearchFiducialMark_3()

@@ -227,6 +227,20 @@ struct PR_SRCH_FIDUCIAL_MARK_RPY
     cv::Point2f             ptPos;
 };
 
+struct PR_FIT_LINE_CMD
+{
+    cv::Mat                 matInput;
+    cv::Rect                rectROI;
+    Int32                   nThreshold;
+};
+
+struct PR_FIT_LINE_RPY
+{
+    float                   fSlope;
+    float                   fIntercept;
+    PR_Line2f               stLine;
+};
+
 }
 }
 #endif
