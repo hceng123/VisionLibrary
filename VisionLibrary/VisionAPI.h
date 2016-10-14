@@ -14,6 +14,7 @@ namespace AOI
 namespace Vision
 {
 
+VisionAPI void          PR_GetVersion(PR_VERSION_INFO *pstVersionInfo);
 VisionAPI VisionStatus  PR_LearnTmpl(PR_LRN_TMPL_CMD * const pLrnTmplCmd, PR_LRN_TMPL_RPY *pLrnTmplRpy);
 VisionAPI VisionStatus  PR_SrchTmpl(PR_SRCH_TMPL_CMD *const pFindObjCmd, PR_SRCH_TMPL_RPY *pFindObjRpy);
 VisionAPI VisionStatus  PR_InspSurface(PR_INSP_SURFACE_CMD *const pInspCmd, PR_INSP_SURFACE_RPY *pInspRpy);
@@ -25,6 +26,7 @@ VisionAPI VisionStatus  PR_InspDevice(PR_INSP_DEVICE_CMD *pstInspDeviceCmd, PR_I
 VisionAPI void          PR_SetDebugMode(PR_DEBUG_MODE enDebugMode);
 VisionAPI VisionStatus  PR_RunLogCase(const std::string &strPath);
 VisionAPI VisionStatus  PR_SrchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd, PR_SRCH_FIDUCIAL_MARK_RPY *pstRpy);
+VisionAPI VisionStatus  PR_FitLine(PR_FIT_LINE_CMD *pstCmd, PR_FIT_LINE_RPY *pstRpy);
 
 }
 }

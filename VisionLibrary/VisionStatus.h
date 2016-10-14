@@ -23,6 +23,7 @@ enum class VisionStatus
     PATH_NOT_EXIST,
     INVALID_LOGCASE,
     LEARN_FAIL,
+    NOT_ENOUGH_POINTS_TO_FIT,
 };
 
 }

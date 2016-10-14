@@ -61,6 +61,13 @@ enum class PR_FIDUCIAL_MARK_TYPE
     CIRCLE,
 };
 
+enum class PR_RM_FIT_NOISE_METHOD
+{
+    ABSOLUTE_ERR,
+    POSITIVE_ERR,
+    NEGATIVE_ERR,
+};
+
 }
 }
 

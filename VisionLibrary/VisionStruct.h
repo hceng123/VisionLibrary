@@ -15,8 +15,15 @@ using VectorOfVectorOfDMatch = std::vector<VectorOfDMatch>;
 using VectorOfKeyPoint =  std::vector<cv::KeyPoint> ;
 using VectorOfVectorKeyPoint = std::vector<VectorOfKeyPoint> ;
 using VectorOfPoint = std::vector<cv::Point2f>;
+using VectorOfVectorOfPoint = std::vector<VectorOfPoint>;
+
 #define ToInt32(param)      (static_cast<Int32>(param))
 #define ToFloat(param)      (static_cast<float>(param))
+
+struct PR_VERSION_INFO
+{
+    char                    chArrVersion[100];
+};
 
 struct PR_LRN_TMPL_CMD
 {
@@ -232,10 +239,13 @@ struct PR_FIT_LINE_CMD
     cv::Mat                 matInput;
     cv::Rect                rectROI;
     Int32                   nThreshold;
+    PR_RM_FIT_NOISE_METHOD  enRmNoiseMethod;
+    float                   fErrTol;
 };
 
 struct PR_FIT_LINE_RPY
 {
+    Int32                   nStatus;
     float                   fSlope;
     float                   fIntercept;
     PR_Line2f               stLine;

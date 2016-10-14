@@ -13,6 +13,7 @@
 #include "CalcUtils.h"
 #include "Log.h"
 #include "FileUtils.h"
+#include "Fitting.h"
 
 using namespace cv::xfeatures2d;
 using namespace std;
@@ -1247,6 +1248,83 @@ VisionStatus VisionAlgorithm::srchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd
     MARK_FUNCTION_END_TIME;
 
     return enStatus;
+}
+
+VectorOfPoint VisionAlgorithm::_findPointInRegionOverThreshold(const cv::Mat &mat, const cv::Rect &rect, int nThreshold)
+{
+    std::vector<cv::Point2f> vecPoint2f;
+    if ( mat.empty() )
+        return vecPoint2f;
+
+    cv::Mat matROI(mat, rect);
+    cv::Mat matThreshold;
+    cv::threshold ( matROI, matThreshold, nThreshold, 256, CV_THRESH_BINARY );
+
+    std::vector<cv::Point> vecPoints;
+    vecPoints.reserve(100000);
+    cv::findNonZero( matThreshold, vecPoints );
+    for ( const auto &point : vecPoints )   {
+        cv::Point point2f ( point.x + rect.x, point.y + rect.y );
+        vecPoint2f.push_back(point2f);
+    }
+    return vecPoint2f;
+}
+
+/*static*/ std::vector<size_t> VisionAlgorithm::_findPointOverTol(const VectorOfPoint      &vecPoint,
+                                                                  const float               fSlope,
+                                                                  const float               fIntercept,
+                                                                  PR_RM_FIT_NOISE_METHOD    method,
+                                                                  float                     tolerance)
+{
+    std::vector<size_t> vecResult;
+    for ( size_t i = 0;i < vecPoint.size(); ++ i )  {
+        cv::Point2f point = vecPoint[i];
+        auto disToLine = CalcUtils::ptDisToLine ( point, fSlope, fIntercept );
+        if ( PR_RM_FIT_NOISE_METHOD::ABSOLUTE_ERR == method && fabs ( disToLine ) > tolerance )  {
+            vecResult.push_back(i);
+        }else if ( PR_RM_FIT_NOISE_METHOD::POSITIVE_ERR == method && disToLine > tolerance ) {
+            vecResult.push_back(i);
+        }else if ( PR_RM_FIT_NOISE_METHOD::NEGATIVE_ERR == method && disToLine < -tolerance ) {
+            vecResult.push_back(i);
+        }
+    }
+    return vecResult;
+}
+
+VisionStatus VisionAlgorithm::fitLine(PR_FIT_LINE_CMD *pstCmd, PR_FIT_LINE_RPY *pstRpy)
+{
+    char charrMsg [ 1000 ];
+    if (NULL == pstCmd || NULL == pstRpy) {
+        _snprintf(charrMsg, sizeof(charrMsg), "Input is invalid, pstCmd = %d, pstRpy = %d", pstCmd, pstRpy);
+        WriteLog(charrMsg);
+        return VisionStatus::INVALID_PARAM;
+    }
+
+    if (pstCmd->matInput.empty()) {
+        WriteLog("Input image is empty");
+        return VisionStatus::INVALID_PARAM;
+    }
+
+    VectorOfPoint vecPoint = _findPointInRegionOverThreshold ( pstCmd->matInput, pstCmd->rectROI, pstCmd->nThreshold );
+    if ( vecPoint.size() < 2 )  {
+        WriteLog("Input image is empty");
+        return VisionStatus::NOT_ENOUGH_POINTS_TO_FIT;
+    }
+
+    std::vector<size_t> overTolPoints;
+    int nIteratorNum = 0;
+    do
+    {
+        for (auto it = overTolPoints.rbegin(); it != overTolPoints.rend(); ++it)
+            vecPoint.erase(vecPoint.begin() + *it);
+
+        Fitting::fitLine(vecPoint, pstRpy->fSlope, pstRpy->fIntercept);
+        overTolPoints = _findPointOverTol(vecPoint, pstRpy->fSlope, pstRpy->fIntercept, pstCmd->enRmNoiseMethod, pstCmd->fErrTol);
+    }while ( ! overTolPoints.empty() && nIteratorNum < 20 );
+
+    pstRpy->stLine = CalcUtils::calcEndPointOfLine ( vecPoint, pstRpy->fSlope, pstRpy->fIntercept );
+    pstRpy->nStatus = ToInt32(VisionStatus::OK);
+    return VisionStatus::OK;
 }
 
 }

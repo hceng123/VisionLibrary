@@ -28,8 +28,9 @@ public:
 	VisionStatus inspSurface(PR_INSP_SURFACE_CMD *const pInspCmd, PR_INSP_SURFACE_RPY *pInspRpy);
     void showImage(String windowName, const cv::Mat &mat);
     VisionStatus runLogCase(const std::string &strPath);
-    VisionStatus srchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd, PR_SRCH_FIDUCIAL_MARK_RPY *pstRpy);
     VisionStatus matchTemplate(const cv::Mat &mat, cv::Mat &matTmpl, cv::Point2f &ptResult);
+    VisionStatus srchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd, PR_SRCH_FIDUCIAL_MARK_RPY *pstRpy);
+    VisionStatus fitLine(PR_FIT_LINE_CMD *pstCmd, PR_FIT_LINE_RPY *pstRpy);
 protected:
 	int _findBlob(const cv::Mat &mat, const cv::Mat &matRevs, PR_INSP_SURFACE_CMD *const pInspCmd, PR_INSP_SURFACE_RPY *pInspRpy );
 	int _findLine(const cv::Mat &mat, PR_INSP_SURFACE_CMD *const pInspCmd, PR_INSP_SURFACE_RPY *pInspRpy );
@@ -42,6 +43,12 @@ protected:
     VisionStatus _writeLrnTmplRecord(PR_LRN_TMPL_RPY *pLrnTmplRpy);
     VisionStatus _writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRpy);
     VisionStatus _refineSrchTemplate(const cv::Mat &mat, cv::Mat &matTmpl, cv::Point2f &ptResult);
+    static VectorOfPoint _findPointInRegionOverThreshold(const cv::Mat &mat, const cv::Rect &rect, int nThreshold);
+    static std::vector<size_t> _findPointOverTol(const VectorOfPoint      &vecPoint,
+                                                 const float               fSlope,
+                                                 const float               fIntercept,
+                                                 PR_RM_FIT_NOISE_METHOD    method,
+                                                 float                     tolerance);
 protected:
     const int       _constMinHessian        =       300;
     const int       _constOctave            =       4;
@@ -49,8 +56,6 @@ protected:
     const UInt32    _constLeastFeatures     =       3;
     const String    _strRecordLogPrefix     =       "tmplDir.";
     const float     _constExpSmoothRatio    =       0.3f;
-    cv::Mat         _mat;
-    PR_DEBUG_MODE   _enDebugMode        = PR_DEBUG_MODE::DISABLED;
     CStopWatch      _stopWatch;
 };
 

@@ -29,8 +29,7 @@ void Log::Write(const String &strMsg, const char *filename, int line)
     if (!FileUtils::Exists(strParent))
         FileUtils::MakeDirectory(strParent);
 
-    std::ofstream file;
-    file.open ( _strLogPath, std::ofstream::out | std::ofstream::app );
+    std::ofstream file( _strLogPath, std::ofstream::out | std::ofstream::app );
     if (!file.is_open())
         return;
     String strLocalMsg = strMsg;

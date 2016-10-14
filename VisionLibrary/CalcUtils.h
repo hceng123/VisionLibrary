@@ -60,8 +60,28 @@ public:
         return dSum;
     }
 
+    //Calculate deviation in one pass. The algorithm is get from https://www.strchr.com/standard_deviation_in_one_pass
+    template<typename T>
+    static double calcStdDeviation(std::vector<T> vecValue)
+    {
+        if (vecValue.empty())
+            return 0.0;
+        double sum = 0;
+        double sq_sum = 0;
+        for (const auto value : vecValue) {
+            sum += value;
+            sq_sum += value * value;
+        }
+        auto n = vecValue.size();
+        double mean = sum / n;
+        double variance = sq_sum / n - mean * mean;
+        return sqrt(variance);
+    }
+
     static double radian2Degree( double dRadian );
     static double degree2Radian( double dDegree );
+    static double ptDisToLine(const cv::Point2f ptInput, float fSlope, float fIntercept );
+    static PR_Line2f calcEndPointOfLine( const VectorOfPoint &vecPoint, float fSlope, float fIntercept );
 };
 
 }
