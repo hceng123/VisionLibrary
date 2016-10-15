@@ -33,3 +33,10 @@ TEMPLATE MATCH REGRESSION TEST #2 STARTING
 ------------------------------------------
 Search fiducial status 0
 Search fiducial result 127.6, 193.6
+
+------------------------------------------
+FIT LINE REGRESSION TEST #1 STARTING
+------------------------------------------
+Fit line status 0
+Line slope = -174.0, intercept = 26186.3
+Line coordinate: (148.8, 290.0), (146.7, 661.0)
