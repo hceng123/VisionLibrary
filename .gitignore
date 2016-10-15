@@ -21,3 +21,4 @@ Release
 *.ipch
 *.suo
 RegressionTest/Vision/Record
+RegressionTest/RegressionTest_result.txt
