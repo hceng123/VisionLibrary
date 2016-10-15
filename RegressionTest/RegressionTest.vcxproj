@@ -52,13 +52,13 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(OPENCV_DIR)\build\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\ExtLibs\opencv\include;</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(OPENCV_DIR)\build\2013\lib\Debug;$(OutDir)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>opencv_calib3d300d.lib;opencv_core300d.lib;opencv_features2d300d.lib;opencv_flann300d.lib;opencv_highgui300d.lib;opencv_imgproc300d.lib;opencv_ml300d.lib;opencv_objdetect300d.lib;opencv_photo300d.lib;opencv_stitching300d.lib;opencv_superres300d.lib;opencv_ts300d.lib;opencv_video300d.lib;opencv_videoio300d.lib;opencv_videostab300d.lib;opencv_imgcodecs300d.lib;opencv_xfeatures2d300d.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>..\Extlibs\opencv\lib\Debug;$(OutDir)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>opencv_calib3d300d.lib;opencv_core300d.lib;opencv_features2d300d.lib;opencv_flann300d.lib;opencv_highgui300d.lib;opencv_imgproc300d.lib;opencv_ml300d.lib;opencv_objdetect300d.lib;opencv_photo300d.lib;opencv_stitching300d.lib;opencv_superres300d.lib;opencv_ts300d.lib;opencv_videostab300d.lib;opencv_imgcodecs300d.lib;opencv_xfeatures2d300d.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>$(OutDir)$(TargetName)$(TargetExt) -n &gt; $(ProjectDir)$(ProjectName)_result.txt
@@ -77,13 +77,21 @@ FC /L $(ProjectDir)$(ProjectName)_golden.txt $(ProjectDir)$(ProjectName)_result.
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\ExtLibs\opencv\include;</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalLibraryDirectories>..\Extlibs\opencv\lib\Release;$(OutDir)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>opencv_calib3d300.lib;opencv_core300.lib;opencv_features2d300.lib;opencv_flann300.lib;opencv_highgui300.lib;opencv_imgproc300.lib;opencv_ml300.lib;opencv_objdetect300.lib;opencv_photo300.lib;opencv_stitching300.lib;opencv_superres300.lib;opencv_ts300.lib;opencv_video300.lib;opencv_videoio300.lib;opencv_videostab300.lib;opencv_imgcodecs300.lib;opencv_xfeatures2d300.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PostBuildEvent>
+      <Command>$(OutDir)$(TargetName)$(TargetExt) -n &gt; $(ProjectDir)$(ProjectName)_result.txt
+FC /L $(ProjectDir)$(ProjectName)_golden.txt $(ProjectDir)$(ProjectName)_result.txt</Command>
+      <Message>Running regression test.</Message>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt" />
