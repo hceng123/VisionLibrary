@@ -53,10 +53,10 @@ namespace Vision
 }
 
 //The equation is from http://hotmath.com/hotmath_help/topics/line-of-best-fit.html
-/*static*/ void Fitting::fitLine(const std::vector<cv::Point2f> &vecPoints, float &fSlope, float &fIntercept)
+/*static*/ void Fitting::fitLine(const std::vector<cv::Point2f> &vecPoints, float &fSlope, float &fIntercept, bool reverseFit)
 {
     if ( vecPoints.size() < 2 )
-        return;
+        return;   
 
     double Sx = 0., Sy = 0., Sx2 = 0., Sy2 = 0., Sxy = 0.;
     for ( const auto &point : vecPoints )   {
@@ -67,11 +67,17 @@ namespace Vision
         Sxy  += point.x * point.y;
     }
     int n = vecPoints.size();
-    fSlope = static_cast<float>( ( n * Sxy - Sx * Sy ) / ( n * Sx2 - Sx * Sx ) );
-    if (fSlope < 100000)
+    if ( reverseFit )   {
+        fSlope = static_cast<float>( ( n * Sxy - Sx * Sy ) / ( n * Sy2 - Sy * Sy ) );
+        fIntercept = static_cast< float >( ( Sx * Sy2 - Sy * Sxy ) / ( n * Sy2 - Sy * Sy ) );
+    }else {
+        fSlope = static_cast<float>( ( n * Sxy - Sx * Sy ) / ( n * Sx2 - Sx * Sx ) );
         fIntercept = static_cast< float >( ( Sy * Sx2 - Sx * Sxy ) / ( n * Sx2 - Sx * Sx ) );
-    else
-        fIntercept = static_cast <float >( ( Sx * Sy2 - Sy * Sxy ) / ( n * Sy2 - Sy * Sy ) );
+    }
+    if ( reverseFit )   {
+        fSlope = 1 / fSlope;
+        fIntercept = - fIntercept * fSlope;
+    }
 }
 
 //Using least square method to fit. Solve equation A * X = B.

@@ -345,6 +345,32 @@ std::string GetTime()
     return (k == std::string::npos) ? s : s.substr(0, k);
 }
 
+void TestFitLine()
+{
+    std::cout << std::endl << "------------------------------------------";
+    std::cout << std::endl << "FIT LINE REGRESSION TEST #1 STARTING";
+    std::cout << std::endl << "------------------------------------------";
+    std::cout << std::endl;
+
+    PR_FIT_LINE_CMD stCmd;
+    stCmd.matInput = cv::imread("./data/lowangle_250.png", cv::IMREAD_COLOR);
+    stCmd.nThreshold = 200;
+    stCmd.rectROI = cv::Rect(139,276,20,400);
+    stCmd.fErrTol = 8;
+    stCmd.enRmNoiseMethod = PR_RM_FIT_NOISE_METHOD::ABSOLUTE_ERR;
+
+    PR_FIT_LINE_RPY stRpy;
+    PR_FitLine ( &stCmd, &stRpy );
+    std::cout << "Fit line status " << stRpy.nStatus << std::endl; 
+    std::cout << "Line slope = " << stRpy.fSlope << ", intercept = " << stRpy.fIntercept << std::endl;
+    char chArrMsg[100];
+    _snprintf(chArrMsg, sizeof ( chArrMsg ), "(%f, %f), (%f, %f)", stRpy.stLine.pt1.x, stRpy.stLine.pt1.y, stRpy.stLine.pt2.x, stRpy.stLine.pt2.y);
+    std::cout << "Line coordinate: " << chArrMsg << std::endl;
+    cv::line (stCmd.matInput, stRpy.stLine.pt1, stRpy.stLine.pt2, cv::Scalar(255, 0, 0 ), 2 );
+    cv::imshow("Result image", stCmd.matInput);
+    cv::waitKey(0);
+}
+
 int _tmain(int argc, _TCHAR* argv[])
 {
     //TestVisionAlgorithm();
@@ -354,7 +380,8 @@ int _tmain(int argc, _TCHAR* argv[])
     //TestSearchFiducialMark();
     //TestSearchFiducialMark_1();
     //TestSearchFiducialMark_2();
-    TestSearchFiducialMark_3();
+    //TestSearchFiducialMark_3();
+    TestFitLine();
 	return 0;
 }
 

@@ -26,7 +26,7 @@ public:
     VisionStatus inspDevice(PR_INSP_DEVICE_CMD *pstInspDeviceCmd, PR_INSP_DEVICE_RPY *pstInspDeivceRpy);
     int align(PR_AlignCmd *const pAlignCmd, PR_AlignRpy *pAlignRpy);
 	VisionStatus inspSurface(PR_INSP_SURFACE_CMD *const pInspCmd, PR_INSP_SURFACE_RPY *pInspRpy);
-    void showImage(String windowName, const cv::Mat &mat);
+    static void showImage(String windowName, const cv::Mat &mat);
     VisionStatus runLogCase(const std::string &strPath);
     VisionStatus matchTemplate(const cv::Mat &mat, cv::Mat &matTmpl, cv::Point2f &ptResult);
     VisionStatus srchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd, PR_SRCH_FIDUCIAL_MARK_RPY *pstRpy);

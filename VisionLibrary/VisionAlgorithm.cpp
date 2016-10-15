@@ -1051,7 +1051,7 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
     return VisionStatus::OK;
 }
 
-void VisionAlgorithm::showImage(String windowName, const cv::Mat &mat)
+/*static*/ void VisionAlgorithm::showImage(String windowName, const cv::Mat &mat)
 {
     static Int32 nImageCount = 0;
     String strWindowName = windowName + "_" + std::to_string(nImageCount ++ );
@@ -1250,7 +1250,7 @@ VisionStatus VisionAlgorithm::srchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd
     return enStatus;
 }
 
-VectorOfPoint VisionAlgorithm::_findPointInRegionOverThreshold(const cv::Mat &mat, const cv::Rect &rect, int nThreshold)
+/*static*/ VectorOfPoint VisionAlgorithm::_findPointInRegionOverThreshold(const cv::Mat &mat, const cv::Rect &rect, int nThreshold)
 {
     std::vector<cv::Point2f> vecPoint2f;
     if ( mat.empty() )
@@ -1258,8 +1258,8 @@ VectorOfPoint VisionAlgorithm::_findPointInRegionOverThreshold(const cv::Mat &ma
 
     cv::Mat matROI(mat, rect);
     cv::Mat matThreshold;
-    cv::threshold ( matROI, matThreshold, nThreshold, 256, CV_THRESH_BINARY );
 
+    cv::threshold ( matROI, matThreshold, nThreshold, 256, CV_THRESH_BINARY );
     std::vector<cv::Point> vecPoints;
     vecPoints.reserve(100000);
     cv::findNonZero( matThreshold, vecPoints );
@@ -1297,19 +1297,40 @@ VisionStatus VisionAlgorithm::fitLine(PR_FIT_LINE_CMD *pstCmd, PR_FIT_LINE_RPY *
     if (NULL == pstCmd || NULL == pstRpy) {
         _snprintf(charrMsg, sizeof(charrMsg), "Input is invalid, pstCmd = %d, pstRpy = %d", pstCmd, pstRpy);
         WriteLog(charrMsg);
+        pstRpy->nStatus = ToInt32 ( VisionStatus::INVALID_PARAM );
         return VisionStatus::INVALID_PARAM;
     }
 
     if (pstCmd->matInput.empty()) {
         WriteLog("Input image is empty");
+        pstRpy->nStatus = ToInt32 ( VisionStatus::INVALID_PARAM );
         return VisionStatus::INVALID_PARAM;
     }
 
-    VectorOfPoint vecPoint = _findPointInRegionOverThreshold ( pstCmd->matInput, pstCmd->rectROI, pstCmd->nThreshold );
+    cv::Mat matGray, matThreshold;
+    if ( pstCmd->matInput.channels() > 1 )
+        cv::cvtColor ( pstCmd->matInput, matGray, CV_BGR2GRAY );
+    else
+        matGray = pstCmd->matInput.clone();
+
+    VectorOfPoint vecPoint = _findPointInRegionOverThreshold ( matGray, pstCmd->rectROI, pstCmd->nThreshold );
     if ( vecPoint.size() < 2 )  {
         WriteLog("Input image is empty");
         return VisionStatus::NOT_ENOUGH_POINTS_TO_FIT;
     }
+
+    std::vector<float> vecX, vecY;
+    for ( const auto &point : vecPoint )
+    {
+        vecX.push_back ( point.x );
+        vecY.push_back ( point.y );
+    }
+
+    //For y = kx + b, the k is the slope, when it is very large, the error is quite big, so change
+    //to get the x = k1 + b1, and get the k = 1 / k1, b = -b1 / k1. Then the result is more accurate.
+    auto reverseFit = false;
+    if ( CalcUtils::calcStdDeviation ( vecY ) > CalcUtils::calcStdDeviation ( vecX ) )
+        reverseFit = true;
 
     std::vector<size_t> overTolPoints;
     int nIteratorNum = 0;
@@ -1318,7 +1339,7 @@ VisionStatus VisionAlgorithm::fitLine(PR_FIT_LINE_CMD *pstCmd, PR_FIT_LINE_RPY *
         for (auto it = overTolPoints.rbegin(); it != overTolPoints.rend(); ++it)
             vecPoint.erase(vecPoint.begin() + *it);
 
-        Fitting::fitLine(vecPoint, pstRpy->fSlope, pstRpy->fIntercept);
+        Fitting::fitLine ( vecPoint, pstRpy->fSlope, pstRpy->fIntercept, reverseFit );
         overTolPoints = _findPointOverTol(vecPoint, pstRpy->fSlope, pstRpy->fIntercept, pstCmd->enRmNoiseMethod, pstCmd->fErrTol);
     }while ( ! overTolPoints.empty() && nIteratorNum < 20 );
 

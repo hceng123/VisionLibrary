@@ -43,10 +43,19 @@ namespace Vision
         if ( point.y > fMaxY ) fMaxY = point.y;
     }
     PR_Line2f line;
-    line.pt1.x = fMinX;
-    line.pt1.y = fSlope * line.pt1.x + fIntercept;
-    line.pt2.x = fMaxX;
-    line.pt2.y = fSlope * line.pt2.x + fIntercept;
+    if (fabs(fSlope) < 1)   {
+        line.pt1.x = fMinX;
+        line.pt1.y = fSlope * line.pt1.x + fIntercept;
+        line.pt2.x = fMaxX;
+        line.pt2.y = fSlope * line.pt2.x + fIntercept;
+    }
+    else
+    {
+        line.pt1.y = fMinY;
+        line.pt1.x = line.pt1.y / fSlope - fIntercept / fSlope;
+        line.pt2.y = fMaxY;
+        line.pt2.x = line.pt2.y / fSlope - fIntercept / fSlope;
+    }
     return line;
 }
 

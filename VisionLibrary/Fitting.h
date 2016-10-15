@@ -14,7 +14,7 @@ class Fitting
 {
 public:
     static cv::RotatedRect fitCircle(const std::vector<cv::Point2f> &vecPoints);
-    static void fitLine(const std::vector<cv::Point2f> &vecPoints, float &fSlope, float &fIntercept);
+    static void fitLine(const std::vector<cv::Point2f> &vecPoints, float &fSlope, float &fIntercept, bool reverseFit = false);
     static void fitParallelLine(const std::vector<cv::Point2f> &vecPoints1,
                                 const std::vector<cv::Point2f> &vecPoints2,
                                 float                          &fSlope,

@@ -23,6 +23,10 @@ int _tmain(int argc, _TCHAR* argv[])
     TestTmplMatch();
     TestTmplMatch_Circle();
 
+    /*************************
+    * Test Fitting Line *
+    **************************/
+    TestFitLine();
 	return 0;
 }
 

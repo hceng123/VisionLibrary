@@ -7,5 +7,6 @@ void TestInspDeviceAutoThreshold();
 void TestRunLogcase();
 void TestTmplMatch();
 void TestTmplMatch_Circle();
+void TestFitLine();
 
 #endif
