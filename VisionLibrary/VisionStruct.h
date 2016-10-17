@@ -10,10 +10,10 @@ namespace AOI
 namespace Vision
 {
 
-using VectorOfDMatch = std::vector<cv::DMatch> ;
+using VectorOfDMatch = std::vector<cv::DMatch>;
 using VectorOfVectorOfDMatch = std::vector<VectorOfDMatch>;
 using VectorOfKeyPoint =  std::vector<cv::KeyPoint> ;
-using VectorOfVectorKeyPoint = std::vector<VectorOfKeyPoint> ;
+using VectorOfVectorKeyPoint = std::vector<VectorOfKeyPoint>;
 using VectorOfPoint = std::vector<cv::Point2f>;
 using VectorOfVectorOfPoint = std::vector<VectorOfPoint>;
 
@@ -249,6 +249,44 @@ struct PR_FIT_LINE_RPY
     float                   fSlope;
     float                   fIntercept;
     PR_Line2f               stLine;
+};
+
+struct PR_FIT_PARALLEL_LINE_CMD
+{
+    cv::Mat                 matInput;
+    cv::Rect                rectArrROI[2];
+    Int32                   nThreshold;
+    PR_RM_FIT_NOISE_METHOD  enRmNoiseMethod;
+    float                   fErrTol;
+};
+
+struct PR_FIT_PARALLEL_LINE_RPY
+{
+    Int32                   nStatus;
+    float                   fSlope;
+    float                   fIntercept1;
+    float                   fIntercept2;
+    PR_Line2f               stLine1;
+    PR_Line2f               stLine2;
+};
+
+//The rectArrROI is the ROI of the rect edge. the 1st and 2nd should be parallel, and the 3rd and 4th is parallel.
+struct PR_FIT_RECT_CMD
+{
+    cv::Mat                 matInput;
+    cv::Rect                rectArrROI[PR_RECT_EDGE_COUNT];
+    Int32                   nThreshold;
+    PR_RM_FIT_NOISE_METHOD  enRmNoiseMethod;
+    float                   fErrTol;
+};
+
+struct PR_FIT_RECT_RPY
+{
+    Int32                   nStatus;
+    float                   fSlope1;
+    float                   fSlope2;
+    float                   fArrIntercept[PR_RECT_EDGE_COUNT];
+    PR_Line2f               fArrLine[PR_RECT_EDGE_COUNT];
 };
 
 }

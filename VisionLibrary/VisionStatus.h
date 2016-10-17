@@ -24,6 +24,7 @@ enum class VisionStatus
     INVALID_LOGCASE,
     LEARN_FAIL,
     NOT_ENOUGH_POINTS_TO_FIT,
+    TOO_MUCH_NOISE_TO_FIT,
 };
 
 }

@@ -56,7 +56,7 @@ namespace Vision
 /*static*/ void Fitting::fitLine(const std::vector<cv::Point2f> &vecPoints, float &fSlope, float &fIntercept, bool reverseFit)
 {
     if ( vecPoints.size() < 2 )
-        return;   
+        return;
 
     double Sx = 0., Sy = 0., Sx2 = 0., Sy2 = 0., Sxy = 0.;
     for ( const auto &point : vecPoints )   {
@@ -85,23 +85,11 @@ namespace Vision
                                          const std::vector<cv::Point2f> &vecPoints2,
                                          float                          &fSlope,
                                          float                          &fIntercept1,
-                                         float                          &fIntercept2)
+                                         float                          &fIntercept2,
+                                         bool                            reverseFit)
 {
     if ( vecPoints1.size() < 2 || vecPoints2.size() < 2 )
         return;
-
-    std::vector<float> vecX, vecY;
-    for ( const auto &point : vecPoints1 )
-    {
-        vecX.push_back( point.x );
-        vecY.push_back( point.y );
-    }
-
-    //For y = kx + b, the k is the slope, when it is very large, the error is quite big, so change
-    //to get the x = k1 + b1, and get the k = 1 / k1, b = -b1 / k1. Then the result is more accurate.
-    auto reverseFit = false;
-    if ( CalcUtils::calcStdDeviation ( vecY ) > CalcUtils::calcStdDeviation ( vecX ) )
-        reverseFit = true;
 
     auto totalDataCount = vecPoints1.size() + vecPoints2.size();
     auto dataCount1 = vecPoints1.size();
@@ -150,7 +138,8 @@ namespace Vision
 /*static*/ void Fitting::fitRect(VectorOfVectorOfPoint &vecVecPoint,
                                  float                 &fSlope1,
                                  float                 &fSlope2,
-                                 std::vector<float>    &vecIntercept)
+                                 std::vector<float>    &vecIntercept,
+                                 bool                   reverseFit)
 {
     assert ( vecVecPoint.size() == 4 );  //The input should has 4 lines
     vecIntercept.clear();
@@ -159,20 +148,7 @@ namespace Vision
         totalRows += vectorPoint.size();
     cv::Mat A = cv::Mat::zeros ( totalRows, 5, CV_32FC1);
     cv::Mat B = cv::Mat::zeros ( totalRows, 1, CV_32FC1);
-
-    std::vector<float> vecX, vecY;
-    for ( const auto &point : vecVecPoint[0] )
-    {
-        vecX.push_back ( point.x );
-        vecY.push_back ( point.y );
-    }
-
-    //For y = kx + b, the k is the slope, when it is very large, the error is quite big, so change
-    //to get the x = k1 + b1, and get the k = 1 / k1, b = -b1 / k1. Then the result is more accurate.
-    auto reverseFit = false;
-    if ( CalcUtils::calcStdDeviation ( vecY ) > CalcUtils::calcStdDeviation ( vecX ) )
-        reverseFit = true;
-
+ 
     int index = 0;
     for (size_t i = 0; i < vecVecPoint.size(); ++ i )
     {

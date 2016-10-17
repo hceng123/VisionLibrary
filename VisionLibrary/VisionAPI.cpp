@@ -88,5 +88,17 @@ VisionAPI VisionStatus  PR_FitLine(PR_FIT_LINE_CMD *pstCmd, PR_FIT_LINE_RPY *pst
     return pVA->fitLine ( pstCmd, pstRpy );
 }
 
+VisionAPI VisionStatus  PR_FitParallelLine(PR_FIT_PARALLEL_LINE_CMD *pstCmd, PR_FIT_PARALLEL_LINE_RPY *pstRpy)
+{
+    std::shared_ptr<VisionAlgorithm> pVA = VisionAlgorithm::create();
+    return pVA->fitParallelLine ( pstCmd, pstRpy );
+}
+
+VisionAPI VisionStatus  PR_FitRect(PR_FIT_RECT_CMD *pstCmd, PR_FIT_RECT_RPY *pstRpy)
+{
+    std::shared_ptr<VisionAlgorithm> pVA = VisionAlgorithm::create();
+    return pVA->fitRect ( pstCmd, pstRpy );
+}
+
 }
 }

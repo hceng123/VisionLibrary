@@ -19,8 +19,13 @@ public:
                                 const std::vector<cv::Point2f> &vecPoints2,
                                 float                          &fSlope,
                                 float                          &fIntercept1,
-                                float                          &fIntercept2);
-    static void fitRect(VectorOfVectorOfPoint &vecVecPoint, float &fSlope1, float &fSlope2, std::vector<float> &vecIntercept);
+                                float                          &fIntercept2,
+                                bool                            reverseFit = false);
+    static void fitRect(VectorOfVectorOfPoint &vecVecPoint, 
+                        float                 &fSlope1, 
+                        float                 &fSlope2, 
+                        std::vector<float>    &vecIntercept,
+                        bool                   reverseFit = false);
 };
 
 }

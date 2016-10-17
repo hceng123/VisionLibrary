@@ -1259,7 +1259,10 @@ VisionStatus VisionAlgorithm::srchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd
     cv::Mat matROI(mat, rect);
     cv::Mat matThreshold;
 
+   
     cv::threshold ( matROI, matThreshold, nThreshold, 256, CV_THRESH_BINARY );
+    if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE)
+        showImage("threshold result", matThreshold);
     std::vector<cv::Point> vecPoints;
     vecPoints.reserve(100000);
     cv::findNonZero( matThreshold, vecPoints );
@@ -1343,7 +1346,178 @@ VisionStatus VisionAlgorithm::fitLine(PR_FIT_LINE_CMD *pstCmd, PR_FIT_LINE_RPY *
         overTolPoints = _findPointOverTol(vecPoint, pstRpy->fSlope, pstRpy->fIntercept, pstCmd->enRmNoiseMethod, pstCmd->fErrTol);
     }while ( ! overTolPoints.empty() && nIteratorNum < 20 );
 
+    if ( vecPoint.size() < 2 )  {
+        pstRpy->nStatus = ToInt32(VisionStatus::TOO_MUCH_NOISE_TO_FIT);
+        return VisionStatus::TOO_MUCH_NOISE_TO_FIT;
+    }
+
     pstRpy->stLine = CalcUtils::calcEndPointOfLine ( vecPoint, pstRpy->fSlope, pstRpy->fIntercept );
+    pstRpy->nStatus = ToInt32(VisionStatus::OK);
+    return VisionStatus::OK;
+}
+
+VisionStatus VisionAlgorithm::fitParallelLine(PR_FIT_PARALLEL_LINE_CMD *pstCmd, PR_FIT_PARALLEL_LINE_RPY *pstRpy)
+{
+    char charrMsg [ 1000 ];
+    if (NULL == pstCmd || NULL == pstRpy) {
+        _snprintf(charrMsg, sizeof(charrMsg), "Input is invalid, pstCmd = %d, pstRpy = %d", pstCmd, pstRpy);
+        WriteLog(charrMsg);
+        pstRpy->nStatus = ToInt32 ( VisionStatus::INVALID_PARAM );
+        return VisionStatus::INVALID_PARAM;
+    }
+
+    if (pstCmd->matInput.empty()) {
+        WriteLog("Input image is empty");
+        pstRpy->nStatus = ToInt32 ( VisionStatus::INVALID_PARAM );
+        return VisionStatus::INVALID_PARAM;
+    }
+
+    cv::Mat matGray, matThreshold;
+    if ( pstCmd->matInput.channels() > 1 )
+        cv::cvtColor ( pstCmd->matInput, matGray, CV_BGR2GRAY );
+    else
+        matGray = pstCmd->matInput.clone();
+
+    VectorOfPoint vecPoint1 = _findPointInRegionOverThreshold ( matGray, pstCmd->rectArrROI[0], pstCmd->nThreshold );
+    VectorOfPoint vecPoint2 = _findPointInRegionOverThreshold ( matGray, pstCmd->rectArrROI[1], pstCmd->nThreshold );
+    if ( vecPoint1.size() < 2 || vecPoint2.size() < 2 )  {
+        WriteLog("Not enough points to fit line");
+        pstRpy->nStatus = ToInt32(VisionStatus::NOT_ENOUGH_POINTS_TO_FIT);
+        return VisionStatus::NOT_ENOUGH_POINTS_TO_FIT;
+    }
+
+    std::vector<float> vecX, vecY;
+    for ( const auto &point : vecPoint1 )
+    {
+        vecX.push_back ( point.x );
+        vecY.push_back ( point.y );
+    }
+
+    //For y = kx + b, the k is the slope, when it is very large, the error is quite big, so change
+    //to get the x = k1 + b1, and get the k = 1 / k1, b = -b1 / k1. Then the result is more accurate.
+    auto reverseFit = false;
+    if ( CalcUtils::calcStdDeviation ( vecY ) > CalcUtils::calcStdDeviation ( vecX ) )
+        reverseFit = true;
+
+    std::vector<size_t> overTolPoints1, overTolPoints2;
+    int nIteratorNum = 0;
+    do
+    {
+        for (auto it = overTolPoints1.rbegin(); it != overTolPoints1.rend(); ++it)
+            vecPoint1.erase(vecPoint1.begin() + *it);
+        for (auto it = overTolPoints2.rbegin(); it != overTolPoints2.rend(); ++it)
+            vecPoint2.erase(vecPoint2.begin() + *it);
+
+        Fitting::fitParallelLine(vecPoint1, vecPoint2, pstRpy->fSlope, pstRpy->fIntercept1, pstRpy->fIntercept2, reverseFit);
+        overTolPoints1 = _findPointOverTol(vecPoint1, pstRpy->fSlope, pstRpy->fIntercept1, pstCmd->enRmNoiseMethod, pstCmd->fErrTol);
+        overTolPoints2 = _findPointOverTol(vecPoint2, pstRpy->fSlope, pstRpy->fIntercept2, pstCmd->enRmNoiseMethod, pstCmd->fErrTol);
+        ++ nIteratorNum;
+    }while ( ( ! overTolPoints1.empty() || ! overTolPoints2.empty() ) &&  nIteratorNum < 20 );
+
+    if ( vecPoint1.size() < 2 || vecPoint2.size() < 2 )  {
+        pstRpy->nStatus = ToInt32(VisionStatus::TOO_MUCH_NOISE_TO_FIT);
+        return VisionStatus::TOO_MUCH_NOISE_TO_FIT;
+    }
+
+    pstRpy->stLine1 = CalcUtils::calcEndPointOfLine ( vecPoint1, pstRpy->fSlope, pstRpy->fIntercept1 );
+    pstRpy->stLine2 = CalcUtils::calcEndPointOfLine ( vecPoint2, pstRpy->fSlope, pstRpy->fIntercept2 );
+    pstRpy->nStatus = ToInt32(VisionStatus::OK);
+    return VisionStatus::OK;
+}
+
+VisionStatus VisionAlgorithm::fitRect(PR_FIT_RECT_CMD *pstCmd, PR_FIT_RECT_RPY *pstRpy)
+{
+    char charrMsg [ 1000 ];
+    if (NULL == pstCmd || NULL == pstRpy) {
+        _snprintf(charrMsg, sizeof(charrMsg), "Input is invalid, pstCmd = %d, pstRpy = %d", pstCmd, pstRpy);
+        WriteLog(charrMsg);
+        pstRpy->nStatus = ToInt32 ( VisionStatus::INVALID_PARAM );
+        return VisionStatus::INVALID_PARAM;
+    }
+
+    if (pstCmd->matInput.empty()) {
+        WriteLog("Input image is empty");
+        pstRpy->nStatus = ToInt32 ( VisionStatus::INVALID_PARAM );
+        return VisionStatus::INVALID_PARAM;
+    }
+
+    cv::Mat matGray, matThreshold;
+    if ( pstCmd->matInput.channels() > 1 )
+        cv::cvtColor ( pstCmd->matInput, matGray, CV_BGR2GRAY );
+    else
+        matGray = pstCmd->matInput.clone();
+
+    VectorOfVectorOfPoint vecVecPoint;
+    for ( int i = 0; i < PR_RECT_EDGE_COUNT; ++ i ) {
+        vecVecPoint.push_back ( _findPointInRegionOverThreshold ( matGray, pstCmd->rectArrROI[i], pstCmd->nThreshold ) );
+        if ( vecVecPoint [ i ].size() < 2 )  {
+            _snprintf(charrMsg, sizeof(charrMsg), "Edge %d not enough points to fit rect", i);
+            WriteLog(charrMsg);
+            pstRpy->nStatus = ToInt32(VisionStatus::NOT_ENOUGH_POINTS_TO_FIT);
+            return VisionStatus::NOT_ENOUGH_POINTS_TO_FIT;
+        }
+    }
+    std::vector<float> vecX, vecY;
+    for ( const auto &point : vecVecPoint[0] )
+    {
+        vecX.push_back ( point.x );
+        vecY.push_back ( point.y );
+    }
+
+    //For y = kx + b, the k is the slope, when it is very large, the error is quite big, so change
+    //to get the x = k1 + b1, and get the k = 1 / k1, b = -b1 / k1. Then the result is more accurate.
+    auto reverseFit = false;
+    if ( CalcUtils::calcStdDeviation ( vecY ) > CalcUtils::calcStdDeviation ( vecX ) )
+        reverseFit = true;
+
+    std::vector<std::vector<size_t>> vecVecOutTolIndex;
+    vecVecOutTolIndex.reserve(vecVecPoint.size());
+    std::vector<float>    vecIntercept;
+    auto hasPointOutTol = false;
+    auto iterateCount = 0;
+    do 
+    {
+        auto index = 0;
+        for ( const auto &vecOutTolIndex : vecVecOutTolIndex ){
+            for (auto it = vecOutTolIndex.rbegin(); it != vecOutTolIndex.rend(); ++ it)
+                vecVecPoint[index].erase ( vecVecPoint[index].begin() + *it);
+            ++ index;
+        }
+        Fitting::fitRect ( vecVecPoint, pstRpy->fSlope1, pstRpy->fSlope2, vecIntercept, reverseFit );
+        vecVecOutTolIndex.clear();
+        hasPointOutTol = false;
+        for( int i = 0; i < PR_RECT_EDGE_COUNT; ++ i )
+        {
+            std::vector<size_t> vecOutTolIndex;
+            if ( i < 2 )
+                vecOutTolIndex = _findPointOverTol( vecVecPoint[i], pstRpy->fSlope1, vecIntercept[i], pstCmd->enRmNoiseMethod, pstCmd->fErrTol );
+            else
+                vecOutTolIndex = _findPointOverTol( vecVecPoint[i], pstRpy->fSlope2, vecIntercept[i], pstCmd->enRmNoiseMethod, pstCmd->fErrTol );
+            vecVecOutTolIndex.push_back( vecOutTolIndex );
+        }
+
+        for ( const auto &vecOutTolIndex : vecVecOutTolIndex ) {
+            if ( ! vecOutTolIndex.empty() ) {
+                hasPointOutTol = true;
+                break;
+            }
+        }
+        ++ iterateCount;
+    }while ( hasPointOutTol && iterateCount < 20 );
+
+    for ( const auto &vecPoint : vecVecPoint )
+    if ( vecPoint.size() < 2 )  {
+        pstRpy->nStatus = ToInt32(VisionStatus::TOO_MUCH_NOISE_TO_FIT);
+        return VisionStatus::TOO_MUCH_NOISE_TO_FIT;
+    }
+
+    for ( int i = 0; i < PR_RECT_EDGE_COUNT; ++ i ) {
+        if ( i < 2 )
+            pstRpy->fArrLine[i] = CalcUtils::calcEndPointOfLine( vecVecPoint[i], pstRpy->fSlope1, vecIntercept[i]);
+        else
+            pstRpy->fArrLine[i] = CalcUtils::calcEndPointOfLine( vecVecPoint[i], pstRpy->fSlope2, vecIntercept[i]);
+        pstRpy->fArrIntercept[i] = vecIntercept[i];
+    }
     pstRpy->nStatus = ToInt32(VisionStatus::OK);
     return VisionStatus::OK;
 }
