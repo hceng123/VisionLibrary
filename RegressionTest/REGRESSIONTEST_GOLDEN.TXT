@@ -38,5 +38,33 @@ Search fiducial result 127.6, 193.6
 FIT LINE REGRESSION TEST #1 STARTING
 ------------------------------------------
 Fit line status 0
-Line slope = -174.0, intercept = 26186.3
-Line coordinate: (148.8, 290.0), (146.7, 661.0)
+Line slope = -174.05, intercept = 26186.35
+Line coordinate: (148.79, 290.00), (146.66, 661.00)
+
+---------------------------------------------
+FIT PARALLEL LINE REGRESSION TEST #1 STARTING
+---------------------------------------------
+Fit line status 0
+Line slope = -258.08, intercept1 = 38607.32, intercept2 = 55029.00
+Line 1 coordinate: (148.47, 290.00), (147.03, 661.00)
+Line 2 coordinate: (212.16, 276.00), (210.61, 675.00)
+
+---------------------------------------------
+FIT PARALLEL LINE REGRESSION TEST #2 STARTING
+---------------------------------------------
+
+Fit line status 0
+Line slope = 0.00, intercept1 = 303.75, intercept2 = 720.86
+Line 1 coordinate: (444.00, 305.86), (592.00, 306.56)
+Line 2 coordinate: (333.00, 722.44), (701.00, 724.19)
+
+---------------------------------------------
+FIT RECT REGRESSION TEST #1 STARTING
+---------------------------------------------
+Fit rect status 0
+Line slope1 = -612.23, slope2 = 0.00
+Intercept = 173111.48, 462552.69, 305.33, 722.19
+Line 1 coordinate: (282.29, 284.00), (281.65, 678.00)
+Line 2 coordinate: (755.04, 297.00), (754.43, 670.00)
+Line 3 coordinate: (444.00, 306.06), (592.00, 306.30)
+Line 4 coordinate: (333.00, 722.74), (701.00, 723.34)

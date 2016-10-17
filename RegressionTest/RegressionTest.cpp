@@ -27,6 +27,16 @@ int _tmain(int argc, _TCHAR* argv[])
     * Test Fitting Line *
     **************************/
     TestFitLine();
+
+    /*****************************
+    * Test Fitting Parallel Line *
+    *****************************/
+    TestFitParellelLine();
+
+    /*************************
+    * Test Fitting Rect *
+    **************************/
+    TestFitRect();
 	return 0;
 }
 
