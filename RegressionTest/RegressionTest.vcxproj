@@ -95,6 +95,7 @@ FC /L $(ProjectDir)$(ProjectName)_golden.txt $(ProjectDir)$(ProjectName)_result.
   </ItemDefinitionGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt" />
+    <Text Include="REGRESSIONTEST_GOLDEN.TXT" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h" />

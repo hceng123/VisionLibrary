@@ -16,6 +16,7 @@
   </ItemGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt" />
+    <Text Include="REGRESSIONTEST_GOLDEN.TXT" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
