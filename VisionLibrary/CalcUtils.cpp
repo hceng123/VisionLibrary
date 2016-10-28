@@ -59,5 +59,26 @@ namespace Vision
     return line;
 }
 
+/*static*/ cv::Point2f CalcUtils::lineIntersect(float fSlope1, float fIntercept1, float fSlope2, float fIntercept2)
+{
+    cv::Point2f ptResult;
+    if ( fabs ( fSlope1 - fSlope2 ) < 0.0001 )
+        return ptResult;
+    cv::Mat A(2, 2, CV_32FC1);
+    cv::Mat B(2, 1, CV_32FC1);
+    A.at<float>(0, 0) = fSlope1; A.at<float>(0, 1) = -1.f;
+    A.at<float>(1, 0) = fSlope2; A.at<float>(1, 1) = -1.f;
+
+    B.at<float>(0, 0) = -fIntercept1;
+    B.at<float>(1, 0) = -fIntercept2;
+
+    cv::Mat matResult;
+    if ( cv::solve(A, B, matResult ) )   {
+        ptResult.x = matResult.at<float>(0, 0);
+        ptResult.y = matResult.at<float>(1, 0);
+    }
+    return ptResult;
+}
+
 }
 }

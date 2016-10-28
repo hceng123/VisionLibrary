@@ -82,6 +82,7 @@ public:
     static double degree2Radian( double dDegree );
     static double ptDisToLine(const cv::Point2f ptInput, float fSlope, float fIntercept );
     static PR_Line2f calcEndPointOfLine( const VectorOfPoint &vecPoint, float fSlope, float fIntercept );
+    static cv::Point2f lineIntersect(float fSlope1, float fIntercept1, float fSlope2, float fIntercept2);
 };
 
 }
