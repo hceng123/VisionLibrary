@@ -241,6 +241,7 @@ namespace
         return 0;
     }
 
+    //The exponent smooth algorithm come from pater "A Visual Inspection System for Surface Mounted Components Based on Color Features".
     template<typename T>
     void _expSmooth(const cv::Mat &matInput, cv::Mat &matOutput, float alpha)
     {
@@ -251,6 +252,7 @@ namespace
         }
     }
 
+    //To find edge from left to right, or from top to bottom.
     VisionStatus _findEdge(const cv::Mat &matProjection, int nObjectSize, int &nObjectEdgeResult)
     {
         if (matProjection.cols < nObjectSize )
@@ -258,7 +260,7 @@ namespace
 
         auto fMaxSumOfProjection = 0.f;
         nObjectEdgeResult = 0;
-        for (int nObjectStart = 0; nObjectStart < matProjection.cols - nObjectSize; ++nObjectStart)
+        for (int nObjectStart = 0; nObjectStart < matProjection.cols - nObjectSize; ++ nObjectStart)
         {
             auto fSumOfProjection = 0.f;
             for (int nIndex = nObjectStart; nIndex < nObjectStart + nObjectSize; ++ nIndex)
@@ -271,6 +273,7 @@ namespace
         return VisionStatus::OK;
     }
 
+    //To find edge from right to left, or from bottom to top.
     VisionStatus _findEdgeReverse(const cv::Mat &matProjection, int nObjectSize, int &nObjectEdgeResult)
     {
         if (matProjection.cols < nObjectSize)
@@ -403,23 +406,21 @@ int VisionAlgorithm::_autoThreshold(const cv::Mat &mat)
 
 VisionStatus VisionAlgorithm::_findDeviceElectrode(const cv::Mat &matDeviceROI, VectorOfPoint &vecElectrodePos)
 {
-    cv::Mat canny_output;
+    cv::Mat matCannyOutput;
     vector<vector<cv::Point> > vecContours, vecContourAfterFilter;
     vector<cv::Vec4i> hierarchy;
     vecElectrodePos.clear();
 
-    /// Detect edges using canny
-    Canny(matDeviceROI, canny_output, 100, 255, 3);
-    if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE )   {
-        imshow("Canny Result", canny_output );
-        cv::waitKey(0);
-    }
+    // Detect edges using canny
+    cv::Canny(matDeviceROI, matCannyOutput, 100, 255, 3);
+    if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE )
+        showImage("Canny Result", matCannyOutput );
 
-    /// Find contours
-    findContours(canny_output, vecContours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, cv::Point(0, 0));
+    // Find contours
+    findContours(matCannyOutput, vecContours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, cv::Point(0, 0));
 
-    /// Filter contours
-    cv::Mat drawing = cv::Mat::zeros(canny_output.size(), CV_8UC3);
+    // Filter contours
+    cv::Mat drawing = cv::Mat::zeros(matCannyOutput.size(), CV_8UC3);
     std::vector<AOI_COUNTOUR> vecAoiContour;
     int index = 0;
     for ( auto contour : vecContours )
@@ -451,6 +452,7 @@ VisionStatus VisionAlgorithm::_findDeviceElectrode(const cv::Mat &matDeviceROI, 
     return VisionStatus::OK;
 }
 
+//The alogorithm come from paper "A Visual Inspection System for Surface Mounted Components Based on Color Features"
 VisionStatus VisionAlgorithm::_findDeviceEdge(const cv::Mat &matDeviceROI, const cv::Size2f &size, cv::Rect &rectDeviceResult)
 {
     cv::Mat matGray, matThreshold, matHorizontalProjection, matVerticalProjection;
@@ -882,7 +884,7 @@ int VisionAlgorithm::_findLine(const cv::Mat &mat, PR_INSP_SURFACE_CMD *const pI
         }
 
 		cv::Mat color_dst;
-		cvtColor(matSobelResult, color_dst, CV_GRAY2BGR);
+		cv::cvtColor(matSobelResult, color_dst, CV_GRAY2BGR);
 
 		vector<cv::Vec4i> lines;
 		HoughLinesP ( matSobelResult, lines, 1, CV_PI / 180, 30, stDefectCriteria.fLength, 10 );
@@ -919,45 +921,57 @@ int VisionAlgorithm::_merge2Line(const PR_Line2f &line1, const PR_Line2f &line2,
 {
 	float fLineSlope1 = ( line1.pt2.y - line1.pt1.y ) / ( line1.pt2.x - line1.pt1.x );
 	float fLineSlope2 = ( line2.pt2.y - line2.pt1.y ) / ( line2.pt2.x - line2.pt1.x );
-	if ( fabs ( fLineSlope1 - fLineSlope2 ) > PARALLEL_LINE_SLOPE_DIFF_LMT )	{
-		printf("Can not merge lines not parallel");
-		return -1;
-	}
 
+	if ( ( fabs(fLineSlope1) < 10.f || fabs(fLineSlope2) < 10.f )
+        && fabs ( fLineSlope1 - fLineSlope2 ) > PARALLEL_LINE_SLOPE_DIFF_LMT )
+		return -1;
+	else if ( ( fabs(fLineSlope1) > 10.f || fabs(fLineSlope2) > 10.f )
+        && fabs ( 1 / fLineSlope1 - 1 / fLineSlope2 ) > PARALLEL_LINE_SLOPE_DIFF_LMT )     
+		return -1;
+
+    //Find the intersection point with Y axis.
 	float fLineCrossWithY1 = fLineSlope1 * ( - line1.pt1.x) + line1.pt1.y;
 	float fLineCrossWithY2 = fLineSlope2 * ( - line2.pt1.x) + line2.pt1.y;
 
-	float fPerpendicularLineSlope =  - 1.f / fLineSlope1;
-	cv::Point2f ptCrossPointWithLine1, ptCrossPointWithLine2;
+	float fPerpendicularLineSlope1 =  - 1.f / fLineSlope1;
+    float fPerpendicularLineSlope2 =  - 1.f / fLineSlope2;
+    float fDistanceOfLine = 0.f;
+    if (fabs(fPerpendicularLineSlope1) < 0.01 || fabs(fPerpendicularLineSlope2) < 0.01 )
+        fDistanceOfLine = fabs ( ( line1.pt1.x + line1.pt2.x ) / 2.f - ( line2.pt1.x + line2.pt2.x ) / 2.f );
+    else if (fabs(fPerpendicularLineSlope1) > 100 || fabs(fPerpendicularLineSlope2) > 100 )
+        fDistanceOfLine = fabs ( ( line1.pt1.y + line1.pt2.y ) / 2.f - ( line2.pt1.y + line2.pt2.y ) / 2.f );
+    else{
+        cv::Point2f ptCrossPointWithLine1, ptCrossPointWithLine2;
 
-	//Find perpendicular line, get the cross points with two lines, then can get the distance of two lines.
-	ptCrossPointWithLine1.x = fLineCrossWithY1 / ( fPerpendicularLineSlope - fLineSlope1 );
-	ptCrossPointWithLine1.y = fPerpendicularLineSlope * ptCrossPointWithLine1.x;
+        //Find perpendicular line, get the cross points with two lines, then can get the distance of two lines.
+        //The perpendicular line assume always cross origin(0, 0), so it can express as y = k * x.
+        ptCrossPointWithLine1.x = fLineCrossWithY1 / (fPerpendicularLineSlope1 - fLineSlope1);
+        ptCrossPointWithLine1.y = fPerpendicularLineSlope1 * ptCrossPointWithLine1.x;
 
-	ptCrossPointWithLine2.x = fLineCrossWithY2 / ( fPerpendicularLineSlope - fLineSlope2 );
-	ptCrossPointWithLine2.y = fPerpendicularLineSlope * ptCrossPointWithLine2.x;
+        ptCrossPointWithLine2.x = fLineCrossWithY2 / (fPerpendicularLineSlope2 - fLineSlope2);
+        ptCrossPointWithLine2.y = fPerpendicularLineSlope2 * ptCrossPointWithLine2.x;
 
-	float fDistanceOfLine = CalcUtils::distanceOf2Point<float> ( ptCrossPointWithLine1, ptCrossPointWithLine2 );
-	if ( fDistanceOfLine > PARALLEL_LINE_MERGE_DIST_LMT ){
-		printf("Distance of the lines are too far, can not merge");
+        fDistanceOfLine = CalcUtils::distanceOf2Point<float>(ptCrossPointWithLine1, ptCrossPointWithLine2);
+    }
+    
+	if ( fDistanceOfLine > PARALLEL_LINE_MERGE_DIST_LMT )
 		return -1;
-	}
 
-	vector<cv::Point> vecPoint;
+	std::vector<cv::Point> vecPoint;
 	vecPoint.push_back ( line1.pt1 );
 	vecPoint.push_back ( line1.pt2 );
 	vecPoint.push_back ( line2.pt1 );
 	vecPoint.push_back ( line2.pt2 );
 
-	vector<float> vecPerpendicularLineB;
+	std::vector<float> vecPerpendicularLineB;
 	//Find the expression of perpendicular lines y = a * x + b
-	float fPerpendicularLineB1 = line1.pt1.y - fPerpendicularLineSlope * line1.pt1.x;
+	float fPerpendicularLineB1 = line1.pt1.y - fPerpendicularLineSlope1 * line1.pt1.x;
 	vecPerpendicularLineB.push_back ( fPerpendicularLineB1 );
-	float fPerpendicularLineB2 = line1.pt2.y - fPerpendicularLineSlope * line1.pt2.x;
+	float fPerpendicularLineB2 = line1.pt2.y - fPerpendicularLineSlope1 * line1.pt2.x;
 	vecPerpendicularLineB.push_back ( fPerpendicularLineB2 );
-	float fPerpendicularLineB3 = line2.pt1.y - fPerpendicularLineSlope * line2.pt1.x;
+	float fPerpendicularLineB3 = line2.pt1.y - fPerpendicularLineSlope2 * line2.pt1.x;
 	vecPerpendicularLineB.push_back ( fPerpendicularLineB3 );
-	float fPerpendicularLineB4 = line2.pt2.y - fPerpendicularLineSlope * line2.pt2.x;
+	float fPerpendicularLineB4 = line2.pt2.y - fPerpendicularLineSlope2 * line2.pt2.x;
 	vecPerpendicularLineB.push_back ( fPerpendicularLineB4 );
 
 	int nMaxIndex = 0, nMinIndex = 0;
@@ -974,26 +988,30 @@ int VisionAlgorithm::_merge2Line(const PR_Line2f &line1, const PR_Line2f &line2,
 			nMinIndex = i;
 		}
 	}
-	cv::Point2f ptMidOfResult;
-	ptMidOfResult.x = ( vecPoint[nMinIndex].x + vecPoint[nMaxIndex].x ) / 2.f;
-	ptMidOfResult.y = ( vecPoint[nMinIndex].y + vecPoint[nMaxIndex].y ) / 2.f;
-	float fLineLength = CalcUtils::distanceOf2Point<float>( vecPoint[nMinIndex], vecPoint[nMaxIndex] );
-	float fAverageSlope = ( fLineSlope1 + fLineSlope2 ) / 2;
-	float fHypotenuse = sqrt( 1 + fAverageSlope * fAverageSlope );
-	float fSin = fAverageSlope / fHypotenuse;
-	float fCos = 1.f / fHypotenuse;
+    lineResult.pt1 = vecPoint[nMinIndex];
+    lineResult.pt2 = vecPoint[nMaxIndex];
+	//cv::Point2f ptMidOfResult;
+	//ptMidOfResult.x = ( vecPoint[nMinIndex].x + vecPoint[nMaxIndex].x ) / 2.f;
+	//ptMidOfResult.y = ( vecPoint[nMinIndex].y + vecPoint[nMaxIndex].y ) / 2.f;
+	//float fLineLength = CalcUtils::distanceOf2Point<float>( vecPoint[nMinIndex], vecPoint[nMaxIndex] );
+	//float fAverageSlope = ( fLineSlope1 + fLineSlope2 ) / 2;
+	//float fHypotenuse = sqrt( 1 + fAverageSlope * fAverageSlope );
+	//float fSin = fAverageSlope / fHypotenuse;
+	//float fCos = 1.f / fHypotenuse;
 
-	lineResult.pt1.x = ptMidOfResult.x + fLineLength * fCos / 2.f;
-	lineResult.pt1.y = ptMidOfResult.y + fLineLength * fSin / 2.f;
-	lineResult.pt2.x = ptMidOfResult.x - fLineLength * fCos / 2.f;
-	lineResult.pt2.y = ptMidOfResult.y - fLineLength * fSin / 2.f;
+	//lineResult.pt1.x = ptMidOfResult.x + fLineLength * fCos / 2.f;
+	//lineResult.pt1.y = ptMidOfResult.y + fLineLength * fSin / 2.f;
+	//lineResult.pt2.x = ptMidOfResult.x - fLineLength * fCos / 2.f;
+	//lineResult.pt2.y = ptMidOfResult.y - fLineLength * fSin / 2.f;
 	return static_cast<int>(VisionStatus::OK);
 }
 
 int VisionAlgorithm::_mergeLines(const vector<PR_Line2f> &vecLines, vector<PR_Line2f> &vecResultLines)
 {
-	if ( vecLines.size() < 2 )
-		return 0;
+	if ( vecLines.size() < 2 )  {
+        vecResultLines = vecLines;
+        return 0;
+    }		
 
 	vector<int> vecMerged(vecLines.size(), false);
 	
@@ -1519,6 +1537,84 @@ VisionStatus VisionAlgorithm::fitRect(PR_FIT_RECT_CMD *pstCmd, PR_FIT_RECT_RPY *
         pstRpy->fArrIntercept[i] = vecIntercept[i];
     }
     pstRpy->nStatus = ToInt32(VisionStatus::OK);
+    return VisionStatus::OK;
+}
+
+VisionStatus VisionAlgorithm::findEdge(PR_FIND_EDGE_CMD *pstCmd, PR_FIND_EDGE_RPY *pstRpy)
+{
+    char charrMsg [ 1000 ];
+    if (NULL == pstCmd || NULL == pstRpy) {
+        _snprintf(charrMsg, sizeof(charrMsg), "Input is invalid, pstCmd = %d, pstRpy = %d", pstCmd, pstRpy);
+        WriteLog(charrMsg);
+        pstRpy->nStatus = ToInt32 ( VisionStatus::INVALID_PARAM );
+        return VisionStatus::INVALID_PARAM;
+    }
+
+    if (pstCmd->matInput.empty()) {
+        WriteLog("Input image is empty");
+        pstRpy->nStatus = ToInt32 ( VisionStatus::INVALID_PARAM );
+        return VisionStatus::INVALID_PARAM;
+    }
+
+    cv::Mat matROI(pstCmd->matInput, pstCmd->rectROI);
+    if ( matROI.empty() ){
+        WriteLog("ROI image is empty");
+        pstRpy->nStatus = ToInt32 ( VisionStatus::INVALID_PARAM );
+        return VisionStatus::INVALID_PARAM;
+    }
+
+    cv::Mat matROIGray;
+    cv::cvtColor(matROI, matROIGray, CV_BGR2GRAY);
+
+    cv::Mat matThreshold;
+    cv::threshold( matROIGray, matThreshold, pstCmd->nThreshold, 255, cv::THRESH_BINARY);
+    if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE )
+        showImage("Threshold Result", matThreshold );
+
+    cv::Mat matBlur;
+    cv::blur ( matThreshold, matBlur, cv::Size(2, 2) );
+
+    cv::Mat matCannyResult;
+
+    /// Detect edges using canny
+    cv::Canny( matBlur, matCannyResult, pstCmd->nThreshold, 255);
+    if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE )
+        showImage("Canny Result", matCannyResult );
+
+    vector<cv::Vec4i> lines;
+    auto voteThreshold = ToInt32 ( pstCmd->fMinLength );
+    HoughLinesP(matCannyResult, lines, 1, CV_PI / 180, voteThreshold, pstCmd->fMinLength, 10);
+    vector<PR_Line2f> vecLines, vecLinesAfterMerge;
+    for (size_t i = 0; i < lines.size(); i++)
+    {
+        cv::Point2f pt1((float)lines[i][0], (float)lines[i][1]);
+        cv::Point2f pt2((float)lines[i][2], (float)lines[i][3]);
+        PR_Line2f line(pt1, pt2);
+        vecLines.push_back(line);
+    }
+    _mergeLines(vecLines, vecLinesAfterMerge);
+    if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE )   {
+        cv::Mat matResultImage = matROI.clone();
+        for ( const auto &line : vecLinesAfterMerge )
+            cv::line ( matResultImage, line.pt1, line.pt2, cv::Scalar(255, 0, 0), 2);
+        showImage("Find edge Result", matResultImage );
+    }
+    Int32 nLineCount = 0;
+    if ( PR_EDGE_DIRECTION::ALL == pstCmd->enDirection)
+        pstRpy->nEdgeCount = vecLinesAfterMerge.size();
+    else
+    {
+        for ( const auto &line : vecLinesAfterMerge )
+        {
+            float fSlope = CalcUtils::lineSlope(line);
+            if ( PR_EDGE_DIRECTION::HORIZONTAL == pstCmd->enDirection && fabs ( fSlope ) < 0.1 )
+                ++ nLineCount;
+            else if ( PR_EDGE_DIRECTION::VERTIAL == pstCmd->enDirection && fabs ( fSlope ) > 10 )
+                ++ nLineCount;
+        }
+        pstRpy->nEdgeCount = nLineCount;
+    }
+    pstRpy->nStatus = ToInt32 ( VisionStatus::OK );
     return VisionStatus::OK;
 }
 

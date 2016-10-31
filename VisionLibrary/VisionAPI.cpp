@@ -100,5 +100,11 @@ VisionAPI VisionStatus  PR_FitRect(PR_FIT_RECT_CMD *pstCmd, PR_FIT_RECT_RPY *pst
     return pVA->fitRect ( pstCmd, pstRpy );
 }
 
+VisionAPI VisionStatus  PR_FindEdge(PR_FIND_EDGE_CMD *pstCmd, PR_FIND_EDGE_RPY *pstRpy)
+{
+    std::shared_ptr<VisionAlgorithm> pVA = VisionAlgorithm::create();
+    return pVA->findEdge ( pstCmd, pstRpy );
+}
+
 }
 }

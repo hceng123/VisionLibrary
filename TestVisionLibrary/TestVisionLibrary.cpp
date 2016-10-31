@@ -371,8 +371,26 @@ void TestFitLine()
     cv::waitKey(0);
 }
 
+void TestFindEdge()
+{
+    PR_FIND_EDGE_CMD stCmd;
+
+    stCmd.matInput = cv::imread("./data/Resisters1.png");
+    stCmd.enDirection = PR_EDGE_DIRECTION::ALL;
+    stCmd.nThreshold = 50;
+    stCmd.fMinLength = 20;
+    stCmd.rectROI = cv::Rect(163, 189, 46, 97);
+
+    PR_FIND_EDGE_RPY stRpy;
+    PR_FindEdge(&stCmd, &stRpy);
+    
+    std::cout << "Find edge status " << stRpy.nStatus << std::endl; 
+    std::cout << "Edge count = " << stRpy.nEdgeCount << std::endl;
+}
+
 int _tmain(int argc, _TCHAR* argv[])
 {
+    PR_SetDebugMode ( PR_DEBUG_MODE::SHOW_IMAGE );
     //TestVisionAlgorithm();
     std::cout << GetTime() << std::endl;
     //TestInspDevice();
@@ -381,7 +399,10 @@ int _tmain(int argc, _TCHAR* argv[])
     //TestSearchFiducialMark_1();
     //TestSearchFiducialMark_2();
     //TestSearchFiducialMark_3();
-    TestFitLine();
+    //TestFitLine();
+    TestFindEdge();
+
+    getchar();
 	return 0;
 }
 

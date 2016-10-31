@@ -69,6 +69,13 @@ enum class PR_RM_FIT_NOISE_METHOD
     NEGATIVE_ERR,
 };
 
+enum class PR_EDGE_DIRECTION
+{
+    HORIZONTAL,
+    VERTIAL,
+    ALL,
+};
+
 }
 }
 

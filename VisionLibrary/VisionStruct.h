@@ -289,6 +289,22 @@ struct PR_FIT_RECT_RPY
     PR_Line2f               fArrLine[PR_RECT_EDGE_COUNT];
 };
 
+struct PR_FIND_EDGE_CMD
+{
+    cv::Mat                 matInput;
+    cv::Rect                rectROI;
+    bool                    bAutothreshold;
+    Int32                   nThreshold;
+    PR_EDGE_DIRECTION       enDirection;
+    float                   fMinLength;
+};
+
+struct PR_FIND_EDGE_RPY
+{
+    Int32                   nStatus;
+    Int32                   nEdgeCount;
+};
+
 }
 }
 #endif
