@@ -1563,18 +1563,25 @@ VisionStatus VisionAlgorithm::findEdge(PR_FIND_EDGE_CMD *pstCmd, PR_FIND_EDGE_RP
         return VisionStatus::INVALID_PARAM;
     }
 
-    cv::Mat matROIGray;
+    if ( ! pstCmd->bAutothreshold && ( pstCmd->nThreshold <= 0 || pstCmd->nThreshold >= PR_MAX_GRAY_LEVEL ) )  {
+         _snprintf(charrMsg, sizeof(charrMsg), "The threshold = %d is invalid", pstCmd->nThreshold);
+        WriteLog(charrMsg);
+        pstRpy->nStatus = ToInt32 ( VisionStatus::INVALID_PARAM );
+        return VisionStatus::INVALID_PARAM;
+    }    
+
+    cv::Mat matROIGray, matThreshold, matBlur, matCannyResult;
     cv::cvtColor(matROI, matROIGray, CV_BGR2GRAY);
 
-    cv::Mat matThreshold;
+    auto threshold = pstCmd->nThreshold;
+    if ( pstCmd->bAutothreshold )
+        threshold = _autoThreshold(matROIGray);
+
     cv::threshold( matROIGray, matThreshold, pstCmd->nThreshold, 255, cv::THRESH_BINARY);
     if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE )
         showImage("Threshold Result", matThreshold );
 
-    cv::Mat matBlur;
     cv::blur ( matThreshold, matBlur, cv::Size(2, 2) );
-
-    cv::Mat matCannyResult;
 
     /// Detect edges using canny
     cv::Canny( matBlur, matCannyResult, pstCmd->nThreshold, 255);
@@ -1585,7 +1592,7 @@ VisionStatus VisionAlgorithm::findEdge(PR_FIND_EDGE_CMD *pstCmd, PR_FIND_EDGE_RP
     auto voteThreshold = ToInt32 ( pstCmd->fMinLength );
     HoughLinesP(matCannyResult, lines, 1, CV_PI / 180, voteThreshold, pstCmd->fMinLength, 10);
     vector<PR_Line2f> vecLines, vecLinesAfterMerge;
-    for (size_t i = 0; i < lines.size(); i++)
+    for ( size_t i = 0; i < lines.size(); ++ i )
     {
         cv::Point2f pt1((float)lines[i][0], (float)lines[i][1]);
         cv::Point2f pt2((float)lines[i][2], (float)lines[i][3]);
@@ -1600,7 +1607,7 @@ VisionStatus VisionAlgorithm::findEdge(PR_FIND_EDGE_CMD *pstCmd, PR_FIND_EDGE_RP
         showImage("Find edge Result", matResultImage );
     }
     Int32 nLineCount = 0;
-    if ( PR_EDGE_DIRECTION::ALL == pstCmd->enDirection)
+    if ( PR_EDGE_DIRECTION::ALL == pstCmd->enDirection )
         pstRpy->nEdgeCount = vecLinesAfterMerge.size();
     else
     {

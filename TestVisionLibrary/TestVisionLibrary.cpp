@@ -377,6 +377,7 @@ void TestFindEdge()
 
     stCmd.matInput = cv::imread("./data/Resisters1.png");
     stCmd.enDirection = PR_EDGE_DIRECTION::ALL;
+    stCmd.bAutothreshold = true;
     stCmd.nThreshold = 50;
     stCmd.fMinLength = 20;
     stCmd.rectROI = cv::Rect(163, 189, 46, 97);
