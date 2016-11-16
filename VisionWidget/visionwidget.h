@@ -12,6 +12,8 @@ public:
     VisionWidget(QWidget *parent = 0);
     ~VisionWidget();
 
+private slots:
+    void on_selectImageBtn_clicked();
 private:
     Ui::VisionWidgetClass ui;
 };

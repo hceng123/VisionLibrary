@@ -10,3 +10,8 @@ VisionWidget::~VisionWidget()
 {
 
 }
+
+void VisionWidget::on_selectImageBtn_clicked()
+{
+    int i = 0;
+}

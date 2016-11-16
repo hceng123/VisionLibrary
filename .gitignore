@@ -23,3 +23,5 @@ Release
 RegressionTest/Vision/Record
 RegressionTest/RegressionTest_result.txt
 VisionWidget/GeneratedFiles
+*.dll
+*.lib
