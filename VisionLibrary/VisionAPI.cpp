@@ -106,5 +106,11 @@ VisionAPI VisionStatus  PR_FindEdge(PR_FIND_EDGE_CMD *pstCmd, PR_FIND_EDGE_RPY *
     return pVA->findEdge ( pstCmd, pstRpy );
 }
 
+VisionStatus  PR_FitCircle(PR_FIT_CIRCLE_CMD *pstCmd, PR_FIT_CIRCLE_RPY *pstRpy)
+{
+    std::shared_ptr<VisionAlgorithm> pVA = VisionAlgorithm::create();
+    return pVA->fitCircle ( pstCmd, pstRpy );
+}
+
 }
 }

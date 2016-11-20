@@ -305,6 +305,28 @@ struct PR_FIND_EDGE_RPY
     Int32                   nEdgeCount;
 };
 
+struct PR_FIT_CIRCLE_CMD
+{
+    cv::Mat                 matInput;
+    PR_FIT_CIRCLE_METHOD    enMethod;
+    PR_RM_FIT_NOISE_METHOD  enRmNoiseMethod;
+    bool                    bAutothreshold;
+    Int32                   nThreshold;
+    cv::Point2f             ptRangeCtr;
+    float                   fRangeInnterRadius;
+    float                   fRangeOutterRadius;
+    float                   fErrTol;
+    int                     nMaxRansacTime;             //Only used when fitting method is ransac.
+    int                     nNumOfPtToFinishRansac;     //Only used when fitting method is ransac.
+};
+
+struct PR_FIT_CIRCLE_RPY
+{
+    Int32                   nStatus;
+    cv::Point2f             ptCircleCtr;
+    float                   fRadius;
+};
+
 }
 }
 #endif

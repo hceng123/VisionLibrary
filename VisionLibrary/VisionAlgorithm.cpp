@@ -1625,5 +1625,188 @@ VisionStatus VisionAlgorithm::findEdge(PR_FIND_EDGE_CMD *pstCmd, PR_FIND_EDGE_RP
     return VisionStatus::OK;
 }
 
+VisionStatus VisionAlgorithm::fitCircle(PR_FIT_CIRCLE_CMD *pstCmd, PR_FIT_CIRCLE_RPY *pstRpy)
+{
+    char charrMsg [ 1000 ];
+    if (NULL == pstCmd || NULL == pstRpy) {
+        _snprintf(charrMsg, sizeof(charrMsg), "Input is invalid, pstCmd = %d, pstRpy = %d", pstCmd, pstRpy);
+        WriteLog(charrMsg);
+        pstRpy->nStatus = ToInt32 ( VisionStatus::INVALID_PARAM );
+        return VisionStatus::INVALID_PARAM;
+    }
+
+    if (pstCmd->matInput.empty()) {
+        WriteLog("Input image is empty");
+        pstRpy->nStatus = ToInt32 ( VisionStatus::INVALID_PARAM );
+        return VisionStatus::INVALID_PARAM;
+    }
+
+    cv::Rect2f rectROI( pstCmd->ptRangeCtr.x - pstCmd->fRangeOutterRadius, pstCmd->ptRangeCtr.y - pstCmd->fRangeOutterRadius,
+        2.f * pstCmd->fRangeOutterRadius, 2.f * pstCmd->fRangeOutterRadius );
+    if ( rectROI.x < 0 || rectROI.y < 0 || 
+        ( rectROI.x + rectROI.width ) > pstCmd->matInput.cols ||
+        ( rectROI.y + rectROI.height ) > pstCmd->matInput.rows )    {
+        WriteLog("The fit circle search range is invalid");
+        pstRpy->nStatus = ToInt32 ( VisionStatus::INVALID_PARAM );
+        return VisionStatus::INVALID_PARAM;
+    }
+    cv::Mat matROI(pstCmd->matInput, rectROI);
+    cv::Mat matGray, matThreshold;
+
+    if ( pstCmd->matInput.channels() > 1 )
+        cv::cvtColor ( matROI, matGray, CV_BGR2GRAY );
+    else
+        matGray = matROI.clone();
+
+    cv::threshold( matROI, matThreshold, pstCmd->nThreshold, 255, cv::THRESH_BINARY);
+
+    VectorOfPoint vecPoints;
+    for (int row = 0; row < matThreshold.rows; ++ row)
+    {
+        for (int col = 0; col < matThreshold.cols; ++ col)
+        {
+            auto distance = sqrt((col - matThreshold.cols / 2 ) * (col - matThreshold.cols / 2) + (row - matThreshold.rows / 2) * (row - matThreshold.rows / 2));
+            if (matThreshold.at<unsigned char>(row, col) > 1 && distance > pstCmd->fRangeInnterRadius && distance < pstCmd->fRangeOutterRadius)   {
+                vecPoints.push_back(cv::Point2f ( ToFloat(col), ToFloat ( row ) ) );
+            }
+        }
+    }
+    cv::RotatedRect fitResult;
+    if ( PR_FIT_CIRCLE_METHOD::RANSAC == pstCmd->enMethod)
+        fitResult = _fitCircleRansac ( vecPoints, pstCmd->fErrTol, pstCmd->nMaxRansacTime, vecPoints.size() / 2 );
+    else if ( PR_FIT_CIRCLE_METHOD::LEAST_SQUARE == pstCmd->enMethod )
+        fitResult = Fitting::fitCircle ( vecPoints );
+    else if ( PR_FIT_CIRCLE_METHOD::LEAST_SQUARE_REFINE == pstCmd->enMethod  )
+        fitResult = _fitCircleIterate ( vecPoints, pstCmd->enRmNoiseMethod, pstCmd->fErrTol );
+    if ( fitResult.center.x <= 0 || fitResult.center.y <= 0 || fitResult.size.width > 0 )   {
+        WriteLog("Failed to fit circle");
+        pstRpy->nStatus = ToInt32 ( VisionStatus::FAIL_TO_FIT_CIRCLE );
+        return VisionStatus::FAIL_TO_FIT_CIRCLE;
+    }
+    pstRpy->ptCircleCtr = fitResult.center;
+    pstRpy->fRadius = fitResult.size.width / 2;
+    pstRpy->nStatus = ToInt32 (VisionStatus::OK);
+    return VisionStatus::OK;
+}
+
+/* The ransac algorithm is from paper "Random Sample Consensus: A Paradigm for Model Fitting with Apphcatlons to Image Analysis and Automated Cartography".
+*  Given a model that requires a minimum of n data points to instantiate
+* its free parameters, and a set of data points P such that the number of
+* points in P is greater than n, randomly select a subset S1 of
+* n data points from P and instantiate the model. Use the instantiated
+* model M1 to determine the subset S1* of points in P that are within
+* some error tolerance of M1. The set S1* is called the consensus set of
+* S1.
+* If g (S1*) is greater than some threshold t, which is a function of the
+* estimate of the number of gross errors in P, use S1* to compute
+* (possibly using least squares) a new model M1* and return.
+* If g (S1*) is less than t, randomly select a new subset S2 and repeat the
+* above process. If, after some predetermined number of trials, no
+* consensus set with t or more members has been found, either solve the
+* model with the largest consensus set found, or terminate in failure. */
+/*static*/ cv::RotatedRect VisionAlgorithm::_fitCircleRansac(const std::vector<cv::Point2f> &vecPoints, float tolerance, int maxRansacTime, int numOfPtToFinish)
+{   
+    cv::RotatedRect fitResult;
+    if (vecPoints.size() < 3)
+        return fitResult;
+
+    int nRansacTime = 0;
+    const int RANSAC_CIRCLE_POINT = 3;
+    size_t nMaxConsentNum = 0;
+
+    while ( nRansacTime < maxRansacTime )   {
+        std::vector<cv::Point2f> vecSelectedPoints = _randomSelectPoints ( vecPoints, RANSAC_CIRCLE_POINT );
+        cv::RotatedRect rectReult = Fitting::fitCircle ( vecSelectedPoints );
+        vecSelectedPoints = _findPointsInCircleTol ( vecPoints, rectReult, tolerance );
+
+        if ( vecSelectedPoints.size() >= (size_t)numOfPtToFinish ) {
+           return Fitting::fitCircle ( vecSelectedPoints );
+        }
+        else if ( vecSelectedPoints.size() > nMaxConsentNum )
+        {
+            fitResult = Fitting::fitCircle ( vecSelectedPoints );
+            nMaxConsentNum = vecSelectedPoints.size();
+        }
+        ++ nRansacTime;
+    }
+
+    return fitResult;
+}
+
+VectorOfPoint VisionAlgorithm::_randomSelectPoints(const std::vector<cv::Point2f> &vecPoints, int numOfPtToSelect)
+{    
+    std::set<int> setResult;
+    std::vector<cv::Point2f> vecResultPoints;
+
+    if ( (int)vecPoints.size() < numOfPtToSelect )
+        return vecResultPoints;
+
+    while ((int)setResult.size() < numOfPtToSelect)   {
+        int nValue = std::rand() % vecPoints.size();
+        setResult.insert(nValue);
+    }
+    for ( auto index : setResult )
+        vecResultPoints.push_back ( vecPoints[index] );
+    return vecResultPoints;
+}
+
+VectorOfPoint VisionAlgorithm::_findPointsInCircleTol( const VectorOfPoint &vecPoints, const cv::RotatedRect &rotatedRect, float tolerance )
+{
+    std::vector<cv::Point2f> vecResult;
+    for ( const auto &point : vecPoints )  {
+        auto disToCtr = sqrt( ( point.x - rotatedRect.center.x) * (point.x - rotatedRect.center.x)  + ( point.y - rotatedRect.center.y) * ( point.y - rotatedRect.center.y ) );
+        auto err = disToCtr - rotatedRect.size.width / 2;
+        if ( fabs ( err ) < tolerance )  {
+            vecResult.push_back(point);
+        }
+    }
+    return vecResult;
+}
+
+std::vector<size_t> VisionAlgorithm::_findPointsOverCircleTol( const VectorOfPoint &vecPoints, const cv::RotatedRect &rotatedRect, PR_RM_FIT_NOISE_METHOD enMethod, float tolerance )
+{
+    std::vector<size_t> vecResult;
+    for ( size_t i = 0;i < vecPoints.size(); ++ i )  {
+        cv::Point2f point = vecPoints[i];
+        auto disToCtr = sqrt( ( point.x - rotatedRect.center.x) * (point.x - rotatedRect.center.x)  + ( point.y - rotatedRect.center.y) * ( point.y - rotatedRect.center.y ) );
+        auto err = disToCtr - rotatedRect.size.width / 2;
+        if ( PR_RM_FIT_NOISE_METHOD::ABSOLUTE_ERR == enMethod && fabs ( err ) > tolerance )  {
+            vecResult.push_back(i);
+        }else if ( PR_RM_FIT_NOISE_METHOD::POSITIVE_ERR == enMethod && err > tolerance ) {
+            vecResult.push_back(i);
+        }else if ( PR_RM_FIT_NOISE_METHOD::NEGATIVE_ERR == enMethod && err < -tolerance ) {
+            vecResult.push_back(i);
+        }
+    }
+    return vecResult;
+}
+
+//method 1 : Exclude all the points out of positive error tolerance and inside the negative error tolerance.
+//method 2 : Exclude all the points out of positive error tolerance.
+//method 3 : Exclude all the points inside the negative error tolerance.
+cv::RotatedRect VisionAlgorithm::_fitCircleIterate(const std::vector<cv::Point2f> &vecPoints, PR_RM_FIT_NOISE_METHOD method, float tolerance)
+{
+    cv::RotatedRect rotatedRect;
+    if (vecPoints.size() < 3)
+        return rotatedRect;
+
+    std::vector<cv::Point2f> vecLocalPoints;
+    for ( const auto &point : vecPoints )   {
+        vecLocalPoints.push_back ( point );
+    }
+    rotatedRect = Fitting::fitCircle ( vecLocalPoints );
+    
+    std::vector<size_t> overTolPoints = _findPointsOverCircleTol ( vecLocalPoints, rotatedRect, method, tolerance );
+    int nIteratorNum = 1;
+    while ( ! overTolPoints.empty() && nIteratorNum < 20 )   {
+        for (auto it = overTolPoints.rbegin(); it != overTolPoints.rend(); ++ it)
+            vecLocalPoints.erase(vecLocalPoints.begin() + *it);
+        rotatedRect = Fitting::fitCircle ( vecLocalPoints );
+        overTolPoints = _findPointsOverCircleTol ( vecLocalPoints, rotatedRect, method, tolerance );
+        ++ nIteratorNum;
+    }
+    return rotatedRect;
+}
+
 }
 }

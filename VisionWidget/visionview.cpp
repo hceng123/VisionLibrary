@@ -1,4 +1,5 @@
 #include "visionview.h"
+#include "VisionHeader.h"
 #include "constants.h"
 //#include "webcameramanager.h"
 #include <QMessageBox>
@@ -10,8 +11,8 @@ VisionView::VisionView(QWidget *parent , Qt::WindowFlags f)
     this->setParent(parent, f);
     _nState = LEARNING;
 
-    _pTimer = new QTimer(this);
-    connect( _pTimer, SIGNAL(timeout()), this, SLOT(updateMat()));    
+    _pTimer = std::make_unique<QTimer>(this);
+    connect( _pTimer.get(), SIGNAL(timeout()), this, SLOT(updateMat()));
 
     setContextMenuPolicy(Qt::CustomContextMenu);
     connect( this, SIGNAL(customContextMenuRequested(const QPoint&)),
@@ -22,19 +23,12 @@ VisionView::VisionView(QWidget *parent , Qt::WindowFlags f)
     _enMaskEditState = MASK_EDIT_NONE;
     _enMaskShape = MASK_SHAPE_RECT;
     _enMaskEditState = MASK_EDIT_ADD;
-    _pDialogEditMask = NULL;
     _ptLeftClickStartPos = Point(0,0);
     _ptLeftClickEndPos = Point(0,0);
 }
 
 VisionView::~VisionView()
 {
-    delete _pTimer;
-    if ( _pDialogEditMask != NULL )
-    {
-        delete _pDialogEditMask;
-        _pDialogEditMask = NULL;
-    }
 }
 
 int VisionView::updateMat()
@@ -62,16 +56,6 @@ int VisionView::updateMat()
             matZoomResult.copyTo(matROI);
             matTemp.copyTo(display);
         }
-        //if ( _fZoomFactor > 1.0f )  {
-        //    pyrUp ( display, display, Size( mat.cols * 2, mat.rows * 2 ) );
-        //    if ( _fZoomFactor > 2.0f )
-        //        pyrUp ( display, display, Size( display.cols * 2, display.rows * 2 ) );
-        //}
-        //else if ( _fZoomFactor < 1.0f ) {
-        //    pyrDown( display, display, Size( mat.cols * 0.5, mat.rows * 0.5 ) );
-        //    if ( _fZoomFactor < 0.5f )
-        //        pyrDown( display, display, Size( display.cols * 0.5, display.rows * 0.5 ) );
-        //}
     }
     cvtColor( display, display, CV_BGR2RGB);
 
@@ -175,6 +159,8 @@ void VisionView::mouseMoveEvent(QMouseEvent *event)
             }else if ( MASK_SHAPE_POLYLINE == _enMaskShape )  {
 
             }
+
+            _drawDisplay();
         }
     }
 }
@@ -193,7 +179,7 @@ void VisionView::setMachineState(int nMachineState)
     _nState = nMachineState;
 }
 
-void VisionView::_drawLearnWindow(Mat &mat)
+void VisionView::_drawLearnWindow(cv::Mat &mat)
 {
     cv::rectangle ( mat, _rectLrnWindow, _colorLrnWindow, 2 );
 
@@ -216,18 +202,68 @@ void VisionView::_drawLearnWindow(Mat &mat)
             cv::line( mat, _ptLeftClickStartPos, _ptLeftClickEndPos, Scalar ( 255, 0, 0 ), 1 );
     }
 
-    cv::Mat copy ( mat.size(), mat.type() );
-    mat.copyTo ( copy );
+    cv::Mat copy = mat.clone();
 
     if ( ! _matMask.empty() )
         copy.setTo ( Scalar(255, 0, 0), _matMask );
 
-    double alpha = 0.4;
+    double alpha = 0.2;
     cv::addWeighted ( copy, alpha, mat, 1.0 - alpha, 0.0, mat );
+}
+
+void VisionView::_drawDisplay()
+{
+    if ( _mat.empty() )
+        return;
+
+    auto displayWidth = this->size().width();
+    auto displayHeight = this->size().height();
+    cv::Mat matZoomResult;
+    if ( ! IsEuqal ( _fZoomFactor, 1.0f ) )       
+        cv::resize( _mat, matZoomResult, cv::Size(), _fZoomFactor, _fZoomFactor );        
+    else
+        matZoomResult = _mat.clone();
+
+    _matDisplay = cv::Mat::ones( displayHeight, displayWidth, _mat.type() ) * 255;
+    _matDisplay.setTo(cv::Scalar(255,255,255));
+
+    if (matZoomResult.cols > displayWidth && matZoomResult.rows > displayHeight)  {
+        cv::Rect rectROI((matZoomResult.cols - displayWidth) / 2, (matZoomResult.rows - displayHeight) / 2, displayWidth, displayHeight);
+        cv::Mat matROI(matZoomResult, rectROI);
+        _matDisplay = matROI;
+    }
+    else if (matZoomResult.cols > displayWidth && matZoomResult.rows < displayHeight)  {
+        cv::Rect rectROISrc( (matZoomResult.cols - displayWidth) / 2, 0, displayWidth, matZoomResult.rows);
+        cv::Mat matSrc(matZoomResult, rectROISrc);
+        cv::Rect rectROIDst(0, ( displayHeight - matZoomResult.rows ) / 2, displayWidth, matZoomResult.rows );
+        cv::Mat matDst(_matDisplay, rectROIDst);
+        matSrc.copyTo(matDst);
+    }else if (matZoomResult.cols < displayWidth && matZoomResult.rows > displayHeight)  {
+        cv::Rect rectROISrc(0, (matZoomResult.rows - displayHeight) / 2, matZoomResult.cols, displayHeight);
+        cv::Mat matSrc(matZoomResult, rectROISrc);
+        cv::Rect rectROIDst(( displayWidth - matZoomResult.cols ) / 2, 0, matZoomResult.cols, displayHeight );
+        cv::Mat matDst(_matDisplay, rectROIDst);
+        matSrc.copyTo(matDst);
+    }else if (matZoomResult.cols < displayWidth && matZoomResult.rows < displayHeight) {
+        cv::Rect rectROIDst((displayWidth - matZoomResult.cols) / 2, (displayHeight - matZoomResult.rows) / 2, matZoomResult.cols, matZoomResult.rows);
+        cv::Mat matDst(_matDisplay, rectROIDst);
+        matZoomResult.copyTo(matDst);
+    }else
+        _matDisplay = matZoomResult;
+
+    cvtColor( _matDisplay, _matDisplay, CV_BGR2RGB);
+
+    _drawLearnWindow ( _matDisplay );
+    QImage image = QImage((uchar*) _matDisplay.data, _matDisplay.cols, _matDisplay.rows, _matDisplay.step, QImage::Format_RGB888);
+    //show Qimage using QLabel
+    setPixmap(QPixmap::fromImage(image));
 }
 
 void VisionView::showContextMenu(const QPoint& pos) // this is a slot
 {
+    if ( _matDisplay.empty() )
+        return;
+
     QPoint globalPos = mapToGlobal(pos);
 
     QMenu contextMenu(tr("Context menu"), this);
@@ -251,13 +287,10 @@ void VisionView::addMask()
 {
     _nState = ADD_MASK;
     if ( _matMask.empty() )
-    {
-        _matMask = cv::Mat(_mat.size(), CV_8U );
-        _matMask.setTo(Scalar(0));
-    }
+        _matMask = cv::Mat( _matDisplay.size(), CV_8UC1, cv::Scalar(0, 0, 0) );
 
     if ( ! _pDialogEditMask)    {
-        _pDialogEditMask = new DialogEditMask(this);
+        _pDialogEditMask = std::make_unique<DialogEditMask>(this);
         _pDialogEditMask->setVisionView(this);
     }
 
@@ -269,12 +302,14 @@ void VisionView::zoomIn()
 {
     if ( _fZoomFactor < _constMaxZoomFactor )
         _fZoomFactor *= 2.f;
+    _drawDisplay();
 }
 
 void VisionView::zoomOut()
 {
     if ( _fZoomFactor > _constMinZoomFactor )
         _fZoomFactor /= 2.f;
+    _drawDisplay();
 }
 
 void VisionView::restoreZoom()
@@ -303,4 +338,10 @@ float VisionView::distanceOf2Point(const cv::Point &pt1, const cv::Point &pt2)
 void VisionView::startTimer()
 {
     _pTimer->start(20);
+}
+
+void VisionView::setImageFile(const std::string &filePath)
+{
+    _mat = cv::imread(filePath);
+    _drawDisplay();    
 }

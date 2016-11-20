@@ -1,3 +1,7 @@
 <RCC>
-    <qresource prefix="/VisionWidget"/>
+    <qresource prefix="/VisionWidget">
+        <file>Image/ZoomIn1.png</file>
+        <file>Image/ZoomIn2.png</file>
+        <file>Image/ZoomOut.png</file>
+    </qresource>
 </RCC>

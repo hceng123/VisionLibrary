@@ -17,8 +17,8 @@
    <widget class="VisionView" name="visionView">
     <property name="geometry">
      <rect>
-      <x>20</x>
-      <y>60</y>
+      <x>70</x>
+      <y>50</y>
       <width>640</width>
       <height>640</height>
      </rect>
@@ -33,8 +33,8 @@
    <widget class="QPushButton" name="selectImageBtn">
     <property name="geometry">
      <rect>
-      <x>30</x>
-      <y>20</y>
+      <x>80</x>
+      <y>10</y>
       <width>81</width>
       <height>31</height>
      </rect>
@@ -46,10 +46,20 @@
    <widget class="QLineEdit" name="imagePathEdit">
     <property name="geometry">
      <rect>
-      <x>130</x>
-      <y>20</y>
-      <width>431</width>
+      <x>180</x>
+      <y>10</y>
+      <width>491</width>
       <height>31</height>
+     </rect>
+    </property>
+   </widget>
+   <widget class="VisionViewToolBox" name="visionViewToolBox" native="true">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>50</y>
+      <width>50</width>
+      <height>461</height>
      </rect>
     </property>
    </widget>
@@ -80,6 +90,12 @@
    <class>VisionView</class>
    <extends>QLabel</extends>
    <header>visionview.h</header>
+  </customwidget>
+  <customwidget>
+   <class>VisionViewToolBox</class>
+   <extends>QWidget</extends>
+   <header>visionviewtoolbox.h</header>
+   <container>1</container>
   </customwidget>
  </customwidgets>
  <resources>

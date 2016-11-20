@@ -52,6 +52,8 @@ namespace Vision
     return rotatedRect;
 }
 
+
+
 //The equation is from http://hotmath.com/hotmath_help/topics/line-of-best-fit.html
 /*static*/ void Fitting::fitLine(const std::vector<cv::Point2f> &vecPoints, float &fSlope, float &fIntercept, bool reverseFit)
 {

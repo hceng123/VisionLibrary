@@ -5,6 +5,8 @@
 #include <QMouseEvent>
 #include <QTimer>
 #include <vector>
+#include <string>
+#include <memory>
 
 #include "opencv2/core/core.hpp"
 #include "opencv/cv.h"
@@ -57,36 +59,39 @@ public:
     void zoomOut();
     void restoreZoom();
     void startTimer();
+    void setImageFile(const std::string &filePath);
     static float distanceOf2Point(const cv::Point &pt1, const cv::Point &pt2);
 protected:
     void mousePressEvent(QMouseEvent *event);
     void mouseReleaseEvent(QMouseEvent *event);
     void mouseMoveEvent(QMouseEvent *event);
     void mouseDoubleClickEvent(QMouseEvent *event);
-    void _drawLearnWindow(Mat &mat);
+    void _drawDisplay();
+    void _drawLearnWindow(cv::Mat &mat);
 
 private:
-    Rect                _rectLrnWindow;
-    Rect                _rectSrchWindow;
-    bool                _bLeftButtonDown;
-    cv::Point           _ptLeftClickStartPos;
-    cv::Point           _ptLeftClickEndPos;
-    int                 _nState;
-    cv::Mat             _mat;
-    cv::Mat             _matMask;
-    vector<Rect>        _vecRectMask;
-    float               _fZoomFactor;
-    QTimer*             _pTimer;
-    short               _nCameraID;
-    MASK_EDIT_STATE     _enMaskEditState;
-    MASK_SHAPE          _enMaskShape;
-    vector<cv::Point>   _vecPolylinePoint;
+    Rect                            _rectLrnWindow;
+    Rect                            _rectSrchWindow;
+    bool                            _bLeftButtonDown;
+    cv::Point                       _ptLeftClickStartPos;
+    cv::Point                       _ptLeftClickEndPos;
+    int                             _nState;
+    cv::Mat                         _mat;
+	cv::Mat             			_matDisplay;
+    cv::Mat                         _matMask;
+    vector<Rect>                    _vecRectMask;
+    float                           _fZoomFactor;
+    std::unique_ptr<QTimer>         _pTimer;
+    short                           _nCameraID;
+    MASK_EDIT_STATE                 _enMaskEditState;
+    MASK_SHAPE                      _enMaskShape;
+    vector<cv::Point>               _vecPolylinePoint;
 
-    const cv::Scalar    _colorLrnWindow = Scalar ( 0, 255, 0 );
-    const cv::Scalar    _colorMask = Scalar ( 255, 0, 0 );
-    const float         _constMaxZoomFactor = 4.f;
-    const float         _constMinZoomFactor = 0.25;
-    DialogEditMask      *_pDialogEditMask;
+    const cv::Scalar                _colorLrnWindow = Scalar ( 0, 255, 0 );
+    const cv::Scalar                _colorMask = Scalar ( 255, 0, 0 );
+    const float                     _constMaxZoomFactor = 4.f;
+    const float                     _constMinZoomFactor = 0.25;
+    std::unique_ptr<DialogEditMask> _pDialogEditMask;
 signals:
 
 protected slots:
