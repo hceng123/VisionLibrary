@@ -1,11 +1,13 @@
 #include "visionwidget.h"
 #include <QFileDialog>
+//#include <QValidator>
 
 VisionWidget::VisionWidget(QWidget *parent)
     : QMainWindow(parent)
 {
     ui.setupUi(this);
     ui.visionViewToolBox->SetVisionView(ui.visionView);
+    ui.lineEditFitCircleErrTol->setValidator(new QIntValidator(1,100, this) );
 }
 
 VisionWidget::~VisionWidget()
