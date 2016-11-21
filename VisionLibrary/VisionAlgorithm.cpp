@@ -1659,6 +1659,9 @@ VisionStatus VisionAlgorithm::fitCircle(PR_FIT_CIRCLE_CMD *pstCmd, PR_FIT_CIRCLE
 
     cv::threshold( matROI, matThreshold, pstCmd->nThreshold, 255, cv::THRESH_BINARY);
 
+	if (PR_DEBUG_MODE::SHOW_IMAGE == Config::GetInstance()->getDebugMode())
+		showImage("Threshold image", matThreshold);
+
     VectorOfPoint vecPoints;
     for (int row = 0; row < matThreshold.rows; ++ row)
     {
@@ -1671,18 +1674,25 @@ VisionStatus VisionAlgorithm::fitCircle(PR_FIT_CIRCLE_CMD *pstCmd, PR_FIT_CIRCLE
         }
     }
     cv::RotatedRect fitResult;
-    if ( PR_FIT_CIRCLE_METHOD::RANSAC == pstCmd->enMethod)
+	if (PR_FIT_CIRCLE_METHOD::RANSAC == pstCmd->enMethod)	{
+		if ( 1000 <= pstCmd->nMaxRansacTime || pstCmd->nMaxRansacTime <= 0 ) {
+			_snprintf(charrMsg, sizeof(charrMsg), "Max Rransac time %d is invalid", pstCmd->nMaxRansacTime);
+			WriteLog(charrMsg);
+			pstRpy->nStatus = ToInt32(VisionStatus::INVALID_PARAM);
+			return VisionStatus::INVALID_PARAM;
+		}
         fitResult = _fitCircleRansac ( vecPoints, pstCmd->fErrTol, pstCmd->nMaxRansacTime, vecPoints.size() / 2 );
-    else if ( PR_FIT_CIRCLE_METHOD::LEAST_SQUARE == pstCmd->enMethod )
+	}
+	else if (PR_FIT_CIRCLE_METHOD::LEAST_SQUARE == pstCmd->enMethod)
         fitResult = Fitting::fitCircle ( vecPoints );
     else if ( PR_FIT_CIRCLE_METHOD::LEAST_SQUARE_REFINE == pstCmd->enMethod  )
         fitResult = _fitCircleIterate ( vecPoints, pstCmd->enRmNoiseMethod, pstCmd->fErrTol );
-    if ( fitResult.center.x <= 0 || fitResult.center.y <= 0 || fitResult.size.width > 0 )   {
+    if ( fitResult.center.x <= 0 || fitResult.center.y <= 0 || fitResult.size.width <= 0 )   {
         WriteLog("Failed to fit circle");
         pstRpy->nStatus = ToInt32 ( VisionStatus::FAIL_TO_FIT_CIRCLE );
         return VisionStatus::FAIL_TO_FIT_CIRCLE;
     }
-    pstRpy->ptCircleCtr = fitResult.center;
+	pstRpy->ptCircleCtr = fitResult.center + cv::Point2f(rectROI.x, rectROI.y);
     pstRpy->fRadius = fitResult.size.width / 2;
     pstRpy->nStatus = ToInt32 (VisionStatus::OK);
     return VisionStatus::OK;
