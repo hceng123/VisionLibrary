@@ -2,7 +2,7 @@
 #define _AOI_VISION_FITTING_H_
 
 #include <vector>
-#include "opencv2/core/core.hpp"
+#include "opencv2/core.hpp"
 #include "VisionStruct.h"
 
 namespace AOI

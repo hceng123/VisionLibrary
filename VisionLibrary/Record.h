@@ -3,7 +3,7 @@
 
 #include "BaseType.h"
 #include "VisionHeader.h"
-#include "opencv2/core/core.hpp"
+#include "opencv2/core.hpp"
 
 namespace AOI
 {

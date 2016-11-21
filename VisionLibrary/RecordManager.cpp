@@ -2,7 +2,7 @@
 #include "Log.h"
 #include "boost/filesystem.hpp"
 #include "Config.h"
-#include "opencv2/core/core.hpp"
+#include "opencv2/core.hpp"
 #include "VisionType.h"
 
 namespace bfs = boost::filesystem;

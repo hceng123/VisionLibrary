@@ -1,9 +1,8 @@
 ﻿#include "VisionAlgorithm.h"
 #include "opencv2/features2d.hpp"
 #include "opencv2/xfeatures2d.hpp"
-#include "opencv2/xfeatures2d/nonfree.hpp"
-#include "opencv2/calib3d/calib3d.hpp"
-#include "opencv2/video/tracking.hpp"
+#include "opencv2/calib3d.hpp"
+#include "opencv2/video.hpp"
 #include "opencv2/highgui.hpp"
 #include "TimeLog.h"
 #include "logcase.h"
@@ -417,7 +416,7 @@ VisionStatus VisionAlgorithm::_findDeviceElectrode(const cv::Mat &matDeviceROI, 
         showImage("Canny Result", matCannyOutput );
 
     // Find contours
-    findContours(matCannyOutput, vecContours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, cv::Point(0, 0));
+    cv::findContours(matCannyOutput, vecContours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, cv::Point(0, 0));
 
     // Filter contours
     cv::Mat drawing = cv::Mat::zeros(matCannyOutput.size(), CV_8UC3);
@@ -597,7 +596,7 @@ VisionStatus VisionAlgorithm::inspDevice(PR_INSP_DEVICE_CMD *pstInspDeviceCmd, P
         matGray = vecChannels [ Config::GetInstance()->getDeviceInspChannel() ];
 
         cv::Mat matBlur;
-        cv::blur ( matGray, matBlur, cv::Size(2, 2) );
+        cv::blur ( matGray, matBlur, cv::Size(3, 3) );
         if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE )
             showImage("Blur image", matBlur );
 
