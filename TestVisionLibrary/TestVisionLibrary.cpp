@@ -389,6 +389,36 @@ void TestFindEdge()
     std::cout << "Edge count = " << stRpy.nEdgeCount << std::endl;
 }
 
+void TestFitCircle()
+{
+	PR_SetDebugMode(PR_DEBUG_MODE::SHOW_IMAGE);
+
+	PR_FIT_CIRCLE_CMD stCmd;
+	stCmd.matInput = cv::imread("./data/001.bmp");
+	stCmd.enRmNoiseMethod = PR_RM_FIT_NOISE_METHOD::ABSOLUTE_ERR;
+	stCmd.fErrTol = 5;
+	stCmd.ptRangeCtr = cv::Point2f(240, 235);
+	stCmd.fRangeInnterRadius = 180;
+	stCmd.fRangeOutterRadius = 210;
+	stCmd.bAutothreshold = false;
+	stCmd.nThreshold = 200;
+	stCmd.enMethod = PR_FIT_CIRCLE_METHOD::RANSAC;
+	stCmd.nMaxRansacTime = 20;
+
+	PR_FIT_CIRCLE_RPY stRpy;
+	VisionStatus visionStatus = PR_FitCircle(&stCmd, &stRpy);
+	if (VisionStatus::OK != visionStatus)	{
+		std::cout << "Failed to fit circle, VisionStatus = " << stRpy.nStatus << std::endl;
+		return;
+	}
+	cv::Mat matResult = stCmd.matInput.clone();
+	cv::circle(matResult, stCmd.ptRangeCtr, stCmd.fRangeInnterRadius, cv::Scalar(0, 255, 0), 1);
+	cv::circle(matResult, stCmd.ptRangeCtr, stCmd.fRangeOutterRadius, cv::Scalar(0, 255, 0), 1);
+	cv::circle(matResult, stRpy.ptCircleCtr, stRpy.fRadius, cv::Scalar(255, 0, 0), 2);
+	cv::imshow("Fit result", matResult);
+	cv::waitKey(0);
+}
+
 int _tmain(int argc, _TCHAR* argv[])
 {
     PR_SetDebugMode ( PR_DEBUG_MODE::SHOW_IMAGE );
@@ -401,7 +431,9 @@ int _tmain(int argc, _TCHAR* argv[])
     //TestSearchFiducialMark_2();
     //TestSearchFiducialMark_3();
     //TestFitLine();
-    TestFindEdge();
+    //TestFindEdge();
+	//TestInspDeviceAutoThreshold();
+	TestFitCircle();
 
     getchar();
 	return 0;
