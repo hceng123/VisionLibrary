@@ -1,5 +1,6 @@
 #pragma once
 #include "Procedure.h"
+
 class FitCircleProcedure :
     public Procedure
 {

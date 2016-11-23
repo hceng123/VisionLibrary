@@ -1,6 +1,6 @@
 #include "visionwidget.h"
 #include <QFileDialog>
-//#include <QValidator>
+#include "FitCircleProcedure.h"
 
 VisionWidget::VisionWidget(QWidget *parent)
     : QMainWindow(parent)
@@ -30,4 +30,10 @@ void VisionWidget::on_selectImageBtn_clicked()
 
     ui.imagePathEdit->setText(fileNames[0]);
     ui.visionView->setImageFile( fileNames[0].toStdString() );
+}
+
+void VisionWidget::on_fitCircleBtn_clicked()
+{
+	FitCircleProcedure procedure(ui.visionView);
+	procedure.run();
 }

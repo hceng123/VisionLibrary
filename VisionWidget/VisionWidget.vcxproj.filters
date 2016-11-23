@@ -83,6 +83,15 @@
     <ClCompile Include="FitCircleProcedure.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="messageboxdialog.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug\moc_messageboxdialog.cpp">
+      <Filter>Generated Files\Debug</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release\moc_messageboxdialog.cpp">
+      <Filter>Generated Files\Release</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="visionwidget.h">
@@ -109,6 +118,12 @@
     <CustomBuild Include="visionviewtoolbox.ui">
       <Filter>Form Files</Filter>
     </CustomBuild>
+    <CustomBuild Include="messageboxdialog.h">
+      <Filter>Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="messageboxdialog.ui">
+      <Filter>Form Files</Filter>
+    </CustomBuild>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="GeneratedFiles\ui_visionwidget.h">
@@ -128,6 +143,9 @@
     </ClInclude>
     <ClInclude Include="FitCircleProcedure.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GeneratedFiles\ui_messageboxdialog.h">
+      <Filter>Generated Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
