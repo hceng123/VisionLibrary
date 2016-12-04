@@ -42,24 +42,36 @@ public:
         MASK_SHAPE_POLYLINE,
     };
 
-    enum VISION_VIEW_STATE
+    enum class VISION_VIEW_STATE
     {
         IDLE,
         LEARNING,
-        ADD_MASK
+        ADD_MASK,
+        TEST_VISION_LIBRARY,
+    };
+
+    enum class TEST_VISION_STATE
+    {
+        UNDEFINED,
+        SET_CIRCLE_CTR,
+        SET_CIRCLE_INNER_RADIUS,
+        SET_CIRCLE_OUTTER_RADIUS,
     };
 
     //explicit VisionView(QLabel *parent = 0);
     explicit VisionView(QWidget *parent = 0, Qt::WindowFlags f=0);
     ~VisionView();
-    void setMachineState(int nMachineState);
+    void setMachineState(VISION_VIEW_STATE enMachineState);
     void setMaskEditState(MASK_EDIT_STATE enMaskEditState);
     void setMaskShape(MASK_SHAPE enMaskShape);
+    void setTestVisionState(TEST_VISION_STATE enState);
     void zoomIn();
     void zoomOut();
     void restoreZoom();
     void startTimer();
     void setImageFile(const std::string &filePath);
+    void setMat(const cv::Mat &mat);
+    void getFitCircleRange(cv::Point &ptCtr, float &fInnterRadius, float &fOutterRadius);
     static float distanceOf2Point(const cv::Point &pt1, const cv::Point &pt2);
 protected:
     void mousePressEvent(QMouseEvent *event);
@@ -68,14 +80,15 @@ protected:
     void mouseDoubleClickEvent(QMouseEvent *event);
     void _drawDisplay();
     void _drawLearnWindow(cv::Mat &mat);
-
+    void _drawTestVisionLibrary(cv::Mat &mat);
 private:
     Rect                            _rectLrnWindow;
     Rect                            _rectSrchWindow;
     bool                            _bLeftButtonDown;
     cv::Point                       _ptLeftClickStartPos;
     cv::Point                       _ptLeftClickEndPos;
-    int                             _nState;
+    VISION_VIEW_STATE               _enState;
+    TEST_VISION_STATE               _enTestVisionState;
     cv::Mat                         _mat;
 	cv::Mat             			_matDisplay;
     cv::Mat                         _matMask;
@@ -86,6 +99,9 @@ private:
     MASK_EDIT_STATE                 _enMaskEditState;
     MASK_SHAPE                      _enMaskShape;
     vector<cv::Point>               _vecPolylinePoint;
+    cv::Point                       _ptCircleCtr;
+    float                           _fInnerRangeRadius;
+    float                           _fOutterRangeRadius;
 
     const cv::Scalar                _colorLrnWindow = Scalar ( 0, 255, 0 );
     const cv::Scalar                _colorMask = Scalar ( 255, 0, 0 );

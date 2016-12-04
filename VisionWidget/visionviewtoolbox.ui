@@ -74,7 +74,7 @@
     </size>
    </property>
   </widget>
-  <widget class="QToolButton" name="toolBoxToolButton">
+  <widget class="QToolButton" name="toolBoxButton">
    <property name="geometry">
     <rect>
      <x>0</x>
@@ -85,6 +85,17 @@
    </property>
    <property name="text">
     <string>ToolBox</string>
+   </property>
+   <property name="icon">
+    <iconset resource="visionwidget.qrc">
+     <normaloff>:/VisionWidget/Image/TB_Config.png</normaloff>
+     <normalon>:/VisionWidget/Image/TB_Config.png</normalon>:/VisionWidget/Image/TB_Config.png</iconset>
+   </property>
+   <property name="iconSize">
+    <size>
+     <width>50</width>
+     <height>50</height>
+    </size>
    </property>
   </widget>
  </widget>

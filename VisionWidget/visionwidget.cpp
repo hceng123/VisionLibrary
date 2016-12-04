@@ -1,6 +1,9 @@
 #include "visionwidget.h"
 #include <QFileDialog>
 #include "FitCircleProcedure.h"
+#include "constants.h"
+
+using namespace AOI::Vision;
 
 VisionWidget::VisionWidget(QWidget *parent)
     : QMainWindow(parent)
@@ -8,6 +11,7 @@ VisionWidget::VisionWidget(QWidget *parent)
     ui.setupUi(this);
     ui.visionViewToolBox->SetVisionView(ui.visionView);
     ui.lineEditFitCircleErrTol->setValidator(new QIntValidator(1,100, this) );
+    ui.visionView->setMachineState(VisionView::VISION_VIEW_STATE::TEST_VISION_LIBRARY);
 }
 
 VisionWidget::~VisionWidget()
@@ -30,10 +34,18 @@ void VisionWidget::on_selectImageBtn_clicked()
 
     ui.imagePathEdit->setText(fileNames[0]);
     ui.visionView->setImageFile( fileNames[0].toStdString() );
+    _sourceImagePath = fileNames[0].toStdString();
 }
 
 void VisionWidget::on_fitCircleBtn_clicked()
 {
 	FitCircleProcedure procedure(ui.visionView);
-	procedure.run();
+    procedure.setErrTol ( ui.lineEditFitCircleErrTol->text().toFloat());
+    procedure.setThreshold ( ui.lineEditFitCircleThreshold->text().toInt());
+    procedure.setAlgorithm ( ui.comboBoxAlgorithm->currentIndex());
+	int nStatus = procedure.run(_sourceImagePath);
+    if ( ToInt(VisionStatus::OK) == nStatus )
+    {
+        ui.visionView->setMat(procedure.getResultMat());
+    }
 }

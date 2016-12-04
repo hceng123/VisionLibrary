@@ -325,6 +325,7 @@ struct PR_FIT_CIRCLE_RPY
     Int32                   nStatus;
     cv::Point2f             ptCircleCtr;
     float                   fRadius;
+    cv::Mat                 matResult;
 };
 
 }

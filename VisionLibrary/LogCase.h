@@ -24,6 +24,7 @@ protected:
     const String _CMD_RPY_FILE_NAME = "cmdrpy.log";
     const String _CMD_SECTION = "CMD";
     const String _RPY_SECTION = "RPY";
+    const String _DEFAULT_COORD = "0, 0";
 };
 
 class LogCaseLrnTmpl:public LogCase
@@ -50,6 +51,25 @@ public:
     virtual VisionStatus RunLogCase() override;
     const static String FOLDER_PREFIX;
 private:
+};
+
+class LogCaseFitCircle : public LogCase
+{
+public:
+    explicit LogCaseFitCircle(const String &strPath, bool bReplay = false);
+    VisionStatus WriteCmd(PR_FIT_CIRCLE_CMD *pLrnTmplCmd);
+    VisionStatus WriteRpy(PR_FIT_CIRCLE_RPY *pLrnTmplRpy);
+    virtual VisionStatus RunLogCase() override;
+    const static String FOLDER_PREFIX;
+private:
+    const String _strKeyMethod      = "Method";
+    const String _strKeyExpectedCtr = "ExpectedCtr";
+    const String _strKeyInnerRadius = "InnerRadius";
+    const String _strKeyOuterRadius = "OuterRadius";
+    const String _strKeyThreshold   = "Threshold";
+    const String _strKeyStatus      = "Status";
+    const String _strKeyResultCtr   = "ResultCtr";
+    const String _strKeyRadius      = "Radius";
 };
 
 }

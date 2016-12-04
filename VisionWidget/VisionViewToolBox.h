@@ -3,6 +3,8 @@
 
 #include <QWidget>
 #include <visionview.h>
+#include "dialogvisiontoolbox.h"
+#include <memory>
 
 namespace Ui {
 class VisionViewToolBox;
@@ -20,11 +22,12 @@ public:
 private slots:
     void on_zoomInButton_clicked();
     void on_zoomOutButton_clicked();
-    void on_toolBoxPushButton_clicked();
+    void on_toolBoxButton_clicked();
 
 private:
-    Ui::VisionViewToolBox *ui;
-    VisionView *_pVisionView;
+    Ui::VisionViewToolBox                   *ui;
+    VisionView                              *_pVisionView;
+    std::unique_ptr<DialogVisionToolBox>    _pVisionToolDialog;
 };
 
 #endif // VISIONVIEWTOOLBOX_H

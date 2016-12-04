@@ -9,7 +9,7 @@
 VisionView::VisionView(QWidget *parent , Qt::WindowFlags f)
 {
     this->setParent(parent, f);
-    _nState = LEARNING;
+    _enState = VISION_VIEW_STATE::LEARNING;
 
     _pTimer = std::make_unique<QTimer>(this);
     connect( _pTimer.get(), SIGNAL(timeout()), this, SLOT(updateMat()));
@@ -25,6 +25,7 @@ VisionView::VisionView(QWidget *parent , Qt::WindowFlags f)
     _enMaskEditState = MASK_EDIT_ADD;
     _ptLeftClickStartPos = Point(0,0);
     _ptLeftClickEndPos = Point(0,0);
+    _enTestVisionState = TEST_VISION_STATE::UNDEFINED;
 }
 
 VisionView::~VisionView()
@@ -65,7 +66,7 @@ int VisionView::updateMat()
 
     //show Qimage using QLabel
     setPixmap(QPixmap::fromImage(image));
-    return OK;
+    return ToInt(STATUS::OK);
 }
 
 void VisionView::mousePressEvent(QMouseEvent *event)
@@ -77,7 +78,7 @@ void VisionView::mousePressEvent(QMouseEvent *event)
         _ptLeftClickStartPos.x = point.x();
         _ptLeftClickStartPos.y = point.y();
 
-        if ( ADD_MASK == _nState && MASK_SHAPE_POLYLINE == _enMaskShape )    {
+        if ( VISION_VIEW_STATE::ADD_MASK == _enState && MASK_SHAPE_POLYLINE == _enMaskShape )    {
             if ( _vecPolylinePoint.size() == 0 ) {
                 _vecPolylinePoint.push_back(_ptLeftClickStartPos);
             }
@@ -94,7 +95,7 @@ void VisionView::mouseReleaseEvent(QMouseEvent *event)
         QPoint qPoint = event->pos();
 
         cv::Point ptCV(qPoint.x(), qPoint.y() );
-        if ( ADD_MASK == _nState && MASK_SHAPE_POLYLINE == _enMaskShape )    {
+        if ( VISION_VIEW_STATE::ADD_MASK == _enState && MASK_SHAPE_POLYLINE == _enMaskShape )    {
             bool bAddPolylineMask = false;
             if ( _vecPolylinePoint.size() > 2 ) {
                 float fDistance = distanceOf2Point( ptCV, _vecPolylinePoint[0] );
@@ -114,6 +115,9 @@ void VisionView::mouseReleaseEvent(QMouseEvent *event)
                 _ptLeftClickStartPos = Point(0,0);
                 _ptLeftClickEndPos = Point(0,0);
             }
+        }else if ( VISION_VIEW_STATE::TEST_VISION_LIBRARY == _enState && TEST_VISION_STATE::SET_CIRCLE_CTR == _enTestVisionState ) {
+            _ptCircleCtr = cv::Point ( event->pos().x(), event->pos().y() );
+            _drawDisplay();
         }
     }else if ( event->button() == Qt::MidButton )   {
         QMessageBox msgBox;
@@ -124,19 +128,19 @@ void VisionView::mouseReleaseEvent(QMouseEvent *event)
 
 void VisionView::mouseMoveEvent(QMouseEvent *event)
 {
-    if(event->buttons() & Qt::LeftButton)
+    if(event->buttons() & Qt::LeftButton)   //This means left button is pressed.
     {
         //do stuff
         QPoint point = event->pos();
         _ptLeftClickEndPos.x = point.x();
         _ptLeftClickEndPos.y = point.y();
 
-        if ( LEARNING == _nState )  {
+        if ( VISION_VIEW_STATE::LEARNING == _enState )  {
             _rectLrnWindow.x = _ptLeftClickStartPos.x;
             _rectLrnWindow.y = _ptLeftClickStartPos.y;
             _rectLrnWindow.width = _ptLeftClickEndPos.x - _ptLeftClickStartPos.x;
             _rectLrnWindow.height = _ptLeftClickEndPos.y - _ptLeftClickStartPos.y;
-        }else if ( ADD_MASK == _nState )    {
+        }else if ( VISION_VIEW_STATE::ADD_MASK == _enState )    {
             if ( MASK_SHAPE_RECT == _enMaskShape ) {
                 Rect rectMask;
                 rectMask.x = _ptLeftClickStartPos.x;
@@ -159,7 +163,15 @@ void VisionView::mouseMoveEvent(QMouseEvent *event)
             }else if ( MASK_SHAPE_POLYLINE == _enMaskShape )  {
 
             }
-
+            _drawDisplay();
+        }else if ( VISION_VIEW_STATE::TEST_VISION_LIBRARY == _enState ) {
+            if ( TEST_VISION_STATE::SET_CIRCLE_INNER_RADIUS == _enTestVisionState )
+                _fInnerRangeRadius = distanceOf2Point (cv::Point( point.x(), point.y()), _ptCircleCtr);
+            else if ( TEST_VISION_STATE::SET_CIRCLE_OUTTER_RADIUS == _enTestVisionState )   {
+                float fRadius = distanceOf2Point (cv::Point( point.x(), point.y()), _ptCircleCtr);
+                if ( fRadius > _fInnerRangeRadius )
+                    _fOutterRangeRadius = fRadius;
+            }
             _drawDisplay();
         }
     }
@@ -174,16 +186,16 @@ void VisionView::mouseDoubleClickEvent(QMouseEvent *event)
     }
 }
 
-void VisionView::setMachineState(int nMachineState)
+void VisionView::setMachineState(VISION_VIEW_STATE enMachineState)
 {
-    _nState = nMachineState;
+    _enState = enMachineState;
 }
 
 void VisionView::_drawLearnWindow(cv::Mat &mat)
 {
     cv::rectangle ( mat, _rectLrnWindow, _colorLrnWindow, 2 );
 
-    if ( ADD_MASK == _nState && MASK_SHAPE_POLYLINE == _enMaskShape  )    {
+    if ( VISION_VIEW_STATE::ADD_MASK == _enState && MASK_SHAPE_POLYLINE == _enMaskShape  )    {
         if ( _vecPolylinePoint.size() > 1 ) {
             const cv::Point *pts = (const cv::Point *)Mat(_vecPolylinePoint).data;
             int npts = Mat(_vecPolylinePoint).rows;
@@ -209,6 +221,21 @@ void VisionView::_drawLearnWindow(cv::Mat &mat)
 
     double alpha = 0.2;
     cv::addWeighted ( copy, alpha, mat, 1.0 - alpha, 0.0, mat );
+}
+
+void VisionView::_drawTestVisionLibrary(cv::Mat &mat)
+{
+    if (TEST_VISION_STATE::SET_CIRCLE_CTR == _enTestVisionState  ||
+        TEST_VISION_STATE::SET_CIRCLE_INNER_RADIUS == _enTestVisionState ||
+        TEST_VISION_STATE::SET_CIRCLE_OUTTER_RADIUS == _enTestVisionState )
+    {
+        if ( _ptCircleCtr.x > 0 && _ptCircleCtr.y > 0 )
+        cv::circle ( mat, _ptCircleCtr, 2, cv::Scalar ( 0, 255, 0 ), 2 );
+        if ( _fInnerRangeRadius > 2 )
+            cv::circle ( mat, _ptCircleCtr, _fInnerRangeRadius, cv::Scalar ( 0, 255, 0 ), 1 );
+        if ( _fOutterRangeRadius > _fInnerRangeRadius )
+            cv::circle ( mat, _ptCircleCtr, _fOutterRangeRadius, cv::Scalar ( 0, 255, 0 ), 1 );
+    }
 }
 
 void VisionView::_drawDisplay()
@@ -253,7 +280,12 @@ void VisionView::_drawDisplay()
 
     cvtColor( _matDisplay, _matDisplay, CV_BGR2RGB);
 
-    _drawLearnWindow ( _matDisplay );
+    if (VISION_VIEW_STATE::LEARNING == _enState ||
+        VISION_VIEW_STATE::ADD_MASK == _enState)
+        _drawLearnWindow ( _matDisplay );
+    else if ( VISION_VIEW_STATE::TEST_VISION_LIBRARY == _enState )
+        _drawTestVisionLibrary ( _matDisplay );
+
     QImage image = QImage((uchar*) _matDisplay.data, _matDisplay.cols, _matDisplay.rows, _matDisplay.step, QImage::Format_RGB888);
     //show Qimage using QLabel
     setPixmap(QPixmap::fromImage(image));
@@ -285,7 +317,7 @@ void VisionView::showContextMenu(const QPoint& pos) // this is a slot
 
 void VisionView::addMask()
 {
-    _nState = ADD_MASK;
+    _enState = VISION_VIEW_STATE::ADD_MASK;
     if ( _matMask.empty() )
         _matMask = cv::Mat( _matDisplay.size(), CV_8UC1, cv::Scalar(0, 0, 0) );
 
@@ -343,5 +375,34 @@ void VisionView::startTimer()
 void VisionView::setImageFile(const std::string &filePath)
 {
     _mat = cv::imread(filePath);
-    _drawDisplay();    
+    _drawDisplay();
+}
+
+void VisionView::setMat(const cv::Mat &mat)
+{
+    _mat = mat;
+    _drawDisplay();
+}
+
+void VisionView::setTestVisionState(TEST_VISION_STATE enState)
+{
+    _enTestVisionState = enState;
+    if ( TEST_VISION_STATE::UNDEFINED == _enTestVisionState )   {
+        _ptCircleCtr.x = 0;
+        _ptCircleCtr.y = 0;
+        _fInnerRangeRadius = 0.f;
+        _fOutterRangeRadius = 0.f;
+        _drawDisplay();
+    }
+}
+
+void VisionView::getFitCircleRange(cv::Point &ptCtr, float &fInnterRadius, float &fOutterRadius)
+{
+    auto displayWidth = this->size().width();
+    auto displayHeight = this->size().height();
+    
+    ptCtr.x = _ptCircleCtr.x - ( displayWidth - _mat.cols ) / 2;
+    ptCtr.y = _ptCircleCtr.y - ( displayHeight - _mat.rows ) / 2;
+    fInnterRadius = _fInnerRangeRadius;
+    fOutterRadius = _fOutterRangeRadius;
 }

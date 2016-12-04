@@ -1,9 +1,13 @@
 #ifndef CONSTANTS
 #define CONSTANTS
 
-#define OK                          (0)
-#define NOK                         (-1)
-#define ToInt(value)                static_cast<int>(value)
+enum class STATUS
+{
+    NOK = -1,
+    OK = 0,
+};
+
+#define ToInt(value)                (static_cast<int>(value))
 
 class MACHINE_STATE
 {

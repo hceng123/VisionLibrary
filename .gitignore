@@ -25,3 +25,5 @@ RegressionTest/RegressionTest_result.txt
 VisionWidget/GeneratedFiles
 *.dll
 *.lib
+*.tmp
+VisionWidget/Vision

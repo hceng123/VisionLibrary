@@ -143,5 +143,66 @@ VisionStatus LogCaseLrnTmpl::RunLogCase()
 
 const String LogCaseLrnDevice::FOLDER_PREFIX = "LrnDevice";
 
+const String LogCaseFitCircle::FOLDER_PREFIX = "FitCircle";
+LogCaseFitCircle::LogCaseFitCircle(const String &strPath, bool bReplay) : LogCase(strPath)
+{
+    if ( bReplay )
+        _strLogCasePath = strPath;
+    else
+        _strLogCasePath = _generateLogCaseName( FOLDER_PREFIX );
+}
+
+VisionStatus LogCaseFitCircle::WriteCmd(PR_FIT_CIRCLE_CMD *pCmd)
+{
+    CSimpleIni ini(false, false, false);
+    auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
+    ini.LoadFile( cmdRpyFilePath.c_str() );
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyMethod.c_str(), static_cast<long>(pCmd->enMethod) );
+    ini.SetValue(_CMD_SECTION.c_str(), _strKeyExpectedCtr.c_str(), _formatCoordinate(pCmd->ptRangeCtr).c_str() );
+    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyInnerRadius.c_str(), pCmd->fRangeInnterRadius );
+    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyOuterRadius.c_str(), pCmd->fRangeOutterRadius );
+    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyThreshold.c_str(), pCmd->nThreshold );    
+    ini.SaveFile( cmdRpyFilePath.c_str() );
+    cv::imwrite( _strLogCasePath + "image.jpg", pCmd->matInput );
+    return VisionStatus::OK;
+}
+
+VisionStatus LogCaseFitCircle::WriteRpy(PR_FIT_CIRCLE_RPY *pRpy)
+{
+    CSimpleIni ini(false, false, false);
+    auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
+    ini.LoadFile( cmdRpyFilePath.c_str() );
+    ini.SetLongValue  (_RPY_SECTION.c_str(), _strKeyStatus.c_str(), pRpy->nStatus );
+    ini.SetValue(_RPY_SECTION.c_str(), _strKeyResultCtr.c_str(), _formatCoordinate(pRpy->ptCircleCtr).c_str() );    
+    ini.SetDoubleValue(_RPY_SECTION.c_str(), _strKeyRadius.c_str(), pRpy->fRadius );
+    ini.SaveFile( cmdRpyFilePath.c_str() );
+    cv::imwrite( _strLogCasePath + "result.jpg", pRpy->matResult );
+    return VisionStatus::OK;
+}
+
+VisionStatus LogCaseFitCircle::RunLogCase()
+{
+    PR_FIT_CIRCLE_CMD stCmd;
+    VisionStatus enStatus;
+
+    CSimpleIni ini(false, false, false);
+    auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
+    ini.LoadFile( cmdRpyFilePath.c_str() );
+    stCmd.matInput = cv::imread( _strLogCasePath + "image.jpg" );
+    stCmd.enMethod = static_cast<PR_FIT_CIRCLE_METHOD> ( ini.GetLongValue ( _CMD_SECTION.c_str(), _strKeyMethod.c_str(), ToInt32(PR_ALIGN_ALGORITHM::SURF) ) );
+    stCmd.ptRangeCtr = _parseCoordinate ( ini.GetValue(_CMD_SECTION.c_str(), _strKeyExpectedCtr.c_str(), _DEFAULT_COORD.c_str() ) );
+    stCmd.fRangeInnterRadius = ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyInnerRadius.c_str(), 0 );
+    stCmd.fRangeOutterRadius = ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyOuterRadius.c_str(), 0 );
+    stCmd.nThreshold = ini.GetLongValue( _CMD_SECTION.c_str(), _strKeyThreshold.c_str(), 0);   
+
+    PR_FIT_CIRCLE_RPY stRpy;
+
+    std::shared_ptr<VisionAlgorithm> pVA = VisionAlgorithm::create();
+    enStatus = pVA->fitCircle ( &stCmd, &stRpy, true );
+
+    WriteRpy( &stRpy );
+    return enStatus;
+}
+
 }
 }

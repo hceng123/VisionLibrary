@@ -14,9 +14,10 @@ public:
 
 private slots:
     void on_selectImageBtn_clicked();
-		void on_fitCircleBtn_clicked();
+	void on_fitCircleBtn_clicked();
 private:
     Ui::VisionWidgetClass ui;
+    std::string           _sourceImagePath;
 };
 
 #endif // VISIONWIDGET_H

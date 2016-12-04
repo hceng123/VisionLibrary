@@ -1099,10 +1099,12 @@ VisionStatus VisionAlgorithm::runLogCase(const std::string &strPath)
     pos = folderName.find('_');
     auto folderPrefix = folderName.substr(0, pos);
 
-    std::shared_ptr<LogCase> pLogCase = nullptr;
+    std::unique_ptr<LogCase> pLogCase = nullptr;
     if ( LogCaseLrnTmpl::FOLDER_PREFIX == folderPrefix )
-        pLogCase = std::make_shared <LogCaseLrnTmpl>( strLocalPath, true );
-    
+        pLogCase = std::make_unique <LogCaseLrnTmpl>( strLocalPath, true );
+    else if ( LogCaseFitCircle::FOLDER_PREFIX == folderPrefix )
+        pLogCase = std::make_unique <LogCaseFitCircle>( strLocalPath, true );
+
     if ( nullptr != pLogCase )
         enStatus = pLogCase->RunLogCase();
     else
@@ -1624,7 +1626,7 @@ VisionStatus VisionAlgorithm::findEdge(PR_FIND_EDGE_CMD *pstCmd, PR_FIND_EDGE_RP
     return VisionStatus::OK;
 }
 
-VisionStatus VisionAlgorithm::fitCircle(PR_FIT_CIRCLE_CMD *pstCmd, PR_FIT_CIRCLE_RPY *pstRpy)
+VisionStatus VisionAlgorithm::fitCircle(PR_FIT_CIRCLE_CMD *pstCmd, PR_FIT_CIRCLE_RPY *pstRpy, bool bReplay)
 {
     char charrMsg [ 1000 ];
     if (NULL == pstCmd || NULL == pstRpy) {
@@ -1639,7 +1641,7 @@ VisionStatus VisionAlgorithm::fitCircle(PR_FIT_CIRCLE_CMD *pstCmd, PR_FIT_CIRCLE
         pstRpy->nStatus = ToInt32 ( VisionStatus::INVALID_PARAM );
         return VisionStatus::INVALID_PARAM;
     }
-
+    
     cv::Rect2f rectROI( pstCmd->ptRangeCtr.x - pstCmd->fRangeOutterRadius, pstCmd->ptRangeCtr.y - pstCmd->fRangeOutterRadius,
         2.f * pstCmd->fRangeOutterRadius, 2.f * pstCmd->fRangeOutterRadius );
     if ( rectROI.x < 0 || rectROI.y < 0 || 
@@ -1649,6 +1651,15 @@ VisionStatus VisionAlgorithm::fitCircle(PR_FIT_CIRCLE_CMD *pstCmd, PR_FIT_CIRCLE
         pstRpy->nStatus = ToInt32 ( VisionStatus::INVALID_PARAM );
         return VisionStatus::INVALID_PARAM;
     }
+
+    VisionStatus enStatus;
+    std::unique_ptr<LogCaseFitCircle> pLogCase;
+    if ( ! bReplay )    {
+        pLogCase = std::make_unique<LogCaseFitCircle>( Config::GetInstance()->getLogCaseDir() );
+        if ( PR_DEBUG_MODE::LOG_ALL_CASE == Config::GetInstance()->getDebugMode() )
+            pLogCase->WriteCmd ( pstCmd );
+    }
+
     cv::Mat matROI(pstCmd->matInput, rectROI);
     cv::Mat matGray, matThreshold;
 
@@ -1690,11 +1701,30 @@ VisionStatus VisionAlgorithm::fitCircle(PR_FIT_CIRCLE_CMD *pstCmd, PR_FIT_CIRCLE
     if ( fitResult.center.x <= 0 || fitResult.center.y <= 0 || fitResult.size.width <= 0 )   {
         WriteLog("Failed to fit circle");
         pstRpy->nStatus = ToInt32 ( VisionStatus::FAIL_TO_FIT_CIRCLE );
-        return VisionStatus::FAIL_TO_FIT_CIRCLE;
+        enStatus = VisionStatus::FAIL_TO_FIT_CIRCLE;
+        goto EXIT;
     }
 	pstRpy->ptCircleCtr = fitResult.center + cv::Point2f(rectROI.x, rectROI.y);
     pstRpy->fRadius = fitResult.size.width / 2;
+    enStatus = VisionStatus::OK;
     pstRpy->nStatus = ToInt32 (VisionStatus::OK);
+
+    pstRpy->matResult = pstCmd->matInput.clone();
+	cv::circle(pstRpy->matResult, pstCmd->ptRangeCtr, pstCmd->fRangeInnterRadius, cv::Scalar(0, 255, 0), 1);
+	cv::circle(pstRpy->matResult, pstCmd->ptRangeCtr, pstCmd->fRangeOutterRadius, cv::Scalar(0, 255, 0), 1);
+	cv::circle(pstRpy->matResult, pstRpy->ptCircleCtr, pstRpy->fRadius, cv::Scalar(255, 0, 0), 2);
+
+EXIT:
+    if ( ! bReplay )    {
+        if ( PR_DEBUG_MODE::LOG_FAIL_CASE == Config::GetInstance()->getDebugMode() && enStatus != VisionStatus::OK )    {
+            pLogCase->WriteCmd ( pstCmd );
+            pLogCase->WriteRpy ( pstRpy );
+        }
+
+        if ( PR_DEBUG_MODE::LOG_ALL_CASE == Config::GetInstance()->getDebugMode() )
+            pLogCase->WriteRpy ( pstRpy );
+    }
+
     return VisionStatus::OK;
 }
 

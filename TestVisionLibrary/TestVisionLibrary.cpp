@@ -412,9 +412,9 @@ void TestFitCircle()
 		return;
 	}
 	cv::Mat matResult = stCmd.matInput.clone();
-	cv::circle(matResult, stCmd.ptRangeCtr, stCmd.fRangeInnterRadius, cv::Scalar(0, 255, 0), 1);
-	cv::circle(matResult, stCmd.ptRangeCtr, stCmd.fRangeOutterRadius, cv::Scalar(0, 255, 0), 1);
-	cv::circle(matResult, stRpy.ptCircleCtr, stRpy.fRadius, cv::Scalar(255, 0, 0), 2);
+	cv::circle(matResult, stCmd.ptRangeCtr, (int)stCmd.fRangeInnterRadius, cv::Scalar(0, 255, 0), 1);
+	cv::circle(matResult, stCmd.ptRangeCtr, (int)stCmd.fRangeOutterRadius, cv::Scalar(0, 255, 0), 1);
+	cv::circle(matResult, stRpy.ptCircleCtr, (int)stRpy.fRadius, cv::Scalar(255, 0, 0), 2);
 	cv::imshow("Fit result", matResult);
 	cv::waitKey(0);
 }
