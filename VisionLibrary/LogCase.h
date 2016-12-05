@@ -12,7 +12,7 @@ namespace Vision
 class LogCase
 {
 public:
-    explicit LogCase(const String &strPath):_strLogCasePath(strPath)  {}
+    explicit LogCase(const String &strPath, bool bReplay = false):_strLogCasePath(strPath), _bReplay(bReplay) {}
     virtual VisionStatus RunLogCase()  = 0;
 protected:
     String _formatCoordinate(const cv::Point2f &pt);
@@ -25,6 +25,8 @@ protected:
     const String _CMD_SECTION = "CMD";
     const String _RPY_SECTION = "RPY";
     const String _DEFAULT_COORD = "0, 0";
+    const String _DEFAULT_RECT = "0, 0, 0, 0";
+    bool         _bReplay;
 };
 
 class LogCaseLrnTmpl:public LogCase
@@ -66,10 +68,31 @@ private:
     const String _strKeyExpectedCtr = "ExpectedCtr";
     const String _strKeyInnerRadius = "InnerRadius";
     const String _strKeyOuterRadius = "OuterRadius";
+    const String _strKeyErrorTol    = "ErrorTolerance";
     const String _strKeyThreshold   = "Threshold";
     const String _strKeyStatus      = "Status";
     const String _strKeyResultCtr   = "ResultCtr";
     const String _strKeyRadius      = "Radius";
+};
+
+class LogCaseFitLine : public LogCase
+{
+public:
+    explicit LogCaseFitLine(const String &strPath, bool bReplay = false);
+    VisionStatus WriteCmd(PR_FIT_LINE_CMD *pLrnTmplCmd);
+    VisionStatus WriteRpy(PR_FIT_LINE_RPY *pLrnTmplRpy);
+    virtual VisionStatus RunLogCase() override;
+    const static String FOLDER_PREFIX;
+private:
+    const String _strKeyMethod      = "Method";
+    const String _strKeySrchWindow  = "SrchWindow";
+    const String _strKeyErrorTol    = "ErrorTolerance";
+    const String _strKeyThreshold   = "Threshold";
+    const String _strKeyStatus      = "Status";
+    const String _strKeySlope       = "Slope";
+    const String _strKeyIntercept   = "Intercept";
+    const String _strKeyPoint1      = "Point1";
+    const String _strKeyPoint2      = "Point2";
 };
 
 }

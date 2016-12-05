@@ -16,6 +16,7 @@ using VectorOfKeyPoint =  std::vector<cv::KeyPoint> ;
 using VectorOfVectorKeyPoint = std::vector<VectorOfKeyPoint>;
 using VectorOfPoint = std::vector<cv::Point2f>;
 using VectorOfVectorOfPoint = std::vector<VectorOfPoint>;
+using VectorOfRect = std::vector<cv::Rect>;
 
 #define ToInt32(param)      (static_cast<Int32>(param))
 #define ToFloat(param)      (static_cast<float>(param))
@@ -249,6 +250,7 @@ struct PR_FIT_LINE_RPY
     float                   fSlope;
     float                   fIntercept;
     PR_Line2f               stLine;
+    cv::Mat                 matResult;
 };
 
 struct PR_FIT_PARALLEL_LINE_CMD

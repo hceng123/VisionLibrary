@@ -15,6 +15,7 @@ public:
 private slots:
     void on_selectImageBtn_clicked();
 	void on_fitCircleBtn_clicked();
+    void on_fitLineBtn_clicked();
 private:
     Ui::VisionWidgetClass ui;
     std::string           _sourceImagePath;

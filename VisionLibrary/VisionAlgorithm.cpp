@@ -1313,7 +1313,7 @@ VisionStatus VisionAlgorithm::srchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd
     return vecResult;
 }
 
-VisionStatus VisionAlgorithm::fitLine(PR_FIT_LINE_CMD *pstCmd, PR_FIT_LINE_RPY *pstRpy)
+VisionStatus VisionAlgorithm::fitLine(PR_FIT_LINE_CMD *pstCmd, PR_FIT_LINE_RPY *pstRpy, bool bReplay)
 {
     char charrMsg [ 1000 ];
     if (NULL == pstCmd || NULL == pstRpy) {
@@ -1329,6 +1329,17 @@ VisionStatus VisionAlgorithm::fitLine(PR_FIT_LINE_CMD *pstCmd, PR_FIT_LINE_RPY *
         return VisionStatus::INVALID_PARAM;
     }
 
+    std::unique_ptr<LogCaseFitLine> pLogCase;
+    if ( ! bReplay )    {
+        pLogCase = std::make_unique<LogCaseFitLine>( Config::GetInstance()->getLogCaseDir() );
+        if ( PR_DEBUG_MODE::LOG_ALL_CASE == Config::GetInstance()->getDebugMode() )
+            pLogCase->WriteCmd ( pstCmd );
+    }
+
+    VisionStatus enStatus = VisionStatus::OK;
+    std::vector<size_t> overTolPoints;
+    std::vector<float> vecX, vecY;
+
     cv::Mat matGray, matThreshold;
     if ( pstCmd->matInput.channels() > 1 )
         cv::cvtColor ( pstCmd->matInput, matGray, CV_BGR2GRAY );
@@ -1338,10 +1349,10 @@ VisionStatus VisionAlgorithm::fitLine(PR_FIT_LINE_CMD *pstCmd, PR_FIT_LINE_RPY *
     VectorOfPoint vecPoint = _findPointInRegionOverThreshold ( matGray, pstCmd->rectROI, pstCmd->nThreshold );
     if ( vecPoint.size() < 2 )  {
         WriteLog("Input image is empty");
-        return VisionStatus::NOT_ENOUGH_POINTS_TO_FIT;
+        enStatus = VisionStatus::NOT_ENOUGH_POINTS_TO_FIT;
+        goto EXIT;
     }
-
-    std::vector<float> vecX, vecY;
+    
     for ( const auto &point : vecPoint )
     {
         vecX.push_back ( point.x );
@@ -1353,8 +1364,7 @@ VisionStatus VisionAlgorithm::fitLine(PR_FIT_LINE_CMD *pstCmd, PR_FIT_LINE_RPY *
     auto reverseFit = false;
     if ( CalcUtils::calcStdDeviation ( vecY ) > CalcUtils::calcStdDeviation ( vecX ) )
         reverseFit = true;
-
-    std::vector<size_t> overTolPoints;
+    
     int nIteratorNum = 0;
     do
     {
@@ -1367,12 +1377,28 @@ VisionStatus VisionAlgorithm::fitLine(PR_FIT_LINE_CMD *pstCmd, PR_FIT_LINE_RPY *
 
     if ( vecPoint.size() < 2 )  {
         pstRpy->nStatus = ToInt32(VisionStatus::TOO_MUCH_NOISE_TO_FIT);
-        return VisionStatus::TOO_MUCH_NOISE_TO_FIT;
+        enStatus = VisionStatus::TOO_MUCH_NOISE_TO_FIT;
+        goto EXIT;
     }
 
     pstRpy->stLine = CalcUtils::calcEndPointOfLine ( vecPoint, pstRpy->fSlope, pstRpy->fIntercept );
-    pstRpy->nStatus = ToInt32(VisionStatus::OK);
-    return VisionStatus::OK;
+    pstRpy->matResult = pstCmd->matInput.clone();
+    cv::line ( pstRpy->matResult, pstRpy->stLine.pt1, pstRpy->stLine.pt2, cv::Scalar(255,0,0), 2 );
+    enStatus = VisionStatus::OK;
+    pstRpy->nStatus = ToInt32(enStatus);
+
+EXIT:
+    if ( ! bReplay )    {
+        if ( PR_DEBUG_MODE::LOG_FAIL_CASE == Config::GetInstance()->getDebugMode() && enStatus != VisionStatus::OK )    {
+            pLogCase->WriteCmd ( pstCmd );
+            pLogCase->WriteRpy ( pstRpy );
+        }
+
+        if ( PR_DEBUG_MODE::LOG_ALL_CASE == Config::GetInstance()->getDebugMode() )
+            pLogCase->WriteRpy ( pstRpy );
+    }
+    
+    return enStatus;
 }
 
 VisionStatus VisionAlgorithm::fitParallelLine(PR_FIT_PARALLEL_LINE_CMD *pstCmd, PR_FIT_PARALLEL_LINE_RPY *pstRpy)
@@ -1707,12 +1733,12 @@ VisionStatus VisionAlgorithm::fitCircle(PR_FIT_CIRCLE_CMD *pstCmd, PR_FIT_CIRCLE
 	pstRpy->ptCircleCtr = fitResult.center + cv::Point2f(rectROI.x, rectROI.y);
     pstRpy->fRadius = fitResult.size.width / 2;
     enStatus = VisionStatus::OK;
-    pstRpy->nStatus = ToInt32 (VisionStatus::OK);
+    pstRpy->nStatus = ToInt32 (enStatus);
 
     pstRpy->matResult = pstCmd->matInput.clone();
-	cv::circle(pstRpy->matResult, pstCmd->ptRangeCtr, pstCmd->fRangeInnterRadius, cv::Scalar(0, 255, 0), 1);
-	cv::circle(pstRpy->matResult, pstCmd->ptRangeCtr, pstCmd->fRangeOutterRadius, cv::Scalar(0, 255, 0), 1);
-	cv::circle(pstRpy->matResult, pstRpy->ptCircleCtr, pstRpy->fRadius, cv::Scalar(255, 0, 0), 2);
+	cv::circle(pstRpy->matResult, pstCmd->ptRangeCtr, (int)pstCmd->fRangeInnterRadius, cv::Scalar(0, 255, 0), 1);
+	cv::circle(pstRpy->matResult, pstCmd->ptRangeCtr, (int)pstCmd->fRangeOutterRadius, cv::Scalar(0, 255, 0), 1);
+	cv::circle(pstRpy->matResult, pstRpy->ptCircleCtr, (int)pstRpy->fRadius, cv::Scalar(255, 0, 0), 2);
 
 EXIT:
     if ( ! bReplay )    {
@@ -1725,7 +1751,7 @@ EXIT:
             pLogCase->WriteRpy ( pstRpy );
     }
 
-    return VisionStatus::OK;
+    return enStatus;
 }
 
 /* The ransac algorithm is from paper "Random Sample Consensus: A Paradigm for Model Fitting with Apphcatlons to Image Analysis and Automated Cartography".

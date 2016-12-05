@@ -1,6 +1,7 @@
 #include "visionwidget.h"
 #include <QFileDialog>
 #include "FitCircleProcedure.h"
+#include "FitLineProcedure.h"
 #include "constants.h"
 
 using namespace AOI::Vision;
@@ -42,7 +43,20 @@ void VisionWidget::on_fitCircleBtn_clicked()
 	FitCircleProcedure procedure(ui.visionView);
     procedure.setErrTol ( ui.lineEditFitCircleErrTol->text().toFloat());
     procedure.setThreshold ( ui.lineEditFitCircleThreshold->text().toInt());
-    procedure.setAlgorithm ( ui.comboBoxAlgorithm->currentIndex());
+    procedure.setAlgorithm ( ui.comboBoxFitCircleAlgorithm->currentIndex());
+	int nStatus = procedure.run(_sourceImagePath);
+    if ( ToInt(VisionStatus::OK) == nStatus )
+    {
+        ui.visionView->setMat(procedure.getResultMat());
+    }
+}
+
+void VisionWidget::on_fitLineBtn_clicked()
+{
+	FitLineProcedure procedure(ui.visionView);
+    procedure.setErrTol ( ui.lineEditFitLineErrTol->text().toFloat());
+    procedure.setThreshold ( ui.lineEditFitLineThreshold->text().toInt());
+    //procedure.setAlgorithm ( ui.comboBoxFitCircleAlgorithm->currentIndex());
 	int nStatus = procedure.run(_sourceImagePath);
     if ( ToInt(VisionStatus::OK) == nStatus )
     {

@@ -171,6 +171,13 @@ void VisionView::mouseMoveEvent(QMouseEvent *event)
                 float fRadius = distanceOf2Point (cv::Point( point.x(), point.y()), _ptCircleCtr);
                 if ( fRadius > _fInnerRangeRadius )
                     _fOutterRangeRadius = fRadius;
+            }else if ( TEST_VISION_STATE::SET_RECT_SRCH_WINDOW == _enTestVisionState )  {
+                assert ( _nCurrentSrchWindowIndex >= 0 );
+                cv::Rect rect ( _ptLeftClickStartPos.x, _ptLeftClickStartPos.y, _ptLeftClickEndPos.x - _ptLeftClickStartPos.x, _ptLeftClickEndPos.y - _ptLeftClickStartPos.y);
+                if ( _vecRectSrchWindow.size() <= _nCurrentSrchWindowIndex )
+                    _vecRectSrchWindow.push_back ( rect );
+                else
+                    _vecRectSrchWindow[_nCurrentSrchWindowIndex] = rect;
             }
             _drawDisplay();
         }
@@ -235,6 +242,10 @@ void VisionView::_drawTestVisionLibrary(cv::Mat &mat)
             cv::circle ( mat, _ptCircleCtr, _fInnerRangeRadius, cv::Scalar ( 0, 255, 0 ), 1 );
         if ( _fOutterRangeRadius > _fInnerRangeRadius )
             cv::circle ( mat, _ptCircleCtr, _fOutterRangeRadius, cv::Scalar ( 0, 255, 0 ), 1 );
+    }else if ( TEST_VISION_STATE::SET_RECT_SRCH_WINDOW == _enTestVisionState )
+    {
+        for ( const auto &rect : _vecRectSrchWindow )
+            cv::rectangle ( mat, rect, _colorLrnWindow, 1 );
     }
 }
 
@@ -396,7 +407,7 @@ void VisionView::setTestVisionState(TEST_VISION_STATE enState)
     }
 }
 
-void VisionView::getFitCircleRange(cv::Point &ptCtr, float &fInnterRadius, float &fOutterRadius)
+void VisionView::getFitCircleRange(cv::Point &ptCtr, float &fInnterRadius, float &fOutterRadius) const
 {
     auto displayWidth = this->size().width();
     auto displayHeight = this->size().height();
@@ -405,4 +416,27 @@ void VisionView::getFitCircleRange(cv::Point &ptCtr, float &fInnterRadius, float
     ptCtr.y = _ptCircleCtr.y - ( displayHeight - _mat.rows ) / 2;
     fInnterRadius = _fInnerRangeRadius;
     fOutterRadius = _fOutterRangeRadius;
+}
+
+VectorOfRect VisionView::getVecSrchWindow() const
+{
+    auto displayWidth = this->size().width();
+    auto displayHeight = this->size().height();
+    VectorOfRect vecResult;
+    for ( auto rect : _vecRectSrchWindow )
+    {
+        if ( ( displayWidth - _mat.cols * _fZoomFactor ) > 0 )
+            rect.x      = ( rect.x - ( displayWidth - _mat.cols * _fZoomFactor ) / 2 ) / _fZoomFactor;
+        if ( ( displayHeight - _mat.rows * _fZoomFactor ) > 0 )
+            rect.y      = ( rect.y - ( displayWidth - _mat.rows * _fZoomFactor ) / 2 ) / _fZoomFactor;
+        rect.width  /= _fZoomFactor;
+        rect.height /= _fZoomFactor;
+        vecResult.push_back ( rect );
+    }
+    return vecResult;
+}
+
+void VisionView::setCurrentSrchWindowIndex(int nIndex)
+{
+    _nCurrentSrchWindowIndex = nIndex;
 }

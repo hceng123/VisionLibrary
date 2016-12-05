@@ -79,13 +79,13 @@
      <attribute name="title">
       <string>Fitting</string>
      </attribute>
-     <widget class="QGroupBox" name="groupBox">
+     <widget class="QGroupBox" name="groupBoxFitCircle">
       <property name="geometry">
        <rect>
         <x>10</x>
         <y>20</y>
         <width>551</width>
-        <height>111</height>
+        <height>91</height>
        </rect>
       </property>
       <property name="title">
@@ -95,7 +95,7 @@
        <property name="geometry">
         <rect>
          <x>460</x>
-         <y>40</y>
+         <y>30</y>
          <width>75</width>
          <height>23</height>
         </rect>
@@ -107,8 +107,8 @@
       <widget class="QLineEdit" name="lineEditFitCircleErrTol">
        <property name="geometry">
         <rect>
-         <x>80</x>
-         <y>40</y>
+         <x>90</x>
+         <y>30</y>
          <width>61</width>
          <height>20</height>
         </rect>
@@ -124,20 +124,20 @@
        <property name="geometry">
         <rect>
          <x>10</x>
-         <y>40</y>
-         <width>71</width>
+         <y>30</y>
+         <width>81</width>
          <height>16</height>
         </rect>
        </property>
        <property name="text">
-        <string>Err Tolerance</string>
+        <string>Error Tolerance</string>
        </property>
       </widget>
       <widget class="QLabel" name="labelFitCircleThreshold">
        <property name="geometry">
         <rect>
          <x>230</x>
-         <y>40</y>
+         <y>30</y>
          <width>51</width>
          <height>16</height>
         </rect>
@@ -150,7 +150,7 @@
        <property name="geometry">
         <rect>
          <x>280</x>
-         <y>40</y>
+         <y>30</y>
          <width>61</width>
          <height>20</height>
         </rect>
@@ -162,11 +162,11 @@
         <string>200</string>
        </property>
       </widget>
-      <widget class="QComboBox" name="comboBoxAlgorithm">
+      <widget class="QComboBox" name="comboBoxFitCircleAlgorithm">
        <property name="geometry">
         <rect>
-         <x>80</x>
-         <y>80</y>
+         <x>90</x>
+         <y>60</y>
          <width>121</width>
          <height>22</height>
         </rect>
@@ -191,13 +191,97 @@
        <property name="geometry">
         <rect>
          <x>10</x>
-         <y>80</y>
+         <y>60</y>
          <width>51</width>
          <height>16</height>
         </rect>
        </property>
        <property name="text">
         <string>Algorithm</string>
+       </property>
+      </widget>
+     </widget>
+     <widget class="QGroupBox" name="groupBoxFitLine">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>120</y>
+        <width>551</width>
+        <height>61</height>
+       </rect>
+      </property>
+      <property name="title">
+       <string>Fit Line</string>
+      </property>
+      <widget class="QLabel" name="label">
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>20</y>
+         <width>81</width>
+         <height>16</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Error Tolerance</string>
+       </property>
+      </widget>
+      <widget class="QLineEdit" name="lineEditFitLineErrTol">
+       <property name="geometry">
+        <rect>
+         <x>90</x>
+         <y>20</y>
+         <width>61</width>
+         <height>20</height>
+        </rect>
+       </property>
+       <property name="inputMethodHints">
+        <set>Qt::ImhDigitsOnly</set>
+       </property>
+       <property name="text">
+        <string>5</string>
+       </property>
+      </widget>
+      <widget class="QLineEdit" name="lineEditFitLineThreshold">
+       <property name="geometry">
+        <rect>
+         <x>280</x>
+         <y>20</y>
+         <width>61</width>
+         <height>20</height>
+        </rect>
+       </property>
+       <property name="inputMethodHints">
+        <set>Qt::ImhDigitsOnly</set>
+       </property>
+       <property name="text">
+        <string>200</string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="labelFitLineThreshold">
+       <property name="geometry">
+        <rect>
+         <x>230</x>
+         <y>20</y>
+         <width>51</width>
+         <height>16</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Threshold</string>
+       </property>
+      </widget>
+      <widget class="QPushButton" name="fitLineBtn">
+       <property name="geometry">
+        <rect>
+         <x>460</x>
+         <y>20</y>
+         <width>75</width>
+         <height>23</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Fit Cicle</string>
        </property>
       </widget>
      </widget>

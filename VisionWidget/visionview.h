@@ -12,9 +12,11 @@
 #include "opencv/cv.h"
 #include "opencv2/opencv.hpp"
 #include "dialogeditmask.h"
+#include "VisionAPI.h"
 
 using namespace cv;
 using namespace std;
+using namespace AOI::Vision;
 
 bool static IsEuqal(float a, float b)
 {
@@ -56,6 +58,7 @@ public:
         SET_CIRCLE_CTR,
         SET_CIRCLE_INNER_RADIUS,
         SET_CIRCLE_OUTTER_RADIUS,
+        SET_RECT_SRCH_WINDOW,
     };
 
     //explicit VisionView(QLabel *parent = 0);
@@ -71,7 +74,9 @@ public:
     void startTimer();
     void setImageFile(const std::string &filePath);
     void setMat(const cv::Mat &mat);
-    void getFitCircleRange(cv::Point &ptCtr, float &fInnterRadius, float &fOutterRadius);
+    void setCurrentSrchWindowIndex(int nIndex);
+    void getFitCircleRange(cv::Point &ptCtr, float &fInnterRadius, float &fOutterRadius) const;
+    VectorOfRect getVecSrchWindow( ) const;
     static float distanceOf2Point(const cv::Point &pt1, const cv::Point &pt2);
 protected:
     void mousePressEvent(QMouseEvent *event);
@@ -82,8 +87,8 @@ protected:
     void _drawLearnWindow(cv::Mat &mat);
     void _drawTestVisionLibrary(cv::Mat &mat);
 private:
-    Rect                            _rectLrnWindow;
-    Rect                            _rectSrchWindow;
+    cv::Rect                        _rectLrnWindow;
+    cv::Rect                        _rectSrchWindow;
     bool                            _bLeftButtonDown;
     cv::Point                       _ptLeftClickStartPos;
     cv::Point                       _ptLeftClickEndPos;
@@ -92,7 +97,7 @@ private:
     cv::Mat                         _mat;
 	cv::Mat             			_matDisplay;
     cv::Mat                         _matMask;
-    vector<Rect>                    _vecRectMask;
+    VectorOfRect                    _vecRectMask;
     float                           _fZoomFactor;
     std::unique_ptr<QTimer>         _pTimer;
     short                           _nCameraID;
@@ -102,6 +107,8 @@ private:
     cv::Point                       _ptCircleCtr;
     float                           _fInnerRangeRadius;
     float                           _fOutterRangeRadius;
+    int                             _nCurrentSrchWindowIndex;
+    std::vector<cv::Rect>           _vecRectSrchWindow;
 
     const cv::Scalar                _colorLrnWindow = Scalar ( 0, 255, 0 );
     const cv::Scalar                _colorMask = Scalar ( 255, 0, 0 );
