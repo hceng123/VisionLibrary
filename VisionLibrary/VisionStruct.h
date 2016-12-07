@@ -2,6 +2,7 @@
 #define _AOI_STRUCT_H_
 
 #include "VisionType.h"
+#include "VisionStatus.h"
 #include "opencv2/core/core.hpp"
 #include "BaseType.h"
 
@@ -328,6 +329,12 @@ struct PR_FIT_CIRCLE_RPY
     cv::Point2f             ptCircleCtr;
     float                   fRadius;
     cv::Mat                 matResult;
+};
+
+struct PR_GET_ERROR_STR_RPY
+{
+	char				    achErrorStr[PR_MAX_ERR_STR_LEN];
+	PR_STATUS_ERROR_LEVEL	enErrorLevel;
 };
 
 }

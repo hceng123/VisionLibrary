@@ -17,7 +17,7 @@
    <property name="geometry">
     <rect>
      <x>0</x>
-     <y>0</y>
+     <y>50</y>
      <width>50</width>
      <height>50</height>
     </rect>
@@ -49,7 +49,7 @@
    <property name="geometry">
     <rect>
      <x>0</x>
-     <y>50</y>
+     <y>100</y>
      <width>50</width>
      <height>50</height>
     </rect>
@@ -78,7 +78,7 @@
    <property name="geometry">
     <rect>
      <x>0</x>
-     <y>100</y>
+     <y>150</y>
      <width>51</width>
      <height>51</height>
     </rect>
@@ -90,6 +90,40 @@
     <iconset resource="visionwidget.qrc">
      <normaloff>:/VisionWidget/Image/TB_Config.png</normaloff>
      <normalon>:/VisionWidget/Image/TB_Config.png</normalon>:/VisionWidget/Image/TB_Config.png</iconset>
+   </property>
+   <property name="iconSize">
+    <size>
+     <width>50</width>
+     <height>50</height>
+    </size>
+   </property>
+  </widget>
+  <widget class="QToolButton" name="swapImageButton">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>50</width>
+     <height>50</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>7</pointsize>
+    </font>
+   </property>
+   <property name="toolTip">
+    <string>Swap between input image and result image</string>
+   </property>
+   <property name="styleSheet">
+    <string notr="true"/>
+   </property>
+   <property name="text">
+    <string/>
+   </property>
+   <property name="icon">
+    <iconset resource="visionwidget.qrc">
+     <normaloff>:/VisionWidget/Image/TB_Swap.png</normaloff>:/VisionWidget/Image/TB_Swap.png</iconset>
    </property>
    <property name="iconSize">
     <size>

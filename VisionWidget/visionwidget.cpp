@@ -3,6 +3,7 @@
 #include "FitCircleProcedure.h"
 #include "FitLineProcedure.h"
 #include "constants.h"
+#include <QMessageBox>
 
 using namespace AOI::Vision;
 
@@ -18,6 +19,20 @@ VisionWidget::VisionWidget(QWidget *parent)
 VisionWidget::~VisionWidget()
 {
 
+}
+
+bool VisionWidget::checkDisplayImage()
+{
+    if ( _sourceImagePath.empty() ) {
+        QMessageBox::information(this, "Vision Widget", "Please select an image first!", "Quit");
+        return false;
+    }
+
+    if ( ui.visionView->isDisplayResultImage()) {
+        QMessageBox::information(this, "Vision Widget", "Please swap to the original image first!", "Quit");
+        return false;
+    }
+    return true;
 }
 
 void VisionWidget::on_selectImageBtn_clicked()
@@ -40,6 +55,8 @@ void VisionWidget::on_selectImageBtn_clicked()
 
 void VisionWidget::on_fitCircleBtn_clicked()
 {
+    if ( ! checkDisplayImage() )
+        return;
 	FitCircleProcedure procedure(ui.visionView);
     procedure.setErrTol ( ui.lineEditFitCircleErrTol->text().toFloat());
     procedure.setThreshold ( ui.lineEditFitCircleThreshold->text().toInt());
@@ -47,12 +64,15 @@ void VisionWidget::on_fitCircleBtn_clicked()
 	int nStatus = procedure.run(_sourceImagePath);
     if ( ToInt(VisionStatus::OK) == nStatus )
     {
-        ui.visionView->setMat(procedure.getResultMat());
+        ui.visionView->setResultMat(procedure.getResultMat());
     }
 }
 
 void VisionWidget::on_fitLineBtn_clicked()
 {
+    if ( ! checkDisplayImage() )
+        return;
+
 	FitLineProcedure procedure(ui.visionView);
     procedure.setErrTol ( ui.lineEditFitLineErrTol->text().toFloat());
     procedure.setThreshold ( ui.lineEditFitLineThreshold->text().toInt());
@@ -60,6 +80,6 @@ void VisionWidget::on_fitLineBtn_clicked()
 	int nStatus = procedure.run(_sourceImagePath);
     if ( ToInt(VisionStatus::OK) == nStatus )
     {
-        ui.visionView->setMat(procedure.getResultMat());
+        ui.visionView->setResultMat(procedure.getResultMat());
     }
 }

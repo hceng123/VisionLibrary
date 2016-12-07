@@ -6,6 +6,15 @@ namespace AOI
 namespace Vision
 {
 
+enum class PR_STATUS_ERROR_LEVEL
+{  
+    PR_STATUS_NO_ERROR,					// No error status
+    PR_STATUS_WARNING,					// Warning status
+    PR_STATUS_INFORMATION,				// Informative
+    PR_STATUS_GENERAL_ERROR,			// Unexpected output but no need to restart application
+    PR_STATUS_FATAL_ERROR				// Fatal error and need to restart application
+};
+
 enum class VisionStatus
 {
 	OK,

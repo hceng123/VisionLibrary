@@ -13,6 +13,7 @@ namespace Vision
 #define DEVICE_ELECTRODE_COUNT                  (2)
 #define PR_MAX_GRAY_LEVEL                       (255)
 #define PR_RECT_EDGE_COUNT                      (4)
+#define PR_MAX_ERR_STR_LEN						(100)
 
 enum class PR_ALIGN_ALGORITHM
 {

@@ -27,3 +27,4 @@ VisionWidget/GeneratedFiles
 *.lib
 *.tmp
 VisionWidget/Vision
+VisionWidget/*.bmp

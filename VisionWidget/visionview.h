@@ -68,16 +68,18 @@ public:
     void setMaskEditState(MASK_EDIT_STATE enMaskEditState);
     void setMaskShape(MASK_SHAPE enMaskShape);
     void setTestVisionState(TEST_VISION_STATE enState);
+    void swapImage();
     void zoomIn();
     void zoomOut();
     void restoreZoom();
     void startTimer();
     void setImageFile(const std::string &filePath);
-    void setMat(const cv::Mat &mat);
+    void setResultMat(const cv::Mat &mat);
+    bool isDisplayResultImage() const;
     void setCurrentSrchWindowIndex(int nIndex);
     void getFitCircleRange(cv::Point &ptCtr, float &fInnterRadius, float &fOutterRadius) const;
     VectorOfRect getVecSrchWindow( ) const;
-    static float distanceOf2Point(const cv::Point &pt1, const cv::Point &pt2);
+    static float distanceOf2Point(const cv::Point &pt1, const cv::Point &pt2);    
 protected:
     void mousePressEvent(QMouseEvent *event);
     void mouseReleaseEvent(QMouseEvent *event);
@@ -95,6 +97,8 @@ private:
     VISION_VIEW_STATE               _enState;
     TEST_VISION_STATE               _enTestVisionState;
     cv::Mat                         _mat;
+    cv::Mat                         _matResult;
+    bool                            _bDisplayResultImage;
 	cv::Mat             			_matDisplay;
     cv::Mat                         _matMask;
     VectorOfRect                    _vecRectMask;

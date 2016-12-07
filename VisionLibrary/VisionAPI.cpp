@@ -8,6 +8,7 @@
 #include "RecordManager.h"
 #include "Config.h"
 #include "Version.h"
+#include "SubFunctions.h"
 
 namespace AOI
 {
@@ -110,6 +111,11 @@ VisionStatus  PR_FitCircle(PR_FIT_CIRCLE_CMD *pstCmd, PR_FIT_CIRCLE_RPY *pstRpy)
 {
     std::shared_ptr<VisionAlgorithm> pVA = VisionAlgorithm::create();
     return pVA->fitCircle ( pstCmd, pstRpy );
+}
+
+VisionStatus  PR_GetErrorStr(VisionStatus enStatus, PR_GET_ERROR_STR_RPY *pstRpy)
+{
+    return GetErrorInfo(enStatus, pstRpy);
 }
 
 }

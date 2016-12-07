@@ -14,6 +14,13 @@ VisionViewToolBox::~VisionViewToolBox()
     delete ui;
 }
 
+void VisionViewToolBox::on_swapImageButton_clicked()
+{
+    if ( _pVisionView == NULL )
+        return;
+    _pVisionView->swapImage();
+}
+
 void VisionViewToolBox::on_zoomInButton_clicked()
 {
     if ( _pVisionView == NULL )

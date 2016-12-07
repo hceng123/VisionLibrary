@@ -61,11 +61,17 @@ int FitCircleProcedure::run(const std::string &imagePath)
         _pVisionView->setTestVisionState(VisionView::TEST_VISION_STATE::UNDEFINED);
         return ToInt(STATUS::NOK);
     }
-    int nStatus = fitCircle(imagePath);
-    return nStatus;
+    VisionStatus enStatus = fitCircle(imagePath);
+    if ( VisionStatus::OK != enStatus ) {
+        PR_GET_ERROR_STR_RPY stErrStrRpy;
+        PR_GetErrorStr(enStatus, &stErrStrRpy);
+        QMessageBox::critical(nullptr, "Fit Circle", stErrStrRpy.achErrorStr, "Quit");
+    }
+    _pVisionView->setTestVisionState(VisionView::TEST_VISION_STATE::UNDEFINED);
+    return ToInt(enStatus);
 }
 
-int FitCircleProcedure::fitCircle(const std::string &imagePath)
+VisionStatus FitCircleProcedure::fitCircle(const std::string &imagePath)
 {
     PR_FIT_CIRCLE_CMD stCmd;
 	stCmd.matInput = cv::imread(imagePath);
@@ -80,13 +86,12 @@ int FitCircleProcedure::fitCircle(const std::string &imagePath)
 	stCmd.nMaxRansacTime = 20;
 
 	PR_FIT_CIRCLE_RPY stRpy;
-	VisionStatus visionStatus = PR_FitCircle(&stCmd, &stRpy);
-	if (VisionStatus::OK != visionStatus)	{
-		std::cout << "Failed to fit circle, VisionStatus = " << stRpy.nStatus << std::endl;
-		return static_cast<int> ( visionStatus );
-	}
-	_matResult = stRpy.matResult;	
-    return ToInt(STATUS::OK);
+	VisionStatus enStatus = PR_FitCircle(&stCmd, &stRpy);
+	if (VisionStatus::OK == enStatus)	{
+		_matResult = stRpy.matResult;
+    }
+		
+    return enStatus;
 }
 
 void FitCircleProcedure::setErrTol(float fErrTol)

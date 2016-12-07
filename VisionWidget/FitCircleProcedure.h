@@ -20,5 +20,5 @@ private:
     int                             _nThreshold;
     int                             _nAlgorithm;
     cv::Mat                         _matResult;
-    int fitCircle(const std::string &imagePath);
+    VisionStatus fitCircle(const std::string &imagePath);
 };

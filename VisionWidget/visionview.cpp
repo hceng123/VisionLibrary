@@ -26,6 +26,7 @@ VisionView::VisionView(QWidget *parent , Qt::WindowFlags f)
     _ptLeftClickStartPos = Point(0,0);
     _ptLeftClickEndPos = Point(0,0);
     _enTestVisionState = TEST_VISION_STATE::UNDEFINED;
+    _bDisplayResultImage = false;
 }
 
 VisionView::~VisionView()
@@ -71,6 +72,9 @@ int VisionView::updateMat()
 
 void VisionView::mousePressEvent(QMouseEvent *event)
 {
+    if ( _bDisplayResultImage )
+        return;
+
     if ( Qt::LeftButton == event->button() )
     {
         _bLeftButtonDown = true;
@@ -88,6 +92,9 @@ void VisionView::mousePressEvent(QMouseEvent *event)
 
 void VisionView::mouseReleaseEvent(QMouseEvent *event)
 {
+    if ( _bDisplayResultImage )
+        return;
+
     if ( Qt::LeftButton == event->button() )
     {
         _bLeftButtonDown = false;
@@ -128,6 +135,9 @@ void VisionView::mouseReleaseEvent(QMouseEvent *event)
 
 void VisionView::mouseMoveEvent(QMouseEvent *event)
 {
+    if ( _bDisplayResultImage )
+        return;
+
     if(event->buttons() & Qt::LeftButton)   //This means left button is pressed.
     {
         //do stuff
@@ -251,16 +261,22 @@ void VisionView::_drawTestVisionLibrary(cv::Mat &mat)
 
 void VisionView::_drawDisplay()
 {
-    if ( _mat.empty() )
+    cv::Mat mat;
+    if ( _bDisplayResultImage )
+        mat = _matResult;
+    else
+        mat = _mat;
+
+    if ( mat.empty() )
         return;
 
     auto displayWidth = this->size().width();
     auto displayHeight = this->size().height();
     cv::Mat matZoomResult;
     if ( ! IsEuqal ( _fZoomFactor, 1.0f ) )       
-        cv::resize( _mat, matZoomResult, cv::Size(), _fZoomFactor, _fZoomFactor );        
+        cv::resize( mat, matZoomResult, cv::Size(), _fZoomFactor, _fZoomFactor );        
     else
-        matZoomResult = _mat.clone();
+        matZoomResult = mat.clone();
 
     _matDisplay = cv::Mat::ones( displayHeight, displayWidth, _mat.type() ) * 255;
     _matDisplay.setTo(cv::Scalar(255,255,255));
@@ -341,6 +357,16 @@ void VisionView::addMask()
     _pDialogEditMask->raise();
 }
 
+void VisionView::swapImage()
+{
+    if ( _bDisplayResultImage )
+        _bDisplayResultImage = false;
+    else if ( ! _bDisplayResultImage && ! _matResult.empty() )
+        _bDisplayResultImage = true;
+
+    _drawDisplay();
+}
+
 void VisionView::zoomIn()
 {
     if ( _fZoomFactor < _constMaxZoomFactor )
@@ -389,10 +415,16 @@ void VisionView::setImageFile(const std::string &filePath)
     _drawDisplay();
 }
 
-void VisionView::setMat(const cv::Mat &mat)
+void VisionView::setResultMat(const cv::Mat &mat)
 {
-    _mat = mat;
+    _matResult = mat;
+    _bDisplayResultImage = true;
     _drawDisplay();
+}
+
+bool VisionView::isDisplayResultImage() const
+{
+    return _bDisplayResultImage;
 }
 
 void VisionView::setTestVisionState(TEST_VISION_STATE enState)
@@ -412,10 +444,13 @@ void VisionView::getFitCircleRange(cv::Point &ptCtr, float &fInnterRadius, float
     auto displayWidth = this->size().width();
     auto displayHeight = this->size().height();
     
-    ptCtr.x = _ptCircleCtr.x - ( displayWidth - _mat.cols ) / 2;
-    ptCtr.y = _ptCircleCtr.y - ( displayHeight - _mat.rows ) / 2;
-    fInnterRadius = _fInnerRangeRadius;
-    fOutterRadius = _fOutterRangeRadius;
+    if ( ( displayWidth - _mat.cols * _fZoomFactor ) > 0 )
+        ptCtr.x = ( _ptCircleCtr.x - ( displayWidth - _mat.cols * _fZoomFactor ) / 2 ) / _fZoomFactor;
+
+    if ( ( displayHeight - _mat.rows * _fZoomFactor ) > 0 )
+        ptCtr.y = ( _ptCircleCtr.y - ( displayWidth - _mat.cols * _fZoomFactor ) / 2 ) / _fZoomFactor;
+    fInnterRadius = _fInnerRangeRadius  / _fZoomFactor;
+    fOutterRadius = _fOutterRangeRadius / _fZoomFactor;
 }
 
 VectorOfRect VisionView::getVecSrchWindow() const
@@ -426,9 +461,9 @@ VectorOfRect VisionView::getVecSrchWindow() const
     for ( auto rect : _vecRectSrchWindow )
     {
         if ( ( displayWidth - _mat.cols * _fZoomFactor ) > 0 )
-            rect.x      = ( rect.x - ( displayWidth - _mat.cols * _fZoomFactor ) / 2 ) / _fZoomFactor;
+            rect.x = ( rect.x - ( displayWidth - _mat.cols * _fZoomFactor ) / 2 ) / _fZoomFactor;
         if ( ( displayHeight - _mat.rows * _fZoomFactor ) > 0 )
-            rect.y      = ( rect.y - ( displayWidth - _mat.rows * _fZoomFactor ) / 2 ) / _fZoomFactor;
+            rect.y = ( rect.y - ( displayWidth - _mat.rows * _fZoomFactor ) / 2 ) / _fZoomFactor;
         rect.width  /= _fZoomFactor;
         rect.height /= _fZoomFactor;
         vecResult.push_back ( rect );

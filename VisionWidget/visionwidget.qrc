@@ -4,5 +4,6 @@
         <file>Image/ZoomIn2.png</file>
         <file>Image/ZoomOut.png</file>
         <file>Image/TB_Config.png</file>
+        <file>Image/TB_Swap.png</file>
     </qresource>
 </RCC>

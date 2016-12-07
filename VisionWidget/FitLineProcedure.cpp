@@ -42,6 +42,8 @@ int FitLineProcedure::run(const std::string &imagePath)
     _rectSrchWindow = vecResult[0];
 
     int nStatus = fitLine(imagePath);
+
+    _pVisionView->setTestVisionState(VisionView::TEST_VISION_STATE::UNDEFINED);
     return nStatus;
 }
 

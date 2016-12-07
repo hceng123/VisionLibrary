@@ -85,6 +85,7 @@
     <ClInclude Include="Record.h" />
     <ClInclude Include="RecordManager.h" />
     <ClInclude Include="SimpleIni.h" />
+    <ClInclude Include="SubFunctions.h" />
     <ClInclude Include="TimeLog.h" />
     <ClInclude Include="Version.h" />
     <ClInclude Include="VisionHeader.h" />
@@ -98,6 +99,7 @@
   <ItemGroup>
     <ClCompile Include="CalcUtils.cpp" />
     <ClCompile Include="Config.cpp" />
+    <ClCompile Include="ErrorMessage.cpp" />
     <ClCompile Include="Exception.cpp" />
     <ClCompile Include="FileUtils.cpp" />
     <ClCompile Include="Fitting.cpp" />

@@ -20,6 +20,7 @@ public:
     void SetVisionView(VisionView *pVisionView);
 
 private slots:
+    void on_swapImageButton_clicked();
     void on_zoomInButton_clicked();
     void on_zoomOutButton_clicked();
     void on_toolBoxButton_clicked();
