@@ -311,96 +311,358 @@ namespace
 }
 
 /*******************************************************************************
-* Purpose:   Auto find the threshold to distinguish the feature need to extract. 
-* Algorithm: The method is come from paper: "A Visual Inspection System for 
-*            Surface Mounted Components Based on Color Features".
+* Purpose:   Auto find the threshold to distinguish the feature need to extract.
+* Algorithm: The method is come from paper: "A Fast Algorithm for Multilevel 
+*            Thresholding".
 * Input:     mat - The input image.
+             N - Number of therehold to calculate. 1 <= N <= 4
 * Output:    The calculated threshold.
-* Node:      Mu is name of greek symbol μ.
+* Note:      Mu is name of greek symbol μ.
+*            Omega and Eta are also greek symbol.
 *******************************************************************************/
-int VisionAlgorithm::_autoThreshold(const cv::Mat &mat)
+std::vector<int> VisionAlgorithm::_autoMultiLevelThreshold(const cv::Mat &mat, const int N)
 {
-    const int sbins = 32;
+    assert(N >= 1 && N <= 4);
+
+    const int sbins = 128;
+    const float MIN_P = 0.001f;
+    std::vector<int> vecThreshold;
     int channels[] = { 0 };
     int histSize[] = { sbins };
 
     // saturation varies from 0 (black-gray-white) to
     // 255 (pure spectrum color)
-    float sranges[] = { 0, PR_MAX_GRAY_LEVEL };
+    float sranges[] = { 0, 255 };
     const float* ranges[] = { sranges };
 
     cv::MatND hist;
     cv::calcHist(&mat, 1, channels, cv::Mat(), // do not use mask
-                 hist, 1, histSize, ranges,
-                 true, // the histogram is uniform
-                 false);
+        hist, 1, histSize, ranges,
+        true, // the histogram is uniform
+        false);
 
-    if (Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE)   {
-        double maxVal = 0;
-        cv::minMaxLoc ( hist, 0, &maxVal, 0, 0 );
-        int scale = 10;
-        cv::Mat histImg = cv::Mat::zeros ( ToInt32( maxVal / 3 ), ToInt32 ( sbins * scale ), CV_8UC3);
-
-        for (int s = 0; s < sbins; s++)
-        {
-            float binVal = hist.at<float>(s, 0);
-            int intensity = cvRound(binVal * 255 / maxVal);
-            cv::rectangle(histImg, cv::Point(s*scale, 0),
-                cv::Point( ToInt32 ( ( s + 1 ) * scale ) - 1, ToInt32 ( binVal / 3 ) ),
-                cv::Scalar::all(intensity),
-                CV_FILLED);
-        }
-        showImage("Image Histogram", histImg );
+    std::vector<float> P, S;
+    P.push_back(0.f);
+    S.push_back(0.f);
+    float fTotalPixel = (float)mat.rows * mat.cols;
+    for (int i = 0; i < sbins; ++i)   {
+        float fPi = hist.at<float>(i, 0) / fTotalPixel;
+        P.push_back(fPi + P[i]);
+        S.push_back(i * fPi + S[i]);
     }
 
-    vector<float> vecH;
-    float fTotalPixel = (float)mat.rows * mat.cols;
-    for (int i = 0; i < sbins; ++i)
-        vecH.push_back(hist.at <float>(i, 0) / fTotalPixel);
+    std::vector<std::vector<float>> vecVecOmega(sbins + 1, vector<float>(sbins + 1, 0));
+    std::vector<std::vector<float>> vecVecMu(sbins + 1, vector<float>(sbins + 1, 0));
+    std::vector<std::vector<float>> vecVecEta(sbins + 1, vector<float>(sbins + 1, -1.f));
+    for (int i = 0; i <= sbins; ++i)
+    for (int j = i; j <= sbins; ++j)
+    {
+        vecVecOmega[i][j] = P[j] - P[i];
+        vecVecMu[i][j] = S[j] - S[i];
+    }
 
-    float fSigmaSquareMin = 100000.f;
-    int nResultT = 0;
-    for (int T = sbins - 1; T >= 0; --T)  {
-        float fSigmaSquare = 0.f;
-        if (vecH[T] <= 0.0001f)
-            continue;
-        float fMu1 = 0.f, fMu2 = 0.f;
-        float fSumH_1 = 0.f, fSumH_2 = 0.f;
-        float fSumHxL_1 = 0.f, fSumHxL_2 = 0.f;
-
-        for (int i = 0; i < T; ++i)  {
-            fSumH_1 += vecH[i];
-            fSumHxL_1 += i * vecH[i];
-        }
-
-        for (int i = T; i < sbins; ++i)  {
-            fSumH_2 += vecH[i];
-            fSumHxL_2 += i * vecH[i];
-        }
-
-        if (fSumH_1 <= 0.00001f || fSumH_2 < 0.000001f)
-            continue;
-
-        fMu1 = fSumHxL_1 / fSumH_1;
-        fMu2 = fSumHxL_2 / fSumH_2;
-
-        for (int i = 0; i < sbins; ++i)  {
-            if (i < T)    {
-                fSigmaSquare += (i - fMu1) * (i - fMu1) * vecH[i];
+    if (N == 1)
+    {
+        float fMaxSigma = 0;
+        int nResultT1 = 0;
+        for (int T = 1; T < sbins; ++T)
+        {
+            float fSigma = 0.f;
+            if (vecVecOmega[1][T] > MIN_P)
+                fSigma += vecVecMu[1][T] * vecVecMu[1][T] / vecVecOmega[1][T];
+            if (vecVecOmega[T][sbins] > MIN_P)
+                fSigma += vecVecMu[T][sbins] * vecVecMu[T][sbins] / vecVecOmega[T][sbins];
+            if (fMaxSigma < fSigma)    {
+                nResultT1 = T;
+                fMaxSigma = fSigma;
             }
+        }
+        vecThreshold.push_back(nResultT1 * PR_MAX_GRAY_LEVEL / sbins);
+    }
+    else if (N == 2)
+    {
+        float fMaxSigma = 0;
+        int nResultT1 = 0, nResultT2 = 0;
+        for (int T1 = 1; T1 < sbins - 1; ++T1)
+        for (int T2 = T1 + 1; T2 < sbins; ++T2)
+        {
+            float fSigma = 0.f;
+
+            if (vecVecEta[1][T1] >= 0.f)
+                fSigma += vecVecEta[1][T1];
             else
             {
-                fSigmaSquare += (i - fMu2) * (i - fMu2) * vecH[i];
+                if (vecVecOmega[1][T1] > MIN_P)
+                    vecVecEta[1][T1] = vecVecMu[1][T1] * vecVecMu[1][T1] / vecVecOmega[1][T1];
+                else
+                    vecVecEta[1][T1] = 0.f;
+                fSigma += vecVecEta[1][T1];
+            }
+
+            if (vecVecEta[T1][T2] >= 0.f)
+                fSigma += vecVecEta[T1][T2];
+            else
+            {
+                if (vecVecOmega[T1][T2] > MIN_P)
+                    vecVecEta[T1][T2] = vecVecMu[T1][T2] * vecVecMu[T1][T2] / vecVecOmega[T1][T2];
+                else
+                    vecVecEta[T1][T2] = 0.f;
+                fSigma += vecVecEta[T1][T2];
+            }
+
+            if (vecVecEta[T2][sbins] >= 0.f)
+                fSigma += vecVecEta[T2][sbins];
+            else
+            {
+                if (vecVecOmega[T2][sbins] > MIN_P)
+                    vecVecEta[T2][sbins] = vecVecMu[T2][sbins] * vecVecMu[T2][sbins] / vecVecOmega[T2][sbins];
+                else
+                    vecVecEta[T2][sbins] = 0.f;
+                fSigma += vecVecEta[T2][sbins];
+            }
+
+            if (fMaxSigma < fSigma)    {
+                nResultT1 = T1;
+                nResultT2 = T2;
+                fMaxSigma = fSigma;
             }
         }
-        if (fSigmaSquare < fSigmaSquareMin)   {
-            fSigmaSquareMin = fSigmaSquare;
-            nResultT = T;
+        vecThreshold.push_back(nResultT1 * PR_MAX_GRAY_LEVEL / sbins);
+        vecThreshold.push_back(nResultT2 * PR_MAX_GRAY_LEVEL / sbins);
+    }
+    else if (N == 3)
+    {
+        float fMaxSigma = 0;
+        int nResultT1 = 0, nResultT2 = 0, nResultT3 = 0;
+        for (int T1 = 1; T1 < sbins - 2; ++T1)
+        for (int T2 = T1 + 1; T2 < sbins - 1; ++T2)
+        for (int T3 = T2 + 1; T3 < sbins; ++T3)
+        {
+
+            float fSigma = 0.f;
+            if (vecVecEta[1][T1] >= 0.f)
+                fSigma += vecVecEta[1][T1];
+            else
+            {
+                if (vecVecOmega[1][T1] > MIN_P)
+                    vecVecEta[1][T1] = vecVecMu[1][T1] * vecVecMu[1][T1] / vecVecOmega[1][T1];
+                else
+                    vecVecEta[1][T1] = 0.f;
+                fSigma += vecVecEta[1][T1];
+            }
+
+            if (vecVecEta[T1][T2] >= 0.f)
+                fSigma += vecVecEta[T1][T2];
+            else
+            {
+                if (vecVecOmega[T1][T2] > MIN_P)
+                    vecVecEta[T1][T2] = vecVecMu[T1][T2] * vecVecMu[T1][T2] / vecVecOmega[T1][T2];
+                else
+                    vecVecEta[T1][T2] = 0.f;
+                fSigma += vecVecEta[T1][T2];
+            }
+
+            if (vecVecEta[T2][T3] >= 0.f)
+                fSigma += vecVecEta[T2][T3];
+            else
+            {
+                if (vecVecOmega[T2][T3] > MIN_P)
+                    vecVecEta[T2][T3] = vecVecMu[T2][T3] * vecVecMu[T2][T3] / vecVecOmega[T2][T3];
+                else
+                    vecVecEta[T2][T3] = 0.f;
+                fSigma += vecVecEta[T2][T3];
+            }
+
+            if (vecVecEta[T3][sbins] >= 0.f)
+                fSigma += vecVecEta[T3][sbins];
+            else
+            {
+                if (vecVecOmega[T3][sbins] > MIN_P)
+                    vecVecEta[T3][sbins] = vecVecMu[T3][sbins] * vecVecMu[T3][sbins] / vecVecOmega[T3][sbins];
+                else
+                    vecVecEta[T3][sbins] = 0.f;
+                fSigma += vecVecEta[T3][sbins];
+            }
+
+            if (fMaxSigma < fSigma)    {
+                nResultT1 = T1;
+                nResultT2 = T2;
+                nResultT3 = T3;
+                fMaxSigma = fSigma;
+            }
         }
+        vecThreshold.push_back(nResultT1 * PR_MAX_GRAY_LEVEL / sbins);
+        vecThreshold.push_back(nResultT2 * PR_MAX_GRAY_LEVEL / sbins);
+        vecThreshold.push_back(nResultT3 * PR_MAX_GRAY_LEVEL / sbins);
+    }
+    else if (N == 4)
+    {
+        float fMaxSigma = 0;
+        int nResultT1 = 0, nResultT2 = 0, nResultT3 = 0, nResultT4 = 0;
+        for (int T1 = 1; T1 < sbins - 3; ++T1)
+        for (int T2 = T1 + 1; T2 < sbins - 2; ++T2)
+        for (int T3 = T2 + 1; T3 < sbins - 1; ++T3)
+        for (int T4 = T3 + 1; T4 < sbins; ++T4)
+        {
+            float fSigma = 0.f;
+
+            if (vecVecEta[1][T1] >= 0.f)
+                fSigma += vecVecEta[1][T1];
+            else
+            {
+                if (vecVecOmega[1][T1] > MIN_P)
+                    vecVecEta[1][T1] = vecVecMu[1][T1] * vecVecMu[1][T1] / vecVecOmega[1][T1];
+                else
+                    vecVecEta[1][T1] = 0.f;
+                fSigma += vecVecEta[1][T1];
+            }
+
+            if (vecVecEta[T1][T2] >= 0.f)
+                fSigma += vecVecEta[T1][T2];
+            else
+            {
+                if (vecVecOmega[T1][T2] > MIN_P)
+                    vecVecEta[T1][T2] = vecVecMu[T1][T2] * vecVecMu[T1][T2] / vecVecOmega[T1][T2];
+                else
+                    vecVecEta[T1][T2] = 0.f;
+                fSigma += vecVecEta[T1][T2];
+            }
+
+            if (vecVecEta[T2][T3] >= 0.f)
+                fSigma += vecVecEta[T2][T3];
+            else
+            {
+                if (vecVecOmega[T2][T3] > MIN_P)
+                    vecVecEta[T2][T3] = vecVecMu[T2][T3] * vecVecMu[T2][T3] / vecVecOmega[T2][T3];
+                else
+                    vecVecEta[T2][T3] = 0.f;
+                fSigma += vecVecEta[T2][T3];
+            }
+
+            if (vecVecEta[T3][T4] >= 0.f)
+                fSigma += vecVecEta[T3][T4];
+            else
+            {
+                if (vecVecOmega[T3][T4] > MIN_P)
+                    vecVecEta[T3][T4] = vecVecMu[T3][T4] * vecVecMu[T3][T4] / vecVecOmega[T3][T4];
+                else
+                    vecVecEta[T3][T4] = 0.f;
+                fSigma += vecVecEta[T3][T4];
+            }
+
+            if (vecVecEta[T4][sbins] >= 0.f)
+                fSigma += vecVecEta[T4][sbins];
+            else
+            {
+                if (vecVecOmega[T4][sbins] > MIN_P)
+                    vecVecEta[T4][sbins] = vecVecMu[T4][sbins] * vecVecMu[T4][sbins] / vecVecOmega[T4][sbins];
+                else
+                    vecVecEta[T4][sbins] = 0.f;
+                fSigma += vecVecEta[T4][sbins];
+            }
+
+            if (fMaxSigma < fSigma)    {
+                nResultT1 = T1;
+                nResultT2 = T2;
+                nResultT3 = T3;
+                nResultT4 = T4;
+                fMaxSigma = fSigma;
+            }
+        }
+        vecThreshold.push_back(nResultT1 * PR_MAX_GRAY_LEVEL / sbins);
+        vecThreshold.push_back(nResultT2 * PR_MAX_GRAY_LEVEL / sbins);
+        vecThreshold.push_back(nResultT3 * PR_MAX_GRAY_LEVEL / sbins);
+        vecThreshold.push_back(nResultT4 * PR_MAX_GRAY_LEVEL / sbins);
     }
 
-    int nThreshold = nResultT * PR_MAX_GRAY_LEVEL / sbins;
-    return nThreshold;
+    return vecThreshold;
+}
+
+int VisionAlgorithm::_autoThreshold(const cv::Mat &mat)
+{
+    std::vector<int> vecThreshold = _autoMultiLevelThreshold(mat, 1);
+    return vecThreshold[0];
+    //const int sbins = 32;
+    //int channels[] = { 0 };
+    //int histSize[] = { sbins };
+
+    //// saturation varies from 0 (black-gray-white) to
+    //// 255 (pure spectrum color)
+    //float sranges[] = { 0, PR_MAX_GRAY_LEVEL };
+    //const float* ranges[] = { sranges };
+
+    //cv::MatND hist;
+    //cv::calcHist(&mat, 1, channels, cv::Mat(), // do not use mask
+    //             hist, 1, histSize, ranges,
+    //             true, // the histogram is uniform
+    //             false);
+
+    //if (Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE)   {
+    //    double maxVal = 0;
+    //    cv::minMaxLoc ( hist, 0, &maxVal, 0, 0 );
+    //    int scale = 10;
+    //    cv::Mat histImg = cv::Mat::zeros ( ToInt32( maxVal / 3 ), ToInt32 ( sbins * scale ), CV_8UC3);
+
+    //    for (int s = 0; s < sbins; s++)
+    //    {
+    //        float binVal = hist.at<float>(s, 0);
+    //        int intensity = cvRound(binVal * 255 / maxVal);
+    //        cv::rectangle(histImg, cv::Point(s*scale, 0),
+    //            cv::Point( ToInt32 ( ( s + 1 ) * scale ) - 1, ToInt32 ( binVal / 3 ) ),
+    //            cv::Scalar::all(intensity),
+    //            CV_FILLED);
+    //    }
+    //    showImage("Image Histogram", histImg );
+    //}
+
+    //vector<float> vecH;
+    //float fTotalPixel = (float)mat.rows * mat.cols;
+    //for (int i = 0; i < sbins; ++i)
+    //    vecH.push_back(hist.at <float>(i, 0) / fTotalPixel);
+
+    //float fSigmaSquareMin = 100000.f;
+    //int nResultT = 0;
+    //for (int T = sbins - 1; T >= 0; --T)  {
+    //    float fSigmaSquare = 0.f;
+    //    if (vecH[T] <= 0.0001f)
+    //        continue;
+    //    float fMu1 = 0.f, fMu2 = 0.f;
+    //    float fSumH_1 = 0.f, fSumH_2 = 0.f;
+    //    float fSumHxL_1 = 0.f, fSumHxL_2 = 0.f;
+
+    //    for (int i = 0; i < T; ++i)  {
+    //        fSumH_1 += vecH[i];
+    //        fSumHxL_1 += i * vecH[i];
+    //    }
+
+    //    for (int i = T; i < sbins; ++i)  {
+    //        fSumH_2 += vecH[i];
+    //        fSumHxL_2 += i * vecH[i];
+    //    }
+
+    //    if (fSumH_1 <= 0.00001f || fSumH_2 < 0.000001f)
+    //        continue;
+
+    //    fMu1 = fSumHxL_1 / fSumH_1;
+    //    fMu2 = fSumHxL_2 / fSumH_2;
+
+    //    for (int i = 0; i < sbins; ++i)  {
+    //        if (i < T)    {
+    //            fSigmaSquare += (i - fMu1) * (i - fMu1) * vecH[i];
+    //        }
+    //        else
+    //        {
+    //            fSigmaSquare += (i - fMu2) * (i - fMu2) * vecH[i];
+    //        }
+    //    }
+    //    if (fSigmaSquare < fSigmaSquareMin)   {
+    //        fSigmaSquareMin = fSigmaSquare;
+    //        nResultT = T;
+    //    }
+    //}
+
+    //int nThreshold = nResultT * PR_MAX_GRAY_LEVEL / sbins;
+    //return nThreshold;
 }
 
 VisionStatus VisionAlgorithm::_findDeviceElectrode(const cv::Mat &matDeviceROI, VectorOfPoint &vecElectrodePos)
@@ -1099,12 +1361,10 @@ VisionStatus VisionAlgorithm::runLogCase(const std::string &strPath)
     pos = folderName.find('_');
     auto folderPrefix = folderName.substr(0, pos);
 
-    std::unique_ptr<LogCase> pLogCase = nullptr;
+    std::shared_ptr<LogCase> pLogCase = nullptr;
     if ( LogCaseLrnTmpl::FOLDER_PREFIX == folderPrefix )
-        pLogCase = std::make_unique <LogCaseLrnTmpl>( strLocalPath, true );
-    else if ( LogCaseFitCircle::FOLDER_PREFIX == folderPrefix )
-        pLogCase = std::make_unique <LogCaseFitCircle>( strLocalPath, true );
-
+        pLogCase = std::make_shared <LogCaseLrnTmpl>( strLocalPath, true );
+    
     if ( nullptr != pLogCase )
         enStatus = pLogCase->RunLogCase();
     else
@@ -1313,7 +1573,7 @@ VisionStatus VisionAlgorithm::srchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd
     return vecResult;
 }
 
-VisionStatus VisionAlgorithm::fitLine(PR_FIT_LINE_CMD *pstCmd, PR_FIT_LINE_RPY *pstRpy, bool bReplay)
+VisionStatus VisionAlgorithm::fitLine(PR_FIT_LINE_CMD *pstCmd, PR_FIT_LINE_RPY *pstRpy)
 {
     char charrMsg [ 1000 ];
     if (NULL == pstCmd || NULL == pstRpy) {
@@ -1329,17 +1589,6 @@ VisionStatus VisionAlgorithm::fitLine(PR_FIT_LINE_CMD *pstCmd, PR_FIT_LINE_RPY *
         return VisionStatus::INVALID_PARAM;
     }
 
-    std::unique_ptr<LogCaseFitLine> pLogCase;
-    if ( ! bReplay )    {
-        pLogCase = std::make_unique<LogCaseFitLine>( Config::GetInstance()->getLogCaseDir() );
-        if ( PR_DEBUG_MODE::LOG_ALL_CASE == Config::GetInstance()->getDebugMode() )
-            pLogCase->WriteCmd ( pstCmd );
-    }
-
-    VisionStatus enStatus = VisionStatus::OK;
-    std::vector<size_t> overTolPoints;
-    std::vector<float> vecX, vecY;
-
     cv::Mat matGray, matThreshold;
     if ( pstCmd->matInput.channels() > 1 )
         cv::cvtColor ( pstCmd->matInput, matGray, CV_BGR2GRAY );
@@ -1349,10 +1598,10 @@ VisionStatus VisionAlgorithm::fitLine(PR_FIT_LINE_CMD *pstCmd, PR_FIT_LINE_RPY *
     VectorOfPoint vecPoint = _findPointInRegionOverThreshold ( matGray, pstCmd->rectROI, pstCmd->nThreshold );
     if ( vecPoint.size() < 2 )  {
         WriteLog("Input image is empty");
-        enStatus = VisionStatus::NOT_ENOUGH_POINTS_TO_FIT;
-        goto EXIT;
+        return VisionStatus::NOT_ENOUGH_POINTS_TO_FIT;
     }
-    
+
+    std::vector<float> vecX, vecY;
     for ( const auto &point : vecPoint )
     {
         vecX.push_back ( point.x );
@@ -1364,7 +1613,8 @@ VisionStatus VisionAlgorithm::fitLine(PR_FIT_LINE_CMD *pstCmd, PR_FIT_LINE_RPY *
     auto reverseFit = false;
     if ( CalcUtils::calcStdDeviation ( vecY ) > CalcUtils::calcStdDeviation ( vecX ) )
         reverseFit = true;
-    
+
+    std::vector<size_t> overTolPoints;
     int nIteratorNum = 0;
     do
     {
@@ -1377,28 +1627,12 @@ VisionStatus VisionAlgorithm::fitLine(PR_FIT_LINE_CMD *pstCmd, PR_FIT_LINE_RPY *
 
     if ( vecPoint.size() < 2 )  {
         pstRpy->nStatus = ToInt32(VisionStatus::TOO_MUCH_NOISE_TO_FIT);
-        enStatus = VisionStatus::TOO_MUCH_NOISE_TO_FIT;
-        goto EXIT;
+        return VisionStatus::TOO_MUCH_NOISE_TO_FIT;
     }
 
     pstRpy->stLine = CalcUtils::calcEndPointOfLine ( vecPoint, pstRpy->fSlope, pstRpy->fIntercept );
-    pstRpy->matResult = pstCmd->matInput.clone();
-    cv::line ( pstRpy->matResult, pstRpy->stLine.pt1, pstRpy->stLine.pt2, cv::Scalar(255,0,0), 2 );
-    enStatus = VisionStatus::OK;
-    pstRpy->nStatus = ToInt32(enStatus);
-
-EXIT:
-    if ( ! bReplay )    {
-        if ( PR_DEBUG_MODE::LOG_FAIL_CASE == Config::GetInstance()->getDebugMode() && enStatus != VisionStatus::OK )    {
-            pLogCase->WriteCmd ( pstCmd );
-            pLogCase->WriteRpy ( pstRpy );
-        }
-
-        if ( PR_DEBUG_MODE::LOG_ALL_CASE == Config::GetInstance()->getDebugMode() )
-            pLogCase->WriteRpy ( pstRpy );
-    }
-    
-    return enStatus;
+    pstRpy->nStatus = ToInt32(VisionStatus::OK);
+    return VisionStatus::OK;
 }
 
 VisionStatus VisionAlgorithm::fitParallelLine(PR_FIT_PARALLEL_LINE_CMD *pstCmd, PR_FIT_PARALLEL_LINE_RPY *pstRpy)
@@ -1652,7 +1886,7 @@ VisionStatus VisionAlgorithm::findEdge(PR_FIND_EDGE_CMD *pstCmd, PR_FIND_EDGE_RP
     return VisionStatus::OK;
 }
 
-VisionStatus VisionAlgorithm::fitCircle(PR_FIT_CIRCLE_CMD *pstCmd, PR_FIT_CIRCLE_RPY *pstRpy, bool bReplay)
+VisionStatus VisionAlgorithm::fitCircle(PR_FIT_CIRCLE_CMD *pstCmd, PR_FIT_CIRCLE_RPY *pstRpy)
 {
     char charrMsg [ 1000 ];
     if (NULL == pstCmd || NULL == pstRpy) {
@@ -1667,7 +1901,7 @@ VisionStatus VisionAlgorithm::fitCircle(PR_FIT_CIRCLE_CMD *pstCmd, PR_FIT_CIRCLE
         pstRpy->nStatus = ToInt32 ( VisionStatus::INVALID_PARAM );
         return VisionStatus::INVALID_PARAM;
     }
-    
+
     cv::Rect2f rectROI( pstCmd->ptRangeCtr.x - pstCmd->fRangeOutterRadius, pstCmd->ptRangeCtr.y - pstCmd->fRangeOutterRadius,
         2.f * pstCmd->fRangeOutterRadius, 2.f * pstCmd->fRangeOutterRadius );
     if ( rectROI.x < 0 || rectROI.y < 0 || 
@@ -1677,15 +1911,6 @@ VisionStatus VisionAlgorithm::fitCircle(PR_FIT_CIRCLE_CMD *pstCmd, PR_FIT_CIRCLE
         pstRpy->nStatus = ToInt32 ( VisionStatus::INVALID_PARAM );
         return VisionStatus::INVALID_PARAM;
     }
-
-    VisionStatus enStatus;
-    std::unique_ptr<LogCaseFitCircle> pLogCase;
-    if ( ! bReplay )    {
-        pLogCase = std::make_unique<LogCaseFitCircle>( Config::GetInstance()->getLogCaseDir() );
-        if ( PR_DEBUG_MODE::LOG_ALL_CASE == Config::GetInstance()->getDebugMode() )
-            pLogCase->WriteCmd ( pstCmd );
-    }
-
     cv::Mat matROI(pstCmd->matInput, rectROI);
     cv::Mat matGray, matThreshold;
 
@@ -1727,31 +1952,12 @@ VisionStatus VisionAlgorithm::fitCircle(PR_FIT_CIRCLE_CMD *pstCmd, PR_FIT_CIRCLE
     if ( fitResult.center.x <= 0 || fitResult.center.y <= 0 || fitResult.size.width <= 0 )   {
         WriteLog("Failed to fit circle");
         pstRpy->nStatus = ToInt32 ( VisionStatus::FAIL_TO_FIT_CIRCLE );
-        enStatus = VisionStatus::FAIL_TO_FIT_CIRCLE;
-        goto EXIT;
+        return VisionStatus::FAIL_TO_FIT_CIRCLE;
     }
 	pstRpy->ptCircleCtr = fitResult.center + cv::Point2f(rectROI.x, rectROI.y);
     pstRpy->fRadius = fitResult.size.width / 2;
-    enStatus = VisionStatus::OK;
-    pstRpy->nStatus = ToInt32 (enStatus);
-
-    pstRpy->matResult = pstCmd->matInput.clone();
-	cv::circle(pstRpy->matResult, pstCmd->ptRangeCtr, (int)pstCmd->fRangeInnterRadius, cv::Scalar(0, 255, 0), 1);
-	cv::circle(pstRpy->matResult, pstCmd->ptRangeCtr, (int)pstCmd->fRangeOutterRadius, cv::Scalar(0, 255, 0), 1);
-	cv::circle(pstRpy->matResult, pstRpy->ptCircleCtr, (int)pstRpy->fRadius, cv::Scalar(255, 0, 0), 2);
-
-EXIT:
-    if ( ! bReplay )    {
-        if ( PR_DEBUG_MODE::LOG_FAIL_CASE == Config::GetInstance()->getDebugMode() && enStatus != VisionStatus::OK )    {
-            pLogCase->WriteCmd ( pstCmd );
-            pLogCase->WriteRpy ( pstRpy );
-        }
-
-        if ( PR_DEBUG_MODE::LOG_ALL_CASE == Config::GetInstance()->getDebugMode() )
-            pLogCase->WriteRpy ( pstRpy );
-    }
-
-    return enStatus;
+    pstRpy->nStatus = ToInt32 (VisionStatus::OK);
+    return VisionStatus::OK;
 }
 
 /* The ransac algorithm is from paper "Random Sample Consensus: A Paradigm for Model Fitting with Apphcatlons to Image Analysis and Automated Cartography".
