@@ -337,6 +337,18 @@ struct PR_GET_ERROR_STR_RPY
 	PR_STATUS_ERROR_LEVEL	enErrorLevel;
 };
 
+struct PR_OCR_CMD
+{
+    cv::Mat                 matInput;
+    cv::Rect                rectROI;
+};
+
+struct PR_OCR_RPY
+{
+    Int32                   nStatus;
+    String                  strResult;
+};
+
 }
 }
 #endif

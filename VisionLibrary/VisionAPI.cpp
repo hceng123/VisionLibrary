@@ -118,5 +118,11 @@ VisionStatus  PR_GetErrorStr(VisionStatus enStatus, PR_GET_ERROR_STR_RPY *pstRpy
     return GetErrorInfo(enStatus, pstRpy);
 }
 
+VisionAPI VisionStatus  PR_Ocr(PR_OCR_CMD *pstCmd, PR_OCR_RPY *pstRpy)
+{
+    std::shared_ptr<VisionAlgorithm> pVA = VisionAlgorithm::create();
+    return pVA->ocr ( pstCmd, pstRpy );
+}
+
 }
 }

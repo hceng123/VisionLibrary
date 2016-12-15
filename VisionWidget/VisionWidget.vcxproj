@@ -125,6 +125,7 @@
     </ClCompile>
     <ClCompile Include="main.cpp" />
     <ClCompile Include="messageboxdialog.cpp" />
+    <ClCompile Include="OcrProcedure.cpp" />
     <ClCompile Include="Procedure.cpp" />
     <ClCompile Include="visionview.cpp" />
     <ClCompile Include="visionviewtoolbox.cpp" />
@@ -179,6 +180,7 @@
     <ClInclude Include="FitLineProcedure.h" />
     <ClInclude Include="GeneratedFiles\ui_dialogvisiontoolbox.h" />
     <ClInclude Include="GeneratedFiles\ui_messageboxdialog.h" />
+    <ClInclude Include="OcrProcedure.h" />
     <ClInclude Include="Procedure.h" />
     <CustomBuild Include="VisionViewToolBox.h">
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(QTDIR)\bin\moc.exe;%(FullPath)</AdditionalInputs>
@@ -237,6 +239,7 @@
       <Message Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Uic%27ing %(Identity)...</Message>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">.\GeneratedFiles\ui_%(Filename).h;%(Outputs)</Outputs>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">"$(QTDIR)\bin\uic.exe" -o ".\GeneratedFiles\ui_%(Filename).h" "%(FullPath)"</Command>
+      <SubType>Designer</SubType>
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>

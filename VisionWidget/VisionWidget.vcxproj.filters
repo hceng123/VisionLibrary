@@ -104,6 +104,9 @@
     <ClCompile Include="FitLineProcedure.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="OcrProcedure.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="visionwidget.h">
@@ -169,6 +172,9 @@
       <Filter>Generated Files</Filter>
     </ClInclude>
     <ClInclude Include="FitLineProcedure.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="OcrProcedure.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -2,6 +2,7 @@
 #include <QFileDialog>
 #include "FitCircleProcedure.h"
 #include "FitLineProcedure.h"
+#include "OcrProcedure.h"
 #include "constants.h"
 #include <QMessageBox>
 
@@ -81,5 +82,18 @@ void VisionWidget::on_fitLineBtn_clicked()
     if ( ToInt(VisionStatus::OK) == nStatus )
     {
         ui.visionView->setResultMat(procedure.getResultMat());
+    }
+}
+
+void VisionWidget::on_ocrBtn_clicked()
+{
+    if ( ! checkDisplayImage() )
+        return;
+
+	OcrProcedure procedure(ui.visionView);
+	int nStatus = procedure.run(_sourceImagePath);
+    if ( ToInt(VisionStatus::OK) == nStatus )
+    {
+        ui.textEditOcrResult->setText( procedure.getResult().c_str() );
     }
 }

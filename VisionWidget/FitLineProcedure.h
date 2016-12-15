@@ -13,7 +13,6 @@ public:
     void setAlgorithm( int nAlgorithm);
     cv::Mat getResultMat() const;
 private:
-    cv::Point                       _ptCircleCtr;
     cv::Rect                        _rectSrchWindow;
     float                           _fErrorTol;
     int                             _nThreshold;

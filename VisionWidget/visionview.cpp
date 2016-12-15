@@ -462,8 +462,14 @@ VectorOfRect VisionView::getVecSrchWindow() const
     {
         if ( ( displayWidth - _mat.cols * _fZoomFactor ) > 0 )
             rect.x = ( rect.x - ( displayWidth - _mat.cols * _fZoomFactor ) / 2 ) / _fZoomFactor;
+        else
+            rect.x /= _fZoomFactor;
+
         if ( ( displayHeight - _mat.rows * _fZoomFactor ) > 0 )
             rect.y = ( rect.y - ( displayWidth - _mat.rows * _fZoomFactor ) / 2 ) / _fZoomFactor;
+        else
+            rect.y /= _fZoomFactor;
+
         rect.width  /= _fZoomFactor;
         rect.height /= _fZoomFactor;
         vecResult.push_back ( rect );

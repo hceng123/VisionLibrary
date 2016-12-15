@@ -73,7 +73,7 @@
      </rect>
     </property>
     <property name="currentIndex">
-     <number>0</number>
+     <number>2</number>
     </property>
     <widget class="QWidget" name="tabFitting">
      <attribute name="title">
@@ -290,6 +290,37 @@
      <attribute name="title">
       <string>Alignment</string>
      </attribute>
+    </widget>
+    <widget class="QWidget" name="tabOCR">
+     <attribute name="title">
+      <string>OCR</string>
+     </attribute>
+     <widget class="QPushButton" name="ocrBtn">
+      <property name="geometry">
+       <rect>
+        <x>30</x>
+        <y>40</y>
+        <width>75</width>
+        <height>23</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>OCR</string>
+      </property>
+     </widget>
+     <widget class="QTextEdit" name="textEditOcrResult">
+      <property name="geometry">
+       <rect>
+        <x>30</x>
+        <y>80</y>
+        <width>271</width>
+        <height>151</height>
+       </rect>
+      </property>
+      <property name="readOnly">
+       <bool>true</bool>
+      </property>
+     </widget>
     </widget>
    </widget>
   </widget>

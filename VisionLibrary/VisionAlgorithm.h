@@ -30,11 +30,12 @@ public:
     VisionStatus runLogCase(const std::string &strPath);
     VisionStatus matchTemplate(const cv::Mat &mat, cv::Mat &matTmpl, cv::Point2f &ptResult);
     VisionStatus srchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd, PR_SRCH_FIDUCIAL_MARK_RPY *pstRpy);
-    VisionStatus fitLine(PR_FIT_LINE_CMD *pstCmd, PR_FIT_LINE_RPY *pstRpy);
+    VisionStatus fitLine(PR_FIT_LINE_CMD *pstCmd, PR_FIT_LINE_RPY *pstRpy, bool bReplay = false);
     VisionStatus fitParallelLine(PR_FIT_PARALLEL_LINE_CMD *pstCmd, PR_FIT_PARALLEL_LINE_RPY *pstRpy);
     VisionStatus fitRect(PR_FIT_RECT_CMD *pstCmd, PR_FIT_RECT_RPY *pstRpy);
     VisionStatus findEdge(PR_FIND_EDGE_CMD *pstCmd, PR_FIND_EDGE_RPY *pstRpy);
-    VisionStatus fitCircle(PR_FIT_CIRCLE_CMD *pstCmd, PR_FIT_CIRCLE_RPY *pstRpy);
+    VisionStatus fitCircle(PR_FIT_CIRCLE_CMD *pstCmd, PR_FIT_CIRCLE_RPY *pstRpy, bool bReplay = false);
+    VisionStatus ocr(PR_OCR_CMD *pstCmd, PR_OCR_RPY *pstRpy, bool bReply = false);
 protected:
 	int _findBlob(const cv::Mat &mat, const cv::Mat &matRevs, PR_INSP_SURFACE_CMD *const pInspCmd, PR_INSP_SURFACE_RPY *pInspRpy );
 	int _findLine(const cv::Mat &mat, PR_INSP_SURFACE_CMD *const pInspCmd, PR_INSP_SURFACE_RPY *pInspRpy );
@@ -60,12 +61,13 @@ protected:
     std::vector<size_t> _findPointsOverCircleTol( const VectorOfPoint &vecPoints, const cv::RotatedRect &rotatedRect, PR_RM_FIT_NOISE_METHOD enMethod, float tolerance );
     cv::RotatedRect _fitCircleIterate(const std::vector<cv::Point2f> &vecPoints, PR_RM_FIT_NOISE_METHOD method, float tolerance);
 protected:
-    const int       _constMinHessian        =       300;
-    const int       _constOctave            =       4;
-    const int       _constOctaveLayer       =       3;
-    const UInt32    _constLeastFeatures     =       3;
-    const String    _strRecordLogPrefix     =       "tmplDir.";
-    const float     _constExpSmoothRatio    =       0.3f;
+    const int       _constMinHessian        =  300;
+    const int       _constOctave            =  4;
+    const int       _constOctaveLayer       =  3;
+    const UInt32    _constLeastFeatures     =  3;
+    const String    _strRecordLogPrefix     =  "tmplDir.";
+    const float     _constExpSmoothRatio    =  0.3f;
+    const String    _constOcrCharList       = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-";
     CStopWatch      _stopWatch;
 };
 
