@@ -127,6 +127,7 @@
     <ClCompile Include="messageboxdialog.cpp" />
     <ClCompile Include="OcrProcedure.cpp" />
     <ClCompile Include="Procedure.cpp" />
+    <ClCompile Include="SrchFiducialProcedure.cpp" />
     <ClCompile Include="visionview.cpp" />
     <ClCompile Include="visionviewtoolbox.cpp" />
     <ClCompile Include="visionwidget.cpp" />
@@ -156,6 +157,7 @@
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="SrchFiducialProcedure.h" />
     <CustomBuild Include="dialogvisiontoolbox.h">
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(QTDIR)\bin\moc.exe;%(FullPath)</AdditionalInputs>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Moc%27ing dialogvisiontoolbox.h...</Message>

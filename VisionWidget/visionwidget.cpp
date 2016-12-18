@@ -3,6 +3,7 @@
 #include "FitCircleProcedure.h"
 #include "FitLineProcedure.h"
 #include "OcrProcedure.h"
+#include "SrchFiducialProcedure.h"
 #include "constants.h"
 #include <QMessageBox>
 
@@ -95,5 +96,21 @@ void VisionWidget::on_ocrBtn_clicked()
     if ( ToInt(VisionStatus::OK) == nStatus )
     {
         ui.textEditOcrResult->setText( procedure.getResult().c_str() );
+    }
+}
+
+void VisionWidget::on_srchFiducialBtn_clicked()
+{
+    if ( ! checkDisplayImage() )
+        return;
+
+    SrchFiducialProcedure procedure(ui.visionView);
+    procedure.setFiducialSize ( ui.lineEditFiducialMarkSize->text().toFloat());
+    procedure.setFiducialMarge ( ui.lineEditFiducialMarkMargin->text().toFloat());
+    procedure.setFicucialType ( ui.comboBoxFiducialMarkShape->currentIndex() );
+    int nStatus = procedure.run(_sourceImagePath);
+    if ( ToInt(VisionStatus::OK) == nStatus )
+    {
+        ui.visionView->setResultMat(procedure.getResultMat());
     }
 }

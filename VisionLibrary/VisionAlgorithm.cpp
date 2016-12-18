@@ -1436,9 +1436,11 @@ VisionStatus VisionAlgorithm::srchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd
     {
         WriteLog("Not supported fiducial mark type");
         return VisionStatus::INVALID_PARAM;
-    }        
+    }  
 
     cv::Mat matSrchROI( pstCmd->matInput, pstCmd->rectSrchRange );
+    if ( matSrchROI.channels() > 1 )
+        cv::cvtColor(matSrchROI, matSrchROI, cv::COLOR_BGR2GRAY);
 
     enStatus = matchTemplate ( matSrchROI, matTmpl, ptResult );
 

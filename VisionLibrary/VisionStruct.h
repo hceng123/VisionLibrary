@@ -234,6 +234,7 @@ struct PR_SRCH_FIDUCIAL_MARK_RPY
 {
     Int32                   nStatus;
     cv::Point2f             ptPos;
+    cv::Mat                 matResult;
 };
 
 struct PR_FIT_LINE_CMD

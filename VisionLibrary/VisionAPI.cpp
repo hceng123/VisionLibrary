@@ -9,6 +9,7 @@
 #include "Config.h"
 #include "Version.h"
 #include "SubFunctions.h"
+#include "Log.h"
 
 namespace AOI
 {
@@ -77,10 +78,17 @@ VisionAPI VisionStatus  PR_RunLogCase(const std::string &strPath)
     return pVA->runLogCase ( strPath );
 }
 
-VisionAPI VisionStatus  PR_SrchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd, PR_SRCH_FIDUCIAL_MARK_RPY *pstRpy)
+VisionAPI VisionStatus PR_SrchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd, PR_SRCH_FIDUCIAL_MARK_RPY *pstRpy)
 {
-    std::shared_ptr<VisionAlgorithm> pVA = VisionAlgorithm::create();
-    return pVA->srchFiducialMark ( pstCmd, pstRpy );
+    try
+    {
+        std::shared_ptr<VisionAlgorithm> pVA = VisionAlgorithm::create();
+        return pVA->srchFiducialMark ( pstCmd, pstRpy );
+    }catch(std::exception &e)
+    {
+        WriteLog(e.what());
+        return VisionStatus::OPENCV_EXCEPTION;
+    }
 }
 
 VisionAPI VisionStatus  PR_FitLine(PR_FIT_LINE_CMD *pstCmd, PR_FIT_LINE_RPY *pstRpy)

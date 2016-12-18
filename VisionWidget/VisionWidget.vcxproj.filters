@@ -107,6 +107,9 @@
     <ClCompile Include="OcrProcedure.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="SrchFiducialProcedure.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="visionwidget.h">
@@ -175,6 +178,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="OcrProcedure.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SrchFiducialProcedure.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
