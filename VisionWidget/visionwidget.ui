@@ -73,7 +73,7 @@
      </rect>
     </property>
     <property name="currentIndex">
-     <number>1</number>
+     <number>0</number>
     </property>
     <widget class="QWidget" name="tabFitting">
      <attribute name="title">
@@ -207,7 +207,7 @@
         <x>10</x>
         <y>120</y>
         <width>551</width>
-        <height>61</height>
+        <height>51</height>
        </rect>
       </property>
       <property name="title">
@@ -281,7 +281,7 @@
         </rect>
        </property>
        <property name="text">
-        <string>Fit Cicle</string>
+        <string>Fit Line</string>
        </property>
       </widget>
      </widget>

@@ -78,7 +78,6 @@ void VisionWidget::on_fitLineBtn_clicked()
 	FitLineProcedure procedure(ui.visionView);
     procedure.setErrTol ( ui.lineEditFitLineErrTol->text().toFloat());
     procedure.setThreshold ( ui.lineEditFitLineThreshold->text().toInt());
-    //procedure.setAlgorithm ( ui.comboBoxFitCircleAlgorithm->currentIndex());
 	int nStatus = procedure.run(_sourceImagePath);
     if ( ToInt(VisionStatus::OK) == nStatus )
     {

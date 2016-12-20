@@ -442,13 +442,10 @@ void VisionView::setTestVisionState(TEST_VISION_STATE enState)
 void VisionView::getFitCircleRange(cv::Point &ptCtr, float &fInnterRadius, float &fOutterRadius) const
 {
     auto displayWidth = this->size().width();
-    auto displayHeight = this->size().height();
+    auto displayHeight = this->size().height();    
     
-    if ( ( displayWidth - _mat.cols * _fZoomFactor ) > 0 )
-        ptCtr.x = ( _ptCircleCtr.x - ( displayWidth - _mat.cols * _fZoomFactor ) / 2 ) / _fZoomFactor;
-
-    if ( ( displayHeight - _mat.rows * _fZoomFactor ) > 0 )
-        ptCtr.y = ( _ptCircleCtr.y - ( displayWidth - _mat.cols * _fZoomFactor ) / 2 ) / _fZoomFactor;
+    ptCtr.x = ( _ptCircleCtr.x - ( displayWidth - _mat.cols * _fZoomFactor ) / 2 ) / _fZoomFactor;
+    ptCtr.y = ( _ptCircleCtr.y - ( displayWidth - _mat.cols * _fZoomFactor ) / 2 ) / _fZoomFactor;
     fInnterRadius = _fInnerRangeRadius  / _fZoomFactor;
     fOutterRadius = _fOutterRangeRadius / _fZoomFactor;
 }
@@ -460,16 +457,8 @@ VectorOfRect VisionView::getVecSrchWindow() const
     VectorOfRect vecResult;
     for ( auto rect : _vecRectSrchWindow )
     {
-        if ( ( displayWidth - _mat.cols * _fZoomFactor ) > 0 )
-            rect.x = ( rect.x - ( displayWidth - _mat.cols * _fZoomFactor ) / 2 ) / _fZoomFactor;
-        else
-            rect.x /= _fZoomFactor;
-
-        if ( ( displayHeight - _mat.rows * _fZoomFactor ) > 0 )
-            rect.y = ( rect.y - ( displayWidth - _mat.rows * _fZoomFactor ) / 2 ) / _fZoomFactor;
-        else
-            rect.y /= _fZoomFactor;
-
+        rect.x = (rect.x - (displayWidth - _mat.cols * _fZoomFactor) / 2) / _fZoomFactor;
+        rect.y = (rect.y - (displayWidth - _mat.rows * _fZoomFactor) / 2) / _fZoomFactor;
         rect.width  /= _fZoomFactor;
         rect.height /= _fZoomFactor;
         vecResult.push_back ( rect );
