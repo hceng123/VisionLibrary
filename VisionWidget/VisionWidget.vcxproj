@@ -81,6 +81,7 @@
     <ClCompile Include="dialogvisiontoolbox.cpp" />
     <ClCompile Include="FitCircleProcedure.cpp" />
     <ClCompile Include="FitLineProcedure.cpp" />
+    <ClCompile Include="FitParallelLineProcedure.cpp" />
     <ClCompile Include="GeneratedFiles\Debug\moc_dialogeditmask.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
     </ClCompile>
@@ -157,6 +158,7 @@
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="FitParallelLineProcedure.h" />
     <ClInclude Include="SrchFiducialProcedure.h" />
     <CustomBuild Include="dialogvisiontoolbox.h">
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(QTDIR)\bin\moc.exe;%(FullPath)</AdditionalInputs>

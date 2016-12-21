@@ -110,6 +110,9 @@
     <ClCompile Include="SrchFiducialProcedure.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="FitParallelLineProcedure.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="visionwidget.h">
@@ -181,6 +184,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="SrchFiducialProcedure.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FitParallelLineProcedure.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

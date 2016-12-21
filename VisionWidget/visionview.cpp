@@ -435,6 +435,8 @@ void VisionView::setTestVisionState(TEST_VISION_STATE enState)
         _ptCircleCtr.y = 0;
         _fInnerRangeRadius = 0.f;
         _fOutterRangeRadius = 0.f;
+        _vecRectSrchWindow.clear();
+
         _drawDisplay();
     }
 }

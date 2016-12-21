@@ -28,3 +28,4 @@ VisionWidget/GeneratedFiles
 *.tmp
 VisionWidget/Vision
 VisionWidget/*.bmp
+VisionWidget/*.png

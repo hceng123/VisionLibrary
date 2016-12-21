@@ -272,6 +272,7 @@ struct PR_FIT_PARALLEL_LINE_RPY
     float                   fIntercept2;
     PR_Line2f               stLine1;
     PR_Line2f               stLine2;
+    cv::Mat                 matResult;
 };
 
 //The rectArrROI is the ROI of the rect edge. the 1st and 2nd should be parallel, and the 3rd and 4th is parallel.

@@ -62,7 +62,7 @@ int FitLineProcedure::fitLine(const std::string &imagePath)
 	PR_FIT_LINE_RPY stRpy;
 	VisionStatus visionStatus = PR_FitLine(&stCmd, &stRpy);
 	if (VisionStatus::OK != visionStatus)	{
-		std::cout << "Failed to fit circle, VisionStatus = " << stRpy.nStatus << std::endl;
+		std::cout << "Failed to fit line, VisionStatus = " << stRpy.nStatus << std::endl;
 		return static_cast<int> ( visionStatus );
 	}
 	_matResult = stRpy.matResult;	

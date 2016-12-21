@@ -19,7 +19,7 @@ namespace Vision
 {
     double distance = 0.f;
     if ( fabs ( fSlope )  < 0.0001 )   {
-        distance = fabs ( ptInput.y - fIntercept );
+        distance = ptInput.y - fIntercept;
     }
     else
     {
@@ -29,6 +29,8 @@ namespace Vision
         ptCrossPoint.x = ( fInterceptOfPerpendicularLine - fIntercept ) / ( fSlope - fSlopeOfPerpendicularLine );
         ptCrossPoint.y = fSlope * ptCrossPoint.x + fIntercept;
         distance = sqrt ( ( ptInput.x - ptCrossPoint.x ) * ( ptInput.x - ptCrossPoint.x ) + ( ptInput.y - ptCrossPoint.y ) * ( ptInput.y - ptCrossPoint.y ) );
+        if ( ptInput.y < ptCrossPoint.y )
+            distance = - distance;
     }
     return distance;
 }
