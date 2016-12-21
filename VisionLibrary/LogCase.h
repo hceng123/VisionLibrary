@@ -13,7 +13,7 @@ class LogCase
 {
 public:
     explicit LogCase(const String &strPath, bool bReplay = false);
-    virtual String GetTableName() const = 0;
+    virtual String GetFolderPrefix() const = 0;
     virtual VisionStatus RunLogCase()  = 0;
 protected:
     String _formatCoordinate(const cv::Point2f &pt);
@@ -37,7 +37,7 @@ public:
     VisionStatus WriteCmd(PR_LRN_TMPL_CMD *pCmd);
     VisionStatus WriteRpy(PR_LRN_TMPL_RPY *pRpy);
     virtual VisionStatus RunLogCase() override;
-    virtual String GetTableName()    const { return StaticGetFolderPrefix(); }
+    virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
     static String StaticGetFolderPrefix();
 private:    
     const String _strKeyAlgorithm   =   "Algorithm";
@@ -64,7 +64,7 @@ public:
     VisionStatus WriteCmd(PR_FIT_CIRCLE_CMD *pCmd);
     VisionStatus WriteRpy(PR_FIT_CIRCLE_RPY *pRpy);
     virtual VisionStatus RunLogCase() override;
-    virtual String GetTableName()    const { return StaticGetFolderPrefix(); }
+    virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
     static String StaticGetFolderPrefix();
 private:
     const String _strKeyMethod      = "Method";
@@ -85,7 +85,7 @@ public:
     VisionStatus WriteCmd(PR_FIT_LINE_CMD *pCmd);
     VisionStatus WriteRpy(PR_FIT_LINE_RPY *pRpy);
     virtual VisionStatus RunLogCase() override;
-    virtual String GetTableName()    const { return StaticGetFolderPrefix(); }
+    virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
     static String StaticGetFolderPrefix();
 private:
     const String _strKeyMethod      = "Method";
@@ -106,7 +106,7 @@ public:
     VisionStatus WriteCmd(PR_FIT_PARALLEL_LINE_CMD *pCmd);
     VisionStatus WriteRpy(PR_FIT_PARALLEL_LINE_RPY *pRpy);
     virtual VisionStatus RunLogCase() override;
-    virtual String GetTableName()    const { return StaticGetFolderPrefix(); }
+    virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
     static String StaticGetFolderPrefix();
 private:
     const String _strKeyMethod = "Method";
@@ -131,7 +131,7 @@ public:
     VisionStatus WriteCmd(PR_SRCH_FIDUCIAL_MARK_CMD *pCmd);
     VisionStatus WriteRpy(PR_SRCH_FIDUCIAL_MARK_RPY *pRpy);
     virtual VisionStatus RunLogCase() override;
-    virtual String GetTableName()    const { return StaticGetFolderPrefix(); }
+    virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
     static String StaticGetFolderPrefix();
 private:
     const String _strKeySrchWindow = "SrchWindow";

@@ -93,7 +93,7 @@ String LogCase::_generateLogCaseName(const String &strFolderPrefix)
 VisionStatus LogCaseLrnTmpl::WriteCmd(PR_LRN_TMPL_CMD *pLrnTmplCmd)
 {
     if ( !_bReplay )    {
-        _strLogCasePath = _generateLogCaseName(GetTableName());
+        _strLogCasePath = _generateLogCaseName(GetFolderPrefix());
         bfs::path dir(_strLogCasePath);
         bfs::create_directories(dir);
     }
@@ -153,7 +153,7 @@ const String LogCaseLrnDevice::FOLDER_PREFIX = "LrnDevice";
 VisionStatus LogCaseFitCircle::WriteCmd(PR_FIT_CIRCLE_CMD *pCmd)
 {
     if ( !_bReplay )    {
-        _strLogCasePath = _generateLogCaseName(GetTableName());
+        _strLogCasePath = _generateLogCaseName(GetFolderPrefix());
         bfs::path dir(_strLogCasePath);
         bfs::create_directories(dir);
     }
@@ -218,7 +218,7 @@ VisionStatus LogCaseFitCircle::RunLogCase()
 VisionStatus LogCaseFitLine::WriteCmd(PR_FIT_LINE_CMD *pCmd)
 {
     if ( !_bReplay )    {
-        _strLogCasePath = _generateLogCaseName(GetTableName());
+        _strLogCasePath = _generateLogCaseName(GetFolderPrefix());
         bfs::path dir(_strLogCasePath);
         bfs::create_directories(dir);
     }
@@ -279,7 +279,7 @@ VisionStatus LogCaseFitLine::RunLogCase()
 VisionStatus LogCaseFitParallelLine::WriteCmd(PR_FIT_PARALLEL_LINE_CMD *pCmd)
 {
     if (!_bReplay)    {
-        _strLogCasePath = _generateLogCaseName(GetTableName());
+        _strLogCasePath = _generateLogCaseName(GetFolderPrefix());
         bfs::path dir(_strLogCasePath);
         bfs::create_directories(dir);
     }
@@ -345,7 +345,7 @@ VisionStatus LogCaseFitParallelLine::RunLogCase()
 VisionStatus LogCaseSrchFiducial::WriteCmd(PR_SRCH_FIDUCIAL_MARK_CMD *pCmd)
 {
     if (!_bReplay)    {
-        _strLogCasePath = _generateLogCaseName(GetTableName());
+        _strLogCasePath = _generateLogCaseName(GetFolderPrefix());
         bfs::path dir(_strLogCasePath);
         bfs::create_directories(dir);
     }
