@@ -1533,6 +1533,8 @@ VisionStatus VisionAlgorithm::fitLine(PR_FIT_LINE_CMD *pstCmd, PR_FIT_LINE_RPY *
         return VisionStatus::INVALID_PARAM;
     }
 
+    MARK_FUNCTION_START_TIME;
+
     std::unique_ptr<LogCaseFitLine> pLogCase;
     if ( ! bReplay )    {
         pLogCase = std::make_unique<LogCaseFitLine>( Config::GetInstance()->getLogCaseDir() );
@@ -1580,7 +1582,6 @@ VisionStatus VisionAlgorithm::fitLine(PR_FIT_LINE_CMD *pstCmd, PR_FIT_LINE_RPY *
     }while ( ! overTolPoints.empty() && nIteratorNum < 20 );
 
     if ( vecPoint.size() < 2 )  {
-        pstRpy->nStatus = ToInt32(VisionStatus::TOO_MUCH_NOISE_TO_FIT);
         enStatus = VisionStatus::TOO_MUCH_NOISE_TO_FIT;
         goto EXIT;
     }
@@ -1589,9 +1590,10 @@ VisionStatus VisionAlgorithm::fitLine(PR_FIT_LINE_CMD *pstCmd, PR_FIT_LINE_RPY *
     pstRpy->matResult = pstCmd->matInput.clone();
     cv::line ( pstRpy->matResult, pstRpy->stLine.pt1, pstRpy->stLine.pt2, cv::Scalar(255,0,0), 2 );
     enStatus = VisionStatus::OK;
-    pstRpy->nStatus = ToInt32(enStatus);
+    
 
 EXIT:
+    pstRpy->nStatus = ToInt32(enStatus);
     if ( ! bReplay )    {
         if ( PR_DEBUG_MODE::LOG_FAIL_CASE == Config::GetInstance()->getDebugMode() && enStatus != VisionStatus::OK )    {
             pLogCase->WriteCmd ( pstCmd );
@@ -1602,10 +1604,11 @@ EXIT:
             pLogCase->WriteRpy ( pstRpy );
     }
     
+    MARK_FUNCTION_END_TIME;
     return enStatus;
 }
 
-VisionStatus VisionAlgorithm::fitParallelLine(PR_FIT_PARALLEL_LINE_CMD *pstCmd, PR_FIT_PARALLEL_LINE_RPY *pstRpy)
+VisionStatus VisionAlgorithm::fitParallelLine(PR_FIT_PARALLEL_LINE_CMD *pstCmd, PR_FIT_PARALLEL_LINE_RPY *pstRpy, bool bReplay)
 {
     char charrMsg [ 1000 ];
     if (NULL == pstCmd || NULL == pstRpy) {
@@ -1620,7 +1623,15 @@ VisionStatus VisionAlgorithm::fitParallelLine(PR_FIT_PARALLEL_LINE_CMD *pstCmd, 
         pstRpy->nStatus = ToInt32 ( VisionStatus::INVALID_PARAM );
         return VisionStatus::INVALID_PARAM;
     }
+    MARK_FUNCTION_START_TIME;
+    std::unique_ptr<LogCaseFitParallelLine> pLogCase;
+    if ( ! bReplay )    {
+        pLogCase = std::make_unique<LogCaseFitParallelLine>( Config::GetInstance()->getLogCaseDir() );
+        if ( PR_DEBUG_MODE::LOG_ALL_CASE == Config::GetInstance()->getDebugMode() )
+            pLogCase->WriteCmd ( pstCmd );
+    }
 
+    VisionStatus enStatus = VisionStatus::OK;
     cv::Mat matGray, matThreshold;
     if ( pstCmd->matInput.channels() > 1 )
         cv::cvtColor ( pstCmd->matInput, matGray, CV_BGR2GRAY );
@@ -1664,14 +1675,32 @@ VisionStatus VisionAlgorithm::fitParallelLine(PR_FIT_PARALLEL_LINE_CMD *pstCmd, 
     }while ( ( ! overTolPoints1.empty() || ! overTolPoints2.empty() ) &&  nIteratorNum < 20 );
 
     if ( vecPoint1.size() < 2 || vecPoint2.size() < 2 )  {
-        pstRpy->nStatus = ToInt32(VisionStatus::TOO_MUCH_NOISE_TO_FIT);
-        return VisionStatus::TOO_MUCH_NOISE_TO_FIT;
+        enStatus = VisionStatus::TOO_MUCH_NOISE_TO_FIT;
+        goto EXIT;
     }
 
     pstRpy->stLine1 = CalcUtils::calcEndPointOfLine ( vecPoint1, pstRpy->fSlope, pstRpy->fIntercept1 );
     pstRpy->stLine2 = CalcUtils::calcEndPointOfLine ( vecPoint2, pstRpy->fSlope, pstRpy->fIntercept2 );
-    pstRpy->nStatus = ToInt32(VisionStatus::OK);
-    return VisionStatus::OK;
+
+    pstRpy->matResult = pstCmd->matInput.clone();
+    cv::line ( pstRpy->matResult, pstRpy->stLine1.pt1, pstRpy->stLine1.pt2, cv::Scalar(255,0,0), 2 );
+    cv::line ( pstRpy->matResult, pstRpy->stLine2.pt1, pstRpy->stLine2.pt2, cv::Scalar(255,0,0), 2 );
+    enStatus = VisionStatus::OK;
+   
+EXIT:
+    pstRpy->nStatus = ToInt32(enStatus);
+    if ( ! bReplay )    {
+        if ( PR_DEBUG_MODE::LOG_FAIL_CASE == Config::GetInstance()->getDebugMode() && enStatus != VisionStatus::OK )    {
+            pLogCase->WriteCmd ( pstCmd );
+            pLogCase->WriteRpy ( pstRpy );
+        }
+
+        if ( PR_DEBUG_MODE::LOG_ALL_CASE == Config::GetInstance()->getDebugMode() )
+            pLogCase->WriteRpy ( pstRpy );
+    }
+    
+    MARK_FUNCTION_END_TIME;
+    return enStatus;
 }
 
 VisionStatus VisionAlgorithm::fitRect(PR_FIT_RECT_CMD *pstCmd, PR_FIT_RECT_RPY *pstRpy)
