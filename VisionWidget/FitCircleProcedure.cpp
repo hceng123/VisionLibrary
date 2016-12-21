@@ -2,6 +2,7 @@
 #include "messageboxdialog.h"
 #include "constants.h"
 #include <QMessageBox>
+#include <QApplication>
 
 using namespace AOI::Vision;
 
@@ -15,7 +16,9 @@ FitCircleProcedure::~FitCircleProcedure()
 
 int FitCircleProcedure::run(const std::string &imagePath)
 {
+    QRect rect = qApp->activeWindow()->geometry();
 	std::unique_ptr<MessageBoxDialog> pMessageBox = std::make_unique<MessageBoxDialog>();
+    pMessageBox->setGeometry(rect.x() + POS_X, rect.y() + POS_Y, pMessageBox->size().width(), pMessageBox->size().height());
     pMessageBox->setWindowTitle("Fit circle");
 	pMessageBox->SetMessageText1("Please input the center of fit range");
     pMessageBox->SetMessageText2("Click left mouse button on vision view to select!");

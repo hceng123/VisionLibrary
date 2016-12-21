@@ -2,6 +2,7 @@
 #include "messageboxdialog.h"
 #include "constants.h"
 #include <QMessageBox>
+#include <QApplication>
 
 using namespace AOI::Vision;
 
@@ -15,7 +16,9 @@ SrchFiducialProcedure::~SrchFiducialProcedure()
 
 int SrchFiducialProcedure::run(const std::string &imagePath)
 {
+    QRect rect = qApp->activeWindow()->geometry();
 	std::unique_ptr<MessageBoxDialog> pMessageBox = std::make_unique<MessageBoxDialog>();
+    pMessageBox->setGeometry(rect.x() + POS_X, rect.y() + POS_Y, pMessageBox->size().width(), pMessageBox->size().height());
     pMessageBox->setWindowTitle("Search Fiducial");
 	pMessageBox->SetMessageText1("Please input the search window");
     pMessageBox->SetMessageText2("Press and drag the left mouse buttont to input");
