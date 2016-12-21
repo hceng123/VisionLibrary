@@ -662,7 +662,7 @@ VisionStatus VisionAlgorithm::lrnDevice(PR_LRN_DEVICE_CMD *pstLrnDeviceCmd, PR_L
 {
     char charrMsg[1000];
     if ( nullptr == pstLrnDeviceCmd || nullptr == pstLrnDeivceRpy )   {
-        _snprintf(charrMsg, sizeof(charrMsg), "Input is invalid, pstLrnDeviceCmd = %d, pstLrnDeivceRpy = %d", pstLrnDeviceCmd, pstLrnDeivceRpy );
+        _snprintf(charrMsg, sizeof(charrMsg), "Input is invalid, pstLrnDeviceCmd = %d, pstLrnDeivceRpy = %d", (int)pstLrnDeviceCmd, (int)pstLrnDeivceRpy);
         WriteLog(charrMsg);
         return VisionStatus::INVALID_PARAM;
     }
@@ -736,7 +736,7 @@ VisionStatus VisionAlgorithm::inspDevice(PR_INSP_DEVICE_CMD *pstInspDeviceCmd, P
     MARK_FUNCTION_START_TIME;
     char charrMsg[1000];
     if ( pstInspDeviceCmd == nullptr || pstInspDeivceRpy == nullptr )   {
-        _snprintf(charrMsg, sizeof(charrMsg), "Input is invalid, pstInspDeviceCmd = %d, pstInspDeivceRpy = %d", pstInspDeviceCmd, pstInspDeivceRpy );
+        _snprintf(charrMsg, sizeof(charrMsg), "Input is invalid, pstInspDeviceCmd = %d, pstInspDeivceRpy = %d", (int)pstInspDeviceCmd, (int)pstInspDeivceRpy);
         WriteLog(charrMsg);
         return VisionStatus::INVALID_PARAM;
     }
@@ -1155,7 +1155,7 @@ int VisionAlgorithm::_merge2Line(const PR_Line2f &line1, const PR_Line2f &line2,
 	float fPerpendicularLineB4 = line2.pt2.y - fPerpendicularLineSlope2 * line2.pt2.x;
 	vecPerpendicularLineB.push_back ( fPerpendicularLineB4 );
 
-	int nMaxIndex = 0, nMinIndex = 0;
+	size_t nMaxIndex = 0, nMinIndex = 0;
 	float fMaxB = fPerpendicularLineB1;
 	float fMinB = fPerpendicularLineB1;
 	for ( size_t i = 1; i < vecPerpendicularLineB.size(); ++ i )	{
@@ -1282,9 +1282,9 @@ VisionStatus VisionAlgorithm::runLogCase(const std::string &strPath)
     auto folderPrefix = folderName.substr(0, pos);
 
     std::unique_ptr<LogCase> pLogCase = nullptr;
-    if ( LogCaseLrnTmpl::FOLDER_PREFIX == folderPrefix )
+    if ( LogCaseLrnTmpl::StaticGetFolderPrefix() == folderPrefix )
         pLogCase = std::make_unique <LogCaseLrnTmpl>( strLocalPath, true );
-    else if ( LogCaseFitCircle::FOLDER_PREFIX == folderPrefix )
+    else if (LogCaseFitCircle::StaticGetFolderPrefix() == folderPrefix)
         pLogCase = std::make_unique <LogCaseFitCircle>( strLocalPath, true );
 
     if ( nullptr != pLogCase )
@@ -1389,14 +1389,14 @@ VisionStatus VisionAlgorithm::matchTemplate(const cv::Mat &mat, cv::Mat &matTmpl
     return VisionStatus::OK;
 }
 
-VisionStatus VisionAlgorithm::srchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd, PR_SRCH_FIDUCIAL_MARK_RPY *pstRpy)
+VisionStatus VisionAlgorithm::srchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd, PR_SRCH_FIDUCIAL_MARK_RPY *pstRpy, bool bReplay)
 {
     char charrMsg[1000];
     VisionStatus enStatus;
     cv::Point2f ptResult;
 
     if ( NULL == pstCmd || NULL == pstRpy ) {
-        _snprintf(charrMsg, sizeof(charrMsg), "Input is invalid, pstCmd = %d, pstRpy = %d", pstCmd, pstRpy );
+        _snprintf(charrMsg, sizeof(charrMsg), "Input is invalid, pstCmd = %d, pstRpy = %d", (int)pstCmd, (int)pstRpy);
         WriteLog(charrMsg);
         return VisionStatus::INVALID_PARAM;
     }
@@ -1418,6 +1418,13 @@ VisionStatus VisionAlgorithm::srchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd
     }
 
     MARK_FUNCTION_START_TIME;
+
+    std::unique_ptr<LogCaseSrchFiducial> pLogCase;
+    if (!bReplay)    {
+        pLogCase = std::make_unique<LogCaseSrchFiducial>(Config::GetInstance()->getLogCaseDir());
+        if (PR_DEBUG_MODE::LOG_ALL_CASE == Config::GetInstance()->getDebugMode())
+            pLogCase->WriteCmd(pstCmd);
+    }
 
     auto nTmplSize = ToInt32 ( pstCmd->fSize + pstCmd->fMargin * 2 );
     cv::Mat matTmpl = cv::Mat::zeros(nTmplSize, nTmplSize, CV_8UC1);
@@ -1448,8 +1455,22 @@ VisionStatus VisionAlgorithm::srchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd
     pstRpy->ptPos.y = ptResult.y + pstCmd->rectSrchRange.y;
 
     pstRpy->nStatus = ToInt32 ( enStatus );
-    MARK_FUNCTION_END_TIME;
 
+    pstRpy->matResult = pstCmd->matInput.clone();
+    cv::circle(pstRpy->matResult, pstRpy->ptPos, 2, cv::Scalar(255, 0, 0), 2);
+    cv::rectangle(pstRpy->matResult, cv::Rect(ToInt32(pstRpy->ptPos.x) - nTmplSize / 2, ToInt32(pstRpy->ptPos.y) - nTmplSize / 2, nTmplSize, nTmplSize), cv::Scalar(255, 0, 0), 1);
+
+    if (!bReplay)    {
+        if (PR_DEBUG_MODE::LOG_FAIL_CASE == Config::GetInstance()->getDebugMode() && enStatus != VisionStatus::OK)    {
+            pLogCase->WriteCmd(pstCmd);
+            pLogCase->WriteRpy(pstRpy);
+        }
+
+        if (PR_DEBUG_MODE::LOG_ALL_CASE == Config::GetInstance()->getDebugMode())
+            pLogCase->WriteRpy(pstRpy);
+    }
+
+    MARK_FUNCTION_END_TIME;
     return enStatus;
 }
 
@@ -1461,7 +1482,6 @@ VisionStatus VisionAlgorithm::srchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd
 
     cv::Mat matROI(mat, rect);
     cv::Mat matThreshold;
-
    
     cv::threshold ( matROI, matThreshold, nThreshold, 256, CV_THRESH_BINARY );
     if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE)
@@ -1501,7 +1521,7 @@ VisionStatus VisionAlgorithm::fitLine(PR_FIT_LINE_CMD *pstCmd, PR_FIT_LINE_RPY *
 {
     char charrMsg [ 1000 ];
     if (NULL == pstCmd || NULL == pstRpy) {
-        _snprintf(charrMsg, sizeof(charrMsg), "Input is invalid, pstCmd = %d, pstRpy = %d", pstCmd, pstRpy);
+        _snprintf(charrMsg, sizeof(charrMsg), "Input is invalid, pstCmd = %d, pstRpy = %d", (int)pstCmd, (int)pstRpy);
         WriteLog(charrMsg);
         pstRpy->nStatus = ToInt32 ( VisionStatus::INVALID_PARAM );
         return VisionStatus::INVALID_PARAM;
@@ -1589,7 +1609,7 @@ VisionStatus VisionAlgorithm::fitParallelLine(PR_FIT_PARALLEL_LINE_CMD *pstCmd, 
 {
     char charrMsg [ 1000 ];
     if (NULL == pstCmd || NULL == pstRpy) {
-        _snprintf(charrMsg, sizeof(charrMsg), "Input is invalid, pstCmd = %d, pstRpy = %d", pstCmd, pstRpy);
+        _snprintf(charrMsg, sizeof(charrMsg), "Input is invalid, pstCmd = %d, pstRpy = %d", (int)pstCmd, (int)pstRpy);
         WriteLog(charrMsg);
         pstRpy->nStatus = ToInt32 ( VisionStatus::INVALID_PARAM );
         return VisionStatus::INVALID_PARAM;
@@ -1658,7 +1678,7 @@ VisionStatus VisionAlgorithm::fitRect(PR_FIT_RECT_CMD *pstCmd, PR_FIT_RECT_RPY *
 {
     char charrMsg [ 1000 ];
     if (NULL == pstCmd || NULL == pstRpy) {
-        _snprintf(charrMsg, sizeof(charrMsg), "Input is invalid, pstCmd = %d, pstRpy = %d", pstCmd, pstRpy);
+        _snprintf(charrMsg, sizeof(charrMsg), "Input is invalid, pstCmd = %d, pstRpy = %d", (int)pstCmd, (int)pstRpy);
         WriteLog(charrMsg);
         pstRpy->nStatus = ToInt32 ( VisionStatus::INVALID_PARAM );
         return VisionStatus::INVALID_PARAM;
@@ -1755,7 +1775,7 @@ VisionStatus VisionAlgorithm::findEdge(PR_FIND_EDGE_CMD *pstCmd, PR_FIND_EDGE_RP
 {
     char charrMsg [ 1000 ];
     if (NULL == pstCmd || NULL == pstRpy) {
-        _snprintf(charrMsg, sizeof(charrMsg), "Input is invalid, pstCmd = %d, pstRpy = %d", pstCmd, pstRpy);
+        _snprintf(charrMsg, sizeof(charrMsg), "Input is invalid, pstCmd = %d, pstRpy = %d", (int)pstCmd, (int)pstRpy);
         WriteLog(charrMsg);
         pstRpy->nStatus = ToInt32 ( VisionStatus::INVALID_PARAM );
         return VisionStatus::INVALID_PARAM;
@@ -1819,7 +1839,7 @@ VisionStatus VisionAlgorithm::findEdge(PR_FIND_EDGE_CMD *pstCmd, PR_FIND_EDGE_RP
     }
     Int32 nLineCount = 0;
     if ( PR_EDGE_DIRECTION::ALL == pstCmd->enDirection )
-        pstRpy->nEdgeCount = vecLinesAfterMerge.size();
+        pstRpy->nEdgeCount = ToInt32(vecLinesAfterMerge.size());
     else
     {
         for ( const auto &line : vecLinesAfterMerge )
@@ -1840,7 +1860,7 @@ VisionStatus VisionAlgorithm::fitCircle(PR_FIT_CIRCLE_CMD *pstCmd, PR_FIT_CIRCLE
 {
     char charrMsg [ 1000 ];
     if (NULL == pstCmd || NULL == pstRpy) {
-        _snprintf(charrMsg, sizeof(charrMsg), "Input is invalid, pstCmd = %d, pstRpy = %d", pstCmd, pstRpy);
+        _snprintf(charrMsg, sizeof(charrMsg), "Input is invalid, pstCmd = %d, pstRpy = %d", (int)pstCmd, (int)pstRpy);
         WriteLog(charrMsg);
         pstRpy->nStatus = ToInt32 ( VisionStatus::INVALID_PARAM );
         return VisionStatus::INVALID_PARAM;
@@ -1953,7 +1973,7 @@ EXIT:
 * above process. If, after some predetermined number of trials, no
 * consensus set with t or more members has been found, either solve the
 * model with the largest consensus set found, or terminate in failure. */
-/*static*/ cv::RotatedRect VisionAlgorithm::_fitCircleRansac(const std::vector<cv::Point2f> &vecPoints, float tolerance, int maxRansacTime, int numOfPtToFinish)
+/*static*/ cv::RotatedRect VisionAlgorithm::_fitCircleRansac(const std::vector<cv::Point2f> &vecPoints, float tolerance, int maxRansacTime, size_t numOfPtToFinish)
 {   
     cv::RotatedRect fitResult;
     if (vecPoints.size() < 3)
@@ -1968,7 +1988,7 @@ EXIT:
         cv::RotatedRect rectReult = Fitting::fitCircle ( vecSelectedPoints );
         vecSelectedPoints = _findPointsInCircleTol ( vecPoints, rectReult, tolerance );
 
-        if ( vecSelectedPoints.size() >= (size_t)numOfPtToFinish ) {
+        if ( vecSelectedPoints.size() >= numOfPtToFinish ) {
            return Fitting::fitCircle ( vecSelectedPoints );
         }
         else if ( vecSelectedPoints.size() > nMaxConsentNum )
@@ -2061,7 +2081,7 @@ VisionStatus VisionAlgorithm::ocr(PR_OCR_CMD *pstCmd, PR_OCR_RPY *pstRpy, bool b
 {
     char charrMsg [ 1000 ];
     if (NULL == pstCmd || NULL == pstRpy) {
-        _snprintf(charrMsg, sizeof(charrMsg), "Input is invalid, pstCmd = %d, pstRpy = %d", pstCmd, pstRpy);
+        _snprintf(charrMsg, sizeof(charrMsg), "Input is invalid, pstCmd = %d, pstRpy = %d", (int)pstCmd, (int)pstRpy);
         WriteLog(charrMsg);
         pstRpy->nStatus = ToInt32 ( VisionStatus::INVALID_PARAM );
         return VisionStatus::INVALID_PARAM;

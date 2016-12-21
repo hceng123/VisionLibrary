@@ -29,7 +29,7 @@ public:
     static void showImage(String windowName, const cv::Mat &mat);
     VisionStatus runLogCase(const std::string &strPath);
     VisionStatus matchTemplate(const cv::Mat &mat, cv::Mat &matTmpl, cv::Point2f &ptResult);
-    VisionStatus srchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd, PR_SRCH_FIDUCIAL_MARK_RPY *pstRpy);
+    VisionStatus srchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd, PR_SRCH_FIDUCIAL_MARK_RPY *pstRpy, bool bReplay = false);
     VisionStatus fitLine(PR_FIT_LINE_CMD *pstCmd, PR_FIT_LINE_RPY *pstRpy, bool bReplay = false);
     VisionStatus fitParallelLine(PR_FIT_PARALLEL_LINE_CMD *pstCmd, PR_FIT_PARALLEL_LINE_RPY *pstRpy);
     VisionStatus fitRect(PR_FIT_RECT_CMD *pstCmd, PR_FIT_RECT_RPY *pstRpy);
@@ -56,7 +56,7 @@ protected:
                                                  PR_RM_FIT_NOISE_METHOD    method,
                                                  float                     tolerance);
     VectorOfPoint _randomSelectPoints(const VectorOfPoint &vecPoints, int numOfPtToSelect);
-    cv::RotatedRect _fitCircleRansac(const VectorOfPoint &vecPoints, float tolerance, int maxRansacTime, int nFinishThreshold);
+    cv::RotatedRect _fitCircleRansac(const VectorOfPoint &vecPoints, float tolerance, int maxRansacTime, size_t nFinishThreshold);
     VectorOfPoint _findPointsInCircleTol( const VectorOfPoint &vecPoints, const cv::RotatedRect &rotatedRect, float tolerance );
     std::vector<size_t> _findPointsOverCircleTol( const VectorOfPoint &vecPoints, const cv::RotatedRect &rotatedRect, PR_RM_FIT_NOISE_METHOD enMethod, float tolerance );
     cv::RotatedRect _fitCircleIterate(const std::vector<cv::Point2f> &vecPoints, PR_RM_FIT_NOISE_METHOD method, float tolerance);
@@ -69,6 +69,8 @@ protected:
     const float     _constExpSmoothRatio    =  0.3f;
     const String    _constOcrCharList       = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-";
     CStopWatch      _stopWatch;
+private:
+    std::shared_ptr<VisionAlgorithm> _pInstance = nullptr;
 };
 
 }

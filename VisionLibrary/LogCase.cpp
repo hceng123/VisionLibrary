@@ -1,7 +1,6 @@
 #include "LogCase.h"
 #include <vector>
 #include <sstream>
-//#include <ctime>
 #include "opencv2/highgui.hpp"
 #include "boost/format.hpp"
 #include "boost/filesystem.hpp"
@@ -29,6 +28,11 @@ namespace
         }
         return elems;
     }
+}
+
+LogCase::LogCase(const String &strPath, bool bReplay) :_strLogCasePath(strPath), _bReplay(bReplay) {
+    if (bReplay)
+        _strLogCasePath = strPath;   
 }
 
 String LogCase::_formatCoordinate(const cv::Point2f &pt)
@@ -81,19 +85,15 @@ String LogCase::_generateLogCaseName(const String &strFolderPrefix)
     return strLogCasePath;
 }
 
-const String LogCaseLrnTmpl::FOLDER_PREFIX = "LrnTmpl";
-
-LogCaseLrnTmpl::LogCaseLrnTmpl(const String &strPath, bool bReplay) : LogCase(strPath, bReplay)
+/*static*/ String LogCaseLrnTmpl::StaticGetFolderPrefix()
 {
-    if ( bReplay )
-        _strLogCasePath = strPath;
-    else
-        _strLogCasePath = _generateLogCaseName( FOLDER_PREFIX );
+    return "LrnTmpl";
 }
 
 VisionStatus LogCaseLrnTmpl::WriteCmd(PR_LRN_TMPL_CMD *pLrnTmplCmd)
 {
     if ( !_bReplay )    {
+        _strLogCasePath = _generateLogCaseName(GetTableName());
         bfs::path dir(_strLogCasePath);
         bfs::create_directories(dir);
     }
@@ -145,18 +145,15 @@ VisionStatus LogCaseLrnTmpl::RunLogCase()
 
 const String LogCaseLrnDevice::FOLDER_PREFIX = "LrnDevice";
 
-const String LogCaseFitCircle::FOLDER_PREFIX = "FitCircle";
-LogCaseFitCircle::LogCaseFitCircle(const String &strPath, bool bReplay) : LogCase(strPath, bReplay)
+/*static*/ String LogCaseFitCircle::StaticGetFolderPrefix()
 {
-    if ( bReplay )
-        _strLogCasePath = strPath;
-    else
-        _strLogCasePath = _generateLogCaseName( FOLDER_PREFIX );
+    return "FitCircle";
 }
 
 VisionStatus LogCaseFitCircle::WriteCmd(PR_FIT_CIRCLE_CMD *pCmd)
 {
     if ( !_bReplay )    {
+        _strLogCasePath = _generateLogCaseName(GetTableName());
         bfs::path dir(_strLogCasePath);
         bfs::create_directories(dir);
     }
@@ -213,18 +210,15 @@ VisionStatus LogCaseFitCircle::RunLogCase()
     return enStatus;
 }
 
-const String LogCaseFitLine::FOLDER_PREFIX = "FitLine";
-LogCaseFitLine::LogCaseFitLine(const String &strPath, bool bReplay) : LogCase(strPath, bReplay)
+/*static*/ String LogCaseFitLine::StaticGetFolderPrefix()
 {
-    if ( bReplay )
-        _strLogCasePath = strPath;
-    else
-        _strLogCasePath = _generateLogCaseName( FOLDER_PREFIX );
+    return "FitLine";
 }
 
 VisionStatus LogCaseFitLine::WriteCmd(PR_FIT_LINE_CMD *pCmd)
 {
     if ( !_bReplay )    {
+        _strLogCasePath = _generateLogCaseName(GetTableName());
         bfs::path dir(_strLogCasePath);
         bfs::create_directories(dir);
     }
@@ -277,5 +271,130 @@ VisionStatus LogCaseFitLine::RunLogCase()
     return enStatus;
 }
 
+/*static*/ String LogCaseFitParallelLine::StaticGetFolderPrefix()
+{
+    return "FitParallelLine";
+}
+
+VisionStatus LogCaseFitParallelLine::WriteCmd(PR_FIT_PARALLEL_LINE_CMD *pCmd)
+{
+    if (!_bReplay)    {
+        _strLogCasePath = _generateLogCaseName(GetTableName());
+        bfs::path dir(_strLogCasePath);
+        bfs::create_directories(dir);
+    }
+
+    CSimpleIni ini(false, false, false);
+    auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
+    ini.LoadFile(cmdRpyFilePath.c_str());
+    ini.SetValue(_CMD_SECTION.c_str(), _strKeySrchWindow1.c_str(), _formatRect(pCmd->rectArrROI[0]).c_str());
+    ini.SetValue(_CMD_SECTION.c_str(), _strKeySrchWindow2.c_str(), _formatRect(pCmd->rectArrROI[1]).c_str());
+    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyErrorTol.c_str(), pCmd->fErrTol);
+    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyThreshold.c_str(), pCmd->nThreshold);
+    ini.SaveFile(cmdRpyFilePath.c_str());
+    cv::imwrite(_strLogCasePath + "image.jpg", pCmd->matInput);
+    return VisionStatus::OK;
+}
+
+VisionStatus LogCaseFitParallelLine::WriteRpy(PR_FIT_PARALLEL_LINE_RPY *pRpy)
+{
+    CSimpleIni ini(false, false, false);
+    auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
+    ini.LoadFile(cmdRpyFilePath.c_str());
+    ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyStatus.c_str(), pRpy->nStatus);
+    ini.SetDoubleValue(_RPY_SECTION.c_str(), _strKeySlope.c_str(), pRpy->fSlope);
+    ini.SetDoubleValue(_RPY_SECTION.c_str(), _strKeyIntercept1.c_str(), pRpy->fIntercept1);
+    ini.SetDoubleValue(_RPY_SECTION.c_str(), _strKeyIntercept2.c_str(), pRpy->fIntercept2);
+    ini.SetValue(_RPY_SECTION.c_str(), _strKeyLineOnePoint1.c_str(), _formatCoordinate(pRpy->stLine1.pt1).c_str());
+    ini.SetValue(_RPY_SECTION.c_str(), _strKeyLineOnePoint2.c_str(), _formatCoordinate(pRpy->stLine1.pt2).c_str());
+    ini.SetValue(_RPY_SECTION.c_str(), _strKeyLineTwoPoint1.c_str(), _formatCoordinate(pRpy->stLine2.pt1).c_str());
+    ini.SetValue(_RPY_SECTION.c_str(), _strKeyLineTwoPoint1.c_str(), _formatCoordinate(pRpy->stLine2.pt2).c_str());
+    ini.SaveFile(cmdRpyFilePath.c_str());
+    //cv::imwrite(_strLogCasePath + "result.jpg", pRpy->matResult);
+    return VisionStatus::OK;
+}
+
+VisionStatus LogCaseFitParallelLine::RunLogCase()
+{
+    PR_FIT_PARALLEL_LINE_CMD stCmd;
+    VisionStatus enStatus;
+
+    CSimpleIni ini(false, false, false);
+    auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
+    ini.LoadFile(cmdRpyFilePath.c_str());
+    stCmd.matInput = cv::imread(_strLogCasePath + "image.jpg");
+    stCmd.rectROI = _parseRect(ini.GetValue(_CMD_SECTION.c_str(), _strKeySrchWindow.c_str(), _DEFAULT_RECT.c_str()));
+    stCmd.fErrTol = (float)ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyErrorTol.c_str(), 0);
+    stCmd.nThreshold = ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyThreshold.c_str(), 0);
+
+    PR_FIT_PARALLEL_LINE_RPY stRpy;
+
+    std::shared_ptr<VisionAlgorithm> pVA = VisionAlgorithm::create();
+    enStatus = pVA->fitParallelLine(&stCmd, &stRpy, true);
+
+    WriteRpy(&stRpy);
+    return enStatus;
+}
+
+/*static*/ String LogCaseSrchFiducial::StaticGetFolderPrefix()
+{
+    return "SrchFiducial";
+}
+
+VisionStatus LogCaseSrchFiducial::WriteCmd(PR_SRCH_FIDUCIAL_MARK_CMD *pCmd)
+{
+    if (!_bReplay)    {
+        _strLogCasePath = _generateLogCaseName(GetTableName());
+        bfs::path dir(_strLogCasePath);
+        bfs::create_directories(dir);
+    }
+
+    CSimpleIni ini(false, false, false);
+    auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
+    ini.LoadFile(cmdRpyFilePath.c_str());
+    ini.SetValue(_CMD_SECTION.c_str(), _strKeySrchWindow.c_str(), _formatRect(pCmd->rectSrchRange).c_str());
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyType.c_str(), ToInt32(pCmd->enType));
+    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeySize.c_str(), pCmd->fSize);
+    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyMargin.c_str(), pCmd->fMargin);
+    ini.SaveFile(cmdRpyFilePath.c_str());
+    cv::imwrite(_strLogCasePath + "image.jpg", pCmd->matInput);
+    return VisionStatus::OK;
+}
+
+VisionStatus LogCaseSrchFiducial::WriteRpy(PR_SRCH_FIDUCIAL_MARK_RPY *pRpy)
+{
+    CSimpleIni ini(false, false, false);
+    auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
+    ini.LoadFile(cmdRpyFilePath.c_str());
+    ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyStatus.c_str(), pRpy->nStatus);
+    ini.SetValue(_RPY_SECTION.c_str(), _strKeyPos.c_str(), _formatCoordinate(pRpy->ptPos).c_str());
+
+    ini.SaveFile(cmdRpyFilePath.c_str());
+    cv::imwrite(_strLogCasePath + "result.jpg", pRpy->matResult);
+    return VisionStatus::OK;
+}
+
+VisionStatus LogCaseSrchFiducial::RunLogCase()
+{
+    PR_SRCH_FIDUCIAL_MARK_CMD stCmd;
+    VisionStatus enStatus;
+
+    CSimpleIni ini(false, false, false);
+    auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
+    ini.LoadFile(cmdRpyFilePath.c_str());
+    stCmd.matInput = cv::imread(_strLogCasePath + "image.jpg");
+    stCmd.rectSrchRange = _parseRect(ini.GetValue(_CMD_SECTION.c_str(), _strKeySrchWindow.c_str(), _DEFAULT_RECT.c_str()));
+    stCmd.enType = (PR_FIDUCIAL_MARK_TYPE)ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyType.c_str(), 0);
+    stCmd.fSize = (float)ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeySize.c_str(), 0);
+    stCmd.fMargin = (float)ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyMargin.c_str(), 0);
+
+    PR_SRCH_FIDUCIAL_MARK_RPY stRpy;
+
+    std::shared_ptr<VisionAlgorithm> pVA = VisionAlgorithm::create();
+    enStatus = pVA->srchFiducialMark(&stCmd, &stRpy, true);
+
+    WriteRpy(&stRpy);
+    return enStatus;
+}
 }
 }
