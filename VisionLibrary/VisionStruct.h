@@ -292,6 +292,7 @@ struct PR_FIT_RECT_RPY
     float                   fSlope2;
     float                   fArrIntercept[PR_RECT_EDGE_COUNT];
     PR_Line2f               fArrLine[PR_RECT_EDGE_COUNT];
+    cv::Mat                 matResult;
 };
 
 struct PR_FIND_EDGE_CMD

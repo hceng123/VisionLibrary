@@ -3,6 +3,7 @@
 #include "FitCircleProcedure.h"
 #include "FitLineProcedure.h"
 #include "FitParallelLineProcedure.h"
+#include "FitRectProcedure.h"
 #include "OcrProcedure.h"
 #include "SrchFiducialProcedure.h"
 #include "constants.h"
@@ -92,6 +93,21 @@ void VisionWidget::on_fitParallelLineBtn_clicked()
         return;
 
     FitParallelLineProcedure procedure(ui.visionView);
+    procedure.setErrTol ( ui.lineEditFitLineErrTol->text().toFloat());
+    procedure.setThreshold ( ui.lineEditFitLineThreshold->text().toInt());
+	int nStatus = procedure.run(_sourceImagePath);
+    if ( ToInt(VisionStatus::OK) == nStatus )
+    {
+        ui.visionView->setResultMat(procedure.getResultMat());
+    }
+}
+
+void VisionWidget::on_fitRectBtn_clicked()
+{
+    if ( ! checkDisplayImage() )
+        return;
+
+    FitRectProcedure procedure(ui.visionView);
     procedure.setErrTol ( ui.lineEditFitLineErrTol->text().toFloat());
     procedure.setThreshold ( ui.lineEditFitLineThreshold->text().toInt());
 	int nStatus = procedure.run(_sourceImagePath);

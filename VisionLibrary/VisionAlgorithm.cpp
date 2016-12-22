@@ -1703,7 +1703,7 @@ EXIT:
     return enStatus;
 }
 
-VisionStatus VisionAlgorithm::fitRect(PR_FIT_RECT_CMD *pstCmd, PR_FIT_RECT_RPY *pstRpy)
+VisionStatus VisionAlgorithm::fitRect(PR_FIT_RECT_CMD *pstCmd, PR_FIT_RECT_RPY *pstRpy, bool bReplay)
 {
     char charrMsg [ 1000 ];
     if (NULL == pstCmd || NULL == pstRpy) {
@@ -1719,6 +1719,16 @@ VisionStatus VisionAlgorithm::fitRect(PR_FIT_RECT_CMD *pstCmd, PR_FIT_RECT_RPY *
         return VisionStatus::INVALID_PARAM;
     }
 
+    MARK_FUNCTION_START_TIME;
+
+    std::unique_ptr<LogCaseFitRect> pLogCase;
+    if ( ! bReplay )    {
+        pLogCase = std::make_unique<LogCaseFitRect>( Config::GetInstance()->getLogCaseDir() );
+        if ( PR_DEBUG_MODE::LOG_ALL_CASE == Config::GetInstance()->getDebugMode() )
+            pLogCase->WriteCmd ( pstCmd );
+    }
+
+    VisionStatus enStatus = VisionStatus::OK;
     cv::Mat matGray, matThreshold;
     if ( pstCmd->matInput.channels() > 1 )
         cv::cvtColor ( pstCmd->matInput, matGray, CV_BGR2GRAY );
@@ -1785,8 +1795,8 @@ VisionStatus VisionAlgorithm::fitRect(PR_FIT_RECT_CMD *pstCmd, PR_FIT_RECT_RPY *
 
     for ( const auto &vecPoint : vecVecPoint )
     if ( vecPoint.size() < 2 )  {
-        pstRpy->nStatus = ToInt32(VisionStatus::TOO_MUCH_NOISE_TO_FIT);
-        return VisionStatus::TOO_MUCH_NOISE_TO_FIT;
+        enStatus = VisionStatus::TOO_MUCH_NOISE_TO_FIT;
+        goto EXIT;
     }
 
     for ( int i = 0; i < PR_RECT_EDGE_COUNT; ++ i ) {
@@ -1796,8 +1806,26 @@ VisionStatus VisionAlgorithm::fitRect(PR_FIT_RECT_CMD *pstCmd, PR_FIT_RECT_RPY *
             pstRpy->fArrLine[i] = CalcUtils::calcEndPointOfLine( vecVecPoint[i], pstRpy->fSlope2, vecIntercept[i]);
         pstRpy->fArrIntercept[i] = vecIntercept[i];
     }
-    pstRpy->nStatus = ToInt32(VisionStatus::OK);
-    return VisionStatus::OK;
+    pstRpy->matResult = pstCmd->matInput.clone();
+    for ( int i = 0; i < PR_RECT_EDGE_COUNT; ++ i ) {
+        cv::line ( pstRpy->matResult, pstRpy->fArrLine[i].pt1, pstRpy->fArrLine[i].pt2, cv::Scalar(255,0,0), 2 );
+    }
+    enStatus = VisionStatus::OK;
+
+EXIT:
+    pstRpy->nStatus = ToInt32(enStatus);
+    if ( ! bReplay )    {
+        if ( PR_DEBUG_MODE::LOG_FAIL_CASE == Config::GetInstance()->getDebugMode() && enStatus != VisionStatus::OK )    {
+            pLogCase->WriteCmd ( pstCmd );
+            pLogCase->WriteRpy ( pstRpy );
+        }
+
+        if ( PR_DEBUG_MODE::LOG_ALL_CASE == Config::GetInstance()->getDebugMode() )
+            pLogCase->WriteRpy ( pstRpy );
+    }
+    
+    MARK_FUNCTION_END_TIME;
+    return enStatus;
 }
 
 VisionStatus VisionAlgorithm::findEdge(PR_FIND_EDGE_CMD *pstCmd, PR_FIND_EDGE_RPY *pstRpy)

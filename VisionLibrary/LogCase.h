@@ -124,6 +124,41 @@ private:
     const String _strKeyLineTwoPoint2 = "LineTwoPoint2";
 };
 
+class LogCaseFitRect : public LogCase
+{
+public:
+    explicit LogCaseFitRect(const String &strPath, bool bReplay = false) : LogCase(strPath, bReplay) {}
+    VisionStatus WriteCmd(PR_FIT_RECT_CMD *pCmd);
+    VisionStatus WriteRpy(PR_FIT_RECT_RPY *pRpy);
+    virtual VisionStatus RunLogCase() override;
+    virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
+    static String StaticGetFolderPrefix();
+private:
+    const String _strKeyMethod          = "Method";
+    const String _strKeySrchWindow1     = "SrchWindow1";
+    const String _strKeySrchWindow2     = "SrchWindow2";
+    const String _strKeySrchWindow3     = "SrchWindow3";
+    const String _strKeySrchWindow4     = "SrchWindow4";
+    const String _strKeyErrorTol        = "ErrorTolerance";
+    const String _strKeyThreshold       = "Threshold";
+
+    const String _strKeyStatus          = "Status";
+    const String _strKeySlope1          = "Slope1";    
+    const String _strKeySlope2          = "Slope2";
+    const String _strKeyIntercept1      = "Intercept1";
+    const String _strKeyIntercept2      = "Intercept2";
+    const String _strKeyIntercept3      = "Intercept3";
+    const String _strKeyIntercept4      = "Intercept4";    
+    const String _strKeyLineOnePoint1   = "LineOnePoint1";
+    const String _strKeyLineOnePoint2   = "LineOnePoint2";
+    const String _strKeyLineTwoPoint1   = "LineTwoPoint1";
+    const String _strKeyLineTwoPoint2   = "LineTwoPoint2";
+    const String _strKeyLineThreePoint1 = "LineThreePoint1";
+    const String _strKeyLineThreePoint2 = "LineThreePoint2";
+    const String _strKeyLineFourPoint1  = "LineFourPoint1";
+    const String _strKeyLineFourPoint2  = "LineFourPoint2";
+};
+
 class LogCaseSrchFiducial : public LogCase
 {
 public:
