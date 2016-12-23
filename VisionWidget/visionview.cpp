@@ -189,6 +189,10 @@ void VisionView::mouseMoveEvent(QMouseEvent *event)
                 else
                     _vecRectSrchWindow[_nCurrentSrchWindowIndex] = rect;
             }
+            else if ( TEST_VISION_STATE::SET_LINE == _enTestVisionState )   {
+                _lineOfIntensityCheck.pt1 = _ptLeftClickStartPos;
+                _lineOfIntensityCheck.pt2 = _ptLeftClickEndPos;
+            }
             _drawDisplay();
         }
     }
@@ -256,6 +260,8 @@ void VisionView::_drawTestVisionLibrary(cv::Mat &mat)
     {
         for ( const auto &rect : _vecRectSrchWindow )
             cv::rectangle ( mat, rect, _colorLrnWindow, 1 );
+    }else if ( TEST_VISION_STATE::SET_LINE == _enTestVisionState )  {
+        cv::line ( mat, _lineOfIntensityCheck.pt1, _lineOfIntensityCheck.pt2, _colorLrnWindow, 1 );
     }
 }
 
@@ -415,6 +421,11 @@ void VisionView::setImageFile(const std::string &filePath)
     _drawDisplay();
 }
 
+cv::Mat VisionView::getMat() const
+{
+    return _mat;
+}
+
 void VisionView::setResultMat(const cv::Mat &mat)
 {
     _matResult = mat;
@@ -466,6 +477,18 @@ VectorOfRect VisionView::getVecSrchWindow() const
         vecResult.push_back ( rect );
     }
     return vecResult;
+}
+
+PR_Line VisionView::getIntensityCheckLine() const
+{
+    auto displayWidth = this->size().width();
+    auto displayHeight = this->size().height();
+    PR_Line line;   
+    line.pt1.x = (_lineOfIntensityCheck.pt1.x - (displayWidth - _mat.cols * _fZoomFactor) / 2) / _fZoomFactor;
+    line.pt1.y = (_lineOfIntensityCheck.pt1.y - (displayWidth - _mat.rows * _fZoomFactor) / 2) / _fZoomFactor;
+    line.pt2.x = (_lineOfIntensityCheck.pt2.x - (displayWidth - _mat.cols * _fZoomFactor) / 2) / _fZoomFactor;
+    line.pt2.y = (_lineOfIntensityCheck.pt2.y - (displayWidth - _mat.rows * _fZoomFactor) / 2) / _fZoomFactor;
+    return line;
 }
 
 void VisionView::setCurrentSrchWindowIndex(int nIndex)

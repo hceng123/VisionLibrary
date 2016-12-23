@@ -2,7 +2,7 @@
 #define VISIONVIEWTOOLBOX_H
 
 #include <QWidget>
-#include <visionview.h>
+#include "visionview.h"
 #include "dialogvisiontoolbox.h"
 #include <memory>
 

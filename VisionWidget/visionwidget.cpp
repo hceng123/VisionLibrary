@@ -1,5 +1,4 @@
 #include "visionwidget.h"
-#include <QFileDialog>
 #include "FitCircleProcedure.h"
 #include "FitLineProcedure.h"
 #include "FitParallelLineProcedure.h"
@@ -7,6 +6,7 @@
 #include "OcrProcedure.h"
 #include "SrchFiducialProcedure.h"
 #include "constants.h"
+#include <QFileDialog>
 #include <QMessageBox>
 
 using namespace AOI::Vision;

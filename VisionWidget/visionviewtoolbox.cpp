@@ -41,7 +41,7 @@ void VisionViewToolBox::SetVisionView(VisionView *pVisionView)
 void VisionViewToolBox::on_toolBoxButton_clicked()
 {
     if ( _pVisionToolDialog == nullptr ) {
-        _pVisionToolDialog = std::make_unique<DialogVisionToolBox>(this);
+        _pVisionToolDialog = std::make_unique<DialogVisionToolBox>(this, _pVisionView);
     }
 
     _pVisionToolDialog->show();

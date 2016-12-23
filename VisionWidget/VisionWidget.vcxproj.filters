@@ -116,6 +116,9 @@
     <ClCompile Include="FitRectProcedure.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="CheckIntensityProcedure.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="visionwidget.h">
@@ -193,6 +196,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="FitRectProcedure.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CheckIntensityProcedure.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

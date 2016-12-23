@@ -1590,7 +1590,6 @@ VisionStatus VisionAlgorithm::fitLine(PR_FIT_LINE_CMD *pstCmd, PR_FIT_LINE_RPY *
     pstRpy->matResult = pstCmd->matInput.clone();
     cv::line ( pstRpy->matResult, pstRpy->stLine.pt1, pstRpy->stLine.pt2, cv::Scalar(255,0,0), 2 );
     enStatus = VisionStatus::OK;
-    
 
 EXIT:
     pstRpy->nStatus = ToInt32(enStatus);

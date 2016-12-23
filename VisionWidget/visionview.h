@@ -59,6 +59,7 @@ public:
         SET_CIRCLE_INNER_RADIUS,
         SET_CIRCLE_OUTTER_RADIUS,
         SET_RECT_SRCH_WINDOW,
+        SET_LINE,
     };
 
     //explicit VisionView(QLabel *parent = 0);
@@ -74,11 +75,13 @@ public:
     void restoreZoom();
     void startTimer();
     void setImageFile(const std::string &filePath);
+    cv::Mat getMat() const;
     void setResultMat(const cv::Mat &mat);
     bool isDisplayResultImage() const;
     void setCurrentSrchWindowIndex(int nIndex);
     void getFitCircleRange(cv::Point &ptCtr, float &fInnterRadius, float &fOutterRadius) const;
     VectorOfRect getVecSrchWindow( ) const;
+    PR_Line getIntensityCheckLine() const;
     static float distanceOf2Point(const cv::Point &pt1, const cv::Point &pt2);    
 protected:
     void mousePressEvent(QMouseEvent *event);
@@ -113,6 +116,7 @@ private:
     float                           _fOutterRangeRadius;
     int                             _nCurrentSrchWindowIndex;
     std::vector<cv::Rect>           _vecRectSrchWindow;
+    PR_Line                         _lineOfIntensityCheck;
 
     const cv::Scalar                _colorLrnWindow = Scalar ( 0, 255, 0 );
     const cv::Scalar                _colorMask = Scalar ( 255, 0, 0 );

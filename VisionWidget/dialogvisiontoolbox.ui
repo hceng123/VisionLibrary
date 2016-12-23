@@ -29,11 +29,11 @@
     <set>QDialogButtonBox::Ok</set>
    </property>
   </widget>
-  <widget class="QPushButton" name="pushButton">
+  <widget class="QPushButton" name="btnCheckIntensity">
    <property name="geometry">
     <rect>
-     <x>30</x>
-     <y>100</y>
+     <x>20</x>
+     <y>130</y>
      <width>101</width>
      <height>23</height>
     </rect>
@@ -84,6 +84,19 @@
      <string>Log Fail Case</string>
     </property>
    </item>
+  </widget>
+  <widget class="QPushButton" name="btnDumpTimeLog">
+   <property name="geometry">
+    <rect>
+     <x>240</x>
+     <y>20</y>
+     <width>91</width>
+     <height>23</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Dump Time Log</string>
+   </property>
   </widget>
  </widget>
  <resources/>

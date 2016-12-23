@@ -77,6 +77,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="CheckIntensityProcedure.cpp" />
     <ClCompile Include="dialogeditmask.cpp" />
     <ClCompile Include="dialogvisiontoolbox.cpp" />
     <ClCompile Include="FitCircleProcedure.cpp" />
@@ -159,6 +160,7 @@
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="CheckIntensityProcedure.h" />
     <ClInclude Include="FitParallelLineProcedure.h" />
     <ClInclude Include="FitRectProcedure.h" />
     <ClInclude Include="SrchFiducialProcedure.h" />
