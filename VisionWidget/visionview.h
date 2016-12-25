@@ -91,6 +91,8 @@ protected:
     void _drawDisplay();
     void _drawLearnWindow(cv::Mat &mat);
     void _drawTestVisionLibrary(cv::Mat &mat);
+    void zoomPoint(cv::Point &point, float fZoomFactor);
+    void zoomRect(cv::Rect &rect, float fZoomFactor);
 private:
     cv::Rect                        _rectLrnWindow;
     cv::Rect                        _rectSrchWindow;

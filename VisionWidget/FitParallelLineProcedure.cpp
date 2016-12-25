@@ -77,11 +77,12 @@ int FitParallelLineProcedure::fitParallelLine(const std::string &imagePath)
 	PR_FIT_PARALLEL_LINE_RPY stRpy;
 	VisionStatus visionStatus = PR_FitParallelLine(&stCmd, &stRpy);
 	if (VisionStatus::OK != visionStatus)	{
-		std::cout << "Failed to fit parallel line, VisionStatus = " << stRpy.nStatus << std::endl;
-		return static_cast<int> ( visionStatus );
+		PR_GET_ERROR_STR_RPY stErrStrRpy;
+        PR_GetErrorStr(visionStatus, &stErrStrRpy);
+        QMessageBox::critical(nullptr, "Fit Parallel Line", stErrStrRpy.achErrorStr, "Quit");
 	}
 	_matResult = stRpy.matResult;	
-    return ToInt(STATUS::OK);
+    return ToInt(visionStatus);
 }
 
 void FitParallelLineProcedure::setErrTol(float fErrTol)

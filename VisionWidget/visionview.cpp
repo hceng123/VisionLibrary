@@ -373,17 +373,57 @@ void VisionView::swapImage()
     _drawDisplay();
 }
 
+void VisionView::zoomPoint(cv::Point &point, float fZoomFactor)
+{
+    auto displayWidth = this->size().width();
+    auto displayHeight = this->size().height();
+
+    point.x = (point.x - displayWidth / 2)  * fZoomFactor + displayWidth / 2;
+    point.y = (point.y - displayHeight / 2) * fZoomFactor + displayHeight / 2;
+}
+
+void VisionView::zoomRect(cv::Rect &rect, float fZoomFactor)
+{
+    auto displayWidth = this->size().width();
+    auto displayHeight = this->size().height();
+
+    rect.x = (rect.x - displayWidth / 2)  * fZoomFactor + displayWidth / 2;
+    rect.y = (rect.y - displayHeight / 2) * fZoomFactor + displayHeight / 2;
+    rect.width *= fZoomFactor;
+    rect.height *= fZoomFactor;   
+}
+
 void VisionView::zoomIn()
 {
-    if ( _fZoomFactor < _constMaxZoomFactor )
+    if ( _fZoomFactor < _constMaxZoomFactor )   {
         _fZoomFactor *= 2.f;
+
+        if (_enState == VISION_VIEW_STATE::TEST_VISION_LIBRARY)   {
+            zoomPoint ( _ptCircleCtr, 2.f);
+            _fInnerRangeRadius *= 2.f;
+            _fOutterRangeRadius *= 2.f;
+
+            for ( auto &rect : _vecRectSrchWindow)
+                zoomRect ( rect, 2.f);
+        }
+    }
     _drawDisplay();
 }
 
 void VisionView::zoomOut()
 {
-    if ( _fZoomFactor > _constMinZoomFactor )
-        _fZoomFactor /= 2.f;
+    if ( _fZoomFactor > _constMinZoomFactor )   {
+        _fZoomFactor *= 0.5f;
+
+        if (_enState == VISION_VIEW_STATE::TEST_VISION_LIBRARY)   {
+            zoomPoint ( _ptCircleCtr, 0.5f);
+            _fInnerRangeRadius *= 0.5f;
+            _fOutterRangeRadius *= 0.5f;
+
+            for ( auto &rect : _vecRectSrchWindow)
+                zoomRect ( rect, 0.5);
+        }        
+    }
     _drawDisplay();
 }
 
@@ -459,8 +499,8 @@ void VisionView::getFitCircleRange(cv::Point &ptCtr, float &fInnterRadius, float
     
     ptCtr.x = ( _ptCircleCtr.x - ( displayWidth - _mat.cols * _fZoomFactor ) / 2 ) / _fZoomFactor;
     ptCtr.y = ( _ptCircleCtr.y - ( displayWidth - _mat.cols * _fZoomFactor ) / 2 ) / _fZoomFactor;
-    fInnterRadius = _fInnerRangeRadius  / _fZoomFactor;
-    fOutterRadius = _fOutterRangeRadius / _fZoomFactor;
+    fInnterRadius = _fInnerRangeRadius / _fZoomFactor;
+    fOutterRadius = _fOutterRangeRadius/ _fZoomFactor;
 }
 
 VectorOfRect VisionView::getVecSrchWindow() const

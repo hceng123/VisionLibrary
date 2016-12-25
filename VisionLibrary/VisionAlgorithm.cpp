@@ -1496,22 +1496,67 @@ VisionStatus VisionAlgorithm::srchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd
     return vecPoint2f;
 }
 
-/*static*/ std::vector<size_t> VisionAlgorithm::_findPointOverTol(const VectorOfPoint      &vecPoint,
-                                                                  const float               fSlope,
-                                                                  const float               fIntercept,
-                                                                  PR_RM_FIT_NOISE_METHOD    method,
-                                                                  float                     tolerance)
+/*static*/ ListOfPoint VisionAlgorithm::_findPointsInRegionByThreshold(const cv::Mat &mat, const cv::Rect &rect, int nThreshold)
+{
+    ListOfPoint listPoint;
+    if ( mat.empty() )
+        return listPoint;
+
+    cv::Mat matROI(mat, rect);
+    cv::Mat matThreshold;
+   
+    cv::threshold ( matROI, matThreshold, nThreshold, 256, CV_THRESH_BINARY );
+    if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE)
+        showImage("threshold result", matThreshold);
+    std::vector<cv::Point> vecPoints;
+    vecPoints.reserve(100000);
+    cv::findNonZero( matThreshold, vecPoints );
+    for ( const auto &point : vecPoints )   {
+        cv::Point point2f ( point.x + rect.x, point.y + rect.y );
+        listPoint.push_back(point2f);
+    }
+    return listPoint;
+}
+
+/*static*/ std::vector<size_t> VisionAlgorithm::_findPointOverLineTol(const VectorOfPoint   &vecPoint,
+                                                                      bool                   bReversedFit,
+                                                                      const float            fSlope,
+                                                                      const float            fIntercept,
+                                                                      PR_RM_FIT_NOISE_METHOD method,
+                                                                      float                  tolerance)
 {
     std::vector<size_t> vecResult;
     for ( size_t i = 0;i < vecPoint.size(); ++ i )  {
         cv::Point2f point = vecPoint[i];
-        auto disToLine = CalcUtils::ptDisToLine ( point, fSlope, fIntercept );
+        auto disToLine = CalcUtils::ptDisToLine ( point, bReversedFit, fSlope, fIntercept );
         if ( PR_RM_FIT_NOISE_METHOD::ABSOLUTE_ERR == method && fabs ( disToLine ) > tolerance )  {
             vecResult.push_back(i);
         }else if ( PR_RM_FIT_NOISE_METHOD::POSITIVE_ERR == method && disToLine > tolerance ) {
             vecResult.push_back(i);
         }else if ( PR_RM_FIT_NOISE_METHOD::NEGATIVE_ERR == method && disToLine < -tolerance ) {
             vecResult.push_back(i);
+        }
+    }
+    return vecResult;
+}
+
+/*static*/ std::vector<ListOfPoint::const_iterator> VisionAlgorithm::_findPointOverLineTol(const ListOfPoint   &listPoint,
+                                                     bool                   bReversedFit,
+                                                     const float            fSlope,
+                                                     const float            fIntercept,
+                                                     PR_RM_FIT_NOISE_METHOD method,
+                                                     float                  tolerance)
+{
+    std::vector<ListOfPoint::const_iterator> vecResult;
+    for ( ListOfPoint::const_iterator it = listPoint.begin(); it != listPoint.end(); ++ it )  {
+        cv::Point2f point = *it;
+        auto disToLine = CalcUtils::ptDisToLine ( point, bReversedFit, fSlope, fIntercept );
+        if ( PR_RM_FIT_NOISE_METHOD::ABSOLUTE_ERR == method && fabs ( disToLine ) > tolerance )  {
+            vecResult.push_back(it);
+        }else if ( PR_RM_FIT_NOISE_METHOD::POSITIVE_ERR == method && disToLine > tolerance ) {
+            vecResult.push_back(it);
+        }else if ( PR_RM_FIT_NOISE_METHOD::NEGATIVE_ERR == method && disToLine < -tolerance ) {
+            vecResult.push_back(it);
         }
     }
     return vecResult;
@@ -1542,9 +1587,9 @@ VisionStatus VisionAlgorithm::fitLine(PR_FIT_LINE_CMD *pstCmd, PR_FIT_LINE_RPY *
             pLogCase->WriteCmd ( pstCmd );
     }
 
-    VisionStatus enStatus = VisionStatus::OK;
-    std::vector<size_t> overTolPoints;
+    VisionStatus enStatus = VisionStatus::OK;    
     std::vector<float> vecX, vecY;
+    std::vector<ListOfPoint::const_iterator> vecOverTolIter;
 
     cv::Mat matGray, matThreshold;
     if ( pstCmd->matInput.channels() > 1 )
@@ -1552,14 +1597,14 @@ VisionStatus VisionAlgorithm::fitLine(PR_FIT_LINE_CMD *pstCmd, PR_FIT_LINE_RPY *
     else
         matGray = pstCmd->matInput.clone();
 
-    VectorOfPoint vecPoint = _findPointInRegionOverThreshold ( matGray, pstCmd->rectROI, pstCmd->nThreshold );
-    if ( vecPoint.size() < 2 )  {
+    ListOfPoint listPoint = _findPointsInRegionByThreshold( matGray, pstCmd->rectROI, pstCmd->nThreshold );
+    if ( listPoint.size() < 2 )  {
         WriteLog("Input image is empty");
         enStatus = VisionStatus::NOT_ENOUGH_POINTS_TO_FIT;
         goto EXIT;
     }
     
-    for ( const auto &point : vecPoint )
+    for ( const auto &point : listPoint )
     {
         vecX.push_back ( point.x );
         vecY.push_back ( point.y );
@@ -1567,26 +1612,26 @@ VisionStatus VisionAlgorithm::fitLine(PR_FIT_LINE_CMD *pstCmd, PR_FIT_LINE_RPY *
 
     //For y = kx + b, the k is the slope, when it is very large, the error is quite big, so change
     //to get the x = k1 + b1, and get the k = 1 / k1, b = -b1 / k1. Then the result is more accurate.
-    auto reverseFit = false;
+    pstRpy->bReversedFit = false;
     if ( CalcUtils::calcStdDeviation ( vecY ) > CalcUtils::calcStdDeviation ( vecX ) )
-        reverseFit = true;
-    
+        pstRpy->bReversedFit = true;    
+
     int nIteratorNum = 0;
     do
     {
-        for (auto it = overTolPoints.rbegin(); it != overTolPoints.rend(); ++it)
-            vecPoint.erase(vecPoint.begin() + *it);
+        for (const auto &it : vecOverTolIter )
+            listPoint.erase( it );
 
-        Fitting::fitLine ( vecPoint, pstRpy->fSlope, pstRpy->fIntercept, reverseFit );
-        overTolPoints = _findPointOverTol(vecPoint, pstRpy->fSlope, pstRpy->fIntercept, pstCmd->enRmNoiseMethod, pstCmd->fErrTol);
-    }while ( ! overTolPoints.empty() && nIteratorNum < 20 );
+        Fitting::fitLine ( listPoint, pstRpy->fSlope, pstRpy->fIntercept, pstRpy->bReversedFit );
+        vecOverTolIter = _findPointOverLineTol(listPoint, pstRpy->bReversedFit, pstRpy->fSlope, pstRpy->fIntercept, pstCmd->enRmNoiseMethod, pstCmd->fErrTol);
+    }while ( ! vecOverTolIter.empty() && nIteratorNum < 20 );
 
-    if ( vecPoint.size() < 2 )  {
+    if ( listPoint.size() < 2 )  {
         enStatus = VisionStatus::TOO_MUCH_NOISE_TO_FIT;
         goto EXIT;
     }
 
-    pstRpy->stLine = CalcUtils::calcEndPointOfLine ( vecPoint, pstRpy->fSlope, pstRpy->fIntercept );
+    pstRpy->stLine = CalcUtils::calcEndPointOfLine ( listPoint, pstRpy->bReversedFit, pstRpy->fSlope, pstRpy->fIntercept );
     pstRpy->matResult = pstCmd->matInput.clone();
     cv::line ( pstRpy->matResult, pstRpy->stLine.pt1, pstRpy->stLine.pt2, cv::Scalar(255,0,0), 2 );
     enStatus = VisionStatus::OK;
@@ -1637,16 +1682,16 @@ VisionStatus VisionAlgorithm::fitParallelLine(PR_FIT_PARALLEL_LINE_CMD *pstCmd, 
     else
         matGray = pstCmd->matInput.clone();
 
-    VectorOfPoint vecPoint1 = _findPointInRegionOverThreshold ( matGray, pstCmd->rectArrROI[0], pstCmd->nThreshold );
-    VectorOfPoint vecPoint2 = _findPointInRegionOverThreshold ( matGray, pstCmd->rectArrROI[1], pstCmd->nThreshold );
-    if ( vecPoint1.size() < 2 || vecPoint2.size() < 2 )  {
-        WriteLog("Not enough points to fit line");
+    ListOfPoint listPoint1 = _findPointsInRegionByThreshold ( matGray, pstCmd->rectArrROI[0], pstCmd->nThreshold );
+    ListOfPoint listPoint2 = _findPointsInRegionByThreshold ( matGray, pstCmd->rectArrROI[1], pstCmd->nThreshold );
+    if ( listPoint1.size() < 2 || listPoint2.size() < 2 )  {
+        WriteLog("Not enough points to fit Parallel line");
         pstRpy->nStatus = ToInt32(VisionStatus::NOT_ENOUGH_POINTS_TO_FIT);
         return VisionStatus::NOT_ENOUGH_POINTS_TO_FIT;
     }
 
     std::vector<float> vecX, vecY;
-    for ( const auto &point : vecPoint1 )
+    for ( const auto &point : listPoint1 )
     {
         vecX.push_back ( point.x );
         vecY.push_back ( point.y );
@@ -1654,32 +1699,32 @@ VisionStatus VisionAlgorithm::fitParallelLine(PR_FIT_PARALLEL_LINE_CMD *pstCmd, 
 
     //For y = kx + b, the k is the slope, when it is very large, the error is quite big, so change
     //to get the x = k1 + b1, and get the k = 1 / k1, b = -b1 / k1. Then the result is more accurate.
-    auto reverseFit = false;
+    pstRpy->bReversedFit = false;
     if ( CalcUtils::calcStdDeviation ( vecY ) > CalcUtils::calcStdDeviation ( vecX ) )
-        reverseFit = true;
+        pstRpy->bReversedFit = true;
 
-    std::vector<size_t> overTolPoints1, overTolPoints2;
+    std::vector<ListOfPoint::const_iterator> overTolPoints1, overTolPoints2;
     int nIteratorNum = 0;
     do
     {
-        for (auto it = overTolPoints1.rbegin(); it != overTolPoints1.rend(); ++it)
-            vecPoint1.erase(vecPoint1.begin() + *it);
-        for (auto it = overTolPoints2.rbegin(); it != overTolPoints2.rend(); ++it)
-            vecPoint2.erase(vecPoint2.begin() + *it);
+        for (const auto &it : overTolPoints1 )
+            listPoint1.erase ( it );
+        for (const auto &it : overTolPoints2)
+            listPoint2.erase ( it );
 
-        Fitting::fitParallelLine(vecPoint1, vecPoint2, pstRpy->fSlope, pstRpy->fIntercept1, pstRpy->fIntercept2, reverseFit);
-        overTolPoints1 = _findPointOverTol(vecPoint1, pstRpy->fSlope, pstRpy->fIntercept1, pstCmd->enRmNoiseMethod, pstCmd->fErrTol);
-        overTolPoints2 = _findPointOverTol(vecPoint2, pstRpy->fSlope, pstRpy->fIntercept2, pstCmd->enRmNoiseMethod, pstCmd->fErrTol);
+        Fitting::fitParallelLine(listPoint1, listPoint2, pstRpy->fSlope, pstRpy->fIntercept1, pstRpy->fIntercept2, pstRpy->bReversedFit);
+        overTolPoints1 = _findPointOverLineTol(listPoint1, pstRpy->bReversedFit, pstRpy->fSlope, pstRpy->fIntercept1, pstCmd->enRmNoiseMethod, pstCmd->fErrTol);
+        overTolPoints2 = _findPointOverLineTol(listPoint2, pstRpy->bReversedFit, pstRpy->fSlope, pstRpy->fIntercept2, pstCmd->enRmNoiseMethod, pstCmd->fErrTol);
         ++ nIteratorNum;
     }while ( ( ! overTolPoints1.empty() || ! overTolPoints2.empty() ) &&  nIteratorNum < 20 );
 
-    if ( vecPoint1.size() < 2 || vecPoint2.size() < 2 )  {
+    if ( listPoint1.size() < 2 || listPoint2.size() < 2 )  {
         enStatus = VisionStatus::TOO_MUCH_NOISE_TO_FIT;
         goto EXIT;
     }
 
-    pstRpy->stLine1 = CalcUtils::calcEndPointOfLine ( vecPoint1, pstRpy->fSlope, pstRpy->fIntercept1 );
-    pstRpy->stLine2 = CalcUtils::calcEndPointOfLine ( vecPoint2, pstRpy->fSlope, pstRpy->fIntercept2 );
+    pstRpy->stLine1 = CalcUtils::calcEndPointOfLine ( listPoint1, pstRpy->bReversedFit, pstRpy->fSlope, pstRpy->fIntercept1 );
+    pstRpy->stLine2 = CalcUtils::calcEndPointOfLine ( listPoint2, pstRpy->bReversedFit, pstRpy->fSlope, pstRpy->fIntercept2 );
 
     pstRpy->matResult = pstCmd->matInput.clone();
     cv::line ( pstRpy->matResult, pstRpy->stLine1.pt1, pstRpy->stLine1.pt2, cv::Scalar(255,0,0), 2 );
@@ -1734,10 +1779,10 @@ VisionStatus VisionAlgorithm::fitRect(PR_FIT_RECT_CMD *pstCmd, PR_FIT_RECT_RPY *
     else
         matGray = pstCmd->matInput.clone();
 
-    VectorOfVectorOfPoint vecVecPoint;
+    VectorOfListOfPoint vecListPoint;
     for ( int i = 0; i < PR_RECT_EDGE_COUNT; ++ i ) {
-        vecVecPoint.push_back ( _findPointInRegionOverThreshold ( matGray, pstCmd->rectArrROI[i], pstCmd->nThreshold ) );
-        if ( vecVecPoint [ i ].size() < 2 )  {
+        vecListPoint.push_back ( _findPointsInRegionByThreshold ( matGray, pstCmd->rectArrROI[i], pstCmd->nThreshold ) );
+        if ( vecListPoint [ i ].size() < 2 )  {
             _snprintf(charrMsg, sizeof(charrMsg), "Edge %d not enough points to fit rect", i);
             WriteLog(charrMsg);
             pstRpy->nStatus = ToInt32(VisionStatus::NOT_ENOUGH_POINTS_TO_FIT);
@@ -1745,7 +1790,7 @@ VisionStatus VisionAlgorithm::fitRect(PR_FIT_RECT_CMD *pstCmd, PR_FIT_RECT_RPY *
         }
     }
     std::vector<float> vecX, vecY;
-    for ( const auto &point : vecVecPoint[0] )
+    for ( const auto &point : vecListPoint[0] )
     {
         vecX.push_back ( point.x );
         vecY.push_back ( point.y );
@@ -1753,12 +1798,18 @@ VisionStatus VisionAlgorithm::fitRect(PR_FIT_RECT_CMD *pstCmd, PR_FIT_RECT_RPY *
 
     //For y = kx + b, the k is the slope, when it is very large, the error is quite big, so change
     //to get the x = k1 + b1, and get the k = 1 / k1, b = -b1 / k1. Then the result is more accurate.
-    auto reverseFit = false;
-    if ( CalcUtils::calcStdDeviation ( vecY ) > CalcUtils::calcStdDeviation ( vecX ) )
-        reverseFit = true;
+    pstRpy->bLineOneReversedFit = false;
+    pstRpy->bLineTwoReversedFit = false;
+    if ( CalcUtils::calcStdDeviation ( vecY ) > CalcUtils::calcStdDeviation ( vecX ) )  {
+        pstRpy->bLineOneReversedFit = true;
+        pstRpy->bLineTwoReversedFit = false;
+    }else {
+        pstRpy->bLineOneReversedFit = false;
+        pstRpy->bLineTwoReversedFit = true;
+    }
 
-    std::vector<std::vector<size_t>> vecVecOutTolIndex;
-    vecVecOutTolIndex.reserve(vecVecPoint.size());
+    std::vector<std::vector<ListOfPoint::const_iterator>> vecVecOutTolIndex;
+    vecVecOutTolIndex.reserve(vecListPoint.size());
     std::vector<float>    vecIntercept;
     auto hasPointOutTol = false;
     auto iterateCount = 0;
@@ -1766,20 +1817,20 @@ VisionStatus VisionAlgorithm::fitRect(PR_FIT_RECT_CMD *pstCmd, PR_FIT_RECT_RPY *
     {
         auto index = 0;
         for ( const auto &vecOutTolIndex : vecVecOutTolIndex ){
-            for (auto it = vecOutTolIndex.rbegin(); it != vecOutTolIndex.rend(); ++ it)
-                vecVecPoint[index].erase ( vecVecPoint[index].begin() + *it);
+            for (const auto &it : vecOutTolIndex )
+                vecListPoint[index].erase ( it );
             ++ index;
         }
-        Fitting::fitRect ( vecVecPoint, pstRpy->fSlope1, pstRpy->fSlope2, vecIntercept, reverseFit );
+        Fitting::fitRect ( vecListPoint, pstRpy->fSlope1, pstRpy->fSlope2, vecIntercept, pstRpy->bLineOneReversedFit, pstRpy->bLineTwoReversedFit );
         vecVecOutTolIndex.clear();
         hasPointOutTol = false;
         for( int i = 0; i < PR_RECT_EDGE_COUNT; ++ i )
         {
-            std::vector<size_t> vecOutTolIndex;
+            std::vector<ListOfPoint::const_iterator> vecOutTolIndex;
             if ( i < 2 )
-                vecOutTolIndex = _findPointOverTol( vecVecPoint[i], pstRpy->fSlope1, vecIntercept[i], pstCmd->enRmNoiseMethod, pstCmd->fErrTol );
+                vecOutTolIndex = _findPointOverLineTol( vecListPoint[i], pstRpy->bLineOneReversedFit, pstRpy->fSlope1, vecIntercept[i], pstCmd->enRmNoiseMethod, pstCmd->fErrTol );
             else
-                vecOutTolIndex = _findPointOverTol( vecVecPoint[i], pstRpy->fSlope2, vecIntercept[i], pstCmd->enRmNoiseMethod, pstCmd->fErrTol );
+                vecOutTolIndex = _findPointOverLineTol( vecListPoint[i], pstRpy->bLineTwoReversedFit, pstRpy->fSlope2, vecIntercept[i], pstCmd->enRmNoiseMethod, pstCmd->fErrTol );
             vecVecOutTolIndex.push_back( vecOutTolIndex );
         }
 
@@ -1792,17 +1843,22 @@ VisionStatus VisionAlgorithm::fitRect(PR_FIT_RECT_CMD *pstCmd, PR_FIT_RECT_RPY *
         ++ iterateCount;
     }while ( hasPointOutTol && iterateCount < 20 );
 
-    for ( const auto &vecPoint : vecVecPoint )
-    if ( vecPoint.size() < 2 )  {
-        enStatus = VisionStatus::TOO_MUCH_NOISE_TO_FIT;
-        goto EXIT;
+    int nLineNumber = 1;
+    for ( const auto &listPoint : vecListPoint )  {
+        if (listPoint.size() < 2)  {
+            enStatus = VisionStatus::TOO_MUCH_NOISE_TO_FIT;
+            _snprintf(charrMsg, sizeof(charrMsg), "Rect line %d has too much noise to fit", nLineNumber);
+            WriteLog(charrMsg);
+            goto EXIT;
+        }
+        ++ nLineNumber;
     }
 
     for ( int i = 0; i < PR_RECT_EDGE_COUNT; ++ i ) {
         if ( i < 2 )
-            pstRpy->fArrLine[i] = CalcUtils::calcEndPointOfLine( vecVecPoint[i], pstRpy->fSlope1, vecIntercept[i]);
+            pstRpy->fArrLine[i] = CalcUtils::calcEndPointOfLine( vecListPoint[i], pstRpy->bLineOneReversedFit, pstRpy->fSlope1, vecIntercept[i]);
         else
-            pstRpy->fArrLine[i] = CalcUtils::calcEndPointOfLine( vecVecPoint[i], pstRpy->fSlope2, vecIntercept[i]);
+            pstRpy->fArrLine[i] = CalcUtils::calcEndPointOfLine( vecListPoint[i], pstRpy->bLineTwoReversedFit, pstRpy->fSlope2, vecIntercept[i]);
         pstRpy->fArrIntercept[i] = vecIntercept[i];
     }
     pstRpy->matResult = pstCmd->matInput.clone();
@@ -2106,6 +2162,24 @@ std::vector<size_t> VisionAlgorithm::_findPointsOverCircleTol( const VectorOfPoi
     return vecResult;
 }
 
+std::vector<ListOfPoint::const_iterator> VisionAlgorithm::_findPointsOverCircleTol( const ListOfPoint &listPoint, const cv::RotatedRect &rotatedRect, PR_RM_FIT_NOISE_METHOD enMethod, float tolerance )
+{
+    std::vector<ListOfPoint::const_iterator> vecResult;
+    for ( ListOfPoint::const_iterator it = listPoint.begin(); it != listPoint.end(); ++ it )  {
+        cv::Point2f point = *it;
+        auto disToCtr = sqrt( ( point.x - rotatedRect.center.x) * (point.x - rotatedRect.center.x)  + ( point.y - rotatedRect.center.y) * ( point.y - rotatedRect.center.y ) );
+        auto err = disToCtr - rotatedRect.size.width / 2;
+        if ( PR_RM_FIT_NOISE_METHOD::ABSOLUTE_ERR == enMethod && fabs ( err ) > tolerance )  {
+            vecResult.push_back(it);
+        }else if ( PR_RM_FIT_NOISE_METHOD::POSITIVE_ERR == enMethod && err > tolerance ) {
+            vecResult.push_back(it);
+        }else if ( PR_RM_FIT_NOISE_METHOD::NEGATIVE_ERR == enMethod && err < -tolerance ) {
+            vecResult.push_back(it);
+        }
+    }
+    return vecResult;
+}
+
 //method 1 : Exclude all the points out of positive error tolerance and inside the negative error tolerance.
 //method 2 : Exclude all the points out of positive error tolerance.
 //method 3 : Exclude all the points inside the negative error tolerance.
@@ -2115,19 +2189,19 @@ cv::RotatedRect VisionAlgorithm::_fitCircleIterate(const std::vector<cv::Point2f
     if (vecPoints.size() < 3)
         return rotatedRect;
 
-    std::vector<cv::Point2f> vecLocalPoints;
+    ListOfPoint listPoint;
     for ( const auto &point : vecPoints )   {
-        vecLocalPoints.push_back ( point );
+        listPoint.push_back ( point );
     }
-    rotatedRect = Fitting::fitCircle ( vecLocalPoints );
+    rotatedRect = Fitting::fitCircle ( listPoint );
     
-    std::vector<size_t> overTolPoints = _findPointsOverCircleTol ( vecLocalPoints, rotatedRect, method, tolerance );
+    std::vector<ListOfPoint::const_iterator> overTolPoints = _findPointsOverCircleTol ( listPoint, rotatedRect, method, tolerance );
     int nIteratorNum = 1;
     while ( ! overTolPoints.empty() && nIteratorNum < 20 )   {
-        for (auto it = overTolPoints.rbegin(); it != overTolPoints.rend(); ++ it)
-            vecLocalPoints.erase(vecLocalPoints.begin() + *it);
-        rotatedRect = Fitting::fitCircle ( vecLocalPoints );
-        overTolPoints = _findPointsOverCircleTol ( vecLocalPoints, rotatedRect, method, tolerance );
+        for (const auto &it : overTolPoints )
+            listPoint.erase( it );
+        rotatedRect = Fitting::fitCircle ( listPoint );
+        overTolPoints = _findPointsOverCircleTol ( listPoint, rotatedRect, method, tolerance );
         ++ nIteratorNum;
     }
     return rotatedRect;

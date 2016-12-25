@@ -50,15 +50,24 @@ protected:
     VisionStatus _writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRpy);
     VisionStatus _refineSrchTemplate(const cv::Mat &mat, cv::Mat &matTmpl, cv::Point2f &ptResult);
     static VectorOfPoint _findPointInRegionOverThreshold(const cv::Mat &mat, const cv::Rect &rect, int nThreshold);
-    static std::vector<size_t> _findPointOverTol(const VectorOfPoint      &vecPoint,
-                                                 const float               fSlope,
-                                                 const float               fIntercept,
-                                                 PR_RM_FIT_NOISE_METHOD    method,
-                                                 float                     tolerance);
+    static ListOfPoint _findPointsInRegionByThreshold(const cv::Mat &mat, const cv::Rect &rect, int nThreshold);
+    static std::vector<size_t> _findPointOverLineTol(const VectorOfPoint   &vecPoint,
+                                                     bool                   bReversedFit,
+                                                     const float            fSlope,
+                                                     const float            fIntercept,
+                                                     PR_RM_FIT_NOISE_METHOD method,
+                                                     float                  tolerance);
+    static std::vector<ListOfPoint::const_iterator> _findPointOverLineTol(const ListOfPoint   &vecPoint,
+                                                     bool                   bReversedFit,
+                                                     const float            fSlope,
+                                                     const float            fIntercept,
+                                                     PR_RM_FIT_NOISE_METHOD method,
+                                                     float                  tolerance);
     VectorOfPoint _randomSelectPoints(const VectorOfPoint &vecPoints, int numOfPtToSelect);
     cv::RotatedRect _fitCircleRansac(const VectorOfPoint &vecPoints, float tolerance, int maxRansacTime, size_t nFinishThreshold);
     VectorOfPoint _findPointsInCircleTol( const VectorOfPoint &vecPoints, const cv::RotatedRect &rotatedRect, float tolerance );
     std::vector<size_t> _findPointsOverCircleTol( const VectorOfPoint &vecPoints, const cv::RotatedRect &rotatedRect, PR_RM_FIT_NOISE_METHOD enMethod, float tolerance );
+    std::vector<ListOfPoint::const_iterator> _findPointsOverCircleTol( const ListOfPoint &listPoint, const cv::RotatedRect &rotatedRect, PR_RM_FIT_NOISE_METHOD enMethod, float tolerance );
     cv::RotatedRect _fitCircleIterate(const std::vector<cv::Point2f> &vecPoints, PR_RM_FIT_NOISE_METHOD method, float tolerance);
 protected:
     const int       _constMinHessian        =  300;

@@ -15,27 +15,47 @@ namespace Vision
     return ( fDegree * CV_PI / 180.f );
 }
 
-/*static*/ double CalcUtils::ptDisToLine(const cv::Point2f ptInput, float fSlope, float fIntercept )
+/*static*/ float CalcUtils::ptDisToLine(const cv::Point2f &ptInput, bool bReversedFit, float fSlope, float fIntercept )
 {
-    double distance = 0.f;
-    if ( fabs ( fSlope )  < 0.0001 )   {
-        distance = ptInput.y - fIntercept;
+    float distance = 0.f;
+    if ( bReversedFit ) {
+        if (fabs(fSlope) < 0.0001)   {
+            distance = ptInput.x - fIntercept;
+        }
+        else
+        {
+            float fSlopeOfPerpendicularLine = -1.f / fSlope;
+            float fInterceptOfPerpendicularLine = ptInput.x - fSlopeOfPerpendicularLine * ptInput.y;
+            cv::Point2f ptCrossPoint;
+            ptCrossPoint.y = (fInterceptOfPerpendicularLine - fIntercept) / (fSlope - fSlopeOfPerpendicularLine);
+            ptCrossPoint.x = fSlope * ptCrossPoint.y + fIntercept;
+            distance = sqrt((ptInput.x - ptCrossPoint.x) * (ptInput.x - ptCrossPoint.x) + (ptInput.y - ptCrossPoint.y) * (ptInput.y - ptCrossPoint.y));
+            if (ptInput.x < ptCrossPoint.x)
+                distance = -distance;
+        }
     }
     else
     {
-        float fSlopeOfPerpendicularLine = - 1.f / fSlope;
-        float fInterceptOfPerpendicularLine = ptInput.y - fSlopeOfPerpendicularLine * ptInput.x;
-        cv::Point2f ptCrossPoint;
-        ptCrossPoint.x = ( fInterceptOfPerpendicularLine - fIntercept ) / ( fSlope - fSlopeOfPerpendicularLine );
-        ptCrossPoint.y = fSlope * ptCrossPoint.x + fIntercept;
-        distance = sqrt ( ( ptInput.x - ptCrossPoint.x ) * ( ptInput.x - ptCrossPoint.x ) + ( ptInput.y - ptCrossPoint.y ) * ( ptInput.y - ptCrossPoint.y ) );
-        if ( ptInput.y < ptCrossPoint.y )
-            distance = - distance;
+        if (fabs(fSlope) < 0.0001)   {
+            distance = ptInput.y - fIntercept;
+        }
+        else
+        {
+            float fSlopeOfPerpendicularLine = -1.f / fSlope;
+            float fInterceptOfPerpendicularLine = ptInput.y - fSlopeOfPerpendicularLine * ptInput.x;
+            cv::Point2f ptCrossPoint;
+            ptCrossPoint.x = (fInterceptOfPerpendicularLine - fIntercept) / (fSlope - fSlopeOfPerpendicularLine);
+            ptCrossPoint.y = fSlope * ptCrossPoint.x + fIntercept;
+            distance = sqrt((ptInput.x - ptCrossPoint.x) * (ptInput.x - ptCrossPoint.x) + (ptInput.y - ptCrossPoint.y) * (ptInput.y - ptCrossPoint.y));
+            if (ptInput.y < ptCrossPoint.y)
+                distance = -distance;
+        }
     }
+    
     return distance;
 }
 
-/*static*/ PR_Line2f CalcUtils::calcEndPointOfLine( const VectorOfPoint &vecPoint, float fSlope, float fIntercept )
+/*static*/ PR_Line2f CalcUtils::calcEndPointOfLine( const VectorOfPoint &vecPoint, bool bReversedFit, float fSlope, float fIntercept )
 {
     float fMinX = 10000.f, fMinY = 10000.f, fMaxX = -10000.f, fMaxY = -10000.f;
     for ( const auto &point : vecPoint )    {
@@ -45,19 +65,43 @@ namespace Vision
         if ( point.y > fMaxY ) fMaxY = point.y;
     }
     PR_Line2f line;
-    if (fabs(fSlope) < 1)   {
+    if ( bReversedFit ) {
+        line.pt1.y = fMinY;
+        line.pt1.x = line.pt1.y * fSlope + fIntercept;
+        line.pt2.y = fMaxY;
+        line.pt2.x = line.pt2.y * fSlope + fIntercept;
+    }else {
         line.pt1.x = fMinX;
         line.pt1.y = fSlope * line.pt1.x + fIntercept;
         line.pt2.x = fMaxX;
         line.pt2.y = fSlope * line.pt2.x + fIntercept;
     }
-    else
-    {
-        line.pt1.y = fMinY;
-        line.pt1.x = line.pt1.y / fSlope - fIntercept / fSlope;
-        line.pt2.y = fMaxY;
-        line.pt2.x = line.pt2.y / fSlope - fIntercept / fSlope;
+    
+    return line;
+}
+
+/*static*/ PR_Line2f CalcUtils::calcEndPointOfLine( const ListOfPoint &listPoint, bool bReversedFit, float fSlope, float fIntercept )
+{
+    float fMinX = 10000.f, fMinY = 10000.f, fMaxX = -10000.f, fMaxY = -10000.f;
+    for ( const auto &point : listPoint )    {
+        if ( point.x < fMinX ) fMinX = point.x;
+        if ( point.x > fMaxX ) fMaxX = point.x;
+        if ( point.y < fMinY ) fMinY = point.y;
+        if ( point.y > fMaxY ) fMaxY = point.y;
     }
+    PR_Line2f line;
+    if ( bReversedFit ) {
+        line.pt1.y = fMinY;
+        line.pt1.x = line.pt1.y * fSlope + fIntercept;
+        line.pt2.y = fMaxY;
+        line.pt2.x = line.pt2.y * fSlope + fIntercept;
+    }else {
+        line.pt1.x = fMinX;
+        line.pt1.y = fSlope * line.pt1.x + fIntercept;
+        line.pt2.x = fMaxX;
+        line.pt2.y = fSlope * line.pt2.x + fIntercept;
+    }
+    
     return line;
 }
 

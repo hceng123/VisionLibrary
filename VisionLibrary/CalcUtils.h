@@ -80,8 +80,9 @@ public:
 
     static double radian2Degree( double dRadian );
     static double degree2Radian( double dDegree );
-    static double ptDisToLine(const cv::Point2f ptInput, float fSlope, float fIntercept );
-    static PR_Line2f calcEndPointOfLine( const VectorOfPoint &vecPoint, float fSlope, float fIntercept );
+    static float ptDisToLine(const cv::Point2f &ptInput, bool bReversedFit, float fSlope, float fIntercept );
+    static PR_Line2f calcEndPointOfLine( const VectorOfPoint &vecPoint, bool bReversedFit, float fSlope, float fIntercept );
+    static PR_Line2f calcEndPointOfLine( const ListOfPoint &listPoint, bool bReversedFit, float fSlope, float fIntercept );
     static cv::Point2f lineIntersect(float fSlope1, float fIntercept1, float fSlope2, float fIntercept2);
     static float lineSlope(const PR_Line2f &line);
 };

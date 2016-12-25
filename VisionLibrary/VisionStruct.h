@@ -5,6 +5,7 @@
 #include "VisionStatus.h"
 #include "opencv2/core/core.hpp"
 #include "BaseType.h"
+#include <list>
 
 namespace AOI
 {
@@ -18,6 +19,9 @@ using VectorOfVectorKeyPoint = std::vector<VectorOfKeyPoint>;
 using VectorOfPoint = std::vector<cv::Point2f>;
 using VectorOfVectorOfPoint = std::vector<VectorOfPoint>;
 using VectorOfRect = std::vector<cv::Rect>;
+using ListOfPoint = std::list<cv::Point2f>;
+using VectorOfListOfPoint = std::vector<ListOfPoint>;
+
 
 #define ToInt32(param)      (static_cast<Int32>(param))
 #define ToFloat(param)      (static_cast<float>(param))
@@ -248,7 +252,8 @@ struct PR_FIT_LINE_CMD
 
 struct PR_FIT_LINE_RPY
 {
-    Int32                   nStatus;
+    Int32                   nStatus;    
+    bool                    bReversedFit;   //If it is true, then the result is x = fSlope * y + fIntercept. Otherwise the line is y = fSlope * x + fIntercept.
     float                   fSlope;
     float                   fIntercept;
     PR_Line2f               stLine;
@@ -267,6 +272,7 @@ struct PR_FIT_PARALLEL_LINE_CMD
 struct PR_FIT_PARALLEL_LINE_RPY
 {
     Int32                   nStatus;
+    bool                    bReversedFit;
     float                   fSlope;
     float                   fIntercept1;
     float                   fIntercept2;
@@ -288,7 +294,9 @@ struct PR_FIT_RECT_CMD
 struct PR_FIT_RECT_RPY
 {
     Int32                   nStatus;
+    bool                    bLineOneReversedFit;
     float                   fSlope1;
+    bool                    bLineTwoReversedFit;
     float                   fSlope2;
     float                   fArrIntercept[PR_RECT_EDGE_COUNT];
     PR_Line2f               fArrLine[PR_RECT_EDGE_COUNT];
@@ -350,6 +358,19 @@ struct PR_OCR_RPY
 {
     Int32                   nStatus;
     String                  strResult;
+};
+
+struct PR_POINT_LINE_DISTANCE_CMD
+{
+    cv::Point2f             ptInput;
+    bool                    bReversedFit;
+    float                   fSlope;
+    float                   fIntercept;
+};
+
+struct PR_POINT_LINE_DISTANCE_RPY
+{
+    float                   fDistance;
 };
 
 }

@@ -15,6 +15,8 @@ VisionWidget::VisionWidget(QWidget *parent)
     : QMainWindow(parent)
 {
     ui.setupUi(this);
+    setWindowIcon(QIcon(":/VisionWidget/Image/VisionWidget.png"));
+
     ui.visionViewToolBox->SetVisionView(ui.visionView);
     ui.lineEditFitCircleErrTol->setValidator(new QIntValidator(1,100, this) );
     ui.visionView->setMachineState(VisionView::VISION_VIEW_STATE::TEST_VISION_LIBRARY);
@@ -22,7 +24,6 @@ VisionWidget::VisionWidget(QWidget *parent)
 
 VisionWidget::~VisionWidget()
 {
-
 }
 
 bool VisionWidget::checkDisplayImage()
@@ -93,8 +94,8 @@ void VisionWidget::on_fitParallelLineBtn_clicked()
         return;
 
     FitParallelLineProcedure procedure(ui.visionView);
-    procedure.setErrTol ( ui.lineEditFitLineErrTol->text().toFloat());
-    procedure.setThreshold ( ui.lineEditFitLineThreshold->text().toInt());
+    procedure.setErrTol ( ui.lineEditFitParallelLineErrTol->text().toFloat());
+    procedure.setThreshold ( ui.lineEditFitParallelLineThreshold->text().toInt());
 	int nStatus = procedure.run(_sourceImagePath);
     if ( ToInt(VisionStatus::OK) == nStatus )
     {
@@ -108,8 +109,8 @@ void VisionWidget::on_fitRectBtn_clicked()
         return;
 
     FitRectProcedure procedure(ui.visionView);
-    procedure.setErrTol ( ui.lineEditFitLineErrTol->text().toFloat());
-    procedure.setThreshold ( ui.lineEditFitLineThreshold->text().toInt());
+    procedure.setErrTol ( ui.lineEditFitRectErrTol->text().toFloat());
+    procedure.setThreshold ( ui.lineEditFitRectThreshold->text().toInt());
 	int nStatus = procedure.run(_sourceImagePath);
     if ( ToInt(VisionStatus::OK) == nStatus )
     {
