@@ -136,7 +136,7 @@ VisionStatus LogCaseLrnTmpl::RunLogCase()
 
     PR_LRN_TMPL_RPY stLrnTmplRpy;
 
-    std::shared_ptr<VisionAlgorithm> pVA = VisionAlgorithm::create();
+    VisionAlgorithmPtr pVA = VisionAlgorithm::create();
     enStatus = pVA->lrnTmpl ( &stLrnTmplCmd, &stLrnTmplRpy, true );
 
     WriteRpy( &stLrnTmplRpy );
@@ -203,7 +203,7 @@ VisionStatus LogCaseFitCircle::RunLogCase()
 
     PR_FIT_CIRCLE_RPY stRpy;
 
-    std::shared_ptr<VisionAlgorithm> pVA = VisionAlgorithm::create();
+    VisionAlgorithmPtr pVA = VisionAlgorithm::create();
     enStatus = pVA->fitCircle ( &stCmd, &stRpy, true );
 
     WriteRpy( &stRpy );
@@ -264,7 +264,7 @@ VisionStatus LogCaseFitLine::RunLogCase()
 
     PR_FIT_LINE_RPY stRpy;
 
-    std::shared_ptr<VisionAlgorithm> pVA = VisionAlgorithm::create();
+    VisionAlgorithmPtr pVA = VisionAlgorithm::create();
     enStatus = pVA->fitLine ( &stCmd, &stRpy, true );
 
     WriteRpy( &stRpy );
@@ -330,7 +330,7 @@ VisionStatus LogCaseFitParallelLine::RunLogCase()
 
     PR_FIT_PARALLEL_LINE_RPY stRpy;
 
-    std::shared_ptr<VisionAlgorithm> pVA = VisionAlgorithm::create();
+    VisionAlgorithmPtr pVA = VisionAlgorithm::create();
     enStatus = pVA->fitParallelLine(&stCmd, &stRpy, true);
 
     WriteRpy(&stRpy);
@@ -407,7 +407,7 @@ VisionStatus LogCaseFitRect::RunLogCase()
 
     PR_FIT_RECT_RPY stRpy;
 
-    std::shared_ptr<VisionAlgorithm> pVA = VisionAlgorithm::create();
+    VisionAlgorithmPtr pVA = VisionAlgorithm::create();
     enStatus = pVA->fitRect(&stCmd, &stRpy, true);
 
     WriteRpy(&stRpy);
@@ -468,7 +468,7 @@ VisionStatus LogCaseSrchFiducial::RunLogCase()
 
     PR_SRCH_FIDUCIAL_MARK_RPY stRpy;
 
-    std::shared_ptr<VisionAlgorithm> pVA = VisionAlgorithm::create();
+    VisionAlgorithmPtr pVA = VisionAlgorithm::create();
     enStatus = pVA->srchFiducialMark(&stCmd, &stRpy, true);
 
     WriteRpy(&stRpy);

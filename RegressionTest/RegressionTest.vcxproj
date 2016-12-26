@@ -62,6 +62,7 @@
     </Link>
     <PostBuildEvent>
       <Command>$(OutDir)$(TargetName)$(TargetExt) -n &gt; $(ProjectDir)$(ProjectName)_result.txt
+sed -b -i '1,3d' $(ProjectDir)$(ProjectName)_result.txt
 FC /L $(ProjectDir)$(ProjectName)_golden.txt $(ProjectDir)$(ProjectName)_result.txt</Command>
     </PostBuildEvent>
     <PostBuildEvent>

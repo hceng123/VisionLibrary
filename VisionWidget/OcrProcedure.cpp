@@ -51,6 +51,7 @@ int OcrProcedure::ocr(const std::string &imagePath)
 {
     PR_OCR_CMD stCmd;
 	stCmd.matInput = cv::imread(imagePath);
+    stCmd.enDirection = static_cast<PR_DIRECTION>(_nTextDirection);
 	stCmd.rectROI = _rectSrchWindow;
 
 	PR_OCR_RPY stRpy;
@@ -66,4 +67,9 @@ int OcrProcedure::ocr(const std::string &imagePath)
 std::string OcrProcedure::getResult() const
 {
     return _strResult;
+}
+
+void OcrProcedure::setTextDirection(int nTextDirection)
+{
+    _nTextDirection = nTextDirection;
 }
