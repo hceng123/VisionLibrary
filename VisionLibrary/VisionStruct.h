@@ -351,7 +351,6 @@ struct PR_GET_ERROR_STR_RPY
 struct PR_OCR_CMD
 {
     cv::Mat                 matInput;
-    PR_DIRECTION            enDirection;
     cv::Rect                rectROI;
 };
 

@@ -53,7 +53,7 @@ VisionAPI VisionStatus PR_InspSurface(PR_INSP_SURFACE_CMD *const pInspCmd, PR_IN
 {
     try
     {
-        VisionAlgorithmPtr pVA = VisionAlgorithm::create();
+        std::shared_ptr<VisionAlgorithm> pVA = VisionAlgorithm::create();
         return pVA->inspSurface ( pInspCmd, pInspRpy );
     }catch(std::exception &e)
     {
@@ -81,7 +81,7 @@ VisionAPI VisionStatus  PR_LrnDevice(PR_LRN_DEVICE_CMD *pstLrnDeviceCmd, PR_LRN_
 {
     try
     {
-        VisionAlgorithmPtr pVA = VisionAlgorithm::create();
+        std::shared_ptr<VisionAlgorithm> pVA = VisionAlgorithm::create();
         return pVA->lrnDevice ( pstLrnDeviceCmd, pstLrnDeivceRpy );
     }catch(std::exception &e)
     {
@@ -94,7 +94,7 @@ VisionAPI VisionStatus PR_InspDevice(PR_INSP_DEVICE_CMD *pstInspDeviceCmd, PR_IN
 {
     try
     {
-        VisionAlgorithmPtr pVA = VisionAlgorithm::create();
+        std::shared_ptr<VisionAlgorithm> pVA = VisionAlgorithm::create();
         return pVA->inspDevice ( pstInspDeviceCmd, pstInspDeivceRpy );
     }catch(std::exception &e)
     {
@@ -112,7 +112,7 @@ VisionAPI VisionStatus  PR_RunLogCase(const std::string &strPath)
 {
     try
     {
-        VisionAlgorithmPtr pVA = VisionAlgorithm::create();
+        std::shared_ptr<VisionAlgorithm> pVA = VisionAlgorithm::create();
         return pVA->runLogCase ( strPath );
     }catch(std::exception &e)
     {
@@ -125,7 +125,7 @@ VisionAPI VisionStatus PR_SrchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd, PR
 {
     try
     {
-        VisionAlgorithmPtr pVA = VisionAlgorithm::create();
+        std::shared_ptr<VisionAlgorithm> pVA = VisionAlgorithm::create();
         return pVA->srchFiducialMark ( pstCmd, pstRpy );
     }catch(std::exception &e)
     {
@@ -138,7 +138,7 @@ VisionAPI VisionStatus  PR_FitLine(PR_FIT_LINE_CMD *pstCmd, PR_FIT_LINE_RPY *pst
 {
     try
     {
-        VisionAlgorithmPtr pVA = VisionAlgorithm::create();
+        std::shared_ptr<VisionAlgorithm> pVA = VisionAlgorithm::create();
         return pVA->fitLine ( pstCmd, pstRpy );
     }catch(std::exception &e)
     {
@@ -151,7 +151,7 @@ VisionAPI VisionStatus  PR_FitParallelLine(PR_FIT_PARALLEL_LINE_CMD *pstCmd, PR_
 {
     try
     {
-        VisionAlgorithmPtr pVA = VisionAlgorithm::create();
+        std::shared_ptr<VisionAlgorithm> pVA = VisionAlgorithm::create();
         return pVA->fitParallelLine ( pstCmd, pstRpy );
     }catch(std::exception &e)
     {
@@ -164,7 +164,7 @@ VisionAPI VisionStatus  PR_FitRect(PR_FIT_RECT_CMD *pstCmd, PR_FIT_RECT_RPY *pst
 {
     try
     {
-        VisionAlgorithmPtr pVA = VisionAlgorithm::create();
+        std::shared_ptr<VisionAlgorithm> pVA = VisionAlgorithm::create();
         return pVA->fitRect ( pstCmd, pstRpy );
     }catch(std::exception &e)
     {
@@ -177,7 +177,7 @@ VisionAPI VisionStatus  PR_FindEdge(PR_FIND_EDGE_CMD *pstCmd, PR_FIND_EDGE_RPY *
 {
     try
     {
-        VisionAlgorithmPtr pVA = VisionAlgorithm::create();
+        std::shared_ptr<VisionAlgorithm> pVA = VisionAlgorithm::create();
         return pVA->findEdge ( pstCmd, pstRpy );
     }catch(std::exception &e)
     {
@@ -190,7 +190,7 @@ VisionStatus  PR_FitCircle(PR_FIT_CIRCLE_CMD *pstCmd, PR_FIT_CIRCLE_RPY *pstRpy)
 {
     try
     {
-        VisionAlgorithmPtr pVA = VisionAlgorithm::create();
+        std::shared_ptr<VisionAlgorithm> pVA = VisionAlgorithm::create();
         return pVA->fitCircle ( pstCmd, pstRpy );
     }catch(std::exception &e)
     {
@@ -208,7 +208,7 @@ VisionAPI VisionStatus  PR_Ocr(PR_OCR_CMD *pstCmd, PR_OCR_RPY *pstRpy)
 {
     try
     {
-        VisionAlgorithmPtr pVA = VisionAlgorithm::create();
+        std::shared_ptr<VisionAlgorithm> pVA = VisionAlgorithm::create();
         return pVA->ocr ( pstCmd, pstRpy );
     }catch(std::exception &e)
     {

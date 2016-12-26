@@ -124,7 +124,6 @@ void VisionWidget::on_ocrBtn_clicked()
         return;
 
 	OcrProcedure procedure(ui.visionView);
-    procedure.setTextDirection(ui.comboBoxOcrTextDirection->currentIndex());
 	int nStatus = procedure.run(_sourceImagePath);
     if ( ToInt(VisionStatus::OK) == nStatus )
     {

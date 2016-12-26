@@ -600,49 +600,6 @@
        <bool>true</bool>
       </property>
      </widget>
-     <widget class="QComboBox" name="comboBoxOcrTextDirection">
-      <property name="geometry">
-       <rect>
-        <x>110</x>
-        <y>10</y>
-        <width>71</width>
-        <height>22</height>
-       </rect>
-      </property>
-      <item>
-       <property name="text">
-        <string>Up</string>
-       </property>
-      </item>
-      <item>
-       <property name="text">
-        <string>Down</string>
-       </property>
-      </item>
-      <item>
-       <property name="text">
-        <string>Left</string>
-       </property>
-      </item>
-      <item>
-       <property name="text">
-        <string>Right</string>
-       </property>
-      </item>
-     </widget>
-     <widget class="QLabel" name="labelOcrTextDirection">
-      <property name="geometry">
-       <rect>
-        <x>30</x>
-        <y>10</y>
-        <width>81</width>
-        <height>16</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>Text Direction</string>
-      </property>
-     </widget>
     </widget>
    </widget>
   </widget>

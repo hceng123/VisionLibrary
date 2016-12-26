@@ -84,14 +84,6 @@ enum class PR_FIT_CIRCLE_METHOD
     RANSAC,
 };
 
-enum class PR_DIRECTION
-{
-    UP,
-    DOWN,
-    LEFT,
-    RIGHT,
-};
-
 }
 }
 
