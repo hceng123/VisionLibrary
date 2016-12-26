@@ -1,7 +1,4 @@
 
-***** VIDEOINPUT LIBRARY - 0.1995 - TFW07 *****
-
-
 ------------------------------------------
 INSPECT DEVICE REGRESSION TEST #1 STARTING
 ------------------------------------------

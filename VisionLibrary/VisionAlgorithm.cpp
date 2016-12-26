@@ -4,7 +4,6 @@
 #include "opencv2/calib3d.hpp"
 #include "opencv2/video.hpp"
 #include "opencv2/highgui.hpp"
-#include "opencv2/text.hpp"
 #include "TimeLog.h"
 #include "logcase.h"
 #include "boost/filesystem.hpp"
@@ -27,13 +26,15 @@ namespace Vision
 #define MARK_FUNCTION_START_TIME    __int64 functionStart = _stopWatch.AbsNow()
 #define MARK_FUNCTION_END_TIME      TimeLog::GetInstance()->addTimeLog( __FUNCTION__, _stopWatch.AbsNow() - functionStart )
 
+/*static*/ OcrTesseractPtr VisionAlgorithm::_ptrOcrTesseract;
+
 VisionAlgorithm::VisionAlgorithm()
 {
 }
 
-/*static*/ shared_ptr<VisionAlgorithm> VisionAlgorithm::create()
+/*static*/ unique_ptr<VisionAlgorithm> VisionAlgorithm::create()
 {
-    return make_shared<VisionAlgorithm>();
+    return make_unique<VisionAlgorithm>();
 }
 
 VisionStatus VisionAlgorithm::lrnTmpl(PR_LRN_TMPL_CMD * const pLrnTmplCmd, PR_LRN_TMPL_RPY *pLrnTmplRpy, bool bReplay)
@@ -2231,9 +2232,33 @@ VisionStatus VisionAlgorithm::ocr(PR_OCR_CMD *pstCmd, PR_OCR_RPY *pstRpy, bool b
         return VisionStatus::INVALID_PARAM;
     }
     cv::Mat matROI(pstCmd->matInput, pstCmd->rectROI);
+    if ( pstCmd->enDirection != PR_DIRECTION::UP )  {
+        float fAngle = 0.f;
+        cv::Size sizeDest(pstCmd->rectROI.width, pstCmd->rectROI.height);
+        switch (pstCmd->enDirection)
+        {
+            case PR_DIRECTION::LEFT:
+                cv::transpose( matROI, matROI );  
+                cv::flip(matROI, matROI,1); //transpose+flip(1)=CW
+                break;
+            case PR_DIRECTION::DOWN:
+                cv::flip(matROI, matROI, -1 );    //flip(-1)=180
+                break;
+            case PR_DIRECTION::RIGHT:                
+                cv::transpose(matROI, matROI);  
+                cv::flip(matROI, matROI,0); //transpose+flip(0)=CCW
+                break;
+            default: break;        
+        }        
+    }
+
+    if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE )
+        showImage("OCR ROI Image", matROI );
+
     char *dataPath = "./tessdata";
-    cv::Ptr<cv::text::OCRTesseract> ptrOcr = cv::text::OCRTesseract::create(dataPath, "eng+eng1", _constOcrCharList.c_str() );
-    ptrOcr->run ( matROI, pstRpy->strResult );
+    if ( nullptr == _ptrOcrTesseract )
+        _ptrOcrTesseract = cv::text::OCRTesseract::create(dataPath, "eng+eng1", _constOcrCharList.c_str() );
+    _ptrOcrTesseract->run ( matROI, pstRpy->strResult );
 
     VisionStatus enStatus = VisionStatus::OK;
     pstRpy->nStatus = ToInt32 (enStatus);
