@@ -2,7 +2,8 @@
 #define _AOI_VISION_ALGORITHM_H
 
 #include "BaseType.h"
-#include "opencv2/core/core.hpp"
+#include "opencv2/core.hpp"
+#include "opencv2/text.hpp"
 #include "VisionHeader.h"
 #include "StopWatch.h"
 #include <list>
@@ -14,12 +15,16 @@ namespace AOI
 {
 namespace Vision
 {
+class VisionAlgorithm;
+
+using VisionAlgorithmPtr = std::unique_ptr<VisionAlgorithm>;
+using OcrTesseractPtr = cv::Ptr<cv::text::OCRTesseract>;
 
 class VisionAlgorithm : private Uncopyable
 {
 public:
     explicit VisionAlgorithm();
-    static shared_ptr<VisionAlgorithm> create();
+    static unique_ptr<VisionAlgorithm> create();
     VisionStatus lrnTmpl(PR_LRN_TMPL_CMD * const pLrnTmplCmd, PR_LRN_TMPL_RPY *pLrnTmplRpy, bool bReplay = false);
     VisionStatus srchTmpl(PR_SRCH_TMPL_CMD *const pFindObjCmd, PR_SRCH_TMPL_RPY *pFindObjRpy);
     VisionStatus lrnDevice(PR_LRN_DEVICE_CMD *pstLrnDeviceCmd, PR_LRN_DEVICE_RPY *pstLrnDeivceRpy);
@@ -77,9 +82,10 @@ protected:
     const String    _strRecordLogPrefix     =  "tmplDir.";
     const float     _constExpSmoothRatio    =  0.3f;
     const String    _constOcrCharList       = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-";
+    static OcrTesseractPtr _ptrOcrTesseract;
     CStopWatch      _stopWatch;
 private:
-    std::shared_ptr<VisionAlgorithm> _pInstance = nullptr;
+    VisionAlgorithmPtr _pInstance = nullptr;
 };
 
 }
