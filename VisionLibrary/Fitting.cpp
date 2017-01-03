@@ -160,7 +160,7 @@ namespace Vision
     cv::Mat B(totalDataCount, 1, CV_32FC1);
     cv::Mat A = cv::Mat::zeros(totalDataCount, 3, CV_32FC1);
     for ( int i = 0; i < totalDataCount; ++ i )  {
-        if ( i < vecPoints1.size() )    {
+        if ( i < ToInt32 ( vecPoints1.size() ) )    {
             if ( reverseFit )
                 A.at<float>(i, 0) = vecPoints1[i].y;
             else
@@ -211,7 +211,7 @@ namespace Vision
     ListOfPoint::const_iterator it1 = listPoints1.begin();
     ListOfPoint::const_iterator it2 = listPoints2.begin();
     for ( int i = 0; i < totalDataCount; ++ i )  {
-        if ( i < listPoints1.size() )    {
+        if ( i < ToInt32 ( listPoints1.size() ) )    {
             if ( reverseFit )
                 A.at<float>(i, 0) = (*it1).y;
             else
@@ -265,9 +265,9 @@ namespace Vision
     cv::Mat B = cv::Mat::zeros ( totalRows, 1, CV_32FC1);
  
     int index = 0;
-    for (int i = 0; i < vecVecPoint.size(); ++ i )
+    for (int i = 0; i < ToInt32 ( vecVecPoint.size() ); ++ i )
     {
-        for (int j = 0; j < vecVecPoint [ i ].size(); ++ j )
+        for (int j = 0; j < ToInt32 ( vecVecPoint [ i ].size() ); ++ j )
         {
             A.at<float>(index, i + 1 ) = 1.f;
             if ( i < 2 )   {
@@ -317,7 +317,7 @@ namespace Vision
     cv::Mat B = cv::Mat::zeros ( totalRows, 1, CV_32FC1);
  
     int index = 0;
-    for (int i = 0; i < vecListPoint.size(); ++ i )
+    for (int i = 0; i < ToInt32 ( vecListPoint.size() ); ++ i )
     {
         ListOfPoint listPoint = vecListPoint[i];
         for (const auto &point : listPoint )
