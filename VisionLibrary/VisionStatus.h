@@ -36,6 +36,7 @@ enum class VisionStatus
     TOO_MUCH_NOISE_TO_FIT,
     FAIL_TO_FIT_CIRCLE,
     OPENCV_EXCEPTION,
+    OCR_FAIL,
 };
 
 }

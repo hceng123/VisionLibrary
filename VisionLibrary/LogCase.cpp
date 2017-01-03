@@ -474,5 +474,62 @@ VisionStatus LogCaseSrchFiducial::RunLogCase()
     WriteRpy(&stRpy);
     return enStatus;
 }
+
+/*static*/ String LogCaseOcr::StaticGetFolderPrefix()
+{
+    return "Ocr";
+}
+
+VisionStatus LogCaseOcr::WriteCmd(PR_OCR_CMD *pCmd)
+{
+    if (!_bReplay)    {
+        _strLogCasePath = _generateLogCaseName(GetFolderPrefix());
+        bfs::path dir(_strLogCasePath);
+        bfs::create_directories(dir);
+    }
+
+    CSimpleIni ini(false, false, false);
+    auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
+    ini.LoadFile(cmdRpyFilePath.c_str());
+    ini.SetValue(_CMD_SECTION.c_str(), _strKeySrchWindow.c_str(), _formatRect(pCmd->rectROI).c_str());
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyDirection.c_str(), ToInt32(pCmd->enDirection));
+    ini.SaveFile(cmdRpyFilePath.c_str());
+    cv::imwrite(_strLogCasePath + "image.jpg", pCmd->matInput);
+    return VisionStatus::OK;
+}
+
+VisionStatus LogCaseOcr::WriteRpy(PR_OCR_RPY *pRpy)
+{
+    CSimpleIni ini(false, false, false);
+    auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
+    ini.LoadFile(cmdRpyFilePath.c_str());
+    ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyStatus.c_str(), pRpy->nStatus);
+    ini.SetValue(_RPY_SECTION.c_str(), _strKeyResultStr.c_str(), pRpy->strResult.c_str());
+
+    ini.SaveFile(cmdRpyFilePath.c_str());
+    return VisionStatus::OK;
+}
+
+VisionStatus LogCaseOcr::RunLogCase()
+{
+    PR_OCR_CMD stCmd;
+    VisionStatus enStatus;
+
+    CSimpleIni ini(false, false, false);
+    auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
+    ini.LoadFile(cmdRpyFilePath.c_str());
+    stCmd.matInput = cv::imread(_strLogCasePath + "image.jpg");
+    stCmd.rectROI = _parseRect(ini.GetValue(_CMD_SECTION.c_str(), _strKeySrchWindow.c_str(), _DEFAULT_RECT.c_str()));
+    stCmd.enDirection = (PR_DIRECTION)ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyDirection.c_str(), 0);
+
+    PR_OCR_RPY stRpy;
+
+    VisionAlgorithmPtr pVA = VisionAlgorithm::create();
+    enStatus = pVA->ocr(&stCmd, &stRpy, true);
+
+    WriteRpy(&stRpy);
+    return enStatus;
+}
+
 }
 }

@@ -169,12 +169,28 @@ public:
     virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
     static String StaticGetFolderPrefix();
 private:
-    const String _strKeySrchWindow = "SrchWindow";
+    const String _strKeySrchWindow  = "SrchWindow";
     const String _strKeyType        = "Type";
     const String _strKeySize        = "Size";
     const String _strKeyMargin      = "Margin";
     const String _strKeyStatus      = "Status";
     const String _strKeyPos         = "Position";
+};
+
+class LogCaseOcr : public LogCase
+{
+public:
+    explicit LogCaseOcr(const String &strPath, bool bReplay = false) : LogCase(strPath, bReplay) {}
+    VisionStatus WriteCmd(PR_OCR_CMD *pCmd);
+    VisionStatus WriteRpy(PR_OCR_RPY *pRpy);
+    virtual VisionStatus RunLogCase() override;
+    virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
+    static String StaticGetFolderPrefix();
+private:
+    const String _strKeyDirection   = "Direction";
+    const String _strKeySrchWindow  = "SrchWindow";    
+    const String _strKeyStatus      = "Status";
+    const String _strKeyResultStr   = "ResultStr";
 };
 
 }

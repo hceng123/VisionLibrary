@@ -2208,7 +2208,7 @@ cv::RotatedRect VisionAlgorithm::_fitCircleIterate(const std::vector<cv::Point2f
     return rotatedRect;
 }
 
-VisionStatus VisionAlgorithm::ocr(PR_OCR_CMD *pstCmd, PR_OCR_RPY *pstRpy, bool bReply)
+VisionStatus VisionAlgorithm::ocr(PR_OCR_CMD *pstCmd, PR_OCR_RPY *pstRpy, bool bReplay)
 {
     char charrMsg [ 1000 ];
     if (NULL == pstCmd || NULL == pstRpy) {
@@ -2231,6 +2231,17 @@ VisionStatus VisionAlgorithm::ocr(PR_OCR_CMD *pstCmd, PR_OCR_RPY *pstRpy, bool b
         pstRpy->nStatus = ToInt32 ( VisionStatus::INVALID_PARAM );
         return VisionStatus::INVALID_PARAM;
     }
+
+    MARK_FUNCTION_START_TIME;
+
+    VisionStatus enStatus = VisionStatus::OK;
+    std::unique_ptr<LogCaseOcr> pLogCase;
+    if ( ! bReplay )    {
+        pLogCase = std::make_unique<LogCaseOcr>( Config::GetInstance()->getLogCaseDir() );
+        if ( PR_DEBUG_MODE::LOG_ALL_CASE == Config::GetInstance()->getDebugMode() )
+            pLogCase->WriteCmd ( pstCmd );
+    }
+
     cv::Mat matROI(pstCmd->matInput, pstCmd->rectROI);
     if ( pstCmd->enDirection != PR_DIRECTION::UP )  {
         float fAngle = 0.f;
@@ -2259,9 +2270,28 @@ VisionStatus VisionAlgorithm::ocr(PR_OCR_CMD *pstCmd, PR_OCR_RPY *pstRpy, bool b
     if ( nullptr == _ptrOcrTesseract )
         _ptrOcrTesseract = cv::text::OCRTesseract::create(dataPath, "eng+eng1", _constOcrCharList.c_str() );
     _ptrOcrTesseract->run ( matROI, pstRpy->strResult );
+    if ( pstRpy->strResult.empty() )    {
+        enStatus = VisionStatus::OCR_FAIL;
+        WriteLog("OCR result is empty");
+    }
+    else
+    {
+        enStatus = VisionStatus::OK;
+    }
 
-    VisionStatus enStatus = VisionStatus::OK;
     pstRpy->nStatus = ToInt32 (enStatus);
+
+    if ( ! bReplay )    {
+        if ( PR_DEBUG_MODE::LOG_FAIL_CASE == Config::GetInstance()->getDebugMode() && enStatus != VisionStatus::OK )    {
+            pLogCase->WriteCmd ( pstCmd );
+            pLogCase->WriteRpy ( pstRpy );
+        }
+
+        if ( PR_DEBUG_MODE::LOG_ALL_CASE == Config::GetInstance()->getDebugMode() )
+            pLogCase->WriteRpy ( pstRpy );
+    }
+
+    MARK_FUNCTION_END_TIME;    
     return enStatus;
 }
 
