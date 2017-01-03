@@ -28,7 +28,7 @@ namespace Vision
     }
 
     double A, B, C, D, E;
-    int n = vecPoints.size();
+    size_t n = vecPoints.size();
     A = n * Sx2 - Sx * Sx;
     B = n * Sxy - Sx * Sy;
     C = n * Sy2 - Sy * Sy;
@@ -72,7 +72,7 @@ namespace Vision
     }
 
     double A, B, C, D, E;
-    int n = listPoint.size();
+    size_t n = listPoint.size();
     A = n * Sx2 - Sx * Sx;
     B = n * Sxy - Sx * Sy;
     C = n * Sy2 - Sy * Sy;
@@ -110,7 +110,7 @@ namespace Vision
         Sy2  += point.y * point.y;
         Sxy  += point.x * point.y;
     }
-    int n = vecPoints.size();
+    size_t n = vecPoints.size();
     if ( reverseFit )   {
         fSlope = static_cast<float>( ( n * Sxy - Sx * Sy ) / ( n * Sy2 - Sy * Sy ) );
         fIntercept = static_cast< float >( ( Sx * Sy2 - Sy * Sxy ) / ( n * Sy2 - Sy * Sy ) );
@@ -134,7 +134,7 @@ namespace Vision
         Sy2  += point.y * point.y;
         Sxy  += point.x * point.y;
     }
-    int n = listPoint.size();
+    size_t n = listPoint.size();
     if ( reverseFit )   {
         fSlope = static_cast<float>( ( n * Sxy - Sx * Sy ) / ( n * Sy2 - Sy * Sy ) );
         fIntercept = static_cast< float >( ( Sx * Sy2 - Sy * Sxy ) / ( n * Sy2 - Sy * Sy ) );
@@ -155,11 +155,11 @@ namespace Vision
     if ( vecPoints1.size() < 2 || vecPoints2.size() < 2 )
         return;
 
-    auto totalDataCount = vecPoints1.size() + vecPoints2.size();
+    auto totalDataCount = static_cast<int>(vecPoints1.size() + vecPoints2.size());
     auto dataCount1 = vecPoints1.size();
     cv::Mat B(totalDataCount, 1, CV_32FC1);
     cv::Mat A = cv::Mat::zeros(totalDataCount, 3, CV_32FC1);
-    for ( size_t i = 0; i < totalDataCount; ++ i )  {
+    for ( int i = 0; i < totalDataCount; ++ i )  {
         if ( i < vecPoints1.size() )    {
             if ( reverseFit )
                 A.at<float>(i, 0) = vecPoints1[i].y;
@@ -204,13 +204,13 @@ namespace Vision
     if ( listPoints1.size() < 2 || listPoints2.size() < 2 )
         return;
 
-    auto totalDataCount = listPoints1.size() + listPoints2.size();
+    auto totalDataCount = static_cast<int>(listPoints1.size() + listPoints2.size());
     auto dataCount1 = listPoints1.size();
     cv::Mat B(totalDataCount, 1, CV_32FC1);
     cv::Mat A = cv::Mat::zeros(totalDataCount, 3, CV_32FC1);
     ListOfPoint::const_iterator it1 = listPoints1.begin();
     ListOfPoint::const_iterator it2 = listPoints2.begin();
-    for ( size_t i = 0; i < totalDataCount; ++ i )  {
+    for ( int i = 0; i < totalDataCount; ++ i )  {
         if ( i < listPoints1.size() )    {
             if ( reverseFit )
                 A.at<float>(i, 0) = (*it1).y;
@@ -260,14 +260,14 @@ namespace Vision
     vecIntercept.clear();
     auto totalRows = 0;
     for ( const auto &vectorPoint : vecVecPoint)
-        totalRows += vectorPoint.size();
+        totalRows += ToInt32(vectorPoint.size());
     cv::Mat A = cv::Mat::zeros ( totalRows, 5, CV_32FC1);
     cv::Mat B = cv::Mat::zeros ( totalRows, 1, CV_32FC1);
  
     int index = 0;
-    for (size_t i = 0; i < vecVecPoint.size(); ++ i )
+    for (int i = 0; i < vecVecPoint.size(); ++ i )
     {
-        for (size_t j = 0; j < vecVecPoint [ i ].size(); ++ j )
+        for (int j = 0; j < vecVecPoint [ i ].size(); ++ j )
         {
             A.at<float>(index, i + 1 ) = 1.f;
             if ( i < 2 )   {
@@ -312,12 +312,12 @@ namespace Vision
     vecIntercept.clear();
     auto totalRows = 0;
     for ( const auto &vectorPoint : vecListPoint)
-        totalRows += vectorPoint.size();
+        totalRows += ToInt32(vectorPoint.size());
     cv::Mat A = cv::Mat::zeros ( totalRows, 5, CV_32FC1);
     cv::Mat B = cv::Mat::zeros ( totalRows, 1, CV_32FC1);
  
     int index = 0;
-    for (size_t i = 0; i < vecListPoint.size(); ++ i )
+    for (int i = 0; i < vecListPoint.size(); ++ i )
     {
         ListOfPoint listPoint = vecListPoint[i];
         for (const auto &point : listPoint )
