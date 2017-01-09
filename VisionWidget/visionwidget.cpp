@@ -54,7 +54,19 @@ void VisionWidget::on_selectImageBtn_clicked()
         return;
 
     ui.imagePathEdit->setText(fileNames[0]);
-    ui.visionView->setImageFile( fileNames[0].toStdString() );
+
+    cv::Mat mat;
+    int nChannel;
+    if ( ui.checkBoxByerFormat->isChecked())    {
+        mat = cv::imread( fileNames[0].toStdString(), IMREAD_GRAYSCALE );
+        cv::Mat matColor;
+        cv::cvtColor (mat, matColor, CV_BayerGR2BGR );
+        mat = matColor;
+    }
+    else
+        mat = cv::imread( fileNames[0].toStdString() );
+    nChannel = mat.channels();
+    ui.visionView->setMat( mat );
     _sourceImagePath = fileNames[0].toStdString();
 }
 

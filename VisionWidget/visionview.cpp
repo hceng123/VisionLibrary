@@ -37,36 +37,38 @@ int VisionView::updateMat()
 {
     cv::Mat mat;
 
-//    AOI::Vision::WebCameraManager::GetInstance()->GrabImage ( _nCameraID, mat );
+    //AOI::Vision::WebCameraManager::GetInstance()->GrabImage ( _nCameraID, mat );
 
     _mat = mat;
 
-    Mat display ( mat.size(), mat.type() );
-    mat.copyTo( display );
-    if ( ! IsEuqal ( _fZoomFactor, 1.0f ) )
-    {
-        cv::Mat matZoomResult;
-        cv::resize( display, matZoomResult, cv::Size(), _fZoomFactor, _fZoomFactor );
-        if ( _fZoomFactor > 1.0f )  {
-            cv::Rect rectROI( ( matZoomResult.cols - display.cols ) / 2, ( matZoomResult.rows - display.rows ) / 2, display.cols, display.rows );
-            cv::Mat matROI ( matZoomResult,  rectROI );
-            matROI.copyTo(display);
-        }else   {
-            cv::Rect rectROI( ( display.cols - matZoomResult.cols ) / 2, ( display.rows - matZoomResult.rows ) / 2, matZoomResult.cols, matZoomResult.rows );
-            cv::Mat matTemp = cv::Mat::zeros( display.rows, display.cols, display.type());
-            cv::Mat matROI ( matTemp, rectROI );
-            matZoomResult.copyTo(matROI);
-            matTemp.copyTo(display);
-        }
-    }
-    cvtColor( display, display, CV_BGR2RGB);
+    _drawDisplay();
 
-    _drawLearnWindow ( display );
+    //Mat display ( mat.size(), mat.type() );
+    //mat.copyTo( display );
+    //if ( ! IsEuqal ( _fZoomFactor, 1.0f ) )
+    //{
+    //    cv::Mat matZoomResult;
+    //    cv::resize( display, matZoomResult, cv::Size(), _fZoomFactor, _fZoomFactor );
+    //    if ( _fZoomFactor > 1.0f )  {
+    //        cv::Rect rectROI( ( matZoomResult.cols - display.cols ) / 2, ( matZoomResult.rows - display.rows ) / 2, display.cols, display.rows );
+    //        cv::Mat matROI ( matZoomResult,  rectROI );
+    //        matROI.copyTo(display);
+    //    }else   {
+    //        cv::Rect rectROI( ( display.cols - matZoomResult.cols ) / 2, ( display.rows - matZoomResult.rows ) / 2, matZoomResult.cols, matZoomResult.rows );
+    //        cv::Mat matTemp = cv::Mat::zeros( display.rows, display.cols, display.type());
+    //        cv::Mat matROI ( matTemp, rectROI );
+    //        matZoomResult.copyTo(matROI);
+    //        matTemp.copyTo(display);
+    //    }
+    //}
+    //cvtColor( display, display, CV_BGR2RGB);
 
-    QImage image = QImage((uchar*) display.data, display.cols, display.rows, display.step, QImage::Format_RGB888);
+    //_drawLearnWindow ( display );
 
-    //show Qimage using QLabel
-    setPixmap(QPixmap::fromImage(image));
+    //QImage image = QImage((uchar*) display.data, display.cols, display.rows, display.step, QImage::Format_RGB888);
+
+    ////show Qimage using QLabel
+    //setPixmap(QPixmap::fromImage(image));
     return ToInt(STATUS::OK);
 }
 
@@ -455,9 +457,9 @@ void VisionView::startTimer()
     _pTimer->start(20);
 }
 
-void VisionView::setImageFile(const std::string &filePath)
+void VisionView::setMat(const cv::Mat &mat)
 {
-    _mat = cv::imread(filePath);
+    _mat = mat;
     _drawDisplay();
 }
 

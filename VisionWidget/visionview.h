@@ -74,7 +74,7 @@ public:
     void zoomOut();
     void restoreZoom();
     void startTimer();
-    void setImageFile(const std::string &filePath);
+    void setMat(const cv::Mat &mat);
     cv::Mat getMat() const;
     void setResultMat(const cv::Mat &mat);
     bool isDisplayResultImage() const;
