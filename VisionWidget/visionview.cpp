@@ -313,7 +313,8 @@ void VisionView::_drawDisplay()
     }else
         _matDisplay = matZoomResult;
 
-    cvtColor( _matDisplay, _matDisplay, CV_BGR2RGB);
+    if ( _matDisplay.channels() == 3 )
+        cvtColor( _matDisplay, _matDisplay, CV_BGR2RGB);
 
     if (VISION_VIEW_STATE::LEARNING == _enState ||
         VISION_VIEW_STATE::ADD_MASK == _enState)
@@ -321,7 +322,14 @@ void VisionView::_drawDisplay()
     else if ( VISION_VIEW_STATE::TEST_VISION_LIBRARY == _enState )
         _drawTestVisionLibrary ( _matDisplay );
 
-    QImage image = QImage((uchar*) _matDisplay.data, _matDisplay.cols, _matDisplay.rows, _matDisplay.step, QImage::Format_RGB888);
+    QImage::Format enFormat;
+    if ( _matDisplay.channels() == 3 )
+        enFormat = QImage::Format_RGB888;
+    else
+        enFormat = QImage::Format_Grayscale8;
+
+    QImage image = QImage((uchar*) _matDisplay.data, _matDisplay.cols, _matDisplay.rows, _matDisplay.step, enFormat);
+    
     //show Qimage using QLabel
     setPixmap(QPixmap::fromImage(image));
 }

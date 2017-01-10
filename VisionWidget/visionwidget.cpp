@@ -61,12 +61,12 @@ void VisionWidget::on_selectImageBtn_clicked()
         mat = cv::imread( fileNames[0].toStdString(), IMREAD_GRAYSCALE );
         cv::Mat matColor;
         cv::cvtColor (mat, matColor, CV_BayerGR2BGR );
-        mat = matColor;
+        _matOriginal = matColor;
     }
     else
-        mat = cv::imread( fileNames[0].toStdString() );
+        _matOriginal = cv::imread( fileNames[0].toStdString() );
     nChannel = mat.channels();
-    ui.visionView->setMat( mat );
+    ui.visionView->setMat( _matOriginal );
     _sourceImagePath = fileNames[0].toStdString();
 }
 
@@ -158,4 +158,28 @@ void VisionWidget::on_srchFiducialBtn_clicked()
     {
         ui.visionView->setResultMat(procedure.getResultMat());
     }
+}
+
+void VisionWidget::on_checkBoxDisplayGrayScale_clicked(bool checked)
+{
+    if ( _matOriginal.empty())
+        return;
+    if (checked)  {
+        float fBRatio = ui.lineEditBRatio->text().toFloat();
+        float fGRatio = ui.lineEditGRatio->text().toFloat();
+        float fRRatio = ui.lineEditRRatio->text().toFloat();
+        std::vector<float> coefficients{ fBRatio, fGRatio, fRRatio };
+        cv::Mat matCoefficients = cv::Mat(coefficients).reshape(1, 1);
+        cv::Mat matResult;
+        cv::transform(_matOriginal, matResult, matCoefficients);
+        ui.visionView->setMat(matResult);
+    }
+    else
+    {
+        ui.visionView->setMat(_matOriginal);
+    }
+}
+
+void VisionWidget::on_checkBoxDisplayBinary_clicked(bool checked)
+{
 }

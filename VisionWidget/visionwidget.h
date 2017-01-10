@@ -20,11 +20,14 @@ private slots:
     void on_fitRectBtn_clicked();
     void on_ocrBtn_clicked();
     void on_srchFiducialBtn_clicked();
+    void on_checkBoxDisplayGrayScale_clicked(bool checked);
+    void on_checkBoxDisplayBinary_clicked(bool checked);
 protected:
     bool checkDisplayImage();
 private:
     Ui::VisionWidgetClass ui;
     std::string           _sourceImagePath;
+    cv::Mat               _matOriginal;
 };
 
 #endif // VISIONWIDGET_H
