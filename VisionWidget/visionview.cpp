@@ -186,7 +186,7 @@ void VisionView::mouseMoveEvent(QMouseEvent *event)
             }else if ( TEST_VISION_STATE::SET_RECT_SRCH_WINDOW == _enTestVisionState )  {
                 assert ( _nCurrentSrchWindowIndex >= 0 );
                 cv::Rect rect ( _ptLeftClickStartPos.x, _ptLeftClickStartPos.y, _ptLeftClickEndPos.x - _ptLeftClickStartPos.x, _ptLeftClickEndPos.y - _ptLeftClickStartPos.y);
-                if ( _vecRectSrchWindow.size() <= _nCurrentSrchWindowIndex )
+                if ( ToInt(_vecRectSrchWindow.size()) <= _nCurrentSrchWindowIndex )
                     _vecRectSrchWindow.push_back ( rect );
                 else
                     _vecRectSrchWindow[_nCurrentSrchWindowIndex] = rect;
@@ -286,7 +286,7 @@ void VisionView::_drawDisplay()
     else
         matZoomResult = mat.clone();
 
-    _matDisplay = cv::Mat::ones( displayHeight, displayWidth, _mat.type() ) * 255;
+    _matDisplay = cv::Mat::ones( displayHeight, displayWidth, mat.type() ) * 255;
     _matDisplay.setTo(cv::Scalar(255,255,255));
 
     if (matZoomResult.cols > displayWidth && matZoomResult.rows > displayHeight)  {
@@ -313,8 +313,8 @@ void VisionView::_drawDisplay()
     }else
         _matDisplay = matZoomResult;
 
-    if ( _matDisplay.channels() == 3 )
-        cvtColor( _matDisplay, _matDisplay, CV_BGR2RGB);
+    if ( _matDisplay.channels() == 1 )
+        cvtColor( _matDisplay, _matDisplay, CV_GRAY2BGR);
 
     if (VISION_VIEW_STATE::LEARNING == _enState ||
         VISION_VIEW_STATE::ADD_MASK == _enState)
@@ -322,14 +322,9 @@ void VisionView::_drawDisplay()
     else if ( VISION_VIEW_STATE::TEST_VISION_LIBRARY == _enState )
         _drawTestVisionLibrary ( _matDisplay );
 
-    QImage::Format enFormat;
-    if ( _matDisplay.channels() == 3 )
-        enFormat = QImage::Format_RGB888;
-    else
-        enFormat = QImage::Format_Grayscale8;
-
-    QImage image = QImage((uchar*) _matDisplay.data, _matDisplay.cols, _matDisplay.rows, _matDisplay.step, enFormat);
-    
+    cvtColor( _matDisplay, _matDisplay, CV_BGR2RGB);
+    QImage image = QImage((uchar*) _matDisplay.data, _matDisplay.cols, _matDisplay.rows, _matDisplay.step, QImage::Format_RGB888);
+        
     //show Qimage using QLabel
     setPixmap(QPixmap::fromImage(image));
 }
