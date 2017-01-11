@@ -16,8 +16,7 @@
 *.rsp
 ExtLibs/boost_1_59_0
 ExtLibs/Debug
-Debug
-Release
+Obj
 *.ipch
 *.suo
 RegressionTest/Vision/Record

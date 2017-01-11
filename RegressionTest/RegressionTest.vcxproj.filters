@@ -49,4 +49,8 @@
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="..\2013_Level_1.props" />
+    <None Include="..\2013_Debug.props" />
+  </ItemGroup>
 </Project>
