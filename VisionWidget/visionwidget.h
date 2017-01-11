@@ -22,12 +22,20 @@ private slots:
     void on_srchFiducialBtn_clicked();
     void on_checkBoxDisplayGrayScale_clicked(bool checked);
     void on_checkBoxDisplayBinary_clicked(bool checked);
+    void on_sliderThreshold_valueChanged(int position);
+    void on_lineEditBinaryThreshold_returnPressed();
 protected:
     bool checkDisplayImage();
+    cv::Mat generateGrayImage();
+    cv::Mat generateBinaryImage(const cv::Mat &matGray);
+    cv::Mat generateDisplayImage();
 private:
-    Ui::VisionWidgetClass ui;
-    std::string           _sourceImagePath;
-    cv::Mat               _matOriginal;
+    Ui::VisionWidgetClass               ui;
+    std::string                         _sourceImagePath;
+    cv::Mat                             _matOriginal;
+    std::unique_ptr<QIntValidator>      _ptrIntValidator;
+    std::unique_ptr<QDoubleValidator>   _ptrDoubleValidator;
+    std::unique_ptr<QIntValidator>      _ptrThresValidator;
 };
 
 #endif // VISIONWIDGET_H

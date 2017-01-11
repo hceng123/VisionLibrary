@@ -18,7 +18,14 @@ VisionWidget::VisionWidget(QWidget *parent)
     setWindowIcon(QIcon(":/VisionWidget/Image/VisionWidget.png"));
 
     ui.visionViewToolBox->SetVisionView(ui.visionView);
-    ui.lineEditFitCircleErrTol->setValidator(new QIntValidator(1,100, this) );
+    _ptrIntValidator    = std::make_unique<QIntValidator>(1,100);
+    _ptrThresValidator  = std::make_unique<QIntValidator>(1,255);
+    _ptrDoubleValidator = std::make_unique<QDoubleValidator>(0, 1, 3);
+    ui.lineEditFitCircleErrTol->setValidator(_ptrIntValidator.get() );
+    ui.lineEditRRatio->setValidator( _ptrDoubleValidator.get() );
+    ui.lineEditGRatio->setValidator( _ptrDoubleValidator.get() );
+    ui.lineEditBRatio->setValidator( _ptrDoubleValidator.get() );
+    ui.lineEditBinaryThreshold->setValidator(_ptrThresValidator.get());
     ui.visionView->setMachineState(VisionView::VISION_VIEW_STATE::TEST_VISION_LIBRARY);
 }
 
@@ -56,7 +63,6 @@ void VisionWidget::on_selectImageBtn_clicked()
     ui.imagePathEdit->setText(fileNames[0]);
 
     cv::Mat mat;
-    int nChannel;
     if ( ui.checkBoxByerFormat->isChecked())    {
         mat = cv::imread( fileNames[0].toStdString(), IMREAD_GRAYSCALE );
         cv::Mat matColor;
@@ -65,8 +71,7 @@ void VisionWidget::on_selectImageBtn_clicked()
     }
     else
         _matOriginal = cv::imread( fileNames[0].toStdString() );
-    nChannel = mat.channels();
-    ui.visionView->setMat( _matOriginal );
+    ui.visionView->setMat( generateDisplayImage() );
     _sourceImagePath = fileNames[0].toStdString();
 }
 
@@ -164,22 +169,87 @@ void VisionWidget::on_checkBoxDisplayGrayScale_clicked(bool checked)
 {
     if ( _matOriginal.empty())
         return;
-    if (checked)  {
-        float fBRatio = ui.lineEditBRatio->text().toFloat();
-        float fGRatio = ui.lineEditGRatio->text().toFloat();
-        float fRRatio = ui.lineEditRRatio->text().toFloat();
-        std::vector<float> coefficients{ fBRatio, fGRatio, fRRatio };
-        cv::Mat matCoefficients = cv::Mat(coefficients).reshape(1, 1);
-        cv::Mat matResult;
-        cv::transform(_matOriginal, matResult, matCoefficients);
-        ui.visionView->setMat(matResult);
-    }
-    else
-    {
-        ui.visionView->setMat(_matOriginal);
-    }
+
+    ui.visionView->setMat(generateDisplayImage());
 }
 
 void VisionWidget::on_checkBoxDisplayBinary_clicked(bool checked)
 {
+    if ( _matOriginal.empty())
+        return;
+
+    ui.visionView->setMat(generateDisplayImage());
+}
+
+cv::Mat VisionWidget::generateGrayImage()
+{
+    if (_matOriginal.empty())
+        return _matOriginal;
+
+    float fBRatio = ui.lineEditBRatio->text().toFloat();
+    float fGRatio = ui.lineEditGRatio->text().toFloat();
+    float fRRatio = ui.lineEditRRatio->text().toFloat();
+    std::vector<float> coefficients{ fBRatio, fGRatio, fRRatio };
+    cv::Mat matCoefficients = cv::Mat(coefficients).reshape(1, 1);
+    cv::Mat matGray;
+    cv::transform(_matOriginal, matGray, matCoefficients);
+    return matGray;
+}
+
+cv::Mat VisionWidget::generateBinaryImage(const cv::Mat &matGray)
+{
+    assert( ! matGray.empty() );
+    cv::Mat matThreshold;
+    int threshold = ui.sliderThreshold->value();
+    cv::threshold(matGray, matThreshold, threshold, PR_MAX_GRAY_LEVEL, THRESH_BINARY);
+    return matThreshold;
+}
+
+cv::Mat VisionWidget::generateDisplayImage()
+{
+    if (_matOriginal.empty())
+        return _matOriginal;
+
+    cv::Mat matResult = _matOriginal;
+    if ( ui.checkBoxDisplayGrayScale->isChecked() ) {
+        cv::Mat matGray = generateGrayImage();
+        if ( ui.checkBoxDisplayBinary->isChecked() )    {
+            matResult = generateBinaryImage(matGray);
+            return matResult;
+        }
+        else
+        {
+            return matGray;
+        }
+    }
+
+    if ( ui.checkBoxDisplayBinary->isChecked() )    {
+        cv::Mat matGray;
+        cv::cvtColor ( _matOriginal, matGray, CV_BGR2GRAY);
+        matResult = generateBinaryImage(matGray);
+        return matResult;
+    }
+
+    return matResult;
+}
+
+void VisionWidget::on_sliderThreshold_valueChanged(int position)
+{
+    ui.lineEditBinaryThreshold->setText(std::to_string(position).c_str());
+
+    if ( _matOriginal.empty())
+        return;
+
+    ui.visionView->setMat(generateDisplayImage());    
+}
+
+void VisionWidget::on_lineEditBinaryThreshold_returnPressed()
+{
+    int threshold = ui.lineEditBinaryThreshold->text().toInt();
+    ui.sliderThreshold->setValue(threshold);
+
+    if ( _matOriginal.empty())
+        return;
+    
+    ui.visionView->setMat(generateDisplayImage());
 }
