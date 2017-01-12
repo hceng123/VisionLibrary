@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1346</width>
-    <height>788</height>
+    <width>1366</width>
+    <height>768</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -18,7 +18,7 @@
     <property name="geometry">
      <rect>
       <x>70</x>
-      <y>100</y>
+      <y>110</y>
       <width>640</width>
       <height>640</height>
      </rect>
@@ -57,7 +57,7 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>100</y>
+      <y>110</y>
       <width>50</width>
       <height>461</height>
      </rect>
@@ -109,7 +109,7 @@
         <rect>
          <x>90</x>
          <y>30</y>
-         <width>61</width>
+         <width>41</width>
          <height>20</height>
         </rect>
        </property>
@@ -200,6 +200,39 @@
         <string>Algorithm</string>
        </property>
       </widget>
+      <widget class="QLabel" name="labelCircleAttribute">
+       <property name="geometry">
+        <rect>
+         <x>230</x>
+         <y>60</y>
+         <width>47</width>
+         <height>13</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Attribute</string>
+       </property>
+      </widget>
+      <widget class="QComboBox" name="comboBoxCircleAttribute">
+       <property name="geometry">
+        <rect>
+         <x>280</x>
+         <y>60</y>
+         <width>69</width>
+         <height>22</height>
+        </rect>
+       </property>
+       <item>
+        <property name="text">
+         <string>Bright</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>Dark</string>
+        </property>
+       </item>
+      </widget>
      </widget>
      <widget class="QGroupBox" name="groupBoxFitLine">
       <property name="geometry">
@@ -231,7 +264,7 @@
         <rect>
          <x>90</x>
          <y>20</y>
-         <width>61</width>
+         <width>41</width>
          <height>20</height>
         </rect>
        </property>
@@ -245,9 +278,9 @@
       <widget class="QLineEdit" name="lineEditFitLineThreshold">
        <property name="geometry">
         <rect>
-         <x>280</x>
+         <x>220</x>
          <y>20</y>
-         <width>61</width>
+         <width>41</width>
          <height>20</height>
         </rect>
        </property>
@@ -261,7 +294,7 @@
       <widget class="QLabel" name="labelFitLineThreshold">
        <property name="geometry">
         <rect>
-         <x>230</x>
+         <x>160</x>
          <y>20</y>
          <width>51</width>
          <height>16</height>
@@ -283,6 +316,39 @@
        <property name="text">
         <string>Fit Line</string>
        </property>
+      </widget>
+      <widget class="QLabel" name="labelLineAttribute">
+       <property name="geometry">
+        <rect>
+         <x>280</x>
+         <y>20</y>
+         <width>47</width>
+         <height>13</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Attribute</string>
+       </property>
+      </widget>
+      <widget class="QComboBox" name="comboBoxLineAttribute">
+       <property name="geometry">
+        <rect>
+         <x>340</x>
+         <y>20</y>
+         <width>69</width>
+         <height>22</height>
+        </rect>
+       </property>
+       <item>
+        <property name="text">
+         <string>Bright</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>Dark</string>
+        </property>
+       </item>
       </widget>
      </widget>
      <widget class="QGroupBox" name="groupBoxFitParallelLine">
@@ -315,7 +381,7 @@
         <rect>
          <x>90</x>
          <y>20</y>
-         <width>61</width>
+         <width>41</width>
          <height>20</height>
         </rect>
        </property>
@@ -329,9 +395,9 @@
       <widget class="QLineEdit" name="lineEditFitParallelLineThreshold">
        <property name="geometry">
         <rect>
-         <x>280</x>
+         <x>220</x>
          <y>20</y>
-         <width>61</width>
+         <width>41</width>
          <height>20</height>
         </rect>
        </property>
@@ -345,7 +411,7 @@
       <widget class="QLabel" name="labelFitParallelLineThreshold">
        <property name="geometry">
         <rect>
-         <x>230</x>
+         <x>160</x>
          <y>20</y>
          <width>51</width>
          <height>16</height>
@@ -367,6 +433,39 @@
        <property name="text">
         <string>Fit Parallel Line</string>
        </property>
+      </widget>
+      <widget class="QLabel" name="labelParallelLineAttribute">
+       <property name="geometry">
+        <rect>
+         <x>280</x>
+         <y>20</y>
+         <width>47</width>
+         <height>13</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Attribute</string>
+       </property>
+      </widget>
+      <widget class="QComboBox" name="comboBoxParallelLineAttribute">
+       <property name="geometry">
+        <rect>
+         <x>340</x>
+         <y>20</y>
+         <width>69</width>
+         <height>22</height>
+        </rect>
+       </property>
+       <item>
+        <property name="text">
+         <string>Bright</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>Dark</string>
+        </property>
+       </item>
       </widget>
      </widget>
      <widget class="QGroupBox" name="groupBoxFitRect">
@@ -399,7 +498,7 @@
         <rect>
          <x>90</x>
          <y>20</y>
-         <width>61</width>
+         <width>41</width>
          <height>20</height>
         </rect>
        </property>
@@ -413,9 +512,9 @@
       <widget class="QLineEdit" name="lineEditFitRectThreshold">
        <property name="geometry">
         <rect>
-         <x>280</x>
+         <x>220</x>
          <y>20</y>
-         <width>61</width>
+         <width>41</width>
          <height>20</height>
         </rect>
        </property>
@@ -429,7 +528,7 @@
       <widget class="QLabel" name="labelFitRectThreshold">
        <property name="geometry">
         <rect>
-         <x>230</x>
+         <x>160</x>
          <y>20</y>
          <width>51</width>
          <height>16</height>
@@ -450,6 +549,39 @@
        </property>
        <property name="text">
         <string>Fit Rectangle</string>
+       </property>
+      </widget>
+      <widget class="QComboBox" name="comboBoxRectAttribute">
+       <property name="geometry">
+        <rect>
+         <x>340</x>
+         <y>20</y>
+         <width>69</width>
+         <height>22</height>
+        </rect>
+       </property>
+       <item>
+        <property name="text">
+         <string>Bright</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>Dark</string>
+        </property>
+       </item>
+      </widget>
+      <widget class="QLabel" name="labelRectAttribute">
+       <property name="geometry">
+        <rect>
+         <x>280</x>
+         <y>20</y>
+         <width>47</width>
+         <height>13</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Attribute</string>
        </property>
       </widget>
      </widget>
@@ -826,7 +958,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1346</width>
+     <width>1366</width>
      <height>21</height>
     </rect>
    </property>

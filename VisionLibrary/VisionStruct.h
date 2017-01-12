@@ -246,7 +246,8 @@ struct PR_FIT_LINE_CMD
     cv::Mat                 matInput;
     cv::Rect                rectROI;
     Int32                   nThreshold;
-    PR_RM_FIT_NOISE_METHOD  enRmNoiseMethod;
+    PR_OBJECT_ATTRIBUTE     enAttribute;
+    PR_RM_FIT_NOISE_METHOD  enRmNoiseMethod;    
     float                   fErrTol;
 };
 
@@ -265,7 +266,8 @@ struct PR_FIT_PARALLEL_LINE_CMD
     cv::Mat                 matInput;
     cv::Rect                rectArrROI[2];
     Int32                   nThreshold;
-    PR_RM_FIT_NOISE_METHOD  enRmNoiseMethod;
+    PR_OBJECT_ATTRIBUTE     enAttribute;
+    PR_RM_FIT_NOISE_METHOD  enRmNoiseMethod;    
     float                   fErrTol;
 };
 
@@ -287,13 +289,14 @@ struct PR_FIT_RECT_CMD
     cv::Mat                 matInput;
     cv::Rect                rectArrROI[PR_RECT_EDGE_COUNT];
     Int32                   nThreshold;
+    PR_OBJECT_ATTRIBUTE     enAttribute;
     PR_RM_FIT_NOISE_METHOD  enRmNoiseMethod;
     float                   fErrTol;
 };
 
 struct PR_FIT_RECT_RPY
 {
-    Int32                   nStatus;
+    VisionStatus            enStatus;
     bool                    bLineOneReversedFit;
     float                   fSlope1;
     bool                    bLineTwoReversedFit;
@@ -326,6 +329,7 @@ struct PR_FIT_CIRCLE_CMD
     PR_RM_FIT_NOISE_METHOD  enRmNoiseMethod;
     bool                    bAutothreshold;
     Int32                   nThreshold;
+    PR_OBJECT_ATTRIBUTE     enAttribute;
     cv::Point2f             ptRangeCtr;
     float                   fRangeInnterRadius;
     float                   fRangeOutterRadius;

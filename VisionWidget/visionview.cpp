@@ -502,8 +502,8 @@ void VisionView::getFitCircleRange(cv::Point &ptCtr, float &fInnterRadius, float
     auto displayWidth = this->size().width();
     auto displayHeight = this->size().height();    
     
-    ptCtr.x = ( _ptCircleCtr.x - ( displayWidth - _mat.cols * _fZoomFactor ) / 2 ) / _fZoomFactor;
-    ptCtr.y = ( _ptCircleCtr.y - ( displayWidth - _mat.cols * _fZoomFactor ) / 2 ) / _fZoomFactor;
+    ptCtr.x = ( _ptCircleCtr.x - ( displayWidth  - _mat.cols * _fZoomFactor ) / 2 ) / _fZoomFactor;
+    ptCtr.y = ( _ptCircleCtr.y - ( displayHeight - _mat.rows * _fZoomFactor ) / 2 ) / _fZoomFactor;
     fInnterRadius = _fInnerRangeRadius / _fZoomFactor;
     fOutterRadius = _fOutterRangeRadius/ _fZoomFactor;
 }
@@ -515,8 +515,8 @@ VectorOfRect VisionView::getVecSrchWindow() const
     VectorOfRect vecResult;
     for ( auto rect : _vecRectSrchWindow )
     {
-        rect.x = (rect.x - (displayWidth - _mat.cols * _fZoomFactor) / 2) / _fZoomFactor;
-        rect.y = (rect.y - (displayWidth - _mat.rows * _fZoomFactor) / 2) / _fZoomFactor;
+        rect.x = (rect.x - (displayWidth  - _mat.cols * _fZoomFactor) / 2) / _fZoomFactor;
+        rect.y = (rect.y - (displayHeight - _mat.rows * _fZoomFactor) / 2) / _fZoomFactor;
         rect.width  /= _fZoomFactor;
         rect.height /= _fZoomFactor;
         vecResult.push_back ( rect );
@@ -529,10 +529,10 @@ PR_Line VisionView::getIntensityCheckLine() const
     auto displayWidth = this->size().width();
     auto displayHeight = this->size().height();
     PR_Line line;   
-    line.pt1.x = (_lineOfIntensityCheck.pt1.x - (displayWidth - _mat.cols * _fZoomFactor) / 2) / _fZoomFactor;
-    line.pt1.y = (_lineOfIntensityCheck.pt1.y - (displayWidth - _mat.rows * _fZoomFactor) / 2) / _fZoomFactor;
-    line.pt2.x = (_lineOfIntensityCheck.pt2.x - (displayWidth - _mat.cols * _fZoomFactor) / 2) / _fZoomFactor;
-    line.pt2.y = (_lineOfIntensityCheck.pt2.y - (displayWidth - _mat.rows * _fZoomFactor) / 2) / _fZoomFactor;
+    line.pt1.x = (_lineOfIntensityCheck.pt1.x - (displayWidth  - _mat.cols * _fZoomFactor) / 2) / _fZoomFactor;
+    line.pt1.y = (_lineOfIntensityCheck.pt1.y - (displayHeight - _mat.rows * _fZoomFactor) / 2) / _fZoomFactor;
+    line.pt2.x = (_lineOfIntensityCheck.pt2.x - (displayWidth  - _mat.cols * _fZoomFactor) / 2) / _fZoomFactor;
+    line.pt2.y = (_lineOfIntensityCheck.pt2.y - (displayHeight - _mat.rows * _fZoomFactor) / 2) / _fZoomFactor;
     return line;
 }
 

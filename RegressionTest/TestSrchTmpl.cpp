@@ -3,7 +3,10 @@
 #include "../VisionLibrary/VisionAPI.h"
 #include <iostream>
 
-using namespace AOI::Vision;
+namespace AOI
+{
+namespace Vision
+{
 
 void TestTmplMatch()
 {
@@ -55,4 +58,7 @@ void TestTmplMatch_Circle()
     VisionStatus enStatus = PR_SrchFiducialMark(&stCmd, &stRpy);
     std::cout << "Search fiducial status " << stRpy.nStatus << std::endl;
     std::cout << "Search fiducial result " << stRpy.ptPos.x << ", " << stRpy.ptPos.y << std::endl;
+}
+
+}
 }

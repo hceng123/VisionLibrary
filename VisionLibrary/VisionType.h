@@ -92,6 +92,13 @@ enum class PR_DIRECTION
     RIGHT,
 };
 
+enum class PR_OBJECT_ATTRIBUTE
+{
+    BRIGHT,
+	DARK,
+    END,
+};
+
 }
 }
 

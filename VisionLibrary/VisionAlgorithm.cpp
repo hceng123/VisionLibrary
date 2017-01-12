@@ -1497,7 +1497,7 @@ VisionStatus VisionAlgorithm::srchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd
     return vecPoint2f;
 }
 
-/*static*/ ListOfPoint VisionAlgorithm::_findPointsInRegionByThreshold(const cv::Mat &mat, const cv::Rect &rect, int nThreshold)
+/*static*/ ListOfPoint VisionAlgorithm::_findPointsInRegionByThreshold(const cv::Mat &mat, const cv::Rect &rect, int nThreshold, PR_OBJECT_ATTRIBUTE enAttribute)
 {
     ListOfPoint listPoint;
     if ( mat.empty() )
@@ -1505,8 +1505,11 @@ VisionStatus VisionAlgorithm::srchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd
 
     cv::Mat matROI(mat, rect);
     cv::Mat matThreshold;
-   
-    cv::threshold ( matROI, matThreshold, nThreshold, 256, CV_THRESH_BINARY );
+
+    cv::ThresholdTypes enThresType = cv::THRESH_BINARY;
+    if ( PR_OBJECT_ATTRIBUTE::DARK == enAttribute )
+        enThresType = cv::THRESH_BINARY_INV;
+    cv::threshold ( matROI, matThreshold, nThreshold, PR_MAX_GRAY_LEVEL, enThresType );
     if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE)
         showImage("threshold result", matThreshold);
     std::vector<cv::Point> vecPoints;
@@ -1598,7 +1601,7 @@ VisionStatus VisionAlgorithm::fitLine(PR_FIT_LINE_CMD *pstCmd, PR_FIT_LINE_RPY *
     else
         matGray = pstCmd->matInput.clone();
 
-    ListOfPoint listPoint = _findPointsInRegionByThreshold( matGray, pstCmd->rectROI, pstCmd->nThreshold );
+    ListOfPoint listPoint = _findPointsInRegionByThreshold( matGray, pstCmd->rectROI, pstCmd->nThreshold, pstCmd->enAttribute );
     if ( listPoint.size() < 2 )  {
         WriteLog("Input image is empty");
         enStatus = VisionStatus::NOT_ENOUGH_POINTS_TO_FIT;
@@ -1683,8 +1686,8 @@ VisionStatus VisionAlgorithm::fitParallelLine(PR_FIT_PARALLEL_LINE_CMD *pstCmd, 
     else
         matGray = pstCmd->matInput.clone();
 
-    ListOfPoint listPoint1 = _findPointsInRegionByThreshold ( matGray, pstCmd->rectArrROI[0], pstCmd->nThreshold );
-    ListOfPoint listPoint2 = _findPointsInRegionByThreshold ( matGray, pstCmd->rectArrROI[1], pstCmd->nThreshold );
+    ListOfPoint listPoint1 = _findPointsInRegionByThreshold ( matGray, pstCmd->rectArrROI[0], pstCmd->nThreshold, pstCmd->enAttribute );
+    ListOfPoint listPoint2 = _findPointsInRegionByThreshold ( matGray, pstCmd->rectArrROI[1], pstCmd->nThreshold, pstCmd->enAttribute );
     if ( listPoint1.size() < 2 || listPoint2.size() < 2 )  {
         WriteLog("Not enough points to fit Parallel line");
         pstRpy->nStatus = ToInt32(VisionStatus::NOT_ENOUGH_POINTS_TO_FIT);
@@ -1754,14 +1757,14 @@ VisionStatus VisionAlgorithm::fitRect(PR_FIT_RECT_CMD *pstCmd, PR_FIT_RECT_RPY *
     if (NULL == pstCmd || NULL == pstRpy) {
         _snprintf(charrMsg, sizeof(charrMsg), "Input is invalid, pstCmd = %d, pstRpy = %d", (int)pstCmd, (int)pstRpy);
         WriteLog(charrMsg);
-        pstRpy->nStatus = ToInt32 ( VisionStatus::INVALID_PARAM );
-        return VisionStatus::INVALID_PARAM;
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
     }
 
     if (pstCmd->matInput.empty()) {
         WriteLog("Input image is empty");
-        pstRpy->nStatus = ToInt32 ( VisionStatus::INVALID_PARAM );
-        return VisionStatus::INVALID_PARAM;
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
     }
 
     MARK_FUNCTION_START_TIME;
@@ -1782,12 +1785,12 @@ VisionStatus VisionAlgorithm::fitRect(PR_FIT_RECT_CMD *pstCmd, PR_FIT_RECT_RPY *
 
     VectorOfListOfPoint vecListPoint;
     for ( int i = 0; i < PR_RECT_EDGE_COUNT; ++ i ) {
-        vecListPoint.push_back ( _findPointsInRegionByThreshold ( matGray, pstCmd->rectArrROI[i], pstCmd->nThreshold ) );
+        vecListPoint.push_back ( _findPointsInRegionByThreshold ( matGray, pstCmd->rectArrROI[i], pstCmd->nThreshold, pstCmd->enAttribute ) );
         if ( vecListPoint [ i ].size() < 2 )  {
             _snprintf(charrMsg, sizeof(charrMsg), "Edge %d not enough points to fit rect", i);
             WriteLog(charrMsg);
-            pstRpy->nStatus = ToInt32(VisionStatus::NOT_ENOUGH_POINTS_TO_FIT);
-            return VisionStatus::NOT_ENOUGH_POINTS_TO_FIT;
+            pstRpy->enStatus = VisionStatus::NOT_ENOUGH_POINTS_TO_FIT;
+            return pstRpy->enStatus;
         }
     }
     std::vector<float> vecX, vecY;
@@ -1869,7 +1872,7 @@ VisionStatus VisionAlgorithm::fitRect(PR_FIT_RECT_CMD *pstCmd, PR_FIT_RECT_RPY *
     enStatus = VisionStatus::OK;
 
 EXIT:
-    pstRpy->nStatus = ToInt32(enStatus);
+    pstRpy->enStatus = enStatus;
     if ( ! bReplay )    {
         if ( PR_DEBUG_MODE::LOG_FAIL_CASE == Config::GetInstance()->getDebugMode() && enStatus != VisionStatus::OK )    {
             pLogCase->WriteCmd ( pstCmd );
@@ -2011,18 +2014,26 @@ VisionStatus VisionAlgorithm::fitCircle(PR_FIT_CIRCLE_CMD *pstCmd, PR_FIT_CIRCLE
     else
         matGray = matROI.clone();
 
-    cv::threshold( matROI, matThreshold, pstCmd->nThreshold, 255, cv::THRESH_BINARY);
+    cv::ThresholdTypes enThresType = cv::THRESH_BINARY;
+    if ( PR_OBJECT_ATTRIBUTE::DARK == pstCmd->enAttribute )
+        enThresType = cv::THRESH_BINARY_INV;
+
+    cv::threshold( matGray, matThreshold, pstCmd->nThreshold, PR_MAX_GRAY_LEVEL, enThresType);
+    CV_Assert(matThreshold.channels() == 1);
 
 	if (PR_DEBUG_MODE::SHOW_IMAGE == Config::GetInstance()->getDebugMode())
 		showImage("Threshold image", matThreshold);
 
     VectorOfPoint vecPoints;
+    auto roiCtrX = matThreshold.cols / 2;
+    auto roiCtrY = matThreshold.rows / 2;
     for (int row = 0; row < matThreshold.rows; ++ row)
     {
         for (int col = 0; col < matThreshold.cols; ++ col)
         {
-            auto distance = sqrt((col - matThreshold.cols / 2 ) * (col - matThreshold.cols / 2) + (row - matThreshold.rows / 2) * (row - matThreshold.rows / 2));
-            if (matThreshold.at<unsigned char>(row, col) > 1 && distance > pstCmd->fRangeInnterRadius && distance < pstCmd->fRangeOutterRadius)   {
+            auto distance = sqrt ( (col - roiCtrX ) * (col - roiCtrX ) + (row - roiCtrY) * (row - roiCtrY) );
+            auto value = matThreshold.at<unsigned char>(row, col);
+            if ( value > 1 && distance > pstCmd->fRangeInnterRadius && distance < pstCmd->fRangeOutterRadius)   {
                 vecPoints.push_back(cv::Point2f ( ToFloat(col), ToFloat ( row ) ) );
             }
         }

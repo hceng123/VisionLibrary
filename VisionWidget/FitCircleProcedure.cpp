@@ -85,6 +85,7 @@ VisionStatus FitCircleProcedure::fitCircle(const std::string &imagePath)
 	stCmd.fRangeOutterRadius = _fOutterRangeRadius;
 	stCmd.bAutothreshold = false;
 	stCmd.nThreshold = _nThreshold;
+    stCmd.enAttribute = static_cast<PR_OBJECT_ATTRIBUTE>(_nAttribute);
 	stCmd.enMethod = PR_FIT_CIRCLE_METHOD(_nAlgorithm);
 	stCmd.nMaxRansacTime = 20;
 
@@ -110,6 +111,11 @@ void FitCircleProcedure::setThreshold(int nThreshold)
 void FitCircleProcedure::setAlgorithm(int nAlgorithm)
 {
     _nAlgorithm = nAlgorithm;
+}
+
+void FitCircleProcedure::setAttribute(int nAttribute)
+{
+    _nAttribute = nAttribute;
 }
 
 cv::Mat FitCircleProcedure::getResultMat() const

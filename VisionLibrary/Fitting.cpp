@@ -126,22 +126,43 @@ namespace Vision
     if ( listPoint.size() < 2 )
         return;
 
-    double Sx = 0., Sy = 0., Sx2 = 0., Sy2 = 0., Sxy = 0.;
-    for ( const auto &point : listPoint )   {
-        Sx   += point.x;
-        Sy   += point.y;
-        Sx2  += point.x * point.x;
-        Sy2  += point.y * point.y;
-        Sxy  += point.x * point.y;
+    //double Sx = 0., Sy = 0., Sx2 = 0., Sy2 = 0., Sxy = 0.;
+    //for ( const auto &point : listPoint )   {
+    //    Sx   += point.x;
+    //    Sy   += point.y;
+    //    Sx2  += point.x * point.x;
+    //    Sy2  += point.y * point.y;
+    //    Sxy  += point.x * point.y;
+    //}
+    //size_t n = listPoint.size();
+    //if ( reverseFit )   {
+    //    fSlope = static_cast<float>( ( n * Sxy - Sx * Sy ) / ( n * Sy2 - Sy * Sy ) );
+    //    fIntercept = static_cast< float >( ( Sx * Sy2 - Sy * Sxy ) / ( n * Sy2 - Sy * Sy ) );
+    //}else {
+    //    fSlope = static_cast<float>( ( n * Sxy - Sx * Sy ) / ( n * Sx2 - Sx * Sx ) );
+    //    fIntercept = static_cast< float >( ( Sy * Sx2 - Sx * Sxy ) / ( n * Sx2 - Sx * Sx ) );
+    //}
+    cv::Mat B(listPoint.size(), 1, CV_32FC1);
+    cv::Mat A = cv::Mat::ones(listPoint.size(), 2, CV_32FC1);
+    int i = 0;
+    for (const auto &point : listPoint)  {
+        if (reverseFit) {
+            A.at<float>(i, 0) = point.y;
+            B.at<float>(i, 0) = point.x;
+        }
+        else
+        {
+            A.at<float>(i, 0) = point.x;
+            B.at<float>(i, 0) = point.y;
+        }
+        ++ i;
     }
-    size_t n = listPoint.size();
-    if ( reverseFit )   {
-        fSlope = static_cast<float>( ( n * Sxy - Sx * Sy ) / ( n * Sy2 - Sy * Sy ) );
-        fIntercept = static_cast< float >( ( Sx * Sy2 - Sy * Sxy ) / ( n * Sy2 - Sy * Sy ) );
-    }else {
-        fSlope = static_cast<float>( ( n * Sxy - Sx * Sy ) / ( n * Sx2 - Sx * Sx ) );
-        fIntercept = static_cast< float >( ( Sy * Sx2 - Sx * Sxy ) / ( n * Sx2 - Sx * Sx ) );
-    }
+
+    cv::Mat matResult;
+    bool bResult = cv::solve(A, B, matResult, cv::DECOMP_SVD);
+
+    fSlope = matResult.at<float>(0, 0);
+    fIntercept = matResult.at<float>(1, 0);
 }
 
 //Using least square method to fit. Solve equation A * X = B.

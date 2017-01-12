@@ -3,7 +3,10 @@
 #include "../VisionLibrary/VisionAPI.h"
 #include <iostream>
 
-using namespace AOI::Vision;
+namespace AOI
+{
+namespace Vision
+{
 
 void TestInspDevice()
 {
@@ -119,4 +122,7 @@ void TestInspDeviceAutoThreshold()
     
     PR_InspDevice( &stInspDeviceCmd, &stInspDeviceRpy );
     std::cout << "Device inspection status " << stInspDeviceRpy.astDeviceResult[0].nStatus << std::endl;
+}
+
+}
 }

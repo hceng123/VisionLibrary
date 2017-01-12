@@ -169,6 +169,7 @@ VisionAPI VisionStatus  PR_FitRect(PR_FIT_RECT_CMD *pstCmd, PR_FIT_RECT_RPY *pst
     }catch(std::exception &e)
     {
         WriteLog(e.what());
+        pstRpy->enStatus = VisionStatus::OPENCV_EXCEPTION;
         return VisionStatus::OPENCV_EXCEPTION;
     }
 }

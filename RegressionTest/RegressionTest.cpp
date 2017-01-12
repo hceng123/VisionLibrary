@@ -4,6 +4,8 @@
 #include "stdafx.h"
 #include "TestFunction.h"
 
+using namespace AOI::Vision;
+
 int _tmain(int argc, _TCHAR* argv[])
 {
     /*************************
@@ -37,6 +39,12 @@ int _tmain(int argc, _TCHAR* argv[])
     * Test Fitting Rect *
     **************************/
     TestFitRect();
+
+    /*************************
+    * Test Fitting Circle *
+    **************************/
+    TestFitCircle();
+
 	return 0;
 }
 

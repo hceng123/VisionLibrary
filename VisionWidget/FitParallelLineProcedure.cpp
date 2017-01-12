@@ -73,6 +73,7 @@ int FitParallelLineProcedure::fitParallelLine(const std::string &imagePath)
 	stCmd.rectArrROI[0] = _vecSrchWindow[0];
     stCmd.rectArrROI[1] = _vecSrchWindow[1];
 	stCmd.nThreshold = _nThreshold;
+    stCmd.enAttribute = static_cast<PR_OBJECT_ATTRIBUTE>(_nAttribute);
 
 	PR_FIT_PARALLEL_LINE_RPY stRpy;
 	VisionStatus visionStatus = PR_FitParallelLine(&stCmd, &stRpy);
@@ -98,6 +99,11 @@ void FitParallelLineProcedure::setThreshold(int nThreshold)
 void FitParallelLineProcedure::setAlgorithm(int nAlgorithm)
 {
     _nAlgorithm = nAlgorithm;
+}
+
+void FitParallelLineProcedure::setAttribute(int nAttribute)
+{
+    _nAttribute = nAttribute;
 }
 
 cv::Mat FitParallelLineProcedure::getResultMat() const

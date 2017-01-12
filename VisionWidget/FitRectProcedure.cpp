@@ -108,6 +108,7 @@ int FitRectProcedure::fitRect(const std::string &imagePath)
     stCmd.rectArrROI[2] = _vecSrchWindow[2];
     stCmd.rectArrROI[3] = _vecSrchWindow[3];
 	stCmd.nThreshold = _nThreshold;
+    stCmd.enAttribute = static_cast<PR_OBJECT_ATTRIBUTE>(_nAttribute);
 
 	PR_FIT_RECT_RPY stRpy;
 	VisionStatus visionStatus = PR_FitRect(&stCmd, &stRpy);
@@ -133,6 +134,11 @@ void FitRectProcedure::setThreshold(int nThreshold)
 void FitRectProcedure::setAlgorithm(int nAlgorithm)
 {
     _nAlgorithm = nAlgorithm;
+}
+
+void FitRectProcedure::setAttribute(int nAttribute)
+{
+    _nAttribute = nAttribute;
 }
 
 cv::Mat FitRectProcedure::getResultMat() const

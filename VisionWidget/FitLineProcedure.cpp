@@ -58,6 +58,7 @@ int FitLineProcedure::fitLine(const std::string &imagePath)
 	stCmd.fErrTol = _fErrorTol;
 	stCmd.rectROI = _rectSrchWindow;
 	stCmd.nThreshold = _nThreshold;
+    stCmd.enAttribute = static_cast<PR_OBJECT_ATTRIBUTE>(_nAttribute);
 
 	PR_FIT_LINE_RPY stRpy;
 	VisionStatus visionStatus = PR_FitLine(&stCmd, &stRpy);
@@ -83,6 +84,11 @@ void FitLineProcedure::setThreshold(int nThreshold)
 void FitLineProcedure::setAlgorithm(int nAlgorithm)
 {
     _nAlgorithm = nAlgorithm;
+}
+
+void FitLineProcedure::setAttribute(int nAttribute)
+{
+    _nAttribute = nAttribute;
 }
 
 cv::Mat FitLineProcedure::getResultMat() const

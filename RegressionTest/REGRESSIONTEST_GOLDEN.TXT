@@ -39,6 +39,22 @@ ReversedFit = 1
 Line slope = -0.01, intercept = 150.46
 Line coordinate: (148.79, 290.00), (146.66, 661.00)
 
+------------------------------------------
+FIT LINE REGRESSION TEST #2 STARTING
+------------------------------------------
+Fit line status 0
+ReversedFit = 0
+Line slope = 0.67, intercept = -119.67
+Line coordinate: (233.00, 37.41), (397.00, 147.98)
+
+------------------------------------------
+FIT LINE REGRESSION TEST #3 STARTING
+------------------------------------------
+Fit line status 0
+ReversedFit = 1
+Line slope = -0.67, intercept = 217.72
+Line coordinate: (179.97, 56.00), (96.39, 180.00)
+
 ---------------------------------------------
 FIT PARALLEL LINE REGRESSION TEST #1 STARTING
 ---------------------------------------------
@@ -51,12 +67,20 @@ Line 2 coordinate: (212.16, 276.00), (210.61, 675.00)
 ---------------------------------------------
 FIT PARALLEL LINE REGRESSION TEST #2 STARTING
 ---------------------------------------------
-
 Fit parallel line status 0
 ReversedFit = 0
 Line slope = 0.00, intercept1 = 303.75, intercept2 = 720.86
 Line 1 coordinate: (444.00, 305.86), (592.00, 306.56)
 Line 2 coordinate: (333.00, 722.44), (701.00, 724.19)
+
+---------------------------------------------
+FIT PARALLEL LINE REGRESSION TEST #3 STARTING
+---------------------------------------------
+Fit parallel line status 0
+ReversedFit = 1
+Line slope = -0.67, intercept1 = 217.71, intercept2 = 559.43
+Line 1 coordinate: (179.97, 56.00), (96.40, 180.00)
+Line 2 coordinate: (421.26, 205.00), (336.34, 331.00)
 
 ---------------------------------------------
 FIT RECT REGRESSION TEST #1 STARTING
@@ -81,3 +105,29 @@ Line 1 coordinate: (444.00, 306.06), (592.00, 306.30)
 Line 2 coordinate: (333.00, 722.74), (701.00, 723.34)
 Line 3 coordinate: (282.29, 284.00), (281.65, 678.00)
 Line 4 coordinate: (755.04, 297.00), (754.43, 670.00)
+
+---------------------------------------------
+FIT RECT REGRESSION TEST #3 STARTING
+---------------------------------------------
+Fit rect status 0
+LineOneReversedFit = 1, LineTwoReversedFit = 0
+Line slope1 = -0.67, slope2 = 0.67
+Intercept = 217.75, 559.52, 145.77, -119.71
+Line 1 coordinate: (179.99, 56.00), (96.38, 180.00)
+Line 2 coordinate: (421.28, 205.00), (336.32, 331.00)
+Line 3 coordinate: (106.00, 217.24), (264.00, 323.79)
+Line 4 coordinate: (240.00, 42.13), (410.00, 156.76)
+
+------------------------------------------
+FIT CIRCLE REGRESSION TEST #1 STARTING
+------------------------------------------
+Fit circle status 0
+Radius = 98.34
+Circle center: (525.30, 485.98)
+
+------------------------------------------
+FIT CIRCLE REGRESSION TEST #2 STARTING
+------------------------------------------
+Fit circle status 0
+Radius = 85.47
+Circle center: (570.06, 212.44)

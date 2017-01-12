@@ -62,7 +62,7 @@ VisionStatus RecordManager::freeAllRecord()
     }
     _mapRecord.clear();
     bfs::remove_all( Config::GetInstance()->getRecordDir() );
-    WriteLog("All log is cleared");
+    WriteLog("All record is freed");
     return VisionStatus::OK;
 }
 

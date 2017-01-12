@@ -82,6 +82,7 @@ void VisionWidget::on_fitCircleBtn_clicked()
 	FitCircleProcedure procedure(ui.visionView);
     procedure.setErrTol ( ui.lineEditFitCircleErrTol->text().toFloat());
     procedure.setThreshold ( ui.lineEditFitCircleThreshold->text().toInt());
+    procedure.setAttribute ( ui.comboBoxCircleAttribute->currentIndex());
     procedure.setAlgorithm ( ui.comboBoxFitCircleAlgorithm->currentIndex());
 	int nStatus = procedure.run(_sourceImagePath);
     if ( ToInt(VisionStatus::OK) == nStatus )
@@ -98,6 +99,7 @@ void VisionWidget::on_fitLineBtn_clicked()
 	FitLineProcedure procedure(ui.visionView);
     procedure.setErrTol ( ui.lineEditFitLineErrTol->text().toFloat());
     procedure.setThreshold ( ui.lineEditFitLineThreshold->text().toInt());
+    procedure.setAttribute ( ui.comboBoxLineAttribute->currentIndex());
 	int nStatus = procedure.run(_sourceImagePath);
     if ( ToInt(VisionStatus::OK) == nStatus )
     {
@@ -113,6 +115,7 @@ void VisionWidget::on_fitParallelLineBtn_clicked()
     FitParallelLineProcedure procedure(ui.visionView);
     procedure.setErrTol ( ui.lineEditFitParallelLineErrTol->text().toFloat());
     procedure.setThreshold ( ui.lineEditFitParallelLineThreshold->text().toInt());
+    procedure.setAttribute ( ui.comboBoxParallelLineAttribute->currentIndex());
 	int nStatus = procedure.run(_sourceImagePath);
     if ( ToInt(VisionStatus::OK) == nStatus )
     {
@@ -128,6 +131,7 @@ void VisionWidget::on_fitRectBtn_clicked()
     FitRectProcedure procedure(ui.visionView);
     procedure.setErrTol ( ui.lineEditFitRectErrTol->text().toFloat());
     procedure.setThreshold ( ui.lineEditFitRectThreshold->text().toInt());
+    procedure.setAttribute ( ui.comboBoxRectAttribute->currentIndex());
 	int nStatus = procedure.run(_sourceImagePath);
     if ( ToInt(VisionStatus::OK) == nStatus )
     {
