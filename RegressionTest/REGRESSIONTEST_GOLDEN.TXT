@@ -18,6 +18,8 @@ LOGCASE REGRESSION TEST #1 STARTING
 ------------------------------------------
 Run logcase result 0
 Run logcase result 0
+Run logcase result 0
+Run logcase result 0
 
 ------------------------------------------
 TEMPLATE MATCH REGRESSION TEST #1 STARTING

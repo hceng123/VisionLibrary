@@ -73,6 +73,8 @@ private:
     const String _strKeyOuterRadius = "OuterRadius";
     const String _strKeyErrorTol    = "ErrorTolerance";
     const String _strKeyThreshold   = "Threshold";
+    const String _strKeyAttribute   = "Attribute";
+
     const String _strKeyStatus      = "Status";
     const String _strKeyResultCtr   = "ResultCtr";
     const String _strKeyRadius      = "Radius";
@@ -92,6 +94,8 @@ private:
     const String _strKeySrchWindow  = "SrchWindow";
     const String _strKeyErrorTol    = "ErrorTolerance";
     const String _strKeyThreshold   = "Threshold";
+    const String _strKeyAttribute   = "Attribute";
+
     const String _strKeyStatus      = "Status";
     const String _strKeySlope       = "Slope";
     const String _strKeyIntercept   = "Intercept";
@@ -109,19 +113,21 @@ public:
     virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
     static String StaticGetFolderPrefix();
 private:
-    const String _strKeyMethod = "Method";
-    const String _strKeySrchWindow1 = "SrchWindow1";
-    const String _strKeySrchWindow2 = "SrchWindow2";
-    const String _strKeyErrorTol = "ErrorTolerance";
-    const String _strKeyThreshold = "Threshold";
-    const String _strKeyStatus = "Status";
-    const String _strKeySlope = "Slope";
-    const String _strKeyIntercept1 = "Intercept1";
-    const String _strKeyIntercept2 = "Intercept2";
-    const String _strKeyLineOnePoint1 = "LineOnePoint1";
-    const String _strKeyLineOnePoint2 = "LineOnePoint2";
-    const String _strKeyLineTwoPoint1 = "LineTwoPoint1";
-    const String _strKeyLineTwoPoint2 = "LineTwoPoint2";
+    const String _strKeyMethod          = "Method";
+    const String _strKeySrchWindow1     = "SrchWindow1";
+    const String _strKeySrchWindow2     = "SrchWindow2";
+    const String _strKeyErrorTol        = "ErrorTolerance";
+    const String _strKeyThreshold       = "Threshold";
+    const String _strKeyAttribute       = "Attribute";
+
+    const String _strKeyStatus          = "Status";
+    const String _strKeySlope           = "Slope";
+    const String _strKeyIntercept1      = "Intercept1";
+    const String _strKeyIntercept2      = "Intercept2";
+    const String _strKeyLineOnePoint1   = "LineOnePoint1";
+    const String _strKeyLineOnePoint2   = "LineOnePoint2";
+    const String _strKeyLineTwoPoint1   = "LineTwoPoint1";
+    const String _strKeyLineTwoPoint2   = "LineTwoPoint2";
 };
 
 class LogCaseFitRect : public LogCase
@@ -141,6 +147,7 @@ private:
     const String _strKeySrchWindow4     = "SrchWindow4";
     const String _strKeyErrorTol        = "ErrorTolerance";
     const String _strKeyThreshold       = "Threshold";
+    const String _strKeyAttribute       = "Attribute";
 
     const String _strKeyStatus          = "Status";
     const String _strKeySlope1          = "Slope1";    

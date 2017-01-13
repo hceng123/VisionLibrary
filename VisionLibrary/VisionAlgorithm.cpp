@@ -1271,10 +1271,14 @@ VisionStatus VisionAlgorithm::runLogCase(const std::string &strPath)
 
     VisionStatus enStatus = VisionStatus::OK;
     auto strLocalPath = strPath;
-    if ( strPath[ strPath.length() - 1 ] != '\\')
-        strLocalPath.append("\\");
+    char chFolderToken = '\\';
+    if ( strPath.find('/') != string::npos )
+        chFolderToken = '/';
 
-    auto pos = strLocalPath.rfind ( '\\', strLocalPath.length() - 2 );
+    if ( strPath[ strPath.length() - 1 ] != chFolderToken )
+        strLocalPath.append ( std::string { chFolderToken } );
+
+    auto pos = strLocalPath.rfind ( chFolderToken, strLocalPath.length() - 2 );
     if ( String::npos == pos )
         return VisionStatus::INVALID_PARAM;
 
@@ -1287,6 +1291,16 @@ VisionStatus VisionAlgorithm::runLogCase(const std::string &strPath)
         pLogCase = std::make_unique <LogCaseLrnTmpl>( strLocalPath, true );
     else if (LogCaseFitCircle::StaticGetFolderPrefix() == folderPrefix)
         pLogCase = std::make_unique <LogCaseFitCircle>( strLocalPath, true );
+    else if (LogCaseFitLine::StaticGetFolderPrefix() == folderPrefix)
+        pLogCase = std::make_unique<LogCaseFitLine>( strLocalPath, true );
+    else if (LogCaseFitParallelLine::StaticGetFolderPrefix() == folderPrefix)
+        pLogCase = std::make_unique<LogCaseFitParallelLine>( strLocalPath, true );
+    else if (LogCaseFitRect::StaticGetFolderPrefix() == folderPrefix)
+        pLogCase = std::make_unique<LogCaseFitRect>( strLocalPath, true );
+    else if (LogCaseSrchFiducial::StaticGetFolderPrefix() == folderPrefix)
+        pLogCase = std::make_unique<LogCaseSrchFiducial>( strLocalPath, true );
+    else if (LogCaseOcr::StaticGetFolderPrefix() == folderPrefix)
+        pLogCase = std::make_unique<LogCaseOcr>( strLocalPath, true );
 
     if ( nullptr != pLogCase )
         enStatus = pLogCase->RunLogCase();

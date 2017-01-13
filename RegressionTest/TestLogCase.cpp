@@ -22,6 +22,12 @@ void TestRunLogcase()
 
     enStatus = PR_RunLogCase(".\\Logcase\\LrnTmpl_Success\\");
     std::cout << "Run logcase result " << static_cast<int> ( enStatus ) << std::endl;
+
+    enStatus = PR_RunLogCase("./Logcase/LrnTmpl_Success");
+    std::cout << "Run logcase result " << static_cast<int> ( enStatus ) << std::endl;
+
+    enStatus = PR_RunLogCase("./Logcase/LrnTmpl_Success/");
+    std::cout << "Run logcase result " << static_cast<int> ( enStatus ) << std::endl;
 }
 
 }

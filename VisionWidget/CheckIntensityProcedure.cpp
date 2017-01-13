@@ -113,7 +113,7 @@ int CheckIntensityProcedure::checkIntensity(const cv::Mat &mat)
     std::vector<float> vecOutput;
 	GetIntensityOnLine<unsigned char> ( matGray, _lineOfIntensityCheck.pt1, _lineOfIntensityCheck.pt2, vecOutput );
 
-    cv::Mat matResult = cv::Mat::ones(PR_MAX_GRAY_LEVEL, vecOutput.size(), CV_8UC1) * PR_MAX_GRAY_LEVEL;
+    cv::Mat matResult = cv::Mat::ones(PR_MAX_GRAY_LEVEL, ToInt(vecOutput.size()), CV_8UC1) * PR_MAX_GRAY_LEVEL;
     for (int col = 1; col < ToInt(vecOutput.size()); ++ col)
     {
         cv::Point pt1(col - 1, PR_MAX_GRAY_LEVEL - vecOutput[col - 1]);

@@ -60,3 +60,12 @@ void DialogVisionToolBox::on_btnCheckIntensity_clicked()
 	CheckIntensityProcedure procedure(_pVisionView);
 	procedure.run(mat);    
 }
+
+void DialogVisionToolBox::on_btnReplayLogcase_clicked()
+{
+    QString dir = QFileDialog::getExistingDirectory(this, tr("Open Logcase"),
+                                             "./Vision/Logcase/",
+                                             QFileDialog::ShowDirsOnly
+                                             | QFileDialog::DontResolveSymlinks);
+    PR_RunLogCase(dir.toStdString());
+}

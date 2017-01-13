@@ -21,7 +21,7 @@ private slots:
     void on_comboBoxDebugMode_currentIndexChanged(int index);
     void on_btnDumpTimeLog_clicked();
     void on_btnCheckIntensity_clicked();
-
+    void on_btnReplayLogcase_clicked();
 private:
     Ui::DialogVisionToolBox *ui;
     VisionView *_pVisionView;

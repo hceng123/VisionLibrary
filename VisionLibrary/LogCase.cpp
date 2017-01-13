@@ -166,7 +166,8 @@ VisionStatus LogCaseFitCircle::WriteCmd(PR_FIT_CIRCLE_CMD *pCmd)
     ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyInnerRadius.c_str(), pCmd->fRangeInnterRadius );
     ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyOuterRadius.c_str(), pCmd->fRangeOutterRadius );
     ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyErrorTol.c_str(), pCmd->fErrTol );
-    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyThreshold.c_str(), pCmd->nThreshold );    
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyThreshold.c_str(), pCmd->nThreshold );
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyAttribute.c_str(), ToInt32 ( pCmd->enAttribute ) );
     ini.SaveFile( cmdRpyFilePath.c_str() );
     cv::imwrite( _strLogCasePath + "image.jpg", pCmd->matInput );
     return VisionStatus::OK;
@@ -194,12 +195,13 @@ VisionStatus LogCaseFitCircle::RunLogCase()
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile( cmdRpyFilePath.c_str() );
     stCmd.matInput = cv::imread( _strLogCasePath + "image.jpg" );
-    stCmd.enMethod = static_cast<PR_FIT_CIRCLE_METHOD> ( ini.GetLongValue ( _CMD_SECTION.c_str(), _strKeyMethod.c_str(), ToInt32(PR_ALIGN_ALGORITHM::SURF) ) );
+    stCmd.enMethod = static_cast<PR_FIT_CIRCLE_METHOD> ( ini.GetLongValue ( _CMD_SECTION.c_str(), _strKeyMethod.c_str(), 0 ) );
     stCmd.ptRangeCtr = _parseCoordinate ( ini.GetValue(_CMD_SECTION.c_str(), _strKeyExpectedCtr.c_str(), _DEFAULT_COORD.c_str() ) );
     stCmd.fRangeInnterRadius = (float)ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyInnerRadius.c_str(), 0 );
     stCmd.fRangeOutterRadius = (float)ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyOuterRadius.c_str(), 0 );
     stCmd.fErrTol = (float)ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyErrorTol.c_str(), 0 );
-    stCmd.nThreshold = ini.GetLongValue( _CMD_SECTION.c_str(), _strKeyThreshold.c_str(), 0);   
+    stCmd.nThreshold = ini.GetLongValue( _CMD_SECTION.c_str(), _strKeyThreshold.c_str(), 0);
+    stCmd.enAttribute = static_cast<PR_OBJECT_ATTRIBUTE>(ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyAttribute.c_str(), 0 ) );
 
     PR_FIT_CIRCLE_RPY stRpy;
 
@@ -228,7 +230,8 @@ VisionStatus LogCaseFitLine::WriteCmd(PR_FIT_LINE_CMD *pCmd)
     ini.LoadFile( cmdRpyFilePath.c_str() );
     ini.SetValue(_CMD_SECTION.c_str(), _strKeySrchWindow.c_str(), _formatRect(pCmd->rectROI).c_str() );
     ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyErrorTol.c_str(), pCmd->fErrTol );
-    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyThreshold.c_str(), pCmd->nThreshold );    
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyThreshold.c_str(), pCmd->nThreshold );
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyAttribute.c_str(), ToInt32 ( pCmd->enAttribute ) );
     ini.SaveFile( cmdRpyFilePath.c_str() );
     cv::imwrite( _strLogCasePath + "image.jpg", pCmd->matInput );
     return VisionStatus::OK;
@@ -260,7 +263,8 @@ VisionStatus LogCaseFitLine::RunLogCase()
     stCmd.matInput = cv::imread( _strLogCasePath + "image.jpg" );    
     stCmd.rectROI = _parseRect ( ini.GetValue(_CMD_SECTION.c_str(), _strKeySrchWindow.c_str(), _DEFAULT_RECT.c_str() ) );
     stCmd.fErrTol = (float)ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyErrorTol.c_str(), 0 );
-    stCmd.nThreshold = ini.GetLongValue( _CMD_SECTION.c_str(), _strKeyThreshold.c_str(), 0);   
+    stCmd.nThreshold = ini.GetLongValue( _CMD_SECTION.c_str(), _strKeyThreshold.c_str(), 0);
+    stCmd.enAttribute = static_cast<PR_OBJECT_ATTRIBUTE>(ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyAttribute.c_str(), 0 ) );
 
     PR_FIT_LINE_RPY stRpy;
 
@@ -290,7 +294,8 @@ VisionStatus LogCaseFitParallelLine::WriteCmd(PR_FIT_PARALLEL_LINE_CMD *pCmd)
     ini.SetValue(_CMD_SECTION.c_str(), _strKeySrchWindow1.c_str(), _formatRect(pCmd->rectArrROI[0]).c_str());
     ini.SetValue(_CMD_SECTION.c_str(), _strKeySrchWindow2.c_str(), _formatRect(pCmd->rectArrROI[1]).c_str());
     ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyErrorTol.c_str(), pCmd->fErrTol);
-    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyThreshold.c_str(), pCmd->nThreshold);
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyThreshold.c_str(), pCmd->nThreshold);
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyAttribute.c_str(), ToInt32 ( pCmd->enAttribute ) );
     ini.SaveFile(cmdRpyFilePath.c_str());
     cv::imwrite(_strLogCasePath + "image.jpg", pCmd->matInput);
     return VisionStatus::OK;
@@ -327,6 +332,7 @@ VisionStatus LogCaseFitParallelLine::RunLogCase()
     stCmd.rectArrROI[1] = _parseRect(ini.GetValue(_CMD_SECTION.c_str(), _strKeySrchWindow2.c_str(), _DEFAULT_RECT.c_str()));
     stCmd.fErrTol = (float)ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyErrorTol.c_str(), 0);
     stCmd.nThreshold = ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyThreshold.c_str(), 0);
+    stCmd.enAttribute = static_cast<PR_OBJECT_ATTRIBUTE>(ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyAttribute.c_str(), 0 ) );
 
     PR_FIT_PARALLEL_LINE_RPY stRpy;
 
@@ -358,7 +364,8 @@ VisionStatus LogCaseFitRect::WriteCmd(PR_FIT_RECT_CMD *pCmd)
     ini.SetValue(_CMD_SECTION.c_str(), _strKeySrchWindow3.c_str(), _formatRect(pCmd->rectArrROI[0]).c_str());
     ini.SetValue(_CMD_SECTION.c_str(), _strKeySrchWindow4.c_str(), _formatRect(pCmd->rectArrROI[1]).c_str());
     ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyErrorTol.c_str(), pCmd->fErrTol);
-    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyThreshold.c_str(), pCmd->nThreshold);
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyThreshold.c_str(), pCmd->nThreshold);
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyAttribute.c_str(), ToInt32 ( pCmd->enAttribute ) );
     ini.SaveFile(cmdRpyFilePath.c_str());
     cv::imwrite(_strLogCasePath + "image.jpg", pCmd->matInput);
     return VisionStatus::OK;
@@ -404,6 +411,7 @@ VisionStatus LogCaseFitRect::RunLogCase()
     stCmd.rectArrROI[3] = _parseRect(ini.GetValue(_CMD_SECTION.c_str(), _strKeySrchWindow4.c_str(), _DEFAULT_RECT.c_str()));
     stCmd.fErrTol = (float)ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyErrorTol.c_str(), 0);
     stCmd.nThreshold = ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyThreshold.c_str(), 0);
+    stCmd.enAttribute = static_cast<PR_OBJECT_ATTRIBUTE>(ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyAttribute.c_str(), 0 ) );
 
     PR_FIT_RECT_RPY stRpy;
 

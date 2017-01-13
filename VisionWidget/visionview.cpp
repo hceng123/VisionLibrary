@@ -323,7 +323,7 @@ void VisionView::_drawDisplay()
         _drawTestVisionLibrary ( _matDisplay );
 
     cvtColor( _matDisplay, _matDisplay, CV_BGR2RGB);
-    QImage image = QImage((uchar*) _matDisplay.data, _matDisplay.cols, _matDisplay.rows, _matDisplay.step, QImage::Format_RGB888);
+    QImage image = QImage((uchar*) _matDisplay.data, _matDisplay.cols, _matDisplay.rows, ToInt(_matDisplay.step), QImage::Format_RGB888);
         
     //show Qimage using QLabel
     setPixmap(QPixmap::fromImage(image));
