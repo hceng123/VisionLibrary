@@ -463,6 +463,7 @@ void VisionView::startTimer()
 void VisionView::setMat(const cv::Mat &mat)
 {
     _mat = mat;
+    _bDisplayResultImage = false;
     _drawDisplay();
 }
 

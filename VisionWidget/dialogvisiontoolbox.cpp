@@ -39,7 +39,8 @@ void DialogVisionToolBox::on_btnDumpTimeLog_clicked()
     QStringList fileNames = dialog.selectedFiles();
     std::string filePath = fileNames[0].toStdString();
 
-    std::async( [filePath] ()
+    std::async( std::launch::async, 
+        [filePath] ()
         { PR_DumpTimeLog(filePath); } 
     );
 }

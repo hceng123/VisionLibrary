@@ -28,4 +28,5 @@ VisionWidget/GeneratedFiles
 VisionWidget/Vision
 VisionWidget/*.bmp
 VisionWidget/*.png
+VisionWidget/TestImage
 *.bak
