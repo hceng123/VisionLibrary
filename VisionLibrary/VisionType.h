@@ -99,6 +99,15 @@ enum class PR_OBJECT_ATTRIBUTE
     END,
 };
 
+enum class PR_FILTER_TYPE
+{
+    NORMALIZED_BOX_FILER,
+    GAUSSIAN_FILTER,
+    MEDIAN_FILTER,
+    BILATERIAL_FILTER,
+    END,
+};
+
 }
 }
 
