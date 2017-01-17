@@ -8,6 +8,7 @@
 #endif
 
 #include "VisionHeader.h"
+#include <memory>
 
 namespace AOI
 {
@@ -33,6 +34,26 @@ VisionAPI VisionStatus  PR_FitCircle(PR_FIT_CIRCLE_CMD *pstCmd, PR_FIT_CIRCLE_RP
 VisionAPI VisionStatus  PR_GetErrorStr(VisionStatus enStatus, PR_GET_ERROR_STR_RPY *pstRpy);
 VisionAPI VisionStatus  PR_Ocr(PR_OCR_CMD *pstCmd, PR_OCR_RPY *pstRpy);
 VisionAPI VisionStatus  PR_PointLineDistance(PR_POINT_LINE_DISTANCE_CMD *pstCmd, PR_POINT_LINE_DISTANCE_RPY *pstRpy);
+
+class VisionAPI BaseVisionHandler
+{
+public:
+    BaseVisionHandler();
+    ~BaseVisionHandler();
+    virtual void run() = 0;    
+protected:
+    struct Impl;
+    std::unique_ptr<Impl>   _pImpl;
+};
+
+class VisionAPI FilterHandler : public BaseVisionHandler
+{
+public :
+    FilterHandler(PR_FILTER_TYPE enType);
+    virtual void run() override;
+protected:
+    PR_FILTER_TYPE _enType;
+};
 
 }
 }
