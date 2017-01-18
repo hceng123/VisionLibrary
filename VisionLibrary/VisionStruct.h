@@ -378,6 +378,27 @@ struct PR_POINT_LINE_DISTANCE_RPY
     float                   fDistance;
 };
 
+struct PR_RGB_RATIO
+{
+    PR_RGB_RATIO() : fRatioR(0.299f), fRatioG(0.587f), fRatioB(0.114f) {}
+    PR_RGB_RATIO(float fRatioR, float fRatioG, float fRatioB ) : fRatioR(fRatioR), fRatioG(fRatioG), fRatioB(fRatioB)   {}
+    float                   fRatioR;
+    float                   fRatioG;
+    float                   fRatioB;
+};
+
+struct PR_COLOR_TO_GRAY_CMD
+{
+    cv::Mat                 matInput;
+    PR_RGB_RATIO            stRatio;
+};
+
+struct PR_COLOR_TO_GRAY_RPY
+{
+    VisionStatus            enStatus;
+    cv::Mat                 matResult;
+};
+
 }
 }
 #endif

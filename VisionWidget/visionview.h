@@ -54,7 +54,7 @@ public:
 
     enum class TEST_VISION_STATE
     {
-        UNDEFINED,
+        IDLE,
         SET_CIRCLE_CTR,
         SET_CIRCLE_INNER_RADIUS,
         SET_CIRCLE_OUTTER_RADIUS,
@@ -80,6 +80,9 @@ public:
     bool isDisplayResultImage() const;
     void setCurrentSrchWindowIndex(int nIndex);
     void getFitCircleRange(cv::Point &ptCtr, float &fInnterRadius, float &fOutterRadius) const;
+    void setImageDisplayMode(bool bDisplayGrayScale, bool bDisplayBinary);
+    void setRGBRatio(float fRatioR, float fRatioG, float fRatioB);
+    void setBinaryThreshold(int nThreshold, bool bReverseThres);
     VectorOfRect getVecSrchWindow( ) const;
     PR_Line getIntensityCheckLine() const;
     static float distanceOf2Point(const cv::Point &pt1, const cv::Point &pt2);    
@@ -90,9 +93,12 @@ protected:
     void mouseDoubleClickEvent(QMouseEvent *event);
     void _drawDisplay();
     void _drawLearnWindow(cv::Mat &mat);
+    void _drawSelectedWindow(cv::Mat &mat);
     void _drawTestVisionLibrary(cv::Mat &mat);
-    void zoomPoint(cv::Point &point, float fZoomFactor);
-    void zoomRect(cv::Rect &rect, float fZoomFactor);
+    cv::Mat _generateBinaryImage(const cv::Mat &matGray);
+    cv::Mat _generateDisplayImage(const cv::Mat &mat);
+    void _zoomPoint(cv::Point &point, float fZoomFactor);
+    void _zoomRect(cv::Rect &rect, float fZoomFactor);
 private:
     cv::Rect                        _rectLrnWindow;
     cv::Rect                        _rectSrchWindow;
@@ -113,6 +119,13 @@ private:
     MASK_EDIT_STATE                 _enMaskEditState;
     MASK_SHAPE                      _enMaskShape;
     vector<cv::Point>               _vecPolylinePoint;
+
+    bool                            _bDisplayGrayScale;
+    bool                            _bDisplayBinary;
+    PR_RGB_RATIO                    _stRGBRatio;
+    int                             _nThreshold;
+    bool                            _bReverseThres;
+    cv::Rect                        _rectSelectedWindow;
     cv::Point                       _ptCircleCtr;
     float                           _fInnerRangeRadius;
     float                           _fOutterRangeRadius;
@@ -125,6 +138,7 @@ private:
     const float                     _constMaxZoomFactor = 4.f;
     const float                     _constMinZoomFactor = 0.25;
     std::unique_ptr<DialogEditMask> _pDialogEditMask;
+
 signals:
 
 protected slots:

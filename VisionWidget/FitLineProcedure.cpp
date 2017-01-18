@@ -30,7 +30,7 @@ int FitLineProcedure::run(const std::string &imagePath)
     _pVisionView->setCurrentSrchWindowIndex(0);
 	int iReturn = pMessageBox->exec();
     if ( iReturn != QDialog::Accepted ) {
-        _pVisionView->setTestVisionState(VisionView::TEST_VISION_STATE::UNDEFINED);
+        _pVisionView->setTestVisionState(VisionView::TEST_VISION_STATE::IDLE);
         return ToInt(STATUS::NOK);
     }	
    
@@ -39,14 +39,14 @@ int FitLineProcedure::run(const std::string &imagePath)
         pMessageBox->SetMessageText1("The input is invalid");
         pMessageBox->SetMessageText2("");
         pMessageBox->exec();
-        _pVisionView->setTestVisionState(VisionView::TEST_VISION_STATE::UNDEFINED);
+        _pVisionView->setTestVisionState(VisionView::TEST_VISION_STATE::IDLE);
         return ToInt(STATUS::NOK);
     }
     _rectSrchWindow = vecResult[0];
 
     int nStatus = fitLine(imagePath);
 
-    _pVisionView->setTestVisionState(VisionView::TEST_VISION_STATE::UNDEFINED);
+    _pVisionView->setTestVisionState(VisionView::TEST_VISION_STATE::IDLE);
     return nStatus;
 }
 

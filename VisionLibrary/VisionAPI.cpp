@@ -224,5 +224,10 @@ VisionAPI VisionStatus  PR_PointLineDistance(PR_POINT_LINE_DISTANCE_CMD *pstCmd,
     return VisionStatus::OK;
 }
 
+VisionAPI VisionStatus  PR_ColorToGray(PR_COLOR_TO_GRAY_CMD *pstCmd, PR_COLOR_TO_GRAY_RPY *pstRpy)
+{
+    return VisionAlgorithm::colorToGray ( pstCmd, pstRpy );
+}
+
 }
 }

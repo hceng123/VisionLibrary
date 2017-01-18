@@ -71,7 +71,7 @@ void VisionWidget::on_selectImageBtn_clicked()
     }
     else
         _matOriginal = cv::imread( fileNames[0].toStdString() );
-    ui.visionView->setMat( generateDisplayImage() );
+    ui.visionView->setMat( _matOriginal );
     _sourceImagePath = fileNames[0].toStdString();
 }
 
@@ -174,7 +174,12 @@ void VisionWidget::on_checkBoxDisplayGrayScale_clicked(bool checked)
     if ( _matOriginal.empty())
         return;
 
-    ui.visionView->setMat(generateDisplayImage());
+    ui.visionView->setImageDisplayMode ( ui.checkBoxDisplayGrayScale->isChecked(), ui.checkBoxDisplayBinary->isChecked() );
+    if ( checked )  {
+        ui.visionView->setRGBRatio ( ui.lineEditRRatio->text().toFloat(),
+                                     ui.lineEditGRatio->text().toFloat(),
+                                     ui.lineEditBRatio->text().toFloat());
+    }
 }
 
 void VisionWidget::on_checkBoxDisplayBinary_clicked(bool checked)
@@ -182,59 +187,15 @@ void VisionWidget::on_checkBoxDisplayBinary_clicked(bool checked)
     if ( _matOriginal.empty())
         return;
 
-    ui.visionView->setMat(generateDisplayImage());
-}
-
-cv::Mat VisionWidget::generateGrayImage()
-{
-    if (_matOriginal.empty())
-        return _matOriginal;
-
-    float fBRatio = ui.lineEditBRatio->text().toFloat();
-    float fGRatio = ui.lineEditGRatio->text().toFloat();
-    float fRRatio = ui.lineEditRRatio->text().toFloat();
-    std::vector<float> coefficients{ fBRatio, fGRatio, fRRatio };
-    cv::Mat matCoefficients = cv::Mat(coefficients).reshape(1, 1);
-    cv::Mat matGray;
-    cv::transform(_matOriginal, matGray, matCoefficients);
-    return matGray;
-}
-
-cv::Mat VisionWidget::generateBinaryImage(const cv::Mat &matGray)
-{
-    assert( ! matGray.empty() );
-    cv::Mat matThreshold;
-    int threshold = ui.sliderThreshold->value();
-    cv::threshold(matGray, matThreshold, threshold, PR_MAX_GRAY_LEVEL, THRESH_BINARY);
-    return matThreshold;
-}
-
-cv::Mat VisionWidget::generateDisplayImage()
-{
-    if (_matOriginal.empty())
-        return _matOriginal;
-
-    cv::Mat matResult = _matOriginal;
-    if ( ui.checkBoxDisplayGrayScale->isChecked() ) {
-        cv::Mat matGray = generateGrayImage();
-        if ( ui.checkBoxDisplayBinary->isChecked() )    {
-            matResult = generateBinaryImage(matGray);
-            return matResult;
-        }
-        else
-        {
-            return matGray;
-        }
+    ui.visionView->setImageDisplayMode ( ui.checkBoxDisplayGrayScale->isChecked(), ui.checkBoxDisplayBinary->isChecked() );
+    if ( checked )  {
+        ui.visionView->setBinaryThreshold ( ui.sliderThreshold->value(), ui.checkBoxReverseThres->isChecked() );
     }
+}
 
-    if ( ui.checkBoxDisplayBinary->isChecked() )    {
-        cv::Mat matGray;
-        cv::cvtColor ( _matOriginal, matGray, CV_BGR2GRAY);
-        matResult = generateBinaryImage(matGray);
-        return matResult;
-    }
-
-    return matResult;
+void VisionWidget::on_checkBoxReverseThres_clicked(bool checked)
+{
+    ui.visionView->setBinaryThreshold ( ui.sliderThreshold->value(), checked );
 }
 
 void VisionWidget::on_sliderThreshold_valueChanged(int position)
@@ -244,7 +205,7 @@ void VisionWidget::on_sliderThreshold_valueChanged(int position)
     if ( _matOriginal.empty())
         return;
 
-    ui.visionView->setMat(generateDisplayImage());    
+    ui.visionView->setBinaryThreshold ( ui.sliderThreshold->value(), ui.checkBoxReverseThres->isChecked() );
 }
 
 void VisionWidget::on_lineEditBinaryThreshold_returnPressed()
@@ -255,5 +216,26 @@ void VisionWidget::on_lineEditBinaryThreshold_returnPressed()
     if ( _matOriginal.empty())
         return;
     
-    ui.visionView->setMat(generateDisplayImage());
+    ui.visionView->setBinaryThreshold ( ui.sliderThreshold->value(), ui.checkBoxReverseThres->isChecked() );
+}
+
+void VisionWidget::on_lineEditRRatio_returnPressed()
+{
+    ui.visionView->setRGBRatio ( ui.lineEditRRatio->text().toFloat(),
+                                     ui.lineEditGRatio->text().toFloat(),
+                                     ui.lineEditBRatio->text().toFloat());
+}
+
+void VisionWidget::on_lineEditGRatio_returnPressed()
+{
+    ui.visionView->setRGBRatio ( ui.lineEditRRatio->text().toFloat(),
+                                     ui.lineEditGRatio->text().toFloat(),
+                                     ui.lineEditBRatio->text().toFloat());
+}
+
+void VisionWidget::on_lineEditBRatio_returnPressed()
+{
+    ui.visionView->setRGBRatio ( ui.lineEditRRatio->text().toFloat(),
+                                     ui.lineEditGRatio->text().toFloat(),
+                                     ui.lineEditBRatio->text().toFloat());
 }

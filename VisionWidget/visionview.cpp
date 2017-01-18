@@ -9,7 +9,7 @@
 VisionView::VisionView(QWidget *parent , Qt::WindowFlags f)
 {
     this->setParent(parent, f);
-    _enState = VISION_VIEW_STATE::LEARNING;
+    _enState = VISION_VIEW_STATE::IDLE;
 
     _pTimer = std::make_unique<QTimer>(this);
     connect( _pTimer.get(), SIGNAL(timeout()), this, SLOT(updateMat()));
@@ -25,8 +25,10 @@ VisionView::VisionView(QWidget *parent , Qt::WindowFlags f)
     _enMaskEditState = MASK_EDIT_ADD;
     _ptLeftClickStartPos = Point(0,0);
     _ptLeftClickEndPos = Point(0,0);
-    _enTestVisionState = TEST_VISION_STATE::UNDEFINED;
+    _enTestVisionState = TEST_VISION_STATE::IDLE;
     _bDisplayResultImage = false;
+    _bDisplayGrayScale = false;
+    _bDisplayBinary = false;
 }
 
 VisionView::~VisionView()
@@ -36,39 +38,9 @@ VisionView::~VisionView()
 int VisionView::updateMat()
 {
     cv::Mat mat;
-
     //AOI::Vision::WebCameraManager::GetInstance()->GrabImage ( _nCameraID, mat );
-
     _mat = mat;
-
     _drawDisplay();
-
-    //Mat display ( mat.size(), mat.type() );
-    //mat.copyTo( display );
-    //if ( ! IsEuqal ( _fZoomFactor, 1.0f ) )
-    //{
-    //    cv::Mat matZoomResult;
-    //    cv::resize( display, matZoomResult, cv::Size(), _fZoomFactor, _fZoomFactor );
-    //    if ( _fZoomFactor > 1.0f )  {
-    //        cv::Rect rectROI( ( matZoomResult.cols - display.cols ) / 2, ( matZoomResult.rows - display.rows ) / 2, display.cols, display.rows );
-    //        cv::Mat matROI ( matZoomResult,  rectROI );
-    //        matROI.copyTo(display);
-    //    }else   {
-    //        cv::Rect rectROI( ( display.cols - matZoomResult.cols ) / 2, ( display.rows - matZoomResult.rows ) / 2, matZoomResult.cols, matZoomResult.rows );
-    //        cv::Mat matTemp = cv::Mat::zeros( display.rows, display.cols, display.type());
-    //        cv::Mat matROI ( matTemp, rectROI );
-    //        matZoomResult.copyTo(matROI);
-    //        matTemp.copyTo(display);
-    //    }
-    //}
-    //cvtColor( display, display, CV_BGR2RGB);
-
-    //_drawLearnWindow ( display );
-
-    //QImage image = QImage((uchar*) display.data, display.cols, display.rows, display.step, QImage::Format_RGB888);
-
-    ////show Qimage using QLabel
-    //setPixmap(QPixmap::fromImage(image));
     return ToInt(STATUS::OK);
 }
 
@@ -152,6 +124,7 @@ void VisionView::mouseMoveEvent(QMouseEvent *event)
             _rectLrnWindow.y = _ptLeftClickStartPos.y;
             _rectLrnWindow.width = _ptLeftClickEndPos.x - _ptLeftClickStartPos.x;
             _rectLrnWindow.height = _ptLeftClickEndPos.y - _ptLeftClickStartPos.y;
+            _drawDisplay();
         }else if ( VISION_VIEW_STATE::ADD_MASK == _enState )    {
             if ( MASK_SHAPE_RECT == _enMaskShape ) {
                 Rect rectMask;
@@ -177,7 +150,14 @@ void VisionView::mouseMoveEvent(QMouseEvent *event)
             }
             _drawDisplay();
         }else if ( VISION_VIEW_STATE::TEST_VISION_LIBRARY == _enState ) {
-            if ( TEST_VISION_STATE::SET_CIRCLE_INNER_RADIUS == _enTestVisionState )
+            if ( TEST_VISION_STATE::IDLE == _enTestVisionState )    {
+                _rectSelectedWindow.x = _ptLeftClickStartPos.x;
+                _rectSelectedWindow.y = _ptLeftClickStartPos.y;
+                _rectSelectedWindow.width = _ptLeftClickEndPos.x - _ptLeftClickStartPos.x;
+                _rectSelectedWindow.height = _ptLeftClickEndPos.y - _ptLeftClickStartPos.y;
+                _drawDisplay();
+            }
+            else if ( TEST_VISION_STATE::SET_CIRCLE_INNER_RADIUS == _enTestVisionState )
                 _fInnerRangeRadius = distanceOf2Point (cv::Point( point.x(), point.y()), _ptCircleCtr);
             else if ( TEST_VISION_STATE::SET_CIRCLE_OUTTER_RADIUS == _enTestVisionState )   {
                 float fRadius = distanceOf2Point (cv::Point( point.x(), point.y()), _ptCircleCtr);
@@ -218,6 +198,39 @@ void VisionView::_drawLearnWindow(cv::Mat &mat)
 {
     cv::rectangle ( mat, _rectLrnWindow, _colorLrnWindow, 2 );
 
+    cv::Scalar scalarMask( 0, 0, 255 );
+    if ( VISION_VIEW_STATE::ADD_MASK == _enState && MASK_SHAPE_POLYLINE == _enMaskShape  )    {
+        if ( _vecPolylinePoint.size() > 1 ) {
+            const cv::Point *pts = (const cv::Point *)Mat(_vecPolylinePoint).data;
+            int npts = Mat(_vecPolylinePoint).rows;
+
+            cv::polylines( mat, &pts, &npts, 1, false, scalarMask, 1 );
+        }
+
+        if ( _vecPolylinePoint.size() > 2 ) {
+            float fDistance = distanceOf2Point( _ptLeftClickEndPos, _vecPolylinePoint[0] );
+            if ( fDistance < 10.f )
+                cv::circle( mat, _vecPolylinePoint[0], 10, scalarMask, 1 );
+        }
+
+        if ( _ptLeftClickStartPos.x > 0 && _ptLeftClickStartPos.y > 0
+             && _ptLeftClickEndPos.x > 0 && _ptLeftClickEndPos.y > 0 )
+            cv::line( mat, _ptLeftClickStartPos, _ptLeftClickEndPos, scalarMask, 1 );
+    }
+
+    cv::Mat copy = mat.clone();
+
+    if ( ! _matMask.empty() )
+        copy.setTo ( Scalar(255, 0, 0), _matMask );
+
+    double alpha = 0.2;
+    cv::addWeighted ( copy, alpha, mat, 1.0 - alpha, 0.0, mat );
+}
+
+void VisionView::_drawSelectedWindow(cv::Mat &mat)
+{
+    cv::rectangle ( mat, _rectSelectedWindow, _colorLrnWindow, 2 );
+
     if ( VISION_VIEW_STATE::ADD_MASK == _enState && MASK_SHAPE_POLYLINE == _enMaskShape  )    {
         if ( _vecPolylinePoint.size() > 1 ) {
             const cv::Point *pts = (const cv::Point *)Mat(_vecPolylinePoint).data;
@@ -248,7 +261,9 @@ void VisionView::_drawLearnWindow(cv::Mat &mat)
 
 void VisionView::_drawTestVisionLibrary(cv::Mat &mat)
 {
-    if (TEST_VISION_STATE::SET_CIRCLE_CTR == _enTestVisionState  ||
+    if ( TEST_VISION_STATE::IDLE == _enTestVisionState )
+        _drawSelectedWindow (mat);
+    else if (TEST_VISION_STATE::SET_CIRCLE_CTR == _enTestVisionState  ||
         TEST_VISION_STATE::SET_CIRCLE_INNER_RADIUS == _enTestVisionState ||
         TEST_VISION_STATE::SET_CIRCLE_OUTTER_RADIUS == _enTestVisionState )
     {
@@ -281,13 +296,28 @@ void VisionView::_drawDisplay()
     auto displayWidth = this->size().width();
     auto displayHeight = this->size().height();
     cv::Mat matZoomResult;
-    if ( ! IsEuqal ( _fZoomFactor, 1.0f ) )       
-        cv::resize( mat, matZoomResult, cv::Size(), _fZoomFactor, _fZoomFactor );        
+    if ( ! IsEuqal ( _fZoomFactor, 1.0f ) )
+        cv::resize( mat, matZoomResult, cv::Size(), _fZoomFactor, _fZoomFactor );
     else
         matZoomResult = mat.clone();
 
+    if ( _rectSelectedWindow.width > 0 && _rectSelectedWindow.height > 0 )  {
+        if ( _rectSelectedWindow.x < 0 ) _rectSelectedWindow.x = 0;
+        if ( _rectSelectedWindow.y < 0 ) _rectSelectedWindow.y = 0;
+        if ( ( _rectSelectedWindow.x + _rectSelectedWindow.width ) > _matDisplay.cols )  _rectSelectedWindow.width = _matDisplay.cols - _rectSelectedWindow.x;
+        if ( ( _rectSelectedWindow.y + _rectSelectedWindow.height ) > _matDisplay.rows )  _rectSelectedWindow.height = _matDisplay.rows - _rectSelectedWindow.y;
+        cv::Mat matSelected ( _matDisplay, _rectSelectedWindow );
+        cv::Mat matResult = _generateDisplayImage ( matSelected );
+        matResult.copyTo ( matSelected );
+    }
+    else
+    {
+        cv::Mat matResult = _generateDisplayImage ( _matDisplay );
+        _matDisplay = matResult;
+    }
+
     _matDisplay = cv::Mat::ones( displayHeight, displayWidth, mat.type() ) * 255;
-    _matDisplay.setTo(cv::Scalar(255,255,255));
+    _matDisplay.setTo(cv::Scalar(255, 255, 255));
 
     if (matZoomResult.cols > displayWidth && matZoomResult.rows > displayHeight)  {
         cv::Rect rectROI((matZoomResult.cols - displayWidth) / 2, (matZoomResult.rows - displayHeight) / 2, displayWidth, displayHeight);
@@ -312,9 +342,24 @@ void VisionView::_drawDisplay()
         matZoomResult.copyTo(matDst);
     }else
         _matDisplay = matZoomResult;
-
-    if ( _matDisplay.channels() == 1 )
-        cvtColor( _matDisplay, _matDisplay, CV_GRAY2BGR);
+    
+    cv::Rect rectChangeROI = _rectSelectedWindow;
+    if ( _rectSelectedWindow.width > 0 && _rectSelectedWindow.height > 0 )  {
+        if ( rectChangeROI.x < displayWidth  / 2 - matZoomResult.cols / 2 ) rectChangeROI.x = displayWidth  / 2 - matZoomResult.cols / 2;
+        if ( rectChangeROI.y < displayHeight / 2 - matZoomResult.rows / 2 ) rectChangeROI.y = displayHeight / 2 - matZoomResult.rows / 2;
+        if ( ( rectChangeROI.x + rectChangeROI.width  ) > ( displayWidth   / 2 + matZoomResult.cols / 2 ) )  rectChangeROI.width  = ( displayWidth   / 2 + matZoomResult.cols / 2 ) - rectChangeROI.x;
+        if ( ( rectChangeROI.y + rectChangeROI.height ) > ( displayHeight  / 2 + matZoomResult.rows / 2 ) )  rectChangeROI.height = ( displayHeight  / 2 + matZoomResult.rows / 2 ) - rectChangeROI.y;
+    }
+    if ( rectChangeROI.width > 0 && rectChangeROI.height > 0 )  {
+        cv::Mat matSelected ( _matDisplay, _rectSelectedWindow );
+        cv::Mat matResult = _generateDisplayImage ( matSelected );
+        matResult.copyTo ( matSelected );
+    }
+    else
+    {
+        cv::Mat matResult = _generateDisplayImage ( _matDisplay );
+        _matDisplay = matResult;
+    }
 
     if (VISION_VIEW_STATE::LEARNING == _enState ||
         VISION_VIEW_STATE::ADD_MASK == _enState)
@@ -378,7 +423,7 @@ void VisionView::swapImage()
     _drawDisplay();
 }
 
-void VisionView::zoomPoint(cv::Point &point, float fZoomFactor)
+void VisionView::_zoomPoint(cv::Point &point, float fZoomFactor)
 {
     auto displayWidth = this->size().width();
     auto displayHeight = this->size().height();
@@ -387,7 +432,7 @@ void VisionView::zoomPoint(cv::Point &point, float fZoomFactor)
     point.y = (point.y - displayHeight / 2) * fZoomFactor + displayHeight / 2;
 }
 
-void VisionView::zoomRect(cv::Rect &rect, float fZoomFactor)
+void VisionView::_zoomRect(cv::Rect &rect, float fZoomFactor)
 {
     auto displayWidth = this->size().width();
     auto displayHeight = this->size().height();
@@ -395,7 +440,7 @@ void VisionView::zoomRect(cv::Rect &rect, float fZoomFactor)
     rect.x = (rect.x - displayWidth / 2)  * fZoomFactor + displayWidth / 2;
     rect.y = (rect.y - displayHeight / 2) * fZoomFactor + displayHeight / 2;
     rect.width *= fZoomFactor;
-    rect.height *= fZoomFactor;   
+    rect.height *= fZoomFactor;
 }
 
 void VisionView::zoomIn()
@@ -404,12 +449,14 @@ void VisionView::zoomIn()
         _fZoomFactor *= 2.f;
 
         if (_enState == VISION_VIEW_STATE::TEST_VISION_LIBRARY)   {
-            zoomPoint ( _ptCircleCtr, 2.f);
+            _zoomPoint ( _ptCircleCtr, 2.f);
             _fInnerRangeRadius *= 2.f;
             _fOutterRangeRadius *= 2.f;
 
             for ( auto &rect : _vecRectSrchWindow)
-                zoomRect ( rect, 2.f);
+                _zoomRect ( rect, 2.f);
+
+            _zoomRect (_rectSelectedWindow, 2.f );
         }
     }
     _drawDisplay();
@@ -421,12 +468,14 @@ void VisionView::zoomOut()
         _fZoomFactor *= 0.5f;
 
         if (_enState == VISION_VIEW_STATE::TEST_VISION_LIBRARY)   {
-            zoomPoint ( _ptCircleCtr, 0.5f);
+            _zoomPoint ( _ptCircleCtr, 0.5f);
             _fInnerRangeRadius *= 0.5f;
             _fOutterRangeRadius *= 0.5f;
 
             for ( auto &rect : _vecRectSrchWindow)
-                zoomRect ( rect, 0.5);
+                _zoomRect ( rect, 0.5f);
+
+            _zoomRect (_rectSelectedWindow, 0.5f );
         }        
     }
     _drawDisplay();
@@ -487,7 +536,7 @@ bool VisionView::isDisplayResultImage() const
 void VisionView::setTestVisionState(TEST_VISION_STATE enState)
 {
     _enTestVisionState = enState;
-    if ( TEST_VISION_STATE::UNDEFINED == _enTestVisionState )   {
+    if ( TEST_VISION_STATE::IDLE == _enTestVisionState )   {
         _ptCircleCtr.x = 0;
         _ptCircleCtr.y = 0;
         _fInnerRangeRadius = 0.f;
@@ -496,6 +545,28 @@ void VisionView::setTestVisionState(TEST_VISION_STATE enState)
 
         _drawDisplay();
     }
+}
+
+void VisionView::setImageDisplayMode(bool bDisplayGrayScale, bool bDisplayBinary)
+{
+    _bDisplayGrayScale = bDisplayGrayScale;
+    _bDisplayBinary    = bDisplayBinary;
+    _drawDisplay();
+}
+
+void VisionView::setRGBRatio(float fRatioR, float fRatioG, float fRatioB)
+{
+    _stRGBRatio.fRatioR = fRatioR;
+    _stRGBRatio.fRatioG = fRatioG;
+    _stRGBRatio.fRatioB = fRatioB;
+    _drawDisplay();
+}
+
+void VisionView::setBinaryThreshold(int nThreshold, bool bReverseThres)
+{
+    _nThreshold = nThreshold;
+    _bReverseThres = bReverseThres;
+    _drawDisplay();
 }
 
 void VisionView::getFitCircleRange(cv::Point &ptCtr, float &fInnterRadius, float &fOutterRadius) const
@@ -540,4 +611,45 @@ PR_Line VisionView::getIntensityCheckLine() const
 void VisionView::setCurrentSrchWindowIndex(int nIndex)
 {
     _nCurrentSrchWindowIndex = nIndex;
+}
+
+cv::Mat VisionView::_generateDisplayImage(const cv::Mat &mat)
+{
+    cv::Mat matResult = mat;
+    if (mat.empty())
+        return matResult;
+
+    if ( _bDisplayGrayScale ) {        
+        PR_COLOR_TO_GRAY_CMD stCmd;
+        PR_COLOR_TO_GRAY_RPY stRpy;
+        stCmd.matInput = mat;
+        stCmd.stRatio = _stRGBRatio;
+        PR_ColorToGray ( &stCmd, &stRpy );
+        cv::Mat matGray = stRpy.matResult;
+
+        if ( _bDisplayBinary )    {
+            matResult = _generateBinaryImage(matGray);
+        }
+        else
+        {
+            matResult = matGray;
+        }
+    }else if ( _bDisplayBinary )    {
+        cv::Mat matGray;
+        cv::cvtColor ( mat, matGray, CV_BGR2GRAY);
+        matResult = _generateBinaryImage(matGray);
+    }
+    
+    if ( matResult.channels() == 1 )  {
+        cvtColor( matResult, matResult, CV_GRAY2BGR);
+    }
+    return matResult;
+}
+
+cv::Mat VisionView::_generateBinaryImage(const cv::Mat &matGray)
+{
+    assert( ! matGray.empty() );
+    cv::Mat matThreshold;
+    cv::threshold(matGray, matThreshold, _nThreshold, PR_MAX_GRAY_LEVEL, _bReverseThres ? THRESH_BINARY_INV : THRESH_BINARY );
+    return matThreshold;
 }

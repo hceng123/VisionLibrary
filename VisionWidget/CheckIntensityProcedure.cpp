@@ -30,7 +30,7 @@ int CheckIntensityProcedure::run(const cv::Mat &mat)
     _pVisionView->setCurrentSrchWindowIndex(0);
 	int iReturn = pMessageBox->exec();
     if ( iReturn != QDialog::Accepted ) {
-        _pVisionView->setTestVisionState(VisionView::TEST_VISION_STATE::UNDEFINED);
+        _pVisionView->setTestVisionState(VisionView::TEST_VISION_STATE::IDLE);
         return ToInt(STATUS::NOK);
     }	
    
@@ -39,13 +39,13 @@ int CheckIntensityProcedure::run(const cv::Mat &mat)
         pMessageBox->SetMessageText1("The input is invalid");
         pMessageBox->SetMessageText2("");
         pMessageBox->exec();
-        _pVisionView->setTestVisionState(VisionView::TEST_VISION_STATE::UNDEFINED);
+        _pVisionView->setTestVisionState(VisionView::TEST_VISION_STATE::IDLE);
         return ToInt(STATUS::NOK);
     }
 
     checkIntensity(mat);
 
-    _pVisionView->setTestVisionState(VisionView::TEST_VISION_STATE::UNDEFINED);
+    _pVisionView->setTestVisionState(VisionView::TEST_VISION_STATE::IDLE);
     return 0;
 }
 

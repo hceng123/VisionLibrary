@@ -23,8 +23,8 @@ namespace AOI
 namespace Vision
 {
 
-#define MARK_FUNCTION_START_TIME    __int64 functionStart = _stopWatch.AbsNow()
-#define MARK_FUNCTION_END_TIME      TimeLog::GetInstance()->addTimeLog( __FUNCTION__, _stopWatch.AbsNow() - functionStart )
+#define MARK_FUNCTION_START_TIME    CStopWatch      stopWatch; __int64 functionStart = stopWatch.AbsNow()
+#define MARK_FUNCTION_END_TIME      TimeLog::GetInstance()->addTimeLog( __FUNCTION__, stopWatch.AbsNow() - functionStart )
 
 /*static*/ OcrTesseractPtr VisionAlgorithm::_ptrOcrTesseract;
 
@@ -92,7 +92,6 @@ VisionStatus VisionAlgorithm::srchTmpl(PR_SRCH_TMPL_CMD *const pFindObjCmd, PR_S
 
     TmplRecord *pRecord = (TmplRecord *)RecordManager::getInstance()->get(pFindObjCmd->nRecordID);
 
-    //__int64 functionStart = _stopWatch.AbsNow();
     MARK_FUNCTION_START_TIME;
     cv::Mat matSrchROI ( pFindObjCmd->mat, pFindObjCmd->rectSrchWindow );
     
@@ -106,7 +105,6 @@ VisionStatus VisionAlgorithm::srchTmpl(PR_SRCH_TMPL_CMD *const pFindObjCmd, PR_S
     cv::Mat matDescriptorScene;
     cv::Mat mask;
     
-    _stopWatch.Start();
     detector->detectAndCompute ( matSrchROI, mask, vecKeypointScene, matDescriptorScene );
     TimeLog::GetInstance()->addTimeLog("detectAndCompute");
 
@@ -120,7 +118,6 @@ VisionStatus VisionAlgorithm::srchTmpl(PR_SRCH_TMPL_CMD *const pFindObjCmd, PR_S
     VectorOfVectorOfDMatch vecVecMatches;
     vecVecMatches.reserve(2000);
 	
-    _stopWatch.Start();
     matcher.knnMatch ( pRecord->getModelDescriptor(), matDescriptorScene, vecVecMatches, 2 );
 	TimeLog::GetInstance()->addTimeLog("knnMatch");
 
@@ -2318,6 +2315,24 @@ VisionStatus VisionAlgorithm::ocr(PR_OCR_CMD *pstCmd, PR_OCR_RPY *pstRpy, bool b
 
     MARK_FUNCTION_END_TIME;    
     return enStatus;
+}
+
+VisionStatus VisionAlgorithm::colorToGray(PR_COLOR_TO_GRAY_CMD *pstCmd, PR_COLOR_TO_GRAY_RPY *pstRpy)
+{
+    assert ( pstCmd != nullptr && pstRpy != nullptr );
+
+    if (pstCmd->matInput.empty()) {
+        WriteLog("Input image is empty");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    std::vector<float> coefficients{ pstCmd->stRatio.fRatioB, pstCmd->stRatio.fRatioG, pstCmd->stRatio.fRatioR };
+    cv::Mat matCoefficients = cv::Mat(coefficients).reshape(1, 1);
+    cv::transform(pstCmd->matInput, pstRpy->matResult, matCoefficients);
+
+    pstRpy->enStatus = VisionStatus::OK;
+    return pstRpy->enStatus;
 }
 
 }
