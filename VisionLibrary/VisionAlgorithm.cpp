@@ -2335,5 +2335,35 @@ VisionStatus VisionAlgorithm::colorToGray(PR_COLOR_TO_GRAY_CMD *pstCmd, PR_COLOR
     return pstRpy->enStatus;
 }
 
+VisionStatus VisionAlgorithm::filter(PR_FILTER_CMD *pstCmd, PR_FILTER_RPY *pstRpy)
+{
+    assert ( pstCmd != nullptr && pstRpy != nullptr );
+
+    if (pstCmd->matInput.empty()) {
+        WriteLog("Input image is empty");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    VisionStatus enStatus = VisionStatus::OK;
+    if ( PR_FILTER_TYPE::NORMALIZED_BOX_FILTER == pstCmd->enType )  {
+        cv::blur( pstCmd->matInput, pstRpy->matResult, pstCmd->szKernel);
+    }else if ( PR_FILTER_TYPE::GAUSSIAN_FILTER == pstCmd->enType )  {
+        cv::GaussianBlur( pstCmd->matInput, pstRpy->matResult, pstCmd->szKernel, pstCmd->dSigmaX, pstCmd->dSigmaY);
+    }else if ( PR_FILTER_TYPE::MEDIAN_FILTER == pstCmd->enType) {
+        cv::medianBlur( pstCmd->matInput, pstRpy->matResult, pstCmd->szKernel.width);
+    }else if ( PR_FILTER_TYPE::MEDIAN_FILTER == pstCmd->enType) {
+        cv::medianBlur( pstCmd->matInput, pstRpy->matResult, pstCmd->szKernel.width);
+    }else if ( PR_FILTER_TYPE::BILATERIAL_FILTER == pstCmd->enType) {
+        //cv::medianBlur( pstCmd->matInput, pstRpy->matResult, pstCmd->szKernel.width);
+        CV_Assert("Not support yet");
+    }else {
+        enStatus = VisionStatus::INVALID_PARAM;
+    }
+
+    pstRpy->enStatus = enStatus;
+    return pstRpy->enStatus;
+}
+
 }
 }

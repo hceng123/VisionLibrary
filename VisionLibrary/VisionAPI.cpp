@@ -229,5 +229,18 @@ VisionAPI VisionStatus  PR_ColorToGray(PR_COLOR_TO_GRAY_CMD *pstCmd, PR_COLOR_TO
     return VisionAlgorithm::colorToGray ( pstCmd, pstRpy );
 }
 
+VisionAPI VisionStatus  PR_Filter(PR_FILTER_CMD *pstCmd, PR_FILTER_RPY *pstRpy)
+{
+    try
+    {
+        return VisionAlgorithm::filter( pstCmd, pstRpy );
+    }catch(std::exception &e)
+    {
+        WriteLog(e.what());
+        pstRpy->enStatus = VisionStatus::OPENCV_EXCEPTION;
+        return VisionStatus::OPENCV_EXCEPTION;
+    }
+}
+
 }
 }

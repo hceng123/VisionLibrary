@@ -964,17 +964,6 @@
     <property name="title">
      <string>Pre Process Image</string>
     </property>
-    <widget class="QWidget" name="horizontalLayoutWidget">
-     <property name="geometry">
-      <rect>
-       <x>10</x>
-       <y>50</y>
-       <width>561</width>
-       <height>281</height>
-      </rect>
-     </property>
-     <layout class="QHBoxLayout" name="horizontalLayout"/>
-    </widget>
     <widget class="QLabel" name="labelSelectPrecessor">
      <property name="geometry">
       <rect>
@@ -1025,6 +1014,24 @@
        <height>30</height>
       </size>
      </property>
+    </widget>
+    <widget class="QWidget" name="verticalLayoutWidget">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>60</y>
+       <width>561</width>
+       <height>271</height>
+      </rect>
+     </property>
+     <layout class="QVBoxLayout" name="verticalLayout">
+      <property name="spacing">
+       <number>0</number>
+      </property>
+      <property name="sizeConstraint">
+       <enum>QLayout::SetMinimumSize</enum>
+      </property>
+     </layout>
     </widget>
    </widget>
    <widget class="QCheckBox" name="checkBoxReverseThres">

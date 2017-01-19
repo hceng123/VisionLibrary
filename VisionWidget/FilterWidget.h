@@ -11,6 +11,9 @@ public:
     FilterWidget(QWidget *parent = Q_NULLPTR);
     ~FilterWidget();
 
+private slots:
+    void on_btnRun_clicked();
+
 private:
     Ui::FilterWidget ui;
 };

@@ -172,7 +172,7 @@ void VisionWidget::on_srchFiducialBtn_clicked()
 
 void VisionWidget::on_addPreProcessorBtn_clicked()
 {
-    ui.horizontalLayout->addWidget(new FilterWidget(this));
+    ui.verticalLayout->addWidget(new FilterWidget(this));
 }
 
 void VisionWidget::on_checkBoxDisplayGrayScale_clicked(bool checked)

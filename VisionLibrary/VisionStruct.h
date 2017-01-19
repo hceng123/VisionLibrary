@@ -399,6 +399,21 @@ struct PR_COLOR_TO_GRAY_RPY
     cv::Mat                 matResult;
 };
 
+struct PR_FILTER_CMD
+{
+    cv::Mat                 matInput;
+    PR_FILTER_TYPE          enType;
+    cv::Size                szKernel;
+    double                  dSigmaX;    //Only used when filter type is Guassian.
+    double                  dSigmaY;    //Only used when filter type is Guassian.
+};
+
+struct PR_FILTER_RPY
+{
+    VisionStatus            enStatus;
+    cv::Mat                 matResult;
+};
+
 }
 }
 #endif
