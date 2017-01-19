@@ -6,5 +6,6 @@
         <file>Image/TB_Config.png</file>
         <file>Image/TB_Swap.png</file>
         <file>Image/VisionWidget.png</file>
+        <file>Image/Add.png</file>
     </qresource>
 </RCC>

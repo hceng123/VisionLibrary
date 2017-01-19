@@ -6,6 +6,7 @@
 #include "OcrProcedure.h"
 #include "SrchFiducialProcedure.h"
 #include "constants.h"
+#include "FilterWidget.h"
 #include <QFileDialog>
 #include <QMessageBox>
 
@@ -167,6 +168,11 @@ void VisionWidget::on_srchFiducialBtn_clicked()
     {
         ui.visionView->setResultMat(procedure.getResultMat());
     }
+}
+
+void VisionWidget::on_addPreProcessorBtn_clicked()
+{
+    ui.horizontalLayout->addWidget(new FilterWidget(this));
 }
 
 void VisionWidget::on_checkBoxDisplayGrayScale_clicked(bool checked)

@@ -20,6 +20,7 @@ private slots:
     void on_fitRectBtn_clicked();
     void on_ocrBtn_clicked();
     void on_srchFiducialBtn_clicked();
+    void on_addPreProcessorBtn_clicked();
     void on_checkBoxDisplayGrayScale_clicked(bool checked);
     void on_checkBoxDisplayBinary_clicked(bool checked);
     void on_checkBoxReverseThres_clicked(bool checked);
@@ -28,6 +29,7 @@ private slots:
     void on_lineEditRRatio_returnPressed();
     void on_lineEditGRatio_returnPressed();
     void on_lineEditBRatio_returnPressed();
+
 protected:
     bool checkDisplayImage();
 private:
