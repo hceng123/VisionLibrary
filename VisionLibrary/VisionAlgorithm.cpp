@@ -2249,7 +2249,7 @@ VisionStatus VisionAlgorithm::ocr(PR_OCR_CMD *pstCmd, PR_OCR_RPY *pstRpy, bool b
     if ( pstCmd->rectROI.x < 0 || pstCmd->rectROI.y < 0 || 
         ( pstCmd->rectROI.x + pstCmd->rectROI.width ) > pstCmd->matInput.cols ||
         ( pstCmd->rectROI.y + pstCmd->rectROI.height ) > pstCmd->matInput.rows )    {
-        WriteLog("The fit circle search range is invalid");
+        WriteLog("The OCR search range is invalid");
         pstRpy->nStatus = ToInt32 ( VisionStatus::INVALID_PARAM );
         return VisionStatus::INVALID_PARAM;
     }
@@ -2338,6 +2338,7 @@ VisionStatus VisionAlgorithm::colorToGray(PR_COLOR_TO_GRAY_CMD *pstCmd, PR_COLOR
 VisionStatus VisionAlgorithm::filter(PR_FILTER_CMD *pstCmd, PR_FILTER_RPY *pstRpy)
 {
     assert ( pstCmd != nullptr && pstRpy != nullptr );
+    char charrMsg [ 1000 ];
 
     if (pstCmd->matInput.empty()) {
         WriteLog("Input image is empty");
@@ -2345,21 +2346,52 @@ VisionStatus VisionAlgorithm::filter(PR_FILTER_CMD *pstCmd, PR_FILTER_RPY *pstRp
         return pstRpy->enStatus;
     }
 
+    if ( pstCmd->rectROI.x < 0 || pstCmd->rectROI.y < 0 || 
+        ( pstCmd->rectROI.x + pstCmd->rectROI.width ) > pstCmd->matInput.cols ||
+        ( pstCmd->rectROI.y + pstCmd->rectROI.height ) > pstCmd->matInput.rows )    {
+        WriteLog("The Fitting range is invalid");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return VisionStatus::INVALID_PARAM;
+    }
+
+    if ( PR_FILTER_TYPE::GAUSSIAN_FILTER == pstCmd->enType &&
+        ( ( pstCmd->szKernel.width % 2 != 1 ) || ( pstCmd->szKernel.height % 2 != 1 ) ) )   {
+        _snprintf(charrMsg, sizeof (charrMsg), "Guassian filter kernel size ( %d, %d ) is invalid", pstCmd->szKernel.width, pstCmd->szKernel.height );
+        WriteLog ( charrMsg );
+        pstRpy->enStatus = VisionStatus::GUASSIAN_FILTER_KERNEL_INVALID;
+        return VisionStatus::GUASSIAN_FILTER_KERNEL_INVALID;
+    }
+
+    if ( PR_FILTER_TYPE::MEDIAN_FILTER == pstCmd->enType &&
+        ( ( pstCmd->szKernel.width % 2 != 1 ) || ( pstCmd->szKernel.height % 2 != 1 ) ) )   {
+        _snprintf(charrMsg, sizeof (charrMsg), "Median filter kernel size ( %d, %d ) is invalid", pstCmd->szKernel.width, pstCmd->szKernel.height );
+        WriteLog ( charrMsg );
+        pstRpy->enStatus = VisionStatus::MEDIAN_FILTER_KERNEL_INVALID;
+        return VisionStatus::MEDIAN_FILTER_KERNEL_INVALID;
+    }
+
+    MARK_FUNCTION_START_TIME;
+
+    pstRpy->matResult = pstCmd->matInput.clone();
+    cv::Mat matROI ( pstRpy->matResult, pstCmd->rectROI );
+
     VisionStatus enStatus = VisionStatus::OK;
     if ( PR_FILTER_TYPE::NORMALIZED_BOX_FILTER == pstCmd->enType )  {
-        cv::blur( pstCmd->matInput, pstRpy->matResult, pstCmd->szKernel);
+        cv::blur( matROI, matROI, pstCmd->szKernel);
     }else if ( PR_FILTER_TYPE::GAUSSIAN_FILTER == pstCmd->enType )  {
-        cv::GaussianBlur( pstCmd->matInput, pstRpy->matResult, pstCmd->szKernel, pstCmd->dSigmaX, pstCmd->dSigmaY);
+        cv::GaussianBlur( matROI, matROI, pstCmd->szKernel, pstCmd->dSigmaX, pstCmd->dSigmaY);
     }else if ( PR_FILTER_TYPE::MEDIAN_FILTER == pstCmd->enType) {
-        cv::medianBlur( pstCmd->matInput, pstRpy->matResult, pstCmd->szKernel.width);
+        cv::medianBlur( matROI, matROI, pstCmd->szKernel.width);
     }else if ( PR_FILTER_TYPE::MEDIAN_FILTER == pstCmd->enType) {
-        cv::medianBlur( pstCmd->matInput, pstRpy->matResult, pstCmd->szKernel.width);
+        cv::medianBlur( matROI, matROI, pstCmd->szKernel.width);
     }else if ( PR_FILTER_TYPE::BILATERIAL_FILTER == pstCmd->enType) {
         //cv::medianBlur( pstCmd->matInput, pstRpy->matResult, pstCmd->szKernel.width);
         CV_Assert("Not support yet");
     }else {
         enStatus = VisionStatus::INVALID_PARAM;
     }
+
+    MARK_FUNCTION_END_TIME;
 
     pstRpy->enStatus = enStatus;
     return pstRpy->enStatus;

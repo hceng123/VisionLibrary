@@ -596,6 +596,23 @@ VectorOfRect VisionView::getVecSrchWindow() const
     return vecResult;
 }
 
+cv::Rect VisionView::getSelectedWindow() const
+{
+    auto displayWidth = this->size().width();
+    auto displayHeight = this->size().height();
+    auto rect = _rectSelectedWindow;
+    if ( rect.width <= 0 || rect.height <= 0 )  {
+        rect = cv::Rect ( 0, 0, _mat.cols, _mat.rows );
+        return rect;
+    }
+
+    rect.x = (rect.x - (displayWidth  - _mat.cols * _fZoomFactor) / 2) / _fZoomFactor;
+    rect.y = (rect.y - (displayHeight - _mat.rows * _fZoomFactor) / 2) / _fZoomFactor;
+    rect.width  /= _fZoomFactor;
+    rect.height /= _fZoomFactor;
+    return rect;
+}
+
 PR_Line VisionView::getIntensityCheckLine() const
 {
     auto displayWidth = this->size().width();

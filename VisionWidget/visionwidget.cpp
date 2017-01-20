@@ -73,6 +73,7 @@ void VisionWidget::on_selectImageBtn_clicked()
     else
         _matOriginal = cv::imread( fileNames[0].toStdString() );
     ui.visionView->setMat( _matOriginal );
+    _matCurrent = _matOriginal;
     _sourceImagePath = fileNames[0].toStdString();
 }
 
@@ -166,13 +167,16 @@ void VisionWidget::on_srchFiducialBtn_clicked()
     int nStatus = procedure.run(_sourceImagePath);
     if ( ToInt(VisionStatus::OK) == nStatus )
     {
-        ui.visionView->setResultMat(procedure.getResultMat());
+        ui.visionView->setResultMat ( procedure.getResultMat() );
     }
 }
 
 void VisionWidget::on_addPreProcessorBtn_clicked()
 {
-    ui.verticalLayout->addWidget(new FilterWidget(this));
+    FilterWidget *pFW = new FilterWidget(this);
+    pFW->setParent(this);
+    pFW->setVisionView ( ui.visionView );
+    ui.verticalLayout->addWidget(pFW);
 }
 
 void VisionWidget::on_checkBoxDisplayGrayScale_clicked(bool checked)
@@ -228,20 +232,36 @@ void VisionWidget::on_lineEditBinaryThreshold_returnPressed()
 void VisionWidget::on_lineEditRRatio_returnPressed()
 {
     ui.visionView->setRGBRatio ( ui.lineEditRRatio->text().toFloat(),
-                                     ui.lineEditGRatio->text().toFloat(),
-                                     ui.lineEditBRatio->text().toFloat());
+                                 ui.lineEditGRatio->text().toFloat(),
+                                 ui.lineEditBRatio->text().toFloat());
 }
 
 void VisionWidget::on_lineEditGRatio_returnPressed()
 {
     ui.visionView->setRGBRatio ( ui.lineEditRRatio->text().toFloat(),
-                                     ui.lineEditGRatio->text().toFloat(),
-                                     ui.lineEditBRatio->text().toFloat());
+                                 ui.lineEditGRatio->text().toFloat(),
+                                 ui.lineEditBRatio->text().toFloat());
 }
 
 void VisionWidget::on_lineEditBRatio_returnPressed()
 {
     ui.visionView->setRGBRatio ( ui.lineEditRRatio->text().toFloat(),
-                                     ui.lineEditGRatio->text().toFloat(),
-                                     ui.lineEditBRatio->text().toFloat());
+                                 ui.lineEditGRatio->text().toFloat(),
+                                 ui.lineEditBRatio->text().toFloat());
+}
+
+cv::Mat VisionWidget::getOriginalMat() const
+{
+    return _matOriginal;
+}
+
+cv::Mat VisionWidget::getCurrentMat() const
+{
+    return _matCurrent;
+}
+
+void VisionWidget::setCurrentMat(const cv::Mat &mat)
+{
+    _matCurrent = mat;
+    ui.visionView->setMat ( _matCurrent );
 }

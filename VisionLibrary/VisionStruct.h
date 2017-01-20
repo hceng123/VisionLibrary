@@ -23,7 +23,7 @@ using ListOfPoint = std::list<cv::Point2f>;
 using VectorOfListOfPoint = std::vector<ListOfPoint>;
 
 
-#define ToInt32(param)      (static_cast<Int32>(param))
+#define ToInt32(param)      (static_cast<AOI::Int32>(param))
 #define ToFloat(param)      (static_cast<float>(param))
 
 struct PR_VERSION_INFO
@@ -402,6 +402,7 @@ struct PR_COLOR_TO_GRAY_RPY
 struct PR_FILTER_CMD
 {
     cv::Mat                 matInput;
+    cv::Rect                rectROI;
     PR_FILTER_TYPE          enType;
     cv::Size                szKernel;
     double                  dSigmaX;    //Only used when filter type is Guassian.

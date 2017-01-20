@@ -84,6 +84,7 @@ public:
     void setRGBRatio(float fRatioR, float fRatioG, float fRatioB);
     void setBinaryThreshold(int nThreshold, bool bReverseThres);
     VectorOfRect getVecSrchWindow( ) const;
+    cv::Rect getSelectedWindow() const;
     PR_Line getIntensityCheckLine() const;
     static float distanceOf2Point(const cv::Point &pt1, const cv::Point &pt2);    
 protected:
