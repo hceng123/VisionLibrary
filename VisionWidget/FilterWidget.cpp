@@ -6,7 +6,7 @@
 using namespace AOI::Vision;
 
 FilterWidget::FilterWidget(QWidget *parent)
-    : QWidget(parent)
+    : BaseProcessWidget(parent)
 {
     ui.setupUi(this);
 
@@ -15,15 +15,18 @@ FilterWidget::FilterWidget(QWidget *parent)
     ui.labelSigmaY->setVisible ( bSigmaVisible );
     ui.lineEditSigmaX->setVisible ( bSigmaVisible );
     ui.lineEditSigmaY->setVisible ( bSigmaVisible );
+
+    bool bBilaterialFilter = ( ToInt32 ( PR_FILTER_TYPE::GAUSSIAN_FILTER ) == ui.cbFilterType->currentIndex() );
+    ui.labelDiameter->setVisible ( bBilaterialFilter );
+    ui.lineEditDiameter->setVisible ( bBilaterialFilter );
+    ui.labelSigmaColor->setVisible ( bBilaterialFilter );
+    ui.lineEditSigmaColor->setVisible ( bBilaterialFilter );
+    ui.labelSigmaSpace->setVisible ( bBilaterialFilter );
+    ui.lineEditSigmaSpace->setVisible ( bBilaterialFilter );
 }
 
 FilterWidget::~FilterWidget()
 {
-}
-
-void FilterWidget::setVisionView(VisionView* pVisionView)
-{
-    _pVisionView = pVisionView;
 }
 
 void FilterWidget::on_btnRun_clicked()
@@ -46,6 +49,9 @@ void FilterWidget::on_btnRun_clicked()
     stCmd.szKernel.height = ui.lineEditKernalSizeY->text().toInt();
     stCmd.dSigmaX = ui.lineEditSigmaX->text().toDouble();
     stCmd.dSigmaY = ui.lineEditSigmaY->text().toDouble();
+    stCmd.nDiameter = ui.lineEditDiameter->text().toInt();
+    stCmd.dSigmaColor = ui.lineEditSigmaColor->text().toDouble();
+    stCmd.dSigmaSpace = ui.lineEditSigmaSpace->text().toDouble();
 
     PR_FILTER_RPY stRpy;
     if ( VisionStatus::OK == PR_Filter(&stCmd, &stRpy) )    {
@@ -61,10 +67,23 @@ void FilterWidget::on_btnRun_clicked()
 
 void FilterWidget::on_cbFilterType_currentIndexChanged(int index)
 {
+    bool bKernelSizeVisible = ( ToInt32 ( PR_FILTER_TYPE::BILATERIAL_FILTER ) != index );
+    ui.labelKernelSize->setVisible ( bKernelSizeVisible );
+    ui.lineEditKernalSizeX->setVisible ( bKernelSizeVisible );
+    ui.lineEditKernalSizeY->setVisible ( bKernelSizeVisible );
+
     //using namespace AOI;
     bool bSigmaVisible = ( ToInt32 ( PR_FILTER_TYPE::GAUSSIAN_FILTER ) == index );
     ui.labelSigmaX->setVisible ( bSigmaVisible );
     ui.labelSigmaY->setVisible ( bSigmaVisible );
     ui.lineEditSigmaX->setVisible ( bSigmaVisible );
     ui.lineEditSigmaY->setVisible ( bSigmaVisible );
+
+    bool bBilaterialFilter = ( ToInt32 ( PR_FILTER_TYPE::BILATERIAL_FILTER ) == index );
+    ui.labelDiameter->setVisible ( bBilaterialFilter );
+    ui.lineEditDiameter->setVisible ( bBilaterialFilter );
+    ui.labelSigmaColor->setVisible ( bBilaterialFilter );
+    ui.lineEditSigmaColor->setVisible ( bBilaterialFilter );
+    ui.labelSigmaSpace->setVisible ( bBilaterialFilter );
+    ui.lineEditSigmaSpace->setVisible ( bBilaterialFilter );
 }

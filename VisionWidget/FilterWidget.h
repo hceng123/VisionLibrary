@@ -2,21 +2,19 @@
 
 #include <QWidget>
 #include "ui_FilterWidget.h"
-#include "visionview.h"
+#include "BaseProcessWidget.h"
 
-class FilterWidget : public QWidget
+class FilterWidget : public BaseProcessWidget
 {
     Q_OBJECT
 
 public:
     FilterWidget(QWidget *parent = Q_NULLPTR);
     ~FilterWidget();
-    void setVisionView(VisionView* pVisionView);
 private slots:
     void on_btnRun_clicked();
     void on_cbFilterType_currentIndexChanged(int index);
 
 private:
     Ui::FilterWidget    ui;
-    VisionView*          _pVisionView;
 };

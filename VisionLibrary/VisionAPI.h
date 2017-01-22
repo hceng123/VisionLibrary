@@ -36,6 +36,8 @@ VisionAPI VisionStatus  PR_Ocr(PR_OCR_CMD *pstCmd, PR_OCR_RPY *pstRpy);
 VisionAPI VisionStatus  PR_PointLineDistance(PR_POINT_LINE_DISTANCE_CMD *pstCmd, PR_POINT_LINE_DISTANCE_RPY *pstRpy);
 VisionAPI VisionStatus  PR_ColorToGray(PR_COLOR_TO_GRAY_CMD *pstCmd, PR_COLOR_TO_GRAY_RPY *pstRpy);
 VisionAPI VisionStatus  PR_Filter(PR_FILTER_CMD *pstCmd, PR_FILTER_RPY *pstRpy);
+VisionAPI VisionStatus  PR_AutoThreshold(PR_AUTO_THRESHOLD_CMD *pstCmd, PR_AUTO_THRESHOLD_RPY *pstRpy);
+VisionAPI VisionStatus  PR_RemoveCC(PR_REMOVE_CC_CMD *pstCmd, PR_REMOVE_CC_RPY *pstRpy);
 
 #pragma warning(disable:4251)
 

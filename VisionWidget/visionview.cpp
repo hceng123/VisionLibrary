@@ -74,32 +74,35 @@ void VisionView::mouseReleaseEvent(QMouseEvent *event)
         _bLeftButtonDown = false;
 
         QPoint qPoint = event->pos();
-
         cv::Point ptCV(qPoint.x(), qPoint.y() );
+
         if ( VISION_VIEW_STATE::ADD_MASK == _enState && MASK_SHAPE_POLYLINE == _enMaskShape )    {
-            bool bAddPolylineMask = false;
+            bool bPolygonFinished = false;
             if ( _vecPolylinePoint.size() > 2 ) {
                 float fDistance = distanceOf2Point( ptCV, _vecPolylinePoint[0] );
                 if ( fDistance < 10.f ) {
                     ptCV = _vecPolylinePoint[0];
-                    bAddPolylineMask = true;
+                    bPolygonFinished = true;
                 }
             }
             _vecPolylinePoint.push_back(ptCV);
-            if ( bAddPolylineMask ) {
+            if ( bPolygonFinished ) {
                 const cv::Point *pts = (const cv::Point *)Mat(_vecPolylinePoint).data;
                 int npts = Mat(_vecPolylinePoint).rows;
 
-                cv::fillPoly( _matMask, &pts, &npts, 1, Scalar ( 255, 0 , 0 ) );
+                if ( MASK_EDIT_STATE::MASK_EDIT_ADD == _enMaskEditState )
+                    cv::fillPoly( _matMask, &pts, &npts, 1, Scalar ( 255, 255 , 255 ) );
+                else
+                    cv::fillPoly( _matMask, &pts, &npts, 1, Scalar ( 0, 0 , 0 ) );
 
                 _vecPolylinePoint.clear();
                 _ptLeftClickStartPos = Point(0,0);
                 _ptLeftClickEndPos = Point(0,0);
             }
         }else if ( VISION_VIEW_STATE::TEST_VISION_LIBRARY == _enState && TEST_VISION_STATE::SET_CIRCLE_CTR == _enTestVisionState ) {
-            _ptCircleCtr = cv::Point ( event->pos().x(), event->pos().y() );
-            _drawDisplay();
+            _ptCircleCtr = cv::Point ( event->pos().x(), event->pos().y() );            
         }
+        _drawDisplay();
     }else if ( event->button() == Qt::MidButton )   {
         QMessageBox msgBox;
         msgBox.setText("Middle button single click");
@@ -221,7 +224,7 @@ void VisionView::_drawLearnWindow(cv::Mat &mat)
     cv::Mat copy = mat.clone();
 
     if ( ! _matMask.empty() )
-        copy.setTo ( Scalar(255, 0, 0), _matMask );
+        copy.setTo ( scalarMask, _matMask );
 
     double alpha = 0.2;
     cv::addWeighted ( copy, alpha, mat, 1.0 - alpha, 0.0, mat );
@@ -230,30 +233,30 @@ void VisionView::_drawLearnWindow(cv::Mat &mat)
 void VisionView::_drawSelectedWindow(cv::Mat &mat)
 {
     cv::rectangle ( mat, _rectSelectedWindow, _colorLrnWindow, 2 );
-
+    cv::Scalar scalarMask(0, 0, 255);
     if ( VISION_VIEW_STATE::ADD_MASK == _enState && MASK_SHAPE_POLYLINE == _enMaskShape  )    {
         if ( _vecPolylinePoint.size() > 1 ) {
             const cv::Point *pts = (const cv::Point *)Mat(_vecPolylinePoint).data;
             int npts = Mat(_vecPolylinePoint).rows;
 
-            cv::polylines( mat, &pts, &npts, 1, false, Scalar ( 255, 0 , 0 ), 1 );
+            cv::polylines( mat, &pts, &npts, 1, false, scalarMask , 1 );
         }
 
         if ( _vecPolylinePoint.size() > 2 ) {
             float fDistance = distanceOf2Point( _ptLeftClickEndPos, _vecPolylinePoint[0] );
             if ( fDistance < 10.f )
-                cv::circle( mat, _vecPolylinePoint[0], 10, Scalar ( 255, 0, 0 ), 1 );
+                cv::circle( mat, _vecPolylinePoint[0], 10, scalarMask, 1 );
         }
 
         if ( _ptLeftClickStartPos.x > 0 && _ptLeftClickStartPos.y > 0
              && _ptLeftClickEndPos.x > 0 && _ptLeftClickEndPos.y > 0 )
-            cv::line( mat, _ptLeftClickStartPos, _ptLeftClickEndPos, Scalar ( 255, 0, 0 ), 1 );
+            cv::line( mat, _ptLeftClickStartPos, _ptLeftClickEndPos, scalarMask, 1 );
     }
 
     cv::Mat copy = mat.clone();
 
     if ( ! _matMask.empty() )
-        copy.setTo ( Scalar(255, 0, 0), _matMask );
+        copy.setTo ( scalarMask, _matMask );
 
     double alpha = 0.2;
     cv::addWeighted ( copy, alpha, mat, 1.0 - alpha, 0.0, mat );
@@ -361,10 +364,10 @@ void VisionView::_drawDisplay()
         _matDisplay = matResult;
     }
 
-    if (VISION_VIEW_STATE::LEARNING == _enState ||
-        VISION_VIEW_STATE::ADD_MASK == _enState)
-        _drawLearnWindow ( _matDisplay );
-    else if ( VISION_VIEW_STATE::TEST_VISION_LIBRARY == _enState )
+    //if (VISION_VIEW_STATE::LEARNING == _enState ||
+    //    VISION_VIEW_STATE::ADD_MASK == _enState)
+    //    _drawLearnWindow ( _matDisplay );
+    //else if ( VISION_VIEW_STATE::TEST_VISION_LIBRARY == _enState )
         _drawTestVisionLibrary ( _matDisplay );
 
     cvtColor( _matDisplay, _matDisplay, CV_BGR2RGB);
@@ -533,6 +536,11 @@ bool VisionView::isDisplayResultImage() const
     return _bDisplayResultImage;
 }
 
+bool VisionView::isDisplayGrayScale() const
+{
+    return _bDisplayGrayScale;
+}
+
 void VisionView::setTestVisionState(TEST_VISION_STATE enState)
 {
     _enTestVisionState = enState;
@@ -560,6 +568,13 @@ void VisionView::setRGBRatio(float fRatioR, float fRatioG, float fRatioB)
     _stRGBRatio.fRatioG = fRatioG;
     _stRGBRatio.fRatioB = fRatioB;
     _drawDisplay();
+}
+
+void VisionView::getRGBRatio(float &fRatioR, float &fRatioG, float &fRatioB)
+{
+    fRatioR = _stRGBRatio.fRatioR;
+    fRatioG = _stRGBRatio.fRatioG;
+    fRatioB = _stRGBRatio.fRatioB;
 }
 
 void VisionView::setBinaryThreshold(int nThreshold, bool bReverseThres)
@@ -636,7 +651,7 @@ cv::Mat VisionView::_generateDisplayImage(const cv::Mat &mat)
     if (mat.empty())
         return matResult;
 
-    if ( _bDisplayGrayScale ) {        
+    if ( _bDisplayGrayScale ) {
         PR_COLOR_TO_GRAY_CMD stCmd;
         PR_COLOR_TO_GRAY_RPY stRpy;
         stCmd.matInput = mat;
@@ -653,12 +668,12 @@ cv::Mat VisionView::_generateDisplayImage(const cv::Mat &mat)
         }
     }else if ( _bDisplayBinary )    {
         cv::Mat matGray;
-        cv::cvtColor ( mat, matGray, CV_BGR2GRAY);
-        matResult = _generateBinaryImage(matGray);
+        cv::cvtColor ( mat, matGray, CV_BGR2GRAY );
+        matResult = _generateBinaryImage ( matGray );
     }
     
     if ( matResult.channels() == 1 )  {
-        cvtColor( matResult, matResult, CV_GRAY2BGR);
+        cvtColor( matResult, matResult, CV_GRAY2BGR );
     }
     return matResult;
 }

@@ -964,64 +964,13 @@
     <property name="title">
      <string>Pre Process Image</string>
     </property>
-    <widget class="QLabel" name="labelSelectPrecessor">
-     <property name="geometry">
-      <rect>
-       <x>20</x>
-       <y>20</y>
-       <width>81</width>
-       <height>16</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>Select Precessor</string>
-     </property>
-    </widget>
-    <widget class="QComboBox" name="comboBoxPreProcessor">
-     <property name="geometry">
-      <rect>
-       <x>110</x>
-       <y>20</y>
-       <width>91</width>
-       <height>22</height>
-      </rect>
-     </property>
-     <item>
-      <property name="text">
-       <string>Filter</string>
-      </property>
-     </item>
-    </widget>
-    <widget class="QPushButton" name="addPreProcessorBtn">
-     <property name="geometry">
-      <rect>
-       <x>210</x>
-       <y>10</y>
-       <width>35</width>
-       <height>35</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string/>
-     </property>
-     <property name="icon">
-      <iconset resource="visionwidget.qrc">
-       <normaloff>:/VisionWidget/Image/Add.png</normaloff>:/VisionWidget/Image/Add.png</iconset>
-     </property>
-     <property name="iconSize">
-      <size>
-       <width>30</width>
-       <height>30</height>
-      </size>
-     </property>
-    </widget>
     <widget class="QWidget" name="verticalLayoutWidget">
      <property name="geometry">
       <rect>
        <x>10</x>
-       <y>60</y>
+       <y>20</y>
        <width>561</width>
-       <height>271</height>
+       <height>321</height>
       </rect>
      </property>
      <layout class="QVBoxLayout" name="verticalLayout">

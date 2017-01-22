@@ -1,5 +1,6 @@
 #include "VisionViewToolBox.h"
 #include "ui_visionviewtoolbox.h"
+#include <QFileDialog>
 
 VisionViewToolBox::VisionViewToolBox(QWidget *parent) :
     QWidget(parent)
@@ -47,4 +48,24 @@ void VisionViewToolBox::on_toolBoxButton_clicked()
     _pVisionToolDialog->show();
     _pVisionToolDialog->raise();
     _pVisionToolDialog->activateWindow();
+}
+
+void VisionViewToolBox::on_saveImageButton_clicked()
+{
+    cv::Mat mat;
+    mat = _pVisionView->getMat();
+    if ( mat.empty() )
+        return;
+
+    QFileDialog dialog(this);
+    dialog.setFileMode(QFileDialog::AnyFile);
+    dialog.setAcceptMode(QFileDialog::AcceptSave);
+    dialog.setNameFilter(tr("Image Files (*.png *.jpg *.bmp)"));
+    dialog.setViewMode(QFileDialog::Detail);
+    QStringList fileNames;
+    if (dialog.exec())  {
+        fileNames = dialog.selectedFiles();
+    }else
+        return;
+    cv::imwrite( fileNames[0].toStdString(), mat );
 }

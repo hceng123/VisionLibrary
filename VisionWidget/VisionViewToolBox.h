@@ -24,7 +24,7 @@ private slots:
     void on_zoomInButton_clicked();
     void on_zoomOutButton_clicked();
     void on_toolBoxButton_clicked();
-
+    void on_saveImageButton_clicked();
 private:
     Ui::VisionViewToolBox                   *ui;
     VisionView                              *_pVisionView;

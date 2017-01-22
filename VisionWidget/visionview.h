@@ -78,10 +78,12 @@ public:
     cv::Mat getMat() const;
     void setResultMat(const cv::Mat &mat);
     bool isDisplayResultImage() const;
+    bool isDisplayGrayScale() const;
     void setCurrentSrchWindowIndex(int nIndex);
     void getFitCircleRange(cv::Point &ptCtr, float &fInnterRadius, float &fOutterRadius) const;
     void setImageDisplayMode(bool bDisplayGrayScale, bool bDisplayBinary);
     void setRGBRatio(float fRatioR, float fRatioG, float fRatioB);
+    void getRGBRatio(float &fRatioR, float &fRatioG, float &fRatioB);
     void setBinaryThreshold(int nThreshold, bool bReverseThres);
     VectorOfRect getVecSrchWindow( ) const;
     cv::Rect getSelectedWindow() const;

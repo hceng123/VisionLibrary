@@ -6,7 +6,6 @@
 #include "OcrProcedure.h"
 #include "SrchFiducialProcedure.h"
 #include "constants.h"
-#include "FilterWidget.h"
 #include <QFileDialog>
 #include <QMessageBox>
 
@@ -20,7 +19,7 @@ VisionWidget::VisionWidget(QWidget *parent)
 
     ui.visionViewToolBox->SetVisionView(ui.visionView);
     _ptrIntValidator    = std::make_unique<QIntValidator>(1,100);
-    _ptrThresValidator  = std::make_unique<QIntValidator>(1,255);
+    _ptrThresValidator  = std::make_unique<QIntValidator>(1, PR_MAX_GRAY_LEVEL);
     _ptrDoubleValidator = std::make_unique<QDoubleValidator>(0, 1, 3);
     ui.lineEditFitCircleErrTol->setValidator(_ptrIntValidator.get() );
     ui.lineEditRRatio->setValidator( _ptrDoubleValidator.get() );
@@ -28,6 +27,18 @@ VisionWidget::VisionWidget(QWidget *parent)
     ui.lineEditBRatio->setValidator( _ptrDoubleValidator.get() );
     ui.lineEditBinaryThreshold->setValidator(_ptrThresValidator.get());
     ui.visionView->setMachineState(VisionView::VISION_VIEW_STATE::TEST_VISION_LIBRARY);
+
+    _ptrGrayScaleWidget = std::make_unique<GrayScaleWidget>(this);
+    _ptrGrayScaleWidget->setVisionView ( ui.visionView );
+    ui.verticalLayout->addWidget(_ptrGrayScaleWidget.get());
+
+    _ptrFilterWidget = std::make_unique<FilterWidget>(this);
+    _ptrFilterWidget->setVisionView ( ui.visionView );
+    ui.verticalLayout->addWidget(_ptrFilterWidget.get());
+
+    _ptrThresholdWidget = std::make_unique<ThresholdWidget>(this);
+    _ptrThresholdWidget->setVisionView ( ui.visionView );
+    ui.verticalLayout->addWidget(_ptrThresholdWidget.get());
 }
 
 VisionWidget::~VisionWidget()
@@ -81,6 +92,7 @@ void VisionWidget::on_fitCircleBtn_clicked()
 {
     if ( ! checkDisplayImage() )
         return;
+
 	FitCircleProcedure procedure(ui.visionView);
     procedure.setErrTol ( ui.lineEditFitCircleErrTol->text().toFloat());
     procedure.setThreshold ( ui.lineEditFitCircleThreshold->text().toInt());
@@ -173,10 +185,10 @@ void VisionWidget::on_srchFiducialBtn_clicked()
 
 void VisionWidget::on_addPreProcessorBtn_clicked()
 {
-    FilterWidget *pFW = new FilterWidget(this);
-    pFW->setParent(this);
-    pFW->setVisionView ( ui.visionView );
-    ui.verticalLayout->addWidget(pFW);
+    //FilterWidget *pFW = new FilterWidget(this);
+    //pFW->setParent(this);
+    //pFW->setVisionView ( ui.visionView );
+    //ui.verticalLayout->addWidget(pFW);
 }
 
 void VisionWidget::on_checkBoxDisplayGrayScale_clicked(bool checked)

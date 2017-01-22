@@ -3,6 +3,9 @@
 
 #include <QtWidgets/QMainWindow>
 #include "ui_visionwidget.h"
+#include "FilterWidget.h"
+#include "ThresholdWidget.h"
+#include "GrayScaleWidget.h"
 
 class VisionWidget : public QMainWindow
 {
@@ -42,6 +45,9 @@ private:
     std::unique_ptr<QIntValidator>      _ptrIntValidator;
     std::unique_ptr<QDoubleValidator>   _ptrDoubleValidator;
     std::unique_ptr<QIntValidator>      _ptrThresValidator;
+    std::unique_ptr<FilterWidget>       _ptrFilterWidget;
+    std::unique_ptr<ThresholdWidget>    _ptrThresholdWidget;
+    std::unique_ptr<GrayScaleWidget>    _ptrGrayScaleWidget;
 };
 
 #endif // VISIONWIDGET_H

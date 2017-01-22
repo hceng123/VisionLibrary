@@ -133,3 +133,83 @@ FIT CIRCLE REGRESSION TEST #2 STARTING
 Fit circle status 0
 Radius = 85.47
 Circle center: (570.06, 212.44)
+
+------------------------------------------
+AUTO THRESHOLD REGRESSION TEST #1 STARTING
+------------------------------------------
+
+Test with threshold number 1
+Auto threshold status: 0
+Auto threshold result: 157 
+
+Test with threshold number 2
+Auto threshold status: 0
+Auto threshold result: 111 171 
+
+Test with threshold number 3
+Auto threshold status: 0
+Auto threshold result: 97 149 191 
+
+Test with threshold number 4
+Auto threshold status: 0
+Auto threshold result: 87 131 171 201 
+
+------------------------------------------
+AUTO THRESHOLD REGRESSION TEST #2 STARTING
+------------------------------------------
+
+Test with threshold number 1
+Auto threshold status: 0
+Auto threshold result: 147 
+
+Test with threshold number 2
+Auto threshold status: 0
+Auto threshold result: 87 155 
+
+Test with threshold number 3
+Auto threshold status: 0
+Auto threshold result: 87 131 177 
+
+Test with threshold number 4
+Auto threshold status: 0
+Auto threshold result: 65 93 131 177 
+
+------------------------------------------
+AUTO THRESHOLD REGRESSION TEST #3 STARTING
+------------------------------------------
+
+Test with threshold number 1
+Auto threshold status: 0
+Auto threshold result: 101 
+
+Test with threshold number 2
+Auto threshold status: 0
+Auto threshold result: 77 145 
+
+Test with threshold number 3
+Auto threshold status: 0
+Auto threshold result: 55 105 159 
+
+Test with threshold number 4
+Auto threshold status: 0
+Auto threshold result: 47 83 119 163 
+
+------------------------------------------
+AUTO THRESHOLD REGRESSION TEST #4 STARTING
+------------------------------------------
+
+Test with threshold number 1
+Auto threshold status: 0
+Auto threshold result: 103 
+
+Test with threshold number 2
+Auto threshold status: 0
+Auto threshold result: 81 141 
+
+Test with threshold number 3
+Auto threshold status: 0
+Auto threshold result: 43 99 153 
+
+Test with threshold number 4
+Auto threshold status: 0
+Auto threshold result: 41 89 135 173 

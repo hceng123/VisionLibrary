@@ -45,6 +45,10 @@ int _tmain(int argc, _TCHAR* argv[])
     **************************/
     TestFitCircle();
 
+    /*************************
+    * Test Auto Threshold *
+    **************************/
+    TestAutoThreshold();
 	return 0;
 }
 

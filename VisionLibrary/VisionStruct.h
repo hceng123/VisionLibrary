@@ -405,13 +405,47 @@ struct PR_FILTER_CMD
     cv::Rect                rectROI;
     PR_FILTER_TYPE          enType;
     cv::Size                szKernel;
-    double                  dSigmaX;    //Only used when filter type is Guassian.
-    double                  dSigmaY;    //Only used when filter type is Guassian.
+    double                  dSigmaX;        //Only used when filter type is Guassian.
+    double                  dSigmaY;        //Only used when filter type is Guassian.
+    Int16                   nDiameter;      //Only used when filter type is Bilaterial.
+    double                  dSigmaColor;    //Only used when filter type is Bilaterial.
+    double                  dSigmaSpace;    //Only used when filter type is Bilaterial.
 };
 
 struct PR_FILTER_RPY
 {
     VisionStatus            enStatus;
+    cv::Mat                 matResult;
+};
+
+struct PR_AUTO_THRESHOLD_CMD
+{
+    cv::Mat                 matInput;
+    cv::Rect                rectROI;
+    Int16                   nThresholdNum;
+};
+
+struct PR_AUTO_THRESHOLD_RPY
+{
+    VisionStatus            enStatus;
+    std::vector<Int16>      vecThreshold;
+};
+
+//CC is acronym of of connected components.
+struct PR_REMOVE_CC_CMD
+{
+    cv::Mat                 matInput;
+    cv::Rect                rectROI;
+    Int16                   nConnectivity;      //connect by 4 or 8 points.
+    PR_COMPARE_TYPE         enCompareType;
+    float                   fAreaThreshold;    
+};
+
+struct PR_REMOVE_CC_RPY
+{
+    VisionStatus            enStatus;
+    Int32                   nTotalCC;
+    Int32                   nRemovedCC;
     cv::Mat                 matResult;
 };
 
