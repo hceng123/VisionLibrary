@@ -2355,6 +2355,13 @@ VisionStatus VisionAlgorithm::colorToGray(PR_COLOR_TO_GRAY_CMD *pstCmd, PR_COLOR
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return pstRpy->enStatus;
     }
+    char charrMsg [ 1000 ];
+    if ( pstCmd->matInput.channels() != 3 ) {
+        _snprintf(charrMsg, sizeof(charrMsg), "Convert from color to gray, the input image channel number %d not equal to 3", pstCmd->matInput.channels());
+        WriteLog(charrMsg);
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
 
     std::vector<float> coefficients{ pstCmd->stRatio.fRatioB, pstCmd->stRatio.fRatioG, pstCmd->stRatio.fRatioR };
     cv::Mat matCoefficients = cv::Mat(coefficients).reshape(1, 1);
@@ -2447,7 +2454,7 @@ VisionStatus VisionAlgorithm::removeCC(PR_REMOVE_CC_CMD *pstCmd, PR_REMOVE_CC_RP
         return VisionStatus::INVALID_PARAM;
     }
 
-    if ( pstCmd->nConnectivity != 4 || pstCmd->nConnectivity != 8 ) {
+    if ( pstCmd->nConnectivity != 4 && pstCmd->nConnectivity != 8 ) {
         _snprintf(chArrMsg, sizeof (chArrMsg), "The connectivity %d is not 4 or 8", pstCmd->nConnectivity );
         WriteLog ( chArrMsg );
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
@@ -2458,23 +2465,38 @@ VisionStatus VisionAlgorithm::removeCC(PR_REMOVE_CC_CMD *pstCmd, PR_REMOVE_CC_RP
 
     pstRpy->matResult = pstCmd->matInput.clone();
     cv::Mat matROI ( pstRpy->matResult, pstCmd->rectROI );
+    cv::Mat matGray = matROI;
+    if ( matROI.channels() == 3 )
+        cv::cvtColor ( matROI, matGray, CV_BGR2GRAY );
 
     cv::Mat matLabels;
-    cv::connectedComponents( matROI, matLabels, pstCmd->nConnectivity, CV_32S);
+    cv::connectedComponents( matGray, matLabels, pstCmd->nConnectivity, CV_32S);
 
-    int nOriginalZeros = cv::countNonZero ( matLabels );
     int nCurrentLabel = 1;
     int nCurrentLabelCount = 0;
+    int nTotalPixels = matLabels.rows * matLabels.cols;
+    cv::Mat matRemoveMask = cv::Mat::zeros(matLabels.size(), CV_8UC1);
+    pstRpy->nRemovedCC = 0;
     do
     {
         cv::Mat matTemp = matLabels - nCurrentLabel;
-        int nZeros = cv::countNonZero ( matTemp );
-        nCurrentLabelCount = nZeros - nOriginalZeros;
-        if ( nCurrentLabelCount < pstCmd->fAreaThreshold )  {
+        nCurrentLabelCount = nTotalPixels - cv::countNonZero ( matTemp );
+        if ( 0 < nCurrentLabelCount && nCurrentLabelCount < pstCmd->fAreaThreshold )  {
+            matRemoveMask += CalcUtils::genMaskByValue<Int32>( matLabels, nCurrentLabel );
+            ++ pstRpy->nRemovedCC;
         }
+        ++ nCurrentLabel;
     } while ( nCurrentLabelCount > 0 );
 
+    pstRpy->nTotalCC = nCurrentLabel - 1;
+
+    matGray.setTo(0, matRemoveMask);
+
+    if ( matROI.channels() == 3 )
+        cv::cvtColor ( matGray, matROI, CV_GRAY2BGR );
+
     MARK_FUNCTION_END_TIME;
+
     pstRpy->enStatus = VisionStatus::OK;
     return pstRpy->enStatus;
 }

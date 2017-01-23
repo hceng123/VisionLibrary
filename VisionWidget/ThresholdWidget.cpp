@@ -74,3 +74,9 @@ void ThresholdWidget::on_btnApply_clicked()
 
     _pVisionView->setMat ( _runThreshold ( threshold ) );
 }
+
+void ThresholdWidget::on_checkBoxReverseThres_clicked()
+{
+    int threshold = ui.lineEditThreshold->text().toInt();
+    _pVisionView->setResultMat ( _runThreshold ( threshold ) );
+}

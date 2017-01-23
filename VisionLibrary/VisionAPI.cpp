@@ -12,6 +12,18 @@
 #include "Log.h"
 #include "CalcUtils.h"
 
+#define PR_FUNCTION_ENTRY   \
+try \
+{
+
+#define PR_FUNCTION_EXIT    \
+}catch(std::exception &e)   \
+{   \
+    WriteLog(e.what()); \
+    pstRpy->enStatus = VisionStatus::OPENCV_EXCEPTION;  \
+    return VisionStatus::OPENCV_EXCEPTION;  \
+}
+
 namespace AOI
 {
 namespace Vision
@@ -226,46 +238,30 @@ VisionAPI VisionStatus  PR_PointLineDistance(PR_POINT_LINE_DISTANCE_CMD *pstCmd,
 
 VisionAPI VisionStatus  PR_ColorToGray(PR_COLOR_TO_GRAY_CMD *pstCmd, PR_COLOR_TO_GRAY_RPY *pstRpy)
 {
+PR_FUNCTION_ENTRY
     return VisionAlgorithm::colorToGray ( pstCmd, pstRpy );
+PR_FUNCTION_EXIT
 }
 
 VisionAPI VisionStatus  PR_Filter(PR_FILTER_CMD *pstCmd, PR_FILTER_RPY *pstRpy)
 {
-    try
-    {
-        return VisionAlgorithm::filter( pstCmd, pstRpy );
-    }catch(std::exception &e)
-    {
-        WriteLog(e.what());
-        pstRpy->enStatus = VisionStatus::OPENCV_EXCEPTION;
-        return VisionStatus::OPENCV_EXCEPTION;
-    }
+PR_FUNCTION_ENTRY
+    return VisionAlgorithm::filter( pstCmd, pstRpy );
+PR_FUNCTION_EXIT
 }
 
 VisionAPI VisionStatus  PR_AutoThreshold(PR_AUTO_THRESHOLD_CMD *pstCmd, PR_AUTO_THRESHOLD_RPY *pstRpy)
 {
-    try
-    {
-        return VisionAlgorithm::autoThreshold( pstCmd, pstRpy );
-    }catch(std::exception &e)
-    {
-        WriteLog(e.what());
-        pstRpy->enStatus = VisionStatus::OPENCV_EXCEPTION;
-        return VisionStatus::OPENCV_EXCEPTION;
-    }
+PR_FUNCTION_ENTRY
+    return VisionAlgorithm::autoThreshold( pstCmd, pstRpy );
+PR_FUNCTION_EXIT
 }
 
 VisionAPI VisionStatus  PR_RemoveCC(PR_REMOVE_CC_CMD *pstCmd, PR_REMOVE_CC_RPY *pstRpy)
 {
-    try
-    {
-        return VisionAlgorithm::removeCC( pstCmd, pstRpy );
-    }catch(std::exception &e)
-    {
-        WriteLog(e.what());
-        pstRpy->enStatus = VisionStatus::OPENCV_EXCEPTION;
-        return VisionStatus::OPENCV_EXCEPTION;
-    }
+PR_FUNCTION_ENTRY
+    return VisionAlgorithm::removeCC( pstCmd, pstRpy );
+PR_FUNCTION_EXIT
 }
 
 }

@@ -6,6 +6,7 @@
 #include "FilterWidget.h"
 #include "ThresholdWidget.h"
 #include "GrayScaleWidget.h"
+#include "CCWidget.h"
 
 class VisionWidget : public QMainWindow
 {
@@ -48,6 +49,7 @@ private:
     std::unique_ptr<FilterWidget>       _ptrFilterWidget;
     std::unique_ptr<ThresholdWidget>    _ptrThresholdWidget;
     std::unique_ptr<GrayScaleWidget>    _ptrGrayScaleWidget;
+    std::unique_ptr<CCWidget>           _ptrCcWidget;
 };
 
 #endif // VISIONWIDGET_H

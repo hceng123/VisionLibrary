@@ -12,7 +12,7 @@ class GrayScaleWidget : public BaseProcessWidget
 public:
     GrayScaleWidget(QWidget *parent = 0);
     ~GrayScaleWidget();
-
+    virtual QSize	sizeHint() const;
 private slots:
     void on_btnConvert_clicked();
     void on_btnApply_clicked();

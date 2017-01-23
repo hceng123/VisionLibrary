@@ -19,6 +19,7 @@ private slots:
     void on_sliderThreshold_valueChanged(int position);
     void on_lineEditThreshold_returnPressed();
     void on_btnApply_clicked();
+    void on_checkBoxReverseThres_clicked();
 
 private:
     cv::Mat _runThreshold(int nThreshold);

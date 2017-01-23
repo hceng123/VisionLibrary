@@ -12,10 +12,12 @@ public:
     BaseProcessWidget(QWidget *parent);
     ~BaseProcessWidget();
     virtual void setVisionView(VisionView* pVisionView);
+
 protected:
-    VisionView*                     _pVisionView;
-private:
-    
+    bool _checkImage() const;
+
+protected:
+    VisionView*                     _pVisionView;    
 };
 
 #endif // BASEPROCESSWIDGET_H

@@ -1,0 +1,53 @@
+#include "CCWidget.h"
+#include <QMessageBox>
+
+CCWidget::CCWidget(QWidget *parent)
+    : BaseProcessWidget(parent)
+{
+    ui.setupUi(this);
+}
+
+CCWidget::~CCWidget()
+{
+}
+
+VisionStatus CCWidget::_runRemoveCC(cv::Mat &mat)
+{
+    PR_REMOVE_CC_CMD stCmd;
+    PR_REMOVE_CC_RPY stRpy;
+    stCmd.matInput = _pVisionView->getMat();
+    stCmd.rectROI  = _pVisionView->getSelectedWindow();
+    stCmd.fAreaThreshold = ui.lineEditAreaThreshold->text().toFloat();
+    stCmd.nConnectivity = ui.cbConnectivity->currentText().toInt();    
+    
+    if ( VisionStatus::OK == PR_RemoveCC( &stCmd, &stRpy ) )    {
+        mat = stRpy.matResult;
+    }else  {
+        PR_GET_ERROR_STR_RPY stErrStrRpy;
+        PR_GetErrorStr( stRpy.enStatus, &stErrStrRpy );
+        QMessageBox::critical(this, "Filter failed", stErrStrRpy.achErrorStr, "Quit");
+    }
+    return stRpy.enStatus;
+}
+
+void CCWidget::on_btnRun_clicked()
+{
+    if ( _checkImage() == false )
+        return;
+
+    cv::Mat mat;
+    VisionStatus enStatus = _runRemoveCC ( mat );
+    if ( VisionStatus::OK == enStatus )
+        _pVisionView->setResultMat ( mat );
+}
+
+void CCWidget::on_btnApply_clicked()
+{
+    if ( _checkImage() == false )
+        return;
+
+    cv::Mat mat;
+    VisionStatus enStatus = _runRemoveCC ( mat );
+    if ( VisionStatus::OK == enStatus )
+        _pVisionView->setMat ( mat );
+}

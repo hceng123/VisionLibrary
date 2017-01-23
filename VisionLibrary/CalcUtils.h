@@ -79,7 +79,7 @@ public:
     }
 
     template<typename _Tp>
-    cv::Mat genMaskByValue(const cv::Mat &matInput, const _Tp value)
+    static cv::Mat genMaskByValue(const cv::Mat &matInput, const _Tp value)
     {
         cv::Mat matResult = cv::Mat::zeros(matInput.size(), CV_8UC1);
         for (int row = 0; row < matInput.rows; ++row)

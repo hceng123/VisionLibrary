@@ -77,6 +77,7 @@ public:
     void setMat(const cv::Mat &mat);
     cv::Mat getMat() const;
     void setResultMat(const cv::Mat &mat);
+    cv::Mat getResultMat() const;
     bool isDisplayResultImage() const;
     bool isDisplayGrayScale() const;
     void setCurrentSrchWindowIndex(int nIndex);

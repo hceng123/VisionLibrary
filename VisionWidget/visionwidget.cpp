@@ -39,6 +39,10 @@ VisionWidget::VisionWidget(QWidget *parent)
     _ptrThresholdWidget = std::make_unique<ThresholdWidget>(this);
     _ptrThresholdWidget->setVisionView ( ui.visionView );
     ui.verticalLayout->addWidget(_ptrThresholdWidget.get());
+
+    _ptrCcWidget = std::make_unique<CCWidget>(this);
+    _ptrCcWidget->setVisionView ( ui.visionView );
+    ui.verticalLayout->addWidget(_ptrCcWidget.get());
 }
 
 VisionWidget::~VisionWidget()

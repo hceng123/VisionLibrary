@@ -531,6 +531,11 @@ void VisionView::setResultMat(const cv::Mat &mat)
     _drawDisplay();
 }
 
+cv::Mat VisionView::getResultMat() const
+{
+    return _matResult;
+}
+
 bool VisionView::isDisplayResultImage() const
 {
     return _bDisplayResultImage;
