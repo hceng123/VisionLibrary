@@ -76,20 +76,29 @@ void VisionWidget::on_selectImageBtn_clicked()
     }else
         return;
 
+    _sourceImagePath = fileNames[0].toStdString();
     ui.imagePathEdit->setText(fileNames[0]);
 
+    on_checkBoxByerFormat_clicked ( ui.checkBoxByerFormat->isChecked() );   
+}
+
+void VisionWidget::on_checkBoxByerFormat_clicked(bool checked)
+{
+    if ( _sourceImagePath.empty() )
+        return;
+
     cv::Mat mat;
-    if ( ui.checkBoxByerFormat->isChecked())    {
-        mat = cv::imread( fileNames[0].toStdString(), IMREAD_GRAYSCALE );
+    if ( checked )    {
+        mat = cv::imread( _sourceImagePath, IMREAD_GRAYSCALE );
         cv::Mat matColor;
         cv::cvtColor (mat, matColor, CV_BayerGR2BGR );
         _matOriginal = matColor;
     }
     else
-        _matOriginal = cv::imread( fileNames[0].toStdString() );
+        _matOriginal = cv::imread( _sourceImagePath );
+
     ui.visionView->setMat( _matOriginal );
     _matCurrent = _matOriginal;
-    _sourceImagePath = fileNames[0].toStdString();
 }
 
 void VisionWidget::on_fitCircleBtn_clicked()

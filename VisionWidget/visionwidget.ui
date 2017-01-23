@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1363</width>
+    <width>1357</width>
     <height>768</height>
    </rect>
   </property>
@@ -66,15 +66,44 @@
    <widget class="QTabWidget" name="tabWidget">
     <property name="geometry">
      <rect>
-      <x>750</x>
-      <y>410</y>
+      <x>730</x>
+      <y>20</y>
       <width>581</width>
-      <height>311</height>
+      <height>691</height>
      </rect>
     </property>
     <property name="currentIndex">
      <number>0</number>
     </property>
+    <widget class="QWidget" name="tabPreProcess">
+     <attribute name="title">
+      <string>Pre Process</string>
+     </attribute>
+     <widget class="QWidget" name="verticalLayoutWidget">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>10</y>
+        <width>561</width>
+        <height>641</height>
+       </rect>
+      </property>
+      <layout class="QVBoxLayout" name="verticalLayout">
+       <property name="spacing">
+        <number>0</number>
+       </property>
+       <property name="sizeConstraint">
+        <enum>QLayout::SetDefaultConstraint</enum>
+       </property>
+       <property name="topMargin">
+        <number>0</number>
+       </property>
+       <property name="bottomMargin">
+        <number>0</number>
+       </property>
+      </layout>
+     </widget>
+    </widget>
     <widget class="QWidget" name="tabFitting">
      <attribute name="title">
       <string>Fitting</string>
@@ -955,43 +984,6 @@
      <string>150</string>
     </property>
    </widget>
-   <widget class="QGroupBox" name="groupBoxPrePreocess">
-    <property name="geometry">
-     <rect>
-      <x>750</x>
-      <y>10</y>
-      <width>581</width>
-      <height>391</height>
-     </rect>
-    </property>
-    <property name="title">
-     <string>Pre Process Image</string>
-    </property>
-    <widget class="QWidget" name="verticalLayoutWidget">
-     <property name="geometry">
-      <rect>
-       <x>10</x>
-       <y>20</y>
-       <width>561</width>
-       <height>371</height>
-      </rect>
-     </property>
-     <layout class="QVBoxLayout" name="verticalLayout">
-      <property name="spacing">
-       <number>0</number>
-      </property>
-      <property name="sizeConstraint">
-       <enum>QLayout::SetDefaultConstraint</enum>
-      </property>
-      <property name="topMargin">
-       <number>0</number>
-      </property>
-      <property name="bottomMargin">
-       <number>0</number>
-      </property>
-     </layout>
-    </widget>
-   </widget>
    <widget class="QCheckBox" name="checkBoxReverseThres">
     <property name="geometry">
      <rect>
@@ -1011,7 +1003,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1363</width>
+     <width>1357</width>
      <height>21</height>
     </rect>
    </property>
