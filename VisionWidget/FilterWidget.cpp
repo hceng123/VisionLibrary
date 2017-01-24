@@ -29,6 +29,11 @@ FilterWidget::~FilterWidget()
 {
 }
 
+std::string FilterWidget::MyName() const
+{
+    return "FilterWidget";
+}
+
 void FilterWidget::on_btnRun_clicked()
 {
     //VisionWidget *pVW = qobject_cast<VisionWidget *>(this->parent());
@@ -55,7 +60,7 @@ void FilterWidget::on_btnRun_clicked()
 
     PR_FILTER_RPY stRpy;
     if ( VisionStatus::OK == PR_Filter(&stCmd, &stRpy) )    {
-        _pVisionView->setMat ( stRpy.matResult );
+        _pVisionView->setMat(VisionView::DISPLAY_SOURCE::INTERMEDIATE, stRpy.matResult );
     }
     else
     {

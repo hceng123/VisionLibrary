@@ -14,6 +14,11 @@ ThresholdWidget::~ThresholdWidget()
 {
 }
 
+std::string ThresholdWidget::MyName() const
+{
+    return "ThresholdWidget";
+}
+
 void ThresholdWidget::on_btnAutoThreshold_clicked()
 {
     assert ( nullptr != _pVisionView );
@@ -40,7 +45,7 @@ void ThresholdWidget::on_btnAutoThreshold_clicked()
 void ThresholdWidget::on_sliderThreshold_valueChanged(int threshold)
 {
     ui.lineEditThreshold->setText(std::to_string(threshold).c_str());
-    _pVisionView->setResultMat ( _runThreshold ( threshold ) );
+    _pVisionView->setMat(VisionView::DISPLAY_SOURCE::INTERMEDIATE, _runThreshold ( threshold ) );
 }
 
 void ThresholdWidget::on_lineEditThreshold_returnPressed()
@@ -48,7 +53,7 @@ void ThresholdWidget::on_lineEditThreshold_returnPressed()
     int threshold = ui.lineEditThreshold->text().toInt();
     ui.sliderThreshold->setValue(threshold);
 
-    _pVisionView->setResultMat ( _runThreshold ( threshold ) );
+    _pVisionView->setMat(VisionView::DISPLAY_SOURCE::INTERMEDIATE, _runThreshold ( threshold ) );
 }
 
 cv::Mat ThresholdWidget::_runThreshold(int nThreshold)
@@ -69,14 +74,14 @@ cv::Mat ThresholdWidget::_runThreshold(int nThreshold)
 
 void ThresholdWidget::on_btnApply_clicked()
 {
-    int threshold = ui.lineEditThreshold->text().toInt();
-    ui.sliderThreshold->setValue(threshold);
+    //int threshold = ui.lineEditThreshold->text().toInt();
+    //ui.sliderThreshold->setValue(threshold);
 
-    _pVisionView->setMat ( _runThreshold ( threshold ) );
+    //_pVisionView->setMat ( _runThreshold ( threshold ) );
 }
 
 void ThresholdWidget::on_checkBoxReverseThres_clicked()
 {
     int threshold = ui.lineEditThreshold->text().toInt();
-    _pVisionView->setResultMat ( _runThreshold ( threshold ) );
+    _pVisionView->setMat(VisionView::DISPLAY_SOURCE::INTERMEDIATE, _runThreshold ( threshold ) );
 }

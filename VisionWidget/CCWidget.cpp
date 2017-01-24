@@ -11,6 +11,11 @@ CCWidget::~CCWidget()
 {
 }
 
+std::string CCWidget::MyName() const
+{
+    return "CCWidget";
+}
+
 VisionStatus CCWidget::_runRemoveCC(cv::Mat &mat)
 {
     PR_REMOVE_CC_CMD stCmd;
@@ -38,16 +43,16 @@ void CCWidget::on_btnRun_clicked()
     cv::Mat mat;
     VisionStatus enStatus = _runRemoveCC ( mat );
     if ( VisionStatus::OK == enStatus )
-        _pVisionView->setResultMat ( mat );
+        _pVisionView->setMat ( VisionView::DISPLAY_SOURCE::INTERMEDIATE, mat );
 }
 
 void CCWidget::on_btnApply_clicked()
 {
-    if ( _checkImage() == false )
-        return;
+    //if ( _checkImage() == false )
+    //    return;
 
-    cv::Mat mat;
-    VisionStatus enStatus = _runRemoveCC ( mat );
-    if ( VisionStatus::OK == enStatus )
-        _pVisionView->setMat ( mat );
+    //cv::Mat mat;
+    //VisionStatus enStatus = _runRemoveCC ( mat );
+    //if ( VisionStatus::OK == enStatus )
+    //    _pVisionView->setMat ( mat );
 }

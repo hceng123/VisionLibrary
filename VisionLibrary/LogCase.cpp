@@ -242,8 +242,8 @@ VisionStatus LogCaseFitLine::WriteRpy(PR_FIT_LINE_RPY *pRpy)
     CSimpleIni ini(false, false, false);
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile( cmdRpyFilePath.c_str() );
-    ini.SetLongValue  (_RPY_SECTION.c_str(), _strKeyStatus.c_str(), pRpy->nStatus );
-    ini.SetDoubleValue(_RPY_SECTION.c_str(), _strKeySlope.c_str(), pRpy->fSlope );    
+    ini.SetLongValue  (_RPY_SECTION.c_str(), _strKeyStatus.c_str(),    ToInt32(pRpy->enStatus) );
+    ini.SetDoubleValue(_RPY_SECTION.c_str(), _strKeySlope.c_str(),     pRpy->fSlope );    
     ini.SetDoubleValue(_RPY_SECTION.c_str(), _strKeyIntercept.c_str(), pRpy->fIntercept );
     ini.SetValue(_RPY_SECTION.c_str(), _strKeyPoint1.c_str(), _formatCoordinate ( pRpy->stLine.pt1 ).c_str() );
     ini.SetValue(_RPY_SECTION.c_str(), _strKeyPoint2.c_str(), _formatCoordinate ( pRpy->stLine.pt2 ).c_str() );

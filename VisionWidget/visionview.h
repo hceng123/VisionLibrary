@@ -62,6 +62,15 @@ public:
         SET_LINE,
     };
 
+    enum class DISPLAY_SOURCE
+    {
+        ORIGINAL,
+        INTERMEDIATE,       //Test Image Source
+        RESULT,
+        END,
+        SIZE = END,
+    };
+
     //explicit VisionView(QLabel *parent = 0);
     explicit VisionView(QWidget *parent = 0, Qt::WindowFlags f=0);
     ~VisionView();
@@ -74,10 +83,11 @@ public:
     void zoomOut();
     void restoreZoom();
     void startTimer();
-    void setMat(const cv::Mat &mat);
-    cv::Mat getMat() const;
-    void setResultMat(const cv::Mat &mat);
-    cv::Mat getResultMat() const;
+    void setMat( DISPLAY_SOURCE enSource, const cv::Mat &mat);
+    cv::Mat getMat( DISPLAY_SOURCE enSource = DISPLAY_SOURCE::ORIGINAL) const;
+    cv::Mat getCurrentMat() const;
+    //void setResultMat(const cv::Mat &mat);
+    //cv::Mat getResultMat() const;
     bool isDisplayResultImage() const;
     bool isDisplayGrayScale() const;
     void setCurrentSrchWindowIndex(int nIndex);
@@ -111,9 +121,11 @@ private:
     cv::Point                       _ptLeftClickEndPos;
     VISION_VIEW_STATE               _enState;
     TEST_VISION_STATE               _enTestVisionState;
-    cv::Mat                         _mat;
-    cv::Mat                         _matResult;
-    bool                            _bDisplayResultImage;
+    //cv::Mat                         _mat;
+    //cv::Mat                         _matResult;
+    //bool                            _bDisplayResultImage;
+    cv::Mat                         _matArray[DISPLAY_SOURCE::SIZE];
+    DISPLAY_SOURCE                  _enDisplaySource;
 	cv::Mat             			_matDisplay;
     cv::Mat                         _matMask;
     VectorOfRect                    _vecRectMask;

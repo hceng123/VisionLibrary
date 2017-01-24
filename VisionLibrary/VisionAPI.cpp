@@ -148,15 +148,9 @@ VisionAPI VisionStatus PR_SrchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd, PR
 
 VisionAPI VisionStatus  PR_FitLine(PR_FIT_LINE_CMD *pstCmd, PR_FIT_LINE_RPY *pstRpy)
 {
-    try
-    {
-        VisionAlgorithmPtr pVA = VisionAlgorithm::create();
-        return pVA->fitLine ( pstCmd, pstRpy );
-    }catch(std::exception &e)
-    {
-        WriteLog(e.what());
-        return VisionStatus::OPENCV_EXCEPTION;
-    }
+PR_FUNCTION_ENTRY
+    return VisionAlgorithm::fitLine ( pstCmd, pstRpy );
+PR_FUNCTION_EXIT
 }
 
 VisionAPI VisionStatus  PR_FitParallelLine(PR_FIT_PARALLEL_LINE_CMD *pstCmd, PR_FIT_PARALLEL_LINE_RPY *pstRpy)

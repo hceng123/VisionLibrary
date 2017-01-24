@@ -66,8 +66,8 @@ void TestFitLine()
     PR_FIT_LINE_RPY stRpy;
     auto PrintRpy = [](const PR_FIT_LINE_RPY &stRpy)    {
         char chArrMsg[100];
-        std::cout << "Fit line status " << stRpy.nStatus << std::endl;
-        std::cout << "ReversedFit = " << stRpy.bReversedFit << std::endl;
+        std::cout << "Fit line status " << ToInt32(stRpy.enStatus) << std::endl;
+        std::cout << "ReversedFit = "   << stRpy.bReversedFit      << std::endl;
         std::cout << std::fixed << std::setprecision(2) << "Line slope = " << stRpy.fSlope << ", intercept = " << stRpy.fIntercept << std::endl;
         _snprintf(chArrMsg, sizeof(chArrMsg), "(%.2f, %.2f), (%.2f, %.2f)", stRpy.stLine.pt1.x, stRpy.stLine.pt1.y, stRpy.stLine.pt2.x, stRpy.stLine.pt2.y);
         std::cout << "Line coordinate: " << chArrMsg << std::endl;

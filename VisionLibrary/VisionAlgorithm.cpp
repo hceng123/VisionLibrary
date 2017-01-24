@@ -1608,19 +1608,8 @@ VisionStatus VisionAlgorithm::srchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd
 
 VisionStatus VisionAlgorithm::fitLine(PR_FIT_LINE_CMD *pstCmd, PR_FIT_LINE_RPY *pstRpy, bool bReplay)
 {
-    char charrMsg [ 1000 ];
-    if (NULL == pstCmd || NULL == pstRpy) {
-        _snprintf(charrMsg, sizeof(charrMsg), "Input is invalid, pstCmd = %d, pstRpy = %d", (int)pstCmd, (int)pstRpy);
-        WriteLog(charrMsg);
-        pstRpy->nStatus = ToInt32 ( VisionStatus::INVALID_PARAM );
-        return VisionStatus::INVALID_PARAM;
-    }
-
-    if (pstCmd->matInput.empty()) {
-        WriteLog("Input image is empty");
-        pstRpy->nStatus = ToInt32 ( VisionStatus::INVALID_PARAM );
-        return VisionStatus::INVALID_PARAM;
-    }
+    assert ( pstCmd != nullptr && pstRpy != nullptr );
+    char chArrMsg [ 1000 ];
 
     MARK_FUNCTION_START_TIME;
 
@@ -1681,7 +1670,7 @@ VisionStatus VisionAlgorithm::fitLine(PR_FIT_LINE_CMD *pstCmd, PR_FIT_LINE_RPY *
     enStatus = VisionStatus::OK;
 
 EXIT:
-    pstRpy->nStatus = ToInt32(enStatus);
+    pstRpy->enStatus = enStatus;
     if ( ! bReplay )    {
         if ( PR_DEBUG_MODE::LOG_FAIL_CASE == Config::GetInstance()->getDebugMode() && enStatus != VisionStatus::OK )    {
             pLogCase->WriteCmd ( pstCmd );

@@ -13,7 +13,7 @@ class ThresholdWidget : public BaseProcessWidget
 public:
     ThresholdWidget(QWidget *parent = 0);
     ~ThresholdWidget();
-
+    virtual std::string MyName() const override;
 private slots:
     void on_btnAutoThreshold_clicked();
     void on_sliderThreshold_valueChanged(int position);

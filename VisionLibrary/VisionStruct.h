@@ -244,6 +244,7 @@ struct PR_SRCH_FIDUCIAL_MARK_RPY
 struct PR_FIT_LINE_CMD
 {
     cv::Mat                 matInput;
+    bool                    bInputPreprocessed;
     cv::Rect                rectROI;
     Int32                   nThreshold;
     PR_OBJECT_ATTRIBUTE     enAttribute;
@@ -253,7 +254,7 @@ struct PR_FIT_LINE_CMD
 
 struct PR_FIT_LINE_RPY
 {
-    Int32                   nStatus;    
+    VisionStatus            enStatus;    
     bool                    bReversedFit;   //If it is true, then the result is x = fSlope * y + fIntercept. Otherwise the line is y = fSlope * x + fIntercept.
     float                   fSlope;
     float                   fIntercept;

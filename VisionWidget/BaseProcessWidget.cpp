@@ -19,7 +19,7 @@ bool BaseProcessWidget::_checkImage() const
 {
     assert ( nullptr != _pVisionView );
 
-    if (_pVisionView->getMat().empty())
+    if ( _pVisionView->getMat().empty() )
     {
         QMessageBox::information(nullptr, "Vision Widget", "Please select an image first!", "Quit");
         return false;

@@ -11,6 +11,11 @@ GrayScaleWidget::~GrayScaleWidget()
 {
 }
 
+std::string GrayScaleWidget::MyName() const
+{
+    return "GrayScaleWidget";
+}
+
 QSize GrayScaleWidget::sizeHint() const
 {
     return QSize(520, 52);
@@ -52,10 +57,10 @@ cv::Mat GrayScaleWidget::_convertImage()
 
 void GrayScaleWidget::on_btnConvert_clicked()
 {
-    _pVisionView->setResultMat ( _convertImage() );
+    _pVisionView->setMat(VisionView::DISPLAY_SOURCE::INTERMEDIATE, _convertImage() );
 }
 
 void GrayScaleWidget::on_btnApply_clicked()
 {
-    _pVisionView->setMat ( _convertImage() );
+    //_pVisionView->setMat ( _convertImage() );
 }

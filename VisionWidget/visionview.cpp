@@ -26,7 +26,7 @@ VisionView::VisionView(QWidget *parent , Qt::WindowFlags f)
     _ptLeftClickStartPos = Point(0,0);
     _ptLeftClickEndPos = Point(0,0);
     _enTestVisionState = TEST_VISION_STATE::IDLE;
-    _bDisplayResultImage = false;
+    _enDisplaySource = DISPLAY_SOURCE::ORIGINAL;
     _bDisplayGrayScale = false;
     _bDisplayBinary = false;
 }
@@ -39,14 +39,15 @@ int VisionView::updateMat()
 {
     cv::Mat mat;
     //AOI::Vision::WebCameraManager::GetInstance()->GrabImage ( _nCameraID, mat );
-    _mat = mat;
+    _matArray[ToInt32(DISPLAY_SOURCE::ORIGINAL)] = mat;
+    _enDisplaySource = DISPLAY_SOURCE::ORIGINAL;
     _drawDisplay();
     return ToInt(STATUS::OK);
 }
 
 void VisionView::mousePressEvent(QMouseEvent *event)
 {
-    if ( _bDisplayResultImage )
+    if ( DISPLAY_SOURCE::RESULT == _enDisplaySource )
         return;
 
     if ( Qt::LeftButton == event->button() )
@@ -66,7 +67,7 @@ void VisionView::mousePressEvent(QMouseEvent *event)
 
 void VisionView::mouseReleaseEvent(QMouseEvent *event)
 {
-    if ( _bDisplayResultImage )
+    if ( DISPLAY_SOURCE::RESULT == _enDisplaySource )
         return;
 
     if ( Qt::LeftButton == event->button() )
@@ -112,7 +113,7 @@ void VisionView::mouseReleaseEvent(QMouseEvent *event)
 
 void VisionView::mouseMoveEvent(QMouseEvent *event)
 {
-    if ( _bDisplayResultImage )
+    if ( DISPLAY_SOURCE::RESULT == _enDisplaySource )
         return;
 
     if(event->buttons() & Qt::LeftButton)   //This means left button is pressed.
@@ -287,11 +288,7 @@ void VisionView::_drawTestVisionLibrary(cv::Mat &mat)
 
 void VisionView::_drawDisplay()
 {
-    cv::Mat mat;
-    if ( _bDisplayResultImage )
-        mat = _matResult;
-    else
-        mat = _mat;
+    cv::Mat mat = _matArray[ToInt32(_enDisplaySource)];
 
     if ( mat.empty() )
         return;
@@ -418,12 +415,13 @@ void VisionView::addMask()
 
 void VisionView::swapImage()
 {
-    if ( _bDisplayResultImage )
-        _bDisplayResultImage = false;
-    else if ( ! _bDisplayResultImage && ! _matResult.empty() )
-        _bDisplayResultImage = true;
-
-    _drawDisplay();
+    if ( DISPLAY_SOURCE::RESULT == _enDisplaySource )   {
+        _enDisplaySource = DISPLAY_SOURCE::ORIGINAL;
+    }
+    else if ( DISPLAY_SOURCE::ORIGINAL == _enDisplaySource && ! _matArray[ToInt32(DISPLAY_SOURCE::RESULT)].empty() ) {
+        _enDisplaySource = DISPLAY_SOURCE::RESULT;
+        _drawDisplay();
+    }
 }
 
 void VisionView::_zoomPoint(cv::Point &point, float fZoomFactor)
@@ -512,33 +510,27 @@ void VisionView::startTimer()
     _pTimer->start(20);
 }
 
-void VisionView::setMat(const cv::Mat &mat)
+
+void VisionView::setMat( DISPLAY_SOURCE enSource, const cv::Mat &mat)
 {
-    _mat = mat;
-    _bDisplayResultImage = false;
+    _enDisplaySource = enSource;
+    _matArray[ToInt32(_enDisplaySource)] = mat;
     _drawDisplay();
 }
 
-cv::Mat VisionView::getMat() const
+cv::Mat VisionView::getMat(DISPLAY_SOURCE enSource) const
 {
-    return _mat;
+    return _matArray[ToInt32(enSource)];
 }
 
-void VisionView::setResultMat(const cv::Mat &mat)
+cv::Mat VisionView::getCurrentMat() const
 {
-    _matResult = mat;
-    _bDisplayResultImage = true;
-    _drawDisplay();
-}
-
-cv::Mat VisionView::getResultMat() const
-{
-    return _matResult;
+    return _matArray[ToInt32(_enDisplaySource)];
 }
 
 bool VisionView::isDisplayResultImage() const
 {
-    return _bDisplayResultImage;
+    return DISPLAY_SOURCE::RESULT == _enDisplaySource;
 }
 
 bool VisionView::isDisplayGrayScale() const
@@ -594,8 +586,9 @@ void VisionView::getFitCircleRange(cv::Point &ptCtr, float &fInnterRadius, float
     auto displayWidth = this->size().width();
     auto displayHeight = this->size().height();    
     
-    ptCtr.x = ( _ptCircleCtr.x - ( displayWidth  - _mat.cols * _fZoomFactor ) / 2 ) / _fZoomFactor;
-    ptCtr.y = ( _ptCircleCtr.y - ( displayHeight - _mat.rows * _fZoomFactor ) / 2 ) / _fZoomFactor;
+    cv::Mat mat = _matArray[ToInt32(_enDisplaySource)];
+    ptCtr.x = ( _ptCircleCtr.x - ( displayWidth  - mat.cols * _fZoomFactor ) / 2 ) / _fZoomFactor;
+    ptCtr.y = ( _ptCircleCtr.y - ( displayHeight - mat.rows * _fZoomFactor ) / 2 ) / _fZoomFactor;
     fInnterRadius = _fInnerRangeRadius / _fZoomFactor;
     fOutterRadius = _fOutterRangeRadius/ _fZoomFactor;
 }
@@ -605,10 +598,11 @@ VectorOfRect VisionView::getVecSrchWindow() const
     auto displayWidth = this->size().width();
     auto displayHeight = this->size().height();
     VectorOfRect vecResult;
+    cv::Mat mat = _matArray[ToInt32(_enDisplaySource)];
     for ( auto rect : _vecRectSrchWindow )
     {
-        rect.x = (rect.x - (displayWidth  - _mat.cols * _fZoomFactor) / 2) / _fZoomFactor;
-        rect.y = (rect.y - (displayHeight - _mat.rows * _fZoomFactor) / 2) / _fZoomFactor;
+        rect.x = (rect.x - (displayWidth  - mat.cols * _fZoomFactor) / 2) / _fZoomFactor;
+        rect.y = (rect.y - (displayHeight - mat.rows * _fZoomFactor) / 2) / _fZoomFactor;
         rect.width  /= _fZoomFactor;
         rect.height /= _fZoomFactor;
         vecResult.push_back ( rect );
@@ -621,13 +615,15 @@ cv::Rect VisionView::getSelectedWindow() const
     auto displayWidth = this->size().width();
     auto displayHeight = this->size().height();
     auto rect = _rectSelectedWindow;
+    cv::Mat mat = _matArray[ToInt32(_enDisplaySource)];
+
     if ( rect.width <= 0 || rect.height <= 0 )  {
-        rect = cv::Rect ( 0, 0, _mat.cols, _mat.rows );
+        rect = cv::Rect ( 0, 0, mat.cols, mat.rows );
         return rect;
     }
 
-    rect.x = (rect.x - (displayWidth  - _mat.cols * _fZoomFactor) / 2) / _fZoomFactor;
-    rect.y = (rect.y - (displayHeight - _mat.rows * _fZoomFactor) / 2) / _fZoomFactor;
+    rect.x = (rect.x - (displayWidth  - mat.cols * _fZoomFactor) / 2) / _fZoomFactor;
+    rect.y = (rect.y - (displayHeight - mat.rows * _fZoomFactor) / 2) / _fZoomFactor;
     rect.width  /= _fZoomFactor;
     rect.height /= _fZoomFactor;
     return rect;
@@ -637,11 +633,13 @@ PR_Line VisionView::getIntensityCheckLine() const
 {
     auto displayWidth = this->size().width();
     auto displayHeight = this->size().height();
-    PR_Line line;   
-    line.pt1.x = (_lineOfIntensityCheck.pt1.x - (displayWidth  - _mat.cols * _fZoomFactor) / 2) / _fZoomFactor;
-    line.pt1.y = (_lineOfIntensityCheck.pt1.y - (displayHeight - _mat.rows * _fZoomFactor) / 2) / _fZoomFactor;
-    line.pt2.x = (_lineOfIntensityCheck.pt2.x - (displayWidth  - _mat.cols * _fZoomFactor) / 2) / _fZoomFactor;
-    line.pt2.y = (_lineOfIntensityCheck.pt2.y - (displayHeight - _mat.rows * _fZoomFactor) / 2) / _fZoomFactor;
+    PR_Line line;
+    cv::Mat mat = _matArray[ToInt32(_enDisplaySource)];
+
+    line.pt1.x = (_lineOfIntensityCheck.pt1.x - (displayWidth  - mat.cols * _fZoomFactor) / 2) / _fZoomFactor;
+    line.pt1.y = (_lineOfIntensityCheck.pt1.y - (displayHeight - mat.rows * _fZoomFactor) / 2) / _fZoomFactor;
+    line.pt2.x = (_lineOfIntensityCheck.pt2.x - (displayWidth  - mat.cols * _fZoomFactor) / 2) / _fZoomFactor;
+    line.pt2.y = (_lineOfIntensityCheck.pt2.y - (displayHeight - mat.rows * _fZoomFactor) / 2) / _fZoomFactor;
     return line;
 }
 

@@ -11,7 +11,7 @@ class CCWidget : public BaseProcessWidget
 public:
     CCWidget(QWidget *parent = Q_NULLPTR);
     ~CCWidget();
-
+    virtual std::string MyName() const override;
 private:
     VisionStatus _runRemoveCC(cv::Mat &mat);
 

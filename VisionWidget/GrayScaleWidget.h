@@ -13,6 +13,7 @@ public:
     GrayScaleWidget(QWidget *parent = 0);
     ~GrayScaleWidget();
     virtual QSize	sizeHint() const;
+    virtual std::string MyName() const override;
 private slots:
     void on_btnConvert_clicked();
     void on_btnApply_clicked();

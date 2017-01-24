@@ -50,7 +50,7 @@ int OcrProcedure::run(const std::string &imagePath)
 int OcrProcedure::ocr(const std::string &imagePath)
 {
     PR_OCR_CMD stCmd;
-	stCmd.matInput = cv::imread(imagePath);
+	stCmd.matInput = _pVisionView->getMat();
     stCmd.enDirection = static_cast<PR_DIRECTION>(_nTextDirection);
 	stCmd.rectROI = _rectSrchWindow;
 

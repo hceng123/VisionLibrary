@@ -52,11 +52,7 @@ void VisionViewToolBox::on_toolBoxButton_clicked()
 
 void VisionViewToolBox::on_saveImageButton_clicked()
 {
-    cv::Mat mat;
-    if ( _pVisionView->isDisplayResultImage())
-        mat = _pVisionView->getResultMat();
-    else
-        mat = _pVisionView->getMat();
+    cv::Mat mat = _pVisionView->getCurrentMat();
     if ( mat.empty() )
         return;
 

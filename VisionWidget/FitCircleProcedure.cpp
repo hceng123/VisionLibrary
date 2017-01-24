@@ -77,7 +77,7 @@ int FitCircleProcedure::run(const std::string &imagePath)
 VisionStatus FitCircleProcedure::fitCircle(const std::string &imagePath)
 {
     PR_FIT_CIRCLE_CMD stCmd;
-	stCmd.matInput = cv::imread(imagePath);
+	stCmd.matInput = _pVisionView->getMat();
 	stCmd.enRmNoiseMethod = PR_RM_FIT_NOISE_METHOD::ABSOLUTE_ERR;
 	stCmd.fErrTol = _fErrorTol;
 	stCmd.ptRangeCtr = _ptCircleCtr;

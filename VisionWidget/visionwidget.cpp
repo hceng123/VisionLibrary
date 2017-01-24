@@ -97,8 +97,7 @@ void VisionWidget::on_checkBoxByerFormat_clicked(bool checked)
     else
         _matOriginal = cv::imread( _sourceImagePath );
 
-    ui.visionView->setMat( _matOriginal );
-    _matCurrent = _matOriginal;
+    ui.visionView->setMat( VisionView::DISPLAY_SOURCE::ORIGINAL, _matOriginal );
 }
 
 void VisionWidget::on_fitCircleBtn_clicked()
@@ -114,7 +113,7 @@ void VisionWidget::on_fitCircleBtn_clicked()
 	int nStatus = procedure.run(_sourceImagePath);
     if ( ToInt(VisionStatus::OK) == nStatus )
     {
-        ui.visionView->setResultMat(procedure.getResultMat());
+        ui.visionView->setMat(VisionView::DISPLAY_SOURCE::RESULT, procedure.getResultMat());
     }
 }
 
@@ -130,7 +129,7 @@ void VisionWidget::on_fitLineBtn_clicked()
 	int nStatus = procedure.run(_sourceImagePath);
     if ( ToInt(VisionStatus::OK) == nStatus )
     {
-        ui.visionView->setResultMat(procedure.getResultMat());
+        ui.visionView->setMat(VisionView::DISPLAY_SOURCE::RESULT, procedure.getResultMat());
     }
 }
 
@@ -146,7 +145,7 @@ void VisionWidget::on_fitParallelLineBtn_clicked()
 	int nStatus = procedure.run(_sourceImagePath);
     if ( ToInt(VisionStatus::OK) == nStatus )
     {
-        ui.visionView->setResultMat(procedure.getResultMat());
+        ui.visionView->setMat(VisionView::DISPLAY_SOURCE::RESULT, procedure.getResultMat());
     }
 }
 
@@ -162,7 +161,7 @@ void VisionWidget::on_fitRectBtn_clicked()
 	int nStatus = procedure.run(_sourceImagePath);
     if ( ToInt(VisionStatus::OK) == nStatus )
     {
-        ui.visionView->setResultMat(procedure.getResultMat());
+        ui.visionView->setMat(VisionView::DISPLAY_SOURCE::RESULT, procedure.getResultMat());
     }
 }
 
@@ -192,7 +191,7 @@ void VisionWidget::on_srchFiducialBtn_clicked()
     int nStatus = procedure.run(_sourceImagePath);
     if ( ToInt(VisionStatus::OK) == nStatus )
     {
-        ui.visionView->setResultMat ( procedure.getResultMat() );
+        ui.visionView->setMat(VisionView::DISPLAY_SOURCE::RESULT, procedure.getResultMat() );
     }
 }
 
@@ -273,20 +272,4 @@ void VisionWidget::on_lineEditBRatio_returnPressed()
     ui.visionView->setRGBRatio ( ui.lineEditRRatio->text().toFloat(),
                                  ui.lineEditGRatio->text().toFloat(),
                                  ui.lineEditBRatio->text().toFloat());
-}
-
-cv::Mat VisionWidget::getOriginalMat() const
-{
-    return _matOriginal;
-}
-
-cv::Mat VisionWidget::getCurrentMat() const
-{
-    return _matCurrent;
-}
-
-void VisionWidget::setCurrentMat(const cv::Mat &mat)
-{
-    _matCurrent = mat;
-    ui.visionView->setMat ( _matCurrent );
 }

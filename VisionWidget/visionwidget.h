@@ -15,9 +15,6 @@ class VisionWidget : public QMainWindow
 public:
     VisionWidget(QWidget *parent = 0);
     ~VisionWidget();
-    cv::Mat getOriginalMat() const;
-    cv::Mat getCurrentMat() const;
-    void    setCurrentMat(const cv::Mat &mat);
 private slots:
     void on_selectImageBtn_clicked();
     void on_checkBoxByerFormat_clicked(bool checked);
@@ -43,7 +40,6 @@ private:
     Ui::VisionWidgetClass               ui;
     std::string                         _sourceImagePath;
     cv::Mat                             _matOriginal;
-    cv::Mat                             _matCurrent;
     std::unique_ptr<QIntValidator>      _ptrIntValidator;
     std::unique_ptr<QDoubleValidator>   _ptrDoubleValidator;
     std::unique_ptr<QIntValidator>      _ptrThresValidator;
