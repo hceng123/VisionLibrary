@@ -12,10 +12,10 @@ public:
     BaseProcessWidget(QWidget *parent);
     ~BaseProcessWidget();
     virtual void setVisionView(VisionView* pVisionView);
-    virtual std::string MyName() const = 0;
+    virtual std::string myName() const = 0;
 protected:
-    bool            _checkImage() const;    
-    std::string     _strCurrentWidgetName;
+    bool                   _checkImage();    
+    static std::string     _strCurrentWidgetName;
 protected:
     VisionView*                     _pVisionView;
 };

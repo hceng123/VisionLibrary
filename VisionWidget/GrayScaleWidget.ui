@@ -125,19 +125,6 @@
    <widget class="QPushButton" name="btnConvert">
     <property name="geometry">
      <rect>
-      <x>370</x>
-      <y>20</y>
-      <width>60</width>
-      <height>23</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Convert</string>
-    </property>
-   </widget>
-   <widget class="QPushButton" name="btnApply">
-    <property name="geometry">
-     <rect>
       <x>440</x>
       <y>20</y>
       <width>60</width>
@@ -145,7 +132,7 @@
      </rect>
     </property>
     <property name="text">
-     <string>Apply</string>
+     <string>Convert</string>
     </property>
    </widget>
   </widget>

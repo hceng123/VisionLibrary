@@ -19,14 +19,8 @@ VisionWidget::VisionWidget(QWidget *parent)
 
     ui.visionViewToolBox->SetVisionView(ui.visionView);
     _ptrIntValidator    = std::make_unique<QIntValidator>(1,100);
-    _ptrThresValidator  = std::make_unique<QIntValidator>(1, PR_MAX_GRAY_LEVEL);
-    _ptrDoubleValidator = std::make_unique<QDoubleValidator>(0, 1, 3);
     ui.lineEditFitCircleErrTol->setValidator(_ptrIntValidator.get() );
-    ui.lineEditRRatio->setValidator( _ptrDoubleValidator.get() );
-    ui.lineEditGRatio->setValidator( _ptrDoubleValidator.get() );
-    ui.lineEditBRatio->setValidator( _ptrDoubleValidator.get() );
-    ui.lineEditBinaryThreshold->setValidator(_ptrThresValidator.get());
-    ui.visionView->setMachineState(VisionView::VISION_VIEW_STATE::TEST_VISION_LIBRARY);
+    ui.visionView->setState(VisionView::VISION_VIEW_STATE::TEST_VISION_LIBRARY);
 
     _ptrGrayScaleWidget = std::make_unique<GrayScaleWidget>(this);
     _ptrGrayScaleWidget->setVisionView ( ui.visionView );
@@ -43,6 +37,10 @@ VisionWidget::VisionWidget(QWidget *parent)
     _ptrCcWidget = std::make_unique<CCWidget>(this);
     _ptrCcWidget->setVisionView ( ui.visionView );
     ui.verticalLayout->addWidget(_ptrCcWidget.get());
+
+    _ptrEdgeDetectWidget = std::make_unique<EdgeDetectWidget>(this);
+    _ptrEdgeDetectWidget->setVisionView ( ui.visionView );
+    ui.verticalLayout->addWidget(_ptrEdgeDetectWidget.get());
 }
 
 VisionWidget::~VisionWidget()
@@ -98,6 +96,8 @@ void VisionWidget::on_checkBoxByerFormat_clicked(bool checked)
         _matOriginal = cv::imread( _sourceImagePath );
 
     ui.visionView->setMat( VisionView::DISPLAY_SOURCE::ORIGINAL, _matOriginal );
+    ui.visionView->clearMat ( VisionView::DISPLAY_SOURCE::INTERMEDIATE );
+    ui.visionView->clearMat ( VisionView::DISPLAY_SOURCE::RESULT );
 }
 
 void VisionWidget::on_fitCircleBtn_clicked()
@@ -201,75 +201,4 @@ void VisionWidget::on_addPreProcessorBtn_clicked()
     //pFW->setParent(this);
     //pFW->setVisionView ( ui.visionView );
     //ui.verticalLayout->addWidget(pFW);
-}
-
-void VisionWidget::on_checkBoxDisplayGrayScale_clicked(bool checked)
-{
-    if ( _matOriginal.empty())
-        return;
-
-    ui.visionView->setImageDisplayMode ( ui.checkBoxDisplayGrayScale->isChecked(), ui.checkBoxDisplayBinary->isChecked() );
-    if ( checked )  {
-        ui.visionView->setRGBRatio ( ui.lineEditRRatio->text().toFloat(),
-                                     ui.lineEditGRatio->text().toFloat(),
-                                     ui.lineEditBRatio->text().toFloat());
-    }
-}
-
-void VisionWidget::on_checkBoxDisplayBinary_clicked(bool checked)
-{
-    if ( _matOriginal.empty())
-        return;
-
-    ui.visionView->setImageDisplayMode ( ui.checkBoxDisplayGrayScale->isChecked(), ui.checkBoxDisplayBinary->isChecked() );
-    if ( checked )  {
-        ui.visionView->setBinaryThreshold ( ui.sliderThreshold->value(), ui.checkBoxReverseThres->isChecked() );
-    }
-}
-
-void VisionWidget::on_checkBoxReverseThres_clicked(bool checked)
-{
-    ui.visionView->setBinaryThreshold ( ui.sliderThreshold->value(), checked );
-}
-
-void VisionWidget::on_sliderThreshold_valueChanged(int position)
-{
-    ui.lineEditBinaryThreshold->setText(std::to_string(position).c_str());
-
-    if ( _matOriginal.empty())
-        return;
-
-    ui.visionView->setBinaryThreshold ( ui.sliderThreshold->value(), ui.checkBoxReverseThres->isChecked() );
-}
-
-void VisionWidget::on_lineEditBinaryThreshold_returnPressed()
-{
-    int threshold = ui.lineEditBinaryThreshold->text().toInt();
-    ui.sliderThreshold->setValue(threshold);
-
-    if ( _matOriginal.empty())
-        return;
-    
-    ui.visionView->setBinaryThreshold ( ui.sliderThreshold->value(), ui.checkBoxReverseThres->isChecked() );
-}
-
-void VisionWidget::on_lineEditRRatio_returnPressed()
-{
-    ui.visionView->setRGBRatio ( ui.lineEditRRatio->text().toFloat(),
-                                 ui.lineEditGRatio->text().toFloat(),
-                                 ui.lineEditBRatio->text().toFloat());
-}
-
-void VisionWidget::on_lineEditGRatio_returnPressed()
-{
-    ui.visionView->setRGBRatio ( ui.lineEditRRatio->text().toFloat(),
-                                 ui.lineEditGRatio->text().toFloat(),
-                                 ui.lineEditBRatio->text().toFloat());
-}
-
-void VisionWidget::on_lineEditBRatio_returnPressed()
-{
-    ui.visionView->setRGBRatio ( ui.lineEditRRatio->text().toFloat(),
-                                 ui.lineEditGRatio->text().toFloat(),
-                                 ui.lineEditBRatio->text().toFloat());
 }

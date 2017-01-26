@@ -258,5 +258,12 @@ PR_FUNCTION_ENTRY
 PR_FUNCTION_EXIT
 }
 
+VisionAPI VisionStatus  PR_DetectEdge(PR_DETECT_EDGE_CMD *pstCmd, PR_DETECT_EDGE_RPY *pstRpy)
+{
+    PR_FUNCTION_ENTRY
+    return VisionAlgorithm::detectEdge( pstCmd, pstRpy );
+PR_FUNCTION_EXIT
+}
+
 }
 }

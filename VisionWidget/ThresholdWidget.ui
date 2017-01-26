@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>514</width>
+    <width>520</width>
     <height>84</height>
    </rect>
   </property>
@@ -150,19 +150,6 @@
     </property>
     <property name="text">
      <string>Reverse Threshold</string>
-    </property>
-   </widget>
-   <widget class="QPushButton" name="btnApply">
-    <property name="geometry">
-     <rect>
-      <x>440</x>
-      <y>20</y>
-      <width>60</width>
-      <height>23</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Apply</string>
     </property>
    </widget>
   </widget>

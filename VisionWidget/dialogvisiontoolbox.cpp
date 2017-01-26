@@ -47,7 +47,8 @@ void DialogVisionToolBox::on_btnDumpTimeLog_clicked()
 
 void DialogVisionToolBox::on_btnCheckIntensity_clicked()
 {
-    cv::Mat mat = _pVisionView->getMat();
+    _pVisionView->applyIntermediateResult();
+    cv::Mat mat = _pVisionView->getMat(VisionView::DISPLAY_SOURCE::ORIGINAL);
     if ( mat.empty() ) {
         QMessageBox::information(this, "Vision Widget", "Please select an image first!", "Quit");
         return;

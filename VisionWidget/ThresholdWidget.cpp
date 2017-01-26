@@ -14,24 +14,20 @@ ThresholdWidget::~ThresholdWidget()
 {
 }
 
-std::string ThresholdWidget::MyName() const
+std::string ThresholdWidget::myName() const
 {
     return "ThresholdWidget";
 }
 
 void ThresholdWidget::on_btnAutoThreshold_clicked()
 {
-    assert ( nullptr != _pVisionView );
-
-    if ( _pVisionView->getMat().empty() )   {
-        QMessageBox::information(this, "Vision Widget", "Please select an image first!", "Quit");
+    if ( _checkImage() == false )
         return;
-    }
 
     PR_AUTO_THRESHOLD_CMD stCmd;
     PR_AUTO_THRESHOLD_RPY stRpy;
 
-    stCmd.matInput = _pVisionView->getMat();
+    stCmd.matInput = _pVisionView->getMat(VisionView::DISPLAY_SOURCE::ORIGINAL);
     stCmd.rectROI = _pVisionView->getSelectedWindow();
     stCmd.nThresholdNum = ui.cbAutoThresLevel->currentText().toInt();
 
@@ -58,8 +54,11 @@ void ThresholdWidget::on_lineEditThreshold_returnPressed()
 
 cv::Mat ThresholdWidget::_runThreshold(int nThreshold)
 {
-    cv::Mat mat = _pVisionView->getMat().clone();
+    cv::Mat mat = _pVisionView->getMat(VisionView::DISPLAY_SOURCE::ORIGINAL).clone();
     if ( mat.empty() )
+        return mat;
+
+    if ( _checkImage() == false )
         return mat;
 
     cv::Mat matROI(mat, _pVisionView->getSelectedWindow());
@@ -70,14 +69,6 @@ cv::Mat ThresholdWidget::_runThreshold(int nThreshold)
     
     matThreshold.copyTo ( matROI  );
     return mat;
-}
-
-void ThresholdWidget::on_btnApply_clicked()
-{
-    //int threshold = ui.lineEditThreshold->text().toInt();
-    //ui.sliderThreshold->setValue(threshold);
-
-    //_pVisionView->setMat ( _runThreshold ( threshold ) );
 }
 
 void ThresholdWidget::on_checkBoxReverseThres_clicked()

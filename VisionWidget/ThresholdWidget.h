@@ -1,9 +1,6 @@
 #ifndef THRESHOLDWIDGET_H
 #define THRESHOLDWIDGET_H
-
-#include <QWidget>
 #include "ui_ThresholdWidget.h"
-#include "visionview.h"
 #include "BaseProcessWidget.h"
 
 class ThresholdWidget : public BaseProcessWidget
@@ -13,12 +10,11 @@ class ThresholdWidget : public BaseProcessWidget
 public:
     ThresholdWidget(QWidget *parent = 0);
     ~ThresholdWidget();
-    virtual std::string MyName() const override;
+    virtual std::string myName() const override;
 private slots:
     void on_btnAutoThreshold_clicked();
     void on_sliderThreshold_valueChanged(int position);
     void on_lineEditThreshold_returnPressed();
-    void on_btnApply_clicked();
     void on_checkBoxReverseThres_clicked();
 
 private:

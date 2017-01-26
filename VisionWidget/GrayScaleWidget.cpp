@@ -11,7 +11,7 @@ GrayScaleWidget::~GrayScaleWidget()
 {
 }
 
-std::string GrayScaleWidget::MyName() const
+std::string GrayScaleWidget::myName() const
 {
     return "GrayScaleWidget";
 }
@@ -23,15 +23,7 @@ QSize GrayScaleWidget::sizeHint() const
 
 cv::Mat GrayScaleWidget::_convertImage()
 {
-    assert ( nullptr != _pVisionView );
-
-    cv::Mat mat = _pVisionView->getMat();
-    if (mat.empty())
-    {
-        QMessageBox::information(this, "Vision Widget", "Please select an image first!", "Quit");
-        return mat;
-    }
-
+    cv::Mat mat = _pVisionView->getMat(VisionView::DISPLAY_SOURCE::ORIGINAL);
     cv::Rect rectROI = _pVisionView->getSelectedWindow();
 
     if ( rectROI.x < 0 || rectROI.y < 0 ||
@@ -57,10 +49,8 @@ cv::Mat GrayScaleWidget::_convertImage()
 
 void GrayScaleWidget::on_btnConvert_clicked()
 {
-    _pVisionView->setMat(VisionView::DISPLAY_SOURCE::INTERMEDIATE, _convertImage() );
-}
+    if ( _checkImage() == false )
+        return;
 
-void GrayScaleWidget::on_btnApply_clicked()
-{
-    //_pVisionView->setMat ( _convertImage() );
+    _pVisionView->setMat(VisionView::DISPLAY_SOURCE::INTERMEDIATE, _convertImage() );
 }

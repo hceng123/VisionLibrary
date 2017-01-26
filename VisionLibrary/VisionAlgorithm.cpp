@@ -1562,6 +1562,25 @@ VisionStatus VisionAlgorithm::srchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd
     return listPoint;
 }
 
+/*static*/ ListOfPoint VisionAlgorithm::_findPointsInRegion(const cv::Mat &mat, const cv::Rect &rect)
+{
+    ListOfPoint listPoint;
+    if ( mat.empty() )
+        return listPoint;
+
+    cv::Mat matROI(mat, rect);
+    cv::Mat matThreshold;
+    
+    std::vector<cv::Point> vecPoints;
+    vecPoints.reserve(100000);
+    cv::findNonZero( matThreshold, vecPoints );
+    for ( const auto &point : vecPoints )   {
+        cv::Point point2f ( point.x + rect.x, point.y + rect.y );
+        listPoint.push_back(point2f);
+    }
+    return listPoint;
+}
+
 /*static*/ std::vector<size_t> VisionAlgorithm::_findPointOverLineTol(const VectorOfPoint   &vecPoint,
                                                                       bool                   bReversedFit,
                                                                       const float            fSlope,
@@ -1609,7 +1628,20 @@ VisionStatus VisionAlgorithm::srchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd
 VisionStatus VisionAlgorithm::fitLine(PR_FIT_LINE_CMD *pstCmd, PR_FIT_LINE_RPY *pstRpy, bool bReplay)
 {
     assert ( pstCmd != nullptr && pstRpy != nullptr );
-    char chArrMsg [ 1000 ];
+
+    if (pstCmd->matInput.empty()) {
+        WriteLog("Input image is empty");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+    
+    if ( pstCmd->rectROI.x < 0 || pstCmd->rectROI.y < 0 || 
+        ( pstCmd->rectROI.x + pstCmd->rectROI.width ) > pstCmd->matInput.cols ||
+        ( pstCmd->rectROI.y + pstCmd->rectROI.height ) > pstCmd->matInput.rows )    {
+        WriteLog("The OCR search range is invalid");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
 
     MARK_FUNCTION_START_TIME;
 
@@ -1687,20 +1719,16 @@ EXIT:
 
 VisionStatus VisionAlgorithm::fitParallelLine(PR_FIT_PARALLEL_LINE_CMD *pstCmd, PR_FIT_PARALLEL_LINE_RPY *pstRpy, bool bReplay)
 {
-    char charrMsg [ 1000 ];
-    if (NULL == pstCmd || NULL == pstRpy) {
-        _snprintf(charrMsg, sizeof(charrMsg), "Input is invalid, pstCmd = %d, pstRpy = %d", (int)pstCmd, (int)pstRpy);
-        WriteLog(charrMsg);
-        pstRpy->nStatus = ToInt32 ( VisionStatus::INVALID_PARAM );
-        return VisionStatus::INVALID_PARAM;
-    }
+    assert ( pstCmd != nullptr && pstRpy != nullptr );
 
     if (pstCmd->matInput.empty()) {
         WriteLog("Input image is empty");
         pstRpy->nStatus = ToInt32 ( VisionStatus::INVALID_PARAM );
         return VisionStatus::INVALID_PARAM;
     }
+
     MARK_FUNCTION_START_TIME;
+
     std::unique_ptr<LogCaseFitParallelLine> pLogCase;
     if ( ! bReplay )    {
         pLogCase = std::make_unique<LogCaseFitParallelLine>( Config::GetInstance()->getLogCaseDir() );
@@ -2424,7 +2452,7 @@ VisionStatus VisionAlgorithm::filter(PR_FILTER_CMD *pstCmd, PR_FILTER_RPY *pstRp
     return pstRpy->enStatus;
 }
 
-VisionStatus VisionAlgorithm::removeCC(PR_REMOVE_CC_CMD *pstCmd, PR_REMOVE_CC_RPY *pstRpy)
+/*static*/ VisionStatus VisionAlgorithm::removeCC(PR_REMOVE_CC_CMD *pstCmd, PR_REMOVE_CC_RPY *pstRpy)
 {
     assert ( pstCmd != nullptr && pstRpy != nullptr );
     char chArrMsg [ 1000 ];
@@ -2484,6 +2512,45 @@ VisionStatus VisionAlgorithm::removeCC(PR_REMOVE_CC_CMD *pstCmd, PR_REMOVE_CC_RP
     if ( matROI.channels() == 3 )
         cv::cvtColor ( matGray, matROI, CV_GRAY2BGR );
 
+    MARK_FUNCTION_END_TIME;
+
+    pstRpy->enStatus = VisionStatus::OK;
+    return pstRpy->enStatus;
+}
+
+/*static*/ VisionStatus VisionAlgorithm::detectEdge(PR_DETECT_EDGE_CMD *pstCmd, PR_DETECT_EDGE_RPY *pstRpy)
+{
+    assert ( pstCmd != nullptr && pstRpy != nullptr );
+
+    if ( pstCmd->matInput.empty() ) {
+        WriteLog("Input image is empty");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    if ( pstCmd->rectROI.x < 0 || pstCmd->rectROI.y < 0 ||
+        ( pstCmd->rectROI.x + pstCmd->rectROI.width ) > pstCmd->matInput.cols ||
+        ( pstCmd->rectROI.y + pstCmd->rectROI.height ) > pstCmd->matInput.rows )    {
+        WriteLog("The input ROI is invalid");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return VisionStatus::INVALID_PARAM;
+    }
+
+    MARK_FUNCTION_START_TIME;    
+
+    pstRpy->matResult = pstCmd->matInput.clone();
+    cv::Mat matROI ( pstRpy->matResult, pstCmd->rectROI );
+
+    cv::Mat matGray = matROI;
+    if ( pstCmd->matInput.channels() == 3 )
+        cv::cvtColor ( matROI, matGray, CV_BGR2GRAY );
+
+    cv::Mat matResult;
+    cv::Canny ( matGray, matResult, pstCmd->nThreshold1, pstCmd->nThreshold2, pstCmd->nApertureSize );
+
+    if ( pstCmd->matInput.channels() == 3 )
+        cv::cvtColor ( matResult, matROI, CV_GRAY2BGR );
+    
     MARK_FUNCTION_END_TIME;
 
     pstRpy->enStatus = VisionStatus::OK;

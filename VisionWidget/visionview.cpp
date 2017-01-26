@@ -193,9 +193,9 @@ void VisionView::mouseDoubleClickEvent(QMouseEvent *event)
     }
 }
 
-void VisionView::setMachineState(VISION_VIEW_STATE enMachineState)
+void VisionView::setState(VISION_VIEW_STATE enState)
 {
-    _enState = enMachineState;
+    _enState = enState;
 }
 
 void VisionView::_drawLearnWindow(cv::Mat &mat)
@@ -233,7 +233,9 @@ void VisionView::_drawLearnWindow(cv::Mat &mat)
 
 void VisionView::_drawSelectedWindow(cv::Mat &mat)
 {
-    cv::rectangle ( mat, _rectSelectedWindow, _colorLrnWindow, 2 );
+    if ( _rectSelectedWindow.width > 0 && _rectSelectedWindow.height > 0 )
+        cv::rectangle ( mat, _rectSelectedWindow, _colorLrnWindow, 2 );
+
     cv::Scalar scalarMask(0, 0, 255);
     if ( VISION_VIEW_STATE::ADD_MASK == _enState && MASK_SHAPE_POLYLINE == _enMaskShape  )    {
         if ( _vecPolylinePoint.size() > 1 ) {
@@ -301,21 +303,6 @@ void VisionView::_drawDisplay()
     else
         matZoomResult = mat.clone();
 
-    if ( _rectSelectedWindow.width > 0 && _rectSelectedWindow.height > 0 )  {
-        if ( _rectSelectedWindow.x < 0 ) _rectSelectedWindow.x = 0;
-        if ( _rectSelectedWindow.y < 0 ) _rectSelectedWindow.y = 0;
-        if ( ( _rectSelectedWindow.x + _rectSelectedWindow.width ) > _matDisplay.cols )  _rectSelectedWindow.width = _matDisplay.cols - _rectSelectedWindow.x;
-        if ( ( _rectSelectedWindow.y + _rectSelectedWindow.height ) > _matDisplay.rows )  _rectSelectedWindow.height = _matDisplay.rows - _rectSelectedWindow.y;
-        cv::Mat matSelected ( _matDisplay, _rectSelectedWindow );
-        cv::Mat matResult = _generateDisplayImage ( matSelected );
-        matResult.copyTo ( matSelected );
-    }
-    else
-    {
-        cv::Mat matResult = _generateDisplayImage ( _matDisplay );
-        _matDisplay = matResult;
-    }
-
     _matDisplay = cv::Mat::ones( displayHeight, displayWidth, mat.type() ) * 255;
     _matDisplay.setTo(cv::Scalar(255, 255, 255));
 
@@ -343,23 +330,23 @@ void VisionView::_drawDisplay()
     }else
         _matDisplay = matZoomResult;
     
-    cv::Rect rectChangeROI = _rectSelectedWindow;
-    if ( _rectSelectedWindow.width > 0 && _rectSelectedWindow.height > 0 )  {
-        if ( rectChangeROI.x < displayWidth  / 2 - matZoomResult.cols / 2 ) rectChangeROI.x = displayWidth  / 2 - matZoomResult.cols / 2;
-        if ( rectChangeROI.y < displayHeight / 2 - matZoomResult.rows / 2 ) rectChangeROI.y = displayHeight / 2 - matZoomResult.rows / 2;
-        if ( ( rectChangeROI.x + rectChangeROI.width  ) > ( displayWidth   / 2 + matZoomResult.cols / 2 ) )  rectChangeROI.width  = ( displayWidth   / 2 + matZoomResult.cols / 2 ) - rectChangeROI.x;
-        if ( ( rectChangeROI.y + rectChangeROI.height ) > ( displayHeight  / 2 + matZoomResult.rows / 2 ) )  rectChangeROI.height = ( displayHeight  / 2 + matZoomResult.rows / 2 ) - rectChangeROI.y;
-    }
-    if ( rectChangeROI.width > 0 && rectChangeROI.height > 0 )  {
-        cv::Mat matSelected ( _matDisplay, _rectSelectedWindow );
-        cv::Mat matResult = _generateDisplayImage ( matSelected );
-        matResult.copyTo ( matSelected );
-    }
-    else
-    {
-        cv::Mat matResult = _generateDisplayImage ( _matDisplay );
-        _matDisplay = matResult;
-    }
+    //cv::Rect rectChangeROI = _rectSelectedWindow;
+    //if ( _rectSelectedWindow.width > 0 && _rectSelectedWindow.height > 0 )  {
+    //    if ( rectChangeROI.x < displayWidth  / 2 - matZoomResult.cols / 2 ) rectChangeROI.x = displayWidth  / 2 - matZoomResult.cols / 2;
+    //    if ( rectChangeROI.y < displayHeight / 2 - matZoomResult.rows / 2 ) rectChangeROI.y = displayHeight / 2 - matZoomResult.rows / 2;
+    //    if ( ( rectChangeROI.x + rectChangeROI.width  ) > ( displayWidth   / 2 + matZoomResult.cols / 2 ) )  rectChangeROI.width  = ( displayWidth   / 2 + matZoomResult.cols / 2 ) - rectChangeROI.x;
+    //    if ( ( rectChangeROI.y + rectChangeROI.height ) > ( displayHeight  / 2 + matZoomResult.rows / 2 ) )  rectChangeROI.height = ( displayHeight  / 2 + matZoomResult.rows / 2 ) - rectChangeROI.y;
+    //}
+    //if ( rectChangeROI.width > 0 && rectChangeROI.height > 0 )  {
+    //    cv::Mat matSelected ( _matDisplay, _rectSelectedWindow );
+    //    cv::Mat matResult = _generateDisplayImage ( matSelected );
+    //    matResult.copyTo ( matSelected );
+    //}
+    //else
+    //{
+    //    cv::Mat matResult = _generateDisplayImage ( _matDisplay );
+    //    _matDisplay = matResult;
+    //}
 
     //if (VISION_VIEW_STATE::LEARNING == _enState ||
     //    VISION_VIEW_STATE::ADD_MASK == _enState)
@@ -387,6 +374,10 @@ void VisionView::showContextMenu(const QPoint& pos) // this is a slot
     connect(&action1, SIGNAL(triggered()), this, SLOT(addMask()));
     contextMenu.addAction(&action1);
 
+    QAction action2("Clear Selection", this);
+    connect(&action2, SIGNAL(triggered()), this, SLOT(clearSelectedWindow()));
+    contextMenu.addAction(&action2);
+
     QAction* selectedItem = contextMenu.exec(globalPos);
     if (selectedItem)
     {
@@ -413,10 +404,18 @@ void VisionView::addMask()
     _pDialogEditMask->raise();
 }
 
+void VisionView::clearSelectedWindow()
+{
+    _rectSelectedWindow.width  = -1;
+    _rectSelectedWindow.height = -1;
+    _drawDisplay();
+}
+
 void VisionView::swapImage()
 {
     if ( DISPLAY_SOURCE::RESULT == _enDisplaySource )   {
         _enDisplaySource = DISPLAY_SOURCE::ORIGINAL;
+        _drawDisplay();
     }
     else if ( DISPLAY_SOURCE::ORIGINAL == _enDisplaySource && ! _matArray[ToInt32(DISPLAY_SOURCE::RESULT)].empty() ) {
         _enDisplaySource = DISPLAY_SOURCE::RESULT;
@@ -526,6 +525,17 @@ cv::Mat VisionView::getMat(DISPLAY_SOURCE enSource) const
 cv::Mat VisionView::getCurrentMat() const
 {
     return _matArray[ToInt32(_enDisplaySource)];
+}
+
+void VisionView::applyIntermediateResult()
+{
+    if ( !_matArray[ToInt32(DISPLAY_SOURCE::INTERMEDIATE)].empty() )
+        _matArray[ToInt32(DISPLAY_SOURCE::ORIGINAL)] = _matArray[ToInt32(DISPLAY_SOURCE::INTERMEDIATE)];
+}
+
+void VisionView::clearMat( DISPLAY_SOURCE enSource )
+{
+    _matArray[ToInt32(enSource)].release();
 }
 
 bool VisionView::isDisplayResultImage() const
@@ -646,45 +656,4 @@ PR_Line VisionView::getIntensityCheckLine() const
 void VisionView::setCurrentSrchWindowIndex(int nIndex)
 {
     _nCurrentSrchWindowIndex = nIndex;
-}
-
-cv::Mat VisionView::_generateDisplayImage(const cv::Mat &mat)
-{
-    cv::Mat matResult = mat;
-    if (mat.empty())
-        return matResult;
-
-    if ( _bDisplayGrayScale ) {
-        PR_COLOR_TO_GRAY_CMD stCmd;
-        PR_COLOR_TO_GRAY_RPY stRpy;
-        stCmd.matInput = mat;
-        stCmd.stRatio = _stRGBRatio;
-        PR_ColorToGray ( &stCmd, &stRpy );
-        cv::Mat matGray = stRpy.matResult;
-
-        if ( _bDisplayBinary )    {
-            matResult = _generateBinaryImage(matGray);
-        }
-        else
-        {
-            matResult = matGray;
-        }
-    }else if ( _bDisplayBinary )    {
-        cv::Mat matGray;
-        cv::cvtColor ( mat, matGray, CV_BGR2GRAY );
-        matResult = _generateBinaryImage ( matGray );
-    }
-    
-    if ( matResult.channels() == 1 )  {
-        cvtColor( matResult, matResult, CV_GRAY2BGR );
-    }
-    return matResult;
-}
-
-cv::Mat VisionView::_generateBinaryImage(const cv::Mat &matGray)
-{
-    assert( ! matGray.empty() );
-    cv::Mat matThreshold;
-    cv::threshold(matGray, matThreshold, _nThreshold, PR_MAX_GRAY_LEVEL, _bReverseThres ? THRESH_BINARY_INV : THRESH_BINARY );
-    return matThreshold;
 }

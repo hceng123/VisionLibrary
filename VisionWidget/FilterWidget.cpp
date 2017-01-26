@@ -29,25 +29,18 @@ FilterWidget::~FilterWidget()
 {
 }
 
-std::string FilterWidget::MyName() const
+std::string FilterWidget::myName() const
 {
     return "FilterWidget";
 }
 
 void FilterWidget::on_btnRun_clicked()
 {
-    //VisionWidget *pVW = qobject_cast<VisionWidget *>(this->parent());
-    VisionWidget *pVW = (VisionWidget *)(parent());
-    if ( nullptr == _pVisionView )
+    if ( _checkImage() == false )
         return;
-
-    if ( _pVisionView->getMat().empty() )   {
-        QMessageBox::information(this, "Vision Widget", "Please select an image first!", "Quit");
-        return;
-    }
 
     PR_FILTER_CMD stCmd;
-    stCmd.matInput = _pVisionView->getMat();
+    stCmd.matInput = _pVisionView->getMat(VisionView::DISPLAY_SOURCE::ORIGINAL);
     stCmd.rectROI  = _pVisionView->getSelectedWindow();
     stCmd.enType = static_cast<PR_FILTER_TYPE>(ui.cbFilterType->currentIndex());
     stCmd.szKernel.width  = ui.lineEditKernalSizeX->text().toInt();

@@ -11,7 +11,7 @@ CCWidget::~CCWidget()
 {
 }
 
-std::string CCWidget::MyName() const
+std::string CCWidget::myName() const
 {
     return "CCWidget";
 }
@@ -20,7 +20,7 @@ VisionStatus CCWidget::_runRemoveCC(cv::Mat &mat)
 {
     PR_REMOVE_CC_CMD stCmd;
     PR_REMOVE_CC_RPY stRpy;
-    stCmd.matInput = _pVisionView->getMat();
+    stCmd.matInput = _pVisionView->getMat(VisionView::DISPLAY_SOURCE::ORIGINAL);
     stCmd.rectROI  = _pVisionView->getSelectedWindow();
     stCmd.fAreaThreshold = ui.lineEditAreaThreshold->text().toFloat();
     stCmd.nConnectivity = ui.cbConnectivity->currentText().toInt();    
@@ -44,15 +44,4 @@ void CCWidget::on_btnRun_clicked()
     VisionStatus enStatus = _runRemoveCC ( mat );
     if ( VisionStatus::OK == enStatus )
         _pVisionView->setMat ( VisionView::DISPLAY_SOURCE::INTERMEDIATE, mat );
-}
-
-void CCWidget::on_btnApply_clicked()
-{
-    //if ( _checkImage() == false )
-    //    return;
-
-    //cv::Mat mat;
-    //VisionStatus enStatus = _runRemoveCC ( mat );
-    //if ( VisionStatus::OK == enStatus )
-    //    _pVisionView->setMat ( mat );
 }

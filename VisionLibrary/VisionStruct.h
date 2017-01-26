@@ -244,11 +244,10 @@ struct PR_SRCH_FIDUCIAL_MARK_RPY
 struct PR_FIT_LINE_CMD
 {
     cv::Mat                 matInput;
-    bool                    bInputPreprocessed;
     cv::Rect                rectROI;
     Int32                   nThreshold;
     PR_OBJECT_ATTRIBUTE     enAttribute;
-    PR_RM_FIT_NOISE_METHOD  enRmNoiseMethod;    
+    PR_RM_FIT_NOISE_METHOD  enRmNoiseMethod;
     float                   fErrTol;
 };
 
@@ -447,6 +446,22 @@ struct PR_REMOVE_CC_RPY
     VisionStatus            enStatus;
     Int32                   nTotalCC;
     Int32                   nRemovedCC;
+    cv::Mat                 matResult;
+};
+
+struct PR_DETECT_EDGE_CMD
+{
+    cv::Mat                 matInput;
+    cv::Rect                rectROI;
+    Int16                   nThreshold1;
+    Int16                   nThreshold2;
+    Int16                   nApertureSize;
+};
+
+
+struct PR_DETECT_EDGE_RPY
+{
+    VisionStatus            enStatus;
     cv::Mat                 matResult;
 };
 

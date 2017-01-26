@@ -74,7 +74,7 @@ public:
     //explicit VisionView(QLabel *parent = 0);
     explicit VisionView(QWidget *parent = 0, Qt::WindowFlags f=0);
     ~VisionView();
-    void setMachineState(VISION_VIEW_STATE enMachineState);
+    void setState(VISION_VIEW_STATE enState);
     void setMaskEditState(MASK_EDIT_STATE enMaskEditState);
     void setMaskShape(MASK_SHAPE enMaskShape);
     void setTestVisionState(TEST_VISION_STATE enState);
@@ -84,10 +84,10 @@ public:
     void restoreZoom();
     void startTimer();
     void setMat( DISPLAY_SOURCE enSource, const cv::Mat &mat);
-    cv::Mat getMat( DISPLAY_SOURCE enSource = DISPLAY_SOURCE::ORIGINAL) const;
+    cv::Mat getMat( DISPLAY_SOURCE enSource = VisionView::DISPLAY_SOURCE::ORIGINAL ) const;
     cv::Mat getCurrentMat() const;
-    //void setResultMat(const cv::Mat &mat);
-    //cv::Mat getResultMat() const;
+    void applyIntermediateResult();
+    void clearMat( DISPLAY_SOURCE enSource );
     bool isDisplayResultImage() const;
     bool isDisplayGrayScale() const;
     void setCurrentSrchWindowIndex(int nIndex);
@@ -109,8 +109,6 @@ protected:
     void _drawLearnWindow(cv::Mat &mat);
     void _drawSelectedWindow(cv::Mat &mat);
     void _drawTestVisionLibrary(cv::Mat &mat);
-    cv::Mat _generateBinaryImage(const cv::Mat &matGray);
-    cv::Mat _generateDisplayImage(const cv::Mat &mat);
     void _zoomPoint(cv::Point &point, float fZoomFactor);
     void _zoomRect(cv::Rect &rect, float fZoomFactor);
 private:
@@ -121,9 +119,6 @@ private:
     cv::Point                       _ptLeftClickEndPos;
     VISION_VIEW_STATE               _enState;
     TEST_VISION_STATE               _enTestVisionState;
-    //cv::Mat                         _mat;
-    //cv::Mat                         _matResult;
-    //bool                            _bDisplayResultImage;
     cv::Mat                         _matArray[DISPLAY_SOURCE::SIZE];
     DISPLAY_SOURCE                  _enDisplaySource;
 	cv::Mat             			_matDisplay;
@@ -160,6 +155,7 @@ signals:
 protected slots:
     void showContextMenu(const QPoint& pos); // this is a slot
     void addMask();
+    void clearSelectedWindow();
     int updateMat();
 };
 

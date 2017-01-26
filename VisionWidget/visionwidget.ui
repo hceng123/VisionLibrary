@@ -18,7 +18,7 @@
     <property name="geometry">
      <rect>
       <x>70</x>
-      <y>110</y>
+      <y>60</y>
       <width>640</width>
       <height>640</height>
      </rect>
@@ -57,7 +57,7 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>110</y>
+      <y>60</y>
       <width>50</width>
       <height>461</height>
      </rect>
@@ -67,9 +67,9 @@
     <property name="geometry">
      <rect>
       <x>730</x>
-      <y>20</y>
+      <y>60</y>
       <width>581</width>
-      <height>691</height>
+      <height>611</height>
      </rect>
     </property>
     <property name="currentIndex">
@@ -85,7 +85,7 @@
         <x>10</x>
         <y>10</y>
         <width>561</width>
-        <height>641</height>
+        <height>571</height>
        </rect>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout">
@@ -820,181 +820,6 @@
     </property>
     <property name="text">
      <string>Bayer format</string>
-    </property>
-   </widget>
-   <widget class="QCheckBox" name="checkBoxDisplayGrayScale">
-    <property name="geometry">
-     <rect>
-      <x>90</x>
-      <y>50</y>
-      <width>111</width>
-      <height>17</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Display Gray Scale</string>
-    </property>
-   </widget>
-   <widget class="QCheckBox" name="checkBoxDisplayBinary">
-    <property name="geometry">
-     <rect>
-      <x>90</x>
-      <y>80</y>
-      <width>91</width>
-      <height>17</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Display Binary</string>
-    </property>
-   </widget>
-   <widget class="QLabel" name="labelChannelRatio">
-    <property name="geometry">
-     <rect>
-      <x>220</x>
-      <y>50</y>
-      <width>71</width>
-      <height>16</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Channel Ratio</string>
-    </property>
-   </widget>
-   <widget class="QLabel" name="labelRChannel">
-    <property name="geometry">
-     <rect>
-      <x>310</x>
-      <y>50</y>
-      <width>16</width>
-      <height>16</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>R</string>
-    </property>
-   </widget>
-   <widget class="QLineEdit" name="lineEditRRatio">
-    <property name="geometry">
-     <rect>
-      <x>330</x>
-      <y>50</y>
-      <width>51</width>
-      <height>20</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>0.299</string>
-    </property>
-   </widget>
-   <widget class="QLabel" name="labelGChannel">
-    <property name="geometry">
-     <rect>
-      <x>410</x>
-      <y>50</y>
-      <width>16</width>
-      <height>16</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>G</string>
-    </property>
-   </widget>
-   <widget class="QLineEdit" name="lineEditGRatio">
-    <property name="geometry">
-     <rect>
-      <x>430</x>
-      <y>50</y>
-      <width>51</width>
-      <height>20</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>0.587</string>
-    </property>
-   </widget>
-   <widget class="QLabel" name="labelBChannel">
-    <property name="geometry">
-     <rect>
-      <x>510</x>
-      <y>50</y>
-      <width>16</width>
-      <height>16</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>B</string>
-    </property>
-   </widget>
-   <widget class="QLineEdit" name="lineEditBRatio">
-    <property name="geometry">
-     <rect>
-      <x>530</x>
-      <y>50</y>
-      <width>51</width>
-      <height>20</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>0.114</string>
-    </property>
-   </widget>
-   <widget class="QSlider" name="sliderThreshold">
-    <property name="geometry">
-     <rect>
-      <x>310</x>
-      <y>80</y>
-      <width>191</width>
-      <height>19</height>
-     </rect>
-    </property>
-    <property name="maximum">
-     <number>255</number>
-    </property>
-    <property name="value">
-     <number>150</number>
-    </property>
-    <property name="orientation">
-     <enum>Qt::Horizontal</enum>
-    </property>
-   </widget>
-   <widget class="QLabel" name="labelBinaryThreshold">
-    <property name="geometry">
-     <rect>
-      <x>220</x>
-      <y>80</y>
-      <width>51</width>
-      <height>16</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Threshold</string>
-    </property>
-   </widget>
-   <widget class="QLineEdit" name="lineEditBinaryThreshold">
-    <property name="geometry">
-     <rect>
-      <x>510</x>
-      <y>80</y>
-      <width>51</width>
-      <height>20</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>150</string>
-    </property>
-   </widget>
-   <widget class="QCheckBox" name="checkBoxReverseThres">
-    <property name="geometry">
-     <rect>
-      <x>600</x>
-      <y>80</y>
-      <width>111</width>
-      <height>17</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Reverse Threshold</string>
     </property>
    </widget>
   </widget>

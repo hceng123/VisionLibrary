@@ -11,13 +11,12 @@ class CCWidget : public BaseProcessWidget
 public:
     CCWidget(QWidget *parent = Q_NULLPTR);
     ~CCWidget();
-    virtual std::string MyName() const override;
+    virtual std::string myName() const override;
 private:
     VisionStatus _runRemoveCC(cv::Mat &mat);
 
 private slots:
     void on_btnRun_clicked();
-    void on_btnApply_clicked();
 
 private:
     Ui::CCWidget ui;

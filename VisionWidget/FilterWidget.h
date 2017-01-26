@@ -11,7 +11,7 @@ class FilterWidget : public BaseProcessWidget
 public:
     FilterWidget(QWidget *parent = Q_NULLPTR);
     ~FilterWidget();
-    virtual std::string MyName() const override;
+    virtual std::string myName() const override;
     
 private slots:
     void on_btnRun_clicked();

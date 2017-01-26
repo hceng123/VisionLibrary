@@ -7,6 +7,7 @@
 #include "ThresholdWidget.h"
 #include "GrayScaleWidget.h"
 #include "CCWidget.h"
+#include "EdgeDetectWidget.h"
 
 class VisionWidget : public QMainWindow
 {
@@ -25,14 +26,6 @@ private slots:
     void on_ocrBtn_clicked();
     void on_srchFiducialBtn_clicked();    
     void on_addPreProcessorBtn_clicked();    
-    void on_checkBoxDisplayGrayScale_clicked(bool checked);
-    void on_checkBoxDisplayBinary_clicked(bool checked);
-    void on_checkBoxReverseThres_clicked(bool checked);
-    void on_sliderThreshold_valueChanged(int position);
-    void on_lineEditBinaryThreshold_returnPressed();
-    void on_lineEditRRatio_returnPressed();
-    void on_lineEditGRatio_returnPressed();
-    void on_lineEditBRatio_returnPressed();
 
 protected:
     bool checkDisplayImage();
@@ -41,12 +34,11 @@ private:
     std::string                         _sourceImagePath;
     cv::Mat                             _matOriginal;
     std::unique_ptr<QIntValidator>      _ptrIntValidator;
-    std::unique_ptr<QDoubleValidator>   _ptrDoubleValidator;
-    std::unique_ptr<QIntValidator>      _ptrThresValidator;
     std::unique_ptr<FilterWidget>       _ptrFilterWidget;
     std::unique_ptr<ThresholdWidget>    _ptrThresholdWidget;
     std::unique_ptr<GrayScaleWidget>    _ptrGrayScaleWidget;
     std::unique_ptr<CCWidget>           _ptrCcWidget;
+    std::unique_ptr<EdgeDetectWidget>   _ptrEdgeDetectWidget;
 };
 
 #endif // VISIONWIDGET_H

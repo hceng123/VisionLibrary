@@ -1,6 +1,8 @@
 #include "BaseProcessWidget.h"
 #include <QMessageBox>
 
+std::string BaseProcessWidget::_strCurrentWidgetName = "undefined";
+
 BaseProcessWidget::BaseProcessWidget(QWidget *parent)
     : QWidget(parent)
 {
@@ -15,7 +17,7 @@ void BaseProcessWidget::setVisionView(VisionView* pVisionView)
     _pVisionView = pVisionView;
 }
 
-bool BaseProcessWidget::_checkImage() const
+bool BaseProcessWidget::_checkImage()
 {
     assert ( nullptr != _pVisionView );
 
@@ -23,6 +25,11 @@ bool BaseProcessWidget::_checkImage() const
     {
         QMessageBox::information(nullptr, "Vision Widget", "Please select an image first!", "Quit");
         return false;
+    }
+
+    if ( _strCurrentWidgetName != myName() )    {
+        _pVisionView->applyIntermediateResult();
+        _strCurrentWidgetName = myName();
     }
     return true;
 }
