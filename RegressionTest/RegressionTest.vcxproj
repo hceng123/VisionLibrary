@@ -188,6 +188,7 @@ FC /L $(ProjectDir)$(ProjectName)_golden.txt $(ProjectDir)$(ProjectName)_result.
   <ItemGroup>
     <ClCompile Include="RegressionTest.cpp" />
     <ClCompile Include="stdafx.cpp" />
+    <ClCompile Include="TestAutoThreshold.cpp" />
     <ClCompile Include="TestFitting.cpp" />
     <ClCompile Include="TestInspDevice.cpp" />
     <ClCompile Include="TestLogCase.cpp" />

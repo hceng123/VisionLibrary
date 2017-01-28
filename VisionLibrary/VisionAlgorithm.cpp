@@ -23,8 +23,8 @@ namespace AOI
 namespace Vision
 {
 
-#define MARK_FUNCTION_START_TIME    __int64 functionStart = _stopWatch.AbsNow()
-#define MARK_FUNCTION_END_TIME      TimeLog::GetInstance()->addTimeLog( __FUNCTION__, _stopWatch.AbsNow() - functionStart )
+#define MARK_FUNCTION_START_TIME    CStopWatch      stopWatch; __int64 functionStart = stopWatch.AbsNow()
+#define MARK_FUNCTION_END_TIME      TimeLog::GetInstance()->addTimeLog( __FUNCTION__, stopWatch.AbsNow() - functionStart )
 
 /*static*/ OcrTesseractPtr VisionAlgorithm::_ptrOcrTesseract;
 
@@ -92,7 +92,6 @@ VisionStatus VisionAlgorithm::srchTmpl(PR_SRCH_TMPL_CMD *const pFindObjCmd, PR_S
 
     TmplRecord *pRecord = (TmplRecord *)RecordManager::getInstance()->get(pFindObjCmd->nRecordID);
 
-    //__int64 functionStart = _stopWatch.AbsNow();
     MARK_FUNCTION_START_TIME;
     cv::Mat matSrchROI ( pFindObjCmd->mat, pFindObjCmd->rectSrchWindow );
     
@@ -106,7 +105,6 @@ VisionStatus VisionAlgorithm::srchTmpl(PR_SRCH_TMPL_CMD *const pFindObjCmd, PR_S
     cv::Mat matDescriptorScene;
     cv::Mat mask;
     
-    _stopWatch.Start();
     detector->detectAndCompute ( matSrchROI, mask, vecKeypointScene, matDescriptorScene );
     TimeLog::GetInstance()->addTimeLog("detectAndCompute");
 
@@ -120,7 +118,6 @@ VisionStatus VisionAlgorithm::srchTmpl(PR_SRCH_TMPL_CMD *const pFindObjCmd, PR_S
     VectorOfVectorOfDMatch vecVecMatches;
     vecVecMatches.reserve(2000);
 	
-    _stopWatch.Start();
     matcher.knnMatch ( pRecord->getModelDescriptor(), matDescriptorScene, vecVecMatches, 2 );
 	TimeLog::GetInstance()->addTimeLog("knnMatch");
 
@@ -322,13 +319,13 @@ namespace
 * Note:      Mu is name of greek symbol μ.
 *            Omega and Eta are also greek symbol.
 *******************************************************************************/
-std::vector<int> VisionAlgorithm::_autoMultiLevelThreshold(const cv::Mat &mat, const int N)
+std::vector<Int16> VisionAlgorithm::_autoMultiLevelThreshold(const cv::Mat &mat, const int N)
 {
     assert(N >= 1 && N <= 4);
 
     const int sbins = 128;
     const float MIN_P = 0.001f;
-    std::vector<int> vecThreshold;
+    std::vector<Int16> vecThreshold;
     int channels[] = { 0 };
     int histSize[] = { sbins };
 
@@ -360,18 +357,19 @@ std::vector<int> VisionAlgorithm::_autoMultiLevelThreshold(const cv::Mat &mat, c
     for (int j = i; j <= sbins; ++j)
     {
         vecVecOmega[i][j] = P[j] - P[i];
-        vecVecMu[i][j] = S[j] - S[i];
+        vecVecMu[i][j]    = S[j] - S[i];
     }
 
+    const int START = 1;
     if (N == 1)
     {
         float fMaxSigma = 0;
         int nResultT1 = 0;
-        for (int T = 1; T < sbins; ++T)
+        for (int T = START; T < sbins; ++ T)
         {
             float fSigma = 0.f;
-            if (vecVecOmega[1][T] > MIN_P)
-                fSigma += vecVecMu[1][T] * vecVecMu[1][T] / vecVecOmega[1][T];
+            if (vecVecOmega[START][T] > MIN_P)
+                fSigma += vecVecMu[START][T] * vecVecMu[1][T] / vecVecOmega[START][T];
             if (vecVecOmega[T][sbins] > MIN_P)
                 fSigma += vecVecMu[T][sbins] * vecVecMu[T][sbins] / vecVecOmega[T][sbins];
             if (fMaxSigma < fSigma)    {
@@ -385,20 +383,20 @@ std::vector<int> VisionAlgorithm::_autoMultiLevelThreshold(const cv::Mat &mat, c
     {
         float fMaxSigma = 0;
         int nResultT1 = 0, nResultT2 = 0;
-        for (int T1 = 1; T1 < sbins - 1; ++T1)
-        for (int T2 = T1 + 1; T2 < sbins; ++T2)
+        for (int T1 = START;  T1 < sbins - 1; ++ T1)
+        for (int T2 = T1 + 1; T2 < sbins;     ++ T2)
         {
             float fSigma = 0.f;
 
-            if (vecVecEta[1][T1] >= 0.f)
-                fSigma += vecVecEta[1][T1];
+            if (vecVecEta[START][T1] >= 0.f)
+                fSigma += vecVecEta[START][T1];
             else
             {
-                if (vecVecOmega[1][T1] > MIN_P)
-                    vecVecEta[1][T1] = vecVecMu[1][T1] * vecVecMu[1][T1] / vecVecOmega[1][T1];
+                if (vecVecOmega[START][T1] > MIN_P)
+                    vecVecEta[START][T1] = vecVecMu[START][T1] * vecVecMu[START][T1] / vecVecOmega[START][T1];
                 else
-                    vecVecEta[1][T1] = 0.f;
-                fSigma += vecVecEta[1][T1];
+                    vecVecEta[START][T1] = 0.f;
+                fSigma += vecVecEta[START][T1];
             }
 
             if (vecVecEta[T1][T2] >= 0.f)
@@ -436,21 +434,21 @@ std::vector<int> VisionAlgorithm::_autoMultiLevelThreshold(const cv::Mat &mat, c
     {
         float fMaxSigma = 0;
         int nResultT1 = 0, nResultT2 = 0, nResultT3 = 0;
-        for (int T1 = 1; T1 < sbins - 2; ++T1)
-        for (int T2 = T1 + 1; T2 < sbins - 1; ++T2)
-        for (int T3 = T2 + 1; T3 < sbins; ++T3)
+        for (int T1 = START;  T1 < sbins - 2; ++ T1)
+        for (int T2 = T1 + 1; T2 < sbins - 1; ++ T2)
+        for (int T3 = T2 + 1; T3 < sbins;     ++ T3)
         {
 
             float fSigma = 0.f;
-            if (vecVecEta[1][T1] >= 0.f)
-                fSigma += vecVecEta[1][T1];
+            if (vecVecEta[START][T1] >= 0.f)
+                fSigma += vecVecEta[START][T1];
             else
             {
-                if (vecVecOmega[1][T1] > MIN_P)
-                    vecVecEta[1][T1] = vecVecMu[1][T1] * vecVecMu[1][T1] / vecVecOmega[1][T1];
+                if (vecVecOmega[START][T1] > MIN_P)
+                    vecVecEta[START][T1] = vecVecMu[START][T1] * vecVecMu[START][T1] / vecVecOmega[START][T1];
                 else
-                    vecVecEta[1][T1] = 0.f;
-                fSigma += vecVecEta[1][T1];
+                    vecVecEta[START][T1] = 0.f;
+                fSigma += vecVecEta[START][T1];
             }
 
             if (vecVecEta[T1][T2] >= 0.f)
@@ -501,22 +499,22 @@ std::vector<int> VisionAlgorithm::_autoMultiLevelThreshold(const cv::Mat &mat, c
     {
         float fMaxSigma = 0;
         int nResultT1 = 0, nResultT2 = 0, nResultT3 = 0, nResultT4 = 0;
-        for (int T1 = 1; T1 < sbins - 3; ++T1)
-        for (int T2 = T1 + 1; T2 < sbins - 2; ++T2)
-        for (int T3 = T2 + 1; T3 < sbins - 1; ++T3)
-        for (int T4 = T3 + 1; T4 < sbins; ++T4)
+        for (int T1 = START;  T1 < sbins - 3; ++ T1)
+        for (int T2 = T1 + 1; T2 < sbins - 2; ++ T2)
+        for (int T3 = T2 + 1; T3 < sbins - 1; ++ T3)
+        for (int T4 = T3 + 1; T4 < sbins;     ++ T4)
         {
             float fSigma = 0.f;
 
-            if (vecVecEta[1][T1] >= 0.f)
-                fSigma += vecVecEta[1][T1];
+            if (vecVecEta[START][T1] >= 0.f)
+                fSigma += vecVecEta[START][T1];
             else
             {
-                if (vecVecOmega[1][T1] > MIN_P)
-                    vecVecEta[1][T1] = vecVecMu[1][T1] * vecVecMu[1][T1] / vecVecOmega[1][T1];
+                if (vecVecOmega[START][T1] > MIN_P)
+                    vecVecEta[START][T1] = vecVecMu[START][T1] * vecVecMu[START][T1] / vecVecOmega[START][T1];
                 else
-                    vecVecEta[1][T1] = 0.f;
-                fSigma += vecVecEta[1][T1];
+                    vecVecEta[START][T1] = 0.f;
+                fSigma += vecVecEta[START][T1];
             }
 
             if (vecVecEta[T1][T2] >= 0.f)
@@ -580,9 +578,37 @@ std::vector<int> VisionAlgorithm::_autoMultiLevelThreshold(const cv::Mat &mat, c
     return vecThreshold;
 }
 
+VisionStatus VisionAlgorithm::autoThreshold(PR_AUTO_THRESHOLD_CMD *pstCmd, PR_AUTO_THRESHOLD_RPY *pstRpy)
+{
+    assert ( pstCmd != nullptr && pstRpy != nullptr );
+
+    if (pstCmd->matInput.empty()) {
+        WriteLog("Input image is empty");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    if ( pstCmd->rectROI.x < 0 || pstCmd->rectROI.y < 0 ||
+        ( pstCmd->rectROI.x + pstCmd->rectROI.width ) > pstCmd->matInput.cols ||
+        ( pstCmd->rectROI.y + pstCmd->rectROI.height ) > pstCmd->matInput.rows )    {
+        WriteLog("The Fitting range is invalid");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return VisionStatus::INVALID_PARAM;
+    }
+
+    MARK_FUNCTION_START_TIME;
+
+    cv::Mat matROI(pstCmd->matInput, pstCmd->rectROI);
+    pstRpy->vecThreshold = _autoMultiLevelThreshold ( matROI, pstCmd->nThresholdNum);
+
+    MARK_FUNCTION_END_TIME;
+    pstRpy->enStatus = VisionStatus::OK;
+    return pstRpy->enStatus;
+}
+
 int VisionAlgorithm::_autoThreshold(const cv::Mat &mat)
 {
-    std::vector<int> vecThreshold = _autoMultiLevelThreshold(mat, 1);
+    auto vecThreshold = _autoMultiLevelThreshold(mat, 1);
     return vecThreshold[0];
 }
 
@@ -1261,7 +1287,7 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
     cv::destroyWindow ( strWindowName );
 }
 
-VisionStatus VisionAlgorithm::runLogCase(const std::string &strPath)
+/*static*/ VisionStatus VisionAlgorithm::runLogCase(const std::string &strPath)
 {
     if ( strPath.length() < 2 )
         return VisionStatus::INVALID_PARAM;
@@ -1301,6 +1327,10 @@ VisionStatus VisionAlgorithm::runLogCase(const std::string &strPath)
         pLogCase = std::make_unique<LogCaseSrchFiducial>( strLocalPath, true );
     else if (LogCaseOcr::StaticGetFolderPrefix() == folderPrefix)
         pLogCase = std::make_unique<LogCaseOcr>( strLocalPath, true );
+    else if (LogCaseRemoveCC::StaticGetFolderPrefix() == folderPrefix )
+        pLogCase = std::make_unique<LogCaseRemoveCC>( strLocalPath, true );
+    else if (LogCaseDetectEdge::StaticGetFolderPrefix() == folderPrefix )
+        pLogCase = std::make_unique<LogCaseDetectEdge>( strLocalPath, true );
 
     if ( nullptr != pLogCase )
         enStatus = pLogCase->RunLogCase();
@@ -1536,6 +1566,25 @@ VisionStatus VisionAlgorithm::srchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd
     return listPoint;
 }
 
+/*static*/ ListOfPoint VisionAlgorithm::_findPointsInRegion(const cv::Mat &mat, const cv::Rect &rect)
+{
+    ListOfPoint listPoint;
+    if ( mat.empty() )
+        return listPoint;
+
+    cv::Mat matROI(mat, rect);
+    cv::Mat matThreshold;
+    
+    std::vector<cv::Point> vecPoints;
+    vecPoints.reserve(100000);
+    cv::findNonZero( matThreshold, vecPoints );
+    for ( const auto &point : vecPoints )   {
+        cv::Point point2f ( point.x + rect.x, point.y + rect.y );
+        listPoint.push_back(point2f);
+    }
+    return listPoint;
+}
+
 /*static*/ std::vector<size_t> VisionAlgorithm::_findPointOverLineTol(const VectorOfPoint   &vecPoint,
                                                                       bool                   bReversedFit,
                                                                       const float            fSlope,
@@ -1582,18 +1631,20 @@ VisionStatus VisionAlgorithm::srchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd
 
 VisionStatus VisionAlgorithm::fitLine(PR_FIT_LINE_CMD *pstCmd, PR_FIT_LINE_RPY *pstRpy, bool bReplay)
 {
-    char charrMsg [ 1000 ];
-    if (NULL == pstCmd || NULL == pstRpy) {
-        _snprintf(charrMsg, sizeof(charrMsg), "Input is invalid, pstCmd = %d, pstRpy = %d", (int)pstCmd, (int)pstRpy);
-        WriteLog(charrMsg);
-        pstRpy->nStatus = ToInt32 ( VisionStatus::INVALID_PARAM );
-        return VisionStatus::INVALID_PARAM;
-    }
+    assert ( pstCmd != nullptr && pstRpy != nullptr );
 
     if (pstCmd->matInput.empty()) {
         WriteLog("Input image is empty");
-        pstRpy->nStatus = ToInt32 ( VisionStatus::INVALID_PARAM );
-        return VisionStatus::INVALID_PARAM;
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+    
+    if ( pstCmd->rectROI.x < 0 || pstCmd->rectROI.y < 0 || 
+        ( pstCmd->rectROI.x + pstCmd->rectROI.width ) > pstCmd->matInput.cols ||
+        ( pstCmd->rectROI.y + pstCmd->rectROI.height ) > pstCmd->matInput.rows )    {
+        WriteLog("The OCR search range is invalid");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
     }
 
     MARK_FUNCTION_START_TIME;
@@ -1655,7 +1706,7 @@ VisionStatus VisionAlgorithm::fitLine(PR_FIT_LINE_CMD *pstCmd, PR_FIT_LINE_RPY *
     enStatus = VisionStatus::OK;
 
 EXIT:
-    pstRpy->nStatus = ToInt32(enStatus);
+    pstRpy->enStatus = enStatus;
     if ( ! bReplay )    {
         if ( PR_DEBUG_MODE::LOG_FAIL_CASE == Config::GetInstance()->getDebugMode() && enStatus != VisionStatus::OK )    {
             pLogCase->WriteCmd ( pstCmd );
@@ -1672,20 +1723,16 @@ EXIT:
 
 VisionStatus VisionAlgorithm::fitParallelLine(PR_FIT_PARALLEL_LINE_CMD *pstCmd, PR_FIT_PARALLEL_LINE_RPY *pstRpy, bool bReplay)
 {
-    char charrMsg [ 1000 ];
-    if (NULL == pstCmd || NULL == pstRpy) {
-        _snprintf(charrMsg, sizeof(charrMsg), "Input is invalid, pstCmd = %d, pstRpy = %d", (int)pstCmd, (int)pstRpy);
-        WriteLog(charrMsg);
-        pstRpy->nStatus = ToInt32 ( VisionStatus::INVALID_PARAM );
-        return VisionStatus::INVALID_PARAM;
-    }
+    assert ( pstCmd != nullptr && pstRpy != nullptr );
 
     if (pstCmd->matInput.empty()) {
         WriteLog("Input image is empty");
         pstRpy->nStatus = ToInt32 ( VisionStatus::INVALID_PARAM );
         return VisionStatus::INVALID_PARAM;
     }
+
     MARK_FUNCTION_START_TIME;
+
     std::unique_ptr<LogCaseFitParallelLine> pLogCase;
     if ( ! bReplay )    {
         pLogCase = std::make_unique<LogCaseFitParallelLine>( Config::GetInstance()->getLogCaseDir() );
@@ -2252,7 +2299,7 @@ VisionStatus VisionAlgorithm::ocr(PR_OCR_CMD *pstCmd, PR_OCR_RPY *pstRpy, bool b
     if ( pstCmd->rectROI.x < 0 || pstCmd->rectROI.y < 0 || 
         ( pstCmd->rectROI.x + pstCmd->rectROI.width ) > pstCmd->matInput.cols ||
         ( pstCmd->rectROI.y + pstCmd->rectROI.height ) > pstCmd->matInput.rows )    {
-        WriteLog("The fit circle search range is invalid");
+        WriteLog("The OCR search range is invalid");
         pstRpy->nStatus = ToInt32 ( VisionStatus::INVALID_PARAM );
         return VisionStatus::INVALID_PARAM;
     }
@@ -2318,6 +2365,245 @@ VisionStatus VisionAlgorithm::ocr(PR_OCR_CMD *pstCmd, PR_OCR_RPY *pstRpy, bool b
 
     MARK_FUNCTION_END_TIME;    
     return enStatus;
+}
+
+VisionStatus VisionAlgorithm::colorToGray(PR_COLOR_TO_GRAY_CMD *pstCmd, PR_COLOR_TO_GRAY_RPY *pstRpy)
+{
+    assert ( pstCmd != nullptr && pstRpy != nullptr );
+
+    if (pstCmd->matInput.empty()) {
+        WriteLog("Input image is empty");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+    char charrMsg [ 1000 ];
+    if ( pstCmd->matInput.channels() != 3 ) {
+        _snprintf(charrMsg, sizeof(charrMsg), "Convert from color to gray, the input image channel number %d not equal to 3", pstCmd->matInput.channels());
+        WriteLog(charrMsg);
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    std::vector<float> coefficients{ pstCmd->stRatio.fRatioB, pstCmd->stRatio.fRatioG, pstCmd->stRatio.fRatioR };
+    cv::Mat matCoefficients = cv::Mat(coefficients).reshape(1, 1);
+    cv::transform(pstCmd->matInput, pstRpy->matResult, matCoefficients);
+
+    pstRpy->enStatus = VisionStatus::OK;
+    return pstRpy->enStatus;
+}
+
+VisionStatus VisionAlgorithm::filter(PR_FILTER_CMD *pstCmd, PR_FILTER_RPY *pstRpy)
+{
+    assert ( pstCmd != nullptr && pstRpy != nullptr );
+    char charrMsg [ 1000 ];
+
+    if (pstCmd->matInput.empty()) {
+        WriteLog("Input image is empty");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    if ( pstCmd->rectROI.x < 0 || pstCmd->rectROI.y < 0 ||
+        ( pstCmd->rectROI.x + pstCmd->rectROI.width ) > pstCmd->matInput.cols ||
+        ( pstCmd->rectROI.y + pstCmd->rectROI.height ) > pstCmd->matInput.rows )    {
+        WriteLog("The input ROI is invalid");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return VisionStatus::INVALID_PARAM;
+    }
+
+    if ( PR_FILTER_TYPE::GAUSSIAN_FILTER == pstCmd->enType &&
+        ( ( pstCmd->szKernel.width % 2 != 1 ) || ( pstCmd->szKernel.height % 2 != 1 ) ) )   {
+        _snprintf(charrMsg, sizeof (charrMsg), "Guassian filter kernel size ( %d, %d ) is invalid", pstCmd->szKernel.width, pstCmd->szKernel.height );
+        WriteLog ( charrMsg );
+        pstRpy->enStatus = VisionStatus::GUASSIAN_FILTER_KERNEL_INVALID;
+        return VisionStatus::GUASSIAN_FILTER_KERNEL_INVALID;
+    }
+
+    if ( PR_FILTER_TYPE::MEDIAN_FILTER == pstCmd->enType &&
+        ( ( pstCmd->szKernel.width % 2 != 1 ) || ( pstCmd->szKernel.height % 2 != 1 ) ) )   {
+        _snprintf(charrMsg, sizeof (charrMsg), "Median filter kernel size ( %d, %d ) is invalid", pstCmd->szKernel.width, pstCmd->szKernel.height );
+        WriteLog ( charrMsg );
+        pstRpy->enStatus = VisionStatus::MEDIAN_FILTER_KERNEL_INVALID;
+        return VisionStatus::MEDIAN_FILTER_KERNEL_INVALID;
+    }
+
+    MARK_FUNCTION_START_TIME;
+
+    pstRpy->matResult = pstCmd->matInput.clone();
+    cv::Mat matROI ( pstRpy->matResult, pstCmd->rectROI );
+
+    VisionStatus enStatus = VisionStatus::OK;
+    if ( PR_FILTER_TYPE::NORMALIZED_BOX_FILTER == pstCmd->enType )  {
+        cv::blur( matROI, matROI, pstCmd->szKernel);
+    }else if ( PR_FILTER_TYPE::GAUSSIAN_FILTER == pstCmd->enType )  {
+        cv::GaussianBlur( matROI, matROI, pstCmd->szKernel, pstCmd->dSigmaX, pstCmd->dSigmaY);
+    }else if ( PR_FILTER_TYPE::MEDIAN_FILTER == pstCmd->enType) {
+        cv::medianBlur( matROI, matROI, pstCmd->szKernel.width);
+    }else if ( PR_FILTER_TYPE::BILATERIAL_FILTER == pstCmd->enType) {
+        cv::Mat matResult;
+        cv::bilateralFilter ( matROI, matResult, pstCmd->nDiameter, pstCmd->dSigmaColor, pstCmd->dSigmaSpace );
+        if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE )   {
+            showImage("Bilateral filter result", matResult );
+        }
+        matResult.copyTo( matROI );
+    }else {
+        enStatus = VisionStatus::INVALID_PARAM;
+    }
+
+    MARK_FUNCTION_END_TIME;
+
+    pstRpy->enStatus = enStatus;
+    return pstRpy->enStatus;
+}
+
+/*static*/ VisionStatus VisionAlgorithm::removeCC(PR_REMOVE_CC_CMD *pstCmd, PR_REMOVE_CC_RPY *pstRpy, bool bReplay)
+{
+    assert ( pstCmd != nullptr && pstRpy != nullptr );
+    char chArrMsg [ 1000 ];
+
+    if ( pstCmd->matInput.empty() ) {
+        WriteLog("Input image is empty");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    if ( pstCmd->rectROI.x < 0 || pstCmd->rectROI.y < 0 ||
+        ( pstCmd->rectROI.x + pstCmd->rectROI.width ) > pstCmd->matInput.cols ||
+        ( pstCmd->rectROI.y + pstCmd->rectROI.height ) > pstCmd->matInput.rows )    {
+        WriteLog("The input ROI is invalid");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return VisionStatus::INVALID_PARAM;
+    }
+
+    if ( pstCmd->nConnectivity != 4 && pstCmd->nConnectivity != 8 ) {
+        _snprintf(chArrMsg, sizeof (chArrMsg), "The connectivity %d is not 4 or 8", pstCmd->nConnectivity );
+        WriteLog ( chArrMsg );
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return VisionStatus::INVALID_PARAM;
+    }
+
+    MARK_FUNCTION_START_TIME;
+
+    std::unique_ptr<LogCaseRemoveCC> pLogCase;
+    if ( ! bReplay )    {
+        pLogCase = std::make_unique<LogCaseRemoveCC>( Config::GetInstance()->getLogCaseDir() );
+        if ( PR_DEBUG_MODE::LOG_ALL_CASE == Config::GetInstance()->getDebugMode() )
+            pLogCase->WriteCmd ( pstCmd );
+    }
+
+    pstRpy->matResult = pstCmd->matInput.clone();
+    cv::Mat matROI ( pstRpy->matResult, pstCmd->rectROI );
+    cv::Mat matGray = matROI;
+    if ( matROI.channels() == 3 )
+        cv::cvtColor ( matROI, matGray, CV_BGR2GRAY );
+
+    cv::Mat matLabels;
+    cv::connectedComponents( matGray, matLabels, pstCmd->nConnectivity, CV_32S);
+
+    double minValue, maxValue;
+    cv::minMaxIdx( matLabels, &minValue, &maxValue );
+
+    VisionStatus enStatus = VisionStatus::OK;
+    cv::Mat matRemoveMask = cv::Mat::zeros(matLabels.size(), CV_8UC1);
+
+    if ( maxValue > Config::GetInstance()->getRemoveCCMaxComponents() ) {
+        enStatus = VisionStatus::TOO_MUCH_CC_TO_REMOVE;
+        goto EXIT;
+    }
+
+    int nCurrentLabel = 1;
+    int nCurrentLabelCount = 0;
+    int nTotalPixels = matLabels.rows * matLabels.cols;    
+    pstRpy->nRemovedCC = 0;
+
+    do
+    {
+        cv::Mat matTemp = matLabels - nCurrentLabel;
+        nCurrentLabelCount = nTotalPixels - cv::countNonZero ( matTemp );
+        if ( 0 < nCurrentLabelCount && nCurrentLabelCount < pstCmd->fAreaThreshold )  {
+            matRemoveMask += CalcUtils::genMaskByValue<Int32>( matLabels, nCurrentLabel );
+            ++ pstRpy->nRemovedCC;
+        }
+        ++ nCurrentLabel;
+    } while ( nCurrentLabelCount > 0 );
+
+    pstRpy->nTotalCC = nCurrentLabel - 1;
+
+    matGray.setTo(0, matRemoveMask);
+
+    if ( matROI.channels() == 3 )
+        cv::cvtColor ( matGray, matROI, CV_GRAY2BGR );
+
+EXIT:
+    pstRpy->enStatus = enStatus;
+    if ( ! bReplay )    {
+        if ( PR_DEBUG_MODE::LOG_FAIL_CASE == Config::GetInstance()->getDebugMode() && enStatus != VisionStatus::OK )    {
+            pLogCase->WriteCmd ( pstCmd );
+            pLogCase->WriteRpy ( pstRpy );
+        }
+
+        if ( PR_DEBUG_MODE::LOG_ALL_CASE == Config::GetInstance()->getDebugMode() )
+            pLogCase->WriteRpy ( pstRpy );
+    }
+
+    MARK_FUNCTION_END_TIME;
+    return pstRpy->enStatus;
+}
+
+/*static*/ VisionStatus VisionAlgorithm::detectEdge(PR_DETECT_EDGE_CMD *pstCmd, PR_DETECT_EDGE_RPY *pstRpy, bool bReplay)
+{
+    assert ( pstCmd != nullptr && pstRpy != nullptr );
+
+    if ( pstCmd->matInput.empty() ) {
+        WriteLog("Input image is empty");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    if ( pstCmd->rectROI.x < 0 || pstCmd->rectROI.y < 0 ||
+        ( pstCmd->rectROI.x + pstCmd->rectROI.width ) > pstCmd->matInput.cols ||
+        ( pstCmd->rectROI.y + pstCmd->rectROI.height ) > pstCmd->matInput.rows )    {
+        WriteLog("The input ROI is invalid");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return VisionStatus::INVALID_PARAM;
+    }
+
+    MARK_FUNCTION_START_TIME;
+
+    std::unique_ptr<LogCaseDetectEdge> pLogCase;
+    if ( ! bReplay )    {
+        pLogCase = std::make_unique<LogCaseDetectEdge>( Config::GetInstance()->getLogCaseDir() );
+        if ( PR_DEBUG_MODE::LOG_ALL_CASE == Config::GetInstance()->getDebugMode() )
+            pLogCase->WriteCmd ( pstCmd );
+    }
+
+    pstRpy->matResult = pstCmd->matInput.clone();
+    cv::Mat matROI ( pstRpy->matResult, pstCmd->rectROI );
+
+    cv::Mat matGray = matROI;
+    if ( pstCmd->matInput.channels() == 3 )
+        cv::cvtColor ( matROI, matGray, CV_BGR2GRAY );
+
+    cv::Mat matResult;
+    cv::Canny ( matGray, matResult, pstCmd->nThreshold1, pstCmd->nThreshold2, pstCmd->nApertureSize );
+
+    if ( pstCmd->matInput.channels() == 3 )
+        cv::cvtColor ( matResult, matROI, CV_GRAY2BGR );
+
+    pstRpy->enStatus = VisionStatus::OK;
+
+    if ( ! bReplay )    {
+        if ( PR_DEBUG_MODE::LOG_FAIL_CASE == Config::GetInstance()->getDebugMode() && pstRpy->enStatus != VisionStatus::OK )    {
+            pLogCase->WriteCmd ( pstCmd );
+            pLogCase->WriteRpy ( pstRpy );
+        }
+
+        if ( PR_DEBUG_MODE::LOG_ALL_CASE == Config::GetInstance()->getDebugMode() )
+            pLogCase->WriteRpy ( pstRpy );
+    }
+
+    MARK_FUNCTION_END_TIME;
+    return pstRpy->enStatus;
 }
 
 }

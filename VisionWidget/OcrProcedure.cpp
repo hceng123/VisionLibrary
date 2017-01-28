@@ -27,7 +27,7 @@ int OcrProcedure::run(const std::string &imagePath)
     _pVisionView->setCurrentSrchWindowIndex(0);
 	int iReturn = pMessageBox->exec();
     if ( iReturn != QDialog::Accepted ) {
-        _pVisionView->setTestVisionState(VisionView::TEST_VISION_STATE::UNDEFINED);
+        _pVisionView->setTestVisionState(VisionView::TEST_VISION_STATE::IDLE);
         return ToInt(STATUS::NOK);
     }	
    
@@ -36,21 +36,21 @@ int OcrProcedure::run(const std::string &imagePath)
         pMessageBox->SetMessageText1("The input is invalid");
         pMessageBox->SetMessageText2("");
         pMessageBox->exec();
-        _pVisionView->setTestVisionState(VisionView::TEST_VISION_STATE::UNDEFINED);
+        _pVisionView->setTestVisionState(VisionView::TEST_VISION_STATE::IDLE);
         return ToInt(STATUS::NOK);
     }
     _rectSrchWindow = vecResult[0];
 
     int nStatus = ocr(imagePath);
 
-    _pVisionView->setTestVisionState(VisionView::TEST_VISION_STATE::UNDEFINED);
+    _pVisionView->setTestVisionState(VisionView::TEST_VISION_STATE::IDLE);
     return nStatus;
 }
 
 int OcrProcedure::ocr(const std::string &imagePath)
 {
     PR_OCR_CMD stCmd;
-	stCmd.matInput = cv::imread(imagePath);
+	stCmd.matInput = _pVisionView->getMat();
     stCmd.enDirection = static_cast<PR_DIRECTION>(_nTextDirection);
 	stCmd.rectROI = _rectSrchWindow;
 

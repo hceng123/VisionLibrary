@@ -23,7 +23,7 @@ using ListOfPoint = std::list<cv::Point2f>;
 using VectorOfListOfPoint = std::vector<ListOfPoint>;
 
 
-#define ToInt32(param)      (static_cast<Int32>(param))
+#define ToInt32(param)      (static_cast<AOI::Int32>(param))
 #define ToFloat(param)      (static_cast<float>(param))
 
 struct PR_VERSION_INFO
@@ -247,13 +247,13 @@ struct PR_FIT_LINE_CMD
     cv::Rect                rectROI;
     Int32                   nThreshold;
     PR_OBJECT_ATTRIBUTE     enAttribute;
-    PR_RM_FIT_NOISE_METHOD  enRmNoiseMethod;    
+    PR_RM_FIT_NOISE_METHOD  enRmNoiseMethod;
     float                   fErrTol;
 };
 
 struct PR_FIT_LINE_RPY
 {
-    Int32                   nStatus;    
+    VisionStatus            enStatus;    
     bool                    bReversedFit;   //If it is true, then the result is x = fSlope * y + fIntercept. Otherwise the line is y = fSlope * x + fIntercept.
     float                   fSlope;
     float                   fIntercept;
@@ -376,6 +376,93 @@ struct PR_POINT_LINE_DISTANCE_CMD
 struct PR_POINT_LINE_DISTANCE_RPY
 {
     float                   fDistance;
+};
+
+struct PR_RGB_RATIO
+{
+    PR_RGB_RATIO() : fRatioR(0.299f), fRatioG(0.587f), fRatioB(0.114f) {}
+    PR_RGB_RATIO(float fRatioR, float fRatioG, float fRatioB ) : fRatioR(fRatioR), fRatioG(fRatioG), fRatioB(fRatioB)   {}
+    float                   fRatioR;
+    float                   fRatioG;
+    float                   fRatioB;
+};
+
+struct PR_COLOR_TO_GRAY_CMD
+{
+    cv::Mat                 matInput;
+    PR_RGB_RATIO            stRatio;
+};
+
+struct PR_COLOR_TO_GRAY_RPY
+{
+    VisionStatus            enStatus;
+    cv::Mat                 matResult;
+};
+
+struct PR_FILTER_CMD
+{
+    cv::Mat                 matInput;
+    cv::Rect                rectROI;
+    PR_FILTER_TYPE          enType;
+    cv::Size                szKernel;
+    double                  dSigmaX;        //Only used when filter type is Guassian.
+    double                  dSigmaY;        //Only used when filter type is Guassian.
+    Int16                   nDiameter;      //Only used when filter type is Bilaterial.
+    double                  dSigmaColor;    //Only used when filter type is Bilaterial.
+    double                  dSigmaSpace;    //Only used when filter type is Bilaterial.
+};
+
+struct PR_FILTER_RPY
+{
+    VisionStatus            enStatus;
+    cv::Mat                 matResult;
+};
+
+struct PR_AUTO_THRESHOLD_CMD
+{
+    cv::Mat                 matInput;
+    cv::Rect                rectROI;
+    Int16                   nThresholdNum;
+};
+
+struct PR_AUTO_THRESHOLD_RPY
+{
+    VisionStatus            enStatus;
+    std::vector<Int16>      vecThreshold;
+};
+
+//CC is acronym of of connected components.
+struct PR_REMOVE_CC_CMD
+{
+    cv::Mat                 matInput;
+    cv::Rect                rectROI;
+    Int16                   nConnectivity;      //connect by 4 or 8 points.
+    PR_COMPARE_TYPE         enCompareType;
+    float                   fAreaThreshold;    
+};
+
+struct PR_REMOVE_CC_RPY
+{
+    VisionStatus            enStatus;
+    Int32                   nTotalCC;
+    Int32                   nRemovedCC;
+    cv::Mat                 matResult;
+};
+
+struct PR_DETECT_EDGE_CMD
+{
+    cv::Mat                 matInput;
+    cv::Rect                rectROI;
+    Int16                   nThreshold1;
+    Int16                   nThreshold2;
+    Int16                   nApertureSize;
+};
+
+
+struct PR_DETECT_EDGE_RPY
+{
+    VisionStatus            enStatus;
+    cv::Mat                 matResult;
 };
 
 }

@@ -51,6 +51,11 @@ void Config::setDebugMode(PR_DEBUG_MODE enDebugMode)
     _enDebugMode = enDebugMode;
 }
 
+Int32 Config::getRemoveCCMaxComponents()
+{
+    return _nRemoveCCMaxComponent;
+}
+
 void Config::load()
 {
 }

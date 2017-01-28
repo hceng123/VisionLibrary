@@ -54,7 +54,7 @@ public:
 
     enum class TEST_VISION_STATE
     {
-        UNDEFINED,
+        IDLE,
         SET_CIRCLE_CTR,
         SET_CIRCLE_INNER_RADIUS,
         SET_CIRCLE_OUTTER_RADIUS,
@@ -62,10 +62,19 @@ public:
         SET_LINE,
     };
 
+    enum class DISPLAY_SOURCE
+    {
+        ORIGINAL,
+        INTERMEDIATE,       //Test Image Source
+        RESULT,
+        END,
+        SIZE = END,
+    };
+
     //explicit VisionView(QLabel *parent = 0);
     explicit VisionView(QWidget *parent = 0, Qt::WindowFlags f=0);
     ~VisionView();
-    void setMachineState(VISION_VIEW_STATE enMachineState);
+    void setState(VISION_VIEW_STATE enState);
     void setMaskEditState(MASK_EDIT_STATE enMaskEditState);
     void setMaskShape(MASK_SHAPE enMaskShape);
     void setTestVisionState(TEST_VISION_STATE enState);
@@ -74,13 +83,21 @@ public:
     void zoomOut();
     void restoreZoom();
     void startTimer();
-    void setMat(const cv::Mat &mat);
-    cv::Mat getMat() const;
-    void setResultMat(const cv::Mat &mat);
+    void setMat( DISPLAY_SOURCE enSource, const cv::Mat &mat);
+    cv::Mat getMat( DISPLAY_SOURCE enSource = VisionView::DISPLAY_SOURCE::ORIGINAL ) const;
+    cv::Mat getCurrentMat() const;
+    void applyIntermediateResult();
+    void clearMat( DISPLAY_SOURCE enSource );
     bool isDisplayResultImage() const;
+    bool isDisplayGrayScale() const;
     void setCurrentSrchWindowIndex(int nIndex);
     void getFitCircleRange(cv::Point &ptCtr, float &fInnterRadius, float &fOutterRadius) const;
+    void setImageDisplayMode(bool bDisplayGrayScale, bool bDisplayBinary);
+    void setRGBRatio(float fRatioR, float fRatioG, float fRatioB);
+    void getRGBRatio(float &fRatioR, float &fRatioG, float &fRatioB);
+    void setBinaryThreshold(int nThreshold, bool bReverseThres);
     VectorOfRect getVecSrchWindow( ) const;
+    cv::Rect getSelectedWindow() const;
     PR_Line getIntensityCheckLine() const;
     static float distanceOf2Point(const cv::Point &pt1, const cv::Point &pt2);    
 protected:
@@ -90,9 +107,10 @@ protected:
     void mouseDoubleClickEvent(QMouseEvent *event);
     void _drawDisplay();
     void _drawLearnWindow(cv::Mat &mat);
+    void _drawSelectedWindow(cv::Mat &mat);
     void _drawTestVisionLibrary(cv::Mat &mat);
-    void zoomPoint(cv::Point &point, float fZoomFactor);
-    void zoomRect(cv::Rect &rect, float fZoomFactor);
+    void _zoomPoint(cv::Point &point, float fZoomFactor);
+    void _zoomRect(cv::Rect &rect, float fZoomFactor);
 private:
     cv::Rect                        _rectLrnWindow;
     cv::Rect                        _rectSrchWindow;
@@ -101,9 +119,8 @@ private:
     cv::Point                       _ptLeftClickEndPos;
     VISION_VIEW_STATE               _enState;
     TEST_VISION_STATE               _enTestVisionState;
-    cv::Mat                         _mat;
-    cv::Mat                         _matResult;
-    bool                            _bDisplayResultImage;
+    cv::Mat                         _matArray[DISPLAY_SOURCE::SIZE];
+    DISPLAY_SOURCE                  _enDisplaySource;
 	cv::Mat             			_matDisplay;
     cv::Mat                         _matMask;
     VectorOfRect                    _vecRectMask;
@@ -113,6 +130,13 @@ private:
     MASK_EDIT_STATE                 _enMaskEditState;
     MASK_SHAPE                      _enMaskShape;
     vector<cv::Point>               _vecPolylinePoint;
+
+    bool                            _bDisplayGrayScale;
+    bool                            _bDisplayBinary;
+    PR_RGB_RATIO                    _stRGBRatio;
+    int                             _nThreshold;
+    bool                            _bReverseThres;
+    cv::Rect                        _rectSelectedWindow;
     cv::Point                       _ptCircleCtr;
     float                           _fInnerRangeRadius;
     float                           _fOutterRangeRadius;
@@ -125,11 +149,13 @@ private:
     const float                     _constMaxZoomFactor = 4.f;
     const float                     _constMinZoomFactor = 0.25;
     std::unique_ptr<DialogEditMask> _pDialogEditMask;
+
 signals:
 
 protected slots:
     void showContextMenu(const QPoint& pos); // this is a slot
     void addMask();
+    void clearSelectedWindow();
     int updateMat();
 };
 

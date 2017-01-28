@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1366</width>
+    <width>1357</width>
     <height>768</height>
    </rect>
   </property>
@@ -18,7 +18,7 @@
     <property name="geometry">
      <rect>
       <x>70</x>
-      <y>110</y>
+      <y>60</y>
       <width>640</width>
       <height>640</height>
      </rect>
@@ -57,7 +57,7 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>110</y>
+      <y>60</y>
       <width>50</width>
       <height>461</height>
      </rect>
@@ -66,15 +66,44 @@
    <widget class="QTabWidget" name="tabWidget">
     <property name="geometry">
      <rect>
-      <x>750</x>
-      <y>20</y>
+      <x>730</x>
+      <y>60</y>
       <width>581</width>
-      <height>381</height>
+      <height>611</height>
      </rect>
     </property>
     <property name="currentIndex">
      <number>0</number>
     </property>
+    <widget class="QWidget" name="tabPreProcess">
+     <attribute name="title">
+      <string>Pre Process</string>
+     </attribute>
+     <widget class="QWidget" name="verticalLayoutWidget">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>10</y>
+        <width>561</width>
+        <height>571</height>
+       </rect>
+      </property>
+      <layout class="QVBoxLayout" name="verticalLayout">
+       <property name="spacing">
+        <number>0</number>
+       </property>
+       <property name="sizeConstraint">
+        <enum>QLayout::SetDefaultConstraint</enum>
+       </property>
+       <property name="topMargin">
+        <number>0</number>
+       </property>
+       <property name="bottomMargin">
+        <number>0</number>
+       </property>
+      </layout>
+     </widget>
+    </widget>
     <widget class="QWidget" name="tabFitting">
      <attribute name="title">
       <string>Fitting</string>
@@ -83,7 +112,7 @@
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>20</y>
+        <y>10</y>
         <width>551</width>
         <height>91</height>
        </rect>
@@ -96,7 +125,7 @@
         <rect>
          <x>460</x>
          <y>30</y>
-         <width>75</width>
+         <width>80</width>
          <height>23</height>
         </rect>
        </property>
@@ -171,6 +200,9 @@
          <height>22</height>
         </rect>
        </property>
+       <property name="currentIndex">
+        <number>1</number>
+       </property>
        <item>
         <property name="text">
          <string>Least Square</string>
@@ -238,7 +270,7 @@
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>120</y>
+        <y>110</y>
         <width>551</width>
         <height>51</height>
        </rect>
@@ -309,7 +341,7 @@
         <rect>
          <x>460</x>
          <y>20</y>
-         <width>75</width>
+         <width>80</width>
          <height>23</height>
         </rect>
        </property>
@@ -355,7 +387,7 @@
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>190</y>
+        <y>170</y>
         <width>551</width>
         <height>51</height>
        </rect>
@@ -424,9 +456,9 @@
       <widget class="QPushButton" name="fitParallelLineBtn">
        <property name="geometry">
         <rect>
-         <x>444</x>
+         <x>460</x>
          <y>20</y>
-         <width>91</width>
+         <width>80</width>
          <height>23</height>
         </rect>
        </property>
@@ -472,7 +504,7 @@
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>260</y>
+        <y>230</y>
         <width>551</width>
         <height>51</height>
        </rect>
@@ -541,9 +573,9 @@
       <widget class="QPushButton" name="fitRectBtn">
        <property name="geometry">
         <rect>
-         <x>444</x>
+         <x>460</x>
          <y>20</y>
-         <width>91</width>
+         <width>80</width>
          <height>23</height>
         </rect>
        </property>
@@ -790,175 +822,13 @@
      <string>Bayer format</string>
     </property>
    </widget>
-   <widget class="QCheckBox" name="checkBoxDisplayGrayScale">
-    <property name="geometry">
-     <rect>
-      <x>90</x>
-      <y>50</y>
-      <width>111</width>
-      <height>17</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Display Gray Scale</string>
-    </property>
-   </widget>
-   <widget class="QCheckBox" name="checkBoxDisplayBinary">
-    <property name="geometry">
-     <rect>
-      <x>90</x>
-      <y>80</y>
-      <width>91</width>
-      <height>17</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Display Binary</string>
-    </property>
-   </widget>
-   <widget class="QLabel" name="labelChannelRatio">
-    <property name="geometry">
-     <rect>
-      <x>220</x>
-      <y>50</y>
-      <width>71</width>
-      <height>16</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Channel Ratio</string>
-    </property>
-   </widget>
-   <widget class="QLabel" name="labelRChannel">
-    <property name="geometry">
-     <rect>
-      <x>310</x>
-      <y>50</y>
-      <width>16</width>
-      <height>16</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>R</string>
-    </property>
-   </widget>
-   <widget class="QLineEdit" name="lineEditRRatio">
-    <property name="geometry">
-     <rect>
-      <x>330</x>
-      <y>50</y>
-      <width>51</width>
-      <height>20</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>0.299</string>
-    </property>
-   </widget>
-   <widget class="QLabel" name="labelGChannel">
-    <property name="geometry">
-     <rect>
-      <x>410</x>
-      <y>50</y>
-      <width>16</width>
-      <height>16</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>G</string>
-    </property>
-   </widget>
-   <widget class="QLineEdit" name="lineEditGRatio">
-    <property name="geometry">
-     <rect>
-      <x>430</x>
-      <y>50</y>
-      <width>51</width>
-      <height>20</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>0.587</string>
-    </property>
-   </widget>
-   <widget class="QLabel" name="labelBChannel">
-    <property name="geometry">
-     <rect>
-      <x>510</x>
-      <y>50</y>
-      <width>16</width>
-      <height>16</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>B</string>
-    </property>
-   </widget>
-   <widget class="QLineEdit" name="lineEditBRatio">
-    <property name="geometry">
-     <rect>
-      <x>530</x>
-      <y>50</y>
-      <width>51</width>
-      <height>20</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>0.114</string>
-    </property>
-   </widget>
-   <widget class="QSlider" name="sliderThreshold">
-    <property name="geometry">
-     <rect>
-      <x>310</x>
-      <y>80</y>
-      <width>191</width>
-      <height>19</height>
-     </rect>
-    </property>
-    <property name="maximum">
-     <number>255</number>
-    </property>
-    <property name="value">
-     <number>150</number>
-    </property>
-    <property name="orientation">
-     <enum>Qt::Horizontal</enum>
-    </property>
-   </widget>
-   <widget class="QLabel" name="labelBinaryThreshold">
-    <property name="geometry">
-     <rect>
-      <x>220</x>
-      <y>80</y>
-      <width>51</width>
-      <height>16</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Threshold</string>
-    </property>
-   </widget>
-   <widget class="QLineEdit" name="lineEditBinaryThreshold">
-    <property name="geometry">
-     <rect>
-      <x>510</x>
-      <y>80</y>
-      <width>51</width>
-      <height>20</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>150</string>
-    </property>
-   </widget>
   </widget>
   <widget class="QMenuBar" name="menuBar">
    <property name="geometry">
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1366</width>
+     <width>1357</width>
      <height>21</height>
     </rect>
    </property>

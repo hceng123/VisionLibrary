@@ -142,8 +142,8 @@ namespace Vision
     //    fSlope = static_cast<float>( ( n * Sxy - Sx * Sy ) / ( n * Sx2 - Sx * Sx ) );
     //    fIntercept = static_cast< float >( ( Sy * Sx2 - Sx * Sxy ) / ( n * Sx2 - Sx * Sx ) );
     //}
-    cv::Mat B(listPoint.size(), 1, CV_32FC1);
-    cv::Mat A = cv::Mat::ones(listPoint.size(), 2, CV_32FC1);
+    cv::Mat B(ToInt32(listPoint.size()), 1, CV_32FC1);
+    cv::Mat A = cv::Mat::ones(ToInt32(listPoint.size()), 2, CV_32FC1);
     int i = 0;
     for (const auto &point : listPoint)  {
         if (reverseFit) {

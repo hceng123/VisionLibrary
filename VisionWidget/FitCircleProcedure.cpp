@@ -29,7 +29,7 @@ int FitCircleProcedure::run(const std::string &imagePath)
     _pVisionView->setTestVisionState(VisionView::TEST_VISION_STATE::SET_CIRCLE_CTR);
 	int iReturn = pMessageBox->exec();
     if ( iReturn != QDialog::Accepted ) {
-        _pVisionView->setTestVisionState(VisionView::TEST_VISION_STATE::UNDEFINED);
+        _pVisionView->setTestVisionState(VisionView::TEST_VISION_STATE::IDLE);
         return ToInt(STATUS::NOK);
     }
 	
@@ -41,7 +41,7 @@ int FitCircleProcedure::run(const std::string &imagePath)
 	pMessageBox->activateWindow();
     iReturn = pMessageBox->exec();
     if ( iReturn != QDialog::Accepted ) {
-        _pVisionView->setTestVisionState(VisionView::TEST_VISION_STATE::UNDEFINED);
+        _pVisionView->setTestVisionState(VisionView::TEST_VISION_STATE::IDLE);
         return ToInt(STATUS::NOK);
     }
 
@@ -53,7 +53,7 @@ int FitCircleProcedure::run(const std::string &imagePath)
 	pMessageBox->activateWindow();
     iReturn = pMessageBox->exec();
     if ( iReturn != QDialog::Accepted ) {
-        _pVisionView->setTestVisionState(VisionView::TEST_VISION_STATE::UNDEFINED);
+        _pVisionView->setTestVisionState(VisionView::TEST_VISION_STATE::IDLE);
         return ToInt(STATUS::NOK);
     }
     _pVisionView->getFitCircleRange ( _ptCircleCtr, _fInnerRangeRadius, _fOutterRangeRadius );
@@ -61,7 +61,7 @@ int FitCircleProcedure::run(const std::string &imagePath)
         pMessageBox->SetMessageText1("The input is invalid");
         pMessageBox->SetMessageText2("");
         pMessageBox->exec();
-        _pVisionView->setTestVisionState(VisionView::TEST_VISION_STATE::UNDEFINED);
+        _pVisionView->setTestVisionState(VisionView::TEST_VISION_STATE::IDLE);
         return ToInt(STATUS::NOK);
     }
     VisionStatus enStatus = fitCircle(imagePath);
@@ -70,14 +70,14 @@ int FitCircleProcedure::run(const std::string &imagePath)
         PR_GetErrorStr(enStatus, &stErrStrRpy);
         QMessageBox::critical(nullptr, "Fit Circle", stErrStrRpy.achErrorStr, "Quit");
     }
-    _pVisionView->setTestVisionState(VisionView::TEST_VISION_STATE::UNDEFINED);
+    _pVisionView->setTestVisionState(VisionView::TEST_VISION_STATE::IDLE);
     return ToInt(enStatus);
 }
 
 VisionStatus FitCircleProcedure::fitCircle(const std::string &imagePath)
 {
     PR_FIT_CIRCLE_CMD stCmd;
-	stCmd.matInput = cv::imread(imagePath);
+	stCmd.matInput = _pVisionView->getMat();
 	stCmd.enRmNoiseMethod = PR_RM_FIT_NOISE_METHOD::ABSOLUTE_ERR;
 	stCmd.fErrTol = _fErrorTol;
 	stCmd.ptRangeCtr = _ptCircleCtr;

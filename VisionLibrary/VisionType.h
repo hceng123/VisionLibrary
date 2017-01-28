@@ -14,6 +14,7 @@ namespace Vision
 #define PR_MAX_GRAY_LEVEL                       (255)
 #define PR_RECT_EDGE_COUNT                      (4)
 #define PR_MAX_ERR_STR_LEN						(100)
+#define PR_AUTO_THRESHOLD_MAX_NUM               (4)
 
 enum class PR_ALIGN_ALGORITHM
 {
@@ -97,6 +98,21 @@ enum class PR_OBJECT_ATTRIBUTE
     BRIGHT,
 	DARK,
     END,
+};
+
+enum class PR_FILTER_TYPE
+{
+    NORMALIZED_BOX_FILTER,
+    GAUSSIAN_FILTER,
+    MEDIAN_FILTER,
+    BILATERIAL_FILTER,
+    END,
+};
+
+enum class PR_COMPARE_TYPE
+{
+    SMALLER,
+    LARGER,
 };
 
 }

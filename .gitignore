@@ -30,3 +30,4 @@ VisionWidget/*.bmp
 VisionWidget/*.png
 VisionWidget/TestImage
 *.bak
+*.user

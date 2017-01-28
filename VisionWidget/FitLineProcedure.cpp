@@ -30,7 +30,7 @@ int FitLineProcedure::run(const std::string &imagePath)
     _pVisionView->setCurrentSrchWindowIndex(0);
 	int iReturn = pMessageBox->exec();
     if ( iReturn != QDialog::Accepted ) {
-        _pVisionView->setTestVisionState(VisionView::TEST_VISION_STATE::UNDEFINED);
+        _pVisionView->setTestVisionState(VisionView::TEST_VISION_STATE::IDLE);
         return ToInt(STATUS::NOK);
     }	
    
@@ -39,26 +39,26 @@ int FitLineProcedure::run(const std::string &imagePath)
         pMessageBox->SetMessageText1("The input is invalid");
         pMessageBox->SetMessageText2("");
         pMessageBox->exec();
-        _pVisionView->setTestVisionState(VisionView::TEST_VISION_STATE::UNDEFINED);
+        _pVisionView->setTestVisionState(VisionView::TEST_VISION_STATE::IDLE);
         return ToInt(STATUS::NOK);
     }
     _rectSrchWindow = vecResult[0];
 
     int nStatus = fitLine(imagePath);
 
-    _pVisionView->setTestVisionState(VisionView::TEST_VISION_STATE::UNDEFINED);
+    _pVisionView->setTestVisionState(VisionView::TEST_VISION_STATE::IDLE);
     return nStatus;
 }
 
 int FitLineProcedure::fitLine(const std::string &imagePath)
 {
     PR_FIT_LINE_CMD stCmd;
-	stCmd.matInput = cv::imread(imagePath);
+	stCmd.matInput = _pVisionView->getMat();
 	stCmd.enRmNoiseMethod = PR_RM_FIT_NOISE_METHOD::ABSOLUTE_ERR;
 	stCmd.fErrTol = _fErrorTol;
 	stCmd.rectROI = _rectSrchWindow;
 	stCmd.nThreshold = _nThreshold;
-    stCmd.enAttribute = static_cast<PR_OBJECT_ATTRIBUTE>(_nAttribute);
+    stCmd.enAttribute = static_cast<PR_OBJECT_ATTRIBUTE> ( _nAttribute );
 
 	PR_FIT_LINE_RPY stRpy;
 	VisionStatus visionStatus = PR_FitLine(&stCmd, &stRpy);

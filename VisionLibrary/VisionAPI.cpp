@@ -12,6 +12,18 @@
 #include "Log.h"
 #include "CalcUtils.h"
 
+#define PR_FUNCTION_ENTRY   \
+try \
+{
+
+#define PR_FUNCTION_EXIT    \
+}catch(std::exception &e)   \
+{   \
+    WriteLog(e.what()); \
+    pstRpy->enStatus = VisionStatus::OPENCV_EXCEPTION;  \
+    return VisionStatus::OPENCV_EXCEPTION;  \
+}
+
 namespace AOI
 {
 namespace Vision
@@ -112,8 +124,7 @@ VisionAPI VisionStatus  PR_RunLogCase(const std::string &strPath)
 {
     try
     {
-        VisionAlgorithmPtr pVA = VisionAlgorithm::create();
-        return pVA->runLogCase ( strPath );
+        return VisionAlgorithm::runLogCase( strPath);
     }catch(std::exception &e)
     {
         WriteLog(e.what());
@@ -136,15 +147,9 @@ VisionAPI VisionStatus PR_SrchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd, PR
 
 VisionAPI VisionStatus  PR_FitLine(PR_FIT_LINE_CMD *pstCmd, PR_FIT_LINE_RPY *pstRpy)
 {
-    try
-    {
-        VisionAlgorithmPtr pVA = VisionAlgorithm::create();
-        return pVA->fitLine ( pstCmd, pstRpy );
-    }catch(std::exception &e)
-    {
-        WriteLog(e.what());
-        return VisionStatus::OPENCV_EXCEPTION;
-    }
+PR_FUNCTION_ENTRY
+    return VisionAlgorithm::fitLine ( pstCmd, pstRpy );
+PR_FUNCTION_EXIT
 }
 
 VisionAPI VisionStatus  PR_FitParallelLine(PR_FIT_PARALLEL_LINE_CMD *pstCmd, PR_FIT_PARALLEL_LINE_RPY *pstRpy)
@@ -222,6 +227,41 @@ VisionAPI VisionStatus  PR_PointLineDistance(PR_POINT_LINE_DISTANCE_CMD *pstCmd,
 {
     pstRpy->fDistance = CalcUtils::ptDisToLine ( pstCmd->ptInput, pstCmd->bReversedFit, pstCmd->fSlope, pstCmd->fIntercept );
     return VisionStatus::OK;
+}
+
+VisionAPI VisionStatus  PR_ColorToGray(PR_COLOR_TO_GRAY_CMD *pstCmd, PR_COLOR_TO_GRAY_RPY *pstRpy)
+{
+PR_FUNCTION_ENTRY
+    return VisionAlgorithm::colorToGray ( pstCmd, pstRpy );
+PR_FUNCTION_EXIT
+}
+
+VisionAPI VisionStatus  PR_Filter(PR_FILTER_CMD *pstCmd, PR_FILTER_RPY *pstRpy)
+{
+PR_FUNCTION_ENTRY
+    return VisionAlgorithm::filter( pstCmd, pstRpy );
+PR_FUNCTION_EXIT
+}
+
+VisionAPI VisionStatus  PR_AutoThreshold(PR_AUTO_THRESHOLD_CMD *pstCmd, PR_AUTO_THRESHOLD_RPY *pstRpy)
+{
+PR_FUNCTION_ENTRY
+    return VisionAlgorithm::autoThreshold( pstCmd, pstRpy );
+PR_FUNCTION_EXIT
+}
+
+VisionAPI VisionStatus  PR_RemoveCC(PR_REMOVE_CC_CMD *pstCmd, PR_REMOVE_CC_RPY *pstRpy)
+{
+PR_FUNCTION_ENTRY
+    return VisionAlgorithm::removeCC( pstCmd, pstRpy );
+PR_FUNCTION_EXIT
+}
+
+VisionAPI VisionStatus  PR_DetectEdge(PR_DETECT_EDGE_CMD *pstCmd, PR_DETECT_EDGE_RPY *pstRpy)
+{
+    PR_FUNCTION_ENTRY
+    return VisionAlgorithm::detectEdge( pstCmd, pstRpy );
+PR_FUNCTION_EXIT
 }
 
 }

@@ -78,6 +78,19 @@ public:
         return sqrt(variance);
     }
 
+    template<typename _Tp>
+    static cv::Mat genMaskByValue(const cv::Mat &matInput, const _Tp value)
+    {
+        cv::Mat matResult = cv::Mat::zeros(matInput.size(), CV_8UC1);
+        for (int row = 0; row < matInput.rows; ++row)
+            for (int col = 0; col < matInput.cols; ++col)
+            {
+                if (value == matInput.at<_Tp>(row, col))
+                    matResult.at<uchar>(row, col) = 1;
+            }
+        return matResult;
+    }
+
     static double radian2Degree( double dRadian );
     static double degree2Radian( double dDegree );
     static float ptDisToLine(const cv::Point2f &ptInput, bool bReversedFit, float fSlope, float fIntercept );

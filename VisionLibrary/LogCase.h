@@ -200,6 +200,44 @@ private:
     const String _strKeyResultStr   = "ResultStr";
 };
 
+class LogCaseRemoveCC : public LogCase
+{
+public:
+    explicit LogCaseRemoveCC(const String &strPath, bool bReplay = false) : LogCase(strPath, bReplay) {}
+    VisionStatus WriteCmd(PR_REMOVE_CC_CMD *pCmd);
+    VisionStatus WriteRpy(PR_REMOVE_CC_RPY *pRpy);
+    virtual VisionStatus RunLogCase() override;
+    virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
+    static String StaticGetFolderPrefix();
+private:
+    const String _strKeyROI             = "ROI";
+    const String _strKeyConnectivity    = "Connectivity";
+    const String _strKeyCompareType     = "CompareType";
+    const String _strKeyAreaThreshold   = "AreaThreshold";
+
+    const String _strKeyStatus          = "Status";
+    const String _strKeyTotalCC         = "TotalCC";
+    const String _strKeyRemovedCC       = "RemovedCC";
+};
+
+class LogCaseDetectEdge : public LogCase
+{
+public:
+    explicit LogCaseDetectEdge(const String &strPath, bool bReplay = false) : LogCase(strPath, bReplay) {}
+    VisionStatus WriteCmd(PR_DETECT_EDGE_CMD *pCmd);
+    VisionStatus WriteRpy(PR_DETECT_EDGE_RPY *pRpy);
+    virtual VisionStatus RunLogCase() override;
+    virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
+    static String StaticGetFolderPrefix();
+private:
+    const String _strKeyROI             = "ROI";
+    const String _strKeyThreshold1      = "Threshold1";
+    const String _strKeyThreshold2      = "Threshold2";
+    const String _strKeyApertureSize    = "ApertureSize";
+
+    const String _strKeyStatus          = "Status";
+};
+
 }
 }
 #endif
