@@ -124,8 +124,7 @@ VisionAPI VisionStatus  PR_RunLogCase(const std::string &strPath)
 {
     try
     {
-        VisionAlgorithmPtr pVA = VisionAlgorithm::create();
-        return pVA->runLogCase ( strPath );
+        return VisionAlgorithm::runLogCase( strPath);
     }catch(std::exception &e)
     {
         WriteLog(e.what());

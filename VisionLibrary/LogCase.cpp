@@ -539,5 +539,121 @@ VisionStatus LogCaseOcr::RunLogCase()
     return enStatus;
 }
 
+/*static*/ String LogCaseRemoveCC::StaticGetFolderPrefix()
+{
+    return "RemoveCC";
+}
+
+VisionStatus LogCaseRemoveCC::WriteCmd(PR_REMOVE_CC_CMD *pCmd)
+{
+    if (!_bReplay)    {
+        _strLogCasePath = _generateLogCaseName(GetFolderPrefix());
+        bfs::path dir(_strLogCasePath);
+        bfs::create_directories(dir);
+    }
+
+    CSimpleIni ini(false, false, false);
+    auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
+    ini.LoadFile(cmdRpyFilePath.c_str());
+    ini.SetValue(_CMD_SECTION.c_str(),     _strKeyROI.c_str(), _formatRect(pCmd->rectROI).c_str());
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyConnectivity.c_str(), pCmd->nConnectivity);
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyCompareType.c_str(),  ToInt32(pCmd->enCompareType));
+    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyAreaThreshold.c_str(),  pCmd->fAreaThreshold);
+    ini.SaveFile(cmdRpyFilePath.c_str());
+    cv::imwrite(_strLogCasePath + "image.jpg", pCmd->matInput);
+    return VisionStatus::OK;
+}
+
+VisionStatus LogCaseRemoveCC::WriteRpy(PR_REMOVE_CC_RPY *pRpy)
+{
+    CSimpleIni ini(false, false, false);
+    auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
+    ini.LoadFile(cmdRpyFilePath.c_str());
+    ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyStatus.c_str(),    ToInt32 ( pRpy->enStatus ) );
+    ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyTotalCC.c_str(),   pRpy->nTotalCC);
+    ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyRemovedCC.c_str(), pRpy->nRemovedCC);
+    ini.SaveFile(cmdRpyFilePath.c_str());
+
+    cv::imwrite(_strLogCasePath + "result.jpg", pRpy->matResult);
+    return VisionStatus::OK;
+}
+
+VisionStatus LogCaseRemoveCC::RunLogCase()
+{
+    PR_REMOVE_CC_CMD stCmd;
+    VisionStatus enStatus;
+
+    CSimpleIni ini(false, false, false);
+    auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
+    ini.LoadFile(cmdRpyFilePath.c_str());
+    stCmd.matInput = cv::imread(_strLogCasePath + "image.jpg");
+    stCmd.rectROI = _parseRect(ini.GetValue(_CMD_SECTION.c_str(), _strKeyROI.c_str(), _DEFAULT_RECT.c_str()));
+    stCmd.nConnectivity = (Int16)ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyConnectivity.c_str(), 8);
+    stCmd.enCompareType = static_cast<PR_COMPARE_TYPE>(ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyCompareType.c_str(),  0 ) );
+    stCmd.fAreaThreshold = (float)ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyAreaThreshold.c_str(), 100 );
+
+    PR_REMOVE_CC_RPY stRpy;
+    enStatus = VisionAlgorithm::removeCC( &stCmd, &stRpy, true );
+    WriteRpy(&stRpy);
+    return enStatus;
+}
+
+/*static*/ String LogCaseDetectEdge::StaticGetFolderPrefix()
+{
+    return "DetectEdge";
+}
+
+VisionStatus LogCaseDetectEdge::WriteCmd(PR_DETECT_EDGE_CMD *pCmd)
+{
+    if (!_bReplay)    {
+        _strLogCasePath = _generateLogCaseName(GetFolderPrefix());
+        bfs::path dir(_strLogCasePath);
+        bfs::create_directories(dir);
+    }
+
+    CSimpleIni ini(false, false, false);
+    auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
+    ini.LoadFile(cmdRpyFilePath.c_str());
+    ini.SetValue(_CMD_SECTION.c_str(),     _strKeyROI.c_str(), _formatRect(pCmd->rectROI).c_str());
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyThreshold1.c_str(), pCmd->nThreshold1);
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyThreshold2.c_str(), pCmd->nThreshold2);
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyApertureSize.c_str(), pCmd->nApertureSize);
+    ini.SaveFile(cmdRpyFilePath.c_str());
+    cv::imwrite(_strLogCasePath + "image.jpg", pCmd->matInput);
+    return VisionStatus::OK;
+}
+
+VisionStatus LogCaseDetectEdge::WriteRpy(PR_DETECT_EDGE_RPY *pRpy)
+{
+    CSimpleIni ini(false, false, false);
+    auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
+    ini.LoadFile(cmdRpyFilePath.c_str());
+    ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyStatus.c_str(),    ToInt32 ( pRpy->enStatus ) );
+    ini.SaveFile(cmdRpyFilePath.c_str());
+
+    cv::imwrite(_strLogCasePath + "result.jpg", pRpy->matResult);
+    return VisionStatus::OK;
+}
+
+VisionStatus LogCaseDetectEdge::RunLogCase()
+{
+    PR_DETECT_EDGE_CMD stCmd;
+    VisionStatus enStatus;
+
+    CSimpleIni ini(false, false, false);
+    auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
+    ini.LoadFile(cmdRpyFilePath.c_str());
+    stCmd.matInput = cv::imread(_strLogCasePath + "image.jpg");
+    stCmd.rectROI = _parseRect(ini.GetValue(_CMD_SECTION.c_str(), _strKeyROI.c_str(), _DEFAULT_RECT.c_str()));
+    stCmd.nThreshold1 = (Int16)ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyThreshold1.c_str(), 100);
+    stCmd.nThreshold2 = (Int16)ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyThreshold2.c_str(), 40);
+    stCmd.nApertureSize = (Int16)ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyApertureSize.c_str(), 3 );
+
+    PR_DETECT_EDGE_RPY stRpy;
+    enStatus = VisionAlgorithm::detectEdge( &stCmd, &stRpy, true );
+    WriteRpy(&stRpy);
+    return enStatus;
+}
+
 }
 }
