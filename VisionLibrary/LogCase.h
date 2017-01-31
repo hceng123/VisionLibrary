@@ -20,6 +20,14 @@ protected:
     cv::Point2f _parseCoordinate(const String &strCoordinate);
     String _formatRect(const cv::Rect2f &pt);
     cv::Rect2f _parseRect(const String &strCoordinate);
+    template<typename _tp>
+    String _formatVector(const std::vector<_tp> &vecValue)  {
+        String strValue;
+        for ( const auto &value : vecValue )
+            strValue += std::to_string(value) + ", ";
+        strValue = strValue.substr(0, strValue.length() - 2 );
+        return strValue;
+    }
     String _generateLogCaseName(const String &strFolderPrefix);
     String      _strLogCasePath;
     const String _CMD_RPY_FILE_NAME = "cmdrpy.log";
@@ -236,6 +244,23 @@ private:
     const String _strKeyApertureSize    = "ApertureSize";
 
     const String _strKeyStatus          = "Status";
+};
+
+class LogCaseAutoThreshold : public LogCase
+{
+public:
+    explicit LogCaseAutoThreshold(const String &strPath, bool bReplay = false) : LogCase(strPath, bReplay) {}
+    VisionStatus WriteCmd(PR_AUTO_THRESHOLD_CMD *pCmd);
+    VisionStatus WriteRpy(PR_AUTO_THRESHOLD_RPY *pRpy);
+    virtual VisionStatus RunLogCase() override;
+    virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
+    static String StaticGetFolderPrefix();
+private:
+    const String _strKeyROI             = "ROI";
+    const String _strKeyThresholdNum    = "ThresholdNum";
+
+    const String _strKeyStatus          = "Status";
+    const String _strKeyThreshold       = "Threshold";
 };
 
 }

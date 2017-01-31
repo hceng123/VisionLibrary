@@ -361,7 +361,7 @@ struct PR_OCR_CMD
 
 struct PR_OCR_RPY
 {
-    Int32                   nStatus;
+    VisionStatus            enStatus;
     String                  strResult;
 };
 

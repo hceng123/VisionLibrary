@@ -99,7 +99,8 @@ public:
     VectorOfRect getVecSrchWindow( ) const;
     cv::Rect getSelectedWindow() const;
     PR_Line getIntensityCheckLine() const;
-    static float distanceOf2Point(const cv::Point &pt1, const cv::Point &pt2);    
+    static float distanceOf2Point(const cv::Point &pt1, const cv::Point &pt2);
+    void clearMask();
 protected:
     void mousePressEvent(QMouseEvent *event);
     void mouseReleaseEvent(QMouseEvent *event);
@@ -154,6 +155,7 @@ signals:
 
 protected slots:
     void showContextMenu(const QPoint& pos); // this is a slot
+    void selectWindow();
     void addMask();
     void clearSelectedWindow();
     int updateMat();

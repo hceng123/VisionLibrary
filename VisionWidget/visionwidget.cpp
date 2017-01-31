@@ -32,15 +32,15 @@ VisionWidget::VisionWidget(QWidget *parent)
 
     _ptrThresholdWidget = std::make_unique<ThresholdWidget>(this);
     _ptrThresholdWidget->setVisionView ( ui.visionView );
-    ui.verticalLayout->addWidget(_ptrThresholdWidget.get());
-
-    _ptrCcWidget = std::make_unique<CCWidget>(this);
-    _ptrCcWidget->setVisionView ( ui.visionView );
-    ui.verticalLayout->addWidget(_ptrCcWidget.get());
+    ui.verticalLayout->addWidget(_ptrThresholdWidget.get());    
 
     _ptrEdgeDetectWidget = std::make_unique<EdgeDetectWidget>(this);
     _ptrEdgeDetectWidget->setVisionView ( ui.visionView );
     ui.verticalLayout->addWidget(_ptrEdgeDetectWidget.get());
+
+    _ptrCcWidget = std::make_unique<CCWidget>(this);
+    _ptrCcWidget->setVisionView ( ui.visionView );
+    ui.verticalLayout->addWidget(_ptrCcWidget.get());
 }
 
 VisionWidget::~VisionWidget()
@@ -77,7 +77,8 @@ void VisionWidget::on_selectImageBtn_clicked()
     _sourceImagePath = fileNames[0].toStdString();
     ui.imagePathEdit->setText(fileNames[0]);
 
-    on_checkBoxByerFormat_clicked ( ui.checkBoxByerFormat->isChecked() );   
+    ui.visionView->clearMask();
+    on_checkBoxByerFormat_clicked ( ui.checkBoxByerFormat->isChecked() );    
 }
 
 void VisionWidget::on_checkBoxByerFormat_clicked(bool checked)

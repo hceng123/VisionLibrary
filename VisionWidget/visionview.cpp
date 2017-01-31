@@ -370,13 +370,17 @@ void VisionView::showContextMenu(const QPoint& pos) // this is a slot
 
     QMenu contextMenu(tr("Context menu"), this);
 
-    QAction action1("Add Mask", this);
-    connect(&action1, SIGNAL(triggered()), this, SLOT(addMask()));
-    contextMenu.addAction(&action1);
+    QAction actionS("Select", this);
+    connect(&actionS, SIGNAL(triggered()), this, SLOT(selectWindow()));
+    contextMenu.addAction(&actionS);
 
-    QAction action2("Clear Selection", this);
-    connect(&action2, SIGNAL(triggered()), this, SLOT(clearSelectedWindow()));
-    contextMenu.addAction(&action2);
+    QAction actionA("Add Mask", this);
+    connect(&actionA, SIGNAL(triggered()), this, SLOT(addMask()));
+    contextMenu.addAction(&actionA);
+
+    QAction actionC("Clear Selection", this);
+    connect(&actionC, SIGNAL(triggered()), this, SLOT(clearSelectedWindow()));
+    contextMenu.addAction(&actionC);
 
     QAction* selectedItem = contextMenu.exec(globalPos);
     if (selectedItem)
@@ -387,6 +391,11 @@ void VisionView::showContextMenu(const QPoint& pos) // this is a slot
     {
         // nothing was chosen
     }
+}
+
+void VisionView::selectWindow()
+{
+    _enState = VISION_VIEW_STATE::TEST_VISION_LIBRARY;
 }
 
 void VisionView::addMask()
@@ -502,6 +511,11 @@ float VisionView::distanceOf2Point(const cv::Point &pt1, const cv::Point &pt2)
     float fOffsetY = pt1.y - pt2.y;
     float fDistance = sqrt ( fOffsetX * fOffsetX + fOffsetY * fOffsetY );
     return fDistance;
+}
+
+void VisionView::clearMask()
+{
+    _matMask.release();
 }
 
 void VisionView::startTimer()

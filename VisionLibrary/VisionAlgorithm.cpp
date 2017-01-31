@@ -26,6 +26,24 @@ namespace Vision
 #define MARK_FUNCTION_START_TIME    CStopWatch      stopWatch; __int64 functionStart = stopWatch.AbsNow()
 #define MARK_FUNCTION_END_TIME      TimeLog::GetInstance()->addTimeLog( __FUNCTION__, stopWatch.AbsNow() - functionStart )
 
+#define SETUP_LOGCASE(classname) \
+std::unique_ptr<classname> pLogCase; \
+if ( ! bReplay )    {   \
+    pLogCase = std::make_unique<classname>( Config::GetInstance()->getLogCaseDir() );    \
+    if ( PR_DEBUG_MODE::LOG_ALL_CASE == Config::GetInstance()->getDebugMode() ) \
+        pLogCase->WriteCmd ( pstCmd );  \
+}
+
+#define FINISH_LOGCASE \
+if ( ! bReplay )    {   \
+    if ( PR_DEBUG_MODE::LOG_FAIL_CASE == Config::GetInstance()->getDebugMode() && pstRpy->enStatus != VisionStatus::OK )    {   \
+        pLogCase->WriteCmd ( pstCmd );  \
+        pLogCase->WriteRpy ( pstRpy );  \
+    }   \
+    if ( PR_DEBUG_MODE::LOG_ALL_CASE == Config::GetInstance()->getDebugMode() ) \
+        pLogCase->WriteRpy ( pstRpy );  \
+}
+
 /*static*/ OcrTesseractPtr VisionAlgorithm::_ptrOcrTesseract;
 
 VisionAlgorithm::VisionAlgorithm()
@@ -578,7 +596,7 @@ std::vector<Int16> VisionAlgorithm::_autoMultiLevelThreshold(const cv::Mat &mat,
     return vecThreshold;
 }
 
-VisionStatus VisionAlgorithm::autoThreshold(PR_AUTO_THRESHOLD_CMD *pstCmd, PR_AUTO_THRESHOLD_RPY *pstRpy)
+VisionStatus VisionAlgorithm::autoThreshold(PR_AUTO_THRESHOLD_CMD *pstCmd, PR_AUTO_THRESHOLD_RPY *pstRpy, bool bReplay)
 {
     assert ( pstCmd != nullptr && pstRpy != nullptr );
 
@@ -597,12 +615,15 @@ VisionStatus VisionAlgorithm::autoThreshold(PR_AUTO_THRESHOLD_CMD *pstCmd, PR_AU
     }
 
     MARK_FUNCTION_START_TIME;
+    SETUP_LOGCASE(LogCaseAutoThreshold);
 
     cv::Mat matROI(pstCmd->matInput, pstCmd->rectROI);
     pstRpy->vecThreshold = _autoMultiLevelThreshold ( matROI, pstCmd->nThresholdNum);
 
-    MARK_FUNCTION_END_TIME;
     pstRpy->enStatus = VisionStatus::OK;
+    
+    FINISH_LOGCASE;
+    MARK_FUNCTION_END_TIME;
     return pstRpy->enStatus;
 }
 
@@ -2281,18 +2302,12 @@ cv::RotatedRect VisionAlgorithm::_fitCircleIterate(const std::vector<cv::Point2f
 }
 
 VisionStatus VisionAlgorithm::ocr(PR_OCR_CMD *pstCmd, PR_OCR_RPY *pstRpy, bool bReplay)
-{
-    char charrMsg [ 1000 ];
-    if (NULL == pstCmd || NULL == pstRpy) {
-        _snprintf(charrMsg, sizeof(charrMsg), "Input is invalid, pstCmd = %d, pstRpy = %d", (int)pstCmd, (int)pstRpy);
-        WriteLog(charrMsg);
-        pstRpy->nStatus = ToInt32 ( VisionStatus::INVALID_PARAM );
-        return VisionStatus::INVALID_PARAM;
-    }
+{    
+    assert ( pstCmd != nullptr && pstRpy != nullptr );
 
     if (pstCmd->matInput.empty()) {
         WriteLog("Input image is empty");
-        pstRpy->nStatus = ToInt32 ( VisionStatus::INVALID_PARAM );
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return VisionStatus::INVALID_PARAM;
     }
     
@@ -2300,20 +2315,14 @@ VisionStatus VisionAlgorithm::ocr(PR_OCR_CMD *pstCmd, PR_OCR_RPY *pstRpy, bool b
         ( pstCmd->rectROI.x + pstCmd->rectROI.width ) > pstCmd->matInput.cols ||
         ( pstCmd->rectROI.y + pstCmd->rectROI.height ) > pstCmd->matInput.rows )    {
         WriteLog("The OCR search range is invalid");
-        pstRpy->nStatus = ToInt32 ( VisionStatus::INVALID_PARAM );
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return VisionStatus::INVALID_PARAM;
     }
 
     MARK_FUNCTION_START_TIME;
+    SETUP_LOGCASE(LogCaseOcr);
 
     VisionStatus enStatus = VisionStatus::OK;
-    std::unique_ptr<LogCaseOcr> pLogCase;
-    if ( ! bReplay )    {
-        pLogCase = std::make_unique<LogCaseOcr>( Config::GetInstance()->getLogCaseDir() );
-        if ( PR_DEBUG_MODE::LOG_ALL_CASE == Config::GetInstance()->getDebugMode() )
-            pLogCase->WriteCmd ( pstCmd );
-    }
-
     cv::Mat matROI(pstCmd->matInput, pstCmd->rectROI);
     if ( pstCmd->enDirection != PR_DIRECTION::UP )  {
         float fAngle = 0.f;
@@ -2347,27 +2356,15 @@ VisionStatus VisionAlgorithm::ocr(PR_OCR_CMD *pstCmd, PR_OCR_RPY *pstRpy, bool b
         WriteLog("OCR result is empty");
     }
     else
-    {
         enStatus = VisionStatus::OK;
-    }
 
-    pstRpy->nStatus = ToInt32 (enStatus);
-
-    if ( ! bReplay )    {
-        if ( PR_DEBUG_MODE::LOG_FAIL_CASE == Config::GetInstance()->getDebugMode() && enStatus != VisionStatus::OK )    {
-            pLogCase->WriteCmd ( pstCmd );
-            pLogCase->WriteRpy ( pstRpy );
-        }
-
-        if ( PR_DEBUG_MODE::LOG_ALL_CASE == Config::GetInstance()->getDebugMode() )
-            pLogCase->WriteRpy ( pstRpy );
-    }
-
-    MARK_FUNCTION_END_TIME;    
+    pstRpy->enStatus = enStatus;
+    FINISH_LOGCASE;
+    MARK_FUNCTION_END_TIME; 
     return enStatus;
 }
 
-VisionStatus VisionAlgorithm::colorToGray(PR_COLOR_TO_GRAY_CMD *pstCmd, PR_COLOR_TO_GRAY_RPY *pstRpy)
+/*static*/ VisionStatus VisionAlgorithm::colorToGray(PR_COLOR_TO_GRAY_CMD *pstCmd, PR_COLOR_TO_GRAY_RPY *pstRpy)
 {
     assert ( pstCmd != nullptr && pstRpy != nullptr );
 
@@ -2392,7 +2389,7 @@ VisionStatus VisionAlgorithm::colorToGray(PR_COLOR_TO_GRAY_CMD *pstCmd, PR_COLOR
     return pstRpy->enStatus;
 }
 
-VisionStatus VisionAlgorithm::filter(PR_FILTER_CMD *pstCmd, PR_FILTER_RPY *pstRpy)
+/*static*/ VisionStatus VisionAlgorithm::filter(PR_FILTER_CMD *pstCmd, PR_FILTER_RPY *pstRpy)
 {
     assert ( pstCmd != nullptr && pstRpy != nullptr );
     char charrMsg [ 1000 ];
@@ -2434,12 +2431,12 @@ VisionStatus VisionAlgorithm::filter(PR_FILTER_CMD *pstCmd, PR_FILTER_RPY *pstRp
 
     VisionStatus enStatus = VisionStatus::OK;
     if ( PR_FILTER_TYPE::NORMALIZED_BOX_FILTER == pstCmd->enType )  {
-        cv::blur( matROI, matROI, pstCmd->szKernel);
+        cv::blur( matROI, matROI, pstCmd->szKernel );
     }else if ( PR_FILTER_TYPE::GAUSSIAN_FILTER == pstCmd->enType )  {
         cv::GaussianBlur( matROI, matROI, pstCmd->szKernel, pstCmd->dSigmaX, pstCmd->dSigmaY);
-    }else if ( PR_FILTER_TYPE::MEDIAN_FILTER == pstCmd->enType) {
+    }else if ( PR_FILTER_TYPE::MEDIAN_FILTER == pstCmd->enType ) {
         cv::medianBlur( matROI, matROI, pstCmd->szKernel.width);
-    }else if ( PR_FILTER_TYPE::BILATERIAL_FILTER == pstCmd->enType) {
+    }else if ( PR_FILTER_TYPE::BILATERIAL_FILTER == pstCmd->enType ) {
         cv::Mat matResult;
         cv::bilateralFilter ( matROI, matResult, pstCmd->nDiameter, pstCmd->dSigmaColor, pstCmd->dSigmaSpace );
         if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE )   {
@@ -2483,13 +2480,7 @@ VisionStatus VisionAlgorithm::filter(PR_FILTER_CMD *pstCmd, PR_FILTER_RPY *pstRp
     }
 
     MARK_FUNCTION_START_TIME;
-
-    std::unique_ptr<LogCaseRemoveCC> pLogCase;
-    if ( ! bReplay )    {
-        pLogCase = std::make_unique<LogCaseRemoveCC>( Config::GetInstance()->getLogCaseDir() );
-        if ( PR_DEBUG_MODE::LOG_ALL_CASE == Config::GetInstance()->getDebugMode() )
-            pLogCase->WriteCmd ( pstCmd );
-    }
+    SETUP_LOGCASE(LogCaseRemoveCC);    
 
     pstRpy->matResult = pstCmd->matInput.clone();
     cv::Mat matROI ( pstRpy->matResult, pstCmd->rectROI );
@@ -2513,7 +2504,7 @@ VisionStatus VisionAlgorithm::filter(PR_FILTER_CMD *pstCmd, PR_FILTER_RPY *pstRp
 
     int nCurrentLabel = 1;
     int nCurrentLabelCount = 0;
-    int nTotalPixels = matLabels.rows * matLabels.cols;    
+    int nTotalPixels = matLabels.rows * matLabels.cols;
     pstRpy->nRemovedCC = 0;
 
     do
@@ -2536,17 +2527,9 @@ VisionStatus VisionAlgorithm::filter(PR_FILTER_CMD *pstCmd, PR_FILTER_RPY *pstRp
 
 EXIT:
     pstRpy->enStatus = enStatus;
-    if ( ! bReplay )    {
-        if ( PR_DEBUG_MODE::LOG_FAIL_CASE == Config::GetInstance()->getDebugMode() && enStatus != VisionStatus::OK )    {
-            pLogCase->WriteCmd ( pstCmd );
-            pLogCase->WriteRpy ( pstRpy );
-        }
-
-        if ( PR_DEBUG_MODE::LOG_ALL_CASE == Config::GetInstance()->getDebugMode() )
-            pLogCase->WriteRpy ( pstRpy );
-    }
-
+    FINISH_LOGCASE;
     MARK_FUNCTION_END_TIME;
+
     return pstRpy->enStatus;
 }
 
@@ -2569,13 +2552,7 @@ EXIT:
     }
 
     MARK_FUNCTION_START_TIME;
-
-    std::unique_ptr<LogCaseDetectEdge> pLogCase;
-    if ( ! bReplay )    {
-        pLogCase = std::make_unique<LogCaseDetectEdge>( Config::GetInstance()->getLogCaseDir() );
-        if ( PR_DEBUG_MODE::LOG_ALL_CASE == Config::GetInstance()->getDebugMode() )
-            pLogCase->WriteCmd ( pstCmd );
-    }
+    SETUP_LOGCASE(LogCaseDetectEdge);
 
     pstRpy->matResult = pstCmd->matInput.clone();
     cv::Mat matROI ( pstRpy->matResult, pstCmd->rectROI );
@@ -2592,16 +2569,7 @@ EXIT:
 
     pstRpy->enStatus = VisionStatus::OK;
 
-    if ( ! bReplay )    {
-        if ( PR_DEBUG_MODE::LOG_FAIL_CASE == Config::GetInstance()->getDebugMode() && pstRpy->enStatus != VisionStatus::OK )    {
-            pLogCase->WriteCmd ( pstCmd );
-            pLogCase->WriteRpy ( pstRpy );
-        }
-
-        if ( PR_DEBUG_MODE::LOG_ALL_CASE == Config::GetInstance()->getDebugMode() )
-            pLogCase->WriteRpy ( pstRpy );
-    }
-
+    FINISH_LOGCASE;
     MARK_FUNCTION_END_TIME;
     return pstRpy->enStatus;
 }
