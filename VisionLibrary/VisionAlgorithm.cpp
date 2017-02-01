@@ -2256,7 +2256,7 @@ std::vector<size_t> VisionAlgorithm::_findPointsOverCircleTol( const VectorOfPoi
     return vecResult;
 }
 
-std::vector<ListOfPoint::const_iterator> VisionAlgorithm::_findPointsOverCircleTol( const ListOfPoint &listPoint, const cv::RotatedRect &rotatedRect, PR_RM_FIT_NOISE_METHOD enMethod, float tolerance )
+/*static*/ std::vector<ListOfPoint::const_iterator> VisionAlgorithm::_findPointsOverCircleTol( const ListOfPoint &listPoint, const cv::RotatedRect &rotatedRect, PR_RM_FIT_NOISE_METHOD enMethod, float tolerance )
 {
     std::vector<ListOfPoint::const_iterator> vecResult;
     for ( ListOfPoint::const_iterator it = listPoint.begin(); it != listPoint.end(); ++ it )  {
@@ -2301,7 +2301,7 @@ cv::RotatedRect VisionAlgorithm::_fitCircleIterate(const std::vector<cv::Point2f
     return rotatedRect;
 }
 
-VisionStatus VisionAlgorithm::ocr(PR_OCR_CMD *pstCmd, PR_OCR_RPY *pstRpy, bool bReplay)
+/*static*/ VisionStatus VisionAlgorithm::ocr(PR_OCR_CMD *pstCmd, PR_OCR_RPY *pstRpy, bool bReplay)
 {    
     assert ( pstCmd != nullptr && pstRpy != nullptr );
 
@@ -2348,8 +2348,9 @@ VisionStatus VisionAlgorithm::ocr(PR_OCR_CMD *pstCmd, PR_OCR_RPY *pstRpy, bool b
         showImage("OCR ROI Image", matROI );
 
     char *dataPath = "./tessdata";
+    String strOcrCharList = Config::GetInstance()->getOcrCharList();
     if ( nullptr == _ptrOcrTesseract )
-        _ptrOcrTesseract = cv::text::OCRTesseract::create(dataPath, "eng+eng1", _constOcrCharList.c_str() );
+        _ptrOcrTesseract = cv::text::OCRTesseract::create(dataPath, "eng+eng1", strOcrCharList.c_str() );
     _ptrOcrTesseract->run ( matROI, pstRpy->strResult );
     if ( pstRpy->strResult.empty() )    {
         enStatus = VisionStatus::OCR_FAIL;

@@ -56,6 +56,11 @@ Int32 Config::getRemoveCCMaxComponents()
     return _nRemoveCCMaxComponent;
 }
 
+String Config::getOcrCharList() const
+{
+    return _strOcrCharList;
+}
+
 void Config::load()
 {
 }

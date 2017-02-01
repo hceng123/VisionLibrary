@@ -66,5 +66,9 @@ void VisionViewToolBox::on_saveImageButton_clicked()
         fileNames = dialog.selectedFiles();
     }else
         return;
-    cv::imwrite( fileNames[0].toStdString(), mat );
+    string strFilePath = fileNames[0].toStdString();
+    size_t posDot = strFilePath.find_last_of('.');
+    if ( posDot == String::npos || posDot < ( strFilePath.length() - 4 ) )
+        strFilePath += ".png";
+    cv::imwrite( strFilePath, mat );
 }

@@ -57,7 +57,7 @@ int OcrProcedure::ocr(const std::string &imagePath)
 	PR_OCR_RPY stRpy;
 	VisionStatus visionStatus = PR_Ocr(&stCmd, &stRpy);
 	if (VisionStatus::OK != visionStatus)	{
-		std::cout << "Failed to do OCR, VisionStatus = " << stRpy.nStatus << std::endl;
+		std::cout << "Failed to do OCR, VisionStatus = " << ToInt32( stRpy.enStatus ) << std::endl;
 		return static_cast<int> ( visionStatus );
 	}
     _strResult = stRpy.strResult;
