@@ -92,9 +92,9 @@ void VisionView::mouseReleaseEvent(QMouseEvent *event)
                 int npts = Mat(_vecPolylinePoint).rows;
 
                 if ( MASK_EDIT_STATE::MASK_EDIT_ADD == _enMaskEditState )
-                    cv::fillPoly( _matMask, &pts, &npts, 1, Scalar ( 255, 255 , 255 ) );
+                    cv::fillPoly( _matMask, &pts, &npts, 1, Scalar ( 255, 255, 255 ) );
                 else
-                    cv::fillPoly( _matMask, &pts, &npts, 1, Scalar ( 0, 0 , 0 ) );
+                    cv::fillPoly( _matMask, &pts, &npts, 1, Scalar ( 0, 0, 0 ) );
 
                 _vecPolylinePoint.clear();
                 _ptLeftClickStartPos = Point(0,0);
@@ -539,6 +539,37 @@ cv::Mat VisionView::getMat(DISPLAY_SOURCE enSource) const
 cv::Mat VisionView::getCurrentMat() const
 {
     return _matArray[ToInt32(_enDisplaySource)];
+}
+
+cv::Mat VisionView::getMask() const
+{
+    cv::Size size( _matArray[0].size().width / _fZoomFactor, _matArray[0].size().height / _fZoomFactor );
+
+    cv::Mat matMaskResult = cv::Mat::zeros(_matArray[0].size(), CV_8UC1) * PR_MAX_GRAY_LEVEL;
+
+    cv::Mat  matLocalMask;
+    if ( fabs ( _fZoomFactor - 1.f) < 0.001 )   {
+        matLocalMask = _matMask.clone();
+    }
+    else
+    {
+        cv::Mat matLocalMask;
+        cv::resize(_matMask, matLocalMask, cv::Size(), 1 / _fZoomFactor, 1 / _fZoomFactor);
+        cv::Mat matRealSize = cv::Mat::ones(_matDisplay.size(), CV_8UC1) * PR_MAX_GRAY_LEVEL;
+    }
+
+    if ( matMaskResult.rows > matLocalMask.rows && matMaskResult.cols > matLocalMask.cols ) {
+        cv::Rect rectROIDst((matMaskResult.cols - matLocalMask.cols) / 2, (matMaskResult.rows - matLocalMask.rows) / 2, matLocalMask.cols, matLocalMask.rows );
+        cv::Mat matDst(matMaskResult, rectROIDst);
+        matLocalMask.copyTo(matDst);
+    }else if  ( matMaskResult.rows < matLocalMask.rows && matMaskResult.cols < matLocalMask.cols )  {
+        cv::Rect rectROISrc(( matLocalMask.cols - matMaskResult.cols ) / 2, ( matLocalMask.rows - matMaskResult.rows) / 2, matMaskResult.cols, matMaskResult.rows );
+        cv::Mat matSrc( matLocalMask, rectROISrc);
+        matSrc.copyTo ( matMaskResult );
+    }
+
+    matMaskResult = cv::Scalar(255) - matMaskResult;
+    return matMaskResult;
 }
 
 void VisionView::applyIntermediateResult()

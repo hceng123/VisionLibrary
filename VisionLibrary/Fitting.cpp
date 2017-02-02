@@ -8,7 +8,7 @@ namespace Vision
 
 // This function is based on Modified Least Square Methods from Paper
 // "A Few Methods for Fitting Circles to Data".
-/*static*/ cv::RotatedRect Fitting::fitCircle(const std::vector<cv::Point2f> &vecPoints)
+/*static*/ cv::RotatedRect Fitting::fitCircle(const VectorOfPoint &vecPoints)
 {
     cv::RotatedRect rotatedRect;
     if ( vecPoints.size() < 3 )
@@ -97,7 +97,7 @@ namespace Vision
 }
 
 //The equation is from http://hotmath.com/hotmath_help/topics/line-of-best-fit.html
-/*static*/ void Fitting::fitLine(const std::vector<cv::Point2f> &vecPoints, float &fSlope, float &fIntercept, bool reverseFit)
+/*static*/ void Fitting::fitLine(const VectorOfPoint &vecPoints, float &fSlope, float &fIntercept, bool reverseFit)
 {
     if ( vecPoints.size() < 2 )
         return;
@@ -166,8 +166,8 @@ namespace Vision
 }
 
 //Using least square method to fit. Solve equation A * X = B.
-/*static*/ void Fitting::fitParallelLine(const std::vector<cv::Point2f> &vecPoints1,
-                                         const std::vector<cv::Point2f> &vecPoints2,
+/*static*/ void Fitting::fitParallelLine(const VectorOfPoint &vecPoints1,
+                                         const VectorOfPoint &vecPoints2,
                                          float                          &fSlope,
                                          float                          &fIntercept1,
                                          float                          &fIntercept2,

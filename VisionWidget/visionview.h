@@ -86,6 +86,7 @@ public:
     void setMat( DISPLAY_SOURCE enSource, const cv::Mat &mat);
     cv::Mat getMat( DISPLAY_SOURCE enSource = VisionView::DISPLAY_SOURCE::ORIGINAL ) const;
     cv::Mat getCurrentMat() const;
+    cv::Mat getMask() const;
     void applyIntermediateResult();
     void clearMat( DISPLAY_SOURCE enSource );
     bool isDisplayResultImage() const;

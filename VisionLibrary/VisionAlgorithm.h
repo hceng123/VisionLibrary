@@ -79,7 +79,7 @@ protected:
     VectorOfPoint _findPointsInCircleTol( const VectorOfPoint &vecPoints, const cv::RotatedRect &rotatedRect, float tolerance );
     std::vector<size_t> _findPointsOverCircleTol( const VectorOfPoint &vecPoints, const cv::RotatedRect &rotatedRect, PR_RM_FIT_NOISE_METHOD enMethod, float tolerance );
     static std::vector<ListOfPoint::const_iterator> _findPointsOverCircleTol( const ListOfPoint &listPoint, const cv::RotatedRect &rotatedRect, PR_RM_FIT_NOISE_METHOD enMethod, float tolerance );
-    cv::RotatedRect _fitCircleIterate(const std::vector<cv::Point2f> &vecPoints, PR_RM_FIT_NOISE_METHOD method, float tolerance);
+    cv::RotatedRect _fitCircleIterate(const VectorOfPoint &vecPoints, PR_RM_FIT_NOISE_METHOD method, float tolerance);
 protected:
     const int       _constMinHessian        =  300;
     const int       _constOctave            =  4;

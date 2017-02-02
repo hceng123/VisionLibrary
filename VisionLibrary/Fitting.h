@@ -13,12 +13,12 @@ namespace Vision
 class Fitting
 {
 public:
-    static cv::RotatedRect fitCircle(const std::vector<cv::Point2f> &vecPoints);
+    static cv::RotatedRect fitCircle(const VectorOfPoint &vecPoints);
     static cv::RotatedRect fitCircle(const ListOfPoint &listPoint);
-    static void fitLine(const std::vector<cv::Point2f> &vecPoints, float &fSlope, float &fIntercept, bool reverseFit = false);
+    static void fitLine(const VectorOfPoint &vecPoints, float &fSlope, float &fIntercept, bool reverseFit = false);
     static void fitLine(const ListOfPoint &listPoint, float &fSlope, float &fIntercept, bool reverseFit = false);
-    static void fitParallelLine(const std::vector<cv::Point2f> &vecPoints1,
-                                const std::vector<cv::Point2f> &vecPoints2,
+    static void fitParallelLine(const VectorOfPoint &vecPoints1,
+                                const VectorOfPoint &vecPoints2,
                                 float                          &fSlope,
                                 float                          &fIntercept1,
                                 float                          &fIntercept2,

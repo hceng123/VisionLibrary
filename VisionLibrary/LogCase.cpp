@@ -162,9 +162,9 @@ VisionStatus LogCaseFitCircle::WriteCmd(PR_FIT_CIRCLE_CMD *pCmd)
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile( cmdRpyFilePath.c_str() );
     ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyMethod.c_str(), static_cast<long>(pCmd->enMethod) );
-    ini.SetValue(_CMD_SECTION.c_str(), _strKeyExpectedCtr.c_str(), _formatCoordinate(pCmd->ptRangeCtr).c_str() );
-    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyInnerRadius.c_str(), pCmd->fRangeInnterRadius );
-    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyOuterRadius.c_str(), pCmd->fRangeOutterRadius );
+//    ini.SetValue(_CMD_SECTION.c_str(), _strKeyExpectedCtr.c_str(), _formatCoordinate(pCmd->ptRangeCtr).c_str() );
+//    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyInnerRadius.c_str(), pCmd->fRangeInnterRadius );
+//    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyOuterRadius.c_str(), pCmd->fRangeOutterRadius );
     ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyErrorTol.c_str(), pCmd->fErrTol );
     ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyThreshold.c_str(), pCmd->nThreshold );
     ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyAttribute.c_str(), ToInt32 ( pCmd->enAttribute ) );
@@ -178,7 +178,7 @@ VisionStatus LogCaseFitCircle::WriteRpy(PR_FIT_CIRCLE_RPY *pRpy)
     CSimpleIni ini(false, false, false);
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile( cmdRpyFilePath.c_str() );
-    ini.SetLongValue  (_RPY_SECTION.c_str(), _strKeyStatus.c_str(), pRpy->nStatus );
+    ini.SetLongValue  (_RPY_SECTION.c_str(), _strKeyStatus.c_str(), ToInt32( pRpy->enStatus ) );
     ini.SetValue(_RPY_SECTION.c_str(), _strKeyResultCtr.c_str(), _formatCoordinate(pRpy->ptCircleCtr).c_str() );    
     ini.SetDoubleValue(_RPY_SECTION.c_str(), _strKeyRadius.c_str(), pRpy->fRadius );
     ini.SaveFile( cmdRpyFilePath.c_str() );
@@ -196,9 +196,9 @@ VisionStatus LogCaseFitCircle::RunLogCase()
     ini.LoadFile( cmdRpyFilePath.c_str() );
     stCmd.matInput = cv::imread( _strLogCasePath + "image.jpg" );
     stCmd.enMethod = static_cast<PR_FIT_CIRCLE_METHOD> ( ini.GetLongValue ( _CMD_SECTION.c_str(), _strKeyMethod.c_str(), 0 ) );
-    stCmd.ptRangeCtr = _parseCoordinate ( ini.GetValue(_CMD_SECTION.c_str(), _strKeyExpectedCtr.c_str(), _DEFAULT_COORD.c_str() ) );
-    stCmd.fRangeInnterRadius = (float)ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyInnerRadius.c_str(), 0 );
-    stCmd.fRangeOutterRadius = (float)ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyOuterRadius.c_str(), 0 );
+//    stCmd.ptRangeCtr = _parseCoordinate ( ini.GetValue(_CMD_SECTION.c_str(), _strKeyExpectedCtr.c_str(), _DEFAULT_COORD.c_str() ) );
+//    stCmd.fRangeInnterRadius = (float)ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyInnerRadius.c_str(), 0 );
+//    stCmd.fRangeOutterRadius = (float)ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyOuterRadius.c_str(), 0 );
     stCmd.fErrTol = (float)ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyErrorTol.c_str(), 0 );
     stCmd.nThreshold = ini.GetLongValue( _CMD_SECTION.c_str(), _strKeyThreshold.c_str(), 0);
     stCmd.enAttribute = static_cast<PR_OBJECT_ATTRIBUTE>(ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyAttribute.c_str(), 0 ) );
