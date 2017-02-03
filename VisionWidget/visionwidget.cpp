@@ -108,8 +108,8 @@ void VisionWidget::on_fitCircleBtn_clicked()
 
 	FitCircleProcedure procedure(ui.visionView);
     procedure.setErrTol ( ui.lineEditFitCircleErrTol->text().toFloat());
-    procedure.setThreshold ( ui.lineEditFitCircleThreshold->text().toInt());
-    procedure.setAttribute ( ui.comboBoxCircleAttribute->currentIndex());
+    //procedure.setThreshold ( ui.lineEditFitCircleThreshold->text().toInt());
+    //procedure.setAttribute ( ui.comboBoxCircleAttribute->currentIndex());
     procedure.setAlgorithm ( ui.comboBoxFitCircleAlgorithm->currentIndex());
 	int nStatus = procedure.run(_sourceImagePath);
     if ( ToInt(VisionStatus::OK) == nStatus )
@@ -192,7 +192,7 @@ void VisionWidget::on_srchFiducialBtn_clicked()
     int nStatus = procedure.run(_sourceImagePath);
     if ( ToInt(VisionStatus::OK) == nStatus )
     {
-        ui.visionView->setMat(VisionView::DISPLAY_SOURCE::RESULT, procedure.getResultMat() );
+        ui.visionView->setMat ( VisionView::DISPLAY_SOURCE::RESULT, procedure.getResultMat() );
     }
 }
 

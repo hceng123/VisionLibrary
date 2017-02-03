@@ -68,7 +68,7 @@
      <rect>
       <x>730</x>
       <y>60</y>
-      <width>581</width>
+      <width>611</width>
       <height>611</height>
      </rect>
     </property>
@@ -113,8 +113,8 @@
        <rect>
         <x>10</x>
         <y>10</y>
-        <width>551</width>
-        <height>91</height>
+        <width>590</width>
+        <height>51</height>
        </rect>
       </property>
       <property name="title">
@@ -123,8 +123,8 @@
       <widget class="QPushButton" name="fitCircleBtn">
        <property name="geometry">
         <rect>
-         <x>460</x>
-         <y>30</y>
+         <x>500</x>
+         <y>20</y>
          <width>80</width>
          <height>23</height>
         </rect>
@@ -137,8 +137,8 @@
        <property name="geometry">
         <rect>
          <x>90</x>
-         <y>30</y>
-         <width>41</width>
+         <y>20</y>
+         <width>50</width>
          <height>20</height>
         </rect>
        </property>
@@ -153,7 +153,7 @@
        <property name="geometry">
         <rect>
          <x>10</x>
-         <y>30</y>
+         <y>20</y>
          <width>81</width>
          <height>16</height>
         </rect>
@@ -162,40 +162,11 @@
         <string>Error Tolerance</string>
        </property>
       </widget>
-      <widget class="QLabel" name="labelFitCircleThreshold">
-       <property name="geometry">
-        <rect>
-         <x>230</x>
-         <y>30</y>
-         <width>51</width>
-         <height>16</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string>Threshold</string>
-       </property>
-      </widget>
-      <widget class="QLineEdit" name="lineEditFitCircleThreshold">
-       <property name="geometry">
-        <rect>
-         <x>280</x>
-         <y>30</y>
-         <width>61</width>
-         <height>20</height>
-        </rect>
-       </property>
-       <property name="inputMethodHints">
-        <set>Qt::ImhDigitsOnly</set>
-       </property>
-       <property name="text">
-        <string>200</string>
-       </property>
-      </widget>
       <widget class="QComboBox" name="comboBoxFitCircleAlgorithm">
        <property name="geometry">
         <rect>
-         <x>90</x>
-         <y>60</y>
+         <x>200</x>
+         <y>20</y>
          <width>121</width>
          <height>22</height>
         </rect>
@@ -222,8 +193,8 @@
       <widget class="QLabel" name="labelFitCircleAlgorithm">
        <property name="geometry">
         <rect>
-         <x>10</x>
-         <y>60</y>
+         <x>150</x>
+         <y>20</y>
          <width>51</width>
          <height>16</height>
         </rect>
@@ -232,46 +203,13 @@
         <string>Algorithm</string>
        </property>
       </widget>
-      <widget class="QLabel" name="labelCircleAttribute">
-       <property name="geometry">
-        <rect>
-         <x>230</x>
-         <y>60</y>
-         <width>47</width>
-         <height>13</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string>Attribute</string>
-       </property>
-      </widget>
-      <widget class="QComboBox" name="comboBoxCircleAttribute">
-       <property name="geometry">
-        <rect>
-         <x>280</x>
-         <y>60</y>
-         <width>69</width>
-         <height>22</height>
-        </rect>
-       </property>
-       <item>
-        <property name="text">
-         <string>Bright</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>Dark</string>
-        </property>
-       </item>
-      </widget>
      </widget>
      <widget class="QGroupBox" name="groupBoxFitLine">
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>110</y>
-        <width>551</width>
+        <y>140</y>
+        <width>590</width>
         <height>51</height>
        </rect>
       </property>
@@ -339,7 +277,7 @@
       <widget class="QPushButton" name="fitLineBtn">
        <property name="geometry">
         <rect>
-         <x>460</x>
+         <x>500</x>
          <y>20</y>
          <width>80</width>
          <height>23</height>
@@ -387,8 +325,8 @@
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>170</y>
-        <width>551</width>
+        <y>210</y>
+        <width>590</width>
         <height>51</height>
        </rect>
       </property>
@@ -456,7 +394,7 @@
       <widget class="QPushButton" name="fitParallelLineBtn">
        <property name="geometry">
         <rect>
-         <x>460</x>
+         <x>500</x>
          <y>20</y>
          <width>80</width>
          <height>23</height>
@@ -504,8 +442,8 @@
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>230</y>
-        <width>551</width>
+        <y>280</y>
+        <width>590</width>
         <height>51</height>
        </rect>
       </property>
@@ -573,7 +511,7 @@
       <widget class="QPushButton" name="fitRectBtn">
        <property name="geometry">
         <rect>
-         <x>460</x>
+         <x>500</x>
          <y>20</y>
          <width>80</width>
          <height>23</height>
@@ -614,6 +552,58 @@
        </property>
        <property name="text">
         <string>Attribute</string>
+       </property>
+      </widget>
+     </widget>
+     <widget class="QGroupBox" name="groupBoxCircleRoundness">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>70</y>
+        <width>590</width>
+        <height>51</height>
+       </rect>
+      </property>
+      <property name="title">
+       <string>Circle Roundness</string>
+      </property>
+      <widget class="QLineEdit" name="lineEditRoundnessResult">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
+       <property name="geometry">
+        <rect>
+         <x>90</x>
+         <y>20</y>
+         <width>50</width>
+         <height>20</height>
+        </rect>
+       </property>
+      </widget>
+      <widget class="QLabel" name="labelRoundness">
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>20</y>
+         <width>81</width>
+         <height>16</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Roundness</string>
+       </property>
+      </widget>
+      <widget class="QPushButton" name="calcRoundnessBtn">
+       <property name="geometry">
+        <rect>
+         <x>480</x>
+         <y>20</y>
+         <width>100</width>
+         <height>23</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Calc Roundness</string>
        </property>
       </widget>
      </widget>

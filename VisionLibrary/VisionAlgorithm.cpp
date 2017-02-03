@@ -606,7 +606,8 @@ VisionStatus VisionAlgorithm::autoThreshold(PR_AUTO_THRESHOLD_CMD *pstCmd, PR_AU
         return pstRpy->enStatus;
     }
 
-    if ( pstCmd->rectROI.x < 0 || pstCmd->rectROI.y < 0 ||
+    if (pstCmd->rectROI.x < 0 || pstCmd->rectROI.y < 0 ||
+        pstCmd->rectROI.width <= 0 || pstCmd->rectROI.height <= 0 ||
         ( pstCmd->rectROI.x + pstCmd->rectROI.width ) > pstCmd->matInput.cols ||
         ( pstCmd->rectROI.y + pstCmd->rectROI.height ) > pstCmd->matInput.rows )    {
         WriteLog("The Fitting range is invalid");
@@ -1498,7 +1499,7 @@ VisionStatus VisionAlgorithm::srchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd
         cv::rectangle(matTmpl,
                       cv::Rect2f(pstCmd->fMargin, pstCmd->fMargin, pstCmd->fSize, pstCmd->fSize),
                       cv::Scalar::all(256),
-                      -1);
+                      CV_FILLED );
     }
     else if ( PR_FIDUCIAL_MARK_TYPE::CIRCLE == pstCmd->enType )
     {
@@ -1660,7 +1661,8 @@ VisionStatus VisionAlgorithm::fitLine(PR_FIT_LINE_CMD *pstCmd, PR_FIT_LINE_RPY *
         return pstRpy->enStatus;
     }
     
-    if ( pstCmd->rectROI.x < 0 || pstCmd->rectROI.y < 0 || 
+    if (pstCmd->rectROI.x < 0 || pstCmd->rectROI.y < 0 ||
+        pstCmd->rectROI.width <= 0 || pstCmd->rectROI.height <= 0 ||
         ( pstCmd->rectROI.x + pstCmd->rectROI.width ) > pstCmd->matInput.cols ||
         ( pstCmd->rectROI.y + pstCmd->rectROI.height ) > pstCmd->matInput.rows )    {
         WriteLog("The OCR search range is invalid");
@@ -1678,7 +1680,7 @@ VisionStatus VisionAlgorithm::fitLine(PR_FIT_LINE_CMD *pstCmd, PR_FIT_LINE_RPY *
     }
 
     VisionStatus enStatus = VisionStatus::OK;    
-    std::vector<float> vecX, vecY;
+    std::vector<int> vecX, vecY;
     std::vector<ListOfPoint::const_iterator> vecOverTolIter;
 
     cv::Mat matGray, matThreshold;
@@ -1776,7 +1778,7 @@ VisionStatus VisionAlgorithm::fitParallelLine(PR_FIT_PARALLEL_LINE_CMD *pstCmd, 
         return VisionStatus::NOT_ENOUGH_POINTS_TO_FIT;
     }
 
-    std::vector<float> vecX, vecY;
+    std::vector<int> vecX, vecY;
     for ( const auto &point : listPoint1 )
     {
         vecX.push_back ( point.x );
@@ -1875,7 +1877,7 @@ VisionStatus VisionAlgorithm::fitRect(PR_FIT_RECT_CMD *pstCmd, PR_FIT_RECT_RPY *
             return pstRpy->enStatus;
         }
     }
-    std::vector<float> vecX, vecY;
+    std::vector<int> vecX, vecY;
     for ( const auto &point : vecListPoint[0] )
     {
         vecX.push_back ( point.x );
@@ -2054,7 +2056,7 @@ VisionStatus VisionAlgorithm::findEdge(PR_FIND_EDGE_CMD *pstCmd, PR_FIND_EDGE_RP
     return VisionStatus::OK;
 }
 
-VisionStatus VisionAlgorithm::fitCircle(PR_FIT_CIRCLE_CMD *pstCmd, PR_FIT_CIRCLE_RPY *pstRpy, bool bReplay)
+/*static*/ VisionStatus VisionAlgorithm::fitCircle(PR_FIT_CIRCLE_CMD *pstCmd, PR_FIT_CIRCLE_RPY *pstRpy, bool bReplay)
 {
     assert ( pstCmd != nullptr && pstRpy != nullptr );
     char charrMsg [ 1000 ];    
@@ -2065,12 +2067,29 @@ VisionStatus VisionAlgorithm::fitCircle(PR_FIT_CIRCLE_CMD *pstCmd, PR_FIT_CIRCLE
         return pstRpy->enStatus;
     }
     
-    if ( pstCmd->rectROI.x < 0 || pstCmd->rectROI.y < 0 ||
+    if (pstCmd->rectROI.x < 0 || pstCmd->rectROI.y < 0 || 
+        pstCmd->rectROI.width <= 0 || pstCmd->rectROI.height <= 0 ||
         ( pstCmd->rectROI.x + pstCmd->rectROI.width ) > pstCmd->matInput.cols ||
-        ( pstCmd->rectROI.y + pstCmd->rectROI.height ) > pstCmd->matInput.rows )    {
+        ( pstCmd->rectROI.y + pstCmd->rectROI.height ) > pstCmd->matInput.rows ) {
         WriteLog("The input ROI is invalid");
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return pstRpy->enStatus;
+    }
+
+    if ( ! pstCmd->matMask.empty() ) {
+        if ( pstCmd->matMask.rows != pstCmd->matInput.rows || pstCmd->matMask.cols != pstCmd->matInput.cols ) {
+            _snprintf(charrMsg, sizeof(charrMsg), "The mask size ( %d, %d ) not match with input image size ( %d, %d )",
+                pstCmd->matMask.cols, pstCmd->matMask.rows, pstCmd->matInput.cols, pstCmd->matInput.rows);
+            WriteLog(charrMsg);
+            pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+            return pstRpy->enStatus;
+        }
+
+        if ( pstCmd->matMask.channels() != 1 )  {
+            WriteLog("The mask must be gray image!");
+            pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+            return pstRpy->enStatus;
+        }
     }
 
     if (PR_FIT_CIRCLE_METHOD::RANSAC == pstCmd->enMethod && (1000 <= pstCmd->nMaxRansacTime || pstCmd->nMaxRansacTime <= 0)) {
@@ -2083,8 +2102,7 @@ VisionStatus VisionAlgorithm::fitCircle(PR_FIT_CIRCLE_CMD *pstCmd, PR_FIT_CIRCLE
     MARK_FUNCTION_START_TIME;
     SETUP_LOGCASE(LogCaseFitCircle);
 
-    cv::Mat matROI ( pstCmd->matInput, pstCmd->rectROI);
-    
+    cv::Mat matROI ( pstCmd->matInput, pstCmd->rectROI);    
     cv::Mat matGray, matThreshold;
 
     if ( pstCmd->matInput.channels() > 1 )
@@ -2098,7 +2116,7 @@ VisionStatus VisionAlgorithm::fitCircle(PR_FIT_CIRCLE_CMD *pstCmd, PR_FIT_CIRCLE
     else
     {
         cv::ThresholdTypes enThresType = cv::THRESH_BINARY;
-        if (PR_OBJECT_ATTRIBUTE::DARK == pstCmd->enAttribute)
+        if ( PR_OBJECT_ATTRIBUTE::DARK == pstCmd->enAttribute )
             enThresType = cv::THRESH_BINARY_INV;
 
         cv::threshold(matGray, matThreshold, pstCmd->nThreshold, PR_MAX_GRAY_LEVEL, enThresType);
@@ -2141,7 +2159,7 @@ VisionStatus VisionAlgorithm::fitCircle(PR_FIT_CIRCLE_CMD *pstCmd, PR_FIT_CIRCLE
     pstRpy->enStatus = VisionStatus::OK;
 
     pstRpy->matResult = pstCmd->matInput.clone();
-	cv::circle(pstRpy->matResult, pstRpy->ptCircleCtr, (int)pstRpy->fRadius, cv::Scalar(255, 0, 0), 2);
+	cv::circle ( pstRpy->matResult, pstRpy->ptCircleCtr, (int)pstRpy->fRadius, cv::Scalar(255, 0, 0), 2);
 
 EXIT:
     FINISH_LOGCASE;
@@ -2193,7 +2211,7 @@ EXIT:
     return fitResult;
 }
 
-VectorOfPoint VisionAlgorithm::_randomSelectPoints(const VectorOfPoint &vecPoints, int numOfPtToSelect)
+/*static*/ VectorOfPoint VisionAlgorithm::_randomSelectPoints(const VectorOfPoint &vecPoints, int numOfPtToSelect)
 {    
     std::set<int> setResult;
     VectorOfPoint vecResultPoints;
@@ -2210,7 +2228,7 @@ VectorOfPoint VisionAlgorithm::_randomSelectPoints(const VectorOfPoint &vecPoint
     return vecResultPoints;
 }
 
-VectorOfPoint VisionAlgorithm::_findPointsInCircleTol( const VectorOfPoint &vecPoints, const cv::RotatedRect &rotatedRect, float tolerance )
+/*static*/ VectorOfPoint VisionAlgorithm::_findPointsInCircleTol( const VectorOfPoint &vecPoints, const cv::RotatedRect &rotatedRect, float tolerance )
 {
     VectorOfPoint vecResult;
     for ( const auto &point : vecPoints )  {
@@ -2218,24 +2236,6 @@ VectorOfPoint VisionAlgorithm::_findPointsInCircleTol( const VectorOfPoint &vecP
         auto err = disToCtr - rotatedRect.size.width / 2;
         if ( fabs ( err ) < tolerance )  {
             vecResult.push_back(point);
-        }
-    }
-    return vecResult;
-}
-
-std::vector<size_t> VisionAlgorithm::_findPointsOverCircleTol( const VectorOfPoint &vecPoints, const cv::RotatedRect &rotatedRect, PR_RM_FIT_NOISE_METHOD enMethod, float tolerance )
-{
-    std::vector<size_t> vecResult;
-    for ( size_t i = 0;i < vecPoints.size(); ++ i )  {
-        cv::Point2f point = vecPoints[i];
-        auto disToCtr = sqrt( ( point.x - rotatedRect.center.x) * (point.x - rotatedRect.center.x)  + ( point.y - rotatedRect.center.y) * ( point.y - rotatedRect.center.y ) );
-        auto err = disToCtr - rotatedRect.size.width / 2;
-        if ( PR_RM_FIT_NOISE_METHOD::ABSOLUTE_ERR == enMethod && fabs ( err ) > tolerance )  {
-            vecResult.push_back(i);
-        }else if ( PR_RM_FIT_NOISE_METHOD::POSITIVE_ERR == enMethod && err > tolerance ) {
-            vecResult.push_back(i);
-        }else if ( PR_RM_FIT_NOISE_METHOD::NEGATIVE_ERR == enMethod && err < -tolerance ) {
-            vecResult.push_back(i);
         }
     }
     return vecResult;
@@ -2262,7 +2262,7 @@ std::vector<size_t> VisionAlgorithm::_findPointsOverCircleTol( const VectorOfPoi
 //method 1 : Exclude all the points out of positive error tolerance and inside the negative error tolerance.
 //method 2 : Exclude all the points out of positive error tolerance.
 //method 3 : Exclude all the points inside the negative error tolerance.
-cv::RotatedRect VisionAlgorithm::_fitCircleIterate(const VectorOfPoint &vecPoints, PR_RM_FIT_NOISE_METHOD method, float tolerance)
+/*static*/ cv::RotatedRect VisionAlgorithm::_fitCircleIterate(const VectorOfPoint &vecPoints, PR_RM_FIT_NOISE_METHOD method, float tolerance)
 {
     cv::RotatedRect rotatedRect;
     if (vecPoints.size() < 3)
@@ -2296,7 +2296,8 @@ cv::RotatedRect VisionAlgorithm::_fitCircleIterate(const VectorOfPoint &vecPoint
         return VisionStatus::INVALID_PARAM;
     }
     
-    if ( pstCmd->rectROI.x < 0 || pstCmd->rectROI.y < 0 || 
+    if (pstCmd->rectROI.x < 0 || pstCmd->rectROI.y < 0 ||
+        pstCmd->rectROI.width <= 0 || pstCmd->rectROI.height <= 0 ||
         ( pstCmd->rectROI.x + pstCmd->rectROI.width ) > pstCmd->matInput.cols ||
         ( pstCmd->rectROI.y + pstCmd->rectROI.height ) > pstCmd->matInput.rows )    {
         WriteLog("The OCR search range is invalid");
@@ -2386,7 +2387,8 @@ cv::RotatedRect VisionAlgorithm::_fitCircleIterate(const VectorOfPoint &vecPoint
         return pstRpy->enStatus;
     }
 
-    if ( pstCmd->rectROI.x < 0 || pstCmd->rectROI.y < 0 ||
+    if (pstCmd->rectROI.x < 0 || pstCmd->rectROI.y < 0 ||
+        pstCmd->rectROI.width <= 0 || pstCmd->rectROI.height <= 0 ||
         ( pstCmd->rectROI.x + pstCmd->rectROI.width ) > pstCmd->matInput.cols ||
         ( pstCmd->rectROI.y + pstCmd->rectROI.height ) > pstCmd->matInput.rows )    {
         WriteLog("The input ROI is invalid");
@@ -2450,7 +2452,8 @@ cv::RotatedRect VisionAlgorithm::_fitCircleIterate(const VectorOfPoint &vecPoint
         return pstRpy->enStatus;
     }
 
-    if ( pstCmd->rectROI.x < 0 || pstCmd->rectROI.y < 0 ||
+    if (pstCmd->rectROI.x < 0 || pstCmd->rectROI.y < 0 ||
+        pstCmd->rectROI.width <= 0 || pstCmd->rectROI.height <= 0 ||
         ( pstCmd->rectROI.x + pstCmd->rectROI.width ) > pstCmd->matInput.cols ||
         ( pstCmd->rectROI.y + pstCmd->rectROI.height ) > pstCmd->matInput.rows )    {
         WriteLog("The input ROI is invalid");
@@ -2529,7 +2532,8 @@ EXIT:
         return pstRpy->enStatus;
     }
 
-    if ( pstCmd->rectROI.x < 0 || pstCmd->rectROI.y < 0 ||
+    if (pstCmd->rectROI.x < 0 || pstCmd->rectROI.y < 0 ||
+        pstCmd->rectROI.width <= 0 || pstCmd->rectROI.height <= 0 ||
         ( pstCmd->rectROI.x + pstCmd->rectROI.width ) > pstCmd->matInput.cols ||
         ( pstCmd->rectROI.y + pstCmd->rectROI.height ) > pstCmd->matInput.rows )    {
         WriteLog("The input ROI is invalid");

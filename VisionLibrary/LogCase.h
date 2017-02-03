@@ -75,17 +75,17 @@ public:
     virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
     static String StaticGetFolderPrefix();
 private:
-    const String _strKeyMethod      = "Method";
-    const String _strKeyExpectedCtr = "ExpectedCtr";
-    const String _strKeyInnerRadius = "InnerRadius";
-    const String _strKeyOuterRadius = "OuterRadius";
-    const String _strKeyErrorTol    = "ErrorTolerance";
-    const String _strKeyThreshold   = "Threshold";
-    const String _strKeyAttribute   = "Attribute";
+    const String _strKeyMethod          = "Method";
+    const String _strKeyROI             = "ROI";
+    const String _strKeyPreprocessed    = "Preprocessed";
+    const String _strKeyErrorTol        = "ErrorTolerance";
+    const String _strKeyAutoThreshold   = "AutoThreshold";
+    const String _strKeyThreshold       = "Threshold";
+    const String _strKeyAttribute       = "Attribute";
 
-    const String _strKeyStatus      = "Status";
-    const String _strKeyResultCtr   = "ResultCtr";
-    const String _strKeyRadius      = "Radius";
+    const String _strKeyStatus          = "Status";
+    const String _strKeyResultCtr       = "ResultCtr";
+    const String _strKeyRadius          = "Radius";
 };
 
 class LogCaseFitLine : public LogCase

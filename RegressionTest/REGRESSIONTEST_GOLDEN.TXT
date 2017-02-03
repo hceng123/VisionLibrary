@@ -124,8 +124,8 @@ Line 4 coordinate: (240.00, 42.13), (410.00, 156.76)
 FIT CIRCLE REGRESSION TEST #1 STARTING
 ------------------------------------------
 Fit circle status 0
-Radius = 98.34
-Circle center: (525.30, 485.98)
+Radius = 98.94
+Circle center: (525.12, 485.80)
 
 ------------------------------------------
 FIT CIRCLE REGRESSION TEST #2 STARTING

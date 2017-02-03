@@ -86,7 +86,7 @@ VisionStatus FitCircleProcedure::fitCircle(const std::string &imagePath)
 //	stCmd.ptRangeCtr = _ptCircleCtr;
 //	stCmd.fRangeInnterRadius = _fInnerRangeRadius;
 //	stCmd.fRangeOutterRadius = _fOutterRangeRadius;
-	stCmd.bAutothreshold = false;
+	stCmd.bAutoThreshold = false;
 	stCmd.nThreshold = _nThreshold;
     stCmd.enAttribute = static_cast<PR_OBJECT_ATTRIBUTE>(_nAttribute);
 	stCmd.enMethod = PR_FIT_CIRCLE_METHOD(_nAlgorithm);

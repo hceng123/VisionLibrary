@@ -147,13 +147,13 @@ namespace Vision
     int i = 0;
     for (const auto &point : listPoint)  {
         if (reverseFit) {
-            A.at<float>(i, 0) = point.y;
-            B.at<float>(i, 0) = point.x;
+            A.at<float>(i, 0) = ToFloat ( point.y );
+            B.at<float>(i, 0) = ToFloat ( point.x );
         }
         else
         {
-            A.at<float>(i, 0) = point.x;
-            B.at<float>(i, 0) = point.y;
+            A.at<float>(i, 0) = ToFloat ( point.x );
+            B.at<float>(i, 0) = ToFloat ( point.y );
         }
         ++ i;
     }
@@ -183,27 +183,27 @@ namespace Vision
     for ( int i = 0; i < totalDataCount; ++ i )  {
         if ( i < ToInt32 ( vecPoints1.size() ) )    {
             if ( reverseFit )
-                A.at<float>(i, 0) = vecPoints1[i].y;
+                A.at<float>(i, 0) = ToFloat ( vecPoints1[i].y );
             else
-                A.at<float>(i, 0) = vecPoints1[i].x;
+                A.at<float>(i, 0) = ToFloat ( vecPoints1[i].x );
 
             A.at<float>(i, 1) = 1.f;
             if ( reverseFit )
-                B.at<float>(i, 0) = vecPoints1[i].x;
+                B.at<float>(i, 0) = ToFloat ( vecPoints1[i].x );
             else
-                B.at<float>(i, 0) = vecPoints1[i].y;
+                B.at<float>(i, 0) = ToFloat ( vecPoints1[i].y );
         }
         else
         {
             if ( reverseFit )
-                A.at<float>(i, 0) = vecPoints2[i - dataCount1].y;
+                A.at<float>(i, 0) = ToFloat ( vecPoints2[i - dataCount1].y );
             else
-                A.at<float>(i, 0) = vecPoints2[i - dataCount1].x;
+                A.at<float>(i, 0) = ToFloat ( vecPoints2[i - dataCount1].x );
             A.at<float>(i, 2) = 1.f;
             if ( reverseFit )
-                B.at<float>(i, 0) = vecPoints2[i - dataCount1].x;
+                B.at<float>(i, 0) = ToFloat ( vecPoints2[i - dataCount1].x );
             else
-                B.at<float>(i, 0) = vecPoints2[i - dataCount1].y;
+                B.at<float>(i, 0) = ToFloat ( vecPoints2[i - dataCount1].y );
         }   
     }
 
@@ -234,29 +234,29 @@ namespace Vision
     for ( int i = 0; i < totalDataCount; ++ i )  {
         if ( i < ToInt32 ( listPoints1.size() ) )    {
             if ( reverseFit )
-                A.at<float>(i, 0) = (*it1).y;
+                A.at<float>(i, 0) = ToFloat ( (*it1).y );
             else
-                A.at<float>(i, 0) = (*it1).x;
+                A.at<float>(i, 0) = ToFloat ( (*it1).x );
 
             A.at<float>(i, 1) = 1.f;
             if ( reverseFit )
-                B.at<float>(i, 0) = (*it1).x;
+                B.at<float>(i, 0) = ToFloat ( (*it1).x );
             else
-                B.at<float>(i, 0) = (*it1).y;
+                B.at<float>(i, 0) = ToFloat ( (*it1).y );
 
             ++ it1;
         }
         else
         {
             if ( reverseFit )
-                A.at<float>(i, 0) = (*it2).y;
+                A.at<float>(i, 0) = ToFloat ( (*it2).y );
             else
-                A.at<float>(i, 0) = (*it2).x;
+                A.at<float>(i, 0) = ToFloat ( (*it2).x );
             A.at<float>(i, 2) = 1.f;
             if ( reverseFit )
-                B.at<float>(i, 0) = (*it2).x;
+                B.at<float>(i, 0) = ToFloat ( (*it2).x );
             else
-                B.at<float>(i, 0) = (*it2).y;
+                B.at<float>(i, 0) = ToFloat ( (*it2).y );
 
             ++ it2;
         }   
@@ -293,21 +293,21 @@ namespace Vision
             A.at<float>(index, i + 1 ) = 1.f;
             if ( i < 2 )   {
                 if (bLineOneReversedFit)   {
-                    A.at<float>(index, 0) = vecVecPoint[i][j].y;
-                    B.at<float>(index, 0) = vecVecPoint[i][j].x;
+                    A.at<float>(index, 0) = ToFloat ( vecVecPoint[i][j].y );
+                    B.at<float>(index, 0) = ToFloat ( vecVecPoint[i][j].x );
                 }
                 else
                 {
-                    A.at<float>(index, 0) = vecVecPoint[i][j].x;
-                    B.at<float>(index, 0) = vecVecPoint[i][j].y;
+                    A.at<float>(index, 0) = ToFloat ( vecVecPoint[i][j].x );
+                    B.at<float>(index, 0) = ToFloat ( vecVecPoint[i][j].y );
                 }
             }else {
                 if ( bLineOneReversedFit )   {
-                    A.at<float>(index, 0) = -vecVecPoint[i][j].x;
-                    B.at<float>(index, 0) =  vecVecPoint[i][j].y;
+                    A.at<float>(index, 0) = ToFloat ( -vecVecPoint[i][j].x );
+                    B.at<float>(index, 0) = ToFloat (  vecVecPoint[i][j].y );
                 }else {
-                    A.at<float>(index, 0) = -vecVecPoint[i][j].y;
-                    B.at<float>(index, 0) =  vecVecPoint[i][j].x;
+                    A.at<float>(index, 0) = ToFloat ( -vecVecPoint[i][j].y );
+                    B.at<float>(index, 0) = ToFloat (  vecVecPoint[i][j].x );
                 }
             }
             ++index;
@@ -346,21 +346,21 @@ namespace Vision
             A.at<float>(index, i + 1 ) = 1.f;
             if ( i < 2 )   {
                 if (bLineOneReversedFit)   {
-                    A.at<float>(index, 0) = point.y;
-                    B.at<float>(index, 0) = point.x;
+                    A.at<float>(index, 0) = ToFloat ( point.y );
+                    B.at<float>(index, 0) = ToFloat ( point.x );
                 }
                 else
                 {
-                    A.at<float>(index, 0) = point.x;
-                    B.at<float>(index, 0) = point.y;
+                    A.at<float>(index, 0) = ToFloat ( point.x );
+                    B.at<float>(index, 0) = ToFloat ( point.y );
                 }
             }else {
                 if ( bLineOneReversedFit )   {
-                    A.at<float>(index, 0) = -point.x;
-                    B.at<float>(index, 0) =  point.y;
+                    A.at<float>(index, 0) = ToFloat ( -point.x );
+                    B.at<float>(index, 0) = ToFloat (  point.y );
                 }else {
-                    A.at<float>(index, 0) = -point.y;
-                    B.at<float>(index, 0) =  point.x;
+                    A.at<float>(index, 0) = ToFloat ( -point.y );
+                    B.at<float>(index, 0) = ToFloat (  point.x );
                 }
             }
             ++ index;

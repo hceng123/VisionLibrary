@@ -196,8 +196,7 @@ VisionStatus  PR_FitCircle(PR_FIT_CIRCLE_CMD *pstCmd, PR_FIT_CIRCLE_RPY *pstRpy)
 {
     try
     {
-        VisionAlgorithmPtr pVA = VisionAlgorithm::create();
-        return pVA->fitCircle ( pstCmd, pstRpy );
+        return VisionAlgorithm::fitCircle ( pstCmd, pstRpy );
     }catch(std::exception &e)
     {
         WriteLog(e.what());

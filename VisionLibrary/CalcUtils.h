@@ -31,7 +31,7 @@ public:
     template<typename T>
     static double calcSlopeDegree(const cv::Point_<T> &pt1, const cv::Point_<T> &pt2)
     {
-        return radian2Degree ( atan2f ( pt2.y - pt1.y, pt2.x - pt1.x ) );
+        return radian2Degree ( atan2f ( ToFloat( pt2.y - pt1.y ), ToFloat ( pt2.x - pt1.x ) ) );
     }
 
     template<typename T>

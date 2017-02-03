@@ -59,10 +59,11 @@ namespace Vision
 {
     float fMinX = 10000.f, fMinY = 10000.f, fMaxX = -10000.f, fMaxY = -10000.f;
     for ( const auto &point : vecPoint )    {
-        if ( point.x < fMinX ) fMinX = point.x;
-        if ( point.x > fMaxX ) fMaxX = point.x;
-        if ( point.y < fMinY ) fMinY = point.y;
-        if ( point.y > fMaxY ) fMaxY = point.y;
+        cv::Point2f pt2f(point);
+        if ( pt2f.x < fMinX ) fMinX = pt2f.x;
+        if ( pt2f.x > fMaxX ) fMaxX = pt2f.x;
+        if ( pt2f.y < fMinY ) fMinY = pt2f.y;
+        if ( pt2f.y > fMaxY ) fMaxY = pt2f.y;
     }
     PR_Line2f line;
     if ( bReversedFit ) {
@@ -84,10 +85,11 @@ namespace Vision
 {
     float fMinX = 10000.f, fMinY = 10000.f, fMaxX = -10000.f, fMaxY = -10000.f;
     for ( const auto &point : listPoint )    {
-        if ( point.x < fMinX ) fMinX = point.x;
-        if ( point.x > fMaxX ) fMaxX = point.x;
-        if ( point.y < fMinY ) fMinY = point.y;
-        if ( point.y > fMaxY ) fMaxY = point.y;
+        cv::Point2f pt2f(point);
+        if ( pt2f.x < fMinX ) fMinX = pt2f.x;
+        if ( pt2f.x > fMaxX ) fMaxX = pt2f.x;
+        if ( pt2f.y < fMinY ) fMinY = pt2f.y;
+        if ( pt2f.y > fMaxY ) fMaxY = pt2f.y;
     }
     PR_Line2f line;
     if ( bReversedFit ) {

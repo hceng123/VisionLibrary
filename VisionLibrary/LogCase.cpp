@@ -7,6 +7,7 @@
 #include "StopWatch.h"
 #include "SimpleIni.h"
 #include "VisionAlgorithm.h"
+#include "FileUtils.h"
 
 namespace bfs = boost::filesystem;
 
@@ -161,15 +162,17 @@ VisionStatus LogCaseFitCircle::WriteCmd(PR_FIT_CIRCLE_CMD *pCmd)
     CSimpleIni ini(false, false, false);
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile( cmdRpyFilePath.c_str() );
+    ini.SetValue(_CMD_SECTION.c_str(),     _strKeyROI.c_str(), _formatRect(pCmd->rectROI).c_str());
     ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyMethod.c_str(), static_cast<long>(pCmd->enMethod) );
-//    ini.SetValue(_CMD_SECTION.c_str(), _strKeyExpectedCtr.c_str(), _formatCoordinate(pCmd->ptRangeCtr).c_str() );
-//    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyInnerRadius.c_str(), pCmd->fRangeInnterRadius );
-//    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyOuterRadius.c_str(), pCmd->fRangeOutterRadius );
+    ini.SetBoolValue( _CMD_SECTION.c_str(), _strKeyPreprocessed.c_str(), pCmd->bPreprocessed);
     ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyErrorTol.c_str(), pCmd->fErrTol );
+    ini.SetBoolValue( _CMD_SECTION.c_str(), _strKeyAutoThreshold.c_str(), pCmd->bAutoThreshold);
     ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyThreshold.c_str(), pCmd->nThreshold );
     ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyAttribute.c_str(), ToInt32 ( pCmd->enAttribute ) );
     ini.SaveFile( cmdRpyFilePath.c_str() );
     cv::imwrite( _strLogCasePath + "image.jpg", pCmd->matInput );
+    if ( ! pCmd->matMask.empty() )
+        cv::imwrite( _strLogCasePath + "mask.jpg",  pCmd->matMask );
     return VisionStatus::OK;
 }
 
@@ -195,18 +198,21 @@ VisionStatus LogCaseFitCircle::RunLogCase()
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile( cmdRpyFilePath.c_str() );
     stCmd.matInput = cv::imread( _strLogCasePath + "image.jpg" );
+
+    String strMaskPath = _strLogCasePath + "mask.jpg";
+    if ( FileUtils::Exists ( strMaskPath ) )
+        stCmd.matMask = cv::imread( strMaskPath, cv::IMREAD_GRAYSCALE );
+
+    stCmd.rectROI = _parseRect(ini.GetValue(_CMD_SECTION.c_str(), _strKeyROI.c_str(), _DEFAULT_RECT.c_str()));
     stCmd.enMethod = static_cast<PR_FIT_CIRCLE_METHOD> ( ini.GetLongValue ( _CMD_SECTION.c_str(), _strKeyMethod.c_str(), 0 ) );
-//    stCmd.ptRangeCtr = _parseCoordinate ( ini.GetValue(_CMD_SECTION.c_str(), _strKeyExpectedCtr.c_str(), _DEFAULT_COORD.c_str() ) );
-//    stCmd.fRangeInnterRadius = (float)ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyInnerRadius.c_str(), 0 );
-//    stCmd.fRangeOutterRadius = (float)ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyOuterRadius.c_str(), 0 );
+    stCmd.bPreprocessed = ini.GetBoolValue ( _CMD_SECTION.c_str(), _strKeyPreprocessed.c_str(), true );
     stCmd.fErrTol = (float)ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyErrorTol.c_str(), 0 );
+    stCmd.bAutoThreshold = ini.GetBoolValue ( _CMD_SECTION.c_str(), _strKeyAutoThreshold.c_str(), false );
     stCmd.nThreshold = ini.GetLongValue( _CMD_SECTION.c_str(), _strKeyThreshold.c_str(), 0);
     stCmd.enAttribute = static_cast<PR_OBJECT_ATTRIBUTE>(ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyAttribute.c_str(), 0 ) );
 
     PR_FIT_CIRCLE_RPY stRpy;
-
-    VisionAlgorithmPtr pVA = VisionAlgorithm::create();
-    enStatus = pVA->fitCircle ( &stCmd, &stRpy, true );
+    enStatus = VisionAlgorithm::fitCircle( &stCmd, &stRpy, true );
 
     WriteRpy( &stRpy );
     return enStatus;

@@ -113,6 +113,7 @@ protected:
     void _drawTestVisionLibrary(cv::Mat &mat);
     void _zoomPoint(cv::Point &point, float fZoomFactor);
     void _zoomRect(cv::Rect &rect, float fZoomFactor);
+    static cv::Mat _zoomMat(const cv::Mat &mat, float fZoomFactor, bool bKeepSize = true);
 private:
     cv::Rect                        _rectLrnWindow;
     cv::Rect                        _rectSrchWindow;

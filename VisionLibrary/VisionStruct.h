@@ -330,12 +330,9 @@ struct PR_FIT_CIRCLE_CMD
     cv::Rect                rectROI;
     PR_FIT_CIRCLE_METHOD    enMethod;
     PR_RM_FIT_NOISE_METHOD  enRmNoiseMethod;    
-    bool                    bAutothreshold;
+    bool                    bAutoThreshold;
     Int32                   nThreshold;
     PR_OBJECT_ATTRIBUTE     enAttribute;
-    //cv::Point2f             ptRangeCtr;
-    //float                   fRangeInnterRadius;
-    //float                   fRangeOutterRadius;
     float                   fErrTol;
     int                     nMaxRansacTime;             //Only used when fitting method is ransac.
     int                     nNumOfPtToFinishRansac;     //Only used when fitting method is ransac.
