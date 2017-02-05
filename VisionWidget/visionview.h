@@ -30,11 +30,11 @@ class VisionView : public QLabel
     Q_OBJECT
 public:
 
-    enum MASK_EDIT_STATE
+    enum class MASK_EDIT_STATE
     {
-        MASK_EDIT_NONE,
-        MASK_EDIT_ADD,
-        MASK_EDIT_REMOVE,
+        NONE,
+        ADD,
+        REMOVE,
     };
 
     enum MASK_SHAPE

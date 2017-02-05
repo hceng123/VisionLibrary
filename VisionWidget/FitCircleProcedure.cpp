@@ -8,6 +8,7 @@ using namespace AOI::Vision;
 
 FitCircleProcedure::FitCircleProcedure(VisionView *pVisionView) : Procedure(pVisionView)
 {
+    _nDirection = ToInt32(PR_RM_FIT_NOISE_METHOD::ABSOLUTE_ERR);
 }
 
 FitCircleProcedure::~FitCircleProcedure()
@@ -81,11 +82,8 @@ VisionStatus FitCircleProcedure::fitCircle(const std::string &imagePath)
     stCmd.matMask = _pVisionView->getMask();
     stCmd.rectROI = _pVisionView->getSelectedWindow();
     stCmd.bPreprocessed = true;
-	stCmd.enRmNoiseMethod = PR_RM_FIT_NOISE_METHOD::ABSOLUTE_ERR;
+	stCmd.enRmNoiseMethod = static_cast<PR_RM_FIT_NOISE_METHOD>(_nDirection);
 	stCmd.fErrTol = _fErrorTol;
-//	stCmd.ptRangeCtr = _ptCircleCtr;
-//	stCmd.fRangeInnterRadius = _fInnerRangeRadius;
-//	stCmd.fRangeOutterRadius = _fOutterRangeRadius;
 	stCmd.bAutoThreshold = false;
 	stCmd.nThreshold = _nThreshold;
     stCmd.enAttribute = static_cast<PR_OBJECT_ATTRIBUTE>(_nAttribute);
@@ -119,6 +117,11 @@ void FitCircleProcedure::setAlgorithm(int nAlgorithm)
 void FitCircleProcedure::setAttribute(int nAttribute)
 {
     _nAttribute = nAttribute;
+}
+
+void FitCircleProcedure::setDirection(int nDirection)
+{
+    _nDirection = nDirection;
 }
 
 cv::Mat FitCircleProcedure::getResultMat() const

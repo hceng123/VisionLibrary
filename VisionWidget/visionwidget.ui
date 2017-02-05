@@ -73,7 +73,7 @@
      </rect>
     </property>
     <property name="currentIndex">
-     <number>0</number>
+     <number>1</number>
     </property>
     <widget class="QWidget" name="tabPreProcess">
      <attribute name="title">
@@ -84,7 +84,7 @@
        <rect>
         <x>10</x>
         <y>10</y>
-        <width>561</width>
+        <width>591</width>
         <height>571</height>
        </rect>
       </property>
@@ -202,6 +202,47 @@
        <property name="text">
         <string>Algorithm</string>
        </property>
+      </widget>
+      <widget class="QLabel" name="labelFitCircleDirection">
+       <property name="geometry">
+        <rect>
+         <x>330</x>
+         <y>20</y>
+         <width>51</width>
+         <height>16</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Direction</string>
+       </property>
+      </widget>
+      <widget class="QComboBox" name="comboBoxFitCircleDirection">
+       <property name="geometry">
+        <rect>
+         <x>380</x>
+         <y>20</y>
+         <width>61</width>
+         <height>22</height>
+        </rect>
+       </property>
+       <property name="currentIndex">
+        <number>0</number>
+       </property>
+       <item>
+        <property name="text">
+         <string>Middle</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>Inner</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>Outter</string>
+        </property>
+       </item>
       </widget>
      </widget>
      <widget class="QGroupBox" name="groupBoxFitLine">
@@ -575,7 +616,7 @@
         <rect>
          <x>90</x>
          <y>20</y>
-         <width>50</width>
+         <width>101</width>
          <height>20</height>
         </rect>
        </property>

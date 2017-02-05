@@ -6,6 +6,7 @@
 #include "OcrProcedure.h"
 #include "SrchFiducialProcedure.h"
 #include "constants.h"
+#include "VisionAPI.h"
 #include <QFileDialog>
 #include <QMessageBox>
 
@@ -103,11 +104,14 @@ void VisionWidget::on_checkBoxByerFormat_clicked(bool checked)
 
 void VisionWidget::on_fitCircleBtn_clicked()
 {
-    if ( ! checkDisplayImage() )
+    if ( _sourceImagePath.empty() ) {
+        QMessageBox::information(this, "Vision Widget", "Please select an image first!", "Quit");
         return;
+    }
 
 	FitCircleProcedure procedure(ui.visionView);
     procedure.setErrTol ( ui.lineEditFitCircleErrTol->text().toFloat());
+    procedure.setDirection ( ui.comboBoxFitCircleDirection->currentIndex());
     //procedure.setThreshold ( ui.lineEditFitCircleThreshold->text().toInt());
     //procedure.setAttribute ( ui.comboBoxCircleAttribute->currentIndex());
     procedure.setAlgorithm ( ui.comboBoxFitCircleAlgorithm->currentIndex());
@@ -115,6 +119,29 @@ void VisionWidget::on_fitCircleBtn_clicked()
     if ( ToInt(VisionStatus::OK) == nStatus )
     {
         ui.visionView->setMat(VisionView::DISPLAY_SOURCE::RESULT, procedure.getResultMat());
+    }
+}
+
+void VisionWidget::on_calcRoundnessBtn_clicked()
+{
+    if ( _sourceImagePath.empty() ) {
+        QMessageBox::information(this, "Vision Widget", "Please select an image first!", "Quit");
+        return;
+    }
+
+    ui.visionView->setState ( VisionView::VISION_VIEW_STATE::TEST_VISION_LIBRARY );
+    ui.visionView->applyIntermediateResult();
+
+    PR_CIRCLE_ROUNDNESS_CMD stCmd;
+	stCmd.matInput = ui.visionView->getMat();
+    stCmd.matMask = ui.visionView->getMask();
+    stCmd.rectROI = ui.visionView->getSelectedWindow();
+
+	PR_CIRCLE_ROUNDNESS_RPY stRpy;
+	VisionStatus enStatus = PR_CircleRoundness(&stCmd, &stRpy);
+	if (VisionStatus::OK == enStatus)	{
+		ui.visionView->setMat ( VisionView::DISPLAY_SOURCE::RESULT, stRpy.matResult );
+        ui.lineEditRoundnessResult->setText( std::to_string(stRpy.fRoundness).c_str() );
     }
 }
 

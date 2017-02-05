@@ -20,9 +20,9 @@ VisionView::VisionView(QWidget *parent , Qt::WindowFlags f)
 
     _fZoomFactor = 1.0;
     _nCameraID = 0;
-    _enMaskEditState = MASK_EDIT_NONE;
+    _enMaskEditState = MASK_EDIT_STATE::NONE;
     _enMaskShape = MASK_SHAPE_RECT;
-    _enMaskEditState = MASK_EDIT_ADD;
+    _enMaskEditState = MASK_EDIT_STATE::ADD;
     _ptLeftClickStartPos = Point(0,0);
     _ptLeftClickEndPos = Point(0,0);
     _enTestVisionState = TEST_VISION_STATE::IDLE;
@@ -91,7 +91,7 @@ void VisionView::mouseReleaseEvent(QMouseEvent *event)
                 const cv::Point *pts = (const cv::Point *)Mat(_vecPolylinePoint).data;
                 int npts = Mat(_vecPolylinePoint).rows;
 
-                if ( MASK_EDIT_STATE::MASK_EDIT_ADD == _enMaskEditState )
+                if ( MASK_EDIT_STATE::ADD == _enMaskEditState )
                     cv::fillPoly( _matMask, &pts, &npts, 1, Scalar ( 255, 255, 255 ) );
                 else
                     cv::fillPoly( _matMask, &pts, &npts, 1, Scalar ( 0, 0, 0 ) );
@@ -137,7 +137,7 @@ void VisionView::mouseMoveEvent(QMouseEvent *event)
                 rectMask.width = _ptLeftClickEndPos.x - _ptLeftClickStartPos.x;
                 rectMask.height = _ptLeftClickEndPos.y - _ptLeftClickStartPos.y;
 
-                if ( MASK_EDIT_ADD == _enMaskEditState )
+                if ( MASK_EDIT_STATE::ADD == _enMaskEditState )
                     cv::rectangle ( _matMask, rectMask, Scalar(255, 255, 255), CV_FILLED, CV_AA );
                 else
                     cv::rectangle ( _matMask, rectMask, Scalar(0, 0, 0 ), CV_FILLED, CV_AA );
@@ -145,7 +145,7 @@ void VisionView::mouseMoveEvent(QMouseEvent *event)
                 float fOffsetX = _ptLeftClickEndPos.x - _ptLeftClickStartPos.x;
                 float fOffsetY = _ptLeftClickEndPos.y - _ptLeftClickStartPos.y;
                 float fRadius = sqrt ( fOffsetX * fOffsetX + fOffsetY * fOffsetY );
-                if ( MASK_EDIT_ADD == _enMaskEditState )
+                if ( MASK_EDIT_STATE::ADD == _enMaskEditState )
                     cv::circle( _matMask, _ptLeftClickStartPos, fRadius, Scalar(255, 255, 255), CV_FILLED);
                 else
                     cv::circle( _matMask, _ptLeftClickStartPos, fRadius, Scalar(0, 0, 0), CV_FILLED);
@@ -579,7 +579,7 @@ cv::Mat VisionView::getMask() const
     }
     else
     {
-        cv::Mat matLocalMask = _zoomMat ( _matMask, 1 / _fZoomFactor, false ) ;
+        cv::Mat matLocalMask = _zoomMat ( _matMask, 1 / _fZoomFactor, false );
     }
 
     if ( matMaskResult.rows >= matLocalMask.rows && matMaskResult.cols >= matLocalMask.cols ) {

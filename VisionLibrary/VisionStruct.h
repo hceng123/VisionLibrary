@@ -329,7 +329,7 @@ struct PR_FIT_CIRCLE_CMD
     cv::Mat                 matMask;
     cv::Rect                rectROI;
     PR_FIT_CIRCLE_METHOD    enMethod;
-    PR_RM_FIT_NOISE_METHOD  enRmNoiseMethod;    
+    PR_RM_FIT_NOISE_METHOD  enRmNoiseMethod;
     bool                    bAutoThreshold;
     Int32                   nThreshold;
     PR_OBJECT_ATTRIBUTE     enAttribute;
@@ -458,10 +458,25 @@ struct PR_DETECT_EDGE_CMD
     Int16                   nApertureSize;
 };
 
-
 struct PR_DETECT_EDGE_RPY
 {
     VisionStatus            enStatus;
+    cv::Mat                 matResult;
+};
+
+struct PR_CIRCLE_ROUNDNESS_CMD
+{
+    cv::Mat                 matInput;
+    cv::Mat                 matMask;
+    cv::Rect                rectROI;
+};
+
+struct PR_CIRCLE_ROUNDNESS_RPY
+{
+    VisionStatus            enStatus;
+    float                   fRoundness;
+    cv::Point2f             ptCircleCtr;
+    float                   fRadius;
     cv::Mat                 matResult;
 };
 

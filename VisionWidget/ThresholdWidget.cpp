@@ -61,7 +61,15 @@ cv::Mat ThresholdWidget::_runThreshold(int nThreshold)
     if ( _checkImage() == false )
         return mat;
 
-    cv::Mat matROI(mat, _pVisionView->getSelectedWindow());
+    cv::Rect rectROI = _pVisionView->getSelectedWindow();
+
+    if ( rectROI.x < 0 || rectROI.y < 0 ||
+        ( rectROI.x + rectROI.width  ) > mat.cols ||
+        ( rectROI.y + rectROI.height ) > mat.rows )    {
+        return mat;
+    }
+
+    cv::Mat matROI ( mat, rectROI );
     bool bReverseThreshold = ui.checkBoxReverseThres->isChecked();
 
     cv::Mat matThreshold;
