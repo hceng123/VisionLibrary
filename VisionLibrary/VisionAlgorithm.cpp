@@ -206,7 +206,7 @@ VisionStatus VisionAlgorithm::srchTmpl(PR_SRCH_TMPL_CMD *const pFindObjCmd, PR_S
 	pFindObjRpy->matHomography.at<double>(1, 2) += pFindObjCmd->rectSrchWindow.y;
 
     cv::Mat matOriginalPos ( 3, 1, CV_64F );
-    matOriginalPos.at<double>(0, 0) = pFindObjCmd->rectLrn.width / 2.f;
+    matOriginalPos.at<double>(0, 0) = pFindObjCmd->rectLrn.width  / 2.f;
     matOriginalPos.at<double>(1, 0) = pFindObjCmd->rectLrn.height / 2.f;
     matOriginalPos.at<double>(2, 0) = 1.0;
 
@@ -1363,61 +1363,18 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
     return enStatus;
 }
 
-VisionStatus VisionAlgorithm::_refineSrchTemplate(const cv::Mat &mat, cv::Mat &matTmpl, cv::Point2f &ptResult)
+/*static*/ VisionStatus VisionAlgorithm::_refineSrchTemplate(const cv::Mat &mat, cv::Mat &matTmpl, cv::Point2f &ptResult)
 {
-    const float fRefineAccuracy = 0.1f;
-    const int nRefineMaxStep = 20;
+    cv::Mat matWarp = cv::Mat::eye(2, 3, CV_32FC1);
+    matWarp.at<float>(0,2) = ptResult.x;
+    matWarp.at<float>(1,2) = ptResult.y;
+    int number_of_iterations = 30;
+    double termination_eps = 0.001;
 
-    cv::Mat matFloat, matTmplFloat;
-    mat.convertTo(matFloat, CV_32FC1);
-    matTmpl.convertTo(matTmplFloat, CV_32FC1 );
-
-    cv::Point2f ptStartPoint = cv::Point2f(ptResult.x - 0.5f + fRefineAccuracy, ptResult.y - 0.5f + fRefineAccuracy);
-    bool bFoundResult = false;
-    cv::Mat matSubPixel_1, matSubPixel_2, matSubPixel_3, matSubPixel_4;
-    cv::Mat matDiff_1, matDiff_2, matDiff_3, matDiff_4;
-    cv::Point2f ptRight, ptDown, ptRightDown;
-    double dDiff_1, dDiff_2, dDiff_3, dDiff_4;
-    int nIteratorCount = 0;
-    do
-    {
-        ptRight     = cv::Point2f( ptStartPoint.x + fRefineAccuracy, ptStartPoint.y );
-        ptDown      = cv::Point2f( ptStartPoint.x,                   ptStartPoint.y + fRefineAccuracy );
-        ptRightDown = cv::Point2f( ptStartPoint.x + fRefineAccuracy, ptStartPoint.y + fRefineAccuracy );
-
-        if (nIteratorCount == 0)    {
-            cv::getRectSubPix ( matFloat, matTmpl.size(), ptStartPoint, matSubPixel_1);
-            matDiff_1 = matTmplFloat - matSubPixel_1;
-            dDiff_1 = CalcUtils::MatSquareSum<float>(matDiff_1);
-        }
-        cv::getRectSubPix ( matFloat, matTmpl.size(), ptRight,     matSubPixel_2);
-        matDiff_2 = matTmplFloat - matSubPixel_2;
-        dDiff_2 = CalcUtils::MatSquareSum<float>(matDiff_2);
-
-        cv::getRectSubPix ( matFloat, matTmpl.size(), ptDown,      matSubPixel_3);
-        matDiff_3 = matTmplFloat - matSubPixel_3;
-        dDiff_3 = CalcUtils::MatSquareSum<float>(matDiff_3);
-
-        cv::getRectSubPix ( matFloat, matTmpl.size(), ptRightDown, matSubPixel_4 );
-        matDiff_4 = matTmplFloat - matSubPixel_4;
-        dDiff_4 = CalcUtils::MatSquareSum<float> ( matDiff_4 );
-
-        if ( dDiff_1 <= dDiff_2 && dDiff_1 <= dDiff_3 && dDiff_1 <= dDiff_4 )
-        {
-            bFoundResult = true;
-            ptResult = ptStartPoint;
-        }else if ( dDiff_2 < dDiff_1 && dDiff_2 < dDiff_3 && dDiff_2 < dDiff_4 )    {
-            ptStartPoint = ptRight;
-            dDiff_1 = dDiff_2;
-        }else if ( dDiff_3 < dDiff_1 && dDiff_3 < dDiff_2 && dDiff_3 < dDiff_4 )    {
-            ptStartPoint = ptDown;
-            dDiff_1 = dDiff_3;
-        }else if ( dDiff_4 < dDiff_1 && dDiff_4 < dDiff_2 && dDiff_4 < dDiff_3 )    {
-            ptStartPoint = ptRightDown;
-            dDiff_1 = dDiff_4;
-        }
-        ++ nIteratorCount;
-    }while ( ! bFoundResult && nIteratorCount < nRefineMaxStep );
+    cv::findTransformECC ( matTmpl, mat, matWarp, cv::MOTION_TRANSLATION, cv::TermCriteria ( cv::TermCriteria::COUNT + cv::TermCriteria::EPS,
+        number_of_iterations, termination_eps) );
+    ptResult.x = matWarp.at<float>(0,2);
+    ptResult.y = matWarp.at<float>(1,2);
 
     return VisionStatus::OK;
 }
@@ -1451,10 +1408,13 @@ VisionStatus VisionAlgorithm::matchTemplate(const cv::Mat &mat, cv::Mat &matTmpl
     else
         matchLoc = maxLoc;
 
-    ptResult.x = (float)matchLoc.x + (float)matTmpl.cols / 2;
-    ptResult.y = (float)matchLoc.y + (float)matTmpl.rows / 2;
-
+    ptResult.x = (float)matchLoc.x;
+    ptResult.y = (float)matchLoc.y;
     _refineSrchTemplate(mat, matTmpl, ptResult);
+
+    ptResult.x += (float)matTmpl.cols / 2;
+    ptResult.y += (float)matTmpl.rows / 2;
+
     return VisionStatus::OK;
 }
 

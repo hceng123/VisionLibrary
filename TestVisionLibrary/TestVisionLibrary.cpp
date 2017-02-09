@@ -361,7 +361,7 @@ void TestFitLine()
 
     PR_FIT_LINE_RPY stRpy;
     PR_FitLine ( &stCmd, &stRpy );
-    std::cout << "Fit line status " << stRpy.nStatus << std::endl; 
+    std::cout << "Fit line status " << ToInt32( stRpy.enStatus ) << std::endl; 
     std::cout << "Line slope = " << stRpy.fSlope << ", intercept = " << stRpy.fIntercept << std::endl;
     char chArrMsg[100];
     _snprintf(chArrMsg, sizeof ( chArrMsg ), "(%f, %f), (%f, %f)", stRpy.stLine.pt1.x, stRpy.stLine.pt1.y, stRpy.stLine.pt2.x, stRpy.stLine.pt2.y);
@@ -397,10 +397,11 @@ void TestFitCircle()
 	stCmd.matInput = cv::imread("./data/001.bmp");
 	stCmd.enRmNoiseMethod = PR_RM_FIT_NOISE_METHOD::ABSOLUTE_ERR;
 	stCmd.fErrTol = 5;
-	stCmd.ptRangeCtr = cv::Point2f(240, 235);
-	stCmd.fRangeInnterRadius = 180;
-	stCmd.fRangeOutterRadius = 210;
-	stCmd.bAutothreshold = false;
+	//stCmd.ptRangeCtr = cv::Point2f(240, 235);
+	//stCmd.fRangeInnterRadius = 180;
+	//stCmd.fRangeOutterRadius = 210;
+    stCmd.bPreprocessed = false;
+	stCmd.bAutoThreshold = false;
 	stCmd.nThreshold = 200;
 	stCmd.enMethod = PR_FIT_CIRCLE_METHOD::RANSAC;
 	stCmd.nMaxRansacTime = 20;
@@ -408,12 +409,12 @@ void TestFitCircle()
 	PR_FIT_CIRCLE_RPY stRpy;
 	VisionStatus visionStatus = PR_FitCircle(&stCmd, &stRpy);
 	if (VisionStatus::OK != visionStatus)	{
-		std::cout << "Failed to fit circle, VisionStatus = " << stRpy.nStatus << std::endl;
+		std::cout << "Failed to fit circle, VisionStatus = " << ToInt32( stRpy.enStatus ) << std::endl;
 		return;
 	}
 	cv::Mat matResult = stCmd.matInput.clone();
-	cv::circle(matResult, stCmd.ptRangeCtr, (int)stCmd.fRangeInnterRadius, cv::Scalar(0, 255, 0), 1);
-	cv::circle(matResult, stCmd.ptRangeCtr, (int)stCmd.fRangeOutterRadius, cv::Scalar(0, 255, 0), 1);
+	//cv::circle(matResult, stCmd.ptRangeCtr, (int)stCmd.fRangeInnterRadius, cv::Scalar(0, 255, 0), 1);
+	//cv::circle(matResult, stCmd.ptRangeCtr, (int)stCmd.fRangeOutterRadius, cv::Scalar(0, 255, 0), 1);
 	cv::circle(matResult, stRpy.ptCircleCtr, (int)stRpy.fRadius, cv::Scalar(255, 0, 0), 2);
 	cv::imshow("Fit result", matResult);
 	cv::waitKey(0);

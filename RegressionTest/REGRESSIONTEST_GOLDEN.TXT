@@ -25,13 +25,13 @@ Run logcase result 0
 TEMPLATE MATCH REGRESSION TEST #1 STARTING
 ------------------------------------------
 Search fiducial status 0
-Search fiducial result 1676, 374.6
+Search fiducial result 1676.49, 374.782
 
 ------------------------------------------
 TEMPLATE MATCH REGRESSION TEST #2 STARTING
 ------------------------------------------
 Search fiducial status 0
-Search fiducial result 127.6, 193.6
+Search fiducial result 127.881, 193.448
 
 ------------------------------------------
 FIT LINE REGRESSION TEST #1 STARTING

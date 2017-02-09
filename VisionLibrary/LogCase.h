@@ -31,12 +31,12 @@ protected:
     String _generateLogCaseName(const String &strFolderPrefix);
     String      _strLogCasePath;
     const String _CMD_RPY_FILE_NAME = "cmdrpy.log";
-    const String _CMD_SECTION = "CMD";
-    const String _RPY_SECTION = "RPY";
-    const String _IMAGE_NAME  = "image.png";
-    const String _MASK_NAME   = "mask.png";
-    const String _DEFAULT_COORD = "0, 0";
-    const String _DEFAULT_RECT = "0, 0, 0, 0";
+    const String _CMD_SECTION       = "CMD";
+    const String _RPY_SECTION       = "RPY";
+    const String _IMAGE_NAME        = "image.png";
+    const String _MASK_NAME         = "mask.png";
+    const String _DEFAULT_COORD     = "0, 0";
+    const String _DEFAULT_RECT      = "0, 0, 0, 0";
     bool         _bReplay;
 };
 
