@@ -206,7 +206,7 @@ VisionStatus VisionAlgorithm::srchTmpl(PR_SRCH_TMPL_CMD *const pFindObjCmd, PR_S
 	pFindObjRpy->matHomography.at<double>(1, 2) += pFindObjCmd->rectSrchWindow.y;
 
     cv::Mat matOriginalPos ( 3, 1, CV_64F );
-    matOriginalPos.at<double>(0, 0) = pFindObjCmd->rectLrn.width / 2.f;
+    matOriginalPos.at<double>(0, 0) = pFindObjCmd->rectLrn.width  / 2.f;
     matOriginalPos.at<double>(1, 0) = pFindObjCmd->rectLrn.height / 2.f;
     matOriginalPos.at<double>(2, 0) = 1.0;
 
@@ -606,7 +606,8 @@ VisionStatus VisionAlgorithm::autoThreshold(PR_AUTO_THRESHOLD_CMD *pstCmd, PR_AU
         return pstRpy->enStatus;
     }
 
-    if ( pstCmd->rectROI.x < 0 || pstCmd->rectROI.y < 0 ||
+    if (pstCmd->rectROI.x < 0 || pstCmd->rectROI.y < 0 ||
+        pstCmd->rectROI.width <= 0 || pstCmd->rectROI.height <= 0 ||
         ( pstCmd->rectROI.x + pstCmd->rectROI.width ) > pstCmd->matInput.cols ||
         ( pstCmd->rectROI.y + pstCmd->rectROI.height ) > pstCmd->matInput.rows )    {
         WriteLog("The Fitting range is invalid");
@@ -1352,6 +1353,8 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
         pLogCase = std::make_unique<LogCaseRemoveCC>( strLocalPath, true );
     else if (LogCaseDetectEdge::StaticGetFolderPrefix() == folderPrefix )
         pLogCase = std::make_unique<LogCaseDetectEdge>( strLocalPath, true );
+    else if (LogCaseCircleRoundness::StaticGetFolderPrefix() == folderPrefix )
+        pLogCase = std::make_unique<LogCaseCircleRoundness>( strLocalPath, true );
 
     if ( nullptr != pLogCase )
         enStatus = pLogCase->RunLogCase();
@@ -1360,61 +1363,18 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
     return enStatus;
 }
 
-VisionStatus VisionAlgorithm::_refineSrchTemplate(const cv::Mat &mat, cv::Mat &matTmpl, cv::Point2f &ptResult)
+/*static*/ VisionStatus VisionAlgorithm::_refineSrchTemplate(const cv::Mat &mat, cv::Mat &matTmpl, cv::Point2f &ptResult)
 {
-    const float fRefineAccuracy = 0.1f;
-    const int nRefineMaxStep = 20;
+    cv::Mat matWarp = cv::Mat::eye(2, 3, CV_32FC1);
+    matWarp.at<float>(0,2) = ptResult.x;
+    matWarp.at<float>(1,2) = ptResult.y;
+    int number_of_iterations = 30;
+    double termination_eps = 0.001;
 
-    cv::Mat matFloat, matTmplFloat;
-    mat.convertTo(matFloat, CV_32FC1);
-    matTmpl.convertTo(matTmplFloat, CV_32FC1 );
-
-    cv::Point2f ptStartPoint = cv::Point2f(ptResult.x - 0.5f + fRefineAccuracy, ptResult.y - 0.5f + fRefineAccuracy);
-    bool bFoundResult = false;
-    cv::Mat matSubPixel_1, matSubPixel_2, matSubPixel_3, matSubPixel_4;
-    cv::Mat matDiff_1, matDiff_2, matDiff_3, matDiff_4;
-    cv::Point2f ptRight, ptDown, ptRightDown;
-    double dDiff_1, dDiff_2, dDiff_3, dDiff_4;
-    int nIteratorCount = 0;
-    do
-    {
-        ptRight     = cv::Point2f( ptStartPoint.x + fRefineAccuracy, ptStartPoint.y );
-        ptDown      = cv::Point2f( ptStartPoint.x,                   ptStartPoint.y + fRefineAccuracy );
-        ptRightDown = cv::Point2f( ptStartPoint.x + fRefineAccuracy, ptStartPoint.y + fRefineAccuracy );
-
-        if (nIteratorCount == 0)    {
-            cv::getRectSubPix ( matFloat, matTmpl.size(), ptStartPoint, matSubPixel_1);
-            matDiff_1 = matTmplFloat - matSubPixel_1;
-            dDiff_1 = CalcUtils::MatSquareSum<float>(matDiff_1);
-        }
-        cv::getRectSubPix ( matFloat, matTmpl.size(), ptRight,     matSubPixel_2);
-        matDiff_2 = matTmplFloat - matSubPixel_2;
-        dDiff_2 = CalcUtils::MatSquareSum<float>(matDiff_2);
-
-        cv::getRectSubPix ( matFloat, matTmpl.size(), ptDown,      matSubPixel_3);
-        matDiff_3 = matTmplFloat - matSubPixel_3;
-        dDiff_3 = CalcUtils::MatSquareSum<float>(matDiff_3);
-
-        cv::getRectSubPix ( matFloat, matTmpl.size(), ptRightDown, matSubPixel_4 );
-        matDiff_4 = matTmplFloat - matSubPixel_4;
-        dDiff_4 = CalcUtils::MatSquareSum<float> ( matDiff_4 );
-
-        if ( dDiff_1 <= dDiff_2 && dDiff_1 <= dDiff_3 && dDiff_1 <= dDiff_4 )
-        {
-            bFoundResult = true;
-            ptResult = ptStartPoint;
-        }else if ( dDiff_2 < dDiff_1 && dDiff_2 < dDiff_3 && dDiff_2 < dDiff_4 )    {
-            ptStartPoint = ptRight;
-            dDiff_1 = dDiff_2;
-        }else if ( dDiff_3 < dDiff_1 && dDiff_3 < dDiff_2 && dDiff_3 < dDiff_4 )    {
-            ptStartPoint = ptDown;
-            dDiff_1 = dDiff_3;
-        }else if ( dDiff_4 < dDiff_1 && dDiff_4 < dDiff_2 && dDiff_4 < dDiff_3 )    {
-            ptStartPoint = ptRightDown;
-            dDiff_1 = dDiff_4;
-        }
-        ++ nIteratorCount;
-    }while ( ! bFoundResult && nIteratorCount < nRefineMaxStep );
+    cv::findTransformECC ( matTmpl, mat, matWarp, cv::MOTION_TRANSLATION, cv::TermCriteria ( cv::TermCriteria::COUNT + cv::TermCriteria::EPS,
+        number_of_iterations, termination_eps) );
+    ptResult.x = matWarp.at<float>(0, 2);
+    ptResult.y = matWarp.at<float>(1, 2);
 
     return VisionStatus::OK;
 }
@@ -1448,10 +1408,12 @@ VisionStatus VisionAlgorithm::matchTemplate(const cv::Mat &mat, cv::Mat &matTmpl
     else
         matchLoc = maxLoc;
 
-    ptResult.x = (float)matchLoc.x + (float)matTmpl.cols / 2;
-    ptResult.y = (float)matchLoc.y + (float)matTmpl.rows / 2;
-
+    ptResult.x = (float)matchLoc.x;
+    ptResult.y = (float)matchLoc.y;
     _refineSrchTemplate(mat, matTmpl, ptResult);
+
+    ptResult.x += (float)( matTmpl.cols / 2 + 0.5 );
+    ptResult.y += (float)( matTmpl.rows / 2 + 0.5 );
     return VisionStatus::OK;
 }
 
@@ -1498,7 +1460,7 @@ VisionStatus VisionAlgorithm::srchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd
         cv::rectangle(matTmpl,
                       cv::Rect2f(pstCmd->fMargin, pstCmd->fMargin, pstCmd->fSize, pstCmd->fSize),
                       cv::Scalar::all(256),
-                      -1);
+                      CV_FILLED );
     }
     else if ( PR_FIDUCIAL_MARK_TYPE::CIRCLE == pstCmd->enType )
     {
@@ -1542,9 +1504,9 @@ VisionStatus VisionAlgorithm::srchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd
 
 /*static*/ VectorOfPoint VisionAlgorithm::_findPointInRegionOverThreshold(const cv::Mat &mat, const cv::Rect &rect, int nThreshold)
 {
-    std::vector<cv::Point2f> vecPoint2f;
+    VectorOfPoint vecPoint;
     if ( mat.empty() )
-        return vecPoint2f;
+        return vecPoint;
 
     cv::Mat matROI(mat, rect);
     cv::Mat matThreshold;
@@ -1557,9 +1519,9 @@ VisionStatus VisionAlgorithm::srchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd
     cv::findNonZero( matThreshold, vecPoints );
     for ( const auto &point : vecPoints )   {
         cv::Point point2f ( point.x + rect.x, point.y + rect.y );
-        vecPoint2f.push_back(point2f);
+        vecPoint.push_back(point2f);
     }
-    return vecPoint2f;
+    return vecPoint;
 }
 
 /*static*/ ListOfPoint VisionAlgorithm::_findPointsInRegionByThreshold(const cv::Mat &mat, const cv::Rect &rect, int nThreshold, PR_OBJECT_ATTRIBUTE enAttribute)
@@ -1660,7 +1622,8 @@ VisionStatus VisionAlgorithm::fitLine(PR_FIT_LINE_CMD *pstCmd, PR_FIT_LINE_RPY *
         return pstRpy->enStatus;
     }
     
-    if ( pstCmd->rectROI.x < 0 || pstCmd->rectROI.y < 0 || 
+    if (pstCmd->rectROI.x < 0 || pstCmd->rectROI.y < 0 ||
+        pstCmd->rectROI.width <= 0 || pstCmd->rectROI.height <= 0 ||
         ( pstCmd->rectROI.x + pstCmd->rectROI.width ) > pstCmd->matInput.cols ||
         ( pstCmd->rectROI.y + pstCmd->rectROI.height ) > pstCmd->matInput.rows )    {
         WriteLog("The OCR search range is invalid");
@@ -1678,7 +1641,7 @@ VisionStatus VisionAlgorithm::fitLine(PR_FIT_LINE_CMD *pstCmd, PR_FIT_LINE_RPY *
     }
 
     VisionStatus enStatus = VisionStatus::OK;    
-    std::vector<float> vecX, vecY;
+    std::vector<int> vecX, vecY;
     std::vector<ListOfPoint::const_iterator> vecOverTolIter;
 
     cv::Mat matGray, matThreshold;
@@ -1776,7 +1739,7 @@ VisionStatus VisionAlgorithm::fitParallelLine(PR_FIT_PARALLEL_LINE_CMD *pstCmd, 
         return VisionStatus::NOT_ENOUGH_POINTS_TO_FIT;
     }
 
-    std::vector<float> vecX, vecY;
+    std::vector<int> vecX, vecY;
     for ( const auto &point : listPoint1 )
     {
         vecX.push_back ( point.x );
@@ -1875,7 +1838,7 @@ VisionStatus VisionAlgorithm::fitRect(PR_FIT_RECT_CMD *pstCmd, PR_FIT_RECT_RPY *
             return pstRpy->enStatus;
         }
     }
-    std::vector<float> vecX, vecY;
+    std::vector<int> vecX, vecY;
     for ( const auto &point : vecListPoint[0] )
     {
         vecX.push_back ( point.x );
@@ -2054,41 +2017,53 @@ VisionStatus VisionAlgorithm::findEdge(PR_FIND_EDGE_CMD *pstCmd, PR_FIND_EDGE_RP
     return VisionStatus::OK;
 }
 
-VisionStatus VisionAlgorithm::fitCircle(PR_FIT_CIRCLE_CMD *pstCmd, PR_FIT_CIRCLE_RPY *pstRpy, bool bReplay)
+/*static*/ VisionStatus VisionAlgorithm::fitCircle(PR_FIT_CIRCLE_CMD *pstCmd, PR_FIT_CIRCLE_RPY *pstRpy, bool bReplay)
 {
-    char charrMsg [ 1000 ];
-    if (NULL == pstCmd || NULL == pstRpy) {
-        _snprintf(charrMsg, sizeof(charrMsg), "Input is invalid, pstCmd = %d, pstRpy = %d", (int)pstCmd, (int)pstRpy);
-        WriteLog(charrMsg);
-        pstRpy->nStatus = ToInt32 ( VisionStatus::INVALID_PARAM );
-        return VisionStatus::INVALID_PARAM;
-    }
+    assert ( pstCmd != nullptr && pstRpy != nullptr );
+    char charrMsg [ 1000 ];    
 
     if (pstCmd->matInput.empty()) {
         WriteLog("Input image is empty");
-        pstRpy->nStatus = ToInt32 ( VisionStatus::INVALID_PARAM );
-        return VisionStatus::INVALID_PARAM;
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
     }
     
-    cv::Rect2f rectROI( pstCmd->ptRangeCtr.x - pstCmd->fRangeOutterRadius, pstCmd->ptRangeCtr.y - pstCmd->fRangeOutterRadius,
-        2.f * pstCmd->fRangeOutterRadius, 2.f * pstCmd->fRangeOutterRadius );
-    if ( rectROI.x < 0 || rectROI.y < 0 || 
-        ( rectROI.x + rectROI.width ) > pstCmd->matInput.cols ||
-        ( rectROI.y + rectROI.height ) > pstCmd->matInput.rows )    {
-        WriteLog("The fit circle search range is invalid");
-        pstRpy->nStatus = ToInt32 ( VisionStatus::INVALID_PARAM );
-        return VisionStatus::INVALID_PARAM;
+    if (pstCmd->rectROI.x < 0 || pstCmd->rectROI.y < 0 || 
+        pstCmd->rectROI.width <= 0 || pstCmd->rectROI.height <= 0 ||
+        ( pstCmd->rectROI.x + pstCmd->rectROI.width ) > pstCmd->matInput.cols ||
+        ( pstCmd->rectROI.y + pstCmd->rectROI.height ) > pstCmd->matInput.rows ) {
+        WriteLog("The input ROI is invalid");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
     }
 
-    VisionStatus enStatus;
-    std::unique_ptr<LogCaseFitCircle> pLogCase;
-    if ( ! bReplay )    {
-        pLogCase = std::make_unique<LogCaseFitCircle>( Config::GetInstance()->getLogCaseDir() );
-        if ( PR_DEBUG_MODE::LOG_ALL_CASE == Config::GetInstance()->getDebugMode() )
-            pLogCase->WriteCmd ( pstCmd );
+    if ( ! pstCmd->matMask.empty() ) {
+        if ( pstCmd->matMask.rows != pstCmd->matInput.rows || pstCmd->matMask.cols != pstCmd->matInput.cols ) {
+            _snprintf(charrMsg, sizeof(charrMsg), "The mask size ( %d, %d ) not match with input image size ( %d, %d )",
+                pstCmd->matMask.cols, pstCmd->matMask.rows, pstCmd->matInput.cols, pstCmd->matInput.rows);
+            WriteLog(charrMsg);
+            pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+            return pstRpy->enStatus;
+        }
+
+        if ( pstCmd->matMask.channels() != 1 )  {
+            WriteLog("The mask must be gray image!");
+            pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+            return pstRpy->enStatus;
+        }
     }
 
-    cv::Mat matROI(pstCmd->matInput, rectROI);
+    if (PR_FIT_CIRCLE_METHOD::RANSAC == pstCmd->enMethod && (1000 <= pstCmd->nMaxRansacTime || pstCmd->nMaxRansacTime <= 0)) {
+        _snprintf(charrMsg, sizeof(charrMsg), "Max Rransac time %d is invalid", pstCmd->nMaxRansacTime);
+        WriteLog(charrMsg);
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    MARK_FUNCTION_START_TIME;
+    SETUP_LOGCASE(LogCaseFitCircle);
+
+    cv::Mat matROI ( pstCmd->matInput, pstCmd->rectROI);    
     cv::Mat matGray, matThreshold;
 
     if ( pstCmd->matInput.channels() > 1 )
@@ -2096,72 +2071,61 @@ VisionStatus VisionAlgorithm::fitCircle(PR_FIT_CIRCLE_CMD *pstCmd, PR_FIT_CIRCLE
     else
         matGray = matROI.clone();
 
-    cv::ThresholdTypes enThresType = cv::THRESH_BINARY;
-    if ( PR_OBJECT_ATTRIBUTE::DARK == pstCmd->enAttribute )
-        enThresType = cv::THRESH_BINARY_INV;
+    if ( pstCmd->bPreprocessed )    {
+        matThreshold = matGray;
+    }
+    else
+    {
+        cv::ThresholdTypes enThresType = cv::THRESH_BINARY;
+        if ( PR_OBJECT_ATTRIBUTE::DARK == pstCmd->enAttribute )
+            enThresType = cv::THRESH_BINARY_INV;
 
-    cv::threshold( matGray, matThreshold, pstCmd->nThreshold, PR_MAX_GRAY_LEVEL, enThresType);
-    CV_Assert(matThreshold.channels() == 1);
+        cv::threshold(matGray, matThreshold, pstCmd->nThreshold, PR_MAX_GRAY_LEVEL, enThresType);
+        CV_Assert(matThreshold.channels() == 1);
 
-	if (PR_DEBUG_MODE::SHOW_IMAGE == Config::GetInstance()->getDebugMode())
-		showImage("Threshold image", matThreshold);
+        if (PR_DEBUG_MODE::SHOW_IMAGE == Config::GetInstance()->getDebugMode())
+            showImage("Threshold image", matThreshold);
+    }
+
+    if ( ! pstCmd->matMask.empty() )    {
+        cv::Mat matROIMask(pstCmd->matMask, pstCmd->rectROI);
+        matROIMask = cv::Scalar(255) - matROIMask;
+        matThreshold.setTo(cv::Scalar(0), matROIMask);
+    }
 
     VectorOfPoint vecPoints;
-    auto roiCtrX = matThreshold.cols / 2;
-    auto roiCtrY = matThreshold.rows / 2;
-    for (int row = 0; row < matThreshold.rows; ++ row)
-    {
-        for (int col = 0; col < matThreshold.cols; ++ col)
-        {
-            auto distance = sqrt ( (col - roiCtrX ) * (col - roiCtrX ) + (row - roiCtrY) * (row - roiCtrY) );
-            auto value = matThreshold.at<unsigned char>(row, col);
-            if ( value > 1 && distance > pstCmd->fRangeInnterRadius && distance < pstCmd->fRangeOutterRadius)   {
-                vecPoints.push_back(cv::Point2f ( ToFloat(col), ToFloat ( row ) ) );
-            }
-        }
-    }
+    cv::findNonZero( matThreshold, vecPoints);
     cv::RotatedRect fitResult;
-	if (PR_FIT_CIRCLE_METHOD::RANSAC == pstCmd->enMethod)	{
-		if ( 1000 <= pstCmd->nMaxRansacTime || pstCmd->nMaxRansacTime <= 0 ) {
-			_snprintf(charrMsg, sizeof(charrMsg), "Max Rransac time %d is invalid", pstCmd->nMaxRansacTime);
-			WriteLog(charrMsg);
-			pstRpy->nStatus = ToInt32(VisionStatus::INVALID_PARAM);
-			return VisionStatus::INVALID_PARAM;
-		}
+
+    if ( vecPoints.size() < 3 ) {
+        WriteLog("Not enough points to fit circle");
+        pstRpy->enStatus = VisionStatus::NOT_ENOUGH_POINTS_TO_FIT;
+        goto EXIT;
+    }    
+    
+	if ( PR_FIT_CIRCLE_METHOD::RANSAC == pstCmd->enMethod )
         fitResult = _fitCircleRansac ( vecPoints, pstCmd->fErrTol, pstCmd->nMaxRansacTime, vecPoints.size() / 2 );
-	}
 	else if (PR_FIT_CIRCLE_METHOD::LEAST_SQUARE == pstCmd->enMethod)
         fitResult = Fitting::fitCircle ( vecPoints );
     else if ( PR_FIT_CIRCLE_METHOD::LEAST_SQUARE_REFINE == pstCmd->enMethod  )
         fitResult = _fitCircleIterate ( vecPoints, pstCmd->enRmNoiseMethod, pstCmd->fErrTol );
+
     if ( fitResult.center.x <= 0 || fitResult.center.y <= 0 || fitResult.size.width <= 0 )   {
         WriteLog("Failed to fit circle");
-        pstRpy->nStatus = ToInt32 ( VisionStatus::FAIL_TO_FIT_CIRCLE );
-        enStatus = VisionStatus::FAIL_TO_FIT_CIRCLE;
+        pstRpy->enStatus = VisionStatus::FAIL_TO_FIT_CIRCLE;
         goto EXIT;
     }
-	pstRpy->ptCircleCtr = fitResult.center + cv::Point2f(rectROI.x, rectROI.y);
+	pstRpy->ptCircleCtr = fitResult.center + cv::Point2f ( ToFloat ( pstCmd->rectROI.x ), ToFloat ( pstCmd->rectROI.y ) );
     pstRpy->fRadius = fitResult.size.width / 2;
-    enStatus = VisionStatus::OK;
-    pstRpy->nStatus = ToInt32 (enStatus);
+    pstRpy->enStatus = VisionStatus::OK;
 
     pstRpy->matResult = pstCmd->matInput.clone();
-	cv::circle(pstRpy->matResult, pstCmd->ptRangeCtr, (int)pstCmd->fRangeInnterRadius, cv::Scalar(0, 255, 0), 1);
-	cv::circle(pstRpy->matResult, pstCmd->ptRangeCtr, (int)pstCmd->fRangeOutterRadius, cv::Scalar(0, 255, 0), 1);
-	cv::circle(pstRpy->matResult, pstRpy->ptCircleCtr, (int)pstRpy->fRadius, cv::Scalar(255, 0, 0), 2);
+	cv::circle ( pstRpy->matResult, pstRpy->ptCircleCtr, (int)pstRpy->fRadius, cv::Scalar(255, 0, 0), 2);
 
 EXIT:
-    if ( ! bReplay )    {
-        if ( PR_DEBUG_MODE::LOG_FAIL_CASE == Config::GetInstance()->getDebugMode() && enStatus != VisionStatus::OK )    {
-            pLogCase->WriteCmd ( pstCmd );
-            pLogCase->WriteRpy ( pstRpy );
-        }
-
-        if ( PR_DEBUG_MODE::LOG_ALL_CASE == Config::GetInstance()->getDebugMode() )
-            pLogCase->WriteRpy ( pstRpy );
-    }
-
-    return enStatus;
+    FINISH_LOGCASE;
+    MARK_FUNCTION_END_TIME;
+    return pstRpy->enStatus;
 }
 
 /* The ransac algorithm is from paper "Random Sample Consensus: A Paradigm for Model Fitting with Apphcatlons to Image Analysis and Automated Cartography".
@@ -2179,7 +2143,7 @@ EXIT:
 * above process. If, after some predetermined number of trials, no
 * consensus set with t or more members has been found, either solve the
 * model with the largest consensus set found, or terminate in failure. */
-/*static*/ cv::RotatedRect VisionAlgorithm::_fitCircleRansac(const std::vector<cv::Point2f> &vecPoints, float tolerance, int maxRansacTime, size_t numOfPtToFinish)
+/*static*/ cv::RotatedRect VisionAlgorithm::_fitCircleRansac(const VectorOfPoint &vecPoints, float tolerance, int maxRansacTime, size_t numOfPtToFinish)
 {   
     cv::RotatedRect fitResult;
     if (vecPoints.size() < 3)
@@ -2190,7 +2154,7 @@ EXIT:
     size_t nMaxConsentNum = 0;
 
     while ( nRansacTime < maxRansacTime )   {
-        std::vector<cv::Point2f> vecSelectedPoints = _randomSelectPoints ( vecPoints, RANSAC_CIRCLE_POINT );
+        VectorOfPoint vecSelectedPoints = _randomSelectPoints ( vecPoints, RANSAC_CIRCLE_POINT );
         cv::RotatedRect rectReult = Fitting::fitCircle ( vecSelectedPoints );
         vecSelectedPoints = _findPointsInCircleTol ( vecPoints, rectReult, tolerance );
 
@@ -2208,10 +2172,10 @@ EXIT:
     return fitResult;
 }
 
-VectorOfPoint VisionAlgorithm::_randomSelectPoints(const std::vector<cv::Point2f> &vecPoints, int numOfPtToSelect)
+/*static*/ VectorOfPoint VisionAlgorithm::_randomSelectPoints(const VectorOfPoint &vecPoints, int numOfPtToSelect)
 {    
     std::set<int> setResult;
-    std::vector<cv::Point2f> vecResultPoints;
+    VectorOfPoint vecResultPoints;
 
     if ( (int)vecPoints.size() < numOfPtToSelect )
         return vecResultPoints;
@@ -2225,32 +2189,14 @@ VectorOfPoint VisionAlgorithm::_randomSelectPoints(const std::vector<cv::Point2f
     return vecResultPoints;
 }
 
-VectorOfPoint VisionAlgorithm::_findPointsInCircleTol( const VectorOfPoint &vecPoints, const cv::RotatedRect &rotatedRect, float tolerance )
+/*static*/ VectorOfPoint VisionAlgorithm::_findPointsInCircleTol( const VectorOfPoint &vecPoints, const cv::RotatedRect &rotatedRect, float tolerance )
 {
-    std::vector<cv::Point2f> vecResult;
+    VectorOfPoint vecResult;
     for ( const auto &point : vecPoints )  {
         auto disToCtr = sqrt( ( point.x - rotatedRect.center.x) * (point.x - rotatedRect.center.x)  + ( point.y - rotatedRect.center.y) * ( point.y - rotatedRect.center.y ) );
         auto err = disToCtr - rotatedRect.size.width / 2;
         if ( fabs ( err ) < tolerance )  {
             vecResult.push_back(point);
-        }
-    }
-    return vecResult;
-}
-
-std::vector<size_t> VisionAlgorithm::_findPointsOverCircleTol( const VectorOfPoint &vecPoints, const cv::RotatedRect &rotatedRect, PR_RM_FIT_NOISE_METHOD enMethod, float tolerance )
-{
-    std::vector<size_t> vecResult;
-    for ( size_t i = 0;i < vecPoints.size(); ++ i )  {
-        cv::Point2f point = vecPoints[i];
-        auto disToCtr = sqrt( ( point.x - rotatedRect.center.x) * (point.x - rotatedRect.center.x)  + ( point.y - rotatedRect.center.y) * ( point.y - rotatedRect.center.y ) );
-        auto err = disToCtr - rotatedRect.size.width / 2;
-        if ( PR_RM_FIT_NOISE_METHOD::ABSOLUTE_ERR == enMethod && fabs ( err ) > tolerance )  {
-            vecResult.push_back(i);
-        }else if ( PR_RM_FIT_NOISE_METHOD::POSITIVE_ERR == enMethod && err > tolerance ) {
-            vecResult.push_back(i);
-        }else if ( PR_RM_FIT_NOISE_METHOD::NEGATIVE_ERR == enMethod && err < -tolerance ) {
-            vecResult.push_back(i);
         }
     }
     return vecResult;
@@ -2277,21 +2223,21 @@ std::vector<size_t> VisionAlgorithm::_findPointsOverCircleTol( const VectorOfPoi
 //method 1 : Exclude all the points out of positive error tolerance and inside the negative error tolerance.
 //method 2 : Exclude all the points out of positive error tolerance.
 //method 3 : Exclude all the points inside the negative error tolerance.
-cv::RotatedRect VisionAlgorithm::_fitCircleIterate(const std::vector<cv::Point2f> &vecPoints, PR_RM_FIT_NOISE_METHOD method, float tolerance)
+/*static*/ cv::RotatedRect VisionAlgorithm::_fitCircleIterate(const VectorOfPoint &vecPoints, PR_RM_FIT_NOISE_METHOD method, float tolerance)
 {
     cv::RotatedRect rotatedRect;
     if (vecPoints.size() < 3)
         return rotatedRect;
 
     ListOfPoint listPoint;
-    for ( const auto &point : vecPoints )   {
+    for ( const auto &point : vecPoints ) {
         listPoint.push_back ( point );
     }
     rotatedRect = Fitting::fitCircle ( listPoint );
     
     std::vector<ListOfPoint::const_iterator> overTolPoints = _findPointsOverCircleTol ( listPoint, rotatedRect, method, tolerance );
     int nIteratorNum = 1;
-    while ( ! overTolPoints.empty() && nIteratorNum < 20 )   {
+    while ( ! overTolPoints.empty() && nIteratorNum < 20 ) {
         for (const auto &it : overTolPoints )
             listPoint.erase( it );
         rotatedRect = Fitting::fitCircle ( listPoint );
@@ -2311,7 +2257,8 @@ cv::RotatedRect VisionAlgorithm::_fitCircleIterate(const std::vector<cv::Point2f
         return VisionStatus::INVALID_PARAM;
     }
     
-    if ( pstCmd->rectROI.x < 0 || pstCmd->rectROI.y < 0 || 
+    if (pstCmd->rectROI.x < 0 || pstCmd->rectROI.y < 0 ||
+        pstCmd->rectROI.width <= 0 || pstCmd->rectROI.height <= 0 ||
         ( pstCmd->rectROI.x + pstCmd->rectROI.width ) > pstCmd->matInput.cols ||
         ( pstCmd->rectROI.y + pstCmd->rectROI.height ) > pstCmd->matInput.rows )    {
         WriteLog("The OCR search range is invalid");
@@ -2401,7 +2348,8 @@ cv::RotatedRect VisionAlgorithm::_fitCircleIterate(const std::vector<cv::Point2f
         return pstRpy->enStatus;
     }
 
-    if ( pstCmd->rectROI.x < 0 || pstCmd->rectROI.y < 0 ||
+    if (pstCmd->rectROI.x < 0 || pstCmd->rectROI.y < 0 ||
+        pstCmd->rectROI.width <= 0 || pstCmd->rectROI.height <= 0 ||
         ( pstCmd->rectROI.x + pstCmd->rectROI.width ) > pstCmd->matInput.cols ||
         ( pstCmd->rectROI.y + pstCmd->rectROI.height ) > pstCmd->matInput.rows )    {
         WriteLog("The input ROI is invalid");
@@ -2465,7 +2413,8 @@ cv::RotatedRect VisionAlgorithm::_fitCircleIterate(const std::vector<cv::Point2f
         return pstRpy->enStatus;
     }
 
-    if ( pstCmd->rectROI.x < 0 || pstCmd->rectROI.y < 0 ||
+    if (pstCmd->rectROI.x < 0 || pstCmd->rectROI.y < 0 ||
+        pstCmd->rectROI.width <= 0 || pstCmd->rectROI.height <= 0 ||
         ( pstCmd->rectROI.x + pstCmd->rectROI.width ) > pstCmd->matInput.cols ||
         ( pstCmd->rectROI.y + pstCmd->rectROI.height ) > pstCmd->matInput.rows )    {
         WriteLog("The input ROI is invalid");
@@ -2544,7 +2493,8 @@ EXIT:
         return pstRpy->enStatus;
     }
 
-    if ( pstCmd->rectROI.x < 0 || pstCmd->rectROI.y < 0 ||
+    if (pstCmd->rectROI.x < 0 || pstCmd->rectROI.y < 0 ||
+        pstCmd->rectROI.width <= 0 || pstCmd->rectROI.height <= 0 ||
         ( pstCmd->rectROI.x + pstCmd->rectROI.width ) > pstCmd->matInput.cols ||
         ( pstCmd->rectROI.y + pstCmd->rectROI.height ) > pstCmd->matInput.rows )    {
         WriteLog("The input ROI is invalid");
@@ -2575,5 +2525,99 @@ EXIT:
     return pstRpy->enStatus;
 }
 
+/*static*/ VisionStatus VisionAlgorithm::circleRoundness(PR_CIRCLE_ROUNDNESS_CMD *pstCmd, PR_CIRCLE_ROUNDNESS_RPY *pstRpy, bool bReplay)
+{
+    assert(pstCmd != nullptr && pstRpy != nullptr);
+    char chArrMsg[1000];
+
+    if (pstCmd->matInput.empty()) {
+        WriteLog("Input image is empty");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    if (pstCmd->rectROI.x < 0 || pstCmd->rectROI.y < 0 ||
+        pstCmd->rectROI.width <= 0 || pstCmd->rectROI.height <= 0 ||
+        ( pstCmd->rectROI.x + pstCmd->rectROI.width ) > pstCmd->matInput.cols ||
+        ( pstCmd->rectROI.y + pstCmd->rectROI.height ) > pstCmd->matInput.rows )    {
+        WriteLog("The input ROI is invalid");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return VisionStatus::INVALID_PARAM;
+    }
+
+    if ( ! pstCmd->matMask.empty() ) {
+        if ( pstCmd->matMask.rows != pstCmd->matInput.rows || pstCmd->matMask.cols != pstCmd->matInput.cols ) {
+            _snprintf(chArrMsg, sizeof(chArrMsg), "The mask size ( %d, %d ) not match with input image size ( %d, %d )",
+                pstCmd->matMask.cols, pstCmd->matMask.rows, pstCmd->matInput.cols, pstCmd->matInput.rows);
+            WriteLog(chArrMsg);
+            pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+            return pstRpy->enStatus;
+        }
+
+        if ( pstCmd->matMask.channels() != 1 )  {
+            WriteLog("The mask must be gray image!");
+            pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+            return pstRpy->enStatus;
+        }
+    }
+
+    MARK_FUNCTION_START_TIME;
+    SETUP_LOGCASE(LogCaseCircleRoundness);
+
+    cv::Mat matROI ( pstCmd->matInput, pstCmd->rectROI);    
+    cv::Mat matGray;
+
+    if ( pstCmd->matInput.channels() > 1 )
+        cv::cvtColor ( matROI, matGray, CV_BGR2GRAY );
+    else
+        matGray = matROI.clone();
+
+    if ( PR_DEBUG_MODE::SHOW_IMAGE == Config::GetInstance()->getDebugMode())
+        showImage("Before mask out ROI image", matGray );
+
+    if ( ! pstCmd->matMask.empty() )    {
+        cv::Mat matROIMask(pstCmd->matMask, pstCmd->rectROI);
+        matROIMask = cv::Scalar(255) - matROIMask;
+        matGray.setTo(cv::Scalar(0), matROIMask);
+    }
+
+    if ( PR_DEBUG_MODE::SHOW_IMAGE == Config::GetInstance()->getDebugMode())
+        showImage("mask out ROI image", matGray );
+
+    VectorOfPoint vecPoints;
+    cv::findNonZero( matGray, vecPoints);
+    cv::RotatedRect fitResult;
+    std::vector<float> vecDistance;
+
+    if ( vecPoints.size() < 3 ) {
+        WriteLog("Not enough points to fit circle");
+        pstRpy->enStatus = VisionStatus::NOT_ENOUGH_POINTS_TO_FIT;
+        goto EXIT;
+    }    
+    
+    fitResult = Fitting::fitCircle ( vecPoints );
+
+    if ( fitResult.center.x <= 0 || fitResult.center.y <= 0 || fitResult.size.width <= 0 )   {
+        WriteLog("Failed to fit circle");
+        pstRpy->enStatus = VisionStatus::FAIL_TO_FIT_CIRCLE;
+        goto EXIT;
+    }
+	pstRpy->ptCircleCtr = fitResult.center + cv::Point2f ( ToFloat ( pstCmd->rectROI.x ), ToFloat ( pstCmd->rectROI.y ) );
+    pstRpy->fRadius = fitResult.size.width / 2;
+    pstRpy->enStatus = VisionStatus::OK;
+    
+    for ( const auto &point : vecPoints )   {
+        cv::Point2f pt2f(point);
+        vecDistance.push_back ( CalcUtils::distanceOf2Point<float> ( pt2f, fitResult.center ) - pstRpy->fRadius );
+    }
+    pstRpy->fRoundness = ToFloat ( CalcUtils::calcStdDeviation<float>( vecDistance ) );
+    pstRpy->matResult = pstCmd->matInput.clone();
+	cv::circle ( pstRpy->matResult, pstRpy->ptCircleCtr, (int)pstRpy->fRadius, cv::Scalar(255, 0, 0), 2);
+
+EXIT:
+    FINISH_LOGCASE;
+    MARK_FUNCTION_END_TIME;
+    return pstRpy->enStatus;
+}
 }
 }

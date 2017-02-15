@@ -1,5 +1,6 @@
-#include "opencv2/core/core.hpp"
+#include "opencv2/core.hpp"
 #include "opencv2/highgui.hpp"
+#include "opencv2/imgproc.hpp"
 #include "../VisionLibrary/VisionAPI.h"
 #include <iostream>
 #include <iomanip>
@@ -15,7 +16,7 @@ void TestFitCircle()
     PR_FIT_CIRCLE_RPY stRpy;
     auto PrintRpy = [](const PR_FIT_CIRCLE_RPY &stRpy)    {
         char chArrMsg[100];
-        std::cout << "Fit circle status " << stRpy.nStatus << std::endl;
+        std::cout << "Fit circle status " << ToInt32( stRpy.enStatus ) << std::endl;
         std::cout << std::fixed << std::setprecision(2) << "Radius = " << stRpy.fRadius << std::endl;
         _snprintf(chArrMsg, sizeof(chArrMsg), "(%.2f, %.2f)", stRpy.ptCircleCtr.x, stRpy.ptCircleCtr.y);
         std::cout << "Circle center: " << chArrMsg << std::endl;
@@ -25,18 +26,20 @@ void TestFitCircle()
     std::cout << std::endl << "FIT CIRCLE REGRESSION TEST #1 STARTING";
     std::cout << std::endl << "------------------------------------------";
     std::cout << std::endl;
-
-    stCmd.matInput = cv::imread("./data/lowangle_250.png", cv::IMREAD_GRAYSCALE);
+    
+    stCmd.matInput = cv::imread("./data/lowangle_250.png");
 	stCmd.enRmNoiseMethod = PR_RM_FIT_NOISE_METHOD::ABSOLUTE_ERR;
 	stCmd.fErrTol = 5;
-	stCmd.ptRangeCtr = cv::Point2f(520, 487);
-	stCmd.fRangeInnterRadius = 90;
-	stCmd.fRangeOutterRadius = 113;
-	stCmd.bAutothreshold = false;
+    stCmd.rectROI = cv::Rect ( 407, 373, 226, 226 );
+    stCmd.matMask = cv::Mat::ones ( stCmd.matInput.size(), CV_8UC1 ) * PR_MAX_GRAY_LEVEL;
+    cv::circle ( stCmd.matMask, cv::Point(520, 487), 90, cv::Scalar(0), CV_FILLED );
+    cv::rectangle ( stCmd.matMask, cv::Rect(493, 590, 51, 21), CV_FILLED, CV_FILLED );
+    stCmd.bPreprocessed = false;
+	stCmd.bAutoThreshold = false;
 	stCmd.nThreshold = 210;
     stCmd.enAttribute = PR_OBJECT_ATTRIBUTE::BRIGHT;
 	stCmd.enMethod = PR_FIT_CIRCLE_METHOD::LEAST_SQUARE_REFINE;
-
+    
 	PR_FitCircle(&stCmd, &stRpy);
     PrintRpy(stRpy);
 
@@ -45,18 +48,19 @@ void TestFitCircle()
     std::cout << std::endl << "------------------------------------------";
     std::cout << std::endl;
 
-    stCmd.matInput = cv::imread("./data/Fitting Test.png", cv::IMREAD_GRAYSCALE);
+    stCmd.matInput = cv::imread("./data/Fitting Test.png");
 	stCmd.enRmNoiseMethod = PR_RM_FIT_NOISE_METHOD::ABSOLUTE_ERR;
 	stCmd.fErrTol = 5;
-	stCmd.ptRangeCtr = cv::Point2f(571, 213);
-	stCmd.fRangeInnterRadius = 76;
-	stCmd.fRangeOutterRadius = 107;
-	stCmd.bAutothreshold = false;
+    stCmd.rectROI = cv::Rect(464, 106, 214, 214 );
+    stCmd.matMask = cv::Mat::ones(stCmd.matInput.size(), CV_8UC1) * PR_MAX_GRAY_LEVEL;
+    cv::circle ( stCmd.matMask, cv::Point(571, 213), 76, cv::Scalar(0), CV_FILLED );
+    stCmd.bPreprocessed = false;
+	stCmd.bAutoThreshold = false;
 	stCmd.nThreshold = 200;
     stCmd.enAttribute = PR_OBJECT_ATTRIBUTE::DARK;
 	stCmd.enMethod = PR_FIT_CIRCLE_METHOD::LEAST_SQUARE_REFINE;
-
-	PR_FitCircle(&stCmd, &stRpy);
+    
+	PR_FitCircle(&stCmd, &stRpy);    
     PrintRpy(stRpy);
 }
 

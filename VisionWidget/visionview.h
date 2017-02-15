@@ -30,11 +30,11 @@ class VisionView : public QLabel
     Q_OBJECT
 public:
 
-    enum MASK_EDIT_STATE
+    enum class MASK_EDIT_STATE
     {
-        MASK_EDIT_NONE,
-        MASK_EDIT_ADD,
-        MASK_EDIT_REMOVE,
+        NONE,
+        ADD,
+        REMOVE,
     };
 
     enum MASK_SHAPE
@@ -86,6 +86,7 @@ public:
     void setMat( DISPLAY_SOURCE enSource, const cv::Mat &mat);
     cv::Mat getMat( DISPLAY_SOURCE enSource = VisionView::DISPLAY_SOURCE::ORIGINAL ) const;
     cv::Mat getCurrentMat() const;
+    cv::Mat getMask() const;
     void applyIntermediateResult();
     void clearMat( DISPLAY_SOURCE enSource );
     bool isDisplayResultImage() const;
@@ -112,6 +113,7 @@ protected:
     void _drawTestVisionLibrary(cv::Mat &mat);
     void _zoomPoint(cv::Point &point, float fZoomFactor);
     void _zoomRect(cv::Rect &rect, float fZoomFactor);
+    static cv::Mat _zoomMat(const cv::Mat &mat, float fZoomFactor, bool bKeepSize = true);
 private:
     cv::Rect                        _rectLrnWindow;
     cv::Rect                        _rectSrchWindow;

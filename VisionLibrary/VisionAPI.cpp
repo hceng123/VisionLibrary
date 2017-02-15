@@ -196,8 +196,7 @@ VisionStatus  PR_FitCircle(PR_FIT_CIRCLE_CMD *pstCmd, PR_FIT_CIRCLE_RPY *pstRpy)
 {
     try
     {
-        VisionAlgorithmPtr pVA = VisionAlgorithm::create();
-        return pVA->fitCircle ( pstCmd, pstRpy );
+        return VisionAlgorithm::fitCircle ( pstCmd, pstRpy );
     }catch(std::exception &e)
     {
         WriteLog(e.what());
@@ -259,8 +258,15 @@ PR_FUNCTION_EXIT
 
 VisionAPI VisionStatus  PR_DetectEdge(PR_DETECT_EDGE_CMD *pstCmd, PR_DETECT_EDGE_RPY *pstRpy)
 {
-    PR_FUNCTION_ENTRY
+PR_FUNCTION_ENTRY
     return VisionAlgorithm::detectEdge( pstCmd, pstRpy );
+PR_FUNCTION_EXIT
+}
+
+VisionAPI VisionStatus  PR_CircleRoundness(PR_CIRCLE_ROUNDNESS_CMD *pstCmd, PR_CIRCLE_ROUNDNESS_RPY *pstRpy)
+{
+PR_FUNCTION_ENTRY
+    return VisionAlgorithm::circleRoundness( pstCmd, pstRpy );
 PR_FUNCTION_EXIT
 }
 

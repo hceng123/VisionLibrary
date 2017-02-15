@@ -35,13 +35,13 @@ void DialogEditMask::on_radioButtonPolyLine_clicked(bool checked)
 void DialogEditMask::on_radioButtonAddMask_clicked(bool checked)
 {
     if ( checked && NULL != _pVisionView )
-        _pVisionView->setMaskEditState( VisionView::MASK_EDIT_ADD );
+        _pVisionView->setMaskEditState( VisionView::MASK_EDIT_STATE::ADD );
 }
 
 void DialogEditMask::on_radioButtonRemoveMask_clicked(bool checked)
 {
     if ( checked && NULL != _pVisionView )
-        _pVisionView->setMaskEditState( VisionView::MASK_EDIT_REMOVE );
+        _pVisionView->setMaskEditState( VisionView::MASK_EDIT_STATE::REMOVE );
 }
 
 void DialogEditMask::setVisionView(VisionView *pVisionView)

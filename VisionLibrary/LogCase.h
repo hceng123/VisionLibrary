@@ -31,10 +31,12 @@ protected:
     String _generateLogCaseName(const String &strFolderPrefix);
     String      _strLogCasePath;
     const String _CMD_RPY_FILE_NAME = "cmdrpy.log";
-    const String _CMD_SECTION = "CMD";
-    const String _RPY_SECTION = "RPY";
-    const String _DEFAULT_COORD = "0, 0";
-    const String _DEFAULT_RECT = "0, 0, 0, 0";
+    const String _CMD_SECTION       = "CMD";
+    const String _RPY_SECTION       = "RPY";
+    const String _IMAGE_NAME        = "image.png";
+    const String _MASK_NAME         = "mask.png";
+    const String _DEFAULT_COORD     = "0, 0";
+    const String _DEFAULT_RECT      = "0, 0, 0, 0";
     bool         _bReplay;
 };
 
@@ -54,7 +56,7 @@ private:
     const String _strKeyCenterPos   =   "Center";
 };
 
-class LogCaseLrnDevice:public LogCase
+class LogCaseLrnDevice : public LogCase
 {
 public:
     explicit LogCaseLrnDevice(const String &strPath, bool bReplay = false) : LogCase(strPath, bReplay) {}
@@ -74,18 +76,38 @@ public:
     virtual VisionStatus RunLogCase() override;
     virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
     static String StaticGetFolderPrefix();
-private:
-    const String _strKeyMethod      = "Method";
-    const String _strKeyExpectedCtr = "ExpectedCtr";
-    const String _strKeyInnerRadius = "InnerRadius";
-    const String _strKeyOuterRadius = "OuterRadius";
-    const String _strKeyErrorTol    = "ErrorTolerance";
-    const String _strKeyThreshold   = "Threshold";
-    const String _strKeyAttribute   = "Attribute";
+private:    
+    const String _strKeyROI             = "ROI";
+    const String _strKeyMethod          = "Method";
+    const String _strKeyRmNoiseMethod   = "RmNoiseMethod";
+    const String _strKeyPreprocessed    = "Preprocessed";
+    const String _strKeyErrorTol        = "ErrorTolerance";
+    const String _strKeyAutoThreshold   = "AutoThreshold";
+    const String _strKeyThreshold       = "Threshold";
+    const String _strKeyAttribute       = "Attribute";
+    
 
-    const String _strKeyStatus      = "Status";
-    const String _strKeyResultCtr   = "ResultCtr";
-    const String _strKeyRadius      = "Radius";
+    const String _strKeyStatus          = "Status";
+    const String _strKeyResultCtr       = "ResultCtr";
+    const String _strKeyRadius          = "Radius";
+};
+
+class LogCaseCircleRoundness : public LogCase
+{
+public:
+    explicit LogCaseCircleRoundness(const String &strPath, bool bReplay = false) : LogCase(strPath, bReplay) {}
+    VisionStatus WriteCmd(PR_CIRCLE_ROUNDNESS_CMD *pCmd);
+    VisionStatus WriteRpy(PR_CIRCLE_ROUNDNESS_RPY *pRpy);
+    virtual VisionStatus RunLogCase() override;
+    virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
+    static String StaticGetFolderPrefix();
+private:
+    const String _strKeyROI             = "ROI";
+
+    const String _strKeyStatus          = "Status";
+    const String _strKeyResultCtr       = "ResultCtr";
+    const String _strKeyRadius          = "Radius";
+    const String _strKeyRoundness       = "Roundness";
 };
 
 class LogCaseFitLine : public LogCase

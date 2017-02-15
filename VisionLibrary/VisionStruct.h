@@ -16,10 +16,10 @@ using VectorOfDMatch = std::vector<cv::DMatch>;
 using VectorOfVectorOfDMatch = std::vector<VectorOfDMatch>;
 using VectorOfKeyPoint =  std::vector<cv::KeyPoint> ;
 using VectorOfVectorKeyPoint = std::vector<VectorOfKeyPoint>;
-using VectorOfPoint = std::vector<cv::Point2f>;
+using VectorOfPoint = std::vector<cv::Point>;
 using VectorOfVectorOfPoint = std::vector<VectorOfPoint>;
 using VectorOfRect = std::vector<cv::Rect>;
-using ListOfPoint = std::list<cv::Point2f>;
+using ListOfPoint = std::list<cv::Point>;
 using VectorOfListOfPoint = std::vector<ListOfPoint>;
 
 
@@ -325,14 +325,14 @@ struct PR_FIND_EDGE_RPY
 struct PR_FIT_CIRCLE_CMD
 {
     cv::Mat                 matInput;
+    bool                    bPreprocessed;
+    cv::Mat                 matMask;
+    cv::Rect                rectROI;
     PR_FIT_CIRCLE_METHOD    enMethod;
     PR_RM_FIT_NOISE_METHOD  enRmNoiseMethod;
-    bool                    bAutothreshold;
+    bool                    bAutoThreshold;
     Int32                   nThreshold;
     PR_OBJECT_ATTRIBUTE     enAttribute;
-    cv::Point2f             ptRangeCtr;
-    float                   fRangeInnterRadius;
-    float                   fRangeOutterRadius;
     float                   fErrTol;
     int                     nMaxRansacTime;             //Only used when fitting method is ransac.
     int                     nNumOfPtToFinishRansac;     //Only used when fitting method is ransac.
@@ -340,7 +340,7 @@ struct PR_FIT_CIRCLE_CMD
 
 struct PR_FIT_CIRCLE_RPY
 {
-    Int32                   nStatus;
+    VisionStatus            enStatus;
     cv::Point2f             ptCircleCtr;
     float                   fRadius;
     cv::Mat                 matResult;
@@ -458,10 +458,25 @@ struct PR_DETECT_EDGE_CMD
     Int16                   nApertureSize;
 };
 
-
 struct PR_DETECT_EDGE_RPY
 {
     VisionStatus            enStatus;
+    cv::Mat                 matResult;
+};
+
+struct PR_CIRCLE_ROUNDNESS_CMD
+{
+    cv::Mat                 matInput;
+    cv::Mat                 matMask;
+    cv::Rect                rectROI;
+};
+
+struct PR_CIRCLE_ROUNDNESS_RPY
+{
+    VisionStatus            enStatus;
+    float                   fRoundness;
+    cv::Point2f             ptCircleCtr;
+    float                   fRadius;
     cv::Mat                 matResult;
 };
 
