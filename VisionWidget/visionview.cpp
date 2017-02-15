@@ -452,15 +452,17 @@ void VisionView::_zoomRect(cv::Rect &rect, float fZoomFactor)
     rect.height *= fZoomFactor;
 }
 
-cv::Mat VisionView::_zoomMat(const cv::Mat &mat, float fZoomFactor, bool bKeepSize )
+/*static*/ void VisionView::_zoomMat(const cv::Mat &mat, cv::Mat &matOutput, float fZoomFactor, bool bKeepSize )
 {
     if ( mat.empty() || fabs ( fZoomFactor - 1 ) < 0.001 )
-        return mat;
+        return;
 
     cv::Mat matZoomResult;
     cv::resize ( mat, matZoomResult, cv::Size(), fZoomFactor, fZoomFactor );
-    if ( ! bKeepSize )
-        return matZoomResult;
+    if ( ! bKeepSize )  {
+        matOutput = matZoomResult;
+        return;
+    }
 
     cv::Mat matResult = cv::Mat::zeros ( mat.size(), mat.type() );
     
@@ -473,7 +475,7 @@ cv::Mat VisionView::_zoomMat(const cv::Mat &mat, float fZoomFactor, bool bKeepSi
         cv::Mat matSrc( matZoomResult, rectROISrc);
         matSrc.copyTo ( matResult );
     }
-    return matResult;
+    matOutput = matResult;
 }
 
 void VisionView::zoomIn()
@@ -490,7 +492,7 @@ void VisionView::zoomIn()
 
         _zoomRect(_rectSelectedWindow, 2.f);
 
-        _matMask = _zoomMat(_matMask, 2.f, true);
+        _zoomMat(_matMask, _matMask, 2.f, true);
     }
     _drawDisplay();
 }
@@ -509,7 +511,7 @@ void VisionView::zoomOut()
 
         _zoomRect(_rectSelectedWindow, 0.5f);
 
-        _matMask = _zoomMat(_matMask, 0.5f, true);
+         _zoomMat(_matMask, _matMask, 0.5f, true);
     }
     _drawDisplay();
 }
@@ -579,7 +581,7 @@ cv::Mat VisionView::getMask() const
     }
     else
     {
-        cv::Mat matLocalMask = _zoomMat ( _matMask, 1 / _fZoomFactor, false );
+        _zoomMat ( _matMask, matLocalMask, 1 / _fZoomFactor, false );
     }
 
     if ( matMaskResult.rows >= matLocalMask.rows && matMaskResult.cols >= matLocalMask.cols ) {
