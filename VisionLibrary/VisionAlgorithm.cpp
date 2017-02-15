@@ -1373,8 +1373,8 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
 
     cv::findTransformECC ( matTmpl, mat, matWarp, cv::MOTION_TRANSLATION, cv::TermCriteria ( cv::TermCriteria::COUNT + cv::TermCriteria::EPS,
         number_of_iterations, termination_eps) );
-    ptResult.x = matWarp.at<float>(0,2);
-    ptResult.y = matWarp.at<float>(1,2);
+    ptResult.x = matWarp.at<float>(0, 2);
+    ptResult.y = matWarp.at<float>(1, 2);
 
     return VisionStatus::OK;
 }
@@ -1412,9 +1412,8 @@ VisionStatus VisionAlgorithm::matchTemplate(const cv::Mat &mat, cv::Mat &matTmpl
     ptResult.y = (float)matchLoc.y;
     _refineSrchTemplate(mat, matTmpl, ptResult);
 
-    ptResult.x += (float)matTmpl.cols / 2;
-    ptResult.y += (float)matTmpl.rows / 2;
-
+    ptResult.x += (float)( matTmpl.cols / 2 + 0.5 );
+    ptResult.y += (float)( matTmpl.rows / 2 + 0.5 );
     return VisionStatus::OK;
 }
 
