@@ -50,6 +50,7 @@ public:
         LEARNING,
         ADD_MASK,
         TEST_VISION_LIBRARY,
+        MOVE,
     };
 
     enum class TEST_VISION_STATE
@@ -81,6 +82,7 @@ public:
     void swapImage();
     void zoomIn();
     void zoomOut();
+    void startToMove();
     void restoreZoom();
     void startTimer();
     void setMat( DISPLAY_SOURCE enSource, const cv::Mat &mat);
@@ -125,6 +127,7 @@ private:
     cv::Mat                         _matArray[DISPLAY_SOURCE::SIZE];
     DISPLAY_SOURCE                  _enDisplaySource;
 	cv::Mat             			_matDisplay;
+    cv::Mat                         _matMaskForDisplay;
     cv::Mat                         _matMask;
     VectorOfRect                    _vecRectMask;
     float                           _fZoomFactor;
@@ -152,6 +155,7 @@ private:
     const float                     _constMaxZoomFactor = 4.f;
     const float                     _constMinZoomFactor = 0.25;
     std::unique_ptr<DialogEditMask> _pDialogEditMask;
+    cv::Size                        _szDisplayCenterOffset;
 
 signals:
 

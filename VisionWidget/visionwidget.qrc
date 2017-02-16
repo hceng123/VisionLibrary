@@ -9,5 +9,6 @@
         <file>Image/Add.png</file>
         <file>Image/TB_SaveCurrentImage.png</file>
         <file>Image/Floppy.png</file>
+        <file>Image/Hand.png</file>
     </qresource>
 </RCC>

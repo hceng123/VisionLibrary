@@ -23,6 +23,7 @@ private slots:
     void on_swapImageButton_clicked();
     void on_zoomInButton_clicked();
     void on_zoomOutButton_clicked();
+    void on_moveButton_clicked();
     void on_toolBoxButton_clicked();
     void on_saveImageButton_clicked();
 private:

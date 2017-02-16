@@ -61,6 +61,8 @@ void VisionView::mousePressEvent(QMouseEvent *event)
             if ( _vecPolylinePoint.size() == 0 ) {
                 _vecPolylinePoint.push_back(_ptLeftClickStartPos);
             }
+        }else if ( VISION_VIEW_STATE::MOVE == _enState )    {
+            setCursor(Qt::ClosedHandCursor);
         }
     }
 }
@@ -92,9 +94,9 @@ void VisionView::mouseReleaseEvent(QMouseEvent *event)
                 int npts = Mat(_vecPolylinePoint).rows;
 
                 if ( MASK_EDIT_STATE::ADD == _enMaskEditState )
-                    cv::fillPoly( _matMask, &pts, &npts, 1, Scalar ( 255, 255, 255 ) );
+                    cv::fillPoly( _matMaskForDisplay, &pts, &npts, 1, Scalar ( 255, 255, 255 ) );
                 else
-                    cv::fillPoly( _matMask, &pts, &npts, 1, Scalar ( 0, 0, 0 ) );
+                    cv::fillPoly( _matMaskForDisplay, &pts, &npts, 1, Scalar ( 0, 0, 0 ) );
 
                 _vecPolylinePoint.clear();
                 _ptLeftClickStartPos = Point(0,0);
@@ -102,6 +104,8 @@ void VisionView::mouseReleaseEvent(QMouseEvent *event)
             }
         }else if ( VISION_VIEW_STATE::TEST_VISION_LIBRARY == _enState && TEST_VISION_STATE::SET_CIRCLE_CTR == _enTestVisionState ) {
             _ptCircleCtr = cv::Point ( event->pos().x(), event->pos().y() );            
+        }else if ( VISION_VIEW_STATE::MOVE == _enState )    {
+            setCursor(Qt::OpenHandCursor);
         }
         _drawDisplay();
     }else if ( event->button() == Qt::MidButton )   {
@@ -138,17 +142,17 @@ void VisionView::mouseMoveEvent(QMouseEvent *event)
                 rectMask.height = _ptLeftClickEndPos.y - _ptLeftClickStartPos.y;
 
                 if ( MASK_EDIT_STATE::ADD == _enMaskEditState )
-                    cv::rectangle ( _matMask, rectMask, Scalar(255, 255, 255), CV_FILLED, CV_AA );
+                    cv::rectangle ( _matMaskForDisplay, rectMask, Scalar(255, 255, 255), CV_FILLED, CV_AA );
                 else
-                    cv::rectangle ( _matMask, rectMask, Scalar(0, 0, 0 ), CV_FILLED, CV_AA );
+                    cv::rectangle ( _matMaskForDisplay, rectMask, Scalar(0, 0, 0 ), CV_FILLED, CV_AA );
             }else if ( MASK_SHAPE_CIRCLE == _enMaskShape )  {
                 float fOffsetX = _ptLeftClickEndPos.x - _ptLeftClickStartPos.x;
                 float fOffsetY = _ptLeftClickEndPos.y - _ptLeftClickStartPos.y;
                 float fRadius = sqrt ( fOffsetX * fOffsetX + fOffsetY * fOffsetY );
                 if ( MASK_EDIT_STATE::ADD == _enMaskEditState )
-                    cv::circle( _matMask, _ptLeftClickStartPos, fRadius, Scalar(255, 255, 255), CV_FILLED);
+                    cv::circle( _matMaskForDisplay, _ptLeftClickStartPos, fRadius, Scalar(255, 255, 255), CV_FILLED);
                 else
-                    cv::circle( _matMask, _ptLeftClickStartPos, fRadius, Scalar(0, 0, 0), CV_FILLED);
+                    cv::circle( _matMaskForDisplay, _ptLeftClickStartPos, fRadius, Scalar(0, 0, 0), CV_FILLED);
             }else if ( MASK_SHAPE_POLYLINE == _enMaskShape )  {
 
             }
@@ -224,8 +228,8 @@ void VisionView::_drawLearnWindow(cv::Mat &mat)
 
     cv::Mat copy = mat.clone();
 
-    if ( ! _matMask.empty() )
-        copy.setTo ( scalarMask, _matMask );
+    if ( ! _matMaskForDisplay.empty() )
+        copy.setTo ( scalarMask, _matMaskForDisplay );
 
     double alpha = 0.4;
     cv::addWeighted ( copy, alpha, mat, 1.0 - alpha, 0.0, mat );
@@ -258,8 +262,8 @@ void VisionView::_drawSelectedWindow(cv::Mat &mat)
 
     cv::Mat copy = mat.clone();
 
-    if ( ! _matMask.empty() )
-        copy.setTo ( scalarMask, _matMask );
+    if ( ! _matMaskForDisplay.empty() )
+        copy.setTo ( scalarMask, _matMaskForDisplay );
 
     double alpha = 0.2;
     cv::addWeighted ( copy, alpha, mat, 1.0 - alpha, 0.0, mat );
@@ -401,8 +405,8 @@ void VisionView::selectWindow()
 void VisionView::addMask()
 {
     _enState = VISION_VIEW_STATE::ADD_MASK;
-    if ( _matMask.empty() )
-        _matMask = cv::Mat( _matDisplay.size(), CV_8UC1, cv::Scalar(0, 0, 0) );
+    if ( _matMaskForDisplay.empty() )
+        _matMaskForDisplay = cv::Mat( _matDisplay.size(), CV_8UC1, cv::Scalar(0, 0, 0) );
 
     if ( ! _pDialogEditMask)    {
         _pDialogEditMask = std::make_unique<DialogEditMask>(this);
@@ -492,7 +496,7 @@ void VisionView::zoomIn()
 
         _zoomRect(_rectSelectedWindow, 2.f);
 
-        _zoomMat(_matMask, _matMask, 2.f, true);
+        _zoomMat(_matMaskForDisplay, _matMaskForDisplay, 2.f, true);
     }
     _drawDisplay();
 }
@@ -511,9 +515,15 @@ void VisionView::zoomOut()
 
         _zoomRect(_rectSelectedWindow, 0.5f);
 
-         _zoomMat(_matMask, _matMask, 0.5f, true);
+         _zoomMat(_matMaskForDisplay, _matMaskForDisplay, 0.5f, true);
     }
     _drawDisplay();
+}
+
+void VisionView::startToMove()
+{
+    setCursor(Qt::OpenHandCursor);
+    _enState = VISION_VIEW_STATE::MOVE;
 }
 
 void VisionView::restoreZoom()
@@ -541,7 +551,7 @@ float VisionView::distanceOf2Point(const cv::Point &pt1, const cv::Point &pt2)
 
 void VisionView::clearMask()
 {
-    _matMask.release();
+    _matMaskForDisplay.release();
 }
 
 void VisionView::startTimer()
@@ -569,19 +579,19 @@ cv::Mat VisionView::getCurrentMat() const
 
 cv::Mat VisionView::getMask() const
 {
-    if ( _matMask.empty() )
-        return _matMask;
+    if ( _matMaskForDisplay.empty() )
+        return _matMaskForDisplay;
 
     cv::Size size( _matArray[0].size().width / _fZoomFactor, _matArray[0].size().height / _fZoomFactor );
     cv::Mat matMaskResult = cv::Mat::zeros(_matArray[0].size(), CV_8UC1) * PR_MAX_GRAY_LEVEL;
 
     cv::Mat  matLocalMask;
     if ( fabs ( _fZoomFactor - 1.f) < 0.001 )   {
-        matLocalMask = _matMask.clone();
+        matLocalMask = _matMaskForDisplay.clone();
     }
     else
     {
-        _zoomMat ( _matMask, matLocalMask, 1 / _fZoomFactor, false );
+        _zoomMat ( _matMaskForDisplay, matLocalMask, 1 / _fZoomFactor, false );
     }
 
     if ( matMaskResult.rows >= matLocalMask.rows && matMaskResult.cols >= matLocalMask.cols ) {
