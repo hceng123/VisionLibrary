@@ -72,6 +72,9 @@ public:
         SIZE = END,
     };
 
+    const float ZOOM_IN_STEP = 2.0;
+    const float ZOOM_OUT_STEP = 0.5;
+
     //explicit VisionView(QLabel *parent = 0);
     explicit VisionView(QWidget *parent = 0, Qt::WindowFlags f=0);
     ~VisionView();
@@ -109,13 +112,17 @@ protected:
     void mouseReleaseEvent(QMouseEvent *event);
     void mouseMoveEvent(QMouseEvent *event);
     void mouseDoubleClickEvent(QMouseEvent *event);
-    void _drawDisplay();
+    void _drawDisplay(bool bAddingMask = false);
     void _drawLearnWindow(cv::Mat &mat);
     void _drawSelectedWindow(cv::Mat &mat);
     void _drawTestVisionLibrary(cv::Mat &mat);
     void _zoomPoint(cv::Point &point, float fZoomFactor);
     void _zoomRect(cv::Rect &rect, float fZoomFactor);
     static void _zoomMat(const cv::Mat &mat, cv::Mat &matOutput, float fZoomFactor, bool bKeepSize = true);
+    void _calcMoveRange();
+    void _moveImage();
+    void _applyMask();
+    void _cutImageForDisplay(const cv::Mat &matInput, cv::Mat &matOutput);
 private:
     cv::Rect                        _rectLrnWindow;
     cv::Rect                        _rectSrchWindow;
@@ -124,7 +131,7 @@ private:
     cv::Point                       _ptLeftClickEndPos;
     VISION_VIEW_STATE               _enState;
     TEST_VISION_STATE               _enTestVisionState;
-    cv::Mat                         _matArray[DISPLAY_SOURCE::SIZE];
+    cv::Mat                         _matArray[ToInt32(DISPLAY_SOURCE::SIZE)];
     DISPLAY_SOURCE                  _enDisplaySource;
 	cv::Mat             			_matDisplay;
     cv::Mat                         _matMaskForDisplay;
@@ -156,6 +163,8 @@ private:
     const float                     _constMinZoomFactor = 0.25;
     std::unique_ptr<DialogEditMask> _pDialogEditMask;
     cv::Size                        _szDisplayCenterOffset;
+    cv::Size                        _szConfirmedCenterOffset;
+    cv::Size                        _szMoveRange;
 
 signals:
 
