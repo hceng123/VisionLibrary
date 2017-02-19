@@ -232,17 +232,11 @@ namespace
         if (mat.empty())
             return 0;
 
-        output.create(1, mat.rows, CV_32FC1);
-        for (int row = 0; row < mat.rows; ++row)
-        {
-            auto whitePixelCount = 0.f;
-            for (int col = 0; col < mat.cols; ++col)
-            {
-                auto value = mat.at<unsigned char>(row, col);
-                if (value > 0)
-                    ++whitePixelCount;
-            }
-            output.at<float>(0, row) = whitePixelCount;
+        output = cv::Mat::zeros(1, mat.rows, CV_32FC1);
+        VectorOfPoint vecPoints;
+        cv::findNonZero(mat, vecPoints);
+        for ( const auto &point : vecPoints )   {
+            ++ output.at<float>(0, point.y);
         }
         return 0;
     }
@@ -1667,7 +1661,7 @@ VisionStatus VisionAlgorithm::fitLine(PR_FIT_LINE_CMD *pstCmd, PR_FIT_LINE_RPY *
     //to get the x = k1 + b1, and get the k = 1 / k1, b = -b1 / k1. Then the result is more accurate.
     pstRpy->bReversedFit = false;
     if ( CalcUtils::calcStdDeviation ( vecY ) > CalcUtils::calcStdDeviation ( vecX ) )
-        pstRpy->bReversedFit = true;    
+        pstRpy->bReversedFit = true;
 
     int nIteratorNum = 0;
     do

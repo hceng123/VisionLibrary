@@ -141,6 +141,9 @@ void VisionView::mouseMoveEvent(QMouseEvent *event)
             _rectLrnWindow.height = _ptLeftClickEndPos.y - _ptLeftClickStartPos.y;
             _drawDisplay();
         }else if ( VISION_VIEW_STATE::ADD_MASK == _enState )    {
+            cv::Mat matMaskZoomResult;
+            _zoomMat(_matMask, matMaskZoomResult, _fZoomFactor, false);
+            _cutImageForDisplay(matMaskZoomResult, _matMaskForDisplay);
             if ( MASK_SHAPE_RECT == _enMaskShape ) {
                 Rect rectMask;
                 rectMask.x = _ptLeftClickStartPos.x;
@@ -170,6 +173,9 @@ void VisionView::mouseMoveEvent(QMouseEvent *event)
                 _rectSelectedWindow.y = _ptLeftClickStartPos.y;
                 _rectSelectedWindow.width = _ptLeftClickEndPos.x - _ptLeftClickStartPos.x;
                 _rectSelectedWindow.height = _ptLeftClickEndPos.y - _ptLeftClickStartPos.y;
+                 _rectSelectedWindow.x -= _szDisplayCenterOffset.width;
+                 _rectSelectedWindow.y -= _szDisplayCenterOffset.height;
+
                 _drawDisplay();
             }
             else if ( TEST_VISION_STATE::SET_CIRCLE_INNER_RADIUS == _enTestVisionState )
@@ -672,6 +678,8 @@ void VisionView::setMat( DISPLAY_SOURCE enSource, const cv::Mat &mat)
         _calcMoveRange();
         _szDisplayCenterOffset = cv::Size(0, 0);
         _szConfirmedCenterOffset = cv::Size(0, 0);
+        _matMask = cv::Mat::zeros(_matArray[0].size(), CV_8UC1);
+        _matMaskForDisplay.release();
     }
 }
 
@@ -835,8 +843,8 @@ cv::Rect VisionView::getSelectedWindow() const
         return rect;
     }
 
-    rect.x += _szDisplayCenterOffset.width;
-    rect.y += _szDisplayCenterOffset.height;
+    //rect.x += _szDisplayCenterOffset.width;
+    //rect.y += _szDisplayCenterOffset.height;
     rect.x = (rect.x + (mat.cols * _fZoomFactor - displayWidth  ) / 2) / _fZoomFactor;
     rect.y = (rect.y + (mat.rows * _fZoomFactor - displayHeight ) / 2) / _fZoomFactor;
     rect.width  /= _fZoomFactor;
