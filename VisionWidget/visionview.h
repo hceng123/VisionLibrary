@@ -106,7 +106,6 @@ public:
     cv::Rect getSelectedWindow() const;
     PR_Line getIntensityCheckLine() const;
     static float distanceOf2Point(const cv::Point &pt1, const cv::Point &pt2);
-    void clearMask();
 protected:
     void mousePressEvent(QMouseEvent *event);
     void mouseReleaseEvent(QMouseEvent *event);

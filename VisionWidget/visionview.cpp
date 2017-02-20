@@ -30,7 +30,7 @@ VisionView::VisionView(QWidget *parent , Qt::WindowFlags f)
     _bDisplayGrayScale = false;
     _bDisplayBinary = false;
     _szDisplayCenterOffset = cv::Size(0, 0);
-    _szConfirmedCenterOffset = cv::Size(0, 0);
+    _szConfirmedCenterOffset = cv::Size(0, 0);    
 }
 
 VisionView::~VisionView()
@@ -382,9 +382,7 @@ void VisionView::selectWindow()
 void VisionView::addMask()
 {
     _enState = VISION_VIEW_STATE::ADD_MASK;
-    unsetCursor();
-    if ( _matMaskForDisplay.empty() )
-        _matMaskForDisplay = cv::Mat( _matDisplay.size(), CV_8UC1, cv::Scalar(0, 0, 0) );
+    unsetCursor();    
 
     if ( ! _pDialogEditMask)    {
         _pDialogEditMask = std::make_unique<DialogEditMask>(this);
@@ -657,11 +655,6 @@ float VisionView::distanceOf2Point(const cv::Point &pt1, const cv::Point &pt2)
     return fDistance;
 }
 
-void VisionView::clearMask()
-{
-    _matMaskForDisplay.release();
-}
-
 void VisionView::startTimer()
 {
     _pTimer->start(20);
@@ -679,7 +672,7 @@ void VisionView::setMat( DISPLAY_SOURCE enSource, const cv::Mat &mat)
         _szDisplayCenterOffset = cv::Size(0, 0);
         _szConfirmedCenterOffset = cv::Size(0, 0);
         _matMask = cv::Mat::zeros(_matArray[0].size(), CV_8UC1);
-        _matMaskForDisplay.release();
+        _matMaskForDisplay = cv::Mat::zeros( this->size().height(), this->size().width() , CV_8UC1 );
     }
 }
 

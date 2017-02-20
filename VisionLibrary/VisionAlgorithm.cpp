@@ -1626,13 +1626,7 @@ VisionStatus VisionAlgorithm::fitLine(PR_FIT_LINE_CMD *pstCmd, PR_FIT_LINE_RPY *
     }
 
     MARK_FUNCTION_START_TIME;
-
-    std::unique_ptr<LogCaseFitLine> pLogCase;
-    if ( ! bReplay )    {
-        pLogCase = std::make_unique<LogCaseFitLine>( Config::GetInstance()->getLogCaseDir() );
-        if ( PR_DEBUG_MODE::LOG_ALL_CASE == Config::GetInstance()->getDebugMode() )
-            pLogCase->WriteCmd ( pstCmd );
-    }
+    SETUP_LOGCASE(LogCaseFitLine);
 
     VisionStatus enStatus = VisionStatus::OK;    
     std::vector<int> vecX, vecY;
@@ -1646,7 +1640,7 @@ VisionStatus VisionAlgorithm::fitLine(PR_FIT_LINE_CMD *pstCmd, PR_FIT_LINE_RPY *
 
     ListOfPoint listPoint = _findPointsInRegionByThreshold( matGray, pstCmd->rectROI, pstCmd->nThreshold, pstCmd->enAttribute );
     if ( listPoint.size() < 2 )  {
-        WriteLog("Input image is empty");
+        WriteLog("Not enough points to fit line");
         enStatus = VisionStatus::NOT_ENOUGH_POINTS_TO_FIT;
         goto EXIT;
     }
@@ -1685,18 +1679,150 @@ VisionStatus VisionAlgorithm::fitLine(PR_FIT_LINE_CMD *pstCmd, PR_FIT_LINE_RPY *
 
 EXIT:
     pstRpy->enStatus = enStatus;
-    if ( ! bReplay )    {
-        if ( PR_DEBUG_MODE::LOG_FAIL_CASE == Config::GetInstance()->getDebugMode() && enStatus != VisionStatus::OK )    {
-            pLogCase->WriteCmd ( pstCmd );
-            pLogCase->WriteRpy ( pstRpy );
-        }
+    FINISH_LOGCASE;    
+    MARK_FUNCTION_END_TIME;
 
-        if ( PR_DEBUG_MODE::LOG_ALL_CASE == Config::GetInstance()->getDebugMode() )
-            pLogCase->WriteRpy ( pstRpy );
+    return enStatus;
+}
+
+/*static*/ VisionStatus VisionAlgorithm::detectLine(PR_DETECT_LINE_CMD *pstCmd, PR_DETECT_LINE_RPY *pstRpy, bool bReplay)
+{
+    assert ( pstCmd != nullptr && pstRpy != nullptr );
+    char charrMsg [ 1000 ];
+
+    if (pstCmd->matInput.empty()) {
+        WriteLog("Input image is empty");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
     }
     
+    if (pstCmd->rectROI.x < 0 || pstCmd->rectROI.y < 0 ||
+        pstCmd->rectROI.width <= 0 || pstCmd->rectROI.height <= 0 ||
+        ( pstCmd->rectROI.x + pstCmd->rectROI.width ) > pstCmd->matInput.cols ||
+        ( pstCmd->rectROI.y + pstCmd->rectROI.height ) > pstCmd->matInput.rows )    {
+        WriteLog("The OCR search range is invalid");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    if ( ! pstCmd->matMask.empty() ) {
+        if ( pstCmd->matMask.rows != pstCmd->matInput.rows || pstCmd->matMask.cols != pstCmd->matInput.cols ) {
+            _snprintf(charrMsg, sizeof(charrMsg), "The mask size ( %d, %d ) not match with input image size ( %d, %d )",
+                pstCmd->matMask.cols, pstCmd->matMask.rows, pstCmd->matInput.cols, pstCmd->matInput.rows);
+            WriteLog(charrMsg);
+            pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+            return pstRpy->enStatus;
+        }
+
+        if ( pstCmd->matMask.channels() != 1 )  {
+            WriteLog("The mask must be gray image!");
+            pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+            return pstRpy->enStatus;
+        }
+    }
+
+    MARK_FUNCTION_START_TIME;
+
+    VectorOfPoint vecPoints, vecFitPoint;
+    std::vector<int> vecX, vecY, vecIndexCanFormLine, vecProjection;
+    VectorOfVectorOfPoint vecVecPoint;
+
+    cv::Mat matGray;
+    if ( pstCmd->matInput.channels() > 1 )
+        cv::cvtColor ( pstCmd->matInput, matGray, CV_BGR2GRAY );
+    else
+        matGray = pstCmd->matInput.clone();
+
+    cv::Mat matROI ( matGray, pstCmd->rectROI );
+
+    if ( ! pstCmd->matMask.empty() )    {
+        cv::Mat matROIMask ( pstCmd->matMask, pstCmd->rectROI );
+        matROIMask = cv::Scalar(PR_MAX_GRAY_LEVEL) - matROIMask;
+        matROI.setTo(cv::Scalar(PR_MIN_GRAY_LEVEL), matROIMask);
+    }
+
+    cv::findNonZero ( matROI, vecPoints );
+
+    if ( vecPoints.size() < 2 )  {
+        WriteLog("Not enough points to detect line");
+        pstRpy->enStatus = VisionStatus::NOT_ENOUGH_POINTS_TO_FIT;
+        goto EXIT;
+    }
+
+    for ( auto &point : vecPoints )
+    {
+        vecX.push_back ( point.x );
+        vecY.push_back ( point.y );
+    }
+
+    bool bReversedFit = false;
+    if ( CalcUtils::calcStdDeviation ( vecY ) > CalcUtils::calcStdDeviation ( vecX ) )
+        bReversedFit = true;
+
+    auto projectSize = bReversedFit ? matROI.cols : matROI.rows;
+    vecProjection.resize ( projectSize, 0 );
+    for ( const auto &point : vecPoints )   {
+        if ( bReversedFit )
+            ++ vecProjection[point.x];
+        else
+            ++ vecProjection[point.y];
+    }
+
+    int maxValue = *std::max_element ( vecProjection.begin(), vecProjection.end() );
+    
+    for ( int index = 0; index < vecProjection.size(); ++ index )    {
+        if ( vecProjection[ index ] > 0.8 * maxValue ) {
+            vecIndexCanFormLine.push_back ( index );
+        }
+    }
+
+    auto initialLinePos = 0;
+    if ( PR_DETECT_LINE_DIR::MIN_TO_MAX == pstCmd->enDetectDir )
+        initialLinePos = vecIndexCanFormLine[0];
+    else
+        initialLinePos = vecIndexCanFormLine.back();
+
+    int rs = std::max ( int ( 0.1*(vecIndexCanFormLine.back() - vecIndexCanFormLine[0] ) ), 5 );
+    
+    if ( bReversedFit ) vecVecPoint.resize( matROI.rows );
+    else                vecVecPoint.resize( matROI.cols );
+
+    for ( const auto &point : vecPoints )
+    {
+        if (bReversedFit) {
+            if (point.x > initialLinePos - rs && point.x < initialLinePos + rs) {
+                vecVecPoint[point.y].push_back(point);
+            }
+        }else {
+            if (point.y > initialLinePos - rs && point.y < initialLinePos + rs) {
+                vecVecPoint[point.x].push_back(point);
+            }
+        }
+    }
+
+    for ( const auto &vecPointTmp : vecVecPoint )  {
+        if ( ! vecPointTmp.empty() )    {
+            auto point = PR_DETECT_LINE_DIR::MIN_TO_MAX == pstCmd->enDetectDir ? vecPointTmp.front() : vecPointTmp.back();
+            if (bReversedFit) {
+                if (point.x != initialLinePos - rs && point.x != initialLinePos - rs)
+                    vecFitPoint.push_back ( point + cv::Point ( pstCmd->rectROI.x, pstCmd->rectROI.y ) );
+            }else {
+                if (point.y != initialLinePos - rs && point.y != initialLinePos - rs)
+                    vecFitPoint.push_back ( point + cv::Point ( pstCmd->rectROI.x, pstCmd->rectROI.y ) );
+            }
+        }
+    }
+
+    Fitting::fitLine ( vecFitPoint, pstRpy->fSlope, pstRpy->fIntercept, bReversedFit );
+    pstRpy->stLine = CalcUtils::calcEndPointOfLine ( vecFitPoint, bReversedFit, pstRpy->fSlope, pstRpy->fIntercept );
+
+    pstRpy->matResult = pstCmd->matInput.clone();
+    cv::line( pstRpy->matResult, pstRpy->stLine.pt1, pstRpy->stLine.pt2, cv::Scalar(255, 0, 0), 2 );    
+    pstRpy->enStatus = VisionStatus::OK;
+
+EXIT:
     MARK_FUNCTION_END_TIME;
-    return enStatus;
+    return pstRpy->enStatus;
 }
 
 VisionStatus VisionAlgorithm::fitParallelLine(PR_FIT_PARALLEL_LINE_CMD *pstCmd, PR_FIT_PARALLEL_LINE_RPY *pstRpy, bool bReplay)
@@ -2014,7 +2140,7 @@ VisionStatus VisionAlgorithm::findEdge(PR_FIND_EDGE_CMD *pstCmd, PR_FIND_EDGE_RP
 /*static*/ VisionStatus VisionAlgorithm::fitCircle(PR_FIT_CIRCLE_CMD *pstCmd, PR_FIT_CIRCLE_RPY *pstRpy, bool bReplay)
 {
     assert ( pstCmd != nullptr && pstRpy != nullptr );
-    char charrMsg [ 1000 ];    
+    char charrMsg [ 1000 ];
 
     if (pstCmd->matInput.empty()) {
         WriteLog("Input image is empty");
@@ -2519,6 +2645,29 @@ EXIT:
     return pstRpy->enStatus;
 }
 
+/*static*/ void VisionAlgorithm::_fillHole(const cv::Mat &matInput, cv::Mat &matOutput)
+{
+    if ( matInput.channels() > 1 )
+        cv::cvtColor ( matInput, matOutput, CV_BGR2GRAY );
+    else
+        matOutput = matInput.clone();
+
+    bool bNeedReverseFill = false;
+    if ( matOutput.at<uchar>(0, 0) >= 1 )
+        bNeedReverseFill = true;
+
+    if ( bNeedReverseFill )
+        cv::bitwise_not( matOutput, matOutput );
+
+    std::vector<std::vector<cv::Point> > contours;
+    cv::findContours( matOutput, contours, cv::RETR_CCOMP, cv::CHAIN_APPROX_SIMPLE);
+    for ( int i = 0; i < contours.size(); ++ i )    {
+        cv::drawContours ( matOutput, contours, i, cv::Scalar::all(255), CV_FILLED );
+    }
+    if ( bNeedReverseFill )
+        cv::bitwise_not( matOutput, matOutput );
+}
+
 /*static*/ VisionStatus VisionAlgorithm::circleRoundness(PR_CIRCLE_ROUNDNESS_CMD *pstCmd, PR_CIRCLE_ROUNDNESS_RPY *pstRpy, bool bReplay)
 {
     assert(pstCmd != nullptr && pstRpy != nullptr);
@@ -2587,7 +2736,7 @@ EXIT:
         WriteLog("Not enough points to fit circle");
         pstRpy->enStatus = VisionStatus::NOT_ENOUGH_POINTS_TO_FIT;
         goto EXIT;
-    }    
+    }
     
     fitResult = Fitting::fitCircle ( vecPoints );
 

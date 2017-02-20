@@ -241,6 +241,7 @@ struct PR_SRCH_FIDUCIAL_MARK_RPY
     cv::Mat                 matResult;
 };
 
+//Fit line is for accurately fit line in the preprocessed image, the line should be obvious compared to the background.
 struct PR_FIT_LINE_CMD
 {
     cv::Mat                 matInput;
@@ -252,6 +253,25 @@ struct PR_FIT_LINE_CMD
 };
 
 struct PR_FIT_LINE_RPY
+{
+    VisionStatus            enStatus;    
+    bool                    bReversedFit;   //If it is true, then the result is x = fSlope * y + fIntercept. Otherwise the line is y = fSlope * x + fIntercept.
+    float                   fSlope;
+    float                   fIntercept;
+    PR_Line2f               stLine;
+    cv::Mat                 matResult;
+};
+
+//Detect line is find the lines in the image.
+struct PR_DETECT_LINE_CMD
+{
+    cv::Mat                 matInput;
+    cv::Mat                 matMask;
+    cv::Rect                rectROI;
+    PR_DETECT_LINE_DIR      enDetectDir;
+};
+
+struct PR_DETECT_LINE_RPY
 {
     VisionStatus            enStatus;    
     bool                    bReversedFit;   //If it is true, then the result is x = fSlope * y + fIntercept. Otherwise the line is y = fSlope * x + fIntercept.

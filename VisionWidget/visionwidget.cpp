@@ -78,7 +78,6 @@ void VisionWidget::on_selectImageBtn_clicked()
     _sourceImagePath = fileNames[0].toStdString();
     ui.imagePathEdit->setText(fileNames[0]);
 
-    ui.visionView->clearMask();
     on_checkBoxByerFormat_clicked ( ui.checkBoxByerFormat->isChecked() );    
 }
 
@@ -158,6 +157,29 @@ void VisionWidget::on_fitLineBtn_clicked()
     if ( ToInt(VisionStatus::OK) == nStatus )
     {
         ui.visionView->setMat(VisionView::DISPLAY_SOURCE::RESULT, procedure.getResultMat());
+    }
+}
+
+void VisionWidget::on_detectLineBtn_clicked()
+{
+    if ( _sourceImagePath.empty() ) {
+        QMessageBox::information(this, "Vision Widget", "Please select an image first!", "Quit");
+        return;
+    }
+
+    ui.visionView->setState ( VisionView::VISION_VIEW_STATE::TEST_VISION_LIBRARY );
+    ui.visionView->applyIntermediateResult();
+
+    PR_DETECT_LINE_CMD stCmd;
+    stCmd.matInput = ui.visionView->getMat();
+    stCmd.matMask = ui.visionView->getMask();
+    stCmd.rectROI = ui.visionView->getSelectedWindow();
+    stCmd.enDetectDir = static_cast<PR_DETECT_LINE_DIR> ( ui.comboBoxDetectLineDirection->currentIndex() );
+
+    PR_DETECT_LINE_RPY stRpy;
+	VisionStatus enStatus = PR_DetectLine(&stCmd, &stRpy);
+	if (VisionStatus::OK == enStatus)	{
+		ui.visionView->setMat ( VisionView::DISPLAY_SOURCE::RESULT, stRpy.matResult );
     }
 }
 

@@ -249,7 +249,7 @@
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>140</y>
+        <y>130</y>
         <width>590</width>
         <height>51</height>
        </rect>
@@ -366,7 +366,7 @@
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>210</y>
+        <y>250</y>
         <width>590</width>
         <height>51</height>
        </rect>
@@ -483,7 +483,7 @@
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>280</y>
+        <y>310</y>
         <width>590</width>
         <height>51</height>
        </rect>
@@ -645,6 +645,68 @@
        </property>
        <property name="text">
         <string>Calc Roundness</string>
+       </property>
+      </widget>
+     </widget>
+     <widget class="QGroupBox" name="groupBoxFitLine_2">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>190</y>
+        <width>590</width>
+        <height>51</height>
+       </rect>
+      </property>
+      <property name="title">
+       <string>Detect Line</string>
+      </property>
+      <widget class="QPushButton" name="detectLineBtn">
+       <property name="geometry">
+        <rect>
+         <x>500</x>
+         <y>20</y>
+         <width>80</width>
+         <height>23</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Detect Line</string>
+       </property>
+      </widget>
+      <widget class="QComboBox" name="comboBoxDetectLineDirection">
+       <property name="geometry">
+        <rect>
+         <x>60</x>
+         <y>20</y>
+         <width>91</width>
+         <height>22</height>
+        </rect>
+       </property>
+       <property name="currentIndex">
+        <number>0</number>
+       </property>
+       <item>
+        <property name="text">
+         <string>Min to Max</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>Max to Min</string>
+        </property>
+       </item>
+      </widget>
+      <widget class="QLabel" name="labelDetectLineDirection">
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>20</y>
+         <width>51</width>
+         <height>16</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Direction</string>
        </property>
       </widget>
      </widget>
