@@ -133,6 +133,26 @@ private:
     const String _strKeyPoint2      = "Point2";
 };
 
+class LogCaseDetectLine : public LogCase
+{
+public:
+    explicit LogCaseDetectLine(const String &strPath, bool bReplay = false) : LogCase(strPath, bReplay) {}
+    VisionStatus WriteCmd(PR_DETECT_LINE_CMD *pCmd);
+    VisionStatus WriteRpy(PR_DETECT_LINE_RPY *pRpy);
+    virtual VisionStatus RunLogCase() override;
+    virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
+    static String StaticGetFolderPrefix();
+private:
+    const String _strKeyROI         = "ROI";
+    const String _strKeyDir         = "Direction";
+
+    const String _strKeyStatus      = "Status";
+    const String _strKeySlope       = "Slope";
+    const String _strKeyIntercept   = "Intercept";
+    const String _strKeyPoint1      = "Point1";
+    const String _strKeyPoint2      = "Point2";
+};
+
 class LogCaseFitParallelLine : public LogCase
 {
 public:

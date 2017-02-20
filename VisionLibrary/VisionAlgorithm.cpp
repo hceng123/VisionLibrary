@@ -1335,6 +1335,8 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
         pLogCase = std::make_unique <LogCaseFitCircle>( strLocalPath, true );
     else if (LogCaseFitLine::StaticGetFolderPrefix() == folderPrefix)
         pLogCase = std::make_unique<LogCaseFitLine>( strLocalPath, true );
+    else if (LogCaseDetectLine::StaticGetFolderPrefix() == folderPrefix)
+        pLogCase = std::make_unique<LogCaseDetectLine>( strLocalPath, true );
     else if (LogCaseFitParallelLine::StaticGetFolderPrefix() == folderPrefix)
         pLogCase = std::make_unique<LogCaseFitParallelLine>( strLocalPath, true );
     else if (LogCaseFitRect::StaticGetFolderPrefix() == folderPrefix)
@@ -1722,6 +1724,7 @@ EXIT:
     }
 
     MARK_FUNCTION_START_TIME;
+    SETUP_LOGCASE(LogCaseDetectLine);
 
     VectorOfPoint vecPoints, vecFitPoint;
     std::vector<int> vecX, vecY, vecIndexCanFormLine, vecProjection;
@@ -1770,7 +1773,7 @@ EXIT:
 
     int maxValue = *std::max_element ( vecProjection.begin(), vecProjection.end() );
     
-    for ( int index = 0; index < vecProjection.size(); ++ index )    {
+    for ( size_t index = 0; index < vecProjection.size(); ++ index )    {
         if ( vecProjection[ index ] > 0.8 * maxValue ) {
             vecIndexCanFormLine.push_back ( index );
         }
@@ -1821,7 +1824,9 @@ EXIT:
     pstRpy->enStatus = VisionStatus::OK;
 
 EXIT:
+    FINISH_LOGCASE;
     MARK_FUNCTION_END_TIME;
+
     return pstRpy->enStatus;
 }
 
@@ -2661,7 +2666,7 @@ EXIT:
 
     std::vector<std::vector<cv::Point> > contours;
     cv::findContours( matOutput, contours, cv::RETR_CCOMP, cv::CHAIN_APPROX_SIMPLE);
-    for ( int i = 0; i < contours.size(); ++ i )    {
+    for ( size_t i = 0; i < contours.size(); ++ i )    {
         cv::drawContours ( matOutput, contours, i, cv::Scalar::all(255), CV_FILLED );
     }
     if ( bNeedReverseFill )
