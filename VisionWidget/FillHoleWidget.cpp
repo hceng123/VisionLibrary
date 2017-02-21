@@ -5,6 +5,7 @@ FillHoleWidget::FillHoleWidget(QWidget *parent)
     : BaseProcessWidget(parent)
 {
     ui.setupUi(this);
+    on_cbAlgorithm_currentIndexChanged(0);
 }
 
 FillHoleWidget::~FillHoleWidget()
@@ -26,13 +27,10 @@ void FillHoleWidget::on_btnRun_clicked()
     stCmd.rectROI  = _pVisionView->getSelectedWindow();
     stCmd.enMethod = static_cast<PR_FILL_HOLE_METHOD>(ui.cbAlgorithm->currentIndex());
     stCmd.enAttribute = static_cast<PR_OBJECT_ATTRIBUTE>(ui.cbObjectAttribute->currentIndex());
-    //stCmd.szKernel.width  = ui.lineEditKernalSizeX->text().toInt();
-    //stCmd.szKernel.height = ui.lineEditKernalSizeY->text().toInt();
-    //stCmd.dSigmaX = ui.lineEditSigmaX->text().toDouble();
-    //stCmd.dSigmaY = ui.lineEditSigmaY->text().toDouble();
-    //stCmd.nDiameter = ui.lineEditDiameter->text().toInt();
-    //stCmd.dSigmaColor = ui.lineEditSigmaColor->text().toDouble();
-    //stCmd.dSigmaSpace = ui.lineEditSigmaSpace->text().toDouble();
+    stCmd.enMorphShape = static_cast<cv::MorphShapes>(ui.cbMorphShape->currentIndex());
+    int nSize = ui.lineEditKernalSize->text().toInt();
+    stCmd.szMorphKernel  = cv::Size( nSize, nSize );
+    stCmd.nMorphIteration = ui.lineEditIteration->text().toInt();
 
     PR_FILL_HOLE_RPY stRpy;
     if ( VisionStatus::OK == PR_FillHole(&stCmd, &stRpy) )    {
@@ -48,23 +46,11 @@ void FillHoleWidget::on_btnRun_clicked()
 
 void FillHoleWidget::on_cbAlgorithm_currentIndexChanged(int index)
 {
-    //bool bKernelSizeVisible = ( ToInt32 ( PR_FILTER_TYPE::BILATERIAL_FILTER ) != index );
-    //ui.labelKernelSize->setVisible ( bKernelSizeVisible );
-    //ui.lineEditKernalSizeX->setVisible ( bKernelSizeVisible );
-    //ui.lineEditKernalSizeY->setVisible ( bKernelSizeVisible );
-
-    ////using namespace AOI;
-    //bool bSigmaVisible = ( ToInt32 ( PR_FILTER_TYPE::GAUSSIAN_FILTER ) == index );
-    //ui.labelSigmaX->setVisible ( bSigmaVisible );
-    //ui.labelSigmaY->setVisible ( bSigmaVisible );
-    //ui.lineEditSigmaX->setVisible ( bSigmaVisible );
-    //ui.lineEditSigmaY->setVisible ( bSigmaVisible );
-
-    //bool bBilaterialFilter = ( ToInt32 ( PR_FILTER_TYPE::BILATERIAL_FILTER ) == index );
-    //ui.labelDiameter->setVisible ( bBilaterialFilter );
-    //ui.lineEditDiameter->setVisible ( bBilaterialFilter );
-    //ui.labelSigmaColor->setVisible ( bBilaterialFilter );
-    //ui.lineEditSigmaColor->setVisible ( bBilaterialFilter );
-    //ui.labelSigmaSpace->setVisible ( bBilaterialFilter );
-    //ui.lineEditSigmaSpace->setVisible ( bBilaterialFilter );
+    bool bKernelSizeVisible = ( ToInt32 ( PR_FILL_HOLE_METHOD::MORPHOLOGY ) == index );
+    ui.labelMorphShape->setVisible ( bKernelSizeVisible );
+    ui.cbMorphShape->setVisible ( bKernelSizeVisible );
+    ui.labelKernelSize->setVisible ( bKernelSizeVisible );
+    ui.lineEditKernalSize->setVisible ( bKernelSizeVisible );
+    ui.labelIteration->setVisible ( bKernelSizeVisible );
+    ui.lineEditIteration->setVisible ( bKernelSizeVisible );
 }

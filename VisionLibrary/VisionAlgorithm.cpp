@@ -1351,6 +1351,8 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
         pLogCase = std::make_unique<LogCaseDetectEdge>( strLocalPath, true );
     else if (LogCaseCircleRoundness::StaticGetFolderPrefix() == folderPrefix )
         pLogCase = std::make_unique<LogCaseCircleRoundness>( strLocalPath, true );
+    else if (LogCaseFillHole::StaticGetFolderPrefix() == folderPrefix )
+        pLogCase = std::make_unique<LogCaseFillHole>( strLocalPath, true );
 
     if ( nullptr != pLogCase )
         enStatus = pLogCase->RunLogCase();
@@ -2772,25 +2774,25 @@ EXIT:
 /*static*/ VisionStatus VisionAlgorithm::_fillHoleByMorph(const cv::Mat      &matInput,
                                                           cv::Mat            &matOutput,
                                                           PR_OBJECT_ATTRIBUTE enAttribute,
-                                                          cv::MorphShapes     enMorthShape,
-                                                          cv::Size            szMorthKernel,
-                                                          Int16               nMorthIteration)
+                                                          cv::MorphShapes     enMorphShape,
+                                                          cv::Size            szMorphKernel,
+                                                          Int16               nMorphIteration)
 {
     char chArrMsg[1000];
-    if ( szMorthKernel.width <= 0 ||  szMorthKernel.height <= 0 ) {
-        _snprintf( chArrMsg, sizeof ( chArrMsg ), "The size of morph kernel ( %d, %d) is invalid.", szMorthKernel.width, szMorthKernel.height );
+    if ( szMorphKernel.width <= 0 ||  szMorphKernel.height <= 0 ) {
+        _snprintf( chArrMsg, sizeof ( chArrMsg ), "The size of morph kernel ( %d, %d) is invalid.", szMorphKernel.width, szMorphKernel.height );
         WriteLog (chArrMsg );
         return VisionStatus::INVALID_PARAM;
     }
 
-    if ( nMorthIteration <= 0 ) {
-        _snprintf( chArrMsg, sizeof ( chArrMsg ), "The morph iteration number %d is invalid.", nMorthIteration );
+    if ( nMorphIteration <= 0 ) {
+        _snprintf( chArrMsg, sizeof ( chArrMsg ), "The morph iteration number %d is invalid.", nMorphIteration );
         WriteLog (chArrMsg );
         return VisionStatus::INVALID_PARAM;
     }
-    cv::Mat matKernal = cv::getStructuringElement ( enMorthShape, szMorthKernel );
+    cv::Mat matKernal = cv::getStructuringElement ( enMorphShape, szMorphKernel );
     cv::MorphTypes morphType = PR_OBJECT_ATTRIBUTE::BRIGHT == enAttribute ? cv::MORPH_CLOSE : cv::MORPH_OPEN;
-    cv::morphologyEx ( matInput, matOutput, morphType, matKernal, cv::Point(-1, -1 ), nMorthIteration);
+    cv::morphologyEx ( matInput, matOutput, morphType, matKernal, cv::Point(-1, -1), nMorphIteration );
 
     return VisionStatus::OK;
 }
@@ -2815,6 +2817,7 @@ EXIT:
     }    
 
     MARK_FUNCTION_START_TIME;
+    SETUP_LOGCASE(LogCaseFillHole);
 
     pstRpy->matResult = pstCmd->matInput.clone();
     cv::Mat matROI ( pstRpy->matResult, pstCmd->rectROI);    
@@ -2829,14 +2832,16 @@ EXIT:
     if ( PR_FILL_HOLE_METHOD::CONTOUR == pstCmd->enMethod )
         pstRpy->enStatus = _fillHoleByContour ( matGray, matFillHoleResult, pstCmd->enAttribute );
     else
-        pstRpy->enStatus = _fillHoleByMorph (matGray, matFillHoleResult, pstCmd->enAttribute, pstCmd->enMorthShape, pstCmd->szMorthKernel, pstCmd->nMorthIteration );
+        pstRpy->enStatus = _fillHoleByMorph (matGray, matFillHoleResult, pstCmd->enAttribute, pstCmd->enMorphShape, pstCmd->szMorphKernel, pstCmd->nMorphIteration );
 
     if ( pstCmd->matInput.channels() == 3 )
         cv::cvtColor ( matFillHoleResult, matROI, CV_GRAY2BGR );
     else
         matFillHoleResult.copyTo ( matROI );
 
+    FINISH_LOGCASE;
     MARK_FUNCTION_END_TIME;
+
     return pstRpy->enStatus;
 }
 

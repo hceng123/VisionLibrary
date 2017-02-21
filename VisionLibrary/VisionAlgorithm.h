@@ -86,9 +86,9 @@ protected:
     static VisionStatus _fillHoleByMorph(const cv::Mat      &matInput,
                                          cv::Mat            &matOutput,
                                          PR_OBJECT_ATTRIBUTE enAttribute,
-                                         cv::MorphShapes     enMorthShape,
-                                         cv::Size            szMorthKernel,
-                                         Int16               nMorthIteration);
+                                         cv::MorphShapes     enMorphShape,
+                                         cv::Size            szMorphKernel,
+                                         Int16               nMorphIteration);
 protected:
     const int       _constMinHessian        =  300;
     const int       _constOctave            =  4;

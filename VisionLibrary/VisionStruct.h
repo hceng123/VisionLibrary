@@ -507,9 +507,9 @@ struct PR_FILL_HOLE_CMD
     cv::Rect                rectROI;
     PR_OBJECT_ATTRIBUTE     enAttribute;
     PR_FILL_HOLE_METHOD     enMethod;
-    cv::MorphShapes         enMorthShape;
-    cv::Size                szMorthKernel;
-    Int16                   nMorthIteration;
+    cv::MorphShapes         enMorphShape;
+    cv::Size                szMorphKernel;
+    Int16                   nMorphIteration;
 };
 
 struct PR_FILL_HOLE_RPY
