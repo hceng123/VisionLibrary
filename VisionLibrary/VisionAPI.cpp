@@ -277,5 +277,12 @@ PR_FUNCTION_ENTRY
 PR_FUNCTION_EXIT
 }
 
+VisionAPI VisionStatus  PR_FillHole(PR_FILL_HOLE_CMD *pstCmd, PR_FILL_HOLE_RPY *pstRpy)
+{
+PR_FUNCTION_ENTRY
+    return VisionAlgorithm::fillHole( pstCmd, pstRpy );
+PR_FUNCTION_EXIT
+}
+
 }
 }

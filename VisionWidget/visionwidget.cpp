@@ -33,7 +33,11 @@ VisionWidget::VisionWidget(QWidget *parent)
 
     _ptrThresholdWidget = std::make_unique<ThresholdWidget>(this);
     _ptrThresholdWidget->setVisionView ( ui.visionView );
-    ui.verticalLayout->addWidget(_ptrThresholdWidget.get());    
+    ui.verticalLayout->addWidget(_ptrThresholdWidget.get());
+
+    _ptrFillHoleWidget = std::make_unique<FillHoleWidget>(this);
+    _ptrFillHoleWidget->setVisionView( ui.visionView );
+    ui.verticalLayout->addWidget(_ptrFillHoleWidget.get());
 
     _ptrEdgeDetectWidget = std::make_unique<EdgeDetectWidget>(this);
     _ptrEdgeDetectWidget->setVisionView ( ui.visionView );

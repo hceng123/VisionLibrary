@@ -1775,7 +1775,7 @@ EXIT:
     
     for ( size_t index = 0; index < vecProjection.size(); ++ index )    {
         if ( vecProjection[ index ] > 0.8 * maxValue ) {
-            vecIndexCanFormLine.push_back ( index );
+            vecIndexCanFormLine.push_back ( ToInt32 ( index ) );
         }
     }
 
@@ -2642,35 +2642,14 @@ EXIT:
 
     if ( pstCmd->matInput.channels() == 3 )
         cv::cvtColor ( matResult, matROI, CV_GRAY2BGR );
+    else
+        matResult.copyTo ( matROI );
 
     pstRpy->enStatus = VisionStatus::OK;
 
     FINISH_LOGCASE;
     MARK_FUNCTION_END_TIME;
     return pstRpy->enStatus;
-}
-
-/*static*/ void VisionAlgorithm::_fillHole(const cv::Mat &matInput, cv::Mat &matOutput)
-{
-    if ( matInput.channels() > 1 )
-        cv::cvtColor ( matInput, matOutput, CV_BGR2GRAY );
-    else
-        matOutput = matInput.clone();
-
-    bool bNeedReverseFill = false;
-    if ( matOutput.at<uchar>(0, 0) >= 1 )
-        bNeedReverseFill = true;
-
-    if ( bNeedReverseFill )
-        cv::bitwise_not( matOutput, matOutput );
-
-    std::vector<std::vector<cv::Point> > contours;
-    cv::findContours( matOutput, contours, cv::RETR_CCOMP, cv::CHAIN_APPROX_SIMPLE);
-    for ( size_t i = 0; i < contours.size(); ++ i )    {
-        cv::drawContours ( matOutput, contours, i, cv::Scalar::all(255), CV_FILLED );
-    }
-    if ( bNeedReverseFill )
-        cv::bitwise_not( matOutput, matOutput );
 }
 
 /*static*/ VisionStatus VisionAlgorithm::circleRoundness(PR_CIRCLE_ROUNDNESS_CMD *pstCmd, PR_CIRCLE_ROUNDNESS_RPY *pstRpy, bool bReplay)
@@ -2767,5 +2746,99 @@ EXIT:
     MARK_FUNCTION_END_TIME;
     return pstRpy->enStatus;
 }
+
+/*static*/ VisionStatus VisionAlgorithm::_fillHoleByContour(const cv::Mat &matInput, cv::Mat &matOutput, PR_OBJECT_ATTRIBUTE enAttribute)
+{
+    if ( matInput.channels() > 1 )
+        cv::cvtColor ( matInput, matOutput, CV_BGR2GRAY );
+    else
+        matOutput = matInput.clone();
+
+    if ( PR_OBJECT_ATTRIBUTE::DARK == enAttribute )
+        cv::bitwise_not( matOutput, matOutput );
+
+    std::vector<std::vector<cv::Point> > contours;
+    cv::findContours( matOutput, contours, cv::RETR_CCOMP, cv::CHAIN_APPROX_SIMPLE);
+    for ( size_t i = 0; i < contours.size(); ++ i )    {
+        cv::drawContours ( matOutput, contours, ToInt32(i), cv::Scalar::all(255), CV_FILLED );
+    }
+
+    if ( PR_OBJECT_ATTRIBUTE::DARK == enAttribute )
+        cv::bitwise_not( matOutput, matOutput );
+
+    return VisionStatus::OK;
+}
+
+/*static*/ VisionStatus VisionAlgorithm::_fillHoleByMorph(const cv::Mat      &matInput,
+                                                          cv::Mat            &matOutput,
+                                                          PR_OBJECT_ATTRIBUTE enAttribute,
+                                                          cv::MorphShapes     enMorthShape,
+                                                          cv::Size            szMorthKernel,
+                                                          Int16               nMorthIteration)
+{
+    char chArrMsg[1000];
+    if ( szMorthKernel.width <= 0 ||  szMorthKernel.height <= 0 ) {
+        _snprintf( chArrMsg, sizeof ( chArrMsg ), "The size of morph kernel ( %d, %d) is invalid.", szMorthKernel.width, szMorthKernel.height );
+        WriteLog (chArrMsg );
+        return VisionStatus::INVALID_PARAM;
+    }
+
+    if ( nMorthIteration <= 0 ) {
+        _snprintf( chArrMsg, sizeof ( chArrMsg ), "The morph iteration number %d is invalid.", nMorthIteration );
+        WriteLog (chArrMsg );
+        return VisionStatus::INVALID_PARAM;
+    }
+    cv::Mat matKernal = cv::getStructuringElement ( enMorthShape, szMorthKernel );
+    cv::MorphTypes morphType = PR_OBJECT_ATTRIBUTE::BRIGHT == enAttribute ? cv::MORPH_CLOSE : cv::MORPH_OPEN;
+    cv::morphologyEx ( matInput, matOutput, morphType, matKernal, cv::Point(-1, -1 ), nMorthIteration);
+
+    return VisionStatus::OK;
+}
+
+/*static*/ VisionStatus VisionAlgorithm::fillHole(PR_FILL_HOLE_CMD *pstCmd, PR_FILL_HOLE_RPY *pstRpy, bool bReplay)
+{
+    assert(pstCmd != nullptr && pstRpy != nullptr);   
+
+    if (pstCmd->matInput.empty()) {
+        WriteLog("Input image is empty");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    if (pstCmd->rectROI.x < 0 || pstCmd->rectROI.y < 0 ||
+        pstCmd->rectROI.width <= 0 || pstCmd->rectROI.height <= 0 ||
+        ( pstCmd->rectROI.x + pstCmd->rectROI.width ) > pstCmd->matInput.cols ||
+        ( pstCmd->rectROI.y + pstCmd->rectROI.height ) > pstCmd->matInput.rows )    {
+        WriteLog("The input ROI is invalid");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return VisionStatus::INVALID_PARAM;
+    }    
+
+    MARK_FUNCTION_START_TIME;
+
+    pstRpy->matResult = pstCmd->matInput.clone();
+    cv::Mat matROI ( pstRpy->matResult, pstCmd->rectROI);    
+    cv::Mat matGray;
+
+    if ( pstCmd->matInput.channels() > 1 )
+        cv::cvtColor ( matROI, matGray, CV_BGR2GRAY );
+    else
+        matGray = matROI.clone();
+
+    cv::Mat matFillHoleResult;
+    if ( PR_FILL_HOLE_METHOD::CONTOUR == pstCmd->enMethod )
+        pstRpy->enStatus = _fillHoleByContour ( matGray, matFillHoleResult, pstCmd->enAttribute );
+    else
+        pstRpy->enStatus = _fillHoleByMorph (matGray, matFillHoleResult, pstCmd->enAttribute, pstCmd->enMorthShape, pstCmd->szMorthKernel, pstCmd->nMorthIteration );
+
+    if ( pstCmd->matInput.channels() == 3 )
+        cv::cvtColor ( matFillHoleResult, matROI, CV_GRAY2BGR );
+    else
+        matFillHoleResult.copyTo ( matROI );
+
+    MARK_FUNCTION_END_TIME;
+    return pstRpy->enStatus;
+}
+
 }
 }

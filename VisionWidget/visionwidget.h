@@ -8,6 +8,7 @@
 #include "GrayScaleWidget.h"
 #include "CCWidget.h"
 #include "EdgeDetectWidget.h"
+#include "FillHoleWidget.h"
 
 class VisionWidget : public QMainWindow
 {
@@ -39,6 +40,7 @@ private:
     std::unique_ptr<ThresholdWidget>    _ptrThresholdWidget;
     std::unique_ptr<GrayScaleWidget>    _ptrGrayScaleWidget;
     std::unique_ptr<CCWidget>           _ptrCcWidget;
+    std::unique_ptr<FillHoleWidget>     _ptrFillHoleWidget;
     std::unique_ptr<EdgeDetectWidget>   _ptrEdgeDetectWidget;
 };
 

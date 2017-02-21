@@ -122,6 +122,12 @@ enum class PR_DETECT_LINE_DIR
     MAX_TO_MIN,
 };
 
+enum class PR_FILL_HOLE_METHOD
+{
+    CONTOUR,
+    MORPHOLOGY,
+};
+
 }
 }
 

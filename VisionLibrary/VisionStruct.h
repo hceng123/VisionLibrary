@@ -3,7 +3,8 @@
 
 #include "VisionType.h"
 #include "VisionStatus.h"
-#include "opencv2/core/core.hpp"
+#include "opencv2/core.hpp"
+#include "opencv2/imgproc.hpp"
 #include "BaseType.h"
 #include <list>
 
@@ -497,6 +498,23 @@ struct PR_CIRCLE_ROUNDNESS_RPY
     float                   fRoundness;
     cv::Point2f             ptCircleCtr;
     float                   fRadius;
+    cv::Mat                 matResult;
+};
+
+struct PR_FILL_HOLE_CMD
+{
+    cv::Mat                 matInput;
+    cv::Rect                rectROI;
+    PR_OBJECT_ATTRIBUTE     enAttribute;
+    PR_FILL_HOLE_METHOD     enMethod;
+    cv::MorphShapes         enMorthShape;
+    cv::Size                szMorthKernel;
+    Int16                   nMorthIteration;
+};
+
+struct PR_FILL_HOLE_RPY
+{
+    VisionStatus            enStatus;
     cv::Mat                 matResult;
 };
 
