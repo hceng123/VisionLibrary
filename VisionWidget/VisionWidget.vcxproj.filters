@@ -101,9 +101,6 @@
     <ClCompile Include="GeneratedFiles\Release\moc_dialogvisiontoolbox.cpp">
       <Filter>Generated Files\Release</Filter>
     </ClCompile>
-    <ClCompile Include="FitLineProcedure.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="OcrProcedure.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -284,9 +281,6 @@
     </ClInclude>
     <ClInclude Include="GeneratedFiles\ui_dialogvisiontoolbox.h">
       <Filter>Generated Files</Filter>
-    </ClInclude>
-    <ClInclude Include="FitLineProcedure.h">
-      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="OcrProcedure.h">
       <Filter>Header Files</Filter>

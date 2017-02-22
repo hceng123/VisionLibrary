@@ -1,6 +1,5 @@
 #include "visionwidget.h"
 #include "FitCircleProcedure.h"
-#include "FitLineProcedure.h"
 #include "FitParallelLineProcedure.h"
 #include "FitRectProcedure.h"
 #include "OcrProcedure.h"
@@ -153,14 +152,26 @@ void VisionWidget::on_fitLineBtn_clicked()
     if ( ! checkDisplayImage() )
         return;
 
-	FitLineProcedure procedure(ui.visionView);
-    procedure.setErrTol ( ui.lineEditFitLineErrTol->text().toFloat());
-    procedure.setThreshold ( ui.lineEditFitLineThreshold->text().toInt());
-    procedure.setAttribute ( ui.comboBoxLineAttribute->currentIndex());
-	int nStatus = procedure.run(_sourceImagePath);
-    if ( ToInt(VisionStatus::OK) == nStatus )
+    ui.visionView->setState ( VisionView::VISION_VIEW_STATE::TEST_VISION_LIBRARY );
+    ui.visionView->applyIntermediateResult();
+
+    PR_FIT_LINE_CMD stCmd;
+	stCmd.matInput = ui.visionView->getMat();
+	stCmd.enRmNoiseMethod = PR_RM_FIT_NOISE_METHOD::ABSOLUTE_ERR;
+	stCmd.fErrTol = ui.lineEditFitLineErrTol->text().toFloat();
+	stCmd.rectROI = ui.visionView->getSelectedWindow();
+	stCmd.nThreshold = ui.lineEditFitLineThreshold->text().toInt();
+    stCmd.enAttribute = static_cast<PR_OBJECT_ATTRIBUTE> ( ui.comboBoxLineAttribute->currentIndex() );
+
+	PR_FIT_LINE_RPY stRpy;
+	VisionStatus enStatus = PR_FitLine(&stCmd, &stRpy);
+    if ( VisionStatus::OK == enStatus )
     {
-        ui.visionView->setMat(VisionView::DISPLAY_SOURCE::RESULT, procedure.getResultMat());
+        ui.visionView->setMat ( VisionView::DISPLAY_SOURCE::RESULT, stRpy.matResult );
+    }else {
+        PR_GET_ERROR_STR_RPY stErrStrRpy;
+        PR_GetErrorStr(enStatus, &stErrStrRpy);
+        QMessageBox::critical(nullptr, "Fit Line", stErrStrRpy.achErrorStr, "Quit");
     }
 }
 

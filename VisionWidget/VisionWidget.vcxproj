@@ -147,7 +147,6 @@
     <ClCompile Include="FillHoleWidget.cpp" />
     <ClCompile Include="FilterWidget.cpp" />
     <ClCompile Include="FitCircleProcedure.cpp" />
-    <ClCompile Include="FitLineProcedure.cpp" />
     <ClCompile Include="FitParallelLineProcedure.cpp" />
     <ClCompile Include="FitRectProcedure.cpp" />
     <ClCompile Include="GeneratedFiles\Debug\moc_BaseProcessWidget.cpp">
@@ -490,7 +489,6 @@
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">"$(QTDIR)\bin\moc.exe"  "%(FullPath)" -o ".\GeneratedFiles\$(ConfigurationName)\moc_%(Filename).cpp"  -DUNICODE -DWIN32 -DWIN64 -DQT_DLL -DQT_NO_DEBUG -DNDEBUG -DQT_CORE_LIB -DQT_GUI_LIB -DQT_WIDGETS_LIB  "-I.\GeneratedFiles" "-I." "-I$(QTDIR)\include" "-I.\GeneratedFiles\$(ConfigurationName)\." "-I$(QTDIR)\include\QtCore" "-I$(QTDIR)\include\QtGui" "-I$(QTDIR)\include\QtWidgets" "-I.\..\ExtLibs\OpenCV\include" "-I.\..\VisionLibrary"</Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">"$(QTDIR)\bin\moc.exe"  "%(FullPath)" -o ".\GeneratedFiles\$(ConfigurationName)\moc_%(Filename).cpp"  -DUNICODE -DWIN32 -DWIN64 -DQT_DLL -DQT_NO_DEBUG -DNDEBUG -DQT_CORE_LIB -DQT_GUI_LIB -DQT_WIDGETS_LIB  "-I.\GeneratedFiles" "-I." "-I$(QTDIR)\include" "-I.\GeneratedFiles\$(ConfigurationName)\." "-I$(QTDIR)\include\QtCore" "-I$(QTDIR)\include\QtGui" "-I$(QTDIR)\include\QtWidgets" "-I.\..\ExtLibs\OpenCV\include" "-I.\..\VisionLibrary"</Command>
     </CustomBuild>
-    <ClInclude Include="FitLineProcedure.h" />
     <ClInclude Include="GeneratedFiles\ui_dialogvisiontoolbox.h" />
     <ClInclude Include="GeneratedFiles\ui_messageboxdialog.h" />
     <ClInclude Include="OcrProcedure.h" />
