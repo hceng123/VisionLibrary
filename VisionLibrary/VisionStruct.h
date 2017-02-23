@@ -70,24 +70,20 @@ struct PR_SRCH_TMPL_RPY
 	float					fRotation;
 };
 
-struct PR_AlignCmd
+struct PR_MATCH_TEMPLATE_CMD
 {
-	cv::Rect2f				    rectLrn;
-	cv::Mat					    matInput;
-	cv::Mat					    matTmpl;
-	cv::Point2f				    ptExpectedPos;
-	cv::Rect2f				    rectSrchWindow;
-	std::vector<cv::KeyPoint>	vecModelKeyPoint;
-	cv::Mat					    matModelDescritor;
+	cv::Mat                 matInput;
+	cv::Mat					matTmpl;
+    cv::Rect				rectSrchWindow;
+    PR_OBJECT_MOTION        enMotion;
 };
 
-struct PR_AlignRpy
+struct PR_MATCH_TEMPLATE_RPY
 {
-	Int16					nStatus;
-	cv::Mat					matAffine;
+	VisionStatus            enStatus;
 	cv::Point2f				ptObjPos;
-	cv::Size2f				szOffset;
 	float                   fRotation;
+    cv::Mat					matResult;
 };
 
 struct PR_DefectCriteria
@@ -237,7 +233,7 @@ struct PR_SRCH_FIDUCIAL_MARK_CMD
 
 struct PR_SRCH_FIDUCIAL_MARK_RPY
 {
-    Int32                   nStatus;
+    VisionStatus            enStatus;
     cv::Point2f             ptPos;
     cv::Mat                 matResult;
 };
@@ -246,7 +242,9 @@ struct PR_SRCH_FIDUCIAL_MARK_RPY
 struct PR_FIT_LINE_CMD
 {
     cv::Mat                 matInput;
+    cv::Mat                 matMask;
     cv::Rect                rectROI;
+    bool                    bPreprocessed;
     Int32                   nThreshold;
     PR_OBJECT_ATTRIBUTE     enAttribute;
     PR_RM_FIT_NOISE_METHOD  enRmNoiseMethod;
@@ -345,12 +343,12 @@ struct PR_FIND_EDGE_RPY
 
 struct PR_FIT_CIRCLE_CMD
 {
-    cv::Mat                 matInput;
-    bool                    bPreprocessed;
+    cv::Mat                 matInput;    
     cv::Mat                 matMask;
     cv::Rect                rectROI;
     PR_FIT_CIRCLE_METHOD    enMethod;
     PR_RM_FIT_NOISE_METHOD  enRmNoiseMethod;
+    bool                    bPreprocessed;
     bool                    bAutoThreshold;
     Int32                   nThreshold;
     PR_OBJECT_ATTRIBUTE     enAttribute;

@@ -62,7 +62,7 @@ int SrchFiducialProcedure::srchFiducial(const std::string &imagePath)
 	PR_SRCH_FIDUCIAL_MARK_RPY stRpy;
 	VisionStatus visionStatus = PR_SrchFiducialMark(&stCmd, &stRpy);
 	if (VisionStatus::OK != visionStatus)	{
-		std::cout << "Failed to search fiducial mark, VisionStatus = " << stRpy.nStatus << std::endl;
+		std::cout << "Failed to search fiducial mark, VisionStatus = " << ToInt32(stRpy.enStatus) << std::endl;
 		return static_cast<int> ( visionStatus );
 	}
 	_matResult = stRpy.matResult;	

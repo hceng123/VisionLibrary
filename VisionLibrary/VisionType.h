@@ -128,6 +128,14 @@ enum class PR_FILL_HOLE_METHOD
     MORPHOLOGY,
 };
 
+enum class PR_OBJECT_MOTION
+{
+    TRANSLATION,
+    EUCLIDEAN,
+    AFFINE,
+    HOMOGRAPHY
+};
+
 }
 }
 

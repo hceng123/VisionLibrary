@@ -80,9 +80,6 @@
     <ClCompile Include="Procedure.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="FitCircleProcedure.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="messageboxdialog.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -271,9 +268,6 @@
       <Filter>Generated Files</Filter>
     </ClInclude>
     <ClInclude Include="Procedure.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="FitCircleProcedure.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="GeneratedFiles\ui_messageboxdialog.h">

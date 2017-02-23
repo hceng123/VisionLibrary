@@ -28,7 +28,8 @@ private slots:
     void on_fitRectBtn_clicked();
     void on_ocrBtn_clicked();
     void on_srchFiducialBtn_clicked();
-    void on_addPreProcessorBtn_clicked();    
+    void on_selectTemplate_clicked();
+    void on_matchTmplBtn_clicked();
 protected:
     bool checkDisplayImage();
 private:
@@ -42,6 +43,7 @@ private:
     std::unique_ptr<CCWidget>           _ptrCcWidget;
     std::unique_ptr<FillHoleWidget>     _ptrFillHoleWidget;
     std::unique_ptr<EdgeDetectWidget>   _ptrEdgeDetectWidget;
+    cv::Mat                             _matTmpl;
 };
 
 #endif // VISIONWIDGET_H

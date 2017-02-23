@@ -29,11 +29,10 @@ public:
     VisionStatus srchTmpl(PR_SRCH_TMPL_CMD *const pFindObjCmd, PR_SRCH_TMPL_RPY *pFindObjRpy);
     VisionStatus lrnDevice(PR_LRN_DEVICE_CMD *pstLrnDeviceCmd, PR_LRN_DEVICE_RPY *pstLrnDeivceRpy);
     VisionStatus inspDevice(PR_INSP_DEVICE_CMD *pstInspDeviceCmd, PR_INSP_DEVICE_RPY *pstInspDeivceRpy);
-    int align(PR_AlignCmd *const pAlignCmd, PR_AlignRpy *pAlignRpy);
+    static VisionStatus matchTemplate(PR_MATCH_TEMPLATE_CMD *const pstCmd, PR_MATCH_TEMPLATE_RPY *pstRpy);
 	VisionStatus inspSurface(PR_INSP_SURFACE_CMD *const pInspCmd, PR_INSP_SURFACE_RPY *pInspRpy);
     static void showImage(String windowName, const cv::Mat &mat);
-    static VisionStatus runLogCase(const std::string &strPath);
-    VisionStatus matchTemplate(const cv::Mat &mat, cv::Mat &matTmpl, cv::Point2f &ptResult);
+    static VisionStatus runLogCase(const std::string &strPath);    
     VisionStatus srchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd, PR_SRCH_FIDUCIAL_MARK_RPY *pstRpy, bool bReplay = false);
     static VisionStatus fitLine(PR_FIT_LINE_CMD *pstCmd, PR_FIT_LINE_RPY *pstRpy, bool bReplay = false);
     static VisionStatus detectLine(PR_DETECT_LINE_CMD *pstCmd, PR_DETECT_LINE_RPY *pstRpy, bool bReplay = false);
@@ -61,7 +60,8 @@ protected:
     VisionStatus _findDeviceEdge(const cv::Mat &matDeviceROI, const cv::Size2f &size, cv::Rect &rectDeviceResult);
     VisionStatus _writeLrnTmplRecord(PR_LRN_TMPL_RPY *pLrnTmplRpy);
     VisionStatus _writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRpy);
-    static VisionStatus _refineSrchTemplate(const cv::Mat &mat, cv::Mat &matTmpl, cv::Point2f &ptResult);
+    static VisionStatus _matchTemplate     (const cv::Mat &mat, cv::Mat &matTmpl, PR_OBJECT_MOTION enMotion, cv::Point2f &ptResult, float &fRotation);
+    static VisionStatus _refineSrchTemplate(const cv::Mat &mat, cv::Mat &matTmpl, PR_OBJECT_MOTION enMotion, cv::Point2f &ptResult, float &fRotation);
     static VectorOfPoint _findPointInRegionOverThreshold(const cv::Mat &mat, const cv::Rect &rect, int nThreshold);
     static ListOfPoint _findPointsInRegionByThreshold(const cv::Mat &mat, const cv::Rect &rect, int nThreshold, PR_OBJECT_ATTRIBUTE enAttribute = PR_OBJECT_ATTRIBUTE::BRIGHT);
     static ListOfPoint _findPointsInRegion(const cv::Mat &mat, const cv::Rect &rect);
@@ -88,7 +88,7 @@ protected:
                                          PR_OBJECT_ATTRIBUTE enAttribute,
                                          cv::MorphShapes     enMorphShape,
                                          cv::Size            szMorphKernel,
-                                         Int16               nMorphIteration);
+                                         Int16               nMorphIteration);    
 protected:
     const int       _constMinHessian        =  300;
     const int       _constOctave            =  4;

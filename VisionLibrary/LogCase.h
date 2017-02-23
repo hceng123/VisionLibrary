@@ -121,17 +121,18 @@ public:
     virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
     static String StaticGetFolderPrefix();
 private:
-    const String _strKeyMethod      = "Method";
-    const String _strKeySrchWindow  = "SrchWindow";
-    const String _strKeyErrorTol    = "ErrorTolerance";
-    const String _strKeyThreshold   = "Threshold";
-    const String _strKeyAttribute   = "Attribute";
+    const String _strKeyMethod          = "Method";
+    const String _strKeySrchWindow      = "SrchWindow";
+    const String _strKeyErrorTol        = "ErrorTolerance";
+    const String _strKeyPreprocessed    = "Preprocessed";
+    const String _strKeyThreshold       = "Threshold";
+    const String _strKeyAttribute       = "Attribute";
 
-    const String _strKeyStatus      = "Status";
-    const String _strKeySlope       = "Slope";
-    const String _strKeyIntercept   = "Intercept";
-    const String _strKeyPoint1      = "Point1";
-    const String _strKeyPoint2      = "Point2";
+    const String _strKeyStatus          = "Status";
+    const String _strKeySlope           = "Slope";
+    const String _strKeyIntercept       = "Intercept";
+    const String _strKeyPoint1          = "Point1";
+    const String _strKeyPoint2          = "Point2";
 };
 
 class LogCaseDetectLine : public LogCase

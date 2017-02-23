@@ -83,6 +83,7 @@ void TestFitLine()
     std::cout << std::endl;
     
     stCmd.matInput = cv::imread("./data/lowangle_250.png", cv::IMREAD_GRAYSCALE);
+    stCmd.bPreprocessed = false;
     stCmd.nThreshold = 200;
     stCmd.enAttribute = PR_OBJECT_ATTRIBUTE::BRIGHT;
     stCmd.rectROI = cv::Rect(139,276,20,400);
@@ -98,6 +99,7 @@ void TestFitLine()
     std::cout << std::endl;
     
     stCmd.matInput = cv::imread("./data/Fitting Test.png", cv::IMREAD_GRAYSCALE);
+    stCmd.bPreprocessed = false;
     stCmd.nThreshold = 200;
     stCmd.enAttribute = PR_OBJECT_ATTRIBUTE::DARK;
     stCmd.rectROI = cv::Rect(233, 37, 166, 111);
