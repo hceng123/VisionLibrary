@@ -903,7 +903,7 @@ VisionStatus VisionAlgorithm::inspDevice(PR_INSP_DEVICE_CMD *pstInspDeviceCmd, P
     return VisionStatus::OK;
 }
 
-/*static*/ VisionStatus VisionAlgorithm::matchTemplate(PR_MATCH_TEMPLATE_CMD *const pstCmd, PR_MATCH_TEMPLATE_RPY *pstRpy)
+/*static*/ VisionStatus VisionAlgorithm::matchTemplate(PR_MATCH_TEMPLATE_CMD *const pstCmd, PR_MATCH_TEMPLATE_RPY *pstRpy, bool bReplay)
 {
     assert(pstCmd != nullptr && pstRpy != nullptr);
 
@@ -932,8 +932,11 @@ VisionStatus VisionAlgorithm::inspDevice(PR_INSP_DEVICE_CMD *pstInspDeviceCmd, P
         WriteLog("The template is bigger than search winfow");
         pstRpy->enStatus = VisionStatus::TMPL_IS_BIGGER_THAN_ROI;
         return pstRpy->enStatus;
-    }    
+    }
    
+    MARK_FUNCTION_START_TIME;
+    SETUP_LOGCASE(LogCaseMatchTmpl);
+
     cv::Mat matSrchROI( pstCmd->matInput, pstCmd->rectSrchWindow );
     if ( matSrchROI.channels() > 1 )
         cv::cvtColor ( matSrchROI, matSrchROI, cv::COLOR_BGR2GRAY );
@@ -943,7 +946,10 @@ VisionStatus VisionAlgorithm::inspDevice(PR_INSP_DEVICE_CMD *pstInspDeviceCmd, P
     pstRpy->ptObjPos.x += pstCmd->rectSrchWindow.x;
     pstRpy->ptObjPos.y += pstCmd->rectSrchWindow.y;
 
-    pstRpy->matResult = pstCmd->matInput.clone();    
+    if ( pstCmd->matInput.channels() > 1 )
+        pstRpy->matResult = pstCmd->matInput.clone();
+    else
+        cv::cvtColor ( pstCmd->matInput, pstRpy->matResult, CV_GRAY2BGR);
 
     cv::Mat matWarp = cv::getRotationMatrix2D( cv::Point(0, 0), pstRpy->fRotation, 1. );
     float fCrossSize = 10.f;
@@ -953,9 +959,13 @@ VisionStatus VisionAlgorithm::inspDevice(PR_INSP_DEVICE_CMD *pstInspDeviceCmd, P
     crossLineTwoPtOne = CalcUtils::warpPoint<double>( matWarp, crossLineTwoPtOne ) + pstRpy->ptObjPos;
     crossLineTwoPtTwo = CalcUtils::warpPoint<double>( matWarp, crossLineTwoPtTwo ) + pstRpy->ptObjPos;
 
-    cv::circle ( pstRpy->matResult, pstRpy->ptObjPos, 2, cv::Scalar(255, 0, 0), 1 );
-    cv::line ( pstRpy->matResult, crossLineOnePtOne, crossLineOnePtTwo, cv::Scalar(0,0,255), 1 );
-    cv::line ( pstRpy->matResult, crossLineTwoPtOne, crossLineTwoPtTwo, cv::Scalar(0,0,255), 1 );
+    cv::circle ( pstRpy->matResult, pstRpy->ptObjPos, 2, cv::Scalar(0, 0, 255), 1 );
+    cv::line ( pstRpy->matResult, crossLineOnePtOne, crossLineOnePtTwo, cv::Scalar(0, 0, 255), 1 );
+    cv::line ( pstRpy->matResult, crossLineTwoPtOne, crossLineTwoPtTwo, cv::Scalar(0, 0, 255), 1 );
+
+    FINISH_LOGCASE;
+    MARK_FUNCTION_END_TIME;
+
     return pstRpy->enStatus;
 }
 
@@ -1351,6 +1361,8 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
         pLogCase = std::make_unique<LogCaseCircleRoundness>( strLocalPath, true );
     else if (LogCaseFillHole::StaticGetFolderPrefix() == folderPrefix )
         pLogCase = std::make_unique<LogCaseFillHole>( strLocalPath, true );
+    else if (LogCaseMatchTmpl::StaticGetFolderPrefix() == folderPrefix )
+        pLogCase = std::make_unique<LogCaseMatchTmpl>( strLocalPath, true );
 
     if ( nullptr != pLogCase )
         enStatus = pLogCase->RunLogCase();

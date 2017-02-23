@@ -911,5 +911,61 @@ VisionStatus LogCaseFillHole::RunLogCase()
     return enStatus;
 }
 
+/*static*/ String LogCaseMatchTmpl::StaticGetFolderPrefix()
+{
+    return "MatchTmpl";
+}
+
+VisionStatus LogCaseMatchTmpl::WriteCmd(PR_MATCH_TEMPLATE_CMD *pCmd)
+{
+    if (!_bReplay)    {
+        _strLogCasePath = _generateLogCaseName(GetFolderPrefix());
+        bfs::path dir(_strLogCasePath);
+        bfs::create_directories(dir);
+    }
+
+    CSimpleIni ini(false, false, false);
+    auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
+    ini.LoadFile(cmdRpyFilePath.c_str());
+    ini.SetValue(_CMD_SECTION.c_str(),     _strKeySrchWindow.c_str(), _formatRect(pCmd->rectSrchWindow).c_str());
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyMotion.c_str(), ToInt32(pCmd->enMotion));
+    ini.SaveFile(cmdRpyFilePath.c_str());
+    cv::imwrite(_strLogCasePath + _IMAGE_NAME,     pCmd->matInput);
+    cv::imwrite(_strLogCasePath + _TMPL_FILE_NAME, pCmd->matTmpl);
+    return VisionStatus::OK;
+}
+
+VisionStatus LogCaseMatchTmpl::WriteRpy(PR_MATCH_TEMPLATE_RPY *pRpy)
+{
+    CSimpleIni ini(false, false, false);
+    auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
+    ini.LoadFile(cmdRpyFilePath.c_str());
+    ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyStatus.c_str(),    ToInt32 ( pRpy->enStatus ) );
+    ini.SaveFile(cmdRpyFilePath.c_str());
+    cv::imwrite ( _strLogCasePath + _RESULT_IMAGE_NAME, pRpy->matResult );
+
+    return VisionStatus::OK;
+}
+
+VisionStatus LogCaseMatchTmpl::RunLogCase()
+{
+    PR_MATCH_TEMPLATE_CMD stCmd;
+    VisionStatus enStatus;
+
+    CSimpleIni ini(false, false, false);
+    auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
+    ini.LoadFile(cmdRpyFilePath.c_str());
+    stCmd.matInput = cv::imread(_strLogCasePath + _IMAGE_NAME,     cv::IMREAD_GRAYSCALE);
+    stCmd.matTmpl  = cv::imread(_strLogCasePath + _TMPL_FILE_NAME, cv::IMREAD_GRAYSCALE);
+    stCmd.rectSrchWindow = _parseRect(ini.GetValue(_CMD_SECTION.c_str(), _strKeySrchWindow.c_str(), _DEFAULT_RECT.c_str()));
+    stCmd.enMotion = static_cast<PR_OBJECT_MOTION>(ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyMotion.c_str(), 0 ) );
+
+    PR_MATCH_TEMPLATE_RPY stRpy;
+    enStatus = VisionAlgorithm::matchTemplate( &stCmd, &stRpy, true );
+    WriteRpy(&stRpy);
+    return enStatus;
+}
+
+
 }
 }

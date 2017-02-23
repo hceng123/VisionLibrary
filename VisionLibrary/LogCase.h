@@ -328,6 +328,23 @@ private:
     const String _strKeyStatus          = "Status";
 };
 
+class LogCaseMatchTmpl : public LogCase
+{
+public:
+    explicit LogCaseMatchTmpl(const String &strPath, bool bReplay = false) : LogCase(strPath, bReplay) {}
+    VisionStatus WriteCmd(PR_MATCH_TEMPLATE_CMD *pCmd);
+    VisionStatus WriteRpy(PR_MATCH_TEMPLATE_RPY *pRpy);
+    virtual VisionStatus RunLogCase() override;
+    virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
+    static String StaticGetFolderPrefix();
+private:
+    const String _TMPL_FILE_NAME        = "Template.png";
+    const String _strKeySrchWindow      = "SrchWindow";
+    const String _strKeyMotion          = "Motion";
+
+    const String _strKeyStatus          = "Status";
+};
+
 }
 }
 #endif
