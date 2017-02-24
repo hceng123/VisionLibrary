@@ -851,7 +851,7 @@
         <string>Search</string>
        </property>
       </widget>
-      <widget class="QPushButton" name="selectTemplate">
+      <widget class="QPushButton" name="selectTemplateBtn">
        <property name="geometry">
         <rect>
          <x>20</x>
@@ -963,6 +963,19 @@
        </property>
        <property name="text">
         <string>Motion</string>
+       </property>
+      </widget>
+      <widget class="QPushButton" name="captureTemplateBtn">
+       <property name="geometry">
+        <rect>
+         <x>20</x>
+         <y>60</y>
+         <width>111</width>
+         <height>31</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Capture Template</string>
        </property>
       </widget>
      </widget>

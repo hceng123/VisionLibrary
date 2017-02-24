@@ -929,7 +929,7 @@ VisionStatus VisionAlgorithm::inspDevice(PR_INSP_DEVICE_CMD *pstInspDeviceCmd, P
     }
 
     if ( pstCmd->matTmpl.rows >= pstCmd->rectSrchWindow.height || pstCmd->matTmpl.cols >= pstCmd->rectSrchWindow.width )    {
-        WriteLog("The template is bigger than search winfow");
+        WriteLog("The template is bigger than search window");
         pstRpy->enStatus = VisionStatus::TMPL_IS_BIGGER_THAN_ROI;
         return pstRpy->enStatus;
     }
@@ -941,7 +941,13 @@ VisionStatus VisionAlgorithm::inspDevice(PR_INSP_DEVICE_CMD *pstInspDeviceCmd, P
     if ( matSrchROI.channels() > 1 )
         cv::cvtColor ( matSrchROI, matSrchROI, cv::COLOR_BGR2GRAY );
 
-    pstRpy->enStatus = _matchTemplate ( matSrchROI, pstCmd->matTmpl, pstCmd->enMotion, pstRpy->ptObjPos, pstRpy->fRotation );
+    cv::Mat matTmplGray;
+    if ( pstCmd->matTmpl.channels() > 1 )
+        cv::cvtColor ( pstCmd->matTmpl, matTmplGray, cv::COLOR_BGR2GRAY );
+    else
+        matTmplGray = pstCmd->matTmpl.clone();
+
+    pstRpy->enStatus = _matchTemplate ( matSrchROI, matTmplGray, pstCmd->enMotion, pstRpy->ptObjPos, pstRpy->fRotation );
 
     pstRpy->ptObjPos.x += pstCmd->rectSrchWindow.x;
     pstRpy->ptObjPos.y += pstCmd->rectSrchWindow.y;

@@ -49,8 +49,8 @@ int VisionView::updateMat()
 
 void VisionView::mousePressEvent(QMouseEvent *event)
 {
-    if ( DISPLAY_SOURCE::RESULT == _enDisplaySource )
-        return;
+    //if ( DISPLAY_SOURCE::RESULT == _enDisplaySource )
+    //    return;
 
     if ( Qt::LeftButton == event->button() )
     {
@@ -71,8 +71,8 @@ void VisionView::mousePressEvent(QMouseEvent *event)
 
 void VisionView::mouseReleaseEvent(QMouseEvent *event)
 {
-    if ( DISPLAY_SOURCE::RESULT == _enDisplaySource )
-        return;
+    //if ( DISPLAY_SOURCE::RESULT == _enDisplaySource )
+    //    return;
 
     if ( Qt::LeftButton == event->button() )
     {
@@ -124,8 +124,8 @@ void VisionView::mouseReleaseEvent(QMouseEvent *event)
 
 void VisionView::mouseMoveEvent(QMouseEvent *event)
 {
-    if ( DISPLAY_SOURCE::RESULT == _enDisplaySource )
-        return;
+    //if ( DISPLAY_SOURCE::RESULT == _enDisplaySource )
+    //    return;
 
     if(event->buttons() & Qt::LeftButton)   //This means left button is pressed.
     {
@@ -601,29 +601,32 @@ void VisionView::_cutImageForDisplay(const cv::Mat &matInput, cv::Mat &matOutput
     auto displayWidth = this->size().width();
     auto displayHeight = this->size().height();
 
-    if (matInput.cols > displayWidth && matInput.rows > displayHeight)  {
+    if (matInput.cols >= displayWidth && matInput.rows >= displayHeight)  {
         cv::Rect rectROISrc( (matInput.cols - displayWidth) / 2 - _szDisplayCenterOffset.width, (matInput.rows - displayHeight) / 2 - _szDisplayCenterOffset.height, displayWidth, displayHeight);
         cv::Mat matSrc( matInput, rectROISrc);
         matSrc.copyTo ( matOutput );
     }
-    else if (matInput.cols > displayWidth && matInput.rows < displayHeight)  {
+    else if (matInput.cols >= displayWidth && matInput.rows <= displayHeight)  {
         cv::Rect rectROISrc( (matInput.cols - displayWidth) / 2 - _szDisplayCenterOffset.width, 0, displayWidth, matInput.rows);
         cv::Mat matSrc(matInput, rectROISrc);
         cv::Rect rectROIDst(0, ( displayHeight - matInput.rows ) / 2, displayWidth, matInput.rows );
         cv::Mat matDst(matOutput, rectROIDst);
         matSrc.copyTo(matDst);
-    }else if (matInput.cols < displayWidth && matInput.rows > displayHeight)  {
+    }else if (matInput.cols <= displayWidth && matInput.rows >= displayHeight)  {
         cv::Rect rectROISrc(0, (matInput.rows - displayHeight) / 2 - _szDisplayCenterOffset.height, matInput.cols, displayHeight);
         cv::Mat matSrc(matInput, rectROISrc);
         cv::Rect rectROIDst(( displayWidth - matInput.cols ) / 2, 0, matInput.cols, displayHeight );
         cv::Mat matDst(matOutput, rectROIDst);
         matSrc.copyTo(matDst);
-    }else if (matInput.cols < displayWidth && matInput.rows < displayHeight) {
+    }else if (matInput.cols <= displayWidth && matInput.rows <= displayHeight) {
         cv::Rect rectROIDst((displayWidth - matInput.cols) / 2, (displayHeight - matInput.rows) / 2, matInput.cols, matInput.rows);
         cv::Mat matDst(matOutput, rectROIDst);
         matInput.copyTo(matDst);
-    }else
-        matOutput = matInput;
+    }
+    else
+    {
+        QMessageBox::critical(nullptr, "Display", "This should not happen, please contact software engineer!", "Quit");
+    }
 }
 
 void VisionView::startToMove()
@@ -664,8 +667,7 @@ void VisionView::startTimer()
 void VisionView::setMat( DISPLAY_SOURCE enSource, const cv::Mat &mat)
 {
     _enDisplaySource = enSource;
-    _matArray[ToInt32(_enDisplaySource)] = mat;
-    _drawDisplay();
+    _matArray[ToInt32(_enDisplaySource)] = mat;    
 
     if ( DISPLAY_SOURCE::ORIGINAL == enSource ) {
         _calcMoveRange();
@@ -675,6 +677,7 @@ void VisionView::setMat( DISPLAY_SOURCE enSource, const cv::Mat &mat)
         _matMask.release();
         _matMaskForDisplay = cv::Mat::zeros( this->size().height(), this->size().width() , CV_8UC1 );
     }
+    _drawDisplay();
 }
 
 cv::Mat VisionView::getMat(DISPLAY_SOURCE enSource) const

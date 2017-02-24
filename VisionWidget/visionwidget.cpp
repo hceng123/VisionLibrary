@@ -282,7 +282,20 @@ void VisionWidget::on_srchFiducialBtn_clicked()
     }
 }
 
-void VisionWidget::on_selectTemplate_clicked()
+void VisionWidget::drawTmplImage()
+{
+    cv::Mat matDisplay;
+    cv::Size size( ui.labelTmplView->size().height(), ui.labelTmplView->size().width() );
+    cv::resize ( _matTmpl, matDisplay, size );
+    if ( matDisplay.channels() > 1 )
+        cvtColor ( matDisplay, matDisplay, CV_BGR2RGB );
+    else
+        cvtColor ( matDisplay, matDisplay, CV_GRAY2RGB );
+    QImage image = QImage((uchar*) matDisplay.data, matDisplay.cols, matDisplay.rows, ToInt32(matDisplay.step), QImage::Format_RGB888);
+    ui.labelTmplView->setPixmap(QPixmap::fromImage(image));
+}
+
+void VisionWidget::on_selectTemplateBtn_clicked()
 {
     QFileDialog dialog(this);
     dialog.setFileMode(QFileDialog::AnyFile);
@@ -300,12 +313,28 @@ void VisionWidget::on_selectTemplate_clicked()
     if ( _matTmpl.empty() )
         return;
 
-    cv::Mat matDisplay;
-    cv::Size size( ui.labelTmplView->size().height(), ui.labelTmplView->size().width() );
-    cv::resize ( _matTmpl, matDisplay, size );
-    cvtColor ( matDisplay, matDisplay, CV_GRAY2RGB );
-    QImage image = QImage((uchar*) matDisplay.data, matDisplay.cols, matDisplay.rows, ToInt32(matDisplay.step), QImage::Format_RGB888);
-    ui.labelTmplView->setPixmap(QPixmap::fromImage(image));
+    drawTmplImage();
+}
+
+void VisionWidget::on_captureTemplateBtn_clicked()
+{
+    if ( _sourceImagePath.empty() ) {
+        QMessageBox::information(this, "Vision Widget", "Please select an image first!", "Quit");
+        return;
+    }
+
+    ui.visionView->setState ( VisionView::VISION_VIEW_STATE::TEST_VISION_LIBRARY );
+    ui.visionView->applyIntermediateResult();
+
+    cv::Mat mat = ui.visionView->getMat();
+    cv::Rect rectSelected = ui.visionView->getSelectedWindow();
+    if ( rectSelected.width >= mat.cols || rectSelected.height >= mat.rows )    {
+        QMessageBox::information(this, "Vision Widget", "Please select an area first!", "Quit");
+        return;
+    }
+    cv::Mat matROI(mat, rectSelected);
+    _matTmpl = matROI.clone();
+    drawTmplImage();
 }
 
 void VisionWidget::on_matchTmplBtn_clicked()
