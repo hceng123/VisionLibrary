@@ -80,9 +80,6 @@
     <ClCompile Include="Procedure.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="FitCircleProcedure.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="messageboxdialog.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -100,9 +97,6 @@
     </ClCompile>
     <ClCompile Include="GeneratedFiles\Release\moc_dialogvisiontoolbox.cpp">
       <Filter>Generated Files\Release</Filter>
-    </ClCompile>
-    <ClCompile Include="FitLineProcedure.cpp">
-      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="OcrProcedure.cpp">
       <Filter>Source Files</Filter>
@@ -171,6 +165,15 @@
       <Filter>Generated Files\Release</Filter>
     </ClCompile>
     <ClCompile Include="EdgeDetectWidget.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug\moc_FillHoleWidget.cpp">
+      <Filter>Generated Files\Debug</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release\moc_FillHoleWidget.cpp">
+      <Filter>Generated Files\Release</Filter>
+    </ClCompile>
+    <ClCompile Include="FillHoleWidget.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -244,6 +247,12 @@
     <CustomBuild Include="EdgeDetectWidget.ui">
       <Filter>Form Files</Filter>
     </CustomBuild>
+    <CustomBuild Include="FillHoleWidget.h">
+      <Filter>Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="FillHoleWidget.ui">
+      <Filter>Form Files</Filter>
+    </CustomBuild>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="GeneratedFiles\ui_visionwidget.h">
@@ -261,17 +270,11 @@
     <ClInclude Include="Procedure.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="FitCircleProcedure.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="GeneratedFiles\ui_messageboxdialog.h">
       <Filter>Generated Files</Filter>
     </ClInclude>
     <ClInclude Include="GeneratedFiles\ui_dialogvisiontoolbox.h">
       <Filter>Generated Files</Filter>
-    </ClInclude>
-    <ClInclude Include="FitLineProcedure.h">
-      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="OcrProcedure.h">
       <Filter>Header Files</Filter>
@@ -301,6 +304,9 @@
       <Filter>Generated Files</Filter>
     </ClInclude>
     <ClInclude Include="GeneratedFiles\ui_EdgeDetectWidget.h">
+      <Filter>Generated Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GeneratedFiles\ui_FillHoleWidget.h">
       <Filter>Generated Files</Filter>
     </ClInclude>
   </ItemGroup>

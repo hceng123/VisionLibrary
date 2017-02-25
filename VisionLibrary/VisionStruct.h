@@ -3,7 +3,8 @@
 
 #include "VisionType.h"
 #include "VisionStatus.h"
-#include "opencv2/core/core.hpp"
+#include "opencv2/core.hpp"
+#include "opencv2/imgproc.hpp"
 #include "BaseType.h"
 #include <list>
 
@@ -69,24 +70,20 @@ struct PR_SRCH_TMPL_RPY
 	float					fRotation;
 };
 
-struct PR_AlignCmd
+struct PR_MATCH_TEMPLATE_CMD
 {
-	cv::Rect2f				    rectLrn;
-	cv::Mat					    matInput;
-	cv::Mat					    matTmpl;
-	cv::Point2f				    ptExpectedPos;
-	cv::Rect2f				    rectSrchWindow;
-	std::vector<cv::KeyPoint>	vecModelKeyPoint;
-	cv::Mat					    matModelDescritor;
+	cv::Mat                 matInput;
+	cv::Mat					matTmpl;
+    cv::Rect				rectSrchWindow;
+    PR_OBJECT_MOTION        enMotion;
 };
 
-struct PR_AlignRpy
+struct PR_MATCH_TEMPLATE_RPY
 {
-	Int16					nStatus;
-	cv::Mat					matAffine;
+	VisionStatus            enStatus;
 	cv::Point2f				ptObjPos;
-	cv::Size2f				szOffset;
 	float                   fRotation;
+    cv::Mat					matResult;
 };
 
 struct PR_DefectCriteria
@@ -236,15 +233,18 @@ struct PR_SRCH_FIDUCIAL_MARK_CMD
 
 struct PR_SRCH_FIDUCIAL_MARK_RPY
 {
-    Int32                   nStatus;
+    VisionStatus            enStatus;
     cv::Point2f             ptPos;
     cv::Mat                 matResult;
 };
 
+//Fit line is for accurately fit line in the preprocessed image, the line should be obvious compared to the background.
 struct PR_FIT_LINE_CMD
 {
     cv::Mat                 matInput;
+    cv::Mat                 matMask;
     cv::Rect                rectROI;
+    bool                    bPreprocessed;
     Int32                   nThreshold;
     PR_OBJECT_ATTRIBUTE     enAttribute;
     PR_RM_FIT_NOISE_METHOD  enRmNoiseMethod;
@@ -252,6 +252,25 @@ struct PR_FIT_LINE_CMD
 };
 
 struct PR_FIT_LINE_RPY
+{
+    VisionStatus            enStatus;    
+    bool                    bReversedFit;   //If it is true, then the result is x = fSlope * y + fIntercept. Otherwise the line is y = fSlope * x + fIntercept.
+    float                   fSlope;
+    float                   fIntercept;
+    PR_Line2f               stLine;
+    cv::Mat                 matResult;
+};
+
+//Detect line is find the lines in the image.
+struct PR_DETECT_LINE_CMD
+{
+    cv::Mat                 matInput;
+    cv::Mat                 matMask;
+    cv::Rect                rectROI;
+    PR_DETECT_LINE_DIR      enDetectDir;
+};
+
+struct PR_DETECT_LINE_RPY
 {
     VisionStatus            enStatus;    
     bool                    bReversedFit;   //If it is true, then the result is x = fSlope * y + fIntercept. Otherwise the line is y = fSlope * x + fIntercept.
@@ -324,12 +343,12 @@ struct PR_FIND_EDGE_RPY
 
 struct PR_FIT_CIRCLE_CMD
 {
-    cv::Mat                 matInput;
-    bool                    bPreprocessed;
+    cv::Mat                 matInput;    
     cv::Mat                 matMask;
     cv::Rect                rectROI;
     PR_FIT_CIRCLE_METHOD    enMethod;
     PR_RM_FIT_NOISE_METHOD  enRmNoiseMethod;
+    bool                    bPreprocessed;
     bool                    bAutoThreshold;
     Int32                   nThreshold;
     PR_OBJECT_ATTRIBUTE     enAttribute;
@@ -477,6 +496,23 @@ struct PR_CIRCLE_ROUNDNESS_RPY
     float                   fRoundness;
     cv::Point2f             ptCircleCtr;
     float                   fRadius;
+    cv::Mat                 matResult;
+};
+
+struct PR_FILL_HOLE_CMD
+{
+    cv::Mat                 matInput;
+    cv::Rect                rectROI;
+    PR_OBJECT_ATTRIBUTE     enAttribute;
+    PR_FILL_HOLE_METHOD     enMethod;
+    cv::MorphShapes         enMorphShape;
+    cv::Size                szMorphKernel;
+    Int16                   nMorphIteration;
+};
+
+struct PR_FILL_HOLE_RPY
+{
+    VisionStatus            enStatus;
     cv::Mat                 matResult;
 };
 

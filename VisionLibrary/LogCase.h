@@ -35,6 +35,7 @@ protected:
     const String _RPY_SECTION       = "RPY";
     const String _IMAGE_NAME        = "image.png";
     const String _MASK_NAME         = "mask.png";
+    const String _RESULT_IMAGE_NAME = "result.png";
     const String _DEFAULT_COORD     = "0, 0";
     const String _DEFAULT_RECT      = "0, 0, 0, 0";
     bool         _bReplay;
@@ -120,11 +121,32 @@ public:
     virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
     static String StaticGetFolderPrefix();
 private:
-    const String _strKeyMethod      = "Method";
-    const String _strKeySrchWindow  = "SrchWindow";
-    const String _strKeyErrorTol    = "ErrorTolerance";
-    const String _strKeyThreshold   = "Threshold";
-    const String _strKeyAttribute   = "Attribute";
+    const String _strKeyMethod          = "Method";
+    const String _strKeySrchWindow      = "SrchWindow";
+    const String _strKeyErrorTol        = "ErrorTolerance";
+    const String _strKeyPreprocessed    = "Preprocessed";
+    const String _strKeyThreshold       = "Threshold";
+    const String _strKeyAttribute       = "Attribute";
+
+    const String _strKeyStatus          = "Status";
+    const String _strKeySlope           = "Slope";
+    const String _strKeyIntercept       = "Intercept";
+    const String _strKeyPoint1          = "Point1";
+    const String _strKeyPoint2          = "Point2";
+};
+
+class LogCaseDetectLine : public LogCase
+{
+public:
+    explicit LogCaseDetectLine(const String &strPath, bool bReplay = false) : LogCase(strPath, bReplay) {}
+    VisionStatus WriteCmd(PR_DETECT_LINE_CMD *pCmd);
+    VisionStatus WriteRpy(PR_DETECT_LINE_RPY *pRpy);
+    virtual VisionStatus RunLogCase() override;
+    virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
+    static String StaticGetFolderPrefix();
+private:
+    const String _strKeyROI         = "ROI";
+    const String _strKeyDir         = "Direction";
 
     const String _strKeyStatus      = "Status";
     const String _strKeySlope       = "Slope";
@@ -283,6 +305,44 @@ private:
 
     const String _strKeyStatus          = "Status";
     const String _strKeyThreshold       = "Threshold";
+};
+
+class LogCaseFillHole : public LogCase
+{
+public:
+    explicit LogCaseFillHole(const String &strPath, bool bReplay = false) : LogCase(strPath, bReplay) {}
+    VisionStatus WriteCmd(PR_FILL_HOLE_CMD *pCmd);
+    VisionStatus WriteRpy(PR_FILL_HOLE_RPY *pRpy);
+    virtual VisionStatus RunLogCase() override;
+    virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
+    static String StaticGetFolderPrefix();
+private:
+    const String _strKeyROI             = "ROI";
+    const String _strKeyAttribute       = "Attribute";
+    const String _strKeyMethod          = "Method";
+    const String _strKeyMorphShape      = "MorphShape";
+    const String _strKeyMorphKernelX    = "MorphKernelX";
+    const String _strKeyMorphKernelY    = "MorphKernelY";
+    const String _strKeyMorphIteration  = "MorphIteration";
+
+    const String _strKeyStatus          = "Status";
+};
+
+class LogCaseMatchTmpl : public LogCase
+{
+public:
+    explicit LogCaseMatchTmpl(const String &strPath, bool bReplay = false) : LogCase(strPath, bReplay) {}
+    VisionStatus WriteCmd(PR_MATCH_TEMPLATE_CMD *pCmd);
+    VisionStatus WriteRpy(PR_MATCH_TEMPLATE_RPY *pRpy);
+    virtual VisionStatus RunLogCase() override;
+    virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
+    static String StaticGetFolderPrefix();
+private:
+    const String _TMPL_FILE_NAME        = "Template.png";
+    const String _strKeySrchWindow      = "SrchWindow";
+    const String _strKeyMotion          = "Motion";
+
+    const String _strKeyStatus          = "Status";
 };
 
 }

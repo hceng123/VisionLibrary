@@ -82,5 +82,5 @@ cv::Mat ThresholdWidget::_runThreshold(int nThreshold)
 void ThresholdWidget::on_checkBoxReverseThres_clicked()
 {
     int threshold = ui.lineEditThreshold->text().toInt();
-    _pVisionView->setMat(VisionView::DISPLAY_SOURCE::INTERMEDIATE, _runThreshold ( threshold ) );
+    _pVisionView->setMat ( VisionView::DISPLAY_SOURCE::INTERMEDIATE, _runThreshold ( threshold ) );
 }

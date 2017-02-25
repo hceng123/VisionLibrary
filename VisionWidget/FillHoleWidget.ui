@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>FillHoleWidget</class>
+ <widget class="QWidget" name="FillHoleWidget">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>522</width>
+    <height>83</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>FillHoleWidget</string>
+  </property>
+  <widget class="QGroupBox" name="groupBox">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>521</width>
+     <height>81</height>
+    </rect>
+   </property>
+   <property name="title">
+    <string>Fill Hole</string>
+   </property>
+   <widget class="QLabel" name="labelAlgorithm">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>20</y>
+      <width>47</width>
+      <height>13</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Algorithm</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="btnRun">
+    <property name="geometry">
+     <rect>
+      <x>440</x>
+      <y>20</y>
+      <width>60</width>
+      <height>23</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Run</string>
+    </property>
+   </widget>
+   <widget class="QComboBox" name="cbAlgorithm">
+    <property name="geometry">
+     <rect>
+      <x>80</x>
+      <y>20</y>
+      <width>81</width>
+      <height>22</height>
+     </rect>
+    </property>
+    <item>
+     <property name="text">
+      <string>Contour</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>Morphology</string>
+     </property>
+    </item>
+   </widget>
+   <widget class="QComboBox" name="cbObjectAttribute">
+    <property name="geometry">
+     <rect>
+      <x>250</x>
+      <y>20</y>
+      <width>51</width>
+      <height>22</height>
+     </rect>
+    </property>
+    <item>
+     <property name="text">
+      <string>Bright</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>Dark</string>
+     </property>
+    </item>
+   </widget>
+   <widget class="QLabel" name="labelObjectAttribute">
+    <property name="geometry">
+     <rect>
+      <x>170</x>
+      <y>20</y>
+      <width>81</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Object Attribute</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="labelMorphShape">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>50</y>
+      <width>71</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Morph Shape</string>
+    </property>
+   </widget>
+   <widget class="QComboBox" name="cbMorphShape">
+    <property name="geometry">
+     <rect>
+      <x>80</x>
+      <y>50</y>
+      <width>81</width>
+      <height>22</height>
+     </rect>
+    </property>
+    <item>
+     <property name="text">
+      <string>Rect</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>Cross</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>Ellipse</string>
+     </property>
+    </item>
+   </widget>
+   <widget class="QLineEdit" name="lineEditKernalSize">
+    <property name="geometry">
+     <rect>
+      <x>250</x>
+      <y>50</y>
+      <width>51</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>5</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="labelKernelSize">
+    <property name="geometry">
+     <rect>
+      <x>170</x>
+      <y>50</y>
+      <width>51</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Kernel Size</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="labelIteration">
+    <property name="geometry">
+     <rect>
+      <x>320</x>
+      <y>50</y>
+      <width>47</width>
+      <height>13</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Iteration</string>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="lineEditIteration">
+    <property name="geometry">
+     <rect>
+      <x>370</x>
+      <y>50</y>
+      <width>51</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>3</string>
+    </property>
+   </widget>
+  </widget>
+ </widget>
+ <layoutdefault spacing="6" margin="11"/>
+ <resources/>
+ <connections/>
+</ui>

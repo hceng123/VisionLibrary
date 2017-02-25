@@ -152,6 +152,13 @@ PR_FUNCTION_ENTRY
 PR_FUNCTION_EXIT
 }
 
+VisionAPI VisionStatus  PR_DetectLine(PR_DETECT_LINE_CMD *pstCmd, PR_DETECT_LINE_RPY *pstRpy)
+{
+PR_FUNCTION_ENTRY
+    return VisionAlgorithm::detectLine ( pstCmd, pstRpy );
+PR_FUNCTION_EXIT
+}
+
 VisionAPI VisionStatus  PR_FitParallelLine(PR_FIT_PARALLEL_LINE_CMD *pstCmd, PR_FIT_PARALLEL_LINE_RPY *pstRpy)
 {
     try
@@ -204,12 +211,12 @@ VisionStatus  PR_FitCircle(PR_FIT_CIRCLE_CMD *pstCmd, PR_FIT_CIRCLE_RPY *pstRpy)
     }
 }
 
-VisionStatus  PR_GetErrorStr(VisionStatus enStatus, PR_GET_ERROR_STR_RPY *pstRpy)
+VisionAPI VisionStatus PR_GetErrorStr(VisionStatus enStatus, PR_GET_ERROR_STR_RPY *pstRpy)
 {
     return GetErrorInfo(enStatus, pstRpy);
 }
 
-VisionAPI VisionStatus  PR_Ocr(PR_OCR_CMD *pstCmd, PR_OCR_RPY *pstRpy)
+VisionAPI VisionStatus PR_Ocr(PR_OCR_CMD *pstCmd, PR_OCR_RPY *pstRpy)
 {
     try
     {
@@ -222,51 +229,65 @@ VisionAPI VisionStatus  PR_Ocr(PR_OCR_CMD *pstCmd, PR_OCR_RPY *pstRpy)
     }
 }
 
-VisionAPI VisionStatus  PR_PointLineDistance(PR_POINT_LINE_DISTANCE_CMD *pstCmd, PR_POINT_LINE_DISTANCE_RPY *pstRpy)
+VisionAPI VisionStatus PR_PointLineDistance(PR_POINT_LINE_DISTANCE_CMD *pstCmd, PR_POINT_LINE_DISTANCE_RPY *pstRpy)
 {
     pstRpy->fDistance = CalcUtils::ptDisToLine ( pstCmd->ptInput, pstCmd->bReversedFit, pstCmd->fSlope, pstCmd->fIntercept );
     return VisionStatus::OK;
 }
 
-VisionAPI VisionStatus  PR_ColorToGray(PR_COLOR_TO_GRAY_CMD *pstCmd, PR_COLOR_TO_GRAY_RPY *pstRpy)
+VisionAPI VisionStatus PR_ColorToGray(PR_COLOR_TO_GRAY_CMD *pstCmd, PR_COLOR_TO_GRAY_RPY *pstRpy)
 {
 PR_FUNCTION_ENTRY
     return VisionAlgorithm::colorToGray ( pstCmd, pstRpy );
 PR_FUNCTION_EXIT
 }
 
-VisionAPI VisionStatus  PR_Filter(PR_FILTER_CMD *pstCmd, PR_FILTER_RPY *pstRpy)
+VisionAPI VisionStatus PR_Filter(PR_FILTER_CMD *pstCmd, PR_FILTER_RPY *pstRpy)
 {
 PR_FUNCTION_ENTRY
     return VisionAlgorithm::filter( pstCmd, pstRpy );
 PR_FUNCTION_EXIT
 }
 
-VisionAPI VisionStatus  PR_AutoThreshold(PR_AUTO_THRESHOLD_CMD *pstCmd, PR_AUTO_THRESHOLD_RPY *pstRpy)
+VisionAPI VisionStatus PR_AutoThreshold(PR_AUTO_THRESHOLD_CMD *pstCmd, PR_AUTO_THRESHOLD_RPY *pstRpy)
 {
 PR_FUNCTION_ENTRY
     return VisionAlgorithm::autoThreshold( pstCmd, pstRpy );
 PR_FUNCTION_EXIT
 }
 
-VisionAPI VisionStatus  PR_RemoveCC(PR_REMOVE_CC_CMD *pstCmd, PR_REMOVE_CC_RPY *pstRpy)
+VisionAPI VisionStatus PR_RemoveCC(PR_REMOVE_CC_CMD *pstCmd, PR_REMOVE_CC_RPY *pstRpy)
 {
 PR_FUNCTION_ENTRY
     return VisionAlgorithm::removeCC( pstCmd, pstRpy );
 PR_FUNCTION_EXIT
 }
 
-VisionAPI VisionStatus  PR_DetectEdge(PR_DETECT_EDGE_CMD *pstCmd, PR_DETECT_EDGE_RPY *pstRpy)
+VisionAPI VisionStatus PR_DetectEdge(PR_DETECT_EDGE_CMD *pstCmd, PR_DETECT_EDGE_RPY *pstRpy)
 {
 PR_FUNCTION_ENTRY
     return VisionAlgorithm::detectEdge( pstCmd, pstRpy );
 PR_FUNCTION_EXIT
 }
 
-VisionAPI VisionStatus  PR_CircleRoundness(PR_CIRCLE_ROUNDNESS_CMD *pstCmd, PR_CIRCLE_ROUNDNESS_RPY *pstRpy)
+VisionAPI VisionStatus PR_CircleRoundness(PR_CIRCLE_ROUNDNESS_CMD *pstCmd, PR_CIRCLE_ROUNDNESS_RPY *pstRpy)
 {
 PR_FUNCTION_ENTRY
     return VisionAlgorithm::circleRoundness( pstCmd, pstRpy );
+PR_FUNCTION_EXIT
+}
+
+VisionAPI VisionStatus PR_FillHole(PR_FILL_HOLE_CMD *const pstCmd, PR_FILL_HOLE_RPY *pstRpy)
+{
+PR_FUNCTION_ENTRY
+    return VisionAlgorithm::fillHole( pstCmd, pstRpy );
+PR_FUNCTION_EXIT
+}
+
+VisionAPI VisionStatus PR_MatchTmpl(PR_MATCH_TEMPLATE_CMD *const pstCmd, PR_MATCH_TEMPLATE_RPY *pstRpy)
+{
+PR_FUNCTION_ENTRY
+    return VisionAlgorithm::matchTemplate( pstCmd, pstRpy );
 PR_FUNCTION_EXIT
 }
 

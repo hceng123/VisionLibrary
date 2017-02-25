@@ -30,7 +30,7 @@ void TestTmplMatch()
 
     PR_SRCH_FIDUCIAL_MARK_RPY stRpy;
     VisionStatus enStatus = PR_SrchFiducialMark(&stCmd, &stRpy);
-    std::cout << "Search fiducial status " << stRpy.nStatus << std::endl; 
+    std::cout << "Search fiducial status " << ToInt32(stRpy.enStatus) << std::endl; 
     std::cout << "Search fiducial result " << stRpy.ptPos.x << ", " << stRpy.ptPos.y << std::endl;
 }
 
@@ -56,7 +56,7 @@ void TestTmplMatch_Circle()
 
     PR_SRCH_FIDUCIAL_MARK_RPY stRpy;
     VisionStatus enStatus = PR_SrchFiducialMark(&stCmd, &stRpy);
-    std::cout << "Search fiducial status " << stRpy.nStatus << std::endl;
+    std::cout << "Search fiducial status " << ToInt32(stRpy.enStatus) << std::endl;
     std::cout << "Search fiducial result " << stRpy.ptPos.x << ", " << stRpy.ptPos.y << std::endl;
 }
 

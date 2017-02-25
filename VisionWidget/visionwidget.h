@@ -8,6 +8,7 @@
 #include "GrayScaleWidget.h"
 #include "CCWidget.h"
 #include "EdgeDetectWidget.h"
+#include "FillHoleWidget.h"
 
 class VisionWidget : public QMainWindow
 {
@@ -22,13 +23,17 @@ private slots:
 	void on_fitCircleBtn_clicked();
     void on_calcRoundnessBtn_clicked();
     void on_fitLineBtn_clicked();
+    void on_detectLineBtn_clicked();
     void on_fitParallelLineBtn_clicked();
     void on_fitRectBtn_clicked();
     void on_ocrBtn_clicked();
     void on_srchFiducialBtn_clicked();
-    void on_addPreProcessorBtn_clicked();    
+    void on_selectTemplateBtn_clicked();
+    void on_matchTmplBtn_clicked();
+    void on_captureTemplateBtn_clicked();
 protected:
     bool checkDisplayImage();
+    void drawTmplImage();
 private:
     Ui::VisionWidgetClass               ui;
     std::string                         _sourceImagePath;
@@ -38,7 +43,9 @@ private:
     std::unique_ptr<ThresholdWidget>    _ptrThresholdWidget;
     std::unique_ptr<GrayScaleWidget>    _ptrGrayScaleWidget;
     std::unique_ptr<CCWidget>           _ptrCcWidget;
+    std::unique_ptr<FillHoleWidget>     _ptrFillHoleWidget;
     std::unique_ptr<EdgeDetectWidget>   _ptrEdgeDetectWidget;
+    cv::Mat                             _matTmpl;
 };
 
 #endif // VISIONWIDGET_H

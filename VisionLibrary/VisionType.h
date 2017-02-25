@@ -12,6 +12,7 @@ namespace Vision
 #define PARALLEL_LINE_MERGE_DIST_LMT			(20)
 #define DEVICE_ELECTRODE_COUNT                  (2)
 #define PR_MAX_GRAY_LEVEL                       (255)
+#define PR_MIN_GRAY_LEVEL                       (0)
 #define PR_RECT_EDGE_COUNT                      (4)
 #define PR_MAX_ERR_STR_LEN						(100)
 #define PR_AUTO_THRESHOLD_MAX_NUM               (4)
@@ -113,6 +114,26 @@ enum class PR_COMPARE_TYPE
 {
     SMALLER,
     LARGER,
+};
+
+enum class PR_DETECT_LINE_DIR
+{
+    MIN_TO_MAX,
+    MAX_TO_MIN,
+};
+
+enum class PR_FILL_HOLE_METHOD
+{
+    CONTOUR,
+    MORPHOLOGY,
+};
+
+enum class PR_OBJECT_MOTION
+{
+    TRANSLATION,
+    EUCLIDEAN,
+    AFFINE,
+    HOMOGRAPHY
 };
 
 }

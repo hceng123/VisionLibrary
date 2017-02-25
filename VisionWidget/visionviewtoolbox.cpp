@@ -34,6 +34,11 @@ void VisionViewToolBox::on_zoomOutButton_clicked()
     _pVisionView->zoomOut();
 }
 
+void VisionViewToolBox::on_moveButton_clicked()
+{
+    _pVisionView->startToMove();
+}
+
 void VisionViewToolBox::SetVisionView(VisionView *pVisionView)
 {
     _pVisionView = pVisionView;
