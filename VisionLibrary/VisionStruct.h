@@ -516,6 +516,22 @@ struct PR_FILL_HOLE_RPY
     cv::Mat                 matResult;
 };
 
+struct PR_PICK_COLOR_CMD
+{
+    cv::Mat                 matInput;
+    cv::Rect                rectROI;
+    cv::Point               ptPick;
+    Int16                   nColorDiff;
+    Int16                   nGrayDiff;
+};
+
+struct PR_PICK_COLOR_RPY
+{
+    VisionStatus            enStatus;
+    UInt32                  nPickPointCount;
+    cv::Mat                 matResult;
+};
+
 }
 }
 #endif

@@ -2884,5 +2884,81 @@ EXIT:
     return pstRpy->enStatus;
 }
 
+/*static*/ VisionStatus VisionAlgorithm::pickColor(PR_PICK_COLOR_CMD *pstCmd, PR_PICK_COLOR_RPY *pstRpy, bool bReplay)
+{
+    assert(pstCmd != nullptr && pstRpy != nullptr);
+
+    if (pstCmd->matInput.empty()) {
+        WriteLog("Input image is empty");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    if (pstCmd->rectROI.x < 0 || pstCmd->rectROI.y < 0 ||
+        pstCmd->rectROI.width <= 0 || pstCmd->rectROI.height <= 0 ||
+        ( pstCmd->rectROI.x + pstCmd->rectROI.width ) > pstCmd->matInput.cols ||
+        ( pstCmd->rectROI.y + pstCmd->rectROI.height ) > pstCmd->matInput.rows )    {
+        WriteLog("The input ROI is invalid");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return VisionStatus::INVALID_PARAM;
+    }
+
+    MARK_FUNCTION_START_TIME;
+
+    cv::Mat matROI ( pstCmd->matInput, pstCmd->rectROI );
+
+    std::vector<cv::Mat> vecMat;
+    cv::split(matROI, vecMat);
+
+    cv::Point ptPick(pstCmd->ptPick.x - pstCmd->rectROI.x, pstCmd->ptPick.y - pstCmd->rectROI.y );
+
+    std::vector<int> vecValue;
+    for ( const auto &mat : vecMat )
+    {
+        vecValue.push_back( mat.at<uchar>( ptPick ) );
+    }
+    assert( vecValue.size() == 3 );
+
+    cv::Mat matGray;
+    cv::cvtColor ( matROI, matGray, CV_BGR2GRAY );
+
+    int Tt = matGray.at<uchar>( ptPick );
+
+    auto maxElement = std::max_element ( vecValue.begin(), vecValue.end() );
+    auto maxIndex = std::distance ( vecValue.begin(), maxElement );
+    std::vector<size_t> vecExcludedIndex{0, 1, 2};
+    vecExcludedIndex.erase( vecExcludedIndex.begin() + maxIndex);
+    cv::Mat matResultMask = cv::Mat::zeros(matROI.size(), CV_8UC1);
+    int diffLowerLimit1 = vecValue[maxIndex] - vecValue[vecExcludedIndex[0]] - pstCmd->nColorDiff;
+    int diffLowerLimit2 = vecValue[maxIndex] - vecValue[vecExcludedIndex[1]] - pstCmd->nColorDiff;
+    int diffUpLimit1    = vecValue[maxIndex] - vecValue[vecExcludedIndex[0]] + pstCmd->nColorDiff;
+    int diffUpLimit2    = vecValue[maxIndex] - vecValue[vecExcludedIndex[1]] + pstCmd->nColorDiff;
+
+    int nPointCount = 0;
+    for ( int row = 0; row < matROI.rows; ++ row )
+    for ( int col = 0; col < matROI.cols; ++ col )
+    {
+        if ((vecMat[maxIndex].at<uchar>(row, col) - vecMat[vecExcludedIndex[0]].at<uchar>(row, col)) > diffLowerLimit1 &&
+            (vecMat[maxIndex].at<uchar>(row, col) - vecMat[vecExcludedIndex[1]].at<uchar>(row, col)) > diffLowerLimit2 &&
+            (vecMat[maxIndex].at<uchar>(row, col) - vecMat[vecExcludedIndex[0]].at<uchar>(row, col)) < diffUpLimit1    &&
+            (vecMat[maxIndex].at<uchar>(row, col) - vecMat[vecExcludedIndex[1]].at<uchar>(row, col)) < diffUpLimit2    &&
+            abs((int)matGray.at<uchar>(row, col) - Tt) < pstCmd->nGrayDiff)
+        {
+            matResultMask.at<uchar>(row, col) = 1;
+            ++ nPointCount;
+        }
+    }
+
+    pstRpy->enStatus = VisionStatus::OK;
+    pstRpy->nPickPointCount = nPointCount;
+    pstRpy->matResult = pstCmd->matInput.clone();
+    cv::Mat matResultROI ( pstRpy->matResult, pstCmd->rectROI );
+    matResultROI.setTo(cv::Scalar::all(0));
+    matResultROI.setTo ( cv::Scalar::all(PR_MAX_GRAY_LEVEL), matResultMask );
+
+    MARK_FUNCTION_END_TIME;
+    return pstRpy->enStatus;
+}
+
 }
 }
