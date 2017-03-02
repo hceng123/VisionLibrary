@@ -32,7 +32,7 @@ int SrchFiducialProcedure::run(const std::string &imagePath)
     if ( iReturn != QDialog::Accepted ) {
         _pVisionView->setTestVisionState(VisionView::TEST_VISION_STATE::IDLE);
         return ToInt(STATUS::NOK);
-    }	
+    }
    
     VectorOfRect vecResult = _pVisionView->getVecSrchWindow();
     if ( vecResult.size() <= 0 )   {

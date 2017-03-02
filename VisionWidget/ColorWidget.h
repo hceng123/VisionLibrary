@@ -10,7 +10,10 @@ class ColorWidget : public BaseProcessWidget
 public:
     ColorWidget(QWidget *parent = Q_NULLPTR);
     ~ColorWidget();
-
+    virtual std::string myName() const override;
+private slots:
+    void on_btnPickColor_clicked();
+    void on_PickColor();
 private:
     Ui::ColorWidget ui;
 };

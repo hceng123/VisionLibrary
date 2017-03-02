@@ -9,6 +9,7 @@
 #include "CCWidget.h"
 #include "EdgeDetectWidget.h"
 #include "FillHoleWidget.h"
+#include "ColorWidget.h"
 
 class VisionWidget : public QMainWindow
 {
@@ -45,6 +46,7 @@ private:
     std::unique_ptr<CCWidget>           _ptrCcWidget;
     std::unique_ptr<FillHoleWidget>     _ptrFillHoleWidget;
     std::unique_ptr<EdgeDetectWidget>   _ptrEdgeDetectWidget;
+    std::unique_ptr<ColorWidget>        _ptrColorWidget;
     cv::Mat                             _matTmpl;
 };
 

@@ -61,6 +61,7 @@ public:
         SET_CIRCLE_OUTTER_RADIUS,
         SET_RECT_SRCH_WINDOW,
         SET_LINE,
+        PICK_COLOR,
     };
 
     enum class DISPLAY_SOURCE
@@ -104,8 +105,9 @@ public:
     void setBinaryThreshold(int nThreshold, bool bReverseThres);
     VectorOfRect getVecSrchWindow( ) const;
     cv::Rect getSelectedWindow() const;
+    cv::Point getClickedPoint() const;
     PR_Line getIntensityCheckLine() const;
-    static float distanceOf2Point(const cv::Point &pt1, const cv::Point &pt2);
+    static float distanceOf2Point(const cv::Point &pt1, const cv::Point &pt2);    
 protected:
     void mousePressEvent(QMouseEvent *event);
     void mouseReleaseEvent(QMouseEvent *event);
@@ -166,6 +168,7 @@ private:
     cv::Size                        _szMoveRange;
 
 signals:
+    void PickColor();
 
 protected slots:
     void showContextMenu(const QPoint& pos); // this is a slot

@@ -65,6 +65,10 @@ void VisionView::mousePressEvent(QMouseEvent *event)
             }
         }else if ( VISION_VIEW_STATE::MOVE == _enState )    {
             setCursor(Qt::ClosedHandCursor);
+        }else if ( VISION_VIEW_STATE::TEST_VISION_LIBRARY == _enState )  {
+            if ( TEST_VISION_STATE::PICK_COLOR == _enTestVisionState )  {
+                emit PickColor();
+            }
         }
     }
 }
@@ -726,6 +730,10 @@ void VisionView::setTestVisionState(TEST_VISION_STATE enState)
         _vecRectSrchWindow.clear();
 
         _drawDisplay();
+        unsetCursor();
+    }
+    if ( TEST_VISION_STATE::PICK_COLOR == _enTestVisionState )  {
+        setCursor ( Qt::PointingHandCursor );
     }
 }
 
@@ -806,6 +814,17 @@ cv::Rect VisionView::getSelectedWindow() const
     rect.width  /= _fZoomFactor;
     rect.height /= _fZoomFactor;
     return rect;
+}
+
+cv::Point VisionView::getClickedPoint() const
+{
+    auto displayWidth = this->size().width();
+    auto displayHeight = this->size().height();
+    cv::Mat mat = _matArray[ToInt32(_enDisplaySource)];
+    auto pt = _ptLeftClickStartPos;
+    pt.x = (pt.x + (mat.cols * _fZoomFactor - displayWidth  ) / 2) / _fZoomFactor;
+    pt.y = (pt.y + (mat.rows * _fZoomFactor - displayHeight ) / 2) / _fZoomFactor;
+    return pt;
 }
 
 PR_Line VisionView::getIntensityCheckLine() const

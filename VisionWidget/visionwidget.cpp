@@ -33,6 +33,10 @@ VisionWidget::VisionWidget(QWidget *parent)
     _ptrThresholdWidget->setVisionView ( ui.visionView );
     ui.verticalLayout->addWidget(_ptrThresholdWidget.get());
 
+    _ptrColorWidget = std::make_unique<ColorWidget>(this);
+    _ptrColorWidget->setVisionView ( ui.visionView );
+    ui.verticalLayout->addWidget(_ptrColorWidget.get());
+
     _ptrFillHoleWidget = std::make_unique<FillHoleWidget>(this);
     _ptrFillHoleWidget->setVisionView( ui.visionView );
     ui.verticalLayout->addWidget(_ptrFillHoleWidget.get());

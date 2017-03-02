@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>530</width>
-    <height>61</height>
+    <width>520</width>
+    <height>53</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -16,14 +16,14 @@
   <widget class="QGroupBox" name="groupBox">
    <property name="geometry">
     <rect>
-     <x>10</x>
+     <x>0</x>
      <y>0</y>
      <width>511</width>
      <height>51</height>
     </rect>
    </property>
    <property name="title">
-    <string>Filter</string>
+    <string>Color</string>
    </property>
    <widget class="QPushButton" name="btnPickColor">
     <property name="geometry">
@@ -35,20 +35,20 @@
      </rect>
     </property>
     <property name="text">
-     <string>Run</string>
+     <string>Pick Color</string>
     </property>
    </widget>
    <widget class="QLineEdit" name="lineEditGrayDiff">
     <property name="geometry">
      <rect>
-      <x>180</x>
+      <x>190</x>
       <y>20</y>
       <width>41</width>
       <height>20</height>
      </rect>
     </property>
     <property name="text">
-     <string>3</string>
+     <string>50</string>
     </property>
    </widget>
    <widget class="QLineEdit" name="lineEditColorDiff">
@@ -61,7 +61,7 @@
      </rect>
     </property>
     <property name="text">
-     <string>50</string>
+     <string>40</string>
     </property>
    </widget>
    <widget class="QLabel" name="labelColorDiff">
@@ -80,7 +80,7 @@
    <widget class="QLabel" name="labelGrayDiff">
     <property name="geometry">
      <rect>
-      <x>120</x>
+      <x>130</x>
       <y>20</y>
       <width>47</width>
       <height>13</height>
