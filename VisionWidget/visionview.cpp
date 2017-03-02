@@ -663,11 +663,10 @@ void VisionView::startTimer()
     _pTimer->start(20);
 }
 
-
 void VisionView::setMat( DISPLAY_SOURCE enSource, const cv::Mat &mat)
 {
     _enDisplaySource = enSource;
-    _matArray[ToInt32(_enDisplaySource)] = mat;    
+    _matArray[ToInt32(_enDisplaySource)] = mat;
 
     if ( DISPLAY_SOURCE::ORIGINAL == enSource ) {
         _calcMoveRange();

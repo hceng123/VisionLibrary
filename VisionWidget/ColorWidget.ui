@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>ColorWidget</class>
+ <widget class="QWidget" name="ColorWidget">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>530</width>
+    <height>61</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>ColorWidget</string>
+  </property>
+  <widget class="QGroupBox" name="groupBox">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>0</y>
+     <width>511</width>
+     <height>51</height>
+    </rect>
+   </property>
+   <property name="title">
+    <string>Filter</string>
+   </property>
+   <widget class="QPushButton" name="btnPickColor">
+    <property name="geometry">
+     <rect>
+      <x>430</x>
+      <y>20</y>
+      <width>60</width>
+      <height>23</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Run</string>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="lineEditGrayDiff">
+    <property name="geometry">
+     <rect>
+      <x>180</x>
+      <y>20</y>
+      <width>41</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>3</string>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="lineEditColorDiff">
+    <property name="geometry">
+     <rect>
+      <x>70</x>
+      <y>20</y>
+      <width>41</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>50</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="labelColorDiff">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>20</y>
+      <width>47</width>
+      <height>13</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Color Diff</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="labelGrayDiff">
+    <property name="geometry">
+     <rect>
+      <x>120</x>
+      <y>20</y>
+      <width>47</width>
+      <height>13</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Gray Diff</string>
+    </property>
+   </widget>
+  </widget>
+ </widget>
+ <layoutdefault spacing="6" margin="11"/>
+ <resources/>
+ <connections/>
+</ui>
