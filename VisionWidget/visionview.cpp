@@ -822,6 +822,8 @@ cv::Point VisionView::getClickedPoint() const
     auto displayHeight = this->size().height();
     cv::Mat mat = _matArray[ToInt32(_enDisplaySource)];
     auto pt = _ptLeftClickStartPos;
+    pt.x -= _szDisplayCenterOffset.width;
+    pt.y -= _szDisplayCenterOffset.height;
     pt.x = (pt.x + (mat.cols * _fZoomFactor - displayWidth  ) / 2) / _fZoomFactor;
     pt.y = (pt.y + (mat.rows * _fZoomFactor - displayHeight ) / 2) / _fZoomFactor;
     return pt;

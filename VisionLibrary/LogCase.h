@@ -345,6 +345,24 @@ private:
     const String _strKeyStatus          = "Status";
 };
 
+class LogCasePickColor : public LogCase
+{
+public:
+    explicit LogCasePickColor(const String &strPath, bool bReplay = false) : LogCase(strPath, bReplay) {}
+    VisionStatus WriteCmd(PR_PICK_COLOR_CMD *pCmd);
+    VisionStatus WriteRpy(PR_PICK_COLOR_RPY *pRpy);
+    virtual VisionStatus RunLogCase() override;
+    virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
+    static String StaticGetFolderPrefix();
+private:
+    const String _strKeyROI             = "ROI";
+    const String _strKeyPickPoint       = "PickPoint";
+    const String _strKeyColorDiff       = "ColorDiff";
+    const String _strKeyGrayDiff        = "GrayDiff";
+
+    const String _strKeyStatus          = "Status";
+};
+
 }
 }
 #endif

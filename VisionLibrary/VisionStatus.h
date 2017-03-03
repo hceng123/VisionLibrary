@@ -41,6 +41,7 @@ enum class VisionStatus
     MEDIAN_FILTER_KERNEL_INVALID,
     TOO_MUCH_CC_TO_REMOVE,
     TMPL_IS_BIGGER_THAN_ROI,
+    PICK_PT_NOT_IN_ROI,
 };
 
 }

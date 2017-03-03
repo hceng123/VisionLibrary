@@ -966,6 +966,62 @@ VisionStatus LogCaseMatchTmpl::RunLogCase()
     return enStatus;
 }
 
+/*static*/ String LogCasePickColor::StaticGetFolderPrefix()
+{
+    return "PickColor";
+}
+
+VisionStatus LogCasePickColor::WriteCmd(PR_PICK_COLOR_CMD *pCmd)
+{
+    if (!_bReplay)    {
+        _strLogCasePath = _generateLogCaseName(GetFolderPrefix());
+        bfs::path dir(_strLogCasePath);
+        bfs::create_directories(dir);
+    }
+
+    CSimpleIni ini(false, false, false);
+    auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
+    ini.LoadFile(cmdRpyFilePath.c_str());
+    ini.SetValue(_CMD_SECTION.c_str(),     _strKeyROI.c_str(), _formatRect(pCmd->rectROI).c_str());
+    ini.SetValue(_CMD_SECTION.c_str(),     _strKeyPickPoint.c_str(), _formatCoordinate(pCmd->ptPick).c_str());
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyColorDiff.c_str(), pCmd->nColorDiff );
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyGrayDiff.c_str(),  pCmd->nGrayDiff );
+    ini.SaveFile(cmdRpyFilePath.c_str());
+    cv::imwrite(_strLogCasePath + _IMAGE_NAME,     pCmd->matInput);
+    return VisionStatus::OK;
+}
+
+VisionStatus LogCasePickColor::WriteRpy(PR_PICK_COLOR_RPY *pRpy)
+{
+    CSimpleIni ini(false, false, false);
+    auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
+    ini.LoadFile(cmdRpyFilePath.c_str());
+    ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyStatus.c_str(),    ToInt32 ( pRpy->enStatus ) );
+    ini.SaveFile(cmdRpyFilePath.c_str());
+    cv::imwrite ( _strLogCasePath + _RESULT_IMAGE_NAME, pRpy->matResult );
+
+    return VisionStatus::OK;
+}
+
+VisionStatus LogCasePickColor::RunLogCase()
+{
+    PR_PICK_COLOR_CMD stCmd;
+    VisionStatus enStatus;
+
+    CSimpleIni ini(false, false, false);
+    auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
+    ini.LoadFile(cmdRpyFilePath.c_str());
+    stCmd.matInput = cv::imread(_strLogCasePath + _IMAGE_NAME, cv::IMREAD_COLOR);
+    stCmd.rectROI = _parseRect(ini.GetValue(_CMD_SECTION.c_str(), _strKeyROI.c_str(), _DEFAULT_RECT.c_str()));
+    stCmd.ptPick = _parseCoordinate(ini.GetValue(_CMD_SECTION.c_str(), _strKeyPickPoint.c_str(), _DEFAULT_COORD.c_str()));
+    stCmd.nColorDiff = static_cast<Int16> ( ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyColorDiff.c_str(), 10 ) );
+    stCmd.nGrayDiff  = static_cast<Int16> ( ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyGrayDiff.c_str(),  10 ) );
+
+    PR_PICK_COLOR_RPY stRpy;
+    enStatus = VisionAlgorithm::pickColor( &stCmd, &stRpy, true );
+    WriteRpy(&stRpy);
+    return enStatus;
+}
 
 }
 }

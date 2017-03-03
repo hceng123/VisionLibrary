@@ -49,6 +49,10 @@ VisionStatus GetErrorInfo(VisionStatus enStatus, PR_GET_ERROR_STR_RPY *pstRpy)
         _snprintf(pstRpy->achErrorStr, PR_MAX_ERR_STR_LEN, "The template is bigger than the search window.");
         pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::PR_STATUS_FATAL_ERROR;
         break;
+    case VisionStatus::PICK_PT_NOT_IN_ROI:
+        _snprintf(pstRpy->achErrorStr, PR_MAX_ERR_STR_LEN, "The pick point must in ROI.");
+        pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::PR_STATUS_FATAL_ERROR;
+        break;
     default:
         _snprintf(pstRpy->achErrorStr, PR_MAX_ERR_STR_LEN, "Undefined error code!");
         pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::PR_STATUS_FATAL_ERROR;

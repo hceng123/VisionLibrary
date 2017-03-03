@@ -32,6 +32,10 @@ void ColorWidget::on_btnPickColor_clicked()
     _pVisionView->setTestVisionState(VisionView::TEST_VISION_STATE::PICK_COLOR);
     connect(_pVisionView, SIGNAL(PickColor()), this, SLOT ( on_PickColor() ) );
 	int iReturn = pMessageBox->exec();
+    if ( iReturn != QDialog::Accepted ) {
+        cv::Mat mat = _pVisionView->getMat();
+        _pVisionView->setMat(VisionView::DISPLAY_SOURCE::ORIGINAL, mat );
+    }
     _pVisionView->setTestVisionState(VisionView::TEST_VISION_STATE::IDLE);
 }
 

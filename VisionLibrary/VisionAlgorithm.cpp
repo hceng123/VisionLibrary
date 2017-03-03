@@ -1369,6 +1369,8 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
         pLogCase = std::make_unique<LogCaseFillHole>( strLocalPath, true );
     else if (LogCaseMatchTmpl::StaticGetFolderPrefix() == folderPrefix )
         pLogCase = std::make_unique<LogCaseMatchTmpl>( strLocalPath, true );
+    else if (LogCasePickColor::StaticGetFolderPrefix() == folderPrefix )
+        pLogCase = std::make_unique<LogCasePickColor>( strLocalPath, true );
 
     if ( nullptr != pLogCase )
         enStatus = pLogCase->RunLogCase();
@@ -2894,6 +2896,12 @@ EXIT:
         return pstRpy->enStatus;
     }
 
+    if ( pstCmd->matInput.channels() <= 1 ) {
+        WriteLog("Input image must be color image.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
     if (pstCmd->rectROI.x < 0 || pstCmd->rectROI.y < 0 ||
         pstCmd->rectROI.width <= 0 || pstCmd->rectROI.height <= 0 ||
         ( pstCmd->rectROI.x + pstCmd->rectROI.width ) > pstCmd->matInput.cols ||
@@ -2903,7 +2911,14 @@ EXIT:
         return VisionStatus::INVALID_PARAM;
     }
 
+    if ( ! pstCmd->rectROI.contains(pstCmd->ptPick) ) {
+        WriteLog("The pick point must in selected ROI");
+        pstRpy->enStatus = VisionStatus::PICK_PT_NOT_IN_ROI;
+        return VisionStatus::PICK_PT_NOT_IN_ROI;
+    }
+
     MARK_FUNCTION_START_TIME;
+    SETUP_LOGCASE(LogCasePickColor);
 
     cv::Mat matROI ( pstCmd->matInput, pstCmd->rectROI );
 
@@ -2956,6 +2971,7 @@ EXIT:
     matResultROI.setTo(cv::Scalar::all(0));
     matResultROI.setTo ( cv::Scalar::all(PR_MAX_GRAY_LEVEL), matResultMask );
 
+    FINISH_LOGCASE;
     MARK_FUNCTION_END_TIME;
     return pstRpy->enStatus;
 }

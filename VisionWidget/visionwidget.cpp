@@ -341,6 +341,39 @@ void VisionWidget::on_captureTemplateBtn_clicked()
     drawTmplImage();
 }
 
+void VisionWidget::on_btnCalcCoverage_clicked()
+{
+    if ( _sourceImagePath.empty() ) {
+        QMessageBox::information(this, "Vision Widget", "Please select an image first!", "Quit");
+        return;
+    }
+
+    ui.visionView->setState ( VisionView::VISION_VIEW_STATE::TEST_VISION_LIBRARY );
+    ui.visionView->applyIntermediateResult();
+
+    cv::Mat mat = ui.visionView->getMat();
+    cv::Rect rectROI = ui.visionView->getSelectedWindow();
+    cv::Mat matROI(mat, rectROI);
+    int nTotalArea = rectROI.width * rectROI.height;    
+    cv::Mat matGray;
+    if ( matROI.channels() > 1 )
+        cv::cvtColor ( matROI, matGray, CV_BGR2GRAY );
+    else
+        matGray = matROI.clone();
+    VectorOfPoint vecPoint;
+    int nWhiteArea = cv::countNonZero ( matGray );
+    int nBlackArea = nTotalArea - nWhiteArea;
+    
+    float fWhiteRatio = (float)nWhiteArea / (float)nTotalArea;
+    float fBlackRatio = (float)nBlackArea / (float)nTotalArea;
+
+    ui.lineEditWhiteArea->setText ( std::to_string ( nWhiteArea ).c_str() );
+    ui.lineEditBlackArea->setText ( std::to_string ( nBlackArea ).c_str() );
+
+    ui.lineEditWhiteRatio->setText ( std::to_string ( fWhiteRatio ).c_str() );
+    ui.lineEditBlackRatio->setText ( std::to_string ( fBlackRatio ).c_str() );
+}
+
 void VisionWidget::on_matchTmplBtn_clicked()
 {
     if ( _sourceImagePath.empty() ) {

@@ -32,6 +32,7 @@ private slots:
     void on_selectTemplateBtn_clicked();
     void on_matchTmplBtn_clicked();
     void on_captureTemplateBtn_clicked();
+    void on_btnCalcCoverage_clicked();
 protected:
     bool checkDisplayImage();
     void drawTmplImage();
