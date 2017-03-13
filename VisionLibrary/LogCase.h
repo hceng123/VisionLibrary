@@ -129,6 +129,7 @@ private:
     const String _strKeyAttribute       = "Attribute";
 
     const String _strKeyStatus          = "Status";
+    const String _strKeyReversedFit     = "ReversedFit";
     const String _strKeySlope           = "Slope";
     const String _strKeyIntercept       = "Intercept";
     const String _strKeyPoint1          = "Point1";
@@ -149,6 +150,7 @@ private:
     const String _strKeyDir         = "Direction";
 
     const String _strKeyStatus      = "Status";
+    const String _strKeyReversedFit = "ReversedFit";
     const String _strKeySlope       = "Slope";
     const String _strKeyIntercept   = "Intercept";
     const String _strKeyPoint1      = "Point1";
@@ -173,6 +175,7 @@ private:
     const String _strKeyAttribute       = "Attribute";
 
     const String _strKeyStatus          = "Status";
+    const String _strKeyReversedFit     = "ReversedFit";
     const String _strKeySlope           = "Slope";
     const String _strKeyIntercept1      = "Intercept1";
     const String _strKeyIntercept2      = "Intercept2";
@@ -202,6 +205,8 @@ private:
     const String _strKeyAttribute       = "Attribute";
 
     const String _strKeyStatus          = "Status";
+    const String _strKeyReversedFit1    = "ReversedFit1";
+    const String _strKeyReversedFit2    = "ReversedFit2";
     const String _strKeySlope1          = "Slope1";    
     const String _strKeySlope2          = "Slope2";
     const String _strKeyIntercept1      = "Intercept1";

@@ -292,7 +292,7 @@ struct PR_FIT_PARALLEL_LINE_CMD
 
 struct PR_FIT_PARALLEL_LINE_RPY
 {
-    Int32                   nStatus;
+    VisionStatus            enStatus;
     bool                    bReversedFit;
     float                   fSlope;
     float                   fIntercept1;
@@ -321,7 +321,7 @@ struct PR_FIT_RECT_RPY
     bool                    bLineTwoReversedFit;
     float                   fSlope2;
     float                   fArrIntercept[PR_RECT_EDGE_COUNT];
-    PR_Line2f               fArrLine[PR_RECT_EDGE_COUNT];
+    PR_Line2f               arrLines[PR_RECT_EDGE_COUNT];
     cv::Mat                 matResult;
 };
 

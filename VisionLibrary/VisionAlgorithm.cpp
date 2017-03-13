@@ -1687,6 +1687,11 @@ VisionStatus VisionAlgorithm::fitLine(PR_FIT_LINE_CMD *pstCmd, PR_FIT_LINE_RPY *
         WriteLog("Not enough points to fit line");
         enStatus = VisionStatus::NOT_ENOUGH_POINTS_TO_FIT;
         goto EXIT;
+    }else if ( vecPoints.size() > PR_FIT_LINE_MAX_POINT_COUNT)  {
+        _snprintf ( charrMsg, sizeof(charrMsg), "Too much noise to fit line, points number %d", vecPoints.size() );
+        WriteLog(charrMsg);
+        enStatus = VisionStatus::TOO_MUCH_NOISE_TO_FIT;
+        goto EXIT;
     }
 
     for ( const auto &point : vecPoints )   {
@@ -1801,14 +1806,14 @@ EXIT:
         vecY.push_back ( point.y );
     }
 
-    bool bReversedFit = false;
+    pstRpy->bReversedFit = false;
     if ( CalcUtils::calcStdDeviation ( vecY ) > CalcUtils::calcStdDeviation ( vecX ) )
-        bReversedFit = true;
+        pstRpy->bReversedFit = true;
 
-    auto projectSize = bReversedFit ? matROI.cols : matROI.rows;
+    auto projectSize = pstRpy->bReversedFit ? matROI.cols : matROI.rows;
     vecProjection.resize ( projectSize, 0 );
     for ( const auto &point : vecPoints )   {
-        if ( bReversedFit )
+        if ( pstRpy->bReversedFit )
             ++ vecProjection[point.x];
         else
             ++ vecProjection[point.y];
@@ -1830,12 +1835,12 @@ EXIT:
 
     int rs = std::max ( int ( 0.1*(vecIndexCanFormLine.back() - vecIndexCanFormLine[0] ) ), 5 );
     
-    if ( bReversedFit ) vecVecPoint.resize( matROI.rows );
-    else                vecVecPoint.resize( matROI.cols );
+    if ( pstRpy->bReversedFit ) vecVecPoint.resize( matROI.rows );
+    else                        vecVecPoint.resize( matROI.cols );
 
     for ( const auto &point : vecPoints )
     {
-        if (bReversedFit) {
+        if (pstRpy->bReversedFit) {
             if (point.x > initialLinePos - rs && point.x < initialLinePos + rs) {
                 vecVecPoint[point.y].push_back(point);
             }
@@ -1849,7 +1854,7 @@ EXIT:
     for ( const auto &vecPointTmp : vecVecPoint )  {
         if ( ! vecPointTmp.empty() )    {
             auto point = PR_DETECT_LINE_DIR::MIN_TO_MAX == pstCmd->enDetectDir ? vecPointTmp.front() : vecPointTmp.back();
-            if (bReversedFit) {
+            if (pstRpy->bReversedFit) {
                 if (point.x != initialLinePos - rs && point.x != initialLinePos - rs)
                     vecFitPoint.push_back ( point + cv::Point ( pstCmd->rectROI.x, pstCmd->rectROI.y ) );
             }else {
@@ -1859,8 +1864,8 @@ EXIT:
         }
     }
 
-    Fitting::fitLine ( vecFitPoint, pstRpy->fSlope, pstRpy->fIntercept, bReversedFit );
-    pstRpy->stLine = CalcUtils::calcEndPointOfLine ( vecFitPoint, bReversedFit, pstRpy->fSlope, pstRpy->fIntercept );
+    Fitting::fitLine ( vecFitPoint, pstRpy->fSlope, pstRpy->fIntercept, pstRpy->bReversedFit );
+    pstRpy->stLine = CalcUtils::calcEndPointOfLine ( vecFitPoint, pstRpy->bReversedFit, pstRpy->fSlope, pstRpy->fIntercept );
 
     pstRpy->matResult = pstCmd->matInput.clone();
     cv::line( pstRpy->matResult, pstRpy->stLine.pt1, pstRpy->stLine.pt2, cv::Scalar(255, 0, 0), 2 );    
@@ -1876,23 +1881,17 @@ EXIT:
 VisionStatus VisionAlgorithm::fitParallelLine(PR_FIT_PARALLEL_LINE_CMD *pstCmd, PR_FIT_PARALLEL_LINE_RPY *pstRpy, bool bReplay)
 {
     assert ( pstCmd != nullptr && pstRpy != nullptr );
+    char charrMsg[1000];
 
     if (pstCmd->matInput.empty()) {
         WriteLog("Input image is empty");
-        pstRpy->nStatus = ToInt32 ( VisionStatus::INVALID_PARAM );
-        return VisionStatus::INVALID_PARAM;
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
     }
 
     MARK_FUNCTION_START_TIME;
+    SETUP_LOGCASE(LogCaseFitParallelLine);
 
-    std::unique_ptr<LogCaseFitParallelLine> pLogCase;
-    if ( ! bReplay )    {
-        pLogCase = std::make_unique<LogCaseFitParallelLine>( Config::GetInstance()->getLogCaseDir() );
-        if ( PR_DEBUG_MODE::LOG_ALL_CASE == Config::GetInstance()->getDebugMode() )
-            pLogCase->WriteCmd ( pstCmd );
-    }
-
-    VisionStatus enStatus = VisionStatus::OK;
     cv::Mat matGray, matThreshold;
     if ( pstCmd->matInput.channels() > 1 )
         cv::cvtColor ( pstCmd->matInput, matGray, CV_BGR2GRAY );
@@ -1903,8 +1902,13 @@ VisionStatus VisionAlgorithm::fitParallelLine(PR_FIT_PARALLEL_LINE_CMD *pstCmd, 
     ListOfPoint listPoint2 = _findPointsInRegionByThreshold ( matGray, pstCmd->rectArrROI[1], pstCmd->nThreshold, pstCmd->enAttribute );
     if ( listPoint1.size() < 2 || listPoint2.size() < 2 )  {
         WriteLog("Not enough points to fit Parallel line");
-        pstRpy->nStatus = ToInt32(VisionStatus::NOT_ENOUGH_POINTS_TO_FIT);
-        return VisionStatus::NOT_ENOUGH_POINTS_TO_FIT;
+        pstRpy->enStatus = VisionStatus::NOT_ENOUGH_POINTS_TO_FIT;
+        return pstRpy->enStatus;
+    }else if ( listPoint1.size() > PR_FIT_LINE_MAX_POINT_COUNT || listPoint2.size() > PR_FIT_LINE_MAX_POINT_COUNT )  {
+        _snprintf ( charrMsg, sizeof(charrMsg), "Too much noise to fit parallel line, points number %d, %d", listPoint1.size(), listPoint2.size() );
+        WriteLog(charrMsg);
+        pstRpy->enStatus = VisionStatus::TOO_MUCH_NOISE_TO_FIT;
+        return pstRpy->enStatus;
     }
 
     std::vector<int> vecX, vecY;
@@ -1936,7 +1940,7 @@ VisionStatus VisionAlgorithm::fitParallelLine(PR_FIT_PARALLEL_LINE_CMD *pstCmd, 
     }while ( ( ! overTolPoints1.empty() || ! overTolPoints2.empty() ) &&  nIteratorNum < 20 );
 
     if ( listPoint1.size() < 2 || listPoint2.size() < 2 )  {
-        enStatus = VisionStatus::TOO_MUCH_NOISE_TO_FIT;
+        pstRpy->enStatus = VisionStatus::TOO_MUCH_NOISE_TO_FIT;
         goto EXIT;
     }
 
@@ -1946,22 +1950,12 @@ VisionStatus VisionAlgorithm::fitParallelLine(PR_FIT_PARALLEL_LINE_CMD *pstCmd, 
     pstRpy->matResult = pstCmd->matInput.clone();
     cv::line ( pstRpy->matResult, pstRpy->stLine1.pt1, pstRpy->stLine1.pt2, cv::Scalar(255,0,0), 2 );
     cv::line ( pstRpy->matResult, pstRpy->stLine2.pt1, pstRpy->stLine2.pt2, cv::Scalar(255,0,0), 2 );
-    enStatus = VisionStatus::OK;
+    pstRpy->enStatus = VisionStatus::OK;
    
 EXIT:
-    pstRpy->nStatus = ToInt32(enStatus);
-    if ( ! bReplay )    {
-        if ( PR_DEBUG_MODE::LOG_FAIL_CASE == Config::GetInstance()->getDebugMode() && enStatus != VisionStatus::OK )    {
-            pLogCase->WriteCmd ( pstCmd );
-            pLogCase->WriteRpy ( pstRpy );
-        }
-
-        if ( PR_DEBUG_MODE::LOG_ALL_CASE == Config::GetInstance()->getDebugMode() )
-            pLogCase->WriteRpy ( pstRpy );
-    }
-    
+    FINISH_LOGCASE;    
     MARK_FUNCTION_END_TIME;
-    return enStatus;
+    return pstRpy->enStatus;
 }
 
 VisionStatus VisionAlgorithm::fitRect(PR_FIT_RECT_CMD *pstCmd, PR_FIT_RECT_RPY *pstRpy, bool bReplay)
@@ -1981,15 +1975,8 @@ VisionStatus VisionAlgorithm::fitRect(PR_FIT_RECT_CMD *pstCmd, PR_FIT_RECT_RPY *
     }
 
     MARK_FUNCTION_START_TIME;
+    SETUP_LOGCASE(LogCaseFitRect);
 
-    std::unique_ptr<LogCaseFitRect> pLogCase;
-    if ( ! bReplay )    {
-        pLogCase = std::make_unique<LogCaseFitRect>( Config::GetInstance()->getLogCaseDir() );
-        if ( PR_DEBUG_MODE::LOG_ALL_CASE == Config::GetInstance()->getDebugMode() )
-            pLogCase->WriteCmd ( pstCmd );
-    }
-
-    VisionStatus enStatus = VisionStatus::OK;
     cv::Mat matGray, matThreshold;
     if ( pstCmd->matInput.channels() > 1 )
         cv::cvtColor ( pstCmd->matInput, matGray, CV_BGR2GRAY );
@@ -2003,6 +1990,11 @@ VisionStatus VisionAlgorithm::fitRect(PR_FIT_RECT_CMD *pstCmd, PR_FIT_RECT_RPY *
             _snprintf(charrMsg, sizeof(charrMsg), "Edge %d not enough points to fit rect", i);
             WriteLog(charrMsg);
             pstRpy->enStatus = VisionStatus::NOT_ENOUGH_POINTS_TO_FIT;
+            return pstRpy->enStatus;
+        }else if ( vecListPoint [ i ].size() > PR_FIT_LINE_MAX_POINT_COUNT )  {
+            _snprintf ( charrMsg, sizeof(charrMsg), "Too much noise to fit rect, line %d points number %d, %d", i + 1, vecListPoint [ i ].size() );
+            WriteLog(charrMsg);
+            pstRpy->enStatus = VisionStatus::TOO_MUCH_NOISE_TO_FIT;
             return pstRpy->enStatus;
         }
     }
@@ -2063,7 +2055,7 @@ VisionStatus VisionAlgorithm::fitRect(PR_FIT_RECT_CMD *pstCmd, PR_FIT_RECT_RPY *
     int nLineNumber = 1;
     for ( const auto &listPoint : vecListPoint )  {
         if (listPoint.size() < 2)  {
-            enStatus = VisionStatus::TOO_MUCH_NOISE_TO_FIT;
+            pstRpy->enStatus = VisionStatus::TOO_MUCH_NOISE_TO_FIT;
             _snprintf(charrMsg, sizeof(charrMsg), "Rect line %d has too much noise to fit", nLineNumber);
             WriteLog(charrMsg);
             goto EXIT;
@@ -2073,31 +2065,21 @@ VisionStatus VisionAlgorithm::fitRect(PR_FIT_RECT_CMD *pstCmd, PR_FIT_RECT_RPY *
 
     for ( int i = 0; i < PR_RECT_EDGE_COUNT; ++ i ) {
         if ( i < 2 )
-            pstRpy->fArrLine[i] = CalcUtils::calcEndPointOfLine( vecListPoint[i], pstRpy->bLineOneReversedFit, pstRpy->fSlope1, vecIntercept[i]);
+            pstRpy->arrLines[i] = CalcUtils::calcEndPointOfLine( vecListPoint[i], pstRpy->bLineOneReversedFit, pstRpy->fSlope1, vecIntercept[i]);
         else
-            pstRpy->fArrLine[i] = CalcUtils::calcEndPointOfLine( vecListPoint[i], pstRpy->bLineTwoReversedFit, pstRpy->fSlope2, vecIntercept[i]);
+            pstRpy->arrLines[i] = CalcUtils::calcEndPointOfLine( vecListPoint[i], pstRpy->bLineTwoReversedFit, pstRpy->fSlope2, vecIntercept[i]);
         pstRpy->fArrIntercept[i] = vecIntercept[i];
     }
     pstRpy->matResult = pstCmd->matInput.clone();
     for ( int i = 0; i < PR_RECT_EDGE_COUNT; ++ i ) {
-        cv::line ( pstRpy->matResult, pstRpy->fArrLine[i].pt1, pstRpy->fArrLine[i].pt2, cv::Scalar(255,0,0), 2 );
+        cv::line ( pstRpy->matResult, pstRpy->arrLines[i].pt1, pstRpy->arrLines[i].pt2, cv::Scalar(255,0,0), 2 );
     }
-    enStatus = VisionStatus::OK;
+    pstRpy->enStatus = VisionStatus::OK;
 
 EXIT:
-    pstRpy->enStatus = enStatus;
-    if ( ! bReplay )    {
-        if ( PR_DEBUG_MODE::LOG_FAIL_CASE == Config::GetInstance()->getDebugMode() && enStatus != VisionStatus::OK )    {
-            pLogCase->WriteCmd ( pstCmd );
-            pLogCase->WriteRpy ( pstRpy );
-        }
-
-        if ( PR_DEBUG_MODE::LOG_ALL_CASE == Config::GetInstance()->getDebugMode() )
-            pLogCase->WriteRpy ( pstRpy );
-    }
-    
+    FINISH_LOGCASE;    
     MARK_FUNCTION_END_TIME;
-    return enStatus;
+    return pstRpy->enStatus;
 }
 
 VisionStatus VisionAlgorithm::findEdge(PR_FIND_EDGE_CMD *pstCmd, PR_FIND_EDGE_RPY *pstRpy)

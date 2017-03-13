@@ -213,3 +213,27 @@ Auto threshold result: 43 99 153
 Test with threshold number 4
 Auto threshold status: 0
 Auto threshold result: 41 89 135 173 
+
+---------------------------------------------
+DETECT LINE REGRESSION TEST #1 STARTING
+---------------------------------------------
+Fit rect status 0
+ReversedFit = 1
+Line slope = -0.01, intercept = 1309.80
+Line coordinate: (1305.10, 802.00), (1303.15, 1133.00)
+
+---------------------------------------------
+DETECT LINE REGRESSION TEST #2 STARTING
+---------------------------------------------
+Fit rect status 0
+ReversedFit = 0
+Line slope = 0.02, intercept = 1293.24
+Line coordinate: (928.00, 1311.99), (1197.00, 1317.42)
+
+---------------------------------------------
+DETECT LINE REGRESSION TEST #3 STARTING
+---------------------------------------------
+Fit rect status 0
+ReversedFit = 0
+Line slope = -0.01, intercept = 1636.05
+Line coordinate: (1496.00, 1623.54), (1703.00, 1621.81)

@@ -131,7 +131,7 @@ void TestFitParellelLine()
     PR_FIT_PARALLEL_LINE_RPY stRpy;
     auto PrintRpy = [](const PR_FIT_PARALLEL_LINE_RPY &stRpy)    {
         char chArrMsg[100];
-        std::cout << "Fit parallel line status " << stRpy.nStatus << std::endl;
+        std::cout << "Fit parallel line status " << ToInt32(stRpy.enStatus) << std::endl;
         std::cout << "ReversedFit = " << stRpy.bReversedFit << std::endl;
         std::cout << std::fixed << std::setprecision(2) << "Line slope = " << stRpy.fSlope << ", intercept1 = " << stRpy.fIntercept1 << ", intercept2 = " << stRpy.fIntercept2 << std::endl;
         _snprintf(chArrMsg, sizeof(chArrMsg), "(%.2f, %.2f), (%.2f, %.2f)", stRpy.stLine1.pt1.x, stRpy.stLine1.pt1.y, stRpy.stLine1.pt2.x, stRpy.stLine1.pt2.y);
@@ -204,7 +204,7 @@ void TestFitRect()
             std::cout << std::fixed << std::setprecision(2) << "Intercept = " << chArrMsg << std::endl;
 
             for (int i = 0; i < PR_RECT_EDGE_COUNT; ++i)    {
-                _snprintf(chArrMsg, sizeof(chArrMsg), "(%.2f, %.2f), (%.2f, %.2f)", stRpy.fArrLine[i].pt1.x, stRpy.fArrLine[i].pt1.y, stRpy.fArrLine[i].pt2.x, stRpy.fArrLine[i].pt2.y);
+                _snprintf(chArrMsg, sizeof(chArrMsg), "(%.2f, %.2f), (%.2f, %.2f)", stRpy.arrLines[i].pt1.x, stRpy.arrLines[i].pt1.y, stRpy.arrLines[i].pt2.x, stRpy.arrLines[i].pt2.y);
                 std::cout << "Line " << i + 1 << " coordinate: " << chArrMsg << std::endl;
             }
         }

@@ -17,6 +17,7 @@ void TestFitParellelLine();
 void TestFitRect();
 void TestFitCircle();
 void TestAutoThreshold();
+void TestDetectLine();
 
 }
 }
