@@ -170,7 +170,6 @@
     <ClCompile Include="TimeLog.cpp" />
     <ClCompile Include="VisionAlgorithm.cpp" />
     <ClCompile Include="VisionAPI.cpp" />
-    <ClCompile Include="VisionHandler.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

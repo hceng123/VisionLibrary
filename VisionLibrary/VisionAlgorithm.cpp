@@ -1992,7 +1992,7 @@ VisionStatus VisionAlgorithm::fitRect(PR_FIT_RECT_CMD *pstCmd, PR_FIT_RECT_RPY *
             pstRpy->enStatus = VisionStatus::NOT_ENOUGH_POINTS_TO_FIT;
             return pstRpy->enStatus;
         }else if ( vecListPoint [ i ].size() > PR_FIT_LINE_MAX_POINT_COUNT )  {
-            _snprintf ( charrMsg, sizeof(charrMsg), "Too much noise to fit rect, line %d points number %d, %d", i + 1, vecListPoint [ i ].size() );
+            _snprintf ( charrMsg, sizeof(charrMsg), "Too much noise to fit rect, line %d points number %d", i + 1, vecListPoint [ i ].size() );
             WriteLog(charrMsg);
             pstRpy->enStatus = VisionStatus::TOO_MUCH_NOISE_TO_FIT;
             return pstRpy->enStatus;
@@ -2132,7 +2132,7 @@ VisionStatus VisionAlgorithm::findEdge(PR_FIND_EDGE_CMD *pstCmd, PR_FIND_EDGE_RP
 
     vector<cv::Vec4i> lines;
     auto voteThreshold = ToInt32 ( pstCmd->fMinLength );
-    HoughLinesP(matCannyResult, lines, 1, CV_PI / 180, voteThreshold, pstCmd->fMinLength, 10);
+    cv::HoughLinesP(matCannyResult, lines, 1, CV_PI / 180, voteThreshold, pstCmd->fMinLength, 10);
     vector<PR_Line2f> vecLines, vecLinesAfterMerge;
     for ( size_t i = 0; i < lines.size(); ++ i )
     {
@@ -2955,6 +2955,10 @@ EXIT:
 
     FINISH_LOGCASE;
     MARK_FUNCTION_END_TIME;
+    return pstRpy->enStatus;
+}
+
+/*static*/ VisionStatus VisionAlgorithm::calibrateCamera(const PR_CALIBRATE_CAMERA_CMD *const, PR_CALIBRATE_CAMERA_RPY *const pstRpy, bool bReply) {
     return pstRpy->enStatus;
 }
 
