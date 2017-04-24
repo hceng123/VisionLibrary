@@ -2958,7 +2958,55 @@ EXIT:
     return pstRpy->enStatus;
 }
 
-/*static*/ VisionStatus VisionAlgorithm::calibrateCamera(const PR_CALIBRATE_CAMERA_CMD *const, PR_CALIBRATE_CAMERA_RPY *const pstRpy, bool bReply) {
+/*static*/ VisionStatus VisionAlgorithm::_findChessBoardCorners(const cv::Mat   &mat,
+                                                                const cv::Point &startPoint,
+                                                                float            fChessBoardSrchStepSize,
+                                                                const cv::Size  &szBoardPattern,
+                                                                VectorOfPoint2f &vecCorners)
+{
+    VisionStatus enStatus;
+
+    //Create the template chessbord corner. The upper left and lower right is white.
+    cv::Mat matTmpl = cv::Mat::zeros(20, 20, CV_8UC1);
+    cv::Mat matTmplROI(matTmpl, cv::Rect(0, 0, 10, 10));
+    matTmplROI.setTo(cv::Scalar::all(PR_MAX_GRAY_LEVEL));
+    cv::Mat matTmplROI1(matTmpl, cv::Rect(10, 10, 10, 10));
+    matTmplROI1.setTo(cv::Scalar::all(PR_MAX_GRAY_LEVEL));
+
+    for ( int row = 0; row < szBoardPattern.height; ++ row )
+    for ( int col = 0; col < szBoardPattern.width;  ++ col )
+    {        
+        cv::Rect rectSrchROI ( static_cast<int> ( startPoint.x + col * fChessBoardSrchStepSize ), 
+            static_cast<int> ( startPoint.y + row * fChessBoardSrchStepSize ), 
+            80, 80);
+        cv::Mat matSrchROI(mat, rectSrchROI);
+
+        cv::Point2f ptResult;
+        float fRotation;
+        enStatus = _matchTemplate ( matSrchROI, matTmpl, PR_OBJECT_MOTION::TRANSLATION, ptResult, fRotation );
+        if ( VisionStatus::OK != enStatus )
+            break;
+        ptResult.x += rectSrchROI.x;
+        ptResult.y += rectSrchROI.y;
+
+        vecCorners.push_back ( ptResult );
+    }
+    return enStatus;
+}
+
+/*static*/ VisionStatus VisionAlgorithm::calibrateCamera(const PR_CALIBRATE_CAMERA_CMD *const pstCmd, PR_CALIBRATE_CAMERA_RPY *const pstRpy, bool bReply) {
+    assert(pstCmd != nullptr && pstRpy != nullptr);
+
+    if (pstCmd->matInput.empty()) {
+        WriteLog("Input image is empty");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+    cv::Mat matGray = pstCmd->matInput;
+    if ( pstCmd->matInput.channels() > 1 )
+        cv::cvtColor ( pstCmd->matInput, matGray, CV_BGR2GRAY );
+    VectorOfVectorOfPoint2f vecVecImagePoints(1);
+    pstRpy->enStatus = _findChessBoardCorners ( matGray, pstCmd->ptChessBoardSrchStartPoint, pstCmd->fChessBoardSrchStepSize, pstCmd->szBoardPattern, vecVecImagePoints[0] );
     return pstRpy->enStatus;
 }
 

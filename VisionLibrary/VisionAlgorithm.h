@@ -90,7 +90,12 @@ protected:
                                          PR_OBJECT_ATTRIBUTE enAttribute,
                                          cv::MorphShapes     enMorphShape,
                                          cv::Size            szMorphKernel,
-                                         Int16               nMorphIteration);    
+                                         Int16               nMorphIteration);
+    static VisionStatus _findChessBoardCorners (const cv::Mat   &mat,
+                                                const cv::Point &startPoint,
+                                                float            fChessBoardSrchStepSize,
+                                                const cv::Size  &szBoardPattern,
+                                                VectorOfPoint2f &dvecVecCorners);
 protected:
     const int       _constMinHessian        =  300;
     const int       _constOctave            =  4;
