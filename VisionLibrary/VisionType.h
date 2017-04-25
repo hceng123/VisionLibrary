@@ -17,6 +17,7 @@ namespace Vision
 #define PR_MAX_ERR_STR_LEN						(100)
 #define PR_AUTO_THRESHOLD_MAX_NUM               (4)
 #define PR_FIT_LINE_MAX_POINT_COUNT             (10000)
+static const double PR_MM_TO_UM              =  1000.;
 
 enum class PR_ALIGN_ALGORITHM
 {

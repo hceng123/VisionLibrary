@@ -2994,19 +2994,76 @@ EXIT:
     return enStatus;
 }
 
+enum Pattern { NOT_EXISTING, CHESSBOARD, CIRCLES_GRID, ASYMMETRIC_CIRCLES_GRID };
+
+static void calcBoardCornerPositions(cv::Size boardSize, float squareSize, std::vector<cv::Point3f> &corners, Pattern patternType /*= Settings::CHESSBOARD*/)
+{
+    corners.clear();
+
+    switch(patternType)
+    {
+    case CHESSBOARD:
+    case CIRCLES_GRID:
+        for( int i = 0; i < boardSize.height; ++i )
+            for( int j = 0; j < boardSize.width; ++j )
+                corners.push_back(cv::Point3f(j*squareSize, i*squareSize, 0));
+        break;
+
+    case ASYMMETRIC_CIRCLES_GRID:
+        for( int i = 0; i < boardSize.height; i++ )
+            for( int j = 0; j < boardSize.width; j++ )
+                corners.push_back(cv::Point3f((2*j + i % 2)*squareSize, i*squareSize, 0));
+        break;
+    default:
+        break;
+    }
+}
+
 /*static*/ VisionStatus VisionAlgorithm::calibrateCamera(const PR_CALIBRATE_CAMERA_CMD *const pstCmd, PR_CALIBRATE_CAMERA_RPY *const pstRpy, bool bReply) {
     assert(pstCmd != nullptr && pstRpy != nullptr);
-
-    if (pstCmd->matInput.empty()) {
+    char charrMsg[1000];
+    if ( pstCmd->matInput.empty() ) {
         WriteLog("Input image is empty");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    if ( pstCmd->ptChessBoardSrchStartPoint.x < 0 || pstCmd->ptChessBoardSrchStartPoint.y < 0 ) {
+        _snprintf(charrMsg, sizeof(charrMsg), "Chess board search start point(%d, %d) is invalid.", pstCmd->ptChessBoardSrchStartPoint.x, pstCmd->ptChessBoardSrchStartPoint.y );
+        WriteLog(charrMsg);
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return pstRpy->enStatus;
     }
     cv::Mat matGray = pstCmd->matInput;
     if ( pstCmd->matInput.channels() > 1 )
         cv::cvtColor ( pstCmd->matInput, matGray, CV_BGR2GRAY );
+
     VectorOfVectorOfPoint2f vecVecImagePoints(1);
+    std::vector<std::vector<cv::Point3f> > vevVecObjectPoints(1);
+    cv::Size imageSize = matGray.size();
+    std::vector<cv::Mat> rvecs, tvecs;
+    cv::Mat matDistCoeffs, matRotation;;
+
     pstRpy->enStatus = _findChessBoardCorners ( matGray, pstCmd->ptChessBoardSrchStartPoint, pstCmd->fChessBoardSrchStepSize, pstCmd->szBoardPattern, vecVecImagePoints[0] );
+    if ( VisionStatus::OK != pstRpy->enStatus )
+        goto EXIT;
+
+    
+    calcBoardCornerPositions ( pstCmd->szBoardPattern, pstCmd->fObjectSize, vevVecObjectPoints[0], CHESSBOARD );
+    vevVecObjectPoints.resize ( vecVecImagePoints.size(), vevVecObjectPoints[0] );
+    
+    double rms = cv::calibrateCamera ( vevVecObjectPoints, vecVecImagePoints, imageSize, pstRpy->matIntrinsicMatrix,
+            matDistCoeffs, rvecs, tvecs, cv::CALIB_FIX_K4 | cv::CALIB_FIX_K5 );
+    
+    cv::Rodrigues ( rvecs[0], matRotation );
+    pstRpy->matExtrinsicMatrix = matRotation.clone();
+    pstRpy->matExtrinsicMatrix.push_back ( tvecs[0] );
+    double z = pstRpy->matExtrinsicMatrix.at<double>(2, 3); //extrinsic matrix is 3x4 matric, the lower right element is z.
+    double fx = pstRpy->matIntrinsicMatrix.at<double>(0, 0);
+    double fy = pstRpy->matIntrinsicMatrix.at<double>(1, 1);
+    pstRpy->dResolutionX = PR_MM_TO_UM * z / fx;
+    pstRpy->dResolutionY = PR_MM_TO_UM * z / fy;
+EXIT:
     return pstRpy->enStatus;
 }
 

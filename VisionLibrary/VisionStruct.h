@@ -492,7 +492,8 @@ struct PR_CALIBRATE_CAMERA_RPY {
     cv::Mat                 matIntrinsicMatrix; //type: CV_64FC1.
     cv::Mat                 matExtrinsicMatrix; //type: CV_64FC1.
     std::vector<double>     vecDistCoeffs;
-    double                  dResolution; //Unit: um/pixel.
+    double                  dResolutionX; //Unit: um/pixel.
+    double                  dResolutionY; //Unit: um/pixel.
 };
 
 }
