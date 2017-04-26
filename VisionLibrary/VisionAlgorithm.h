@@ -23,6 +23,8 @@ using OcrTesseractPtr = cv::Ptr<cv::text::OCRTesseract>;
 class VisionAlgorithm : private Uncopyable
 {
 public:
+    enum CalibPattern { NOT_EXISTING, CHESSBOARD, CIRCLES_GRID, ASYMMETRIC_CIRCLES_GRID };
+
     explicit VisionAlgorithm();
     static unique_ptr<VisionAlgorithm> create();
     VisionStatus lrnTmpl(PR_LRN_TMPL_CMD * const pLrnTmplCmd, PR_LRN_TMPL_RPY *pLrnTmplRpy, bool bReplay = false);
@@ -49,7 +51,7 @@ public:
     static VisionStatus circleRoundness(PR_CIRCLE_ROUNDNESS_CMD *pstCmd, PR_CIRCLE_ROUNDNESS_RPY *pstRpy, bool bReplay = false);
     static VisionStatus fillHole(PR_FILL_HOLE_CMD *pstCmd, PR_FILL_HOLE_RPY *pstRpy, bool bReplay = false);
     static VisionStatus pickColor(PR_PICK_COLOR_CMD *pstCmd, PR_PICK_COLOR_RPY *pstRpy, bool bReplay = false);
-    static VisionStatus calibrateCamera(const PR_CALIBRATE_CAMERA_CMD *const, PR_CALIBRATE_CAMERA_RPY *const pstRpy, bool bReply = false);
+    static VisionStatus calibrateCamera(const PR_CALIBRATE_CAMERA_CMD *const pstCmd, PR_CALIBRATE_CAMERA_RPY *const pstRpy, bool bReplay = false);
 protected:
 	int _findBlob(const cv::Mat &mat, const cv::Mat &matRevs, PR_INSP_SURFACE_CMD *const pInspCmd, PR_INSP_SURFACE_RPY *pInspRpy );
 	int _findLine(const cv::Mat &mat, PR_INSP_SURFACE_CMD *const pInspCmd, PR_INSP_SURFACE_RPY *pInspRpy );
@@ -99,6 +101,8 @@ protected:
                                                 const cv::Size  &szBoardPattern,
                                                 VectorOfPoint2f &dvecVecCorners);
     static float _findChessBoardBlockSize( const cv::Mat &matInput );
+    static void _calcBoardCornerPositions(cv::Size boardSize, float squareSize, std::vector<cv::Point3f> &corners, CalibPattern patternType = CHESSBOARD );
+    static cv::Point2f _findFirstChessBoardCorner(const cv::Mat &matInput, float fBlockSize);
 protected:
     const int       _constMinHessian        =  300;
     const int       _constOctave            =  4;

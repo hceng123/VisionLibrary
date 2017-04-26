@@ -10,7 +10,7 @@ void printfMat ( const cv::Mat &mat)
     {
         for ( short col = 0; col < mat.cols; ++ col )
         {
-            printf ("%f ", mat.at<T>(row, col) );
+            printf ("%.2f ", mat.at<T>(row, col) );
         }
         printf("\n");
     }

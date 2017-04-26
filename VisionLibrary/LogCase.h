@@ -20,6 +20,8 @@ protected:
     cv::Point2f _parseCoordinate(const String &strCoordinate);
     String _formatRect(const cv::Rect2f &pt);
     cv::Rect2f _parseRect(const String &strCoordinate);
+    String _formatSize(const cv::Size &size);
+    cv::Size _parseSize(const String &strSize);
     template<typename _tp>
     String _formatVector(const std::vector<_tp> &vecValue)  {
         String strValue;
@@ -38,6 +40,7 @@ protected:
     const String _RESULT_IMAGE_NAME = "result.png";
     const String _DEFAULT_COORD     = "0, 0";
     const String _DEFAULT_RECT      = "0, 0, 0, 0";
+    const String _DEFAULT_SIZE      = "0, 0";
     bool         _bReplay;
 };
 
@@ -366,6 +369,24 @@ private:
     const String _strKeyGrayDiff        = "GrayDiff";
 
     const String _strKeyStatus          = "Status";
+};
+
+class LogCaseCalibrateCamera : public LogCase
+{
+public:
+    explicit LogCaseCalibrateCamera(const String &strPath, bool bReplay = false) : LogCase(strPath, bReplay) {}
+    VisionStatus WriteCmd(const PR_CALIBRATE_CAMERA_CMD *const pCmd);
+    VisionStatus WriteRpy(PR_CALIBRATE_CAMERA_RPY *pRpy);
+    virtual VisionStatus RunLogCase() override;
+    virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
+    static String StaticGetFolderPrefix();
+private:
+    const String _strKeyBoardPattern    = "BoardPattern";
+    const String _strKeyObjectSize      = "ObjectSize";
+
+    const String _strKeyStatus          = "Status";
+    const String _strKeyResolutionX     = "ResolutionX";
+    const String _strKeyResolutionY     = "ResolutionY";
 };
 
 }

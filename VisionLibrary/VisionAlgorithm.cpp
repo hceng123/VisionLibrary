@@ -1371,6 +1371,8 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
         pLogCase = std::make_unique<LogCaseMatchTmpl>( strLocalPath, true );
     else if (LogCasePickColor::StaticGetFolderPrefix() == folderPrefix )
         pLogCase = std::make_unique<LogCasePickColor>( strLocalPath, true );
+    else if (LogCaseCalibrateCamera::StaticGetFolderPrefix() == folderPrefix )
+        pLogCase = std::make_unique<LogCaseCalibrateCamera>( strLocalPath, true );
 
     if ( nullptr != pLogCase )
         enStatus = pLogCase->RunLogCase();
@@ -2987,9 +2989,7 @@ EXIT:
     return enStatus;
 }
 
-enum Pattern { NOT_EXISTING, CHESSBOARD, CIRCLES_GRID, ASYMMETRIC_CIRCLES_GRID };
-
-static void calcBoardCornerPositions(cv::Size boardSize, float squareSize, std::vector<cv::Point3f> &corners, Pattern patternType /*= Settings::CHESSBOARD*/)
+/*static*/ void VisionAlgorithm::_calcBoardCornerPositions(cv::Size boardSize, float squareSize, std::vector<cv::Point3f> &corners, CalibPattern patternType /*= CHESSBOARD*/)
 {
     corners.clear();
 
@@ -3035,7 +3035,7 @@ static void calcBoardCornerPositions(cv::Size boardSize, float squareSize, std::
     return max ( size.width, size.height );
 }
 
-static cv::Point2f findFirstCorner(const cv::Mat &matInput, float fBlockSize) {
+/*static*/ cv::Point2f VisionAlgorithm::_findFirstChessBoardCorner(const cv::Mat &matInput, float fBlockSize) {
     cv::Mat matROI ( matInput, cv::Rect ( 0, 0, 300, 300 ) );
     cv::Mat matFilter;
     cv::blur ( matROI, matFilter, cv::Size(5, 5) );
@@ -3068,29 +3068,32 @@ static cv::Point2f findFirstCorner(const cv::Mat &matInput, float fBlockSize) {
     return cv::Point2f ( ptUpperLeftBlockCenter.x - fBlockSize / 2, ptUpperLeftBlockCenter.y - fBlockSize / 2 );
 }
 
-/*static*/ VisionStatus VisionAlgorithm::calibrateCamera(const PR_CALIBRATE_CAMERA_CMD *const pstCmd, PR_CALIBRATE_CAMERA_RPY *const pstRpy, bool bReply) {
+/*static*/ VisionStatus VisionAlgorithm::calibrateCamera(const PR_CALIBRATE_CAMERA_CMD *const pstCmd, PR_CALIBRATE_CAMERA_RPY *const pstRpy, bool bReplay) {
     assert(pstCmd != nullptr && pstRpy != nullptr);
     char charrMsg[1000];
     if ( pstCmd->matInput.empty() ) {
-        WriteLog("Input image is empty");
+        WriteLog("Input image is empty.");
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return pstRpy->enStatus;
     }
 
-    if ( pstCmd->fObjectSize <= 0 ) {
-        _snprintf(charrMsg, sizeof(charrMsg), "Object block size %f is invalid", pstCmd->fObjectSize );
+    if ( pstCmd->fPatternDist <= 0 ) {
+        _snprintf(charrMsg, sizeof(charrMsg), "Pattern distance %f is invalid.", pstCmd->fPatternDist );
         WriteLog(charrMsg);
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return pstRpy->enStatus;
     }
 
     if ( pstCmd->szBoardPattern.width <= 0 || pstCmd->szBoardPattern.height <= 0) {
-        _snprintf(charrMsg, sizeof(charrMsg), "Board pattern size %d, %d is invalid", pstCmd->szBoardPattern.width, pstCmd->szBoardPattern.height );
+        _snprintf(charrMsg, sizeof(charrMsg), "Board pattern size %d, %d is invalid.", pstCmd->szBoardPattern.width, pstCmd->szBoardPattern.height );
         WriteLog(charrMsg);
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return pstRpy->enStatus;
     }
 
+    MARK_FUNCTION_START_TIME;
+    SETUP_LOGCASE(LogCaseCalibrateCamera);
+    
     cv::Mat matGray = pstCmd->matInput;
     if ( pstCmd->matInput.channels() > 1 )
         cv::cvtColor ( pstCmd->matInput, matGray, CV_BGR2GRAY );
@@ -3112,24 +3115,27 @@ static cv::Point2f findFirstCorner(const cv::Mat &matInput, float fBlockSize) {
     if ( fBlockSize <= 5 )  {
         WriteLog("Failed to find chess board block size");
         pstRpy->enStatus = VisionStatus::FAILED_TO_FIND_CHESS_BOARD_BLOCK_SIZE;
+        FINISH_LOGCASE;
         pstRpy->enStatus;
     }
     float fStepSize = fBlockSize * 2;
     int nSrchSize = ToInt32( fStepSize - 10 );
-    cv::Point2f ptFirstCorer = findFirstCorner ( matGray, fBlockSize );
+    cv::Point2f ptFirstCorer = _findFirstChessBoardCorner ( matGray, fBlockSize );
     if ( ptFirstCorer.x <= 0 || ptFirstCorer.y <= 0 ) {
         WriteLog("Failed to find chess board first corner.");
         pstRpy->enStatus = VisionStatus::FAILED_TO_FIND_CHESS_BOARD_CORNER;
+        FINISH_LOGCASE;
         pstRpy->enStatus;
     }
     cv::Point ptChessBoardSrchStartPoint = ptChessBoardSrchStartPoint = cv::Point ( ToInt32 ( ptFirstCorer.x - nSrchSize / 2 ), ToInt32 ( ptFirstCorer.y - nSrchSize/ 2 ) );
     pstRpy->enStatus = _findChessBoardCorners ( matGray, matTmpl, ptChessBoardSrchStartPoint, fStepSize, nSrchSize, pstCmd->szBoardPattern, vecVecImagePoints[0] );
     if ( VisionStatus::OK != pstRpy->enStatus ) {
         WriteLog("Failed to find chess board first corners.");
+        FINISH_LOGCASE;
         pstRpy->enStatus;
     }
     
-    calcBoardCornerPositions ( pstCmd->szBoardPattern, pstCmd->fObjectSize, vevVecObjectPoints[0], CHESSBOARD );
+    _calcBoardCornerPositions ( pstCmd->szBoardPattern, pstCmd->fPatternDist, vevVecObjectPoints[0], CHESSBOARD );
     vevVecObjectPoints.resize ( vecVecImagePoints.size(), vevVecObjectPoints[0] );
     
     double rms = cv::calibrateCamera ( vevVecObjectPoints, vecVecImagePoints, imageSize, pstRpy->matIntrinsicMatrix,
@@ -3151,6 +3157,8 @@ static cv::Point2f findFirstCorner(const cv::Mat &matInput, float fBlockSize) {
     pstRpy->dResolutionX = PR_MM_TO_UM * z / fx;
     pstRpy->dResolutionY = PR_MM_TO_UM * z / fy;
 
+    FINISH_LOGCASE;
+    MARK_FUNCTION_END_TIME;
     return pstRpy->enStatus;
 }
 

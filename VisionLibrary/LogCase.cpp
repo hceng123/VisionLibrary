@@ -74,6 +74,22 @@ cv::Rect2f LogCase::_parseRect(const String &strCoordinate)
     return cv::Rect2f(pt1, pt2);
 }
 
+String  LogCase::_formatSize(const cv::Size &size) {
+    char chArray[200];
+    _snprintf(chArray, sizeof(chArray), "%d, %d", size.width, size.height);
+    return String(chArray);
+}
+
+cv::Size LogCase::_parseSize(const String &strSize) {
+    cv::Size size(0, 0);
+    StringVector vecStrSize = split(strSize, ',');
+    if ( vecStrSize.size() == 2 ) {
+        size.width = std::stoi ( vecStrSize[0] );
+        size.height = std::stoi ( vecStrSize[1] );
+    }
+    return size;
+}
+
 String LogCase::_generateLogCaseName(const String &strFolderPrefix)
 {
     auto timeT = std::time(nullptr);
@@ -1024,6 +1040,59 @@ VisionStatus LogCasePickColor::RunLogCase()
 
     PR_PICK_COLOR_RPY stRpy;
     enStatus = VisionAlgorithm::pickColor( &stCmd, &stRpy, true );
+    WriteRpy(&stRpy);
+    return enStatus;
+}
+
+/*static*/ String LogCaseCalibrateCamera::StaticGetFolderPrefix()
+{
+    return "CalibrateCamera";
+}
+
+VisionStatus LogCaseCalibrateCamera::WriteCmd(const PR_CALIBRATE_CAMERA_CMD *const pCmd)
+{
+    if (!_bReplay)    {
+        _strLogCasePath = _generateLogCaseName(GetFolderPrefix());
+        bfs::path dir(_strLogCasePath);
+        bfs::create_directories(dir);
+    }
+
+    CSimpleIni ini(false, false, false);
+    auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
+    ini.LoadFile(cmdRpyFilePath.c_str());
+    ini.SetValue(_CMD_SECTION.c_str(), _strKeyBoardPattern.c_str(), _formatSize(pCmd->szBoardPattern).c_str());
+    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyObjectSize.c_str(), pCmd->fPatternDist );
+    ini.SaveFile(cmdRpyFilePath.c_str());
+    cv::imwrite(_strLogCasePath + _IMAGE_NAME,     pCmd->matInput);
+    return VisionStatus::OK;
+}
+
+VisionStatus LogCaseCalibrateCamera::WriteRpy(PR_CALIBRATE_CAMERA_RPY *pRpy) {
+    CSimpleIni ini(false, false, false);
+    auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
+    ini.LoadFile(cmdRpyFilePath.c_str());    
+    ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyStatus.c_str(),    ToInt32 ( pRpy->enStatus ) );
+    ini.SetDoubleValue(_RPY_SECTION.c_str(), _strKeyResolutionX.c_str(), pRpy->dResolutionX );
+    ini.SetDoubleValue(_RPY_SECTION.c_str(), _strKeyResolutionY.c_str(), pRpy->dResolutionY );
+    ini.SaveFile(cmdRpyFilePath.c_str());
+
+    return VisionStatus::OK;
+}
+
+VisionStatus LogCaseCalibrateCamera::RunLogCase()
+{
+    PR_CALIBRATE_CAMERA_CMD stCmd;
+    VisionStatus enStatus;
+
+    CSimpleIni ini(false, false, false);
+    auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
+    ini.LoadFile(cmdRpyFilePath.c_str());
+    stCmd.matInput = cv::imread(_strLogCasePath + _IMAGE_NAME, cv::IMREAD_COLOR);
+    stCmd.szBoardPattern = _parseSize(ini.GetValue(_CMD_SECTION.c_str(), _strKeyBoardPattern.c_str(), _DEFAULT_SIZE.c_str()));
+    stCmd.fPatternDist = (float)ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyObjectSize.c_str(), 0 );
+
+    PR_CALIBRATE_CAMERA_RPY stRpy;
+    enStatus = VisionAlgorithm::calibrateCamera ( &stCmd, &stRpy, true );
     WriteRpy(&stRpy);
     return enStatus;
 }
