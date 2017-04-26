@@ -2,6 +2,7 @@
 #include "opencv2/highgui.hpp"
 #include "../VisionLibrary/VisionAPI.h"
 #include <iostream>
+#include <iomanip>
 
 namespace AOI
 {

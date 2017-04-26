@@ -28,6 +28,9 @@
     <ClInclude Include="TestFunction.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="UtilityFunc.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -52,6 +55,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="TestDetectLine.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TestCalibrateCamera.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

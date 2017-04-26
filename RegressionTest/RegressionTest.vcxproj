@@ -114,7 +114,7 @@ FC /L $(ProjectDir)$(ProjectName)_golden.txt $(ProjectDir)$(ProjectName)_result.
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_LIB;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -184,11 +184,13 @@ FC /L $(ProjectDir)$(ProjectName)_golden.txt $(ProjectDir)$(ProjectName)_result.
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="TestFunction.h" />
+    <ClInclude Include="UtilityFunc.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="RegressionTest.cpp" />
     <ClCompile Include="stdafx.cpp" />
     <ClCompile Include="TestAutoThreshold.cpp" />
+    <ClCompile Include="TestCalibrateCamera.cpp" />
     <ClCompile Include="TestDetectLine.cpp" />
     <ClCompile Include="TestFitting.cpp" />
     <ClCompile Include="TestInspDevice.cpp" />

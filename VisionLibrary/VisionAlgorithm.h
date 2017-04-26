@@ -62,8 +62,8 @@ protected:
     VisionStatus _findDeviceEdge(const cv::Mat &matDeviceROI, const cv::Size2f &size, cv::Rect &rectDeviceResult);
     VisionStatus _writeLrnTmplRecord(PR_LRN_TMPL_RPY *pLrnTmplRpy);
     VisionStatus _writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRpy);
-    static VisionStatus _matchTemplate     (const cv::Mat &mat, cv::Mat &matTmpl, PR_OBJECT_MOTION enMotion, cv::Point2f &ptResult, float &fRotation);
-    static VisionStatus _refineSrchTemplate(const cv::Mat &mat, cv::Mat &matTmpl, PR_OBJECT_MOTION enMotion, cv::Point2f &ptResult, float &fRotation);
+    static VisionStatus _matchTemplate     (const cv::Mat &mat, const cv::Mat &matTmpl, PR_OBJECT_MOTION enMotion, cv::Point2f &ptResult, float &fRotation);
+    static VisionStatus _refineSrchTemplate(const cv::Mat &mat, const cv::Mat &matTmpl, PR_OBJECT_MOTION enMotion, cv::Point2f &ptResult, float &fRotation);
     static VectorOfPoint _findPointInRegionOverThreshold(const cv::Mat &mat, const cv::Rect &rect, int nThreshold);
     static ListOfPoint _findPointsInRegionByThreshold(const cv::Mat &mat, const cv::Rect &rect, int nThreshold, PR_OBJECT_ATTRIBUTE enAttribute = PR_OBJECT_ATTRIBUTE::BRIGHT);
     static ListOfPoint _findPointsInRegion(const cv::Mat &mat, const cv::Rect &rect);
@@ -92,10 +92,13 @@ protected:
                                          cv::Size            szMorphKernel,
                                          Int16               nMorphIteration);
     static VisionStatus _findChessBoardCorners (const cv::Mat   &mat,
+                                                const cv::Mat   &matTmpl,
                                                 const cv::Point &startPoint,
-                                                float            fChessBoardSrchStepSize,
+                                                float            fStepSize,
+                                                int              nSrchSize,
                                                 const cv::Size  &szBoardPattern,
                                                 VectorOfPoint2f &dvecVecCorners);
+    static float _findChessBoardBlockSize( const cv::Mat &matInput );
 protected:
     const int       _constMinHessian        =  300;
     const int       _constOctave            =  4;

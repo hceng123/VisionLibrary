@@ -1,4 +1,3 @@
-#include "opencv2/core/core.hpp"
 #include "opencv2/highgui.hpp"
 #include "../VisionLibrary/VisionAPI.h"
 #include <iostream>
@@ -28,7 +27,7 @@ void TestDetectLine()
     std::cout << std::endl << "---------------------------------------------";
     std::cout << std::endl << "DETECT LINE REGRESSION TEST #1 STARTING";
     std::cout << std::endl << "---------------------------------------------";
-    std::cout << std::endl;    
+    std::cout << std::endl;
 
     stCmd.matInput = cv::imread("./data/F1-5-1_Threshold.png");
     stCmd.rectROI = cv::Rect(1216, 802, 142, 332);

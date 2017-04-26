@@ -655,7 +655,7 @@ VisionStatus VisionAlgorithm::_findDeviceElectrode(const cv::Mat &matDeviceROI, 
             drawContours ( drawing, vecContours, index ++ , color, 2, 8, hierarchy, 0, cv::Point() );
         }
         vector<cv::Point> approx;
-        approxPolyDP(contour, approx, 3, true);
+        cv::approxPolyDP(contour, approx, 3, true);
         auto area = cv::contourArea ( approx );
         if (area > 100){
             AOI_COUNTOUR stAoiContour;
@@ -1379,7 +1379,7 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
     return enStatus;
 }
 
-/*static*/ VisionStatus VisionAlgorithm::_refineSrchTemplate(const cv::Mat &mat, cv::Mat &matTmpl, PR_OBJECT_MOTION enMotion, cv::Point2f &ptResult, float &fRotation)
+/*static*/ VisionStatus VisionAlgorithm::_refineSrchTemplate(const cv::Mat &mat, const cv::Mat &matTmpl, PR_OBJECT_MOTION enMotion, cv::Point2f &ptResult, float &fRotation)
 {
     cv::Mat matWarp = cv::Mat::eye(2, 3, CV_32FC1);
     matWarp.at<float>(0,2) = ptResult.x;
@@ -1396,7 +1396,7 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
     return VisionStatus::OK;
 }
 
-/*static*/ VisionStatus VisionAlgorithm::_matchTemplate(const cv::Mat &mat, cv::Mat &matTmpl, PR_OBJECT_MOTION enMotion, cv::Point2f &ptResult, float &fRotation)
+/*static*/ VisionStatus VisionAlgorithm::_matchTemplate(const cv::Mat &mat, const cv::Mat &matTmpl, PR_OBJECT_MOTION enMotion, cv::Point2f &ptResult, float &fRotation)
 {
     cv::Mat img_display, matResult;
     const int match_method = CV_TM_SQDIFF;
@@ -2959,26 +2959,19 @@ EXIT:
 }
 
 /*static*/ VisionStatus VisionAlgorithm::_findChessBoardCorners(const cv::Mat   &mat,
+                                                                const cv::Mat   &matTmpl,
                                                                 const cv::Point &startPoint,
-                                                                float            fChessBoardSrchStepSize,
+                                                                float            fStepSize,
+                                                                int              nSrchSize,
                                                                 const cv::Size  &szBoardPattern,
                                                                 VectorOfPoint2f &vecCorners)
 {
-    VisionStatus enStatus;
-
-    //Create the template chessbord corner. The upper left and lower right is white.
-    cv::Mat matTmpl = cv::Mat::zeros(20, 20, CV_8UC1);
-    cv::Mat matTmplROI(matTmpl, cv::Rect(0, 0, 10, 10));
-    matTmplROI.setTo(cv::Scalar::all(PR_MAX_GRAY_LEVEL));
-    cv::Mat matTmplROI1(matTmpl, cv::Rect(10, 10, 10, 10));
-    matTmplROI1.setTo(cv::Scalar::all(PR_MAX_GRAY_LEVEL));
+    VisionStatus enStatus;    
 
     for ( int row = 0; row < szBoardPattern.height; ++ row )
     for ( int col = 0; col < szBoardPattern.width;  ++ col )
     {        
-        cv::Rect rectSrchROI ( static_cast<int> ( startPoint.x + col * fChessBoardSrchStepSize ), 
-            static_cast<int> ( startPoint.y + row * fChessBoardSrchStepSize ), 
-            80, 80);
+        cv::Rect rectSrchROI ( ToInt32 ( startPoint.x + col * fStepSize ), ToInt32 ( startPoint.y + row * fStepSize ), nSrchSize, nSrchSize );
         cv::Mat matSrchROI(mat, rectSrchROI);
 
         cv::Point2f ptResult;
@@ -3019,6 +3012,62 @@ static void calcBoardCornerPositions(cv::Size boardSize, float squareSize, std::
     }
 }
 
+/*static*/ float VisionAlgorithm::_findChessBoardBlockSize( const cv::Mat &matInput ) {
+    cv::Size2f size;
+    cv::Mat matROI ( matInput, cv::Rect ( matInput.cols / 2 - 100,  matInput.rows / 2 - 100, 200, 200 ) );  //Use the ROI 200x200 in the center of the image.
+    cv::Mat matFilter;
+    cv::blur ( matROI, matFilter, cv::Size(5, 5) );
+    cv::Mat matThreshold;
+    cv::threshold ( matFilter, matThreshold, 150, 255, cv::THRESH_BINARY_INV );
+    if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE )
+        showImage("findChessBoardBlockSize Threshold image", matThreshold);
+
+    std::vector<std::vector<cv::Point> > contours;
+    cv::findContours ( matThreshold, contours, cv::RETR_LIST, cv::CHAIN_APPROX_SIMPLE );
+    for ( const auto &contour : contours )  {
+        auto area = cv::contourArea ( contour );
+        if ( area > 1000 )  {
+            cv::RotatedRect rotatedRect = cv::minAreaRect ( contour );
+            size = rotatedRect.size;
+            break;
+        }
+    }
+    return max ( size.width, size.height );
+}
+
+static cv::Point2f findFirstCorner(const cv::Mat &matInput, float fBlockSize) {
+    cv::Mat matROI ( matInput, cv::Rect ( 0, 0, 300, 300 ) );
+    cv::Mat matFilter;
+    cv::blur ( matROI, matFilter, cv::Size(5, 5) );
+    cv::Mat matThreshold;
+    cv::threshold ( matFilter, matThreshold, 100, 255, cv::THRESH_BINARY_INV );   
+    
+    VectorOfVectorOfPoint contours, vecDrawContours;
+    cv::findContours ( matThreshold, contours, cv::RETR_LIST, cv::CHAIN_APPROX_SIMPLE );
+    VectorOfPoint2f vecBlockCenters;
+    for ( const auto &contour : contours )  {
+        auto area = cv::contourArea ( contour );
+        if ( area > 1000 )  {
+            cv::RotatedRect rotatedRect = cv::minAreaRect ( contour );
+            if ( fabs ( rotatedRect.size.width - rotatedRect.size.height ) / ( rotatedRect.size.width + rotatedRect.size.height ) < 0.1 )   {
+                vecDrawContours.push_back ( contour );
+                vecBlockCenters.push_back ( rotatedRect.center );
+            }
+        }
+    }
+
+    float minDistanceToZero = 10000000;
+    cv::Point ptUpperLeftBlockCenter;
+    for ( const auto point : vecBlockCenters ) {
+        auto distanceToZero = point.x * point.x + point.y * point.y;
+        if ( distanceToZero < minDistanceToZero )   {
+            ptUpperLeftBlockCenter = point;
+            minDistanceToZero = distanceToZero;
+        }          
+    }
+    return cv::Point2f ( ptUpperLeftBlockCenter.x - fBlockSize / 2, ptUpperLeftBlockCenter.y - fBlockSize / 2 );
+}
+
 /*static*/ VisionStatus VisionAlgorithm::calibrateCamera(const PR_CALIBRATE_CAMERA_CMD *const pstCmd, PR_CALIBRATE_CAMERA_RPY *const pstRpy, bool bReply) {
     assert(pstCmd != nullptr && pstRpy != nullptr);
     char charrMsg[1000];
@@ -3028,12 +3077,20 @@ static void calcBoardCornerPositions(cv::Size boardSize, float squareSize, std::
         return pstRpy->enStatus;
     }
 
-    if ( pstCmd->ptChessBoardSrchStartPoint.x < 0 || pstCmd->ptChessBoardSrchStartPoint.y < 0 ) {
-        _snprintf(charrMsg, sizeof(charrMsg), "Chess board search start point(%d, %d) is invalid.", pstCmd->ptChessBoardSrchStartPoint.x, pstCmd->ptChessBoardSrchStartPoint.y );
+    if ( pstCmd->fObjectSize <= 0 ) {
+        _snprintf(charrMsg, sizeof(charrMsg), "Object block size %f is invalid", pstCmd->fObjectSize );
         WriteLog(charrMsg);
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return pstRpy->enStatus;
     }
+
+    if ( pstCmd->szBoardPattern.width <= 0 || pstCmd->szBoardPattern.height <= 0) {
+        _snprintf(charrMsg, sizeof(charrMsg), "Board pattern size %d, %d is invalid", pstCmd->szBoardPattern.width, pstCmd->szBoardPattern.height );
+        WriteLog(charrMsg);
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
     cv::Mat matGray = pstCmd->matInput;
     if ( pstCmd->matInput.channels() > 1 )
         cv::cvtColor ( pstCmd->matInput, matGray, CV_BGR2GRAY );
@@ -3042,28 +3099,58 @@ static void calcBoardCornerPositions(cv::Size boardSize, float squareSize, std::
     std::vector<std::vector<cv::Point3f> > vevVecObjectPoints(1);
     cv::Size imageSize = matGray.size();
     std::vector<cv::Mat> rvecs, tvecs;
-    cv::Mat matDistCoeffs, matRotation;;
+    cv::Mat matRotation, matTransformation;
 
-    pstRpy->enStatus = _findChessBoardCorners ( matGray, pstCmd->ptChessBoardSrchStartPoint, pstCmd->fChessBoardSrchStepSize, pstCmd->szBoardPattern, vecVecImagePoints[0] );
-    if ( VisionStatus::OK != pstRpy->enStatus )
-        goto EXIT;
+    //Create the template chessbord corner. The upper left and lower right is white.
+    cv::Mat matTmpl = cv::Mat::zeros(20, 20, CV_8UC1);
+    cv::Mat matTmplROI(matTmpl, cv::Rect(0, 0, 10, 10));
+    matTmplROI.setTo(cv::Scalar::all(PR_MAX_GRAY_LEVEL));
+    cv::Mat matTmplROI1(matTmpl, cv::Rect(10, 10, 10, 10));
+    matTmplROI1.setTo(cv::Scalar::all(PR_MAX_GRAY_LEVEL));
 
+    float fBlockSize = _findChessBoardBlockSize ( matGray );
+    if ( fBlockSize <= 5 )  {
+        WriteLog("Failed to find chess board block size");
+        pstRpy->enStatus = VisionStatus::FAILED_TO_FIND_CHESS_BOARD_BLOCK_SIZE;
+        pstRpy->enStatus;
+    }
+    float fStepSize = fBlockSize * 2;
+    int nSrchSize = ToInt32( fStepSize - 10 );
+    cv::Point2f ptFirstCorer = findFirstCorner ( matGray, fBlockSize );
+    if ( ptFirstCorer.x <= 0 || ptFirstCorer.y <= 0 ) {
+        WriteLog("Failed to find chess board first corner.");
+        pstRpy->enStatus = VisionStatus::FAILED_TO_FIND_CHESS_BOARD_CORNER;
+        pstRpy->enStatus;
+    }
+    cv::Point ptChessBoardSrchStartPoint = ptChessBoardSrchStartPoint = cv::Point ( ToInt32 ( ptFirstCorer.x - nSrchSize / 2 ), ToInt32 ( ptFirstCorer.y - nSrchSize/ 2 ) );
+    pstRpy->enStatus = _findChessBoardCorners ( matGray, matTmpl, ptChessBoardSrchStartPoint, fStepSize, nSrchSize, pstCmd->szBoardPattern, vecVecImagePoints[0] );
+    if ( VisionStatus::OK != pstRpy->enStatus ) {
+        WriteLog("Failed to find chess board first corners.");
+        pstRpy->enStatus;
+    }
     
     calcBoardCornerPositions ( pstCmd->szBoardPattern, pstCmd->fObjectSize, vevVecObjectPoints[0], CHESSBOARD );
     vevVecObjectPoints.resize ( vecVecImagePoints.size(), vevVecObjectPoints[0] );
     
     double rms = cv::calibrateCamera ( vevVecObjectPoints, vecVecImagePoints, imageSize, pstRpy->matIntrinsicMatrix,
-            matDistCoeffs, rvecs, tvecs, cv::CALIB_FIX_K4 | cv::CALIB_FIX_K5 );
+            pstRpy->matDistCoeffs, rvecs, tvecs, cv::CALIB_FIX_K4 | cv::CALIB_FIX_K5 );
     
     cv::Rodrigues ( rvecs[0], matRotation );
     pstRpy->matExtrinsicMatrix = matRotation.clone();
-    pstRpy->matExtrinsicMatrix.push_back ( tvecs[0] );
+    cv::transpose( pstRpy->matExtrinsicMatrix, pstRpy->matExtrinsicMatrix );
+
+    matTransformation = tvecs[0];
+    cv::transpose ( matTransformation, matTransformation );
+
+    pstRpy->matExtrinsicMatrix.push_back( matTransformation );
+    cv::transpose( pstRpy->matExtrinsicMatrix, pstRpy->matExtrinsicMatrix );
+
     double z = pstRpy->matExtrinsicMatrix.at<double>(2, 3); //extrinsic matrix is 3x4 matric, the lower right element is z.
     double fx = pstRpy->matIntrinsicMatrix.at<double>(0, 0);
     double fy = pstRpy->matIntrinsicMatrix.at<double>(1, 1);
     pstRpy->dResolutionX = PR_MM_TO_UM * z / fx;
     pstRpy->dResolutionY = PR_MM_TO_UM * z / fy;
-EXIT:
+
     return pstRpy->enStatus;
 }
 

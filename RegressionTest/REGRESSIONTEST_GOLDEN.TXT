@@ -237,3 +237,19 @@ Fit rect status 0
 ReversedFit = 0
 Line slope = -0.01, intercept = 1636.05
 Line coordinate: (1496.00, 1623.54), (1703.00, 1621.81)
+
+---------------------------------------------
+CALIBRATE CAMERA REGRESSION TEST #1 STARTING
+---------------------------------------------
+Calibrate camera status 0
+Camera Intrinsic camera:
+56258.998105 0.000000 1326.306429 
+0.000000 56216.998038 961.395529 
+0.000000 0.000000 1.000000 
+Camera Extrinsic camera:
+0.999451 0.005808 -0.032616 -26.570439 
+-0.005818 0.999983 -0.000209 -21.959787 
+0.032615 0.000398 0.999468 1336.980505 
+Camera resolution (23.76, 23.78)
+Camera distoration coefficients:
+-5.079901 -0.288655 -0.000522 0.000073 -0.000217 

@@ -54,6 +54,12 @@ int _tmain(int argc, _TCHAR* argv[])
     * Test Detect Line *
     *******************/
     TestDetectLine();
+
+    /*******************
+    * Test Calibrate Camera *
+    *******************/
+    TestCalibrateCamera();
+
 	return 0;
 }
 

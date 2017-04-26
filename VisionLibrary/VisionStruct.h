@@ -481,8 +481,6 @@ struct PR_PICK_COLOR_RPY {
 
 struct PR_CALIBRATE_CAMERA_CMD {
     cv::Mat                 matInput;
-    cv::Point               ptChessBoardSrchStartPoint;
-    float                   fChessBoardSrchStepSize;
     cv::Size                szBoardPattern; // Number of corners per chessboard row and col. szBoardPattern = cv::Size(points_per_row, points_per_col) = cv::Size(columns, rows).
     float                   fObjectSize; //The real chess board corner to corner distance. Unit: mm.
 };
@@ -491,7 +489,7 @@ struct PR_CALIBRATE_CAMERA_RPY {
     VisionStatus            enStatus;
     cv::Mat                 matIntrinsicMatrix; //type: CV_64FC1.
     cv::Mat                 matExtrinsicMatrix; //type: CV_64FC1.
-    std::vector<double>     vecDistCoeffs;
+    cv::Mat                 matDistCoeffs;
     double                  dResolutionX; //Unit: um/pixel.
     double                  dResolutionY; //Unit: um/pixel.
 };
