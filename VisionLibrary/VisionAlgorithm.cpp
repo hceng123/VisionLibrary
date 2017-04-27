@@ -13,9 +13,9 @@
 #include "Log.h"
 #include "FileUtils.h"
 #include "Fitting.h"
+#include <iostream>
 
 using namespace cv::xfeatures2d;
-using namespace std;
 namespace bfs = boost::filesystem;
 
 namespace AOI
@@ -2970,13 +2970,23 @@ EXIT:
                                                                 const cv::Size  &szBoardPattern,
                                                                 VectorOfPoint2f &vecCorners)
 {
-    VisionStatus enStatus;    
+    VisionStatus enStatus;
+
+    cv::Mat matOutput;
+    cv::cvtColor ( mat, matOutput, CV_GRAY2BGR );
 
     for ( int row = 0; row < szBoardPattern.height; ++ row )
     for ( int col = 0; col < szBoardPattern.width;  ++ col )
     {        
         cv::Rect rectSrchROI ( ToInt32 ( startPoint.x + col * fStepSize ), ToInt32 ( startPoint.y + row * fStepSize ), nSrchSize, nSrchSize );
-        cv::Mat matSrchROI(mat, rectSrchROI);
+        if ( ( rectSrchROI.x + rectSrchROI.width )  > mat.cols ) rectSrchROI.width = mat.cols - rectSrchROI.x;
+        if ( ( rectSrchROI.y + rectSrchROI.height ) > mat.rows ) rectSrchROI.width = mat.rows - rectSrchROI.y;
+
+        cv::Mat matSrchROI ( mat, rectSrchROI );
+
+//#ifdef _DEBUG
+//        std::cout << "Srch ROI " << rectSrchROI.x << ", " << rectSrchROI.y << ", " << rectSrchROI.width << ", " << rectSrchROI.height << std::endl;
+//#endif
 
         cv::Point2f ptResult;
         float fRotation;
@@ -2987,7 +2997,10 @@ EXIT:
         ptResult.y += rectSrchROI.y;
 
         vecCorners.push_back ( ptResult );
+        cv::circle ( matOutput, ptResult, 3, cv::Scalar(0, 0, 255), 1);
     }
+
+    //cv::imwrite("./data/ChessBoardTmplMatchResult.png", matOutput);
     return enStatus;
 }
 
@@ -3014,35 +3027,61 @@ EXIT:
     }
 }
 
-/*static*/ float VisionAlgorithm::_findChessBoardBlockSize( const cv::Mat &matInput ) {
+/*static*/ float VisionAlgorithm::_findChessBoardBlockSize( const cv::Mat &matInput, const cv::Size szBoardPattern  ) {
     cv::Size2f size;
-    cv::Mat matROI ( matInput, cv::Rect ( matInput.cols / 2 - 100,  matInput.rows / 2 - 100, 200, 200 ) );  //Use the ROI 200x200 in the center of the image.
+    int nRoughBlockSize = matInput.rows / szBoardPattern.width / 2;
+    cv::Mat matROI ( matInput, cv::Rect ( matInput.cols / 2 - nRoughBlockSize * 2,  matInput.rows / 2 - nRoughBlockSize * 2, nRoughBlockSize * 4, nRoughBlockSize * 4 ) );  //Use the ROI 200x200 in the center of the image.
     cv::Mat matFilter;
-    cv::blur ( matROI, matFilter, cv::Size(5, 5) );
+    cv::GaussianBlur ( matROI, matFilter, cv::Size(3, 3), 1, 1 );
     cv::Mat matThreshold;
+    int nThreshold = _autoThreshold ( matFilter );
     cv::threshold ( matFilter, matThreshold, 150, 255, cv::THRESH_BINARY_INV );
     if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE )
         showImage("findChessBoardBlockSize Threshold image", matThreshold);
 
     std::vector<std::vector<cv::Point> > contours;
     cv::findContours ( matThreshold, contours, cv::RETR_LIST, cv::CHAIN_APPROX_SIMPLE );
+    
+    float fMaxBlockArea = 0;
     for ( const auto &contour : contours )  {
         auto area = cv::contourArea ( contour );
         if ( area > 1000 )  {
             cv::RotatedRect rotatedRect = cv::minAreaRect ( contour );
-            size = rotatedRect.size;
-            break;
+            if ( ( fabs ( rotatedRect.size.width - rotatedRect.size.height ) / ( rotatedRect.size.width + rotatedRect.size.height ) < 0.1 ) &&
+                ( rotatedRect.size.width * 2 * ( szBoardPattern.width - 1 ) < matInput.cols ) ) {
+                float fArea = rotatedRect.size.width * rotatedRect.size.height;
+                if ( fArea > fMaxBlockArea ) {
+                    size = rotatedRect.size;
+                    fMaxBlockArea = fArea;
+                }
+            }
         }
     }
-    return max ( size.width, size.height );
+
+    if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE ) {
+        cv::Mat matDisplay;
+        cv::cvtColor ( matROI, matDisplay, CV_GRAY2BGR );
+        for ( size_t i = 0; i < contours.size(); ++ i )    {
+            cv::drawContours ( matDisplay, contours, ToInt32(i), cv::Scalar(0,0,255) );
+        }
+        showImage("findChessBoardBlockSize contour image", matDisplay);
+    }
+    return  ( size.width + size.height ) / 2;
 }
 
 /*static*/ cv::Point2f VisionAlgorithm::_findFirstChessBoardCorner(const cv::Mat &matInput, float fBlockSize) {
-    cv::Mat matROI ( matInput, cv::Rect ( 0, 0, 300, 300 ) );
+    int nCornerRoiSize = fBlockSize * 3;
+    if ( nCornerRoiSize < 300 ) nCornerRoiSize = 300;
+    cv::Mat matROI ( matInput, cv::Rect ( 0, 0, nCornerRoiSize, nCornerRoiSize ) );
     cv::Mat matFilter;
-    cv::blur ( matROI, matFilter, cv::Size(5, 5) );
+    cv::GaussianBlur ( matROI, matFilter, cv::Size(3, 3), 0.5, 0.5 );
     cv::Mat matThreshold;
-    cv::threshold ( matFilter, matThreshold, 100, 255, cv::THRESH_BINARY_INV );   
+    int nThreshold = _autoThreshold ( matFilter );
+    nThreshold += 20;
+    cv::threshold ( matFilter, matThreshold, nThreshold, 255, cv::THRESH_BINARY_INV );
+    if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE ) {
+        showImage("_findFirstChessBoardCorner threshold image", matThreshold);
+    }
     
     VectorOfVectorOfPoint contours, vecDrawContours;
     cv::findContours ( matThreshold, contours, cv::RETR_LIST, cv::CHAIN_APPROX_SIMPLE );
@@ -3067,6 +3106,14 @@ EXIT:
             minDistanceToZero = distanceToZero;
         }          
     }
+    if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE ) {
+        cv::Mat matDisplay;
+        cv::cvtColor ( matROI, matDisplay, CV_GRAY2BGR );
+        for ( size_t i = 0; i < contours.size(); ++ i )    {
+            cv::drawContours ( matDisplay, contours, ToInt32(i), cv::Scalar(0,0,255) );
+        }
+        showImage("findChessBoardBlockSize contour image", matDisplay);
+    }
     return cv::Point2f ( ptUpperLeftBlockCenter.x - fBlockSize / 2, ptUpperLeftBlockCenter.y - fBlockSize / 2 );
 }
 
@@ -3086,7 +3133,7 @@ EXIT:
         return pstRpy->enStatus;
     }
 
-    if ( pstCmd->szBoardPattern.width <= 0 || pstCmd->szBoardPattern.height <= 0) {
+    if ( pstCmd->szBoardPattern.width <= 0 || pstCmd->szBoardPattern.height <= 0 ) {
         _snprintf(charrMsg, sizeof(charrMsg), "Board pattern size %d, %d is invalid.", pstCmd->szBoardPattern.width, pstCmd->szBoardPattern.height );
         WriteLog(charrMsg);
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
@@ -3113,12 +3160,12 @@ EXIT:
     cv::Mat matTmplROI1(matTmpl, cv::Rect(10, 10, 10, 10));
     matTmplROI1.setTo(cv::Scalar::all(PR_MAX_GRAY_LEVEL));
 
-    float fBlockSize = _findChessBoardBlockSize ( matGray );
+    float fBlockSize = _findChessBoardBlockSize ( matGray, pstCmd->szBoardPattern );
     if ( fBlockSize <= 5 )  {
         WriteLog("Failed to find chess board block size");
         pstRpy->enStatus = VisionStatus::FAILED_TO_FIND_CHESS_BOARD_BLOCK_SIZE;
         FINISH_LOGCASE;
-        pstRpy->enStatus;
+        return pstRpy->enStatus;
     }
     float fStepSize = fBlockSize * 2;
     int nSrchSize = ToInt32( fStepSize - 10 );
@@ -3127,14 +3174,18 @@ EXIT:
         WriteLog("Failed to find chess board first corner.");
         pstRpy->enStatus = VisionStatus::FAILED_TO_FIND_CHESS_BOARD_CORNER;
         FINISH_LOGCASE;
-        pstRpy->enStatus;
+        return pstRpy->enStatus;
     }
-    cv::Point ptChessBoardSrchStartPoint = ptChessBoardSrchStartPoint = cv::Point ( ToInt32 ( ptFirstCorer.x - nSrchSize / 2 ), ToInt32 ( ptFirstCorer.y - nSrchSize/ 2 ) );
+    cv::Point ptChessBoardSrchStartPoint = cv::Point ( ToInt32 ( ptFirstCorer.x - nSrchSize / 2 ), ToInt32 ( ptFirstCorer.y - nSrchSize/ 2 ) );
+    if ( ptChessBoardSrchStartPoint.x < 0 || ptChessBoardSrchStartPoint.y < 0 ) {
+        ptChessBoardSrchStartPoint.x += ToInt32( fBlockSize );
+        ptChessBoardSrchStartPoint.y += ToInt32( fBlockSize );
+    }
     pstRpy->enStatus = _findChessBoardCorners ( matGray, matTmpl, ptChessBoardSrchStartPoint, fStepSize, nSrchSize, pstCmd->szBoardPattern, vecVecImagePoints[0] );
     if ( VisionStatus::OK != pstRpy->enStatus ) {
         WriteLog("Failed to find chess board first corners.");
         FINISH_LOGCASE;
-        pstRpy->enStatus;
+        return pstRpy->enStatus;
     }
     
     _calcBoardCornerPositions ( pstCmd->szBoardPattern, pstCmd->fPatternDist, vevVecObjectPoints[0], CHESSBOARD );

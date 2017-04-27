@@ -101,7 +101,7 @@ protected:
                                                 int              nSrchSize,
                                                 const cv::Size  &szBoardPattern,
                                                 VectorOfPoint2f &dvecVecCorners);
-    static float _findChessBoardBlockSize( const cv::Mat &matInput );
+    static float _findChessBoardBlockSize( const cv::Mat &matInput, const cv::Size szBoardPattern );
     static void _calcBoardCornerPositions(cv::Size boardSize, float squareSize, std::vector<cv::Point3f> &corners, CalibPattern patternType = CHESSBOARD );
     static cv::Point2f _findFirstChessBoardCorner(const cv::Mat &matInput, float fBlockSize);
 protected:

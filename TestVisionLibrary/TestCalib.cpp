@@ -7,11 +7,12 @@ using namespace AOI::Vision;
 
 void TestCalibCamera()
 {
+    std::string strImgPath = "./data/1.bmp";
     PR_CALIBRATE_CAMERA_CMD stCmd;
     PR_CALIBRATE_CAMERA_RPY stRpy;
-    stCmd.matInput = cv::imread("./data/ChessBoard.png", cv::IMREAD_GRAYSCALE );
+    stCmd.matInput = cv::imread(strImgPath, cv::IMREAD_GRAYSCALE );
     stCmd.fPatternDist = 2.;
-    stCmd.szBoardPattern = cv::Size(25, 23);
+    stCmd.szBoardPattern = cv::Size( 8, 5); //cv::Size(25, 23); 
 
     PR_CalibrateCamera ( &stCmd, &stRpy );
     if ( VisionStatus::OK != stRpy.enStatus) {
@@ -21,7 +22,7 @@ void TestCalibCamera()
 
     PR_RESTORE_IMG_CMD stRetoreCmd;
     PR_RESTORE_IMG_RPY stRetoreRpy;
-    stRetoreCmd.matInput = cv::imread("./data/ChessBoard.png", cv::IMREAD_GRAYSCALE );
+    stRetoreCmd.matInput = cv::imread(strImgPath, cv::IMREAD_GRAYSCALE );
     stRetoreCmd.vecMatRestoreImage = stRpy.vecMatRestoreImage;
     PR_RestoreImage ( &stRetoreCmd, &stRetoreRpy );
     if ( VisionStatus::OK != stRetoreRpy.enStatus) {

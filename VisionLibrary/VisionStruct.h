@@ -24,6 +24,7 @@ using VectorOfVectorOfPoint2f = std::vector<VectorOfPoint2f>;
 using VectorOfRect = std::vector<cv::Rect>;
 using ListOfPoint = std::list<cv::Point>;
 using VectorOfListOfPoint = std::vector<ListOfPoint>;
+using VectorOfRotatedRect = std::vector<cv::RotatedRect>;
 
 
 #define ToInt32(param)      (static_cast<AOI::Int32>(param))
@@ -503,6 +504,18 @@ struct PR_RESTORE_IMG_CMD {
 struct PR_RESTORE_IMG_RPY {
     VisionStatus            enStatus;
     cv::Mat                 matResult;
+};
+
+struct PR_AUTO_LOCATE_LEAD_CMD {
+    cv::Mat                 matInput;
+    cv::Rect                rectSrchWindow;
+    cv::Rect                rectChipBody;
+    PR_OBJECT_ATTRIBUTE     enLeadAttribute;
+};
+
+struct PR_AUTO_LOCATE_LEAD_RPY {
+    VisionStatus            enStatus;
+    VectorOfRotatedRect     vecLeadLocation;
 };
 
 }
