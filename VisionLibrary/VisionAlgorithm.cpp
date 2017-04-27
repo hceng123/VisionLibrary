@@ -1373,6 +1373,8 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
         pLogCase = std::make_unique<LogCasePickColor>( strLocalPath, true );
     else if (LogCaseCalibrateCamera::StaticGetFolderPrefix() == folderPrefix )
         pLogCase = std::make_unique<LogCaseCalibrateCamera>( strLocalPath, true );
+    else if (LogCaseRestoreImg::StaticGetFolderPrefix() == folderPrefix )
+        pLogCase = std::make_unique<LogCaseRestoreImg>( strLocalPath, true );
 
     if ( nullptr != pLogCase )
         enStatus = pLogCase->RunLogCase();
@@ -3156,6 +3158,53 @@ EXIT:
     double fy = pstRpy->matIntrinsicMatrix.at<double>(1, 1);
     pstRpy->dResolutionX = PR_MM_TO_UM * z / fx;
     pstRpy->dResolutionY = PR_MM_TO_UM * z / fy;
+
+    cv::Mat matMapX, matMapY;
+    cv::Mat matNewCemraMatrix = cv::getOptimalNewCameraMatrix ( pstRpy->matIntrinsicMatrix, pstRpy->matDistCoeffs, imageSize, 1, imageSize, 0 );
+    cv::initUndistortRectifyMap ( pstRpy->matIntrinsicMatrix, pstRpy->matDistCoeffs, cv::Mat(), matNewCemraMatrix,
+        imageSize, CV_32FC1, matMapX, matMapY );
+    pstRpy->vecMatRestoreImage.push_back ( matMapX );
+    pstRpy->vecMatRestoreImage.push_back ( matMapY );
+
+    FINISH_LOGCASE;
+    MARK_FUNCTION_END_TIME;
+    return pstRpy->enStatus;
+}
+
+/*static*/ VisionStatus VisionAlgorithm::restoreImage(const PR_RESTORE_IMG_CMD *const pstCmd, PR_RESTORE_IMG_RPY *const pstRpy, bool bReplay/* = false*/)
+{
+    assert(pstCmd != nullptr && pstRpy != nullptr);
+    char charrMsg[1000];
+    if ( pstCmd->matInput.empty() ) {
+        WriteLog("Input image is empty.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    if ( pstCmd->vecMatRestoreImage.size() != 2 )   {
+        _snprintf( charrMsg, sizeof( charrMsg ), "The remap mat vector size %d is invalid.", pstCmd->vecMatRestoreImage.size() );
+        WriteLog(charrMsg);
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    if ( pstCmd->vecMatRestoreImage[0].size() != pstCmd->matInput.size() || pstCmd->vecMatRestoreImage[1].size() != pstCmd->matInput.size() )   {
+        _snprintf( charrMsg, sizeof( charrMsg ), "The remap mat size(%d, %d) is not match with input image size (%d, %d).", 
+            pstCmd->vecMatRestoreImage[0].size().width, pstCmd->vecMatRestoreImage[0].size().height,
+            pstCmd->matInput.size().width, pstCmd->matInput.size().height );
+        WriteLog(charrMsg);
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    MARK_FUNCTION_START_TIME;
+    SETUP_LOGCASE(LogCaseRestoreImg);
+
+    cv::Mat matInputFloat;
+    pstCmd->matInput.convertTo ( matInputFloat, CV_32FC1 );
+    cv::remap ( matInputFloat, pstRpy->matResult, pstCmd->vecMatRestoreImage[0], pstCmd->vecMatRestoreImage[1], cv::INTER_LINEAR);
+
+    pstRpy->enStatus = VisionStatus::OK;
 
     FINISH_LOGCASE;
     MARK_FUNCTION_END_TIME;

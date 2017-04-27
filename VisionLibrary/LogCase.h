@@ -376,7 +376,7 @@ class LogCaseCalibrateCamera : public LogCase
 public:
     explicit LogCaseCalibrateCamera(const String &strPath, bool bReplay = false) : LogCase(strPath, bReplay) {}
     VisionStatus WriteCmd(const PR_CALIBRATE_CAMERA_CMD *const pCmd);
-    VisionStatus WriteRpy(PR_CALIBRATE_CAMERA_RPY *pRpy);
+    VisionStatus WriteRpy(const PR_CALIBRATE_CAMERA_RPY *const pRpy);
     virtual VisionStatus RunLogCase() override;
     virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
     static String StaticGetFolderPrefix();
@@ -387,6 +387,24 @@ private:
     const String _strKeyStatus          = "Status";
     const String _strKeyResolutionX     = "ResolutionX";
     const String _strKeyResolutionY     = "ResolutionY";
+};
+
+class LogCaseRestoreImg : public LogCase
+{
+public:
+    explicit LogCaseRestoreImg(const String &strPath, bool bReplay = false) : LogCase(strPath, bReplay) {}
+    VisionStatus WriteCmd(const PR_RESTORE_IMG_CMD *const pCmd);
+    VisionStatus WriteRpy(PR_RESTORE_IMG_RPY *const pRpy);
+    virtual VisionStatus RunLogCase() override;
+    virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
+    static String StaticGetFolderPrefix();
+private:
+    const String _strYmlFile            = "InputMat.yml";
+    const String _strKeyMapX            = "MapX";
+    const String _strKeyMapY            = "MapY";
+
+    const String _strKeyStatus          = "Status";
+    const String _strDiffImg            = "diff.png";
 };
 
 }

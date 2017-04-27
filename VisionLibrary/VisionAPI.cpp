@@ -305,5 +305,12 @@ PR_FUNCTION_ENTRY
 PR_FUNCTION_EXIT
 }
 
+VisionAPI VisionStatus PR_RestoreImage(const PR_RESTORE_IMG_CMD *const pstCmd, PR_RESTORE_IMG_RPY *const pstRpy)
+{
+PR_FUNCTION_ENTRY
+    return VisionAlgorithm::restoreImage( pstCmd, pstRpy );
+PR_FUNCTION_EXIT
+}
+
 }
 }

@@ -31,3 +31,4 @@ VisionWidget/*.png
 VisionWidget/TestImage
 *.bak
 *.user
+TestVisionLibrary/Vision

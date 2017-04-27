@@ -1067,7 +1067,7 @@ VisionStatus LogCaseCalibrateCamera::WriteCmd(const PR_CALIBRATE_CAMERA_CMD *con
     return VisionStatus::OK;
 }
 
-VisionStatus LogCaseCalibrateCamera::WriteRpy(PR_CALIBRATE_CAMERA_RPY *pRpy) {
+VisionStatus LogCaseCalibrateCamera::WriteRpy(const PR_CALIBRATE_CAMERA_RPY * const pRpy) {
     CSimpleIni ini(false, false, false);
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile(cmdRpyFilePath.c_str());    
@@ -1094,6 +1094,79 @@ VisionStatus LogCaseCalibrateCamera::RunLogCase()
     PR_CALIBRATE_CAMERA_RPY stRpy;
     enStatus = VisionAlgorithm::calibrateCamera ( &stCmd, &stRpy, true );
     WriteRpy(&stRpy);
+    return enStatus;
+}
+
+/*static*/ String LogCaseRestoreImg::StaticGetFolderPrefix()
+{
+    return "RestoreImg";
+}
+
+VisionStatus LogCaseRestoreImg::WriteCmd(const PR_RESTORE_IMG_CMD *const pCmd)
+{
+    if (!_bReplay)    {
+        _strLogCasePath = _generateLogCaseName(GetFolderPrefix());
+        bfs::path dir(_strLogCasePath);
+        bfs::create_directories(dir);
+    }
+
+    CSimpleIni ini(false, false, false);
+    auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
+
+    cv::FileStorage fs ( _strLogCasePath + _strYmlFile, cv::FileStorage::WRITE );
+    cv::write(fs , _strKeyMapX, pCmd->vecMatRestoreImage[0] );
+    cv::write(fs , _strKeyMapY, pCmd->vecMatRestoreImage[1] );
+    fs.release();
+
+    cv::imwrite(_strLogCasePath + _IMAGE_NAME,     pCmd->matInput);
+    return VisionStatus::OK;
+}
+
+VisionStatus LogCaseRestoreImg::WriteRpy(PR_RESTORE_IMG_RPY *const pRpy) {
+    CSimpleIni ini(false, false, false);
+    auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
+    ini.LoadFile(cmdRpyFilePath.c_str());    
+    ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyStatus.c_str(),    ToInt32 ( pRpy->enStatus ) );
+    ini.SaveFile(cmdRpyFilePath.c_str());
+
+    cv::imwrite ( _strLogCasePath + _RESULT_IMAGE_NAME, pRpy->matResult );
+    return VisionStatus::OK;
+}
+
+VisionStatus LogCaseRestoreImg::RunLogCase()
+{
+    PR_RESTORE_IMG_CMD stCmd;
+    VisionStatus enStatus;
+
+    CSimpleIni ini(false, false, false);
+    auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
+    ini.LoadFile(cmdRpyFilePath.c_str());
+    stCmd.matInput = cv::imread(_strLogCasePath + _IMAGE_NAME, cv::IMREAD_COLOR);
+    
+    cv::FileStorage fs ( _strLogCasePath + _strYmlFile, cv::FileStorage::READ );
+    cv::Mat matMapX, matMapY;
+    cv::FileNode fileNodeMapX = fs[_strKeyMapX];
+    cv::FileNode fileNodeMapY = fs[_strKeyMapY];
+    cv::read ( fileNodeMapX , matMapX );
+    cv::read ( fileNodeMapY , matMapY );
+    fs.release();
+
+    stCmd.vecMatRestoreImage.push_back ( matMapX );
+    stCmd.vecMatRestoreImage.push_back ( matMapY );
+
+    PR_RESTORE_IMG_RPY stRpy;
+    enStatus = VisionAlgorithm::restoreImage ( &stCmd, &stRpy, true );
+    WriteRpy(&stRpy);
+
+    if ( VisionStatus::OK == enStatus ) {
+        cv::Mat matInputFloat, matResultFloat;
+        stCmd.matInput.convertTo (matInputFloat,  CV_32FC1);
+        stRpy.matResult.convertTo(matResultFloat, CV_32FC1);
+
+        cv::Mat matDiff = cv::Scalar::all(255.f) - (matInputFloat - matResultFloat);
+        cv::imwrite(_strLogCasePath + _strDiffImg, matDiff);
+    }
+
     return enStatus;
 }
 

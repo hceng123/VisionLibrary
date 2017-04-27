@@ -437,8 +437,11 @@ int _tmain(int argc, _TCHAR* argv[])
 	//TestInspDeviceAutoThreshold();
 	//TestFitCircle();
 
-    TestCalibCamera();
+    //TestCalibCamera();
+    //TestCompareInputAndResult();
+    TestRunRestoreImgLogCase();
 
+    std::cout << "Press any key to exist." << std::endl;
     getchar();
 	return 0;
 }
