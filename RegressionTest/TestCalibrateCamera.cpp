@@ -15,11 +15,11 @@ void TestCalibrateCamera()
         char chArrMsg[100];
         std::cout << "Calibrate camera status " << ToInt32(stRpy.enStatus) << std::endl;
         if (VisionStatus::OK == stRpy.enStatus)   {
-            std::cout << "Camera Intrinsic camera:" << std::endl;
-            printfMat<double> ( stRpy.matIntrinsicMatrix );
+            //std::cout << "Camera Intrinsic camera:" << std::endl;
+            //printfMat<double> ( stRpy.matIntrinsicMatrix );
 
-            std::cout << "Camera Extrinsic camera:" << std::endl;
-            printfMat<double> ( stRpy.matExtrinsicMatrix );
+            //std::cout << "Camera Extrinsic camera:" << std::endl;
+            //printfMat<double> ( stRpy.matExtrinsicMatrix );
 
             _snprintf(chArrMsg, sizeof(chArrMsg), "Camera resolution (%.2f, %.2f)", stRpy.dResolutionX, stRpy.dResolutionY );
             std::cout << chArrMsg << std::endl;      

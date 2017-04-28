@@ -2997,10 +2997,22 @@ EXIT:
         ptResult.y += rectSrchROI.y;
 
         vecCorners.push_back ( ptResult );
-        cv::circle ( matOutput, ptResult, 3, cv::Scalar(0, 0, 255), 1);
+
+        //Get a more accurate step size.
+        if ( vecCorners.size() == 2 )
+            fStepSize = CalcUtils::distanceOf2Point ( vecCorners[1], vecCorners[0] );
+
+#ifdef _DEBUG
+        cv::rectangle ( matOutput, rectSrchROI, cv::Scalar(255,0,0), 2 );
+        cv::circle ( matOutput, ptResult, 10, cv::Scalar(0, 0, 255), 2);
+#endif
+
     }
 
-    //cv::imwrite("./data/ChessBoardTmplMatchResult.png", matOutput);
+#ifdef _DEBUG
+    cv::imwrite("./data/ChessBoardTmplMatchResult.png", matOutput);
+#endif
+
     return enStatus;
 }
 
@@ -3035,7 +3047,7 @@ EXIT:
     cv::GaussianBlur ( matROI, matFilter, cv::Size(3, 3), 1, 1 );
     cv::Mat matThreshold;
     int nThreshold = _autoThreshold ( matFilter );
-    cv::threshold ( matFilter, matThreshold, 150, 255, cv::THRESH_BINARY_INV );
+    cv::threshold ( matFilter, matThreshold, nThreshold + 20, 255, cv::THRESH_BINARY_INV );
     if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE )
         showImage("findChessBoardBlockSize Threshold image", matThreshold);
 
@@ -3070,7 +3082,7 @@ EXIT:
 }
 
 /*static*/ cv::Point2f VisionAlgorithm::_findFirstChessBoardCorner(const cv::Mat &matInput, float fBlockSize) {
-    int nCornerRoiSize = fBlockSize * 3;
+    int nCornerRoiSize = ToInt32 ( fBlockSize * 3 );
     if ( nCornerRoiSize < 300 ) nCornerRoiSize = 300;
     cv::Mat matROI ( matInput, cv::Rect ( 0, 0, nCornerRoiSize, nCornerRoiSize ) );
     cv::Mat matFilter;
@@ -3169,6 +3181,7 @@ EXIT:
     }
     float fStepSize = fBlockSize * 2;
     int nSrchSize = ToInt32( fStepSize - 10 );
+    if ( nSrchSize > 100 ) nSrchSize = 100;
     cv::Point2f ptFirstCorer = _findFirstChessBoardCorner ( matGray, fBlockSize );
     if ( ptFirstCorer.x <= 0 || ptFirstCorer.y <= 0 ) {
         WriteLog("Failed to find chess board first corner.");
@@ -3192,7 +3205,7 @@ EXIT:
     vevVecObjectPoints.resize ( vecVecImagePoints.size(), vevVecObjectPoints[0] );
     
     double rms = cv::calibrateCamera ( vevVecObjectPoints, vecVecImagePoints, imageSize, pstRpy->matIntrinsicMatrix,
-            pstRpy->matDistCoeffs, rvecs, tvecs, cv::CALIB_FIX_K4 | cv::CALIB_FIX_K5 );
+            pstRpy->matDistCoeffs, rvecs, tvecs );
     
     cv::Rodrigues ( rvecs[0], matRotation );
     pstRpy->matExtrinsicMatrix = matRotation.clone();
@@ -3259,6 +3272,12 @@ EXIT:
 
     FINISH_LOGCASE;
     MARK_FUNCTION_END_TIME;
+    return pstRpy->enStatus;
+}
+
+/*static*/ VisionStatus VisionAlgorithm::autoLocateLead(const PR_AUTO_LOCATE_LEAD_CMD *const pstCmd, PR_AUTO_LOCATE_LEAD_RPY *const pstRpy, bool Replay/* = false*/ )
+{
+    pstRpy->enStatus = VisionStatus::OK;
     return pstRpy->enStatus;
 }
 

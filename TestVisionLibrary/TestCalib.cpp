@@ -2,23 +2,34 @@
 #include "../VisionLibrary/VisionAPI.h"
 #include "opencv2/highgui.hpp"
 #include <iostream>
+#include "TestSub.h"
 
 using namespace AOI::Vision;
 
 void TestCalibCamera()
 {
-    std::string strImgPath = "./data/1.bmp";
+    std::string strImgPath = "./data/chessboard.png";
     PR_CALIBRATE_CAMERA_CMD stCmd;
     PR_CALIBRATE_CAMERA_RPY stRpy;
     stCmd.matInput = cv::imread(strImgPath, cv::IMREAD_GRAYSCALE );
     stCmd.fPatternDist = 2.;
-    stCmd.szBoardPattern = cv::Size( 8, 5); //cv::Size(25, 23); 
+    stCmd.szBoardPattern =  cv::Size(25, 23); //cv::Size( 7, 5 );
 
     PR_CalibrateCamera ( &stCmd, &stRpy );
-    if ( VisionStatus::OK != stRpy.enStatus) {
+    if ( VisionStatus::OK != stRpy.enStatus ) {
         std::cout << "Failed to calibrate camera!" << std::endl;
         return;
     }
+
+    bool ok = cv::checkRange(stRpy.matIntrinsicMatrix) && cv::checkRange(stRpy.matIntrinsicMatrix);
+    std::cout << "OK = " << ok << ", Camera Instrinsic Matrix: " << std::endl;
+    printfMat<double>(stRpy.matIntrinsicMatrix);
+
+    std::cout << "Camera Extrinsic Matrix: " << std::endl;
+    printfMat<double>(stRpy.matExtrinsicMatrix);
+
+    std::cout << " Distortion Coefficient: " << std::endl;
+    printfMat<double>(stRpy.matDistCoeffs);
 
     PR_RESTORE_IMG_CMD stRetoreCmd;
     PR_RESTORE_IMG_RPY stRetoreRpy;
@@ -29,12 +40,6 @@ void TestCalibCamera()
         std::cout << "Failed to restore image!" << std::endl;
         return;
     }
-
-    //cv::FileStorage fs("./data/InputMat.yml", cv::FileStorage::WRITE);
-    //cv::write(fs , "MapX", stRetoreCmd.vecMatRestoreImage[0]);
-    //fs.release();
-
-    //cv::imwrite ( "./data/mapX.png", )
 
     cv::Mat matInputFloat;
     stRetoreCmd.matInput.convertTo ( matInputFloat, CV_32FC1 );
