@@ -24,8 +24,6 @@ using VectorOfVectorOfPoint2f = std::vector<VectorOfPoint2f>;
 using VectorOfRect = std::vector<cv::Rect>;
 using ListOfPoint = std::list<cv::Point>;
 using VectorOfListOfPoint = std::vector<ListOfPoint>;
-using VectorOfRotatedRect = std::vector<cv::RotatedRect>;
-
 
 #define ToInt32(param)      (static_cast<AOI::Int32>(param))
 #define ToFloat(param)      (static_cast<float>(param))
@@ -399,6 +397,7 @@ struct PR_FILTER_RPY {
 
 struct PR_AUTO_THRESHOLD_CMD {
     cv::Mat                 matInput;
+    cv::Mat                 matMask;
     cv::Rect                rectROI;
     Int16                   nThresholdNum;
 };
@@ -483,7 +482,7 @@ struct PR_PICK_COLOR_RPY {
 struct PR_CALIBRATE_CAMERA_CMD {
     cv::Mat                 matInput;
     cv::Size                szBoardPattern; // Number of corners per chessboard row and col. szBoardPattern = cv::Size(points_per_row, points_per_col) = cv::Size(columns, rows).
-    float                   fPatternDist;    //The real chess board corner to corner distance. Unit: mm.
+    float                   fPatternDist;   //The real chess board corner to corner distance. Unit: mm.
 };
 
 struct PR_CALIBRATE_CAMERA_RPY {
@@ -515,7 +514,8 @@ struct PR_AUTO_LOCATE_LEAD_CMD {
 
 struct PR_AUTO_LOCATE_LEAD_RPY {
     VisionStatus            enStatus;
-    VectorOfRotatedRect     vecLeadLocation;
+    cv::Mat                 matResult;
+    VectorOfRect            vecLeadLocation;
 };
 
 }

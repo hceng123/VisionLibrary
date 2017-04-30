@@ -410,7 +410,7 @@ void TestFitCircle()
 
 int _tmain(int argc, _TCHAR* argv[])
 {
-    PR_SetDebugMode ( PR_DEBUG_MODE::SHOW_IMAGE );
+    PR_SetDebugMode ( PR_DEBUG_MODE::LOG_ALL_CASE );
     //TestVisionAlgorithm();
     std::cout << GetTime() << std::endl;
     //TestInspDevice();
@@ -427,6 +427,8 @@ int _tmain(int argc, _TCHAR* argv[])
     TestCalibCamera();
     //TestCompareInputAndResult();
     //TestRunRestoreImgLogCase();
+
+    //TestAutoLocateLead();
 
     std::cout << "Press any key to exist." << std::endl;
     getchar();
