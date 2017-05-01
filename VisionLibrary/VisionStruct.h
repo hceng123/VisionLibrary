@@ -493,6 +493,8 @@ struct PR_CALIBRATE_CAMERA_RPY {
     double                  dResolutionX;       //Unit: um/pixel.
     double                  dResolutionY;       //Unit: um/pixel.
     std::vector<cv::Mat>    vecMatRestoreImage; //The remap matrix to restore image. vector size is 2, the matrix dimension is same as input image.
+    //Intermediate result.
+    cv::Mat                 matCornerPointsImg;
 };
 
 struct PR_RESTORE_IMG_CMD {

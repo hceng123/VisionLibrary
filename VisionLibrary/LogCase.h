@@ -381,6 +381,8 @@ public:
     virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
     static String StaticGetFolderPrefix();
 private:
+    const String _strCornerPointsImage  = "CorerPoints.png";
+
     const String _strKeyBoardPattern    = "BoardPattern";
     const String _strKeyObjectSize      = "ObjectSize";
 
