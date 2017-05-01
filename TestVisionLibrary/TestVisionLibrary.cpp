@@ -12,19 +12,6 @@
 
 using namespace AOI::Vision;
 
-template<class T>
-void printfMat(const cv::Mat &mat)
-{
-	for (short row = 0; row < mat.rows; ++row)
-	{
-		for (short col = 0; col < mat.cols; ++col)
-		{
-			printf("%f ", mat.at<T>(row, col));
-		}
-		printf("\n");
-	}
-}
-
 int TestVisionAlgorithm()
 {
 	float WZ = 0, TX = 0, TY = 0;
@@ -437,9 +424,11 @@ int _tmain(int argc, _TCHAR* argv[])
 	//TestInspDeviceAutoThreshold();
 	//TestFitCircle();
 
-    //TestCalibCamera();
+    TestCalibCamera();
     //TestCompareInputAndResult();
-    TestRunRestoreImgLogCase();
+    //TestRunRestoreImgLogCase();
+
+    //TestAutoLocateLead();
 
     std::cout << "Press any key to exist." << std::endl;
     getchar();

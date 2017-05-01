@@ -13,9 +13,9 @@
 #include "Log.h"
 #include "FileUtils.h"
 #include "Fitting.h"
+#include <iostream>
 
 using namespace cv::xfeatures2d;
-using namespace std;
 namespace bfs = boost::filesystem;
 
 namespace AOI
@@ -331,7 +331,7 @@ namespace
 * Note:      Mu is name of greek symbol μ.
 *            Omega and Eta are also greek symbol.
 *******************************************************************************/
-std::vector<Int16> VisionAlgorithm::_autoMultiLevelThreshold(const cv::Mat &mat, const int N)
+std::vector<Int16> VisionAlgorithm::_autoMultiLevelThreshold(const cv::Mat &matInput, const cv::Mat &matMask, int N)
 {
     assert(N >= 1 && N <= 4);
 
@@ -347,7 +347,7 @@ std::vector<Int16> VisionAlgorithm::_autoMultiLevelThreshold(const cv::Mat &mat,
     const float* ranges[] = { sranges };
 
     cv::MatND hist;
-    cv::calcHist(&mat, 1, channels, cv::Mat(), // do not use mask
+    cv::calcHist(&matInput, 1, channels, matMask,
         hist, 1, histSize, ranges,
         true, // the histogram is uniform
         false);
@@ -355,7 +355,7 @@ std::vector<Int16> VisionAlgorithm::_autoMultiLevelThreshold(const cv::Mat &mat,
     std::vector<float> P, S;
     P.push_back(0.f);
     S.push_back(0.f);
-    float fTotalPixel = (float)mat.rows * mat.cols;
+    float fTotalPixel = (float)matInput.rows * matInput.cols;
     for (int i = 0; i < sbins; ++i)   {
         float fPi = hist.at<float>(i, 0) / fTotalPixel;
         P.push_back(fPi + P[i]);
@@ -593,7 +593,7 @@ std::vector<Int16> VisionAlgorithm::_autoMultiLevelThreshold(const cv::Mat &mat,
 VisionStatus VisionAlgorithm::autoThreshold(PR_AUTO_THRESHOLD_CMD *pstCmd, PR_AUTO_THRESHOLD_RPY *pstRpy, bool bReplay)
 {
     assert ( pstCmd != nullptr && pstRpy != nullptr );
-
+    char charrMsg[1000];
     if (pstCmd->matInput.empty()) {
         WriteLog("Input image is empty");
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
@@ -609,11 +609,30 @@ VisionStatus VisionAlgorithm::autoThreshold(PR_AUTO_THRESHOLD_CMD *pstCmd, PR_AU
         return VisionStatus::INVALID_PARAM;
     }
 
+    if ( ! pstCmd->matMask.empty() ) {
+        if ( pstCmd->matMask.rows != pstCmd->matInput.rows || pstCmd->matMask.cols != pstCmd->matInput.cols ) {
+            _snprintf(charrMsg, sizeof(charrMsg), "The mask size ( %d, %d ) not match with input image size ( %d, %d )",
+                pstCmd->matMask.cols, pstCmd->matMask.rows, pstCmd->matInput.cols, pstCmd->matInput.rows);
+            WriteLog(charrMsg);
+            pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+            return pstRpy->enStatus;
+        }
+
+        if ( pstCmd->matMask.channels() != 1 )  {
+            WriteLog("The mask must be gray image!");
+            pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+            return pstRpy->enStatus;
+        }
+    }
+
     MARK_FUNCTION_START_TIME;
     SETUP_LOGCASE(LogCaseAutoThreshold);
 
     cv::Mat matROI(pstCmd->matInput, pstCmd->rectROI);
-    pstRpy->vecThreshold = _autoMultiLevelThreshold ( matROI, pstCmd->nThresholdNum);
+    cv::Mat matMaskROI;
+    if ( ! pstCmd->matMask.empty() )
+        matMaskROI = cv::Mat( pstCmd->matMask, pstCmd->rectROI).clone();
+    pstRpy->vecThreshold = _autoMultiLevelThreshold ( matROI, matMaskROI, pstCmd->nThresholdNum);
 
     pstRpy->enStatus = VisionStatus::OK;
     
@@ -622,9 +641,9 @@ VisionStatus VisionAlgorithm::autoThreshold(PR_AUTO_THRESHOLD_CMD *pstCmd, PR_AU
     return pstRpy->enStatus;
 }
 
-int VisionAlgorithm::_autoThreshold(const cv::Mat &mat)
+int VisionAlgorithm::_autoThreshold(const cv::Mat &mat, const cv::Mat &matMask/* = cv::Mat()*/ )
 {
-    auto vecThreshold = _autoMultiLevelThreshold(mat, 1);
+    auto vecThreshold = _autoMultiLevelThreshold ( mat, matMask, 1 );
     return vecThreshold[0];
 }
 
@@ -1375,6 +1394,8 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
         pLogCase = std::make_unique<LogCaseCalibrateCamera>( strLocalPath, true );
     else if (LogCaseRestoreImg::StaticGetFolderPrefix() == folderPrefix )
         pLogCase = std::make_unique<LogCaseRestoreImg>( strLocalPath, true );
+    else if (LogCaseAutoLocateLead::StaticGetFolderPrefix() == folderPrefix )
+        pLogCase = std::make_unique<LogCaseAutoLocateLead>( strLocalPath, true );
 
     if ( nullptr != pLogCase )
         enStatus = pLogCase->RunLogCase();
@@ -2596,14 +2617,14 @@ EXIT:
     cv::connectedComponents( matGray, matLabels, pstCmd->nConnectivity, CV_32S);
 
     double minValue, maxValue;
-    cv::minMaxIdx( matLabels, &minValue, &maxValue );
+    cv::minMaxIdx ( matLabels, &minValue, &maxValue );
 
-    VisionStatus enStatus = VisionStatus::OK;
     cv::Mat matRemoveMask = cv::Mat::zeros(matLabels.size(), CV_8UC1);
 
     if ( maxValue > Config::GetInstance()->getRemoveCCMaxComponents() ) {
-        enStatus = VisionStatus::TOO_MUCH_CC_TO_REMOVE;
-        goto EXIT;
+        pstRpy->enStatus = VisionStatus::TOO_MUCH_CC_TO_REMOVE;
+        FINISH_LOGCASE;
+        return pstRpy->enStatus;
     }
 
     int nCurrentLabel = 1;
@@ -2629,8 +2650,7 @@ EXIT:
     if ( matROI.channels() == 3 )
         cv::cvtColor ( matGray, matROI, CV_GRAY2BGR );
 
-EXIT:
-    pstRpy->enStatus = enStatus;
+    pstRpy->enStatus = VisionStatus::OK;
     FINISH_LOGCASE;
     MARK_FUNCTION_END_TIME;
 
@@ -2753,7 +2773,7 @@ EXIT:
     
     fitResult = Fitting::fitCircle ( vecPoints );
 
-    if ( fitResult.center.x <= 0 || fitResult.center.y <= 0 || fitResult.size.width <= 0 )   {
+    if ( fitResult.center.x <= 0 || fitResult.center.y <= 0 || fitResult.size.width <= 0 ) {
         WriteLog("Failed to fit circle");
         pstRpy->enStatus = VisionStatus::FAIL_TO_FIT_CIRCLE;
         goto EXIT;
@@ -2829,7 +2849,7 @@ EXIT:
     assert(pstCmd != nullptr && pstRpy != nullptr);
 
     if (pstCmd->matInput.empty()) {
-        WriteLog("Input image is empty");
+        WriteLog("Input image is empty.");
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return pstRpy->enStatus;
     }
@@ -2838,7 +2858,7 @@ EXIT:
         pstCmd->rectROI.width <= 0 || pstCmd->rectROI.height <= 0 ||
         ( pstCmd->rectROI.x + pstCmd->rectROI.width ) > pstCmd->matInput.cols ||
         ( pstCmd->rectROI.y + pstCmd->rectROI.height ) > pstCmd->matInput.rows )    {
-        WriteLog("The input ROI is invalid");
+        WriteLog("The input ROI is invalid.");
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return VisionStatus::INVALID_PARAM;
     }
@@ -2847,7 +2867,7 @@ EXIT:
     SETUP_LOGCASE(LogCaseFillHole);
 
     pstRpy->matResult = pstCmd->matInput.clone();
-    cv::Mat matROI ( pstRpy->matResult, pstCmd->rectROI);    
+    cv::Mat matROI ( pstRpy->matResult, pstCmd->rectROI);
     cv::Mat matGray;
 
     if ( pstCmd->matInput.channels() > 1 )
@@ -2970,13 +2990,23 @@ EXIT:
                                                                 const cv::Size  &szBoardPattern,
                                                                 VectorOfPoint2f &vecCorners)
 {
-    VisionStatus enStatus;    
+    VisionStatus enStatus;
+
+    cv::Mat matOutput;
+    cv::cvtColor ( mat, matOutput, CV_GRAY2BGR );
 
     for ( int row = 0; row < szBoardPattern.height; ++ row )
     for ( int col = 0; col < szBoardPattern.width;  ++ col )
     {        
         cv::Rect rectSrchROI ( ToInt32 ( startPoint.x + col * fStepSize ), ToInt32 ( startPoint.y + row * fStepSize ), nSrchSize, nSrchSize );
-        cv::Mat matSrchROI(mat, rectSrchROI);
+        if ( ( rectSrchROI.x + rectSrchROI.width )  > mat.cols ) rectSrchROI.width = mat.cols - rectSrchROI.x;
+        if ( ( rectSrchROI.y + rectSrchROI.height ) > mat.rows ) rectSrchROI.width = mat.rows - rectSrchROI.y;
+
+        cv::Mat matSrchROI ( mat, rectSrchROI );
+
+//#ifdef _DEBUG
+//        std::cout << "Srch ROI " << rectSrchROI.x << ", " << rectSrchROI.y << ", " << rectSrchROI.width << ", " << rectSrchROI.height << std::endl;
+//#endif
 
         cv::Point2f ptResult;
         float fRotation;
@@ -2987,7 +3017,22 @@ EXIT:
         ptResult.y += rectSrchROI.y;
 
         vecCorners.push_back ( ptResult );
+
+        //Get a more accurate step size.
+        if ( vecCorners.size() == 2 )
+            fStepSize = CalcUtils::distanceOf2Point ( vecCorners[1], vecCorners[0] );
+
+#ifdef _DEBUG
+        cv::rectangle ( matOutput, rectSrchROI, cv::Scalar(255,0,0), 2 );
+        cv::circle ( matOutput, ptResult, 10, cv::Scalar(0, 0, 255), 2);
+#endif
+
     }
+
+#ifdef _DEBUG
+    cv::imwrite("./data/ChessBoardTmplMatchResult.png", matOutput);
+#endif
+
     return enStatus;
 }
 
@@ -3014,35 +3059,61 @@ EXIT:
     }
 }
 
-/*static*/ float VisionAlgorithm::_findChessBoardBlockSize( const cv::Mat &matInput ) {
+/*static*/ float VisionAlgorithm::_findChessBoardBlockSize( const cv::Mat &matInput, const cv::Size szBoardPattern  ) {
     cv::Size2f size;
-    cv::Mat matROI ( matInput, cv::Rect ( matInput.cols / 2 - 100,  matInput.rows / 2 - 100, 200, 200 ) );  //Use the ROI 200x200 in the center of the image.
+    int nRoughBlockSize = matInput.rows / szBoardPattern.width / 2;
+    cv::Mat matROI ( matInput, cv::Rect ( matInput.cols / 2 - nRoughBlockSize * 2,  matInput.rows / 2 - nRoughBlockSize * 2, nRoughBlockSize * 4, nRoughBlockSize * 4 ) );  //Use the ROI 200x200 in the center of the image.
     cv::Mat matFilter;
-    cv::blur ( matROI, matFilter, cv::Size(5, 5) );
+    cv::GaussianBlur ( matROI, matFilter, cv::Size(3, 3), 1, 1 );
     cv::Mat matThreshold;
-    cv::threshold ( matFilter, matThreshold, 150, 255, cv::THRESH_BINARY_INV );
+    int nThreshold = _autoThreshold ( matFilter );
+    cv::threshold ( matFilter, matThreshold, nThreshold + 20, 255, cv::THRESH_BINARY_INV );
     if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE )
         showImage("findChessBoardBlockSize Threshold image", matThreshold);
 
     std::vector<std::vector<cv::Point> > contours;
     cv::findContours ( matThreshold, contours, cv::RETR_LIST, cv::CHAIN_APPROX_SIMPLE );
+    
+    float fMaxBlockArea = 0;
     for ( const auto &contour : contours )  {
         auto area = cv::contourArea ( contour );
         if ( area > 1000 )  {
             cv::RotatedRect rotatedRect = cv::minAreaRect ( contour );
-            size = rotatedRect.size;
-            break;
+            if ( ( fabs ( rotatedRect.size.width - rotatedRect.size.height ) / ( rotatedRect.size.width + rotatedRect.size.height ) < 0.1 ) &&
+                ( rotatedRect.size.width * 2 * ( szBoardPattern.width - 1 ) < matInput.cols ) ) {
+                float fArea = rotatedRect.size.width * rotatedRect.size.height;
+                if ( fArea > fMaxBlockArea ) {
+                    size = rotatedRect.size;
+                    fMaxBlockArea = fArea;
+                }
+            }
         }
     }
-    return max ( size.width, size.height );
+
+    if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE ) {
+        cv::Mat matDisplay;
+        cv::cvtColor ( matROI, matDisplay, CV_GRAY2BGR );
+        for ( size_t i = 0; i < contours.size(); ++ i )    {
+            cv::drawContours ( matDisplay, contours, ToInt32(i), cv::Scalar(0,0,255) );
+        }
+        showImage("findChessBoardBlockSize contour image", matDisplay);
+    }
+    return  ( size.width + size.height ) / 2;
 }
 
 /*static*/ cv::Point2f VisionAlgorithm::_findFirstChessBoardCorner(const cv::Mat &matInput, float fBlockSize) {
-    cv::Mat matROI ( matInput, cv::Rect ( 0, 0, 300, 300 ) );
+    int nCornerRoiSize = ToInt32 ( fBlockSize * 3 );
+    if ( nCornerRoiSize < 300 ) nCornerRoiSize = 300;
+    cv::Mat matROI ( matInput, cv::Rect ( 0, 0, nCornerRoiSize, nCornerRoiSize ) );
     cv::Mat matFilter;
-    cv::blur ( matROI, matFilter, cv::Size(5, 5) );
+    cv::GaussianBlur ( matROI, matFilter, cv::Size(3, 3), 0.5, 0.5 );
     cv::Mat matThreshold;
-    cv::threshold ( matFilter, matThreshold, 100, 255, cv::THRESH_BINARY_INV );   
+    int nThreshold = _autoThreshold ( matFilter );
+    nThreshold += 20;
+    cv::threshold ( matFilter, matThreshold, nThreshold, 255, cv::THRESH_BINARY_INV );
+    if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE ) {
+        showImage("_findFirstChessBoardCorner threshold image", matThreshold);
+    }
     
     VectorOfVectorOfPoint contours, vecDrawContours;
     cv::findContours ( matThreshold, contours, cv::RETR_LIST, cv::CHAIN_APPROX_SIMPLE );
@@ -3067,6 +3138,14 @@ EXIT:
             minDistanceToZero = distanceToZero;
         }          
     }
+    if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE ) {
+        cv::Mat matDisplay;
+        cv::cvtColor ( matROI, matDisplay, CV_GRAY2BGR );
+        for ( size_t i = 0; i < contours.size(); ++ i )    {
+            cv::drawContours ( matDisplay, contours, ToInt32(i), cv::Scalar(0,0,255) );
+        }
+        showImage("findChessBoardBlockSize contour image", matDisplay);
+    }
     return cv::Point2f ( ptUpperLeftBlockCenter.x - fBlockSize / 2, ptUpperLeftBlockCenter.y - fBlockSize / 2 );
 }
 
@@ -3086,7 +3165,7 @@ EXIT:
         return pstRpy->enStatus;
     }
 
-    if ( pstCmd->szBoardPattern.width <= 0 || pstCmd->szBoardPattern.height <= 0) {
+    if ( pstCmd->szBoardPattern.width <= 0 || pstCmd->szBoardPattern.height <= 0 ) {
         _snprintf(charrMsg, sizeof(charrMsg), "Board pattern size %d, %d is invalid.", pstCmd->szBoardPattern.width, pstCmd->szBoardPattern.height );
         WriteLog(charrMsg);
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
@@ -3113,35 +3192,40 @@ EXIT:
     cv::Mat matTmplROI1(matTmpl, cv::Rect(10, 10, 10, 10));
     matTmplROI1.setTo(cv::Scalar::all(PR_MAX_GRAY_LEVEL));
 
-    float fBlockSize = _findChessBoardBlockSize ( matGray );
+    float fBlockSize = _findChessBoardBlockSize ( matGray, pstCmd->szBoardPattern );
     if ( fBlockSize <= 5 )  {
         WriteLog("Failed to find chess board block size");
         pstRpy->enStatus = VisionStatus::FAILED_TO_FIND_CHESS_BOARD_BLOCK_SIZE;
         FINISH_LOGCASE;
-        pstRpy->enStatus;
+        return pstRpy->enStatus;
     }
     float fStepSize = fBlockSize * 2;
     int nSrchSize = ToInt32( fStepSize - 10 );
+    if ( nSrchSize > 100 ) nSrchSize = 100;
     cv::Point2f ptFirstCorer = _findFirstChessBoardCorner ( matGray, fBlockSize );
     if ( ptFirstCorer.x <= 0 || ptFirstCorer.y <= 0 ) {
         WriteLog("Failed to find chess board first corner.");
         pstRpy->enStatus = VisionStatus::FAILED_TO_FIND_CHESS_BOARD_CORNER;
         FINISH_LOGCASE;
-        pstRpy->enStatus;
+        return pstRpy->enStatus;
     }
-    cv::Point ptChessBoardSrchStartPoint = ptChessBoardSrchStartPoint = cv::Point ( ToInt32 ( ptFirstCorer.x - nSrchSize / 2 ), ToInt32 ( ptFirstCorer.y - nSrchSize/ 2 ) );
+    cv::Point ptChessBoardSrchStartPoint = cv::Point ( ToInt32 ( ptFirstCorer.x - nSrchSize / 2 ), ToInt32 ( ptFirstCorer.y - nSrchSize/ 2 ) );
+    if ( ptChessBoardSrchStartPoint.x < 0 || ptChessBoardSrchStartPoint.y < 0 ) {
+        ptChessBoardSrchStartPoint.x += ToInt32( fBlockSize );
+        ptChessBoardSrchStartPoint.y += ToInt32( fBlockSize );
+    }
     pstRpy->enStatus = _findChessBoardCorners ( matGray, matTmpl, ptChessBoardSrchStartPoint, fStepSize, nSrchSize, pstCmd->szBoardPattern, vecVecImagePoints[0] );
     if ( VisionStatus::OK != pstRpy->enStatus ) {
         WriteLog("Failed to find chess board first corners.");
         FINISH_LOGCASE;
-        pstRpy->enStatus;
+        return pstRpy->enStatus;
     }
     
     _calcBoardCornerPositions ( pstCmd->szBoardPattern, pstCmd->fPatternDist, vevVecObjectPoints[0], CHESSBOARD );
     vevVecObjectPoints.resize ( vecVecImagePoints.size(), vevVecObjectPoints[0] );
     
     double rms = cv::calibrateCamera ( vevVecObjectPoints, vecVecImagePoints, imageSize, pstRpy->matIntrinsicMatrix,
-            pstRpy->matDistCoeffs, rvecs, tvecs, cv::CALIB_FIX_K4 | cv::CALIB_FIX_K5 );
+            pstRpy->matDistCoeffs, rvecs, tvecs );
     
     cv::Rodrigues ( rvecs[0], matRotation );
     pstRpy->matExtrinsicMatrix = matRotation.clone();
@@ -3171,8 +3255,7 @@ EXIT:
     return pstRpy->enStatus;
 }
 
-/*static*/ VisionStatus VisionAlgorithm::restoreImage(const PR_RESTORE_IMG_CMD *const pstCmd, PR_RESTORE_IMG_RPY *const pstRpy, bool bReplay/* = false*/)
-{
+/*static*/ VisionStatus VisionAlgorithm::restoreImage(const PR_RESTORE_IMG_CMD *const pstCmd, PR_RESTORE_IMG_RPY *const pstRpy, bool bReplay/* = false*/) {
     assert(pstCmd != nullptr && pstRpy != nullptr);
     char charrMsg[1000];
     if ( pstCmd->matInput.empty() ) {
@@ -3181,14 +3264,14 @@ EXIT:
         return pstRpy->enStatus;
     }
 
-    if ( pstCmd->vecMatRestoreImage.size() != 2 )   {
+    if ( pstCmd->vecMatRestoreImage.size() != 2 ) {
         _snprintf( charrMsg, sizeof( charrMsg ), "The remap mat vector size %d is invalid.", pstCmd->vecMatRestoreImage.size() );
         WriteLog(charrMsg);
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return pstRpy->enStatus;
     }
 
-    if ( pstCmd->vecMatRestoreImage[0].size() != pstCmd->matInput.size() || pstCmd->vecMatRestoreImage[1].size() != pstCmd->matInput.size() )   {
+    if ( pstCmd->vecMatRestoreImage[0].size() != pstCmd->matInput.size() || pstCmd->vecMatRestoreImage[1].size() != pstCmd->matInput.size() ) {
         _snprintf( charrMsg, sizeof( charrMsg ), "The remap mat size(%d, %d) is not match with input image size (%d, %d).", 
             pstCmd->vecMatRestoreImage[0].size().width, pstCmd->vecMatRestoreImage[0].size().height,
             pstCmd->matInput.size().width, pstCmd->matInput.size().height );
@@ -3208,6 +3291,172 @@ EXIT:
 
     FINISH_LOGCASE;
     MARK_FUNCTION_END_TIME;
+    return pstRpy->enStatus;
+}
+
+/*static*/ VisionStatus VisionAlgorithm::calcUndistortRectifyMap(const PR_CALC_UNDISTORT_RECTIFY_MAP_CMD *const pstCmd, PR_CALC_UNDISTORT_RECTIFY_MAP_RPY *const pstRpy) {
+    assert(pstCmd != nullptr && pstRpy != nullptr);
+    if ( pstCmd->matIntrinsicMatrix.empty() || pstCmd->matIntrinsicMatrix.cols != 3 || pstCmd->matIntrinsicMatrix.rows != 3 ) {
+        WriteLog("The intrinsic matrix is invalid.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+    MARK_FUNCTION_START_TIME;
+
+    cv::Mat matMapX, matMapY;
+    cv::Mat matNewCemraMatrix = cv::getOptimalNewCameraMatrix ( pstCmd->matIntrinsicMatrix, pstCmd->matDistCoeffs, pstCmd->szImage, 1, pstCmd->szImage, 0 );
+    cv::initUndistortRectifyMap ( pstCmd->matIntrinsicMatrix, pstCmd->matDistCoeffs, cv::Mat(), matNewCemraMatrix,
+        pstCmd->szImage, CV_32FC1, matMapX, matMapY );
+    pstRpy->vecMatRestoreImage.push_back ( matMapX );
+    pstRpy->vecMatRestoreImage.push_back ( matMapY );
+
+    pstRpy->enStatus = VisionStatus::OK;
+    MARK_FUNCTION_END_TIME;
+    return pstRpy->enStatus;
+}
+
+/*static*/ VisionStatus VisionAlgorithm::autoLocateLead(const PR_AUTO_LOCATE_LEAD_CMD *const pstCmd, PR_AUTO_LOCATE_LEAD_RPY *const pstRpy, bool bReplay/* = false*/ )
+{
+    assert(pstCmd != nullptr && pstRpy != nullptr);
+    char charrMsg[1000];
+    if ( pstCmd->matInput.empty() ) {
+        WriteLog("Input image is empty.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+    if ( ! pstCmd->rectSrchWindow.contains ( cv::Point ( pstCmd->rectChipBody.x, pstCmd->rectChipBody.y ) )
+        || ! pstCmd->rectSrchWindow.contains ( cv::Point ( pstCmd->rectChipBody.x + pstCmd->rectChipBody.width, pstCmd->rectChipBody.y + pstCmd->rectChipBody.height ) ) ) {
+        _snprintf( charrMsg, sizeof( charrMsg ), "The chip window(%d, %d, %d, %d) should inside search window (%d, %d, %d, %d).", 
+            pstCmd->rectChipBody.x, pstCmd->rectChipBody.y, pstCmd->rectChipBody.width, pstCmd->rectChipBody.height,
+            pstCmd->rectSrchWindow.x, pstCmd->rectSrchWindow.y, pstCmd->rectSrchWindow.width, pstCmd->rectSrchWindow.height );
+        WriteLog(charrMsg);
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+    if (pstCmd->rectSrchWindow.x < 0 || pstCmd->rectSrchWindow.y < 0 ||
+        pstCmd->rectSrchWindow.width <= 0 || pstCmd->rectSrchWindow.height <= 0 ||
+        ( pstCmd->rectSrchWindow.x + pstCmd->rectSrchWindow.width ) > pstCmd->matInput.cols ||
+        ( pstCmd->rectSrchWindow.y + pstCmd->rectSrchWindow.height ) > pstCmd->matInput.rows )    {
+        _snprintf( charrMsg, sizeof( charrMsg ), "The input search window (%d, %d, %d, %d) is invalid",
+            pstCmd->rectSrchWindow.x, pstCmd->rectSrchWindow.y, pstCmd->rectSrchWindow.width, pstCmd->rectSrchWindow.height );
+        WriteLog(charrMsg);
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return VisionStatus::INVALID_PARAM;
+    }
+
+    MARK_FUNCTION_START_TIME;
+    SETUP_LOGCASE(LogCaseAutoLocateLead);
+
+    cv::Mat matGray;
+    if ( pstCmd->matInput.channels() > 1 )
+        cv::cvtColor ( pstCmd->matInput, matGray, CV_BGR2GRAY);
+    else
+        matGray = pstCmd->matInput;
+
+    cv::Mat matROI ( matGray, pstCmd->rectSrchWindow);
+    cv::Mat matFilter;
+    cv::GaussianBlur ( matROI, matFilter, cv::Size(3, 3), 1, 1 );
+
+    cv::Mat matMask = cv::Mat::ones(matROI.size(), CV_8UC1);
+    cv::Rect rectIcBodyInROI(pstCmd->rectChipBody.x - pstCmd->rectSrchWindow.x, pstCmd->rectChipBody.y - pstCmd->rectSrchWindow.y,
+        pstCmd->rectChipBody.width, pstCmd->rectChipBody.height );
+    cv::Mat matMaskROI(matMask, rectIcBodyInROI);
+    matMaskROI.setTo(cv::Scalar(0));
+    int nThreshold = _autoThreshold ( matFilter, matMask );
+
+    matFilter.setTo ( cv::Scalar(0), cv::Scalar(1) - matMask ); //Set the body of the IC to pure dark.
+    cv::Mat matThreshold;
+    cv::threshold ( matFilter, matThreshold, nThreshold, 255, cv::THRESH_BINARY );
+    if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE )
+        showImage("autoLocateLead threshold image", matThreshold );
+
+    PR_FILL_HOLE_CMD stFillHoleCmd;
+    PR_FILL_HOLE_RPY stFillHoleRpy;
+    stFillHoleCmd.matInput = matThreshold;
+    stFillHoleCmd.enAttribute = PR_OBJECT_ATTRIBUTE::BRIGHT;
+    stFillHoleCmd.enMethod = PR_FILL_HOLE_METHOD::CONTOUR;
+    stFillHoleCmd.rectROI = cv::Rect(0, 0, matThreshold.cols, matThreshold.rows);
+    fillHole(&stFillHoleCmd, &stFillHoleRpy);
+    matThreshold = stFillHoleRpy.matResult;
+    if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE )
+        showImage("autoLocateLead fillHole image", matThreshold );
+
+    PR_REMOVE_CC_CMD stRemoveCcCmd;
+    PR_REMOVE_CC_RPY stRemoveCcRpy;
+    stRemoveCcCmd.matInput = matThreshold;
+    stRemoveCcCmd.enCompareType = PR_COMPARE_TYPE::SMALLER;
+    stRemoveCcCmd.nConnectivity = 4;
+    stRemoveCcCmd.rectROI = cv::Rect(0, 0, matThreshold.cols, matThreshold.rows);
+    stRemoveCcCmd.fAreaThreshold = 200;
+    removeCC(&stRemoveCcCmd, &stRemoveCcRpy);
+    matThreshold = stRemoveCcRpy.matResult;
+    if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE )
+        showImage("autoLocateLead removeCC image", matThreshold );
+
+    VectorOfVectorOfPoint contours, vecDrawContours;
+    cv::findContours ( matThreshold, contours, cv::RETR_LIST, cv::CHAIN_APPROX_SIMPLE );
+    if ( contours.size() <= 0 ) {
+        pstRpy->enStatus = VisionStatus::FAILED_TO_FIND_LEAD;
+        FINISH_LOGCASE;
+        return pstRpy->enStatus;
+    }
+    double dTotalContourArea = 0.;
+    double dTotalRectArea = 0.;
+    for ( const auto &contour : contours )  {
+        auto area = cv::contourArea ( contour );
+        dTotalContourArea += area;
+        cv::Rect rect = cv::boundingRect(contour);
+        dTotalRectArea += rect.width * rect.height;
+    }
+    double dAverageContourArea = dTotalContourArea / contours.size();
+    double dAverageRectArea = dTotalRectArea / contours.size();
+    double dMinAcceptContourArea = 0.4 * dAverageContourArea;
+    double dMaxAcceptContourArea = 1.5 * dAverageContourArea;
+    double dMinAcceptRectArea = 0.4 * dAverageRectArea;
+    double dMaxAcceptRectArea = 1.5 * dAverageRectArea;
+
+    cv::cvtColor ( matROI, pstRpy->matResult, CV_GRAY2BGR );
+
+    for ( const auto &contour : contours )  {
+        cv::Rect rect = cv::boundingRect(contour);
+        auto contourArea = cv::contourArea ( contour );
+        auto rectArea = rect.width * rect.height;
+        //auto area = rect.width * rect.height;
+        if ( dMinAcceptContourArea < contourArea && contourArea < dMaxAcceptContourArea &&
+            dMinAcceptRectArea < rectArea && rectArea < dMaxAcceptRectArea ) {
+            if ( ( rect.br().x < rectIcBodyInROI.x ) && 
+               ( ( rect.y < rectIcBodyInROI.y ) || ( rect.br().y > rectIcBodyInROI.br().y ) ) ) {
+                cv::rectangle ( pstRpy->matResult, rect, cv::Scalar(0, 0, 255));
+                continue;
+            }
+
+            if ( ( rect.x > rectIcBodyInROI.br().x ) && 
+               ( ( rect.y < rectIcBodyInROI.y ) || ( rect.br().y > rectIcBodyInROI.br().y ) ) ) {
+                cv::rectangle ( pstRpy->matResult, rect, cv::Scalar(0, 0, 255));
+                continue;
+            }
+
+            if ( ( rect.br().y < rectIcBodyInROI.y ) && 
+               ( ( rect.x < rectIcBodyInROI.x ) || ( rect.br().x > rectIcBodyInROI.br().x ) ) ) {
+                cv::rectangle ( pstRpy->matResult, rect, cv::Scalar(0, 0, 255));
+                continue;
+            }
+
+            if ( ( rect.y > rectIcBodyInROI.br().y ) && 
+               ( ( rect.x < rectIcBodyInROI.x ) || ( rect.br().x > rectIcBodyInROI.br().x ) ) ) {
+                cv::rectangle ( pstRpy->matResult, rect, cv::Scalar(0, 0, 255));
+                continue;
+            }
+            cv::rectangle ( pstRpy->matResult, rect, cv::Scalar(0, 255, 0));
+
+            rect.x += pstCmd->rectSrchWindow.x;
+            rect.y += pstCmd->rectSrchWindow.y;
+            pstRpy->vecLeadLocation.push_back ( rect );            
+        }
+    }
+
+    pstRpy->enStatus = VisionStatus::OK;
+    FINISH_LOGCASE;
     return pstRpy->enStatus;
 }
 

@@ -32,3 +32,4 @@ VisionWidget/TestImage
 *.bak
 *.user
 TestVisionLibrary/Vision
+TestVisionLibrary/data

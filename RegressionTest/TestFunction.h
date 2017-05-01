@@ -19,6 +19,7 @@ void TestFitCircle();
 void TestAutoThreshold();
 void TestDetectLine();
 void TestCalibrateCamera();
+void TestAutoLocateLead();
 
 }
 }

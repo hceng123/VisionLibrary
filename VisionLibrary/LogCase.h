@@ -407,6 +407,23 @@ private:
     const String _strDiffImg            = "diff.png";
 };
 
+class LogCaseAutoLocateLead : public LogCase
+{
+public:
+    explicit LogCaseAutoLocateLead(const String &strPath, bool bReplay = false) : LogCase(strPath, bReplay) {}
+    VisionStatus WriteCmd(const PR_AUTO_LOCATE_LEAD_CMD *const pCmd);
+    VisionStatus WriteRpy(PR_AUTO_LOCATE_LEAD_RPY *const pRpy);
+    virtual VisionStatus RunLogCase() override;
+    virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
+    static String StaticGetFolderPrefix();
+private:
+    const String _strKeySrchWindow      = "SrchWindow";
+    const String _strKeyChipWindow      = "ChipWindow";
+
+    const String _strKeyStatus          = "Status";
+    const String _strLeadLocation       = "LoadLocation_";
+};
+
 }
 }
 #endif

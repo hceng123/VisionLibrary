@@ -25,7 +25,6 @@ using VectorOfRect = std::vector<cv::Rect>;
 using ListOfPoint = std::list<cv::Point>;
 using VectorOfListOfPoint = std::vector<ListOfPoint>;
 
-
 #define ToInt32(param)      (static_cast<AOI::Int32>(param))
 #define ToFloat(param)      (static_cast<float>(param))
 
@@ -398,6 +397,7 @@ struct PR_FILTER_RPY {
 
 struct PR_AUTO_THRESHOLD_CMD {
     cv::Mat                 matInput;
+    cv::Mat                 matMask;
     cv::Rect                rectROI;
     Int16                   nThresholdNum;
 };
@@ -482,14 +482,14 @@ struct PR_PICK_COLOR_RPY {
 struct PR_CALIBRATE_CAMERA_CMD {
     cv::Mat                 matInput;
     cv::Size                szBoardPattern; // Number of corners per chessboard row and col. szBoardPattern = cv::Size(points_per_row, points_per_col) = cv::Size(columns, rows).
-    float                   fPatternDist;    //The real chess board corner to corner distance. Unit: mm.
+    float                   fPatternDist;   //The real chess board corner to corner distance. Unit: mm.
 };
 
 struct PR_CALIBRATE_CAMERA_RPY {
     VisionStatus            enStatus;
     cv::Mat                 matIntrinsicMatrix; //type: CV_64FC1.
     cv::Mat                 matExtrinsicMatrix; //type: CV_64FC1.
-    cv::Mat                 matDistCoeffs;
+    cv::Mat                 matDistCoeffs;      //type: CV_64FC1.
     double                  dResolutionX;       //Unit: um/pixel.
     double                  dResolutionY;       //Unit: um/pixel.
     std::vector<cv::Mat>    vecMatRestoreImage; //The remap matrix to restore image. vector size is 2, the matrix dimension is same as input image.
@@ -503,6 +503,30 @@ struct PR_RESTORE_IMG_CMD {
 struct PR_RESTORE_IMG_RPY {
     VisionStatus            enStatus;
     cv::Mat                 matResult;
+};
+
+struct PR_CALC_UNDISTORT_RECTIFY_MAP_CMD {
+    cv::Mat                 matIntrinsicMatrix; //type: CV_64FC1.
+    cv::Mat                 matDistCoeffs;
+    cv::Size                szImage;            //The pixel width and height of the image camptured by camera.
+};
+
+struct PR_CALC_UNDISTORT_RECTIFY_MAP_RPY {
+    VisionStatus            enStatus;
+    std::vector<cv::Mat>    vecMatRestoreImage;
+};
+
+struct PR_AUTO_LOCATE_LEAD_CMD {
+    cv::Mat                 matInput;
+    cv::Rect                rectSrchWindow;
+    cv::Rect                rectChipBody;
+    PR_OBJECT_ATTRIBUTE     enLeadAttribute;
+};
+
+struct PR_AUTO_LOCATE_LEAD_RPY {
+    VisionStatus            enStatus;
+    cv::Mat                 matResult;
+    VectorOfRect            vecLeadLocation;
 };
 
 }
