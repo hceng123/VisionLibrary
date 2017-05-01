@@ -2984,6 +2984,7 @@ EXIT:
 
 /*static*/ VisionStatus VisionAlgorithm::_findChessBoardCorners(const cv::Mat   &mat,
                                                                 const cv::Mat   &matTmpl,
+                                                                cv::Mat         &matCornerPointsImg,
                                                                 const cv::Point &startPoint,
                                                                 float            fStepSize,
                                                                 int              nSrchSize,
@@ -2991,9 +2992,7 @@ EXIT:
                                                                 VectorOfPoint2f &vecCorners)
 {
     VisionStatus enStatus;
-
-    cv::Mat matOutput;
-    cv::cvtColor ( mat, matOutput, CV_GRAY2BGR );
+    cv::cvtColor ( mat, matCornerPointsImg, CV_GRAY2BGR );
 
     for ( int row = 0; row < szBoardPattern.height; ++ row )
     for ( int col = 0; col < szBoardPattern.width;  ++ col )
@@ -3001,13 +3000,10 @@ EXIT:
         cv::Rect rectSrchROI ( ToInt32 ( startPoint.x + col * fStepSize ), ToInt32 ( startPoint.y + row * fStepSize ), nSrchSize, nSrchSize );
         if ( ( rectSrchROI.x + rectSrchROI.width )  > mat.cols ) rectSrchROI.width = mat.cols - rectSrchROI.x;
         if ( ( rectSrchROI.y + rectSrchROI.height ) > mat.rows ) rectSrchROI.width = mat.rows - rectSrchROI.y;
-
         cv::Mat matSrchROI ( mat, rectSrchROI );
-
 //#ifdef _DEBUG
 //        std::cout << "Srch ROI " << rectSrchROI.x << ", " << rectSrchROI.y << ", " << rectSrchROI.width << ", " << rectSrchROI.height << std::endl;
 //#endif
-
         cv::Point2f ptResult;
         float fRotation;
         enStatus = _matchTemplate ( matSrchROI, matTmpl, PR_OBJECT_MOTION::TRANSLATION, ptResult, fRotation );
@@ -3022,17 +3018,11 @@ EXIT:
         if ( vecCorners.size() == 2 )
             fStepSize = CalcUtils::distanceOf2Point ( vecCorners[1], vecCorners[0] );
 
-#ifdef _DEBUG
-        cv::rectangle ( matOutput, rectSrchROI, cv::Scalar(255,0,0), 2 );
-        cv::circle ( matOutput, ptResult, 10, cv::Scalar(0, 0, 255), 2);
-#endif
-
+        cv::rectangle ( matCornerPointsImg, rectSrchROI, cv::Scalar(255,0,0), 2 );
+        cv::circle ( matCornerPointsImg, ptResult, 10, cv::Scalar(0, 0, 255), 2);
+        cv::line ( matCornerPointsImg, cv::Point(ptResult.x - 4, ptResult.y), cv::Point(ptResult.x + 4, ptResult.y), cv::Scalar(0, 0, 255), 1);
+        cv::line ( matCornerPointsImg, cv::Point(ptResult.x, ptResult.y - 4), cv::Point(ptResult.x, ptResult.y + 4), cv::Scalar(0, 0, 255), 1);
     }
-
-#ifdef _DEBUG
-    cv::imwrite("./data/ChessBoardTmplMatchResult.png", matOutput);
-#endif
-
     return enStatus;
 }
 
@@ -3133,7 +3123,7 @@ EXIT:
     cv::Point ptUpperLeftBlockCenter;
     for ( const auto point : vecBlockCenters ) {
         auto distanceToZero = point.x * point.x + point.y * point.y;
-        if ( distanceToZero < minDistanceToZero )   {
+        if ( distanceToZero < minDistanceToZero ) {
             ptUpperLeftBlockCenter = point;
             minDistanceToZero = distanceToZero;
         }          
@@ -3141,7 +3131,7 @@ EXIT:
     if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE ) {
         cv::Mat matDisplay;
         cv::cvtColor ( matROI, matDisplay, CV_GRAY2BGR );
-        for ( size_t i = 0; i < contours.size(); ++ i )    {
+        for ( size_t i = 0; i < contours.size(); ++ i ) {
             cv::drawContours ( matDisplay, contours, ToInt32(i), cv::Scalar(0,0,255) );
         }
         showImage("findChessBoardBlockSize contour image", matDisplay);
@@ -3214,7 +3204,7 @@ EXIT:
         ptChessBoardSrchStartPoint.x += ToInt32( fBlockSize );
         ptChessBoardSrchStartPoint.y += ToInt32( fBlockSize );
     }
-    pstRpy->enStatus = _findChessBoardCorners ( matGray, matTmpl, ptChessBoardSrchStartPoint, fStepSize, nSrchSize, pstCmd->szBoardPattern, vecVecImagePoints[0] );
+    pstRpy->enStatus = _findChessBoardCorners ( matGray, matTmpl, pstRpy->matCornerPointsImg, ptChessBoardSrchStartPoint, fStepSize, nSrchSize, pstCmd->szBoardPattern, vecVecImagePoints[0] );
     if ( VisionStatus::OK != pstRpy->enStatus ) {
         WriteLog("Failed to find chess board first corners.");
         FINISH_LOGCASE;

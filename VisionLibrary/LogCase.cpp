@@ -1076,11 +1076,11 @@ VisionStatus LogCaseCalibrateCamera::WriteRpy(const PR_CALIBRATE_CAMERA_RPY * co
     ini.SetDoubleValue(_RPY_SECTION.c_str(), _strKeyResolutionY.c_str(), pRpy->dResolutionY );
     ini.SaveFile(cmdRpyFilePath.c_str());
 
+    cv::imwrite(_strLogCasePath + _strCornerPointsImage,     pRpy->matCornerPointsImg);
     return VisionStatus::OK;
 }
 
-VisionStatus LogCaseCalibrateCamera::RunLogCase()
-{
+VisionStatus LogCaseCalibrateCamera::RunLogCase() {
     PR_CALIBRATE_CAMERA_CMD stCmd;
     VisionStatus enStatus;
 
@@ -1102,8 +1102,7 @@ VisionStatus LogCaseCalibrateCamera::RunLogCase()
     return "RestoreImg";
 }
 
-VisionStatus LogCaseRestoreImg::WriteCmd(const PR_RESTORE_IMG_CMD *const pCmd)
-{
+VisionStatus LogCaseRestoreImg::WriteCmd(const PR_RESTORE_IMG_CMD *const pCmd) {
     if (!_bReplay)    {
         _strLogCasePath = _generateLogCaseName(GetFolderPrefix());
         bfs::path dir(_strLogCasePath);

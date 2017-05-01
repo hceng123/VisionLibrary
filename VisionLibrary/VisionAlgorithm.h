@@ -98,6 +98,7 @@ protected:
                                          Int16               nMorphIteration);
     static VisionStatus _findChessBoardCorners (const cv::Mat   &mat,
                                                 const cv::Mat   &matTmpl,
+                                                cv::Mat         &matCornerPointsImg,
                                                 const cv::Point &startPoint,
                                                 float            fStepSize,
                                                 int              nSrchSize,
