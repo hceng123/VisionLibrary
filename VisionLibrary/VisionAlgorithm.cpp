@@ -3255,8 +3255,7 @@ EXIT:
     return pstRpy->enStatus;
 }
 
-/*static*/ VisionStatus VisionAlgorithm::restoreImage(const PR_RESTORE_IMG_CMD *const pstCmd, PR_RESTORE_IMG_RPY *const pstRpy, bool bReplay/* = false*/)
-{
+/*static*/ VisionStatus VisionAlgorithm::restoreImage(const PR_RESTORE_IMG_CMD *const pstCmd, PR_RESTORE_IMG_RPY *const pstRpy, bool bReplay/* = false*/) {
     assert(pstCmd != nullptr && pstRpy != nullptr);
     char charrMsg[1000];
     if ( pstCmd->matInput.empty() ) {
@@ -3265,14 +3264,14 @@ EXIT:
         return pstRpy->enStatus;
     }
 
-    if ( pstCmd->vecMatRestoreImage.size() != 2 )   {
+    if ( pstCmd->vecMatRestoreImage.size() != 2 ) {
         _snprintf( charrMsg, sizeof( charrMsg ), "The remap mat vector size %d is invalid.", pstCmd->vecMatRestoreImage.size() );
         WriteLog(charrMsg);
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return pstRpy->enStatus;
     }
 
-    if ( pstCmd->vecMatRestoreImage[0].size() != pstCmd->matInput.size() || pstCmd->vecMatRestoreImage[1].size() != pstCmd->matInput.size() )   {
+    if ( pstCmd->vecMatRestoreImage[0].size() != pstCmd->matInput.size() || pstCmd->vecMatRestoreImage[1].size() != pstCmd->matInput.size() ) {
         _snprintf( charrMsg, sizeof( charrMsg ), "The remap mat size(%d, %d) is not match with input image size (%d, %d).", 
             pstCmd->vecMatRestoreImage[0].size().width, pstCmd->vecMatRestoreImage[0].size().height,
             pstCmd->matInput.size().width, pstCmd->matInput.size().height );
@@ -3291,6 +3290,27 @@ EXIT:
     pstRpy->enStatus = VisionStatus::OK;
 
     FINISH_LOGCASE;
+    MARK_FUNCTION_END_TIME;
+    return pstRpy->enStatus;
+}
+
+/*static*/ VisionStatus VisionAlgorithm::calcUndistortRectifyMap(const PR_CALC_UNDISTORT_RECTIFY_MAP_CMD *const pstCmd, PR_CALC_UNDISTORT_RECTIFY_MAP_RPY *const pstRpy) {
+    assert(pstCmd != nullptr && pstRpy != nullptr);
+    if ( pstCmd->matIntrinsicMatrix.empty() || pstCmd->matIntrinsicMatrix.cols != 3 || pstCmd->matIntrinsicMatrix.rows != 3 ) {
+        WriteLog("The intrinsic matrix is invalid.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+    MARK_FUNCTION_START_TIME;
+
+    cv::Mat matMapX, matMapY;
+    cv::Mat matNewCemraMatrix = cv::getOptimalNewCameraMatrix ( pstCmd->matIntrinsicMatrix, pstCmd->matDistCoeffs, pstCmd->szImage, 1, pstCmd->szImage, 0 );
+    cv::initUndistortRectifyMap ( pstCmd->matIntrinsicMatrix, pstCmd->matDistCoeffs, cv::Mat(), matNewCemraMatrix,
+        pstCmd->szImage, CV_32FC1, matMapX, matMapY );
+    pstRpy->vecMatRestoreImage.push_back ( matMapX );
+    pstRpy->vecMatRestoreImage.push_back ( matMapY );
+
+    pstRpy->enStatus = VisionStatus::OK;
     MARK_FUNCTION_END_TIME;
     return pstRpy->enStatus;
 }

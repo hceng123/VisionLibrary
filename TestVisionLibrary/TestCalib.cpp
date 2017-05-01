@@ -31,10 +31,21 @@ void TestCalibCamera()
     std::cout << " Distortion Coefficient: " << std::endl;
     printfMat<double>(stRpy.matDistCoeffs);
 
+    //PR_CALC_UNDISTORT_RECTIFY_MAP_CMD stCalcUndistortRectifyMapCmd;
+    //PR_CALC_UNDISTORT_RECTIFY_MAP_RPY stCalcUndistortRectifyMapRpy;
+    //stCalcUndistortRectifyMapCmd.matIntrinsicMatrix = stRpy.matIntrinsicMatrix;
+    //stCalcUndistortRectifyMapCmd.matDistCoeffs      = stRpy.matDistCoeffs;
+    //stCalcUndistortRectifyMapCmd.szImage            = stCmd.matInput.size();
+    //PR_CalcUndistortRectifyMap(&stCalcUndistortRectifyMapCmd, &stCalcUndistortRectifyMapRpy);
+    //if ( VisionStatus::OK != stCalcUndistortRectifyMapRpy.enStatus ) {
+    //    std::cout << "Failed to calculate undistort rectify map!" << std::endl;
+    //    return;
+    //}
+
     PR_RESTORE_IMG_CMD stRetoreCmd;
     PR_RESTORE_IMG_RPY stRetoreRpy;
     stRetoreCmd.matInput = cv::imread(strImgPath, cv::IMREAD_GRAYSCALE );
-    stRetoreCmd.vecMatRestoreImage = stRpy.vecMatRestoreImage;
+    stRetoreCmd.vecMatRestoreImage = stRpy.vecMatRestoreImage; //stCalcUndistortRectifyMapRpy.vecMatRestoreImage;
     PR_RestoreImage ( &stRetoreCmd, &stRetoreRpy );
     if ( VisionStatus::OK != stRetoreRpy.enStatus) {
         std::cout << "Failed to restore image!" << std::endl;

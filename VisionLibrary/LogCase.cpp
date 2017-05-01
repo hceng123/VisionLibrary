@@ -1196,7 +1196,7 @@ VisionStatus LogCaseAutoLocateLead::WriteRpy(PR_AUTO_LOCATE_LEAD_RPY *const pRpy
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile(cmdRpyFilePath.c_str());    
     ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyStatus.c_str(),    ToInt32 ( pRpy->enStatus ) );
-    for ( int i = 0; i < pRpy->vecLeadLocation.size(); ++ i ) {
+    for ( size_t i = 0; i < pRpy->vecLeadLocation.size(); ++ i ) {
         String strKey = _strLeadLocation + std::to_string(i);
         auto rect = pRpy->vecLeadLocation[i];
         ini.SetValue(_RPY_SECTION.c_str(), strKey.c_str(), _formatRect(rect).c_str());

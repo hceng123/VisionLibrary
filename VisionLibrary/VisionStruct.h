@@ -489,7 +489,7 @@ struct PR_CALIBRATE_CAMERA_RPY {
     VisionStatus            enStatus;
     cv::Mat                 matIntrinsicMatrix; //type: CV_64FC1.
     cv::Mat                 matExtrinsicMatrix; //type: CV_64FC1.
-    cv::Mat                 matDistCoeffs;
+    cv::Mat                 matDistCoeffs;      //type: CV_64FC1.
     double                  dResolutionX;       //Unit: um/pixel.
     double                  dResolutionY;       //Unit: um/pixel.
     std::vector<cv::Mat>    vecMatRestoreImage; //The remap matrix to restore image. vector size is 2, the matrix dimension is same as input image.
@@ -503,6 +503,17 @@ struct PR_RESTORE_IMG_CMD {
 struct PR_RESTORE_IMG_RPY {
     VisionStatus            enStatus;
     cv::Mat                 matResult;
+};
+
+struct PR_CALC_UNDISTORT_RECTIFY_MAP_CMD {
+    cv::Mat                 matIntrinsicMatrix; //type: CV_64FC1.
+    cv::Mat                 matDistCoeffs;
+    cv::Size                szImage;            //The pixel width and height of the image camptured by camera.
+};
+
+struct PR_CALC_UNDISTORT_RECTIFY_MAP_RPY {
+    VisionStatus            enStatus;
+    std::vector<cv::Mat>    vecMatRestoreImage;
 };
 
 struct PR_AUTO_LOCATE_LEAD_CMD {
