@@ -138,6 +138,18 @@ enum class PR_OBJECT_MOTION
     HOMOGRAPHY
 };
 
+enum class PR_INSP_BRIDGE_MODE {
+    INNER,
+    OUTER,
+};
+
+enum class PR_INSP_BRIDGE_DIRECTION {
+    LEFT,
+    RIGHT,
+    UP,
+    DOWN,
+};
+
 }
 }
 

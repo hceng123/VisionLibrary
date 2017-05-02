@@ -55,6 +55,7 @@ public:
     static VisionStatus restoreImage(const PR_RESTORE_IMG_CMD *const pstCmd, PR_RESTORE_IMG_RPY *const pstRpy, bool bReplay = false);
     static VisionStatus calcUndistortRectifyMap(const PR_CALC_UNDISTORT_RECTIFY_MAP_CMD *const pstCmd, PR_CALC_UNDISTORT_RECTIFY_MAP_RPY *const pstRpy);
     static VisionStatus autoLocateLead(const PR_AUTO_LOCATE_LEAD_CMD *const pstCmd, PR_AUTO_LOCATE_LEAD_RPY *const pstRpy, bool bReplay = false );
+    static VisionStatus inspBridge(const PR_INSP_BRIDGE_CMD *const pstCmd, PR_INSP_BRIDGE_RPY *const pstRpy, bool bReplay = false );
 protected:
 	int _findBlob(const cv::Mat &mat, const cv::Mat &matRevs, PR_INSP_SURFACE_CMD *const pInspCmd, PR_INSP_SURFACE_RPY *pInspRpy );
 	int _findLine(const cv::Mat &mat, PR_INSP_SURFACE_CMD *const pInspCmd, PR_INSP_SURFACE_RPY *pInspRpy );
@@ -107,6 +108,7 @@ protected:
     static float _findChessBoardBlockSize( const cv::Mat &matInput, const cv::Size szBoardPattern );
     static void _calcBoardCornerPositions(cv::Size boardSize, float squareSize, std::vector<cv::Point3f> &corners, CalibPattern patternType = CHESSBOARD );
     static cv::Point2f _findFirstChessBoardCorner(const cv::Mat &matInput, float fBlockSize);
+    static VisionStatus _inspBridgeItem(const cv::Mat &matGray, const cv::Mat &matResult, PR_INSP_BRIDGE_CMD::INSP_ITEM &inspItem, PR_INSP_BRIDGE_RPY::ITEM_RESULT &inspResult);
 protected:
     const int       _constMinHessian        =  300;
     const int       _constOctave            =  4;

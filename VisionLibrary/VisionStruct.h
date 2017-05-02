@@ -531,6 +531,34 @@ struct PR_AUTO_LOCATE_LEAD_RPY {
     VectorOfRect            vecLeadLocation;
 };
 
+struct PR_INSP_BRIDGE_CMD {
+    struct INSP_CRITERIA {
+        PR_INSP_BRIDGE_DIRECTION    enDirection;
+        float                       fMaxLength;
+    };
+    using INSP_CRITERIA_VECTOR = std::vector<INSP_CRITERIA>;
+    struct INSP_ITEM {
+        cv::Rect                rectInnerWindow;
+        cv::Rect                rectOuterWindow;
+        PR_INSP_BRIDGE_MODE     enMode;
+        INSP_CRITERIA_VECTOR    vecInspCriteria;
+    };
+    using INSP_ITEM_VECTOR = std::vector<INSP_ITEM>;
+    cv::Mat                 matInputImg;
+    INSP_ITEM_VECTOR        vecInspItems;
+};
+
+struct PR_INSP_BRIDGE_RPY {
+    struct ITEM_RESULT {
+        bool                bWithBridge;
+        float               fBridgeLength;
+    };
+    using ITEM_RESULT_VECTOR = std::vector<ITEM_RESULT>;
+    VisionStatus            enStatus;
+    cv::Mat                 matResultImg;
+    ITEM_RESULT_VECTOR      vecInspResults;
+};
+
 }
 }
 #endif
