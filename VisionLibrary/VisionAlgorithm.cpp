@@ -2768,7 +2768,8 @@ EXIT:
     if ( vecPoints.size() < 3 ) {
         WriteLog("Not enough points to fit circle");
         pstRpy->enStatus = VisionStatus::NOT_ENOUGH_POINTS_TO_FIT;
-        goto EXIT;
+        FINISH_LOGCASE;
+        return pstRpy->enStatus;
     }
     
     fitResult = Fitting::fitCircle ( vecPoints );
@@ -2776,11 +2777,11 @@ EXIT:
     if ( fitResult.center.x <= 0 || fitResult.center.y <= 0 || fitResult.size.width <= 0 ) {
         WriteLog("Failed to fit circle");
         pstRpy->enStatus = VisionStatus::FAIL_TO_FIT_CIRCLE;
-        goto EXIT;
+        FINISH_LOGCASE;
+        return pstRpy->enStatus;
     }
 	pstRpy->ptCircleCtr = fitResult.center + cv::Point2f ( ToFloat ( pstCmd->rectROI.x ), ToFloat ( pstCmd->rectROI.y ) );
     pstRpy->fRadius = fitResult.size.width / 2;
-    pstRpy->enStatus = VisionStatus::OK;
     
     for ( const auto &point : vecPoints )   {
         cv::Point2f pt2f(point);
@@ -2790,7 +2791,7 @@ EXIT:
     pstRpy->matResult = pstCmd->matInput.clone();
 	cv::circle ( pstRpy->matResult, pstRpy->ptCircleCtr, (int)pstRpy->fRadius, cv::Scalar(255, 0, 0), 2);
 
-EXIT:
+    pstRpy->enStatus = VisionStatus::OK;
     FINISH_LOGCASE;
     MARK_FUNCTION_END_TIME;
     return pstRpy->enStatus;
@@ -3020,8 +3021,8 @@ EXIT:
 
         cv::rectangle ( matCornerPointsImg, rectSrchROI, cv::Scalar(255,0,0), 2 );
         cv::circle ( matCornerPointsImg, ptResult, 10, cv::Scalar(0, 0, 255), 2);
-        cv::line ( matCornerPointsImg, cv::Point(ptResult.x - 4, ptResult.y), cv::Point(ptResult.x + 4, ptResult.y), cv::Scalar(0, 0, 255), 1);
-        cv::line ( matCornerPointsImg, cv::Point(ptResult.x, ptResult.y - 4), cv::Point(ptResult.x, ptResult.y + 4), cv::Scalar(0, 0, 255), 1);
+        cv::line ( matCornerPointsImg, cv::Point2f(ptResult.x - 4, ptResult.y), cv::Point2f(ptResult.x + 4, ptResult.y), cv::Scalar(0, 0, 255), 1);
+        cv::line ( matCornerPointsImg, cv::Point2f(ptResult.x, ptResult.y - 4), cv::Point2f(ptResult.x, ptResult.y + 4), cv::Scalar(0, 0, 255), 1);
     }
     return enStatus;
 }
@@ -3367,6 +3368,11 @@ EXIT:
     stFillHoleCmd.enMethod = PR_FILL_HOLE_METHOD::CONTOUR;
     stFillHoleCmd.rectROI = cv::Rect(0, 0, matThreshold.cols, matThreshold.rows);
     fillHole(&stFillHoleCmd, &stFillHoleRpy);
+    if ( VisionStatus::OK != stFillHoleRpy.enStatus ) {
+        pstRpy->enStatus = stFillHoleRpy.enStatus;
+        FINISH_LOGCASE;
+        return pstRpy->enStatus;
+    }
     matThreshold = stFillHoleRpy.matResult;
     if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE )
         showImage("autoLocateLead fillHole image", matThreshold );
@@ -3379,6 +3385,11 @@ EXIT:
     stRemoveCcCmd.rectROI = cv::Rect(0, 0, matThreshold.cols, matThreshold.rows);
     stRemoveCcCmd.fAreaThreshold = 200;
     removeCC(&stRemoveCcCmd, &stRemoveCcRpy);
+    if ( VisionStatus::OK != stRemoveCcRpy.enStatus ) {
+        pstRpy->enStatus = stRemoveCcRpy.enStatus;
+        FINISH_LOGCASE;
+        return pstRpy->enStatus;
+    }
     matThreshold = stRemoveCcRpy.matResult;
     if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE )
         showImage("autoLocateLead removeCC image", matThreshold );
@@ -3411,7 +3422,6 @@ EXIT:
         cv::Rect rect = cv::boundingRect(contour);
         auto contourArea = cv::contourArea ( contour );
         auto rectArea = rect.width * rect.height;
-        //auto area = rect.width * rect.height;
         if ( dMinAcceptContourArea < contourArea && contourArea < dMaxAcceptContourArea &&
             dMinAcceptRectArea < rectArea && rectArea < dMaxAcceptRectArea ) {
             if ( ( rect.br().x < rectIcBodyInROI.x ) && 
@@ -3444,7 +3454,6 @@ EXIT:
             pstRpy->vecLeadLocation.push_back ( rect );            
         }
     }
-
     pstRpy->enStatus = VisionStatus::OK;
     FINISH_LOGCASE;
     return pstRpy->enStatus;
