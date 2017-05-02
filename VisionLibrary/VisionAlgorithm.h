@@ -108,14 +108,16 @@ protected:
     static float _findChessBoardBlockSize( const cv::Mat &matInput, const cv::Size szBoardPattern );
     static void _calcBoardCornerPositions(cv::Size boardSize, float squareSize, std::vector<cv::Point3f> &corners, CalibPattern patternType = CHESSBOARD );
     static cv::Point2f _findFirstChessBoardCorner(const cv::Mat &matInput, float fBlockSize);
-    static VisionStatus _inspBridgeItem(const cv::Mat &matGray, const cv::Mat &matResult, PR_INSP_BRIDGE_CMD::INSP_ITEM &inspItem, PR_INSP_BRIDGE_RPY::ITEM_RESULT &inspResult);
+    static VisionStatus _inspBridgeItem(const cv::Mat &matGray, cv::Mat &matResult, const PR_INSP_BRIDGE_CMD::INSP_ITEM &inspItem, PR_INSP_BRIDGE_RPY::ITEM_RESULT &inspResult);
 protected:
-    const int       _constMinHessian        =  300;
-    const int       _constOctave            =  4;
-    const int       _constOctaveLayer       =  3;
-    const UInt32    _constLeastFeatures     =  3;
-    const String    _strRecordLogPrefix     =  "tmplDir.";
-    const float     _constExpSmoothRatio    =  0.3f;
+    const int       _constMinHessian        = 300;
+    const int       _constOctave            = 4;
+    const int       _constOctaveLayer       = 3;
+    const UInt32    _constLeastFeatures     = 3;
+    const String    _strRecordLogPrefix     = "tmplDir.";
+    const float     _constExpSmoothRatio    = 0.3f;
+
+    static const cv::Scalar _constRedScalar;
     static OcrTesseractPtr _ptrOcrTesseract;
 private:
     VisionAlgorithmPtr _pInstance = nullptr;

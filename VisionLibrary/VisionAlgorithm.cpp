@@ -45,6 +45,7 @@ if ( ! bReplay )    {   \
 }
 
 /*static*/ OcrTesseractPtr VisionAlgorithm::_ptrOcrTesseract;
+/*static*/ const cv::Scalar VisionAlgorithm::_constRedScalar = cv::Scalar(0, 0, 255);
 
 VisionAlgorithm::VisionAlgorithm()
 {
@@ -3459,16 +3460,19 @@ EXIT:
     return pstRpy->enStatus;
 }
 
-/*static*/ VisionStatus VisionAlgorithm::_inspBridgeItem(const cv::Mat &matGray, const cv::Mat &matResult, PR_INSP_BRIDGE_CMD::INSP_ITEM &inspItem, PR_INSP_BRIDGE_RPY::ITEM_RESULT &inspResult) {
+/*static*/ VisionStatus VisionAlgorithm::_inspBridgeItem(const cv::Mat &matGray, cv::Mat &matResult, const PR_INSP_BRIDGE_CMD::INSP_ITEM &inspItem, PR_INSP_BRIDGE_RPY::ITEM_RESULT &inspResult) {
     cv::Mat matROI, matFilter, matMask, matThreshold;
+    cv::Point ptRoiTL;
     if ( PR_INSP_BRIDGE_MODE::INNER == inspItem.enMode ) {
          matROI = cv::Mat( matGray, inspItem.rectInnerWindow ).clone();
+         ptRoiTL = inspItem.rectInnerWindow.tl();
     }else {
         matROI = cv::Mat ( matGray, inspItem.rectOuterWindow ).clone();
         cv::Rect rectInnerWindowNew(inspItem.rectInnerWindow.x - inspItem.rectOuterWindow.x, inspItem.rectInnerWindow.y - inspItem.rectOuterWindow.y, inspItem.rectInnerWindow.width, inspItem.rectInnerWindow.height);
         matMask = cv::Mat::ones(matROI.size(), CV_8UC1);        
         cv::Mat matMaskInnerWindow ( matMask, rectInnerWindowNew);
         matMaskInnerWindow.setTo ( cv::Scalar ( 0 ) );
+        ptRoiTL = inspItem.rectOuterWindow.tl();
     }
     if ( PR_INSP_BRIDGE_MODE::OUTER == inspItem.enMode )
         matROI.setTo ( cv::Scalar(0), cv::Scalar(1) - matMask ); //Set the body of the IC to pure dark.
@@ -3480,8 +3484,44 @@ EXIT:
     cv::findContours ( matThreshold, contours, cv::RETR_LIST, cv::CHAIN_APPROX_SIMPLE );
     if ( contours.size() <= 0 ) {
         inspResult.bWithBridge = false;
-        inspResult.fBridgeLength = 0;
+        inspResult.vecBridgeWindow.clear();
         return VisionStatus::OK;
+    }
+    
+    for ( const auto &contour : contours ) {
+        cv::Rect rect = cv::boundingRect ( contour );
+        for ( const auto & criteria : inspItem.vecInspCriteria )
+        {
+            float fTolerance = 0;
+            if ( PR_INSP_BRIDGE_MODE::INNER == inspItem.enMode )
+                fTolerance = criteria.fMaxLength;
+            else {
+                if ( PR_INSP_BRIDGE_DIRECTION::UP == criteria.enDirection )
+                    fTolerance = ToFloat ( inspItem.rectInnerWindow.y - inspItem.rectOuterWindow.y );
+                else if ( PR_INSP_BRIDGE_DIRECTION::DOWN == criteria.enDirection )
+                    fTolerance = ToFloat ( (inspItem.rectOuterWindow.y + inspItem.rectOuterWindow.height) - ( inspItem.rectInnerWindow.y + inspItem.rectInnerWindow.height ) );
+                if ( PR_INSP_BRIDGE_DIRECTION::LEFT == criteria.enDirection )
+                    fTolerance = ToFloat ( inspItem.rectInnerWindow.x - inspItem.rectOuterWindow.x );
+                else if ( PR_INSP_BRIDGE_DIRECTION::RIGHT == criteria.enDirection )
+                    fTolerance = ToFloat ( ( inspItem.rectOuterWindow.x + inspItem.rectOuterWindow.width ) - ( inspItem.rectInnerWindow.x + inspItem.rectInnerWindow.width ) );
+            }
+            if (PR_INSP_BRIDGE_DIRECTION::UP == criteria.enDirection || PR_INSP_BRIDGE_DIRECTION::DOWN == criteria.enDirection) {
+                
+                if (rect.height > fTolerance) {
+                    inspResult.bWithBridge = true;
+                    inspResult.vecBridgeWindow.push_back(rect);
+                    cv::rectangle(matResult, cv::Rect(rect.x + ptRoiTL.x, rect.y + ptRoiTL.y, rect.width, rect.height), _constRedScalar, 1);
+                }
+            }
+            else if (PR_INSP_BRIDGE_DIRECTION::LEFT == criteria.enDirection || PR_INSP_BRIDGE_DIRECTION::RIGHT == criteria.enDirection)
+            {
+                if (rect.width > fTolerance) {
+                    inspResult.bWithBridge = true;
+                    inspResult.vecBridgeWindow.push_back(rect);
+                    cv::rectangle(matResult, cv::Rect(rect.x + ptRoiTL.x, rect.y + ptRoiTL.y, rect.width, rect.height), _constRedScalar, 1);
+                }
+            }
+        }        
     }
     return VisionStatus::OK;
 }
@@ -3505,11 +3545,16 @@ EXIT:
         cv::cvtColor(pstCmd->matInputImg, matGray, CV_BGR2GRAY );
     else
         matGray = pstCmd->matInputImg.clone();
-    for ( const auto &inspItem : pstCmd->vecInspItems ) {
-        if ( PR_INSP_BRIDGE_MODE::OUTER == inspItem.enMode ) {
+    cv::cvtColor ( matGray, pstRpy->matResultImg, CV_GRAY2BGR );
+
+    for ( const auto &inspItem : pstCmd->vecInspItems )
+    {
+        if ( PR_INSP_BRIDGE_MODE::OUTER == inspItem.enMode )
+        {
             auto rectROI = inspItem.rectOuterWindow;
             if (rectROI.x < 0 || rectROI.y < 0 || rectROI.width <= 0 || rectROI.height <= 0
-                || (rectROI.x + rectROI.width) > pstCmd->matInputImg.cols || (rectROI.y + rectROI.height) > pstCmd->matInputImg.rows) {
+                || (rectROI.x + rectROI.width) > pstCmd->matInputImg.cols || (rectROI.y + rectROI.height) > pstCmd->matInputImg.rows)
+            {
                 _snprintf(charrMsg, sizeof(charrMsg), "The insect bridge outer check window (%d, %d, %d, %d) is invalid.",
                     rectROI.x, rectROI.y, rectROI.width, rectROI.height);
                 WriteLog(charrMsg);
@@ -3519,7 +3564,8 @@ EXIT:
             
             auto rectInnterWindow = inspItem.rectInnerWindow;
             if (!rectROI.contains(cv::Point(rectInnterWindow.x, rectInnterWindow.y)) ||
-                !rectROI.contains(cv::Point(rectInnterWindow.x + rectInnterWindow.width, rectInnterWindow.y + rectInnterWindow.height))) {
+                !rectROI.contains(cv::Point(rectInnterWindow.x + rectInnterWindow.width, rectInnterWindow.y + rectInnterWindow.height)))
+            {
                 _snprintf(charrMsg, sizeof(charrMsg), "The inner check window(%d, %d, %d, %d) should inside outer check window (%d, %d, %d, %d).",
                     rectInnterWindow.x, rectInnterWindow.y, rectInnterWindow.width, rectInnterWindow.height,
                     rectROI.x, rectROI.y, rectROI.width, rectROI.height);
@@ -3527,7 +3573,8 @@ EXIT:
                 pstRpy->enStatus = VisionStatus::INVALID_PARAM;
                 return pstRpy->enStatus;
             }
-        }else if ( PR_INSP_BRIDGE_MODE::INNER == inspItem.enMode ) {
+        }else if ( PR_INSP_BRIDGE_MODE::INNER == inspItem.enMode )
+        {
             auto rectROI = inspItem.rectInnerWindow;
             if (rectROI.x < 0 || rectROI.y < 0 || rectROI.width <= 0 || rectROI.height <= 0
                 || (rectROI.x + rectROI.width) > pstCmd->matInputImg.cols || (rectROI.y + rectROI.height) > pstCmd->matInputImg.rows) {
@@ -3538,6 +3585,12 @@ EXIT:
                 return VisionStatus::INVALID_PARAM;
             }
         }
+        PR_INSP_BRIDGE_RPY::ITEM_RESULT itemResult;
+        pstRpy->enStatus =  _inspBridgeItem ( matGray, pstRpy->matResultImg, inspItem, itemResult);
+        if ( VisionStatus::OK != pstRpy->enStatus ) {
+            return pstRpy->enStatus;
+        }
+        pstRpy->vecInspResults.push_back ( itemResult );
     }
 
     pstRpy->enStatus = VisionStatus::OK;

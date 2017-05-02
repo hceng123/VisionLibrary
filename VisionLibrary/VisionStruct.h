@@ -551,7 +551,7 @@ struct PR_INSP_BRIDGE_CMD {
 struct PR_INSP_BRIDGE_RPY {
     struct ITEM_RESULT {
         bool                bWithBridge;
-        float               fBridgeLength;
+        VectorOfRect        vecBridgeWindow;
     };
     using ITEM_RESULT_VECTOR = std::vector<ITEM_RESULT>;
     VisionStatus            enStatus;
