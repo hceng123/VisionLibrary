@@ -3070,7 +3070,7 @@ EXIT:
         auto area = cv::contourArea ( contour );
         if ( area > 1000 )  {
             cv::RotatedRect rotatedRect = cv::minAreaRect ( contour );
-            if ( ( fabs ( rotatedRect.size.width - rotatedRect.size.height ) / ( rotatedRect.size.width + rotatedRect.size.height ) < 0.1 ) &&
+            if ( ( fabs ( rotatedRect.size.width - rotatedRect.size.height ) / ( rotatedRect.size.width + rotatedRect.size.height ) < 0.05 ) &&
                 ( rotatedRect.size.width * 2 * ( szBoardPattern.width - 1 ) < matInput.cols ) ) {
                 float fArea = rotatedRect.size.width * rotatedRect.size.height;
                 if ( fArea > fMaxBlockArea ) {

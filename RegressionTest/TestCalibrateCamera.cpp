@@ -67,6 +67,18 @@ void TestCalibrateCamera()
 
     PR_CalibrateCamera ( &stCmd, &stRpy );
     PrintRpy(stRpy);
+
+    std::cout << std::endl << "---------------------------------------------";
+    std::cout << std::endl << "CALIBRATE CAMERA REGRESSION TEST #4 STARTING";
+    std::cout << std::endl << "---------------------------------------------";
+    std::cout << std::endl;
+    
+    stCmd.matInput = cv::imread("./data/PhaseImageForCalibCamera.bmp", cv::IMREAD_GRAYSCALE );
+    stCmd.fPatternDist = 2;
+    stCmd.szBoardPattern = cv::Size(5, 5);
+
+    PR_CalibrateCamera ( &stCmd, &stRpy );
+    PrintRpy(stRpy);
 }
 
 }
