@@ -1072,11 +1072,14 @@ VisionStatus LogCaseCalibrateCamera::WriteRpy(const PR_CALIBRATE_CAMERA_RPY * co
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile(cmdRpyFilePath.c_str());    
     ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyStatus.c_str(),    ToInt32 ( pRpy->enStatus ) );
-    ini.SetDoubleValue(_RPY_SECTION.c_str(), _strKeyResolutionX.c_str(), pRpy->dResolutionX );
-    ini.SetDoubleValue(_RPY_SECTION.c_str(), _strKeyResolutionY.c_str(), pRpy->dResolutionY );
+    if ( VisionStatus::OK == pRpy->enStatus ) {
+        ini.SetDoubleValue(_RPY_SECTION.c_str(), _strKeyResolutionX.c_str(), pRpy->dResolutionX);
+        ini.SetDoubleValue(_RPY_SECTION.c_str(), _strKeyResolutionY.c_str(), pRpy->dResolutionY);
+    }
     ini.SaveFile(cmdRpyFilePath.c_str());
 
-    cv::imwrite(_strLogCasePath + _strCornerPointsImage,     pRpy->matCornerPointsImg);
+    if ( ! pRpy->matCornerPointsImg.empty() )
+        cv::imwrite ( _strLogCasePath + _strCornerPointsImage, pRpy->matCornerPointsImg );
     return VisionStatus::OK;
 }
 
