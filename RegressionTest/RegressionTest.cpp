@@ -65,6 +65,11 @@ int _tmain(int argc, _TCHAR* argv[])
     ************************/
     TestAutoLocateLead();
 
+    /**********************
+    * Test Inspect Bridge *
+    **********************/
+    TestInspBridge();
+
 	return 0;
 }
 

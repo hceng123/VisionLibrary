@@ -533,8 +533,9 @@ struct PR_AUTO_LOCATE_LEAD_RPY {
 
 struct PR_INSP_BRIDGE_CMD {
     struct INSP_CRITERIA {
+        INSP_CRITERIA() : enDirection(PR_INSP_BRIDGE_DIRECTION::LEFT), fMaxLength(0.f) {}
         PR_INSP_BRIDGE_DIRECTION    enDirection;
-        float                       fMaxLength;
+        float                       fMaxLength;     //Only used when PR_INSP_BRIDGE_MODE is inner.
     };
     using INSP_CRITERIA_VECTOR = std::vector<INSP_CRITERIA>;
     struct INSP_ITEM {

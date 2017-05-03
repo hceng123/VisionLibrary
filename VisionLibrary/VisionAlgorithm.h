@@ -118,6 +118,8 @@ protected:
     const float     _constExpSmoothRatio    = 0.3f;
 
     static const cv::Scalar _constRedScalar;
+    static const cv::Scalar _constBlueScalar;
+    static const cv::Scalar _constGreenScalar;
     static OcrTesseractPtr _ptrOcrTesseract;
 private:
     VisionAlgorithmPtr _pInstance = nullptr;
