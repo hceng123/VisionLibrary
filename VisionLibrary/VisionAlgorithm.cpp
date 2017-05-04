@@ -3509,8 +3509,9 @@ EXIT:
         if (PR_INSP_BRIDGE_MODE::INNER == inspItem.enMode) {
             if (rect.width > inspItem.stInnerInspCriteria.fMaxLengthX || rect.height > inspItem.stInnerInspCriteria.fMaxLengthY) {
                 inspResult.bWithBridge = true;
-                inspResult.vecBridgeWindow.push_back(rect);
-                cv::rectangle(matResult, cv::Rect(rect.x + ptRoiTL.x, rect.y + ptRoiTL.y, rect.width, rect.height), _constRedScalar, 1);
+                cv::Rect rectResult(rect.x + ptRoiTL.x, rect.y + ptRoiTL.y, rect.width, rect.height);
+                inspResult.vecBridgeWindow.push_back(rectResult);
+                cv::rectangle(matResult, rectResult, _constRedScalar, 1);
             }
         }
         else {
@@ -3519,16 +3520,18 @@ EXIT:
                 int nTolerance = inspItem.rectInnerWindow.y - inspItem.rectOuterWindow.y - MARGIN;
                 if (rect.br().y <= rectInnerWindowNew.tl().y && rect.height >= nTolerance) {
                     inspResult.bWithBridge = true;
-                    inspResult.vecBridgeWindow.push_back(rect);
-                    cv::rectangle(matResult, cv::Rect(rect.x + ptRoiTL.x, rect.y + ptRoiTL.y, rect.width, rect.height), _constRedScalar, 1);
+                    cv::Rect rectResult(rect.x + ptRoiTL.x, rect.y + ptRoiTL.y, rect.width, rect.height);
+                    inspResult.vecBridgeWindow.push_back(rectResult);
+                    cv::rectangle(matResult, rectResult, _constRedScalar, 1);
                 }
             }
             else if (PR_INSP_BRIDGE_DIRECTION::DOWN == enDirection) {
                 int nTolerance = (inspItem.rectOuterWindow.y + inspItem.rectOuterWindow.height) - (inspItem.rectInnerWindow.y + inspItem.rectInnerWindow.height) - MARGIN;
                 if (rect.tl().y >= rectInnerWindowNew.br().y && rect.height >= nTolerance) {
                     inspResult.bWithBridge = true;
-                    inspResult.vecBridgeWindow.push_back(rect);
-                    cv::rectangle(matResult, cv::Rect(rect.x + ptRoiTL.x, rect.y + ptRoiTL.y, rect.width, rect.height), _constRedScalar, 1);
+                    cv::Rect rectResult(rect.x + ptRoiTL.x, rect.y + ptRoiTL.y, rect.width, rect.height);
+                    inspResult.vecBridgeWindow.push_back(rectResult);
+                    cv::rectangle(matResult, rectResult, _constRedScalar, 1);
                 }
             }
             else
@@ -3536,8 +3539,9 @@ EXIT:
                 int nTolerance = inspItem.rectInnerWindow.x - inspItem.rectOuterWindow.x - MARGIN;
                 if (rect.br().x <= rectInnerWindowNew.tl().x && rect.width >= nTolerance) {
                     inspResult.bWithBridge = true;
-                    inspResult.vecBridgeWindow.push_back(rect);
-                    cv::rectangle(matResult, cv::Rect(rect.x + ptRoiTL.x, rect.y + ptRoiTL.y, rect.width, rect.height), _constRedScalar, 1);
+                    cv::Rect rectResult(rect.x + ptRoiTL.x, rect.y + ptRoiTL.y, rect.width, rect.height);
+                    inspResult.vecBridgeWindow.push_back(rectResult);
+                    cv::rectangle(matResult, rectResult, _constRedScalar, 1);
                 }
             }
             else
@@ -3545,8 +3549,9 @@ EXIT:
                 int nTolerance = (inspItem.rectOuterWindow.x + inspItem.rectOuterWindow.width) - (inspItem.rectInnerWindow.x + inspItem.rectInnerWindow.width) - MARGIN;
                 if (rect.tl().x >= rectInnerWindowNew.br().x && rect.width >= nTolerance) {
                     inspResult.bWithBridge = true;
-                    inspResult.vecBridgeWindow.push_back(rect);
-                    cv::rectangle(matResult, cv::Rect(rect.x + ptRoiTL.x, rect.y + ptRoiTL.y, rect.width, rect.height), _constRedScalar, 1);
+                    cv::Rect rectResult(rect.x + ptRoiTL.x, rect.y + ptRoiTL.y, rect.width, rect.height);
+                    inspResult.vecBridgeWindow.push_back(rectResult);
+                    cv::rectangle(matResult, rectResult, _constRedScalar, 1);
                 }
             }
         }

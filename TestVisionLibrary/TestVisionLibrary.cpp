@@ -430,8 +430,8 @@ int _tmain(int argc, _TCHAR* argv[])
 
     //TestAutoLocateLead();
 
-    TestInspBridge();
-    //TestInspBridge_1();
+    //TestInspBridge();
+    TestInspBridge_1();
 
     std::cout << "Press any key to exist." << std::endl;
     getchar();
