@@ -441,7 +441,8 @@ private:
     const String _strKeyInnerWindow     = "InnerWindow";
     const String _strKeyOuterWindow     = "OuterWindow";    
     const String _strKeyDirection       = "Direction";
-    const String _strKeyMaxLength       = "MaxLength";
+    const String _strKeyMaxLengthX      = "MaxLengthX";
+    const String _strKeyMaxLengthY      = "MaxLengthY";
 
     const String _strKeyStatus          = "Status";
     const String _strKeyWithBridge      = "WithBridge";

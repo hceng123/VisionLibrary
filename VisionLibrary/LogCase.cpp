@@ -1247,19 +1247,23 @@ VisionStatus LogCaseInspBridge::WriteCmd(const PR_INSP_BRIDGE_CMD *const pCmd) {
         String strKeyOuterWindow = _strKeyOuterWindow + "_" + std::to_string ( nInspItemIndex );
         String strKeyMode = _strKeyMode + "_" + std::to_string ( nInspItemIndex );
         String strKeyDirection = _strKeyDirection + "_" + std::to_string ( nInspItemIndex );
-        String strKeyMaxLength = _strKeyMaxLength + "_" + std::to_string ( nInspItemIndex );
+        
         ini.SetValue(_CMD_SECTION.c_str(), strKeyInnerWindow.c_str(), _formatRect(inspItem.rectInnerWindow).c_str());
         ini.SetValue(_CMD_SECTION.c_str(), strKeyOuterWindow.c_str(), _formatRect(inspItem.rectOuterWindow).c_str());
         ini.SetLongValue(_CMD_SECTION.c_str(), strKeyMode.c_str(), ToInt32 ( inspItem.enMode ) );
-        String strDirection, strMaxLength;
-        for ( const auto &criteria : inspItem.vecInspCriteria ) {
-            strDirection += std::to_string ( ToInt32 ( criteria.enDirection ) ) + ", ";
-            strMaxLength += std::to_string ( criteria.fMaxLength ) + ", ";
-        }
-        strDirection.resize ( strDirection.size() - 2 );
-        strMaxLength.resize ( strMaxLength.size() - 2 );
-        ini.SetValue ( _CMD_SECTION.c_str(), strKeyDirection.c_str(), strDirection.c_str() );
-        ini.SetValue ( _CMD_SECTION.c_str(), strKeyMaxLength.c_str(), strMaxLength.c_str() );
+        if ( PR_INSP_BRIDGE_MODE::OUTER == inspItem.enMode ) {
+            String strDirection, strMaxLength;
+            for ( const auto enDirection : inspItem.vecOuterInspDirection )
+                strDirection += std::to_string ( ToInt32 ( enDirection ) ) + ", ";
+            strDirection.resize ( strDirection.size() - 2 );
+            ini.SetValue ( _CMD_SECTION.c_str(), strKeyDirection.c_str(), strDirection.c_str() );
+        } else {
+            String strKeyMaxLengthX = _strKeyMaxLengthX + "_" + std::to_string ( nInspItemIndex );
+            String strKeyMaxLengthY = _strKeyMaxLengthY + "_" + std::to_string ( nInspItemIndex );
+            ini.SetDoubleValue ( _CMD_SECTION.c_str(), strKeyMaxLengthX.c_str(), inspItem.stInnerInspCriteria.fMaxLengthX );
+            ini.SetDoubleValue ( _CMD_SECTION.c_str(), strKeyMaxLengthY.c_str(), inspItem.stInnerInspCriteria.fMaxLengthY );
+        }     
+        
         ++ nInspItemIndex;
     }
     ini.SaveFile(cmdRpyFilePath.c_str());
@@ -1300,26 +1304,26 @@ VisionStatus LogCaseInspBridge::RunLogCase() {
         String strKeyInnerWindow = _strKeyInnerWindow + "_" + std::to_string ( nInspItemIndex );
         String strKeyOuterWindow = _strKeyOuterWindow + "_" + std::to_string ( nInspItemIndex );
         String strKeyMode = _strKeyMode + "_" + std::to_string ( nInspItemIndex );
-        String strKeyDirection = _strKeyDirection + "_" + std::to_string ( nInspItemIndex );
-        String strKeyMaxLength = _strKeyMaxLength + "_" + std::to_string ( nInspItemIndex );
-
+        
         PR_INSP_BRIDGE_CMD::INSP_ITEM inspItem;
         inspItem.rectInnerWindow = _parseRect ( ini.GetValue(_CMD_SECTION.c_str(), strKeyInnerWindow.c_str(), _DEFAULT_RECT.c_str() ) );
         inspItem.rectOuterWindow = _parseRect ( ini.GetValue(_CMD_SECTION.c_str(), strKeyOuterWindow.c_str(), _DEFAULT_RECT.c_str() ) );
         inspItem.enMode = static_cast<PR_INSP_BRIDGE_MODE>( ini.GetLongValue(_CMD_SECTION.c_str(), strKeyMode.c_str(), 0 ) );
         
-        String strDirection = ini.GetValue ( _CMD_SECTION.c_str(), strKeyDirection.c_str(), "" );
-        String strMaxLength = ini.GetValue ( _CMD_SECTION.c_str(), strKeyMaxLength.c_str(), "" );
-        StringVector vecStrDirection = split(strDirection, ',');
-        StringVector vecStrMaxLength = split(strDirection, ',');
-        if ( vecStrDirection.size() == vecStrMaxLength.size() ) {
+        if ( PR_INSP_BRIDGE_MODE::OUTER == inspItem.enMode ) {
+            String strKeyDirection = _strKeyDirection + "_" + std::to_string ( nInspItemIndex );
+            String strDirection = ini.GetValue ( _CMD_SECTION.c_str(), strKeyDirection.c_str(), "" );
+            StringVector vecStrDirection = split(strDirection, ',');
             for ( size_t index = 0; index < vecStrDirection.size(); ++ index ) {
-                PR_INSP_BRIDGE_CMD::INSP_CRITERIA inspCriteria;
-                inspCriteria.enDirection = static_cast<PR_INSP_BRIDGE_DIRECTION> ( std::atoi ( vecStrDirection[index].c_str() ) );
-                inspCriteria.fMaxLength  = static_cast<float> ( std::atof ( vecStrMaxLength[index].c_str() ) );
-                inspItem.vecInspCriteria.push_back ( inspCriteria );
+                PR_INSP_BRIDGE_DIRECTION enDirection = static_cast<PR_INSP_BRIDGE_DIRECTION> ( std::atoi ( vecStrDirection[index].c_str() ) );
+                inspItem.vecOuterInspDirection.push_back ( enDirection );
             }
-        }
+        }else {
+            String strKeyMaxLengthX = _strKeyMaxLengthX + "_" + std::to_string ( nInspItemIndex );
+            String strKeyMaxLengthY = _strKeyMaxLengthY + "_" + std::to_string ( nInspItemIndex );
+            inspItem.stInnerInspCriteria.fMaxLengthX = ToFloat( ini.GetDoubleValue ( _CMD_SECTION.c_str(), strKeyMaxLengthX.c_str(), 0.f ) );
+            inspItem.stInnerInspCriteria.fMaxLengthY = ToFloat( ini.GetDoubleValue ( _CMD_SECTION.c_str(), strKeyMaxLengthY.c_str(), 0.f ) );
+        }        
         stCmd.vecInspItems.push_back ( inspItem );
     }
 

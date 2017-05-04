@@ -40,11 +40,8 @@ void TestInspBridge() {
     inspItem.enMode = PR_INSP_BRIDGE_MODE::OUTER;
     inspItem.rectInnerWindow = cv::Rect(221, 195, 28, 82);
     inspItem.rectOuterWindow = cv::Rect(212, 187, 43, 102);
-    for ( int i = 0; i < 4; ++ i ) {
-        PR_INSP_BRIDGE_CMD::INSP_CRITERIA inspCriteria;
-        inspCriteria.enDirection = PR_INSP_BRIDGE_DIRECTION(i);
-        inspItem.vecInspCriteria.push_back ( inspCriteria );
-    }
+    for ( int i = 0; i < 4; ++ i )
+        inspItem.vecOuterInspDirection.push_back ( PR_INSP_BRIDGE_DIRECTION(i) );
     stCmd.vecInspItems.push_back ( inspItem );
 
     inspItem.rectInnerWindow = cv::Rect(169, 195, 26, 82);

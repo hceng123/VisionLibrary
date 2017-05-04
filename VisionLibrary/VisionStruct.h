@@ -532,17 +532,18 @@ struct PR_AUTO_LOCATE_LEAD_RPY {
 };
 
 struct PR_INSP_BRIDGE_CMD {
-    struct INSP_CRITERIA {
-        INSP_CRITERIA() : enDirection(PR_INSP_BRIDGE_DIRECTION::LEFT), fMaxLength(0.f) {}
-        PR_INSP_BRIDGE_DIRECTION    enDirection;
-        float                       fMaxLength;     //Only used when PR_INSP_BRIDGE_MODE is inner.
+    struct INNER_INSP_CRITERIA {
+        INNER_INSP_CRITERIA() : fMaxLengthX(0.f), fMaxLengthY(0.f) {}
+        float                   fMaxLengthX;
+        float                   fMaxLengthY;
     };
-    using INSP_CRITERIA_VECTOR = std::vector<INSP_CRITERIA>;
+    using INSP_DIRECTION_VECTOR = std::vector<PR_INSP_BRIDGE_DIRECTION>;
     struct INSP_ITEM {
         cv::Rect                rectInnerWindow;
         cv::Rect                rectOuterWindow;
         PR_INSP_BRIDGE_MODE     enMode;
-        INSP_CRITERIA_VECTOR    vecInspCriteria;
+        INSP_DIRECTION_VECTOR   vecOuterInspDirection;
+        INNER_INSP_CRITERIA     stInnerInspCriteria;
     };
     using INSP_ITEM_VECTOR = std::vector<INSP_ITEM>;
     cv::Mat                 matInputImg;
