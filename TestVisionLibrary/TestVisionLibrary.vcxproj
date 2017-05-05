@@ -168,6 +168,7 @@
     </ClCompile>
     <ClCompile Include="TestAutoLocateLead.cpp" />
     <ClCompile Include="TestCalib.cpp" />
+    <ClCompile Include="TestInspBridge.cpp" />
     <ClCompile Include="TestVisionLibrary.cpp" />
   </ItemGroup>
   <ItemGroup>

@@ -1,5 +1,5 @@
-#ifndef AGILENT_BBOX_COMMON_BASEDEFS_H
-#define AGILENT_BBOX_COMMON_BASEDEFS_H
+#ifndef AOI_VISION_COMMON_BASEDEFS_H
+#define AOI_VISION_COMMON_BASEDEFS_H
 //****************************************************************************
 // BaseDefs.h -- $Id$
 //
@@ -11,13 +11,9 @@
 //   Four characters. No tabs!
 //
 // Modifications
-//   2014-03-13 (MM) Added a file-utils include.
-//   2014-02-10 (MM) Added two includes and a boost list size override.
-//   2011-10-06 (MM) Added more includes.
-//   2010-12-06 (MM) Under construction.
-//   2010-08-09 (MM) Created.
+//   2016-08-09 (XSG) Created.
 //
-// Copyright (c) 2010-2011, 2014 Agilent Technologies, Inc.  All rights reserved.
+// Copyright (c) 2016-2017, 2014 Xiao Sheng Guang, Inc.  All rights reserved.
 //****************************************************************************
 
 #include <algorithm>
@@ -54,4 +50,4 @@
 #include "Exception.h"
 #include "FileUtils.h"
 
-#endif//AGILENT_BBOX_COMMON_BASEDEFS_H
+#endif//AOI_VISION_COMMON_BASEDEFS_H

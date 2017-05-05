@@ -426,6 +426,29 @@ private:
     const String _strLeadLocation       = "LoadLocation_";
 };
 
+class LogCaseInspBridge : public LogCase
+{
+public:
+    explicit LogCaseInspBridge(const String &strPath, bool bReplay = false) : LogCase(strPath, bReplay) {}
+    VisionStatus WriteCmd(const PR_INSP_BRIDGE_CMD *const pCmd);
+    VisionStatus WriteRpy(PR_INSP_BRIDGE_RPY *const pRpy);
+    virtual VisionStatus RunLogCase() override;
+    virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
+    static String StaticGetFolderPrefix();
+private:
+    const String _strKeyInspItemCount   = "InspItemCount";
+    const String _strKeyMode            = "Mode";
+    const String _strKeyInnerWindow     = "InnerWindow";
+    const String _strKeyOuterWindow     = "OuterWindow";    
+    const String _strKeyDirection       = "Direction";
+    const String _strKeyMaxLengthX      = "MaxLengthX";
+    const String _strKeyMaxLengthY      = "MaxLengthY";
+
+    const String _strKeyStatus          = "Status";
+    const String _strKeyWithBridge      = "WithBridge";
+    const String _strKeyBridgeWindow    = "BridgeWindow";
+};
+
 }
 }
 #endif

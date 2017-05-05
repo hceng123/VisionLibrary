@@ -20,14 +20,15 @@ protected:
 
     Config();
 
-    String           _strRecordDir          = ".\\Vision\\Record\\";
-    String          _strLogCaseDir          = ".\\Vision\\Logcase\\";
-    String          _strRecordPrefix        = "tmpl.";
-    String          _strRecordLogPrefix     = "tmplDir.";
-    PR_DEBUG_MODE   _enDebugMode            = PR_DEBUG_MODE::DISABLED;
-    Int16           _nDeviceInspChannel     = static_cast<Int16>( BGR_CHANNEL::RED );
-    Int32           _nRemoveCCMaxComponent  = 500;
-    String          _strOcrCharList         = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-";
+    String           _strRecordDir              = ".\\Vision\\Record\\";
+    String          _strLogCaseDir              = ".\\Vision\\Logcase\\";
+    String          _strRecordPrefix            = "tmpl.";
+    String          _strRecordLogPrefix         = "tmplDir.";
+    PR_DEBUG_MODE   _enDebugMode                = PR_DEBUG_MODE::DISABLED;
+    Int16           _nDeviceInspChannel         = static_cast<Int16>( BGR_CHANNEL::RED );
+    Int32           _nRemoveCCMaxComponent      = 500;
+    String          _strOcrCharList             = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-";
+    Int32           _nInspBridgeMinThreshold    = 100;
 public:
     static Config*          GetInstance();
     String                  getRecordDir() const;
@@ -39,6 +40,7 @@ public:
     void                    setDebugMode(PR_DEBUG_MODE enDebugMode);
     Int32                   getRemoveCCMaxComponents();
     String                  getOcrCharList() const;
+    Int32                   getInspBridgeMinThreshold() const;
     void load();
 };
 

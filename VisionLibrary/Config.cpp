@@ -61,6 +61,10 @@ String Config::getOcrCharList() const
     return _strOcrCharList;
 }
 
+Int32 Config::getInspBridgeMinThreshold() const {
+    return _nInspBridgeMinThreshold;
+}
+
 void Config::load()
 {
 }

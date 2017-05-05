@@ -5,6 +5,8 @@ void TestAutoLocateLead();
 void TestAutoLocateLead_1();
 void TestAutoLocateLead_2();
 void TestAutoLocateLead_3();
+void TestInspBridge();
+void TestInspBridge_1();
 
 template<class T>
 void printfMat(const cv::Mat &mat)

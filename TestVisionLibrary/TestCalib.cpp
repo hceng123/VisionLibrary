@@ -8,12 +8,12 @@ using namespace AOI::Vision;
 
 void TestCalibCamera()
 {
-    std::string strImgPath = "./data/Obj_image6.bmp";
+    std::string strImgPath = "./data/PhaseImageForCalibCamera.bmp";
     PR_CALIBRATE_CAMERA_CMD stCmd;
     PR_CALIBRATE_CAMERA_RPY stRpy;
     stCmd.matInput = cv::imread(strImgPath, cv::IMREAD_GRAYSCALE );
     stCmd.fPatternDist = 2.;
-    stCmd.szBoardPattern = cv::Size( 7, 5 ); //cv::Size(25, 23);
+    stCmd.szBoardPattern = cv::Size( 5, 5 ); //cv::Size(25, 23);
 
     PR_CalibrateCamera ( &stCmd, &stRpy );
     if ( VisionStatus::OK != stRpy.enStatus ) {

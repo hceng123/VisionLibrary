@@ -20,6 +20,7 @@ void TestAutoThreshold();
 void TestDetectLine();
 void TestCalibrateCamera();
 void TestAutoLocateLead();
+void TestInspBridge();
 
 }
 }
