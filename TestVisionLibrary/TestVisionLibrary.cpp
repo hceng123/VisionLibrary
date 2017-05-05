@@ -324,6 +324,17 @@ void TestRunLogcase()
     std::cout << "Run logcase result " << static_cast<int> ( enStatus ) << std::endl;
 }
 
+void TestAutoThreshold() {
+    PR_AUTO_THRESHOLD_CMD stCmd;
+    PR_AUTO_THRESHOLD_RPY stRpy;
+    stCmd.matInput = cv::imread ( "./data/Compare.png", cv::IMREAD_GRAYSCALE );
+    stCmd.rectROI = cv::Rect(0, 0, stCmd.matInput.cols, stCmd.matInput.rows );
+    stCmd.nThresholdNum = 1;
+    PR_AutoThreshold ( &stCmd, &stRpy);
+    if ( stRpy.enStatus == VisionStatus::OK )
+        std::cout << "Auto theshold result: " << stRpy.vecThreshold[0] << std::endl;
+}
+
 std::string GetTime()
 {
     std::time_t t; std::time(&t);
@@ -431,7 +442,9 @@ int _tmain(int argc, _TCHAR* argv[])
     //TestAutoLocateLead();
 
     //TestInspBridge();
-    TestInspBridge_1();
+    //TestInspBridge_1();
+
+    TestAutoThreshold();
 
     std::cout << "Press any key to exist." << std::endl;
     getchar();

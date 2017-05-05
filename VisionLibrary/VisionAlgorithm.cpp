@@ -607,7 +607,7 @@ VisionStatus VisionAlgorithm::autoThreshold(PR_AUTO_THRESHOLD_CMD *pstCmd, PR_AU
         pstCmd->rectROI.width <= 0 || pstCmd->rectROI.height <= 0 ||
         ( pstCmd->rectROI.x + pstCmd->rectROI.width ) > pstCmd->matInput.cols ||
         ( pstCmd->rectROI.y + pstCmd->rectROI.height ) > pstCmd->matInput.rows )    {
-        WriteLog("The Fitting range is invalid");
+        WriteLog("The auto threshold range is invalid");
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return VisionStatus::INVALID_PARAM;
     }
@@ -1025,9 +1025,9 @@ VisionStatus VisionAlgorithm::inspSurface(PR_INSP_SURFACE_CMD *const pInspCmd, P
 
 	cv::Mat matRotatedMask;
 	cv::warpAffine( matMask, matRotatedMask, matRotation, matMask.size() );
-	matRotatedMask =  cv::Scalar::all(255) - matRotatedMask;	
+	matRotatedMask =  cv::Scalar::all(255) - matRotatedMask;
 
-	pInspCmd->matInsp.setTo(cv::Scalar(0), matRotatedMask );	
+	pInspCmd->matInsp.setTo(cv::Scalar(0), matRotatedMask );
 
 	cv::Mat matCmpResult = pInspCmd->matInsp - matRotatedTmpl;
 	cv::Mat matRevsCmdResult = matRotatedTmpl - pInspCmd->matInsp;
