@@ -19,14 +19,12 @@ namespace Vision
 #define PR_FIT_LINE_MAX_POINT_COUNT             (10000)
 static const double PR_MM_TO_UM              =  1000.;
 
-enum class PR_ALIGN_ALGORITHM
-{
+enum class PR_SRCH_OBJ_ALGORITHM {
 	SIFT,
 	SURF,
 };
 
-enum class PR_DEFECT_ATTRIBUTE
-{
+enum class PR_DEFECT_ATTRIBUTE {
 	BRIGHT, // Only bright defect (those defects brighter than the reference and the 
 	// absolute value of the difference is larger than the defect threshold) is detected. 
 	DARK,	// Only dark defect (those defects darker than the reference and the absolute 
@@ -37,23 +35,20 @@ enum class PR_DEFECT_ATTRIBUTE
 	END
 };
 
-enum class PR_DEFECT_TYPE
-{
+enum class PR_DEFECT_TYPE {
 	BLOB,
 	LINE,
 	END,
 };
 
-enum class PR_DEBUG_MODE
-{
+enum class PR_DEBUG_MODE {
     DISABLED,
     SHOW_IMAGE,
     LOG_ALL_CASE,
     LOG_FAIL_CASE,
 };
 
-enum class PR_RECORD_TYPE
-{
+enum class PR_RECORD_TYPE {
     INVALID = -1,
     ALIGNMENT,
     DEVICE,

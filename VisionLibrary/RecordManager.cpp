@@ -22,32 +22,29 @@ RecordManager::~RecordManager()
 {
 }
 
-VisionStatus RecordManager::add(IRecord *pRecord, Int32 &recordID)
+VisionStatus RecordManager::add(IRecordPtr pRecord, Int32 &recordID)
 {
     recordID = _generateRecordID();    
     pRecord->save ( _getRecordFilePath ( recordID ) );
-    _mapRecord.insert ( PairRecord (recordID, pRecord) );
+    _mapRecord.insert ( std::make_pair ( recordID, pRecord ) );
 
     String strLog = "Add record " + std::to_string(recordID) + ";";
     WriteLog(strLog);
     return VisionStatus::OK;
 }
 
-IRecord* RecordManager::get(Int32 nRecordID)
+IRecordPtr RecordManager::get(Int32 nRecordID)
 {
     return _mapRecord[nRecordID];
 }
 
 VisionStatus RecordManager::free(Int32 nRecordID)
 {
-    IRecord *pRecord = _mapRecord[nRecordID];
+    IRecordPtr pRecord = _mapRecord[nRecordID];
     if ( pRecord != nullptr )
-    {
         _mapRecord.erase(nRecordID);
-        delete pRecord;
-    }
     
-    bfs::remove( _getRecordFilePath(nRecordID) );
+    bfs::remove( _getRecordFilePath ( nRecordID ) );
     
     String strLog = "Free record " + std::to_string(nRecordID) + ";";
     WriteLog(strLog);
@@ -56,10 +53,6 @@ VisionStatus RecordManager::free(Int32 nRecordID)
 
 VisionStatus RecordManager::freeAllRecord()
 {
-    for ( auto record : _mapRecord )
-    {
-       delete record.second;
-    }
     _mapRecord.clear();
     bfs::remove_all( Config::GetInstance()->getRecordDir() );
     WriteLog("All record is freed");
@@ -98,7 +91,7 @@ VisionStatus RecordManager::_loadOneRecord(const String &strFilePath)
             fs.release();
             return VisionStatus::INVALID_RECORD_TYPE;
         }
-        IRecord *pRecord = _createRecordPtr ( recordType );
+        IRecordPtr pRecord = _createRecordPtr ( recordType );
         if ( nullptr == pRecord )   {
             fs.release();
             return VisionStatus::INVALID_RECORD_TYPE;
@@ -110,13 +103,13 @@ VisionStatus RecordManager::_loadOneRecord(const String &strFilePath)
     return VisionStatus::OK;
 }
 
-IRecord *RecordManager::_createRecordPtr(Int32 recordType)
+IRecordPtr RecordManager::_createRecordPtr(Int32 recordType)
 {
     PR_RECORD_TYPE enRecordType = static_cast<PR_RECORD_TYPE>(recordType);
     switch(enRecordType)
     {
     case PR_RECORD_TYPE::ALIGNMENT:
-        return ( new TmplRecord( enRecordType ) );
+        return std::make_shared<TmplRecord>( enRecordType );
         break;
     default:
         return nullptr;

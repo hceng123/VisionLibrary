@@ -90,16 +90,16 @@ int TestVisionAlgorithm()
 
 	// Restore image I
 	//warp_image(pGrayPhoto, pImgI, W);
-	PR_ALIGN_ALGORITHM enAlgorithm = PR_ALIGN_ALGORITHM::SURF;
-	PR_LRN_TMPL_CMD stLrnTmplCmd;
+	PR_SRCH_OBJ_ALGORITHM enAlgorithm = PR_SRCH_OBJ_ALGORITHM::SURF;
+	PR_LRN_OBJ_CMD stLrnTmplCmd;
 	PR_LRN_TMPL_RPY stLrnTmplRpy;
 	stLrnTmplCmd.mat = cv::cvarrToMat(pImgT, true);
 	stLrnTmplCmd.rectLrn = omega;
 	stLrnTmplCmd.enAlgorithm = enAlgorithm;
-	PR_LearnTmpl(&stLrnTmplCmd, &stLrnTmplRpy);
+	PR_LrnObj(&stLrnTmplCmd, &stLrnTmplRpy);
 
-	PR_SRCH_TMPL_CMD stSrchTmplCmd;
-	PR_SRCH_TMPL_RPY stSrchTmplRpy;
+	PR_SRCH_OBJ_CMD stSrchTmplCmd;
+	PR_SRCH_OBJ_RPY stSrchTmplRpy;
 	stSrchTmplCmd.mat = matRotated;
 	stSrchTmplCmd.rectLrn = omega;
 	stSrchTmplCmd.nRecordID = stLrnTmplRpy.nRecordID;
@@ -108,7 +108,7 @@ int TestVisionAlgorithm()
 	stSrchTmplCmd.rectSrchWindow = rectSrchWindow;
 	stSrchTmplCmd.enAlgorithm = enAlgorithm;
 
-	PR_SrchTmpl(&stSrchTmplCmd, &stSrchTmplRpy);
+	PR_SrchObj(&stSrchTmplCmd, &stSrchTmplRpy);
 
     printf("Match score %.2f \n", stSrchTmplRpy.fMatchScore );
 	printfMat<double>(stSrchTmplRpy.matHomography);
@@ -162,21 +162,21 @@ int TestVisionAlgorithm()
 
 void TestSearchFiducialMark()
 {
-    PR_ALIGN_ALGORITHM enAlgorithm = PR_ALIGN_ALGORITHM::SURF;
+    PR_SRCH_OBJ_ALGORITHM enAlgorithm = PR_SRCH_OBJ_ALGORITHM::SURF;
     cv::Rect2f omega = cv::Rect2f(311, 45, 300, 300 );
-	PR_LRN_TMPL_CMD stLrnTmplCmd;
+	PR_LRN_OBJ_CMD stLrnTmplCmd;
 	PR_LRN_TMPL_RPY stLrnTmplRpy;
 	stLrnTmplCmd.mat = cv::imread(".\\data\\FiducialLrn.png");
 	stLrnTmplCmd.rectLrn = omega;
 	stLrnTmplCmd.enAlgorithm = enAlgorithm;
-	VisionStatus enStatus = PR_LearnTmpl(&stLrnTmplCmd, &stLrnTmplRpy);
+	VisionStatus enStatus = PR_LrnObj(&stLrnTmplCmd, &stLrnTmplRpy);
     if ( VisionStatus::OK != enStatus ) {
         std::cout << "Learn fail with status " << static_cast<int>(enStatus) << std::endl;
         return;
     }
 
-	PR_SRCH_TMPL_CMD stSrchTmplCmd;
-	PR_SRCH_TMPL_RPY stSrchTmplRpy;
+	PR_SRCH_OBJ_CMD stSrchTmplCmd;
+	PR_SRCH_OBJ_RPY stSrchTmplRpy;
 	stSrchTmplCmd.mat = cv::imread(".\\data\\FiducialSrch_BK.png");
 	stSrchTmplCmd.rectLrn = omega;
 	stSrchTmplCmd.nRecordID = stLrnTmplRpy.nRecordID;
@@ -185,7 +185,7 @@ void TestSearchFiducialMark()
 	stSrchTmplCmd.rectSrchWindow = rectSrchWindow;
 	stSrchTmplCmd.enAlgorithm = enAlgorithm;
 
-	PR_SrchTmpl(&stSrchTmplCmd, &stSrchTmplRpy);
+	PR_SrchObj(&stSrchTmplCmd, &stSrchTmplRpy);
 
     printf("Match score %.2f \n", stSrchTmplRpy.fMatchScore );
 	printfMat<double>(stSrchTmplRpy.matHomography);
@@ -195,21 +195,21 @@ void TestSearchFiducialMark()
 
 void TestSearchFiducialMark_1()
 {
-    PR_ALIGN_ALGORITHM enAlgorithm = PR_ALIGN_ALGORITHM::SURF;
+    PR_SRCH_OBJ_ALGORITHM enAlgorithm = PR_SRCH_OBJ_ALGORITHM::SURF;
     cv::Rect2f omega = cv::Rect2f(464, 591, 194, 194 );
-	PR_LRN_TMPL_CMD stLrnTmplCmd;
+	PR_LRN_OBJ_CMD stLrnTmplCmd;
 	PR_LRN_TMPL_RPY stLrnTmplRpy;
 	stLrnTmplCmd.mat = cv::imread(".\\data\\PCB_FiducialMark1.jpg");
 	stLrnTmplCmd.rectLrn = omega;
 	stLrnTmplCmd.enAlgorithm = enAlgorithm;
-	VisionStatus enStatus = PR_LearnTmpl(&stLrnTmplCmd, &stLrnTmplRpy);
+	VisionStatus enStatus = PR_LrnObj(&stLrnTmplCmd, &stLrnTmplRpy);
     if ( VisionStatus::OK != enStatus ) {
         std::cout << "Learn fail with status " << static_cast<int>(enStatus) << std::endl;
         return;
     }
 
-	PR_SRCH_TMPL_CMD stSrchTmplCmd;
-	PR_SRCH_TMPL_RPY stSrchTmplRpy;
+	PR_SRCH_OBJ_CMD stSrchTmplCmd;
+	PR_SRCH_OBJ_RPY stSrchTmplRpy;
 	stSrchTmplCmd.mat = cv::imread(".\\data\\PCB_FiducialMark2.jpg");
 	stSrchTmplCmd.rectLrn = omega;
 	stSrchTmplCmd.nRecordID = stLrnTmplRpy.nRecordID;
@@ -218,7 +218,7 @@ void TestSearchFiducialMark_1()
 	stSrchTmplCmd.rectSrchWindow = rectSrchWindow;
 	stSrchTmplCmd.enAlgorithm = enAlgorithm;
 
-	PR_SrchTmpl(&stSrchTmplCmd, &stSrchTmplRpy);
+	PR_SrchObj(&stSrchTmplCmd, &stSrchTmplRpy);
 
     printf("Match score %.2f \n", stSrchTmplRpy.fMatchScore );
 	printfMat<double>(stSrchTmplRpy.matHomography);

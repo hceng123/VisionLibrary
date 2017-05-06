@@ -4,6 +4,7 @@
 #include "BaseType.h"
 #include "VisionHeader.h"
 #include "opencv2/core.hpp"
+#include <memory>
 
 namespace AOI
 {
@@ -20,8 +21,9 @@ public:
 protected:
     PR_RECORD_TYPE                       _enType;
 };
+using IRecordPtr = std::shared_ptr<IRecord>;
 
-class TmplRecord:public IRecord
+class TmplRecord : public IRecord
 {
 public:
     TmplRecord(PR_RECORD_TYPE enType):IRecord(enType)   {}
@@ -35,8 +37,9 @@ protected:
     VectorOfKeyPoint            _vecModelKeyPoint;
 	cv::Mat                     _matModelDescritor;
 };
+using TmplRecordPtr = std::shared_ptr<TmplRecord>;
 
-class DeviceRecord:public IRecord
+class DeviceRecord : public IRecord
 {
 public:
     DeviceRecord(PR_RECORD_TYPE enType):IRecord(enType)   {}
@@ -50,6 +53,7 @@ protected:
     cv::Size2f          _size;
     Int16               _nElectrodeThreshold;
 };
+using DeviceRecordPtr = std::shared_ptr<DeviceRecord>;
 
 }
 }

@@ -32,8 +32,8 @@ struct PR_VERSION_INFO {
     char                    chArrVersion[100];
 };
 
-struct PR_LRN_TMPL_CMD {
-	PR_ALIGN_ALGORITHM      enAlgorithm;
+struct PR_LRN_OBJ_CMD {
+	PR_SRCH_OBJ_ALGORITHM   enAlgorithm;
 	cv::Mat                 mat;
 	cv::Mat                 mask;
 	cv::Rect2f              rectLrn;
@@ -48,8 +48,8 @@ struct PR_LRN_TMPL_RPY {
     Int32                       nRecordID;
 };
 
-struct PR_SRCH_TMPL_CMD {
-	PR_ALIGN_ALGORITHM     enAlgorithm;
+struct PR_SRCH_OBJ_CMD {
+	PR_SRCH_OBJ_ALGORITHM  enAlgorithm;
 	cv::Rect2f             rectLrn;
 	cv::Mat                mat;
 	cv::Rect               rectSrchWindow;
@@ -57,8 +57,8 @@ struct PR_SRCH_TMPL_CMD {
     Int32                  nRecordID;
 };
 
-struct PR_SRCH_TMPL_RPY {
-	Int16					nStatus;
+struct PR_SRCH_OBJ_RPY {
+	VisionStatus		    enStatus;
 	float					fMatchScore;
 	cv::Mat					matHomography;
 	cv::Point2f				ptObjPos;

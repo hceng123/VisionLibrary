@@ -164,8 +164,8 @@ void TestFitParellelLine()
     stCmd.matInput = cv::imread("./data/lowangle_250.png");
     stCmd.nThreshold = 200;
     stCmd.enAttribute = PR_OBJECT_ATTRIBUTE::BRIGHT;
-    stCmd.rectArrROI[0] = cv::Rect(444,291,149,25);
-    stCmd.rectArrROI[1] = cv::Rect(333,709,369,30);
+    stCmd.rectArrROI[0] = cv::Rect(444, 291, 149, 25);
+    stCmd.rectArrROI[1] = cv::Rect(333, 709, 369, 30);
     stCmd.fErrTol = 8;
     stCmd.enRmNoiseMethod = PR_RM_FIT_NOISE_METHOD::ABSOLUTE_ERR;
 

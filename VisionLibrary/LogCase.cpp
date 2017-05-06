@@ -107,7 +107,7 @@ String LogCase::_generateLogCaseName(const String &strFolderPrefix)
     return "LrnTmpl";
 }
 
-VisionStatus LogCaseLrnTmpl::WriteCmd(PR_LRN_TMPL_CMD *pLrnTmplCmd)
+VisionStatus LogCaseLrnTmpl::WriteCmd(PR_LRN_OBJ_CMD *pLrnTmplCmd)
 {
     if ( !_bReplay )    {
         _strLogCasePath = _generateLogCaseName(GetFolderPrefix());
@@ -140,13 +140,13 @@ VisionStatus LogCaseLrnTmpl::WriteRpy(PR_LRN_TMPL_RPY *pLrnTmplRpy)
 
 VisionStatus LogCaseLrnTmpl::RunLogCase()
 {
-    PR_LRN_TMPL_CMD stLrnTmplCmd;
+    PR_LRN_OBJ_CMD stLrnTmplCmd;
     VisionStatus enStatus;
 
     CSimpleIni ini(false, false, false);
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile( cmdRpyFilePath.c_str() );
-    stLrnTmplCmd.enAlgorithm = static_cast<PR_ALIGN_ALGORITHM> ( ini.GetLongValue ( _CMD_SECTION.c_str(), _strKeyAlgorithm.c_str(), ToInt32(PR_ALIGN_ALGORITHM::SURF) ) );
+    stLrnTmplCmd.enAlgorithm = static_cast<PR_SRCH_OBJ_ALGORITHM> ( ini.GetLongValue ( _CMD_SECTION.c_str(), _strKeyAlgorithm.c_str(), ToInt32(PR_SRCH_OBJ_ALGORITHM::SURF) ) );
     stLrnTmplCmd.rectLrn = _parseRect ( ini.GetValue(_CMD_SECTION.c_str(), _strKeyLrnWindow.c_str(), "" ) );
     stLrnTmplCmd.mat = cv::imread( _strLogCasePath + _IMAGE_NAME );
     stLrnTmplCmd.mask = cv::imread( _strLogCasePath + _MASK_NAME );

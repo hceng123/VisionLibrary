@@ -27,8 +27,8 @@ public:
 
     explicit VisionAlgorithm();
     static unique_ptr<VisionAlgorithm> create();
-    VisionStatus lrnTmpl(PR_LRN_TMPL_CMD * const pLrnTmplCmd, PR_LRN_TMPL_RPY *pLrnTmplRpy, bool bReplay = false);
-    VisionStatus srchTmpl(PR_SRCH_TMPL_CMD *const pFindObjCmd, PR_SRCH_TMPL_RPY *pFindObjRpy);
+    VisionStatus lrnTmpl(PR_LRN_OBJ_CMD * const pLrnTmplCmd, PR_LRN_TMPL_RPY *pLrnTmplRpy, bool bReplay = false);
+    static VisionStatus srchObj(PR_SRCH_OBJ_CMD *const pFindObjCmd, PR_SRCH_OBJ_RPY *pFindObjRpy);
     VisionStatus lrnDevice(PR_LRN_DEVICE_CMD *pstLrnDeviceCmd, PR_LRN_DEVICE_RPY *pstLrnDeivceRpy);
     VisionStatus inspDevice(PR_INSP_DEVICE_CMD *pstInspDeviceCmd, PR_INSP_DEVICE_RPY *pstInspDeivceRpy);
     static VisionStatus matchTemplate(PR_MATCH_TEMPLATE_CMD *const pstCmd, PR_MATCH_TEMPLATE_RPY *pstRpy, bool bReplay = false);
@@ -110,17 +110,17 @@ protected:
     static cv::Point2f _findFirstChessBoardCorner(const cv::Mat &matInput, float fBlockSize);
     static VisionStatus _inspBridgeItem(const cv::Mat &matGray, cv::Mat &matResult, const PR_INSP_BRIDGE_CMD::INSP_ITEM &inspItem, PR_INSP_BRIDGE_RPY::ITEM_RESULT &inspResult);
 protected:
-    const int       _constMinHessian        = 300;
-    const int       _constOctave            = 4;
-    const int       _constOctaveLayer       = 3;
-    const UInt32    _constLeastFeatures     = 3;
-    const String    _strRecordLogPrefix     = "tmplDir.";
-    const float     _constExpSmoothRatio    = 0.3f;
+    static const int       _constMinHessian        = 300;
+    static const int       _constOctave            = 4;
+    static const int       _constOctaveLayer       = 3;
+    static const UInt32    _constLeastFeatures     = 3;
+    static const String    _strRecordLogPrefix;
+    static const float     _constExpSmoothRatio;
 
     static const cv::Scalar _constRedScalar;
     static const cv::Scalar _constBlueScalar;
     static const cv::Scalar _constGreenScalar;
-    static OcrTesseractPtr _ptrOcrTesseract;
+    static OcrTesseractPtr  _ptrOcrTesseract;
 private:
     VisionAlgorithmPtr _pInstance = nullptr;
 };

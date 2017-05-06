@@ -48,7 +48,7 @@ class LogCaseLrnTmpl:public LogCase
 {
 public:
     explicit LogCaseLrnTmpl(const String &strPath, bool bReplay = false) : LogCase(strPath, bReplay) {}
-    VisionStatus WriteCmd(PR_LRN_TMPL_CMD *pCmd);
+    VisionStatus WriteCmd(PR_LRN_OBJ_CMD *pCmd);
     VisionStatus WriteRpy(PR_LRN_TMPL_RPY *pRpy);
     virtual VisionStatus RunLogCase() override;
     virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }

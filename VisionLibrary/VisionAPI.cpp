@@ -35,7 +35,7 @@ VisionAPI void PR_GetVersion(PR_VERSION_INFO *pstVersionInfo)
         _snprintf(pstVersionInfo->chArrVersion, sizeof (pstVersionInfo->chArrVersion), AOI_VISION_VERSION );
 }
 
-VisionAPI VisionStatus PR_LearnTmpl(PR_LRN_TMPL_CMD * const pLrnTmplCmd, PR_LRN_TMPL_RPY *pLrnTmplRpy)
+VisionAPI VisionStatus PR_LrnObj(PR_LRN_OBJ_CMD * const pLrnTmplCmd, PR_LRN_TMPL_RPY *pLrnTmplRpy)
 {
     try
     {
@@ -48,17 +48,11 @@ VisionAPI VisionStatus PR_LearnTmpl(PR_LRN_TMPL_CMD * const pLrnTmplCmd, PR_LRN_
     }
 }
 
-VisionAPI VisionStatus PR_SrchTmpl(PR_SRCH_TMPL_CMD *const pSrchTmplCmd, PR_SRCH_TMPL_RPY *pSrchTmplRpy)
+VisionAPI VisionStatus PR_SrchObj(PR_SRCH_OBJ_CMD *const pstCmd, PR_SRCH_OBJ_RPY *pstRpy)
 {
-    try
-    {
-        VisionAlgorithm va;
-        return va.srchTmpl ( pSrchTmplCmd, pSrchTmplRpy );
-    }catch(std::exception &e)
-    {
-        WriteLog(e.what());
-        return VisionStatus::OPENCV_EXCEPTION;
-    }
+PR_FUNCTION_ENTRY
+        return VisionAlgorithm::srchObj ( pstCmd, pstRpy );
+PR_FUNCTION_EXIT
 }
 
 VisionAPI VisionStatus PR_InspSurface(PR_INSP_SURFACE_CMD *const pInspCmd, PR_INSP_SURFACE_RPY *pInspRpy)
