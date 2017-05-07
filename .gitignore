@@ -19,7 +19,7 @@ ExtLibs/Debug
 Obj
 *.ipch
 *.suo
-RegressionTest/Vision/Record
+RegressionTest/Vision
 RegressionTest/RegressionTest_result.txt
 VisionWidget/GeneratedFiles
 *.dll

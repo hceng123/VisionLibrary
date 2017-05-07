@@ -211,14 +211,14 @@ void VisionWidget::on_detectLineBtn_clicked()
     ui.visionView->setState ( VisionView::VISION_VIEW_STATE::TEST_VISION_LIBRARY );
     ui.visionView->applyIntermediateResult();
 
-    PR_DETECT_LINE_CMD stCmd;
+    PR_CALIPER_CMD stCmd;
     stCmd.matInput = ui.visionView->getMat();
     stCmd.matMask = ui.visionView->getMask();
     stCmd.rectROI = ui.visionView->getSelectedWindow();
     stCmd.enDetectDir = static_cast<PR_DETECT_LINE_DIR> ( ui.comboBoxDetectLineDirection->currentIndex() );
 
-    PR_DETECT_LINE_RPY stRpy;
-	VisionStatus enStatus = PR_DetectLine(&stCmd, &stRpy);
+    PR_CALIPER_RPY stRpy;
+	VisionStatus enStatus = PR_Caliper(&stCmd, &stRpy);
 	if (VisionStatus::OK == enStatus)	{
 		ui.visionView->setMat ( VisionView::DISPLAY_SOURCE::RESULT, stRpy.matResult );
     }

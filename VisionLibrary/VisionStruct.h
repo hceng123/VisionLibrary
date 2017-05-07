@@ -34,13 +34,13 @@ struct PR_VERSION_INFO {
 
 struct PR_LRN_OBJ_CMD {
 	PR_SRCH_OBJ_ALGORITHM   enAlgorithm;
-	cv::Mat                 mat;
+	cv::Mat                 matInputImg;
 	cv::Mat                 mask;
 	cv::Rect2f              rectLrn;
 };
 
-struct PR_LRN_TMPL_RPY {
-	Int16                       nStatus;
+struct PR_LRN_OBJ_RPY {
+	VisionStatus                enStatus;
 	std::vector<cv::KeyPoint>   vecKeyPoint;
 	cv::Mat                     matDescritor;
 	cv::Mat                     matTmpl;
@@ -51,7 +51,7 @@ struct PR_LRN_TMPL_RPY {
 struct PR_SRCH_OBJ_CMD {
 	PR_SRCH_OBJ_ALGORITHM  enAlgorithm;
 	cv::Rect2f             rectLrn;
-	cv::Mat                mat;
+	cv::Mat                matInputImg;
 	cv::Rect               rectSrchWindow;
 	cv::Point2f            ptExpectedPos;
     Int32                  nRecordID;
@@ -240,20 +240,31 @@ struct PR_FIT_LINE_RPY {
 };
 
 //Detect line is find the lines in the image.
-struct PR_DETECT_LINE_CMD {
+struct PR_CALIPER_CMD {
+    PR_CALIPER_CMD() : bCheckLinerity(false), fPointMaxOffset(0.f), fMinLinerity(0.f), bCheckAngle(false), fExpectedAngle(0.f), fAngleDiffTolerance(0.f) {}
     cv::Mat                 matInput;
     cv::Mat                 matMask;
     cv::Rect                rectROI;
     PR_DETECT_LINE_DIR      enDetectDir;
+    bool                    bCheckLinerity;
+    float                   fPointMaxOffset;
+    float                   fMinLinerity;
+    bool                    bCheckAngle;
+    float                   fExpectedAngle;
+    float                   fAngleDiffTolerance;
 };
 
-struct PR_DETECT_LINE_RPY {
+struct PR_CALIPER_RPY {
     VisionStatus            enStatus;    
     bool                    bReversedFit;   //If it is true, then the result is x = fSlope * y + fIntercept. Otherwise the line is y = fSlope * x + fIntercept.
     float                   fSlope;
     float                   fIntercept;
     PR_Line2f               stLine;
-    cv::Mat                 matResult;
+    bool                    bLinerityCheckPass;
+    float                   fLinerity;
+    bool                    bAngleCheckPass;
+    float                   fAngle;
+    cv::Mat                 matResult;    
 };
 
 struct PR_FIT_PARALLEL_LINE_CMD {
@@ -261,7 +272,7 @@ struct PR_FIT_PARALLEL_LINE_CMD {
     cv::Rect                rectArrROI[2];
     Int32                   nThreshold;
     PR_OBJECT_ATTRIBUTE     enAttribute;
-    PR_RM_FIT_NOISE_METHOD  enRmNoiseMethod;    
+    PR_RM_FIT_NOISE_METHOD  enRmNoiseMethod;
     float                   fErrTol;
 };
 

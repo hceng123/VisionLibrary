@@ -44,20 +44,22 @@ protected:
     bool         _bReplay;
 };
 
-class LogCaseLrnTmpl:public LogCase
+class LogCaseLrnObj : public LogCase
 {
 public:
-    explicit LogCaseLrnTmpl(const String &strPath, bool bReplay = false) : LogCase(strPath, bReplay) {}
-    VisionStatus WriteCmd(PR_LRN_OBJ_CMD *pCmd);
-    VisionStatus WriteRpy(PR_LRN_TMPL_RPY *pRpy);
+    explicit LogCaseLrnObj(const String &strPath, bool bReplay = false) : LogCase(strPath, bReplay) {}
+    VisionStatus WriteCmd(const PR_LRN_OBJ_CMD *const pCmd);
+    VisionStatus WriteRpy(const PR_LRN_OBJ_RPY *const pRpy);
     virtual VisionStatus RunLogCase() override;
     virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
     static String StaticGetFolderPrefix();
 private:    
-    const String _strKeyAlgorithm   =   "Algorithm";
-    const String _strKeyLrnWindow   =   "LrnWindow";
-    const String _strKeyStatus      =   "Status";
-    const String _strKeyCenterPos   =   "Center";
+    const String _strKeyAlgorithm   = "Algorithm";
+    const String _strKeyLrnWindow   = "LrnWindow";
+
+    const String _strKeyStatus      = "Status";
+    const String _strKeyCenterPos   = "Center";
+    const String _strKeyRecordId    = "RecordId"; 
 };
 
 class LogCaseLrnDevice : public LogCase
@@ -139,25 +141,35 @@ private:
     const String _strKeyPoint2          = "Point2";
 };
 
-class LogCaseDetectLine : public LogCase
+class LogCaseCaliper : public LogCase
 {
 public:
-    explicit LogCaseDetectLine(const String &strPath, bool bReplay = false) : LogCase(strPath, bReplay) {}
-    VisionStatus WriteCmd(PR_DETECT_LINE_CMD *pCmd);
-    VisionStatus WriteRpy(PR_DETECT_LINE_RPY *pRpy);
+    explicit LogCaseCaliper(const String &strPath, bool bReplay = false) : LogCase(strPath, bReplay) {}
+    VisionStatus WriteCmd(const PR_CALIPER_CMD *const pCmd);
+    VisionStatus WriteRpy(const PR_CALIPER_RPY *const pRpy);
     virtual VisionStatus RunLogCase() override;
     virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
     static String StaticGetFolderPrefix();
 private:
-    const String _strKeyROI         = "ROI";
-    const String _strKeyDir         = "Direction";
+    const String _strKeyROI             = "ROI";
+    const String _strKeyDir             = "Direction";
+    const String _strKeyCheckLinerity   = "CheckLinerity";
+    const String _strKeyPointMaxOffset  = "PointMaxOffset";
+    const String _strKeyMinLinerity     = "MinLinerity";
+    const String _strKeyCheckAngle      = "CheckAngle";
+    const String _strKeyExpectedAngle   = "ExpectedAngle";
+    const String _strKeyAngleDiffTol    = "AngleDiffTol";
 
-    const String _strKeyStatus      = "Status";
-    const String _strKeyReversedFit = "ReversedFit";
-    const String _strKeySlope       = "Slope";
-    const String _strKeyIntercept   = "Intercept";
-    const String _strKeyPoint1      = "Point1";
-    const String _strKeyPoint2      = "Point2";
+    const String _strKeyStatus          = "Status";
+    const String _strKeyReversedFit     = "ReversedFit";
+    const String _strKeySlope           = "Slope";
+    const String _strKeyIntercept       = "Intercept";
+    const String _strKeyPoint1          = "Point1";
+    const String _strKeyPoint2          = "Point2";
+    const String _strKeyLinerityPass    = "LinerityPass";
+    const String _strKeyLinerity        = "Linerity";
+    const String _strKeyAngleCheckPass  = "AngleCheckPass";
+    const String _strKeyAngle           = "Angle";
 };
 
 class LogCaseFitParallelLine : public LogCase

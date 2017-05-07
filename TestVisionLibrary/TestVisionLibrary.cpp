@@ -92,19 +92,19 @@ int TestVisionAlgorithm()
 	//warp_image(pGrayPhoto, pImgI, W);
 	PR_SRCH_OBJ_ALGORITHM enAlgorithm = PR_SRCH_OBJ_ALGORITHM::SURF;
 	PR_LRN_OBJ_CMD stLrnTmplCmd;
-	PR_LRN_TMPL_RPY stLrnTmplRpy;
-	stLrnTmplCmd.mat = cv::cvarrToMat(pImgT, true);
+	PR_LRN_OBJ_RPY stLrnTmplRpy;
+	stLrnTmplCmd.matInputImg = cv::cvarrToMat(pImgT, true);
 	stLrnTmplCmd.rectLrn = omega;
 	stLrnTmplCmd.enAlgorithm = enAlgorithm;
 	PR_LrnObj(&stLrnTmplCmd, &stLrnTmplRpy);
 
 	PR_SRCH_OBJ_CMD stSrchTmplCmd;
 	PR_SRCH_OBJ_RPY stSrchTmplRpy;
-	stSrchTmplCmd.mat = matRotated;
+	stSrchTmplCmd.matInputImg = matRotated;
 	stSrchTmplCmd.rectLrn = omega;
 	stSrchTmplCmd.nRecordID = stLrnTmplRpy.nRecordID;
 	stSrchTmplCmd.ptExpectedPos = stLrnTmplRpy.ptCenter;
-	cv::Rect rectSrchWindow ( cv::Point(100, 80), cv::Point ( stSrchTmplCmd.mat.cols - 70, stSrchTmplCmd.mat.rows - 60 ) );
+	cv::Rect rectSrchWindow ( cv::Point(100, 80), cv::Point ( stSrchTmplCmd.matInputImg.cols - 70, stSrchTmplCmd.matInputImg.rows - 60 ) );
 	stSrchTmplCmd.rectSrchWindow = rectSrchWindow;
 	stSrchTmplCmd.enAlgorithm = enAlgorithm;
 
@@ -165,8 +165,8 @@ void TestSearchFiducialMark()
     PR_SRCH_OBJ_ALGORITHM enAlgorithm = PR_SRCH_OBJ_ALGORITHM::SURF;
     cv::Rect2f omega = cv::Rect2f(311, 45, 300, 300 );
 	PR_LRN_OBJ_CMD stLrnTmplCmd;
-	PR_LRN_TMPL_RPY stLrnTmplRpy;
-	stLrnTmplCmd.mat = cv::imread(".\\data\\FiducialLrn.png");
+	PR_LRN_OBJ_RPY stLrnTmplRpy;
+	stLrnTmplCmd.matInputImg = cv::imread(".\\data\\FiducialLrn.png");
 	stLrnTmplCmd.rectLrn = omega;
 	stLrnTmplCmd.enAlgorithm = enAlgorithm;
 	VisionStatus enStatus = PR_LrnObj(&stLrnTmplCmd, &stLrnTmplRpy);
@@ -177,7 +177,7 @@ void TestSearchFiducialMark()
 
 	PR_SRCH_OBJ_CMD stSrchTmplCmd;
 	PR_SRCH_OBJ_RPY stSrchTmplRpy;
-	stSrchTmplCmd.mat = cv::imread(".\\data\\FiducialSrch_BK.png");
+	stSrchTmplCmd.matInputImg = cv::imread(".\\data\\FiducialSrch_BK.png");
 	stSrchTmplCmd.rectLrn = omega;
 	stSrchTmplCmd.nRecordID = stLrnTmplRpy.nRecordID;
 	stSrchTmplCmd.ptExpectedPos = stLrnTmplRpy.ptCenter;
@@ -198,8 +198,8 @@ void TestSearchFiducialMark_1()
     PR_SRCH_OBJ_ALGORITHM enAlgorithm = PR_SRCH_OBJ_ALGORITHM::SURF;
     cv::Rect2f omega = cv::Rect2f(464, 591, 194, 194 );
 	PR_LRN_OBJ_CMD stLrnTmplCmd;
-	PR_LRN_TMPL_RPY stLrnTmplRpy;
-	stLrnTmplCmd.mat = cv::imread(".\\data\\PCB_FiducialMark1.jpg");
+	PR_LRN_OBJ_RPY stLrnTmplRpy;
+	stLrnTmplCmd.matInputImg = cv::imread(".\\data\\PCB_FiducialMark1.jpg");
 	stLrnTmplCmd.rectLrn = omega;
 	stLrnTmplCmd.enAlgorithm = enAlgorithm;
 	VisionStatus enStatus = PR_LrnObj(&stLrnTmplCmd, &stLrnTmplRpy);
@@ -210,7 +210,7 @@ void TestSearchFiducialMark_1()
 
 	PR_SRCH_OBJ_CMD stSrchTmplCmd;
 	PR_SRCH_OBJ_RPY stSrchTmplRpy;
-	stSrchTmplCmd.mat = cv::imread(".\\data\\PCB_FiducialMark2.jpg");
+	stSrchTmplCmd.matInputImg = cv::imread(".\\data\\PCB_FiducialMark2.jpg");
 	stSrchTmplCmd.rectLrn = omega;
 	stSrchTmplCmd.nRecordID = stLrnTmplRpy.nRecordID;
 	stSrchTmplCmd.ptExpectedPos = stLrnTmplRpy.ptCenter;
@@ -419,9 +419,27 @@ void TestFitCircle()
 	cv::waitKey(0);
 }
 
+void TestCaliper() {
+    PR_CALIPER_CMD stCmd;
+    PR_CALIPER_RPY stRpy;
+
+    stCmd.matInput = cv::imread("./data/F1-5-1_Threshold.png");
+    stCmd.rectROI = cv::Rect(1591, 970, 51, 90);
+    stCmd.enDetectDir = PR_DETECT_LINE_DIR::MAX_TO_MIN;
+    stCmd.bCheckLinerity = true;
+    stCmd.fPointMaxOffset = 5;
+    stCmd.fMinLinerity = 60.;
+    stCmd.bCheckAngle = true;
+    stCmd.fExpectedAngle = 90;
+    stCmd.fAngleDiffTolerance = 5;
+    
+    PR_Caliper ( &stCmd, &stRpy );
+    std::cout << "PR_Caliper status: " << ToInt32 ( stRpy.enStatus ) << std::endl;
+}
+
 int _tmain(int argc, _TCHAR* argv[])
 {
-    PR_SetDebugMode ( PR_DEBUG_MODE::SHOW_IMAGE );
+    PR_SetDebugMode ( PR_DEBUG_MODE::LOG_ALL_CASE );
     //TestVisionAlgorithm();
     std::cout << GetTime() << std::endl;
     //TestInspDevice();
@@ -444,7 +462,13 @@ int _tmain(int argc, _TCHAR* argv[])
     //TestInspBridge();
     //TestInspBridge_1();
 
-    TestAutoThreshold();
+    //TestAutoThreshold();
+
+    //TestCaliper();
+
+    TestLrnObj();
+    //TestLrnObj_1();
+    //TestSrchObj();
 
     std::cout << "Press any key to exist." << std::endl;
     getchar();

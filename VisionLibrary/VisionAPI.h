@@ -15,7 +15,8 @@ namespace AOI
 namespace Vision
 {
 VisionAPI void         PR_GetVersion(PR_VERSION_INFO *pstVersionInfo);
-VisionAPI VisionStatus PR_LrnObj(PR_LRN_OBJ_CMD *const pLrnTmplCmd, PR_LRN_TMPL_RPY *pLrnTmplRpy);
+VisionAPI VisionStatus PR_Init();         
+VisionAPI VisionStatus PR_LrnObj(const PR_LRN_OBJ_CMD *const pstCmd, PR_LRN_OBJ_RPY *const pstRpy);
 VisionAPI VisionStatus PR_SrchObj(PR_SRCH_OBJ_CMD *const pFindObjCmd, PR_SRCH_OBJ_RPY *pFindObjRpy);
 VisionAPI VisionStatus PR_InspSurface(PR_INSP_SURFACE_CMD *const pInspCmd, PR_INSP_SURFACE_RPY *pInspRpy);
 VisionAPI void         PR_DumpTimeLog(const std::string &strPath);
@@ -40,7 +41,7 @@ Example:
 @param pstCmd pointer of input command.
 @param pstRpy pointer of reply.
 */
-VisionAPI VisionStatus PR_DetectLine(PR_DETECT_LINE_CMD *pstCmd, PR_DETECT_LINE_RPY *pstRpy);
+VisionAPI VisionStatus PR_Caliper(const PR_CALIPER_CMD *const pstCmd, PR_CALIPER_RPY *const pstRpy);
 VisionAPI VisionStatus PR_FitParallelLine(PR_FIT_PARALLEL_LINE_CMD *pstCmd, PR_FIT_PARALLEL_LINE_RPY *pstRpy);
 VisionAPI VisionStatus PR_FitRect(PR_FIT_RECT_CMD *pstCmd, PR_FIT_RECT_RPY *pstRpy);
 

@@ -35,17 +35,16 @@ VisionAPI void PR_GetVersion(PR_VERSION_INFO *pstVersionInfo)
         _snprintf(pstVersionInfo->chArrVersion, sizeof (pstVersionInfo->chArrVersion), AOI_VISION_VERSION );
 }
 
-VisionAPI VisionStatus PR_LrnObj(PR_LRN_OBJ_CMD * const pLrnTmplCmd, PR_LRN_TMPL_RPY *pLrnTmplRpy)
+VisionAPI VisionStatus PR_Init()
 {
-    try
-    {
-        VisionAlgorithm va;
-        return va.lrnTmpl ( pLrnTmplCmd, pLrnTmplRpy );
-    }catch(std::exception &e)
-    {
-        WriteLog(e.what());
-        return VisionStatus::OPENCV_EXCEPTION;
-    }
+    return RecordManager::getInstance()->load();
+}
+
+VisionAPI VisionStatus PR_LrnObj(const PR_LRN_OBJ_CMD *const pstCmd, PR_LRN_OBJ_RPY *const pstRpy)
+{
+PR_FUNCTION_ENTRY
+    return VisionAlgorithm::lrnObj ( pstCmd, pstRpy );
+PR_FUNCTION_EXIT
 }
 
 VisionAPI VisionStatus PR_SrchObj(PR_SRCH_OBJ_CMD *const pstCmd, PR_SRCH_OBJ_RPY *pstRpy)
@@ -146,10 +145,10 @@ PR_FUNCTION_ENTRY
 PR_FUNCTION_EXIT
 }
 
-VisionAPI VisionStatus  PR_DetectLine(PR_DETECT_LINE_CMD *pstCmd, PR_DETECT_LINE_RPY *pstRpy)
+VisionAPI VisionStatus  PR_Caliper(const PR_CALIPER_CMD *const pstCmd, PR_CALIPER_RPY *const pstRpy)
 {
 PR_FUNCTION_ENTRY
-    return VisionAlgorithm::detectLine ( pstCmd, pstRpy );
+    return VisionAlgorithm::caliper ( pstCmd, pstRpy );
 PR_FUNCTION_EXIT
 }
 
