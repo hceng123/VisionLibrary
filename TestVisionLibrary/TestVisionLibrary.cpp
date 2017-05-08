@@ -440,7 +440,7 @@ void TestCaliper() {
 int _tmain(int argc, _TCHAR* argv[])
 {
     PR_SetDebugMode ( PR_DEBUG_MODE::LOG_ALL_CASE );
-    TestVisionAlgorithm();
+    //TestVisionAlgorithm();
     std::cout << GetTime() << std::endl;
     //TestInspDevice();
     //TestRunLogcase();
@@ -466,9 +466,11 @@ int _tmain(int argc, _TCHAR* argv[])
 
     //TestCaliper();
 
-    //TestLrnObj();
+    PR_FreeAllRecord();
+
+    TestLrnObj();
     //TestLrnObj_1();
-    //TestSrchObj();
+    TestSrchObj();
 
     std::cout << "Press any key to exist." << std::endl;
     getchar();

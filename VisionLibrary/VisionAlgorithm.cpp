@@ -87,13 +87,14 @@ VisionAlgorithm::VisionAlgorithm()
 
     cv::Ptr<cv::Feature2D> detector;
     if ( PR_SRCH_OBJ_ALGORITHM::SIFT == pstCmd->enAlgorithm)
-        detector = SIFT::create (_constMinHessian, _constOctave, _constOctaveLayer );
+        detector = SIFT::create (_constMinHessian, _constOctave );
     else
         detector = SURF::create (_constMinHessian, _constOctave, _constOctaveLayer );
     cv::Mat matROI( pstCmd->matInputImg, pstCmd->rectLrn );
     detector->detectAndCompute ( matROI, pstCmd->mask, pstRpy->vecKeyPoint, pstRpy->matDescritor );
 
     if ( pstRpy->vecKeyPoint.size() < _constLeastFeatures ) {
+        WriteLog("detectAndCompute can not find feature.");
         pstRpy->enStatus = VisionStatus::LEARN_FAIL;
         FINISH_LOGCASE;
         return pstRpy->enStatus;
@@ -113,7 +114,7 @@ VisionAlgorithm::VisionAlgorithm()
     return pstRpy->enStatus;
 }
 
-/*static*/ VisionStatus VisionAlgorithm::srchObj(const PR_SRCH_OBJ_CMD *const pstCmd, PR_SRCH_OBJ_RPY *const pstRpy) {
+/*static*/ VisionStatus VisionAlgorithm::srchObj(const PR_SRCH_OBJ_CMD *const pstCmd, PR_SRCH_OBJ_RPY *const pstRpy, bool bReplay /*= false*/ ) {
     assert ( NULL != pstCmd || NULL != pstRpy );    
     if ( pstCmd->matInputImg.empty() ) {
         WriteLog("Input image is empty.");
@@ -145,11 +146,13 @@ VisionAlgorithm::VisionAlgorithm()
     }
 
     MARK_FUNCTION_START_TIME;
+    SETUP_LOGCASE(LogCaseSrchObj);
+
     cv::Mat matSrchROI ( pstCmd->matInputImg, pstCmd->rectSrchWindow );
     
     cv::Ptr<cv::Feature2D> detector;
     if (PR_SRCH_OBJ_ALGORITHM::SIFT == pstCmd->enAlgorithm)
-        detector = SIFT::create(_constMinHessian, _constOctave, _constOctaveLayer );
+        detector = SIFT::create(_constMinHessian, _constOctave );
     else
         detector = SURF::create(_constMinHessian, _constOctave, _constOctaveLayer );
     
@@ -159,6 +162,13 @@ VisionAlgorithm::VisionAlgorithm()
     
     detector->detectAndCompute ( matSrchROI, mask, vecKeypointScene, matDescriptorScene );
     TimeLog::GetInstance()->addTimeLog("detectAndCompute");
+
+    if ( vecKeypointScene.size() < _constLeastFeatures ) {
+        WriteLog("detectAndCompute can not find feature.");
+        WriteLog ( charrMsg );
+        pstRpy->enStatus = VisionStatus::SRCH_OBJ_FAIL;
+        return pstRpy->enStatus;
+    }
 
     VectorOfDMatch good_matches;
 
@@ -178,13 +188,11 @@ VisionAlgorithm::VisionAlgorithm()
     for ( VectorOfVectorOfDMatch::const_iterator it = vecVecMatches.begin();  it != vecVecMatches.end(); ++ it ) {
         VectorOfDMatch vecDMatch = *it;
         if ( (vecDMatch[0].distance / vecDMatch[1].distance ) < 0.8 )
-        {
             good_matches.push_back ( vecDMatch[0] );
-        }
 
 		double dist = vecDMatch[0].distance;
 		if (dist < 0.5)
-			++nScoreCount;
+			++ nScoreCount;
 		if (dist < min_dist) min_dist = dist;
 		if (dist > max_dist) max_dist = dist;
     }
@@ -218,7 +226,8 @@ VisionAlgorithm::VisionAlgorithm()
 	pstRpy->fMatchScore = (float)nScoreCount * 100.f / vecVecMatches.size();
 
     if ( good_matches.size() <= 0 ) {
-        pstRpy->enStatus = VisionStatus::SRCH_TMPL_FAIL;
+        pstRpy->enStatus = VisionStatus::SRCH_OBJ_FAIL;
+        FINISH_LOGCASE;
         return pstRpy->enStatus;
     }
     //-- Localize the object
@@ -237,6 +246,8 @@ VisionAlgorithm::VisionAlgorithm()
 	pstRpy->matHomography.at<double>(0, 2) += pstCmd->rectSrchWindow.x;
 	pstRpy->matHomography.at<double>(1, 2) += pstCmd->rectSrchWindow.y;
 
+    auto vevVecHomography = CalcUtils::matToVector<double>(pstRpy->matHomography);
+
     cv::Point2f ptLrnObjCenter = ptrRecord->getObjCenter();
     cv::Rect2f rectLrn(0, 0, ptLrnObjCenter.x * 2.f, ptLrnObjCenter.y * 2.f );
     
@@ -246,16 +257,17 @@ VisionAlgorithm::VisionAlgorithm()
         vecVecPoint[0].push_back ( point );
     cv::cvtColor ( pstCmd->matInputImg, pstRpy->matResultImg, CV_GRAY2BGR );
     cv::polylines ( pstRpy->matResultImg, vecVecPoint, true, _constRedScalar );
-    cv::imwrite("./data/srchObjResult.png", pstRpy->matResultImg );
+    cv::drawKeypoints( pstRpy->matResultImg, vecKeypointScene, pstRpy->matResultImg, _constRedScalar, cv::DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS );
 
     pstRpy->ptObjPos = CalcUtils::warpPoint<double>( pstRpy->matHomography, ptLrnObjCenter );
     pstRpy->szOffset.width = pstRpy->ptObjPos.x - pstCmd->ptExpectedPos.x;
     pstRpy->szOffset.height = pstRpy->ptObjPos.y - pstCmd->ptExpectedPos.y;
 	float fRotationValue = (float)(pstRpy->matHomography.at<double>(1, 0) - pstRpy->matHomography.at<double>(0, 1)) / 2.0f;
 	pstRpy->fRotation = (float) CalcUtils::radian2Degree ( asin ( fRotationValue ) );
-    
-    MARK_FUNCTION_END_TIME;
     pstRpy->enStatus = VisionStatus::OK;
+
+    FINISH_LOGCASE;
+    MARK_FUNCTION_END_TIME;    
     return pstRpy->enStatus;
 }
 
@@ -1390,6 +1402,8 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
     std::unique_ptr<LogCase> pLogCase = nullptr;
     if ( LogCaseLrnObj::StaticGetFolderPrefix() == folderPrefix )
         pLogCase = std::make_unique <LogCaseLrnObj>( strLocalPath, true );
+    else if (LogCaseSrchObj::StaticGetFolderPrefix() == folderPrefix)
+        pLogCase = std::make_unique <LogCaseSrchObj>( strLocalPath, true );
     else if (LogCaseFitCircle::StaticGetFolderPrefix() == folderPrefix)
         pLogCase = std::make_unique <LogCaseFitCircle>( strLocalPath, true );
     else if (LogCaseFitLine::StaticGetFolderPrefix() == folderPrefix)

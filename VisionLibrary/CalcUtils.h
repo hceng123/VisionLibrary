@@ -119,6 +119,26 @@ public:
         vecPoints.push_back ( warpPoint<_Tp>( matWarp, cv::Point2f(rectInput.x, rectInput.y + rectInput.height ) ) );
         return vecPoints;
     }
+
+    template<typename _Tp>
+    static inline std::vector<std::vector<_Tp>> matToVector(const cv::Mat &matInput) {
+    std::vector<std::vector<_Tp>> vecVecArray;
+    if ( matInput.isContinuous() ) {
+        for ( int row = 0; row < matInput.rows; ++ row ) {            
+            std::vector<_Tp> vecRow;
+            int nRowStart = row * matInput.cols;
+            vecRow.assign ( (_Tp *)matInput.datastart + nRowStart, (_Tp *)matInput.datastart + nRowStart + matInput.cols );
+            vecVecArray.push_back(vecRow);
+        }
+    }else {
+        for ( int row = 0; row < matInput.rows; ++ row ) {
+            std::vector<_Tp> vecRow;
+            vecRow.assign((_Tp*)matInput.ptr<uchar>(row), (_Tp*)matInput.ptr<uchar>(row) + matInput.cols);
+            vecVecArray.push_back(vecRow);
+        }
+    }
+    return vecVecArray;
+}
 };
 
 }

@@ -62,6 +62,28 @@ private:
     const String _strKeyRecordId    = "RecordId"; 
 };
 
+class LogCaseSrchObj : public LogCase
+{
+public:
+    explicit LogCaseSrchObj(const String &strPath, bool bReplay = false) : LogCase(strPath, bReplay) {}
+    VisionStatus WriteCmd(const PR_SRCH_OBJ_CMD *const pCmd);
+    VisionStatus WriteRpy(const PR_SRCH_OBJ_RPY *const pRpy);
+    virtual VisionStatus RunLogCase() override;
+    virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
+    static String StaticGetFolderPrefix();
+private:    
+    const String _strKeyAlgorithm   = "Algorithm";
+    const String _strKeySrchWindow  = "SrchWindow";
+    const String _strKeyRecordId    = "RecordId";
+    const String _strKeyExpectedPos = "ExpectedPos";
+
+    const String _strKeyStatus      = "Status";
+    const String _strKeyObjPos      = "ObjPos";
+    const String _strKeyRotation    = "Rotation";
+    const String _strKeyOffset      = "Offset";
+    const String _strKeyMatchScore  = "MatchScore";
+};
+
 class LogCaseLrnDevice : public LogCase
 {
 public:
@@ -69,7 +91,6 @@ public:
     VisionStatus WriteCmd(PR_LRN_DEVICE_CMD *pLrnTmplCmd);
     VisionStatus WriteRpy(PR_LRN_DEVICE_RPY *pLrnTmplRpy);
     virtual VisionStatus RunLogCase() override;
-    const static String FOLDER_PREFIX;
 private:
 };
 

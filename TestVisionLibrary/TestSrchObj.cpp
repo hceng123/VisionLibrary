@@ -10,17 +10,17 @@ void TestLrnObj() {
     PR_LRN_OBJ_CMD stCmd;
     PR_LRN_OBJ_RPY stRpy;
 
-    stCmd.matInputImg = cv::imread("./data/OCV/two.png", cv::IMREAD_GRAYSCALE );    
+    stCmd.matInputImg = cv::imread("./data/OCV/ProcessedTwo.png", cv::IMREAD_GRAYSCALE );    
     if ( stCmd.matInputImg.empty() ) {
         std::cout << "Failed to read image!" << std::endl;
         return;
     }
-    stCmd.matInputImg -= 100;
-    stCmd.matInputImg *= 4;
+    //stCmd.matInputImg -= 100;
+    //stCmd.matInputImg *= 4;
     cv::imshow("Input image", stCmd.matInputImg );
     cv::waitKey(0);
 
-    stCmd.enAlgorithm = PR_SRCH_OBJ_ALGORITHM::SURF;
+    stCmd.enAlgorithm = PR_SRCH_OBJ_ALGORITHM::SIFT;
     stCmd.rectLrn = cv::Rect(0, 0, stCmd.matInputImg.cols, stCmd.matInputImg.rows );
     PR_LrnObj ( &stCmd, &stRpy );
     std::cout << "Lrn Obj status " << ToInt32( stRpy.enStatus ) << std::endl;
@@ -40,7 +40,7 @@ void TestLrnObj_1() {
     cv::imshow("Input image", stCmd.matInputImg );
     cv::waitKey(0);
 
-    stCmd.enAlgorithm = PR_SRCH_OBJ_ALGORITHM::SURF;
+    stCmd.enAlgorithm = PR_SRCH_OBJ_ALGORITHM::SIFT;
     stCmd.rectLrn = cv::Rect(0, 0, stCmd.matInputImg.cols, stCmd.matInputImg.rows );
     PR_LrnObj ( &stCmd, &stRpy );
     std::cout << "Lrn Obj status " << ToInt32( stRpy.enStatus ) << std::endl;
@@ -52,20 +52,20 @@ void TestSrchObj() {
 
     stCmd.enAlgorithm = PR_SRCH_OBJ_ALGORITHM::SIFT;
     stCmd.nRecordID = 1;
-    stCmd.matInputImg = cv::imread("./data/OCV/SrchImg.png", cv::IMREAD_GRAYSCALE );
+    stCmd.matInputImg = cv::imread("./data/OCV/ProcessedTwoAndThree.png", cv::IMREAD_GRAYSCALE );
     if ( stCmd.matInputImg.empty() ) {
         std::cout << "Failed to read image!" << std::endl;
         return;
     }
-    stCmd.matInputImg -= 100;
-    stCmd.matInputImg *= 3;    
+    //stCmd.matInputImg -= 100;
+    //stCmd.matInputImg *= 3;
     cv::imshow("Input image", stCmd.matInputImg );
     cv::waitKey(0);
 
     //stCmd.rectLrn = cv::Rect(0, 0, 68, 94 );
     stCmd.rectSrchWindow = cv::Rect(0, 0, stCmd.matInputImg.cols, stCmd.matInputImg.rows );
     stCmd.ptExpectedPos = cv::Point(104, 58);
-    PR_Init();
+    //PR_Init();
     PR_SrchObj ( &stCmd, &stRpy );
     std::cout << "Srch Obj status " << ToInt32( stRpy.enStatus ) << std::endl;
 }

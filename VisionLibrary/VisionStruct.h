@@ -51,7 +51,6 @@ struct PR_LRN_OBJ_RPY {
 
 struct PR_SRCH_OBJ_CMD {
 	PR_SRCH_OBJ_ALGORITHM  enAlgorithm;
-	//cv::Rect2f             rectLrn;
 	cv::Mat                matInputImg;
 	cv::Rect               rectSrchWindow;
 	cv::Point2f            ptExpectedPos;
