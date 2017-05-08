@@ -105,8 +105,19 @@ public:
         cv::Mat matPoint = cv::Mat::zeros(3, 1, matWarp.type());
         matPoint.at<_Tp>(0, 0) = ptInput.x;
         matPoint.at<_Tp>(1, 0) = ptInput.y;
+        matPoint.at<_Tp>(2, 0) = 1.f;
         cv::Mat matResult = matWarp * matPoint;
-        return cv::Point2f ( ToFloat ( matResult.at<_Tp>(0, 0) ),  ToFloat ( matResult.at<_Tp>(1, 0) ) );
+        return cv::Point_<_Tp> ( ToFloat ( matResult.at<_Tp>(0, 0) ),  ToFloat ( matResult.at<_Tp>(1, 0) ) );
+    }
+
+    template<typename _Tp>
+    static VectorOfPoint2f warpRect(const cv::Mat &matWarp, const cv::Rect2f &rectInput) {
+        VectorOfPoint2f vecPoints;
+        vecPoints.push_back ( warpPoint<_Tp>( matWarp, rectInput.tl() ) );
+        vecPoints.push_back ( warpPoint<_Tp>( matWarp, cv::Point2f(rectInput.x + rectInput.width, rectInput.y ) ) );
+        vecPoints.push_back ( warpPoint<_Tp>( matWarp, rectInput.br() ) );
+        vecPoints.push_back ( warpPoint<_Tp>( matWarp, cv::Point2f(rectInput.x, rectInput.y + rectInput.height ) ) );
+        return vecPoints;
     }
 };
 

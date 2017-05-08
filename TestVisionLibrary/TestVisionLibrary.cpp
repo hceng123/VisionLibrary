@@ -33,7 +33,7 @@ int TestVisionAlgorithm()
 	//cvNamedWindow("image"); // Here we will display I(x).
 
 	// Load photo.
-	pColorPhoto = cvLoadImage(".\\data\\photo.jpg");
+	pColorPhoto = cvLoadImage("./data/photo.jpg");
 	if (NULL == pColorPhoto)
 		return -1;
 
@@ -101,7 +101,7 @@ int TestVisionAlgorithm()
 	PR_SRCH_OBJ_CMD stSrchTmplCmd;
 	PR_SRCH_OBJ_RPY stSrchTmplRpy;
 	stSrchTmplCmd.matInputImg = matRotated;
-	stSrchTmplCmd.rectLrn = omega;
+	//stSrchTmplCmd.rectLrn = omega;
 	stSrchTmplCmd.nRecordID = stLrnTmplRpy.nRecordID;
 	stSrchTmplCmd.ptExpectedPos = stLrnTmplRpy.ptCenter;
 	cv::Rect rectSrchWindow ( cv::Point(100, 80), cv::Point ( stSrchTmplCmd.matInputImg.cols - 70, stSrchTmplCmd.matInputImg.rows - 60 ) );
@@ -178,7 +178,7 @@ void TestSearchFiducialMark()
 	PR_SRCH_OBJ_CMD stSrchTmplCmd;
 	PR_SRCH_OBJ_RPY stSrchTmplRpy;
 	stSrchTmplCmd.matInputImg = cv::imread(".\\data\\FiducialSrch_BK.png");
-	stSrchTmplCmd.rectLrn = omega;
+	//stSrchTmplCmd.rectLrn = omega;
 	stSrchTmplCmd.nRecordID = stLrnTmplRpy.nRecordID;
 	stSrchTmplCmd.ptExpectedPos = stLrnTmplRpy.ptCenter;
 	cv::Rect rectSrchWindow ( 40, 40, 390, 390 );
@@ -211,7 +211,7 @@ void TestSearchFiducialMark_1()
 	PR_SRCH_OBJ_CMD stSrchTmplCmd;
 	PR_SRCH_OBJ_RPY stSrchTmplRpy;
 	stSrchTmplCmd.matInputImg = cv::imread(".\\data\\PCB_FiducialMark2.jpg");
-	stSrchTmplCmd.rectLrn = omega;
+	//stSrchTmplCmd.rectLrn = omega;
 	stSrchTmplCmd.nRecordID = stLrnTmplRpy.nRecordID;
 	stSrchTmplCmd.ptExpectedPos = stLrnTmplRpy.ptCenter;
 	cv::Rect rectSrchWindow ( 300, 600, 270, 270 );
@@ -440,7 +440,7 @@ void TestCaliper() {
 int _tmain(int argc, _TCHAR* argv[])
 {
     PR_SetDebugMode ( PR_DEBUG_MODE::LOG_ALL_CASE );
-    //TestVisionAlgorithm();
+    TestVisionAlgorithm();
     std::cout << GetTime() << std::endl;
     //TestInspDevice();
     //TestRunLogcase();
@@ -466,7 +466,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
     //TestCaliper();
 
-    TestLrnObj();
+    //TestLrnObj();
     //TestLrnObj_1();
     //TestSrchObj();
 

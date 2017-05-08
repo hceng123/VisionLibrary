@@ -23,21 +23,24 @@ protected:
 };
 using IRecordPtr = std::shared_ptr<IRecord>;
 
-class TmplRecord : public IRecord
+class ObjRecord : public IRecord
 {
 public:
-    TmplRecord(PR_RECORD_TYPE enType):IRecord(enType)   {}
+    ObjRecord(PR_RECORD_TYPE enType):IRecord(enType)   {}
     virtual VisionStatus load(cv::FileStorage &fileStorage) override;
     virtual VisionStatus save(const String& strFilePath) override;
     void setModelKeyPoint(const VectorOfKeyPoint vecModelKeyPoint);
     const VectorOfKeyPoint& getModelKeyPoint() const;
     void setModelDescriptor(const cv::Mat &matModelDescritor);
     const cv::Mat& getModelDescriptor() const;
+    void setObjCenter(const cv::Point2f ptObjCenter);
+    cv::Point2f getObjCenter() const;
 protected:
+    cv::Point2f                 _ptObjCenter;
     VectorOfKeyPoint            _vecModelKeyPoint;
 	cv::Mat                     _matModelDescritor;
 };
-using TmplRecordPtr = std::shared_ptr<TmplRecord>;
+using ObjRecordPtr = std::shared_ptr<ObjRecord>;
 
 class DeviceRecord : public IRecord
 {

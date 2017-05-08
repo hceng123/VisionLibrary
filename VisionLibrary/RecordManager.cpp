@@ -108,8 +108,8 @@ IRecordPtr RecordManager::_createRecordPtr(Int32 recordType)
     PR_RECORD_TYPE enRecordType = static_cast<PR_RECORD_TYPE>(recordType);
     switch(enRecordType)
     {
-    case PR_RECORD_TYPE::ALIGNMENT:
-        return std::make_shared<TmplRecord>( enRecordType );
+    case PR_RECORD_TYPE::OBJECT:
+        return std::make_shared<ObjRecord>( enRecordType );
         break;
     default:
         return nullptr;

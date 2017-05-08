@@ -46,11 +46,12 @@ struct PR_LRN_OBJ_RPY {
 	cv::Mat                     matTmpl;
 	cv::Point2f                 ptCenter;
     Int32                       nRecordID;
+    cv::Mat                     matResultImg;
 };
 
 struct PR_SRCH_OBJ_CMD {
 	PR_SRCH_OBJ_ALGORITHM  enAlgorithm;
-	cv::Rect2f             rectLrn;
+	//cv::Rect2f             rectLrn;
 	cv::Mat                matInputImg;
 	cv::Rect               rectSrchWindow;
 	cv::Point2f            ptExpectedPos;
@@ -64,6 +65,7 @@ struct PR_SRCH_OBJ_RPY {
 	cv::Point2f				ptObjPos;
 	cv::Size2f				szOffset;
 	float					fRotation;
+    cv::Mat                 matResultImg;
 };
 
 struct PR_MATCH_TEMPLATE_CMD {

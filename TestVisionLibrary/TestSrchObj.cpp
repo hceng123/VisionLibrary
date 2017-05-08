@@ -62,7 +62,7 @@ void TestSrchObj() {
     cv::imshow("Input image", stCmd.matInputImg );
     cv::waitKey(0);
 
-    stCmd.rectLrn = cv::Rect(0, 0, 68, 94 );
+    //stCmd.rectLrn = cv::Rect(0, 0, 68, 94 );
     stCmd.rectSrchWindow = cv::Rect(0, 0, stCmd.matInputImg.cols, stCmd.matInputImg.rows );
     stCmd.ptExpectedPos = cv::Point(104, 58);
     PR_Init();

@@ -107,8 +107,7 @@ String LogCase::_generateLogCaseName(const String &strFolderPrefix)
     return "LrnObj";
 }
 
-VisionStatus LogCaseLrnObj::WriteCmd(const PR_LRN_OBJ_CMD *const pstCmd)
-{
+VisionStatus LogCaseLrnObj::WriteCmd(const PR_LRN_OBJ_CMD *const pstCmd) {
     if ( !_bReplay )    {
         _strLogCasePath = _generateLogCaseName(GetFolderPrefix());
         bfs::path dir(_strLogCasePath);
@@ -133,8 +132,10 @@ VisionStatus LogCaseLrnObj::WriteRpy(const PR_LRN_OBJ_RPY *const pstRpy) {
     ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyStatus.c_str(), ToInt32(pstRpy->enStatus) );
     ini.SetValue(_RPY_SECTION.c_str(), _strKeyCenterPos.c_str(), _formatCoordinate(pstRpy->ptCenter).c_str() );
     ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyRecordId.c_str(), pstRpy->nRecordID );
-
     ini.SaveFile( cmdRpyFilePath.c_str() );
+
+    if ( ! pstRpy->matResultImg.empty() )
+        cv::imwrite( _strLogCasePath + _RESULT_IMAGE_NAME, pstRpy->matResultImg );
     return VisionStatus::OK;
 }
 

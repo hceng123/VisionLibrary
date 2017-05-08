@@ -70,6 +70,18 @@ VisionAlgorithm::VisionAlgorithm()
         return pstRpy->enStatus;
     }
 
+    char charrMsg[1000];
+    if (pstCmd->rectLrn.x < 0 || pstCmd->rectLrn.y < 0 ||
+        pstCmd->rectLrn.width <= 0 || pstCmd->rectLrn.height <= 0 ||
+        ( pstCmd->rectLrn.x + pstCmd->rectLrn.width ) > pstCmd->matInputImg.cols ||
+        ( pstCmd->rectLrn.y + pstCmd->rectLrn.height ) > pstCmd->matInputImg.rows ) {
+        _snprintf( charrMsg, sizeof( charrMsg ), "The learn rect (%d, %d, %d, %d) is invalid.",
+            pstCmd->rectLrn.x, pstCmd->rectLrn.y, pstCmd->rectLrn.width, pstCmd->rectLrn.height );
+        WriteLog(charrMsg);
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
     MARK_FUNCTION_START_TIME;
     SETUP_LOGCASE(LogCaseLrnObj);
 
@@ -81,19 +93,17 @@ VisionAlgorithm::VisionAlgorithm()
     cv::Mat matROI( pstCmd->matInputImg, pstCmd->rectLrn );
     detector->detectAndCompute ( matROI, pstCmd->mask, pstRpy->vecKeyPoint, pstRpy->matDescritor );
 
-    if ( pstRpy->vecKeyPoint.size() < _constLeastFeatures) {
+    if ( pstRpy->vecKeyPoint.size() < _constLeastFeatures ) {
         pstRpy->enStatus = VisionStatus::LEARN_FAIL;
         FINISH_LOGCASE;
         return pstRpy->enStatus;
     }
 
-    cv::Mat matResultImg;
-    cv::cvtColor ( pstCmd->matInputImg, matResultImg, CV_GRAY2BGR );
-    cv::drawKeypoints( matResultImg, pstRpy->vecKeyPoint, matResultImg, _constRedScalar, cv::DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS );
-    cv::imwrite("./data/OCV/KeyPoint.png", matResultImg );
+    pstRpy->matResultImg = matROI.clone();
+    cv::drawKeypoints( pstRpy->matResultImg, pstRpy->vecKeyPoint, pstRpy->matResultImg, _constRedScalar, cv::DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS );
 
     pstRpy->enStatus = VisionStatus::OK;
-    pstRpy->ptCenter.x = pstCmd->rectLrn.x + pstCmd->rectLrn.width / 2.0f;
+    pstRpy->ptCenter.x = pstCmd->rectLrn.x + pstCmd->rectLrn.width  / 2.0f;
     pstRpy->ptCenter.y = pstCmd->rectLrn.y + pstCmd->rectLrn.height / 2.0f;
     matROI.copyTo(pstRpy->matTmpl);
     _writeLrnObjRecord(pstRpy);        
@@ -103,8 +113,7 @@ VisionAlgorithm::VisionAlgorithm()
     return pstRpy->enStatus;
 }
 
-/*static*/ VisionStatus VisionAlgorithm::srchObj(PR_SRCH_OBJ_CMD *const pstCmd, PR_SRCH_OBJ_RPY *pstRpy)
-{
+/*static*/ VisionStatus VisionAlgorithm::srchObj(const PR_SRCH_OBJ_CMD *const pstCmd, PR_SRCH_OBJ_RPY *const pstRpy) {
     assert ( NULL != pstCmd || NULL != pstRpy );    
     if ( pstCmd->matInputImg.empty() ) {
         WriteLog("Input image is empty.");
@@ -120,9 +129,16 @@ VisionAlgorithm::VisionAlgorithm()
         return pstRpy->enStatus;
     }
 
-    TmplRecordPtr pRecord = std::static_pointer_cast<TmplRecord> ( RecordManager::getInstance()->get ( pstCmd->nRecordID ) );
-    if ( nullptr == pRecord ) {
+    ObjRecordPtr ptrRecord = std::static_pointer_cast<ObjRecord> ( RecordManager::getInstance()->get ( pstCmd->nRecordID ) );
+    if ( nullptr == ptrRecord ) {
         _snprintf(charrMsg, sizeof (charrMsg), "Failed to get record ID %d in system.", pstCmd->nRecordID );
+        WriteLog ( charrMsg );
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    if ( ptrRecord->getType() != PR_RECORD_TYPE::OBJECT ) {
+        _snprintf(charrMsg, sizeof (charrMsg), "The type of record ID %d is not OBJECT.", pstCmd->nRecordID );
         WriteLog ( charrMsg );
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return pstRpy->enStatus;
@@ -154,13 +170,12 @@ VisionAlgorithm::VisionAlgorithm()
     VectorOfVectorOfDMatch vecVecMatches;
     vecVecMatches.reserve(2000);
 	
-    matcher.knnMatch ( pRecord->getModelDescriptor(), matDescriptorScene, vecVecMatches, 2 );
+    matcher.knnMatch ( ptrRecord->getModelDescriptor(), matDescriptorScene, vecVecMatches, 2 );
 	TimeLog::GetInstance()->addTimeLog("knnMatch");
 
 	double max_dist = 0; double min_dist = 100.;
 	int nScoreCount = 0;
-    for ( VectorOfVectorOfDMatch::const_iterator it = vecVecMatches.begin();  it != vecVecMatches.end(); ++ it )
-    {
+    for ( VectorOfVectorOfDMatch::const_iterator it = vecVecMatches.begin();  it != vecVecMatches.end(); ++ it ) {
         VectorOfDMatch vecDMatch = *it;
         if ( (vecDMatch[0].distance / vecDMatch[1].distance ) < 0.8 )
         {
@@ -210,10 +225,9 @@ VisionAlgorithm::VisionAlgorithm()
     std::vector<cv::Point2f> obj;
     std::vector<cv::Point2f> scene;
 
-    for (size_t i = 0; i < good_matches.size(); ++ i )
-    {
+    for (size_t i = 0; i < good_matches.size(); ++ i ) {
         //-- Get the keypoints from the good matches
-        obj.push_back( pRecord->getModelKeyPoint()[good_matches[i].queryIdx].pt);
+        obj.push_back( ptrRecord->getModelKeyPoint()[good_matches[i].queryIdx].pt);
         scene.push_back( vecKeypointScene[good_matches[i].trainIdx].pt);
     }    
     
@@ -223,16 +237,18 @@ VisionAlgorithm::VisionAlgorithm()
 	pstRpy->matHomography.at<double>(0, 2) += pstCmd->rectSrchWindow.x;
 	pstRpy->matHomography.at<double>(1, 2) += pstCmd->rectSrchWindow.y;
 
-    cv::Mat matOriginalPos ( 3, 1, CV_64F );
-    matOriginalPos.at<double>(0, 0) = pstCmd->rectLrn.width  / 2.f;
-    matOriginalPos.at<double>(1, 0) = pstCmd->rectLrn.height / 2.f;
-    matOriginalPos.at<double>(2, 0) = 1.0;
+    cv::Point2f ptLrnObjCenter = ptrRecord->getObjCenter();
+    cv::Rect2f rectLrn(0, 0, ptLrnObjCenter.x * 2.f, ptLrnObjCenter.y * 2.f );
+    
+    VectorOfPoint2f vecPoint2f = CalcUtils::warpRect<double>( pstRpy->matHomography, rectLrn );
+    VectorOfVectorOfPoint vecVecPoint(1);
+    for ( const auto &point : vecPoint2f )
+        vecVecPoint[0].push_back ( point );
+    cv::cvtColor ( pstCmd->matInputImg, pstRpy->matResultImg, CV_GRAY2BGR );
+    cv::polylines ( pstRpy->matResultImg, vecVecPoint, true, _constRedScalar );
+    cv::imwrite("./data/srchObjResult.png", pstRpy->matResultImg );
 
-    cv::Mat destPos ( 3, 1, CV_64F );
-
-    destPos = pstRpy->matHomography * matOriginalPos;
-    pstRpy->ptObjPos.x = (float) destPos.at<double>(0, 0);
-    pstRpy->ptObjPos.y = (float) destPos.at<double>(1, 0);
+    pstRpy->ptObjPos = CalcUtils::warpPoint<double>( pstRpy->matHomography, ptLrnObjCenter );
     pstRpy->szOffset.width = pstRpy->ptObjPos.x - pstCmd->ptExpectedPos.x;
     pstRpy->szOffset.height = pstRpy->ptObjPos.y - pstCmd->ptExpectedPos.y;
 	float fRotationValue = (float)(pstRpy->matHomography.at<double>(1, 0) - pstRpy->matHomography.at<double>(0, 1)) / 2.0f;
@@ -726,7 +742,6 @@ VisionStatus VisionAlgorithm::_findDeviceEdge(const cv::Mat &matDeviceROI, const
         return VisionStatus::FIND_EDGE_FAIL;
 
     rectDeviceResult = cv::Rect ( cv::Point ( nLeftEdge, nTopEdge ), cv::Point ( nRightEdge, nBottomEdge ) );
-
     return VisionStatus::OK;
 }
 
@@ -989,10 +1004,10 @@ VisionStatus VisionAlgorithm::inspDevice(PR_INSP_DEVICE_CMD *pstInspDeviceCmd, P
     cv::Mat matWarp = cv::getRotationMatrix2D( cv::Point(0, 0), pstRpy->fRotation, 1. );
     float fCrossSize = 10.f;
     cv::Point2f crossLineOnePtOne(-fCrossSize, 0), crossLineOnePtTwo(fCrossSize, 0), crossLineTwoPtOne(0, -fCrossSize), crossLineTwoPtTwo(0, fCrossSize);
-    crossLineOnePtOne = CalcUtils::warpPoint<double>( matWarp, crossLineOnePtOne ) + pstRpy->ptObjPos;
-    crossLineOnePtTwo = CalcUtils::warpPoint<double>( matWarp, crossLineOnePtTwo ) + pstRpy->ptObjPos;
-    crossLineTwoPtOne = CalcUtils::warpPoint<double>( matWarp, crossLineTwoPtOne ) + pstRpy->ptObjPos;
-    crossLineTwoPtTwo = CalcUtils::warpPoint<double>( matWarp, crossLineTwoPtTwo ) + pstRpy->ptObjPos;
+    crossLineOnePtOne = pstRpy->ptObjPos + CalcUtils::warpPoint<double>( matWarp, crossLineOnePtOne );
+    crossLineOnePtTwo = pstRpy->ptObjPos + CalcUtils::warpPoint<double>( matWarp, crossLineOnePtTwo );
+    crossLineTwoPtOne = pstRpy->ptObjPos + CalcUtils::warpPoint<double>( matWarp, crossLineTwoPtOne );
+    crossLineTwoPtTwo = pstRpy->ptObjPos + CalcUtils::warpPoint<double>( matWarp, crossLineTwoPtTwo );
 
     cv::circle ( pstRpy->matResult, pstRpy->ptObjPos, 2, cv::Scalar(0, 0, 255), 1 );
     cv::line ( pstRpy->matResult, crossLineOnePtOne, crossLineOnePtTwo, cv::Scalar(0, 0, 255), 1 );
@@ -1096,11 +1111,11 @@ int VisionAlgorithm::_findBlob(const cv::Mat &mat, const cv::Mat &matRevs, PR_IN
 		cv::Ptr<cv::SimpleBlobDetector> detector = cv::SimpleBlobDetector::create(params);
 
 		vector<cv::Mat> vecInput;
-		if ( PR_DEFECT_ATTRIBUTE::BRIGHT == stDefectCriteria.enAttribute )	{
+		if ( PR_DEFECT_ATTRIBUTE::BRIGHT == stDefectCriteria.enAttribute ) {
 			vecInput.push_back(mat);
-		}else if ( PR_DEFECT_ATTRIBUTE::DARK == stDefectCriteria.enAttribute )	{
+		}else if ( PR_DEFECT_ATTRIBUTE::DARK == stDefectCriteria.enAttribute ) {
 			vecInput.push_back(matRevs);
-		}else if(PR_DEFECT_ATTRIBUTE::BOTH == stDefectCriteria.enAttribute ){
+		}else if(PR_DEFECT_ATTRIBUTE::BOTH == stDefectCriteria.enAttribute ) {
             vecInput.push_back(mat);
             vecInput.push_back(matRevs);
 		}	
@@ -1320,9 +1335,10 @@ int VisionAlgorithm::_findLineCrossPoint(const PR_Line2f &line1, const PR_Line2f
 
 /*static*/ VisionStatus VisionAlgorithm::_writeLrnObjRecord(PR_LRN_OBJ_RPY *const pstRpy)
 {
-    TmplRecordPtr ptrRecord = std::make_shared<TmplRecord>(PR_RECORD_TYPE::ALIGNMENT);
+    ObjRecordPtr ptrRecord = std::make_shared<ObjRecord>(PR_RECORD_TYPE::OBJECT);
     ptrRecord->setModelKeyPoint(pstRpy->vecKeyPoint);
     ptrRecord->setModelDescriptor(pstRpy->matDescritor);
+    ptrRecord->setObjCenter ( cv::Point2f ( ToFloat( pstRpy->matTmpl.cols ) / 2.f , ToFloat( pstRpy->matTmpl.rows ) / 2.f ) );
     RecordManager::getInstance()->add ( ptrRecord, pstRpy->nRecordID );
     return VisionStatus::OK;
 }
@@ -1659,8 +1675,10 @@ VisionStatus VisionAlgorithm::fitLine(PR_FIT_LINE_CMD *pstCmd, PR_FIT_LINE_RPY *
     if (pstCmd->rectROI.x < 0 || pstCmd->rectROI.y < 0 ||
         pstCmd->rectROI.width <= 0 || pstCmd->rectROI.height <= 0 ||
         ( pstCmd->rectROI.x + pstCmd->rectROI.width ) > pstCmd->matInput.cols ||
-        ( pstCmd->rectROI.y + pstCmd->rectROI.height ) > pstCmd->matInput.rows )    {
-        WriteLog("The OCR search range is invalid");
+        ( pstCmd->rectROI.y + pstCmd->rectROI.height ) > pstCmd->matInput.rows ) {
+        _snprintf( charrMsg, sizeof( charrMsg ), "The ROI rect (%d, %d, %d, %d) is invalid",
+            pstCmd->rectROI.x, pstCmd->rectROI.y, pstCmd->rectROI.width, pstCmd->rectROI.height );
+        WriteLog(charrMsg);
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return pstRpy->enStatus;
     }
@@ -3373,7 +3391,7 @@ EXIT:
     if (pstCmd->rectSrchWindow.x < 0 || pstCmd->rectSrchWindow.y < 0 ||
         pstCmd->rectSrchWindow.width <= 0 || pstCmd->rectSrchWindow.height <= 0 ||
         ( pstCmd->rectSrchWindow.x + pstCmd->rectSrchWindow.width ) > pstCmd->matInput.cols ||
-        ( pstCmd->rectSrchWindow.y + pstCmd->rectSrchWindow.height ) > pstCmd->matInput.rows )    {
+        ( pstCmd->rectSrchWindow.y + pstCmd->rectSrchWindow.height ) > pstCmd->matInput.rows ) {
         _snprintf( charrMsg, sizeof( charrMsg ), "The input search window (%d, %d, %d, %d) is invalid",
             pstCmd->rectSrchWindow.x, pstCmd->rectSrchWindow.y, pstCmd->rectSrchWindow.width, pstCmd->rectSrchWindow.height );
         WriteLog(charrMsg);

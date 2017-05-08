@@ -50,7 +50,7 @@ enum class PR_DEBUG_MODE {
 
 enum class PR_RECORD_TYPE {
     INVALID = -1,
-    ALIGNMENT,
+    OBJECT,
     DEVICE,
     CHIP,
     LEAD,

@@ -47,7 +47,7 @@ PR_FUNCTION_ENTRY
 PR_FUNCTION_EXIT
 }
 
-VisionAPI VisionStatus PR_SrchObj(PR_SRCH_OBJ_CMD *const pstCmd, PR_SRCH_OBJ_RPY *pstRpy)
+VisionAPI VisionStatus PR_SrchObj(const PR_SRCH_OBJ_CMD *const pstCmd, PR_SRCH_OBJ_RPY *const pstRpy)
 {
 PR_FUNCTION_ENTRY
         return VisionAlgorithm::srchObj ( pstCmd, pstRpy );
