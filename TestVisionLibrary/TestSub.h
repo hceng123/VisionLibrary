@@ -10,6 +10,7 @@ void TestInspBridge_1();
 void TestLrnObj();
 void TestLrnObj_1();
 void TestSrchObj();
+void TestCalibCamera_1();
 
 template<class T>
 void printfMat(const cv::Mat &mat)

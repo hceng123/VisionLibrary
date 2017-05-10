@@ -292,6 +292,14 @@ CALIBRATE CAMERA REGRESSION TEST #4 STARTING
 Calibrate camera status 25
 
 ---------------------------------------------
+CALIBRATE CAMERA REGRESSION TEST #5 STARTING
+---------------------------------------------
+Calibrate camera status 0
+Camera resolution (15.88, 15.90)
+Camera distoration coefficients:
+0.0 -40.3 0.0 0.0 111.9 
+
+---------------------------------------------
 AUTO LOCATE LEAD REGRESSION TEST #1 STARTING
 ---------------------------------------------
 Auto locate lead status 0

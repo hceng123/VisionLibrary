@@ -20,6 +20,8 @@ class VisionAlgorithm;
 using VisionAlgorithmPtr = std::unique_ptr<VisionAlgorithm>;
 using OcrTesseractPtr = cv::Ptr<cv::text::OCRTesseract>;
 
+const float ConstToPercentage = 100.f;
+
 class VisionAlgorithm : private Uncopyable
 {
 public:
@@ -68,8 +70,8 @@ protected:
     VisionStatus _findDeviceEdge(const cv::Mat &matDeviceROI, const cv::Size2f &size, cv::Rect &rectDeviceResult);
     static VisionStatus _writeLrnObjRecord(PR_LRN_OBJ_RPY *const pstRpy);
     VisionStatus _writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRpy);
-    static VisionStatus _matchTemplate     (const cv::Mat &mat, const cv::Mat &matTmpl, PR_OBJECT_MOTION enMotion, cv::Point2f &ptResult, float &fRotation);
-    static VisionStatus _refineSrchTemplate(const cv::Mat &mat, const cv::Mat &matTmpl, PR_OBJECT_MOTION enMotion, cv::Point2f &ptResult, float &fRotation);
+    static VisionStatus _matchTemplate     (const cv::Mat &mat, const cv::Mat &matTmpl, PR_OBJECT_MOTION enMotion, cv::Point2f &ptResult, float &fRotation, float &fCorrelation);
+    static VisionStatus _refineSrchTemplate(const cv::Mat &mat, const cv::Mat &matTmpl, PR_OBJECT_MOTION enMotion, cv::Point2f &ptResult, float &fRotation, float &fCorrelation);
     static VectorOfPoint _findPointInRegionOverThreshold(const cv::Mat &mat, const cv::Rect &rect, int nThreshold);
     static ListOfPoint _findPointsInRegionByThreshold(const cv::Mat &mat, const cv::Rect &rect, int nThreshold, PR_OBJECT_ATTRIBUTE enAttribute = PR_OBJECT_ATTRIBUTE::BRIGHT);
     static ListOfPoint _findPointsInRegion(const cv::Mat &mat, const cv::Rect &rect);
@@ -103,10 +105,16 @@ protected:
                                                 const cv::Point &startPoint,
                                                 float            fStepSize,
                                                 int              nSrchSize,
+                                                float            fMinTmplMatchScore,
                                                 const cv::Size  &szBoardPattern,
-                                                VectorOfPoint2f &dvecVecCorners);
+                                                VectorOfPoint2f &vecCorners,
+                                                VectorOfPoint   &vecFailedRowCol);
     static float _findChessBoardBlockSize( const cv::Mat &matInput, const cv::Size szBoardPattern );
-    static void _calcBoardCornerPositions(cv::Size boardSize, float squareSize, std::vector<cv::Point3f> &corners, CalibPattern patternType = CHESSBOARD );
+    static void _calcBoardCornerPositions(cv::Size boardSize, 
+                                          float squareSize,
+                                          const VectorOfPoint   &vecFailedRowCol,
+                                          std::vector<cv::Point3f> &corners,
+                                          CalibPattern patternType = CHESSBOARD );
     static cv::Point2f _findFirstChessBoardCorner(const cv::Mat &matInput, float fBlockSize);
     static VisionStatus _inspBridgeItem(const cv::Mat &matGray, cv::Mat &matResult, const PR_INSP_BRIDGE_CMD::INSP_ITEM &inspItem, PR_INSP_BRIDGE_RPY::ITEM_RESULT &inspResult);
 protected:
