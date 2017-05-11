@@ -20,6 +20,7 @@ using VectorOfVectorKeyPoint = std::vector<VectorOfKeyPoint>;
 using VectorOfPoint = std::vector<cv::Point>;
 using VectorOfVectorOfPoint = std::vector<VectorOfPoint>;
 using VectorOfPoint2f = std::vector<cv::Point2f>;
+using VectorOfPoint3f = std::vector<cv::Point3f>;
 using VectorOfVectorOfPoint2f = std::vector<VectorOfPoint2f>;
 using VectorOfRect = std::vector<cv::Rect>;
 using ListOfPoint = std::list<cv::Point>;
@@ -512,6 +513,7 @@ struct PR_CALIBRATE_CAMERA_RPY {
     //Intermediate result.
     cv::Mat                 matCornerPointsImg;
     VectorOfPoint2f         vecImagePoints;
+    VectorOfPoint3f         vecObjectPoints;
     cv::Mat                 matInitialIntrinsicMatrix;  //type: CV_64FC1.
     cv::Mat                 matInitialExtrinsicMatrix;  //type: CV_64FC1.
 };

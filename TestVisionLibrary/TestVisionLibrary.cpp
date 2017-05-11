@@ -476,6 +476,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
     //std::cout << "Press any key to exist." << std::endl;
     //getchar();
-	return 0;
+
+    return 0;
 }
 

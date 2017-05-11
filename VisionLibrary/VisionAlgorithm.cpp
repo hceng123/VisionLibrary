@@ -3319,6 +3319,7 @@ EXIT:
     
     _calcBoardCornerPositions ( pstCmd->szBoardPattern, pstCmd->fPatternDist, vecFailedColRow, vevVecObjectPoints[0], CHESSBOARD );
     vevVecObjectPoints.resize ( vecVecImagePoints.size(), vevVecObjectPoints[0] );
+    pstRpy->vecObjectPoints = vevVecObjectPoints[0];
     
     double rms = cv::calibrateCamera ( vevVecObjectPoints, vecVecImagePoints, imageSize, pstRpy->matIntrinsicMatrix,
             pstRpy->matDistCoeffs, rvecs, tvecs );

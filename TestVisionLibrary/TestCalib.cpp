@@ -2,6 +2,7 @@
 #include "../VisionLibrary/VisionAPI.h"
 #include "opencv2/highgui.hpp"
 #include <iostream>
+#include <fstream>
 #include "TestSub.h"
 
 using namespace AOI::Vision;
@@ -115,28 +116,68 @@ void TestCalibCamera_1()
     //    return;
     //}
 
-    PR_RESTORE_IMG_CMD stRetoreCmd;
-    PR_RESTORE_IMG_RPY stRetoreRpy;
-    stRetoreCmd.matInput = cv::imread(strImgPath, cv::IMREAD_GRAYSCALE );
-    stRetoreCmd.vecMatRestoreImage = stRpy.vecMatRestoreImage; //stCalcUndistortRectifyMapRpy.vecMatRestoreImage;
-    PR_RestoreImage ( &stRetoreCmd, &stRetoreRpy );
-    if ( VisionStatus::OK != stRetoreRpy.enStatus) {
-        std::cout << "Failed to restore image!" << std::endl;
-        return;
+    cv::Mat matPoint( stRpy.vecObjectPoints );
+    //cv::transpose ( matPoint, matPoint );
+    //int nChannels = matPoint.channels();
+    matPoint = matPoint.reshape(1, matPoint.rows);
+    cv::transpose ( matPoint, matPoint );
+    cv::Mat mat2 = cv::Mat::ones(1, matPoint.cols, matPoint.type() );
+    matPoint.push_back ( mat2 );
+    matPoint.convertTo ( matPoint, CV_64FC1 );
+    auto vevVecPoints = matToVector<double>(matPoint);
+    {
+        cv::Mat matProject = stRpy.matIntrinsicMatrix * stRpy.matExtrinsicMatrix * matPoint;
+        double dScale = matProject.at<double>(2, 0);
+        matProject = matProject / dScale;
+        auto vecVecProjectPoints = matToVector<double>(matProject);
+
+        std::ofstream ofStrm;
+        ofStrm.open("./data/CoordinateDiffFinalMatrix.txt");
+        for (size_t index = 0; index < stRpy.vecImagePoints.size(); ++index) {
+            cv::Point2f ptImage = stRpy.vecImagePoints[index];
+            cv::Point2f ptProject = cv::Point2f ( vecVecProjectPoints[0][index], vecVecProjectPoints[1][index]);
+            ofStrm << ptImage.x - ptProject.x << ", " << ptImage.y - ptProject.y << std::endl;
+        }
+        ofStrm.close();
     }
 
-    cv::Mat matInputFloat;
-    stRetoreCmd.matInput.convertTo ( matInputFloat, CV_32FC1 );
+    {
+        cv::Mat matProject = stRpy.matInitialIntrinsicMatrix * stRpy.matInitialExtrinsicMatrix * matPoint;
+        double dScale = matProject.at<double>(2, 0);
+        matProject = matProject / dScale;
+        auto vecVecProjectPoints = matToVector<double>(matProject);
 
-    //cv::Mat matDiff = cv::Scalar::all(255.f) - ( matInputFloat - stRetoreRpy.matResult );
-    cv::imwrite("./data/chessboardRestored.png", stRetoreRpy.matResult);
+        std::ofstream ofStrm;
+        ofStrm.open("./data/CoordinateDiffInitialMatrix.txt");
+        for (size_t index = 0; index < stRpy.vecImagePoints.size(); ++index) {
+            cv::Point2f ptImage = stRpy.vecImagePoints[index];
+            cv::Point2f ptProject = cv::Point2f ( vecVecProjectPoints[0][index], vecVecProjectPoints[1][index] );
+            ofStrm << ptImage.x - ptProject.x << ", " << ptImage.y - ptProject.y << std::endl;
+        }
+        ofStrm.close();
+    }
+    //PR_RESTORE_IMG_CMD stRetoreCmd;
+    //PR_RESTORE_IMG_RPY stRetoreRpy;
+    //stRetoreCmd.matInput = cv::imread(strImgPath, cv::IMREAD_GRAYSCALE );
+    //stRetoreCmd.vecMatRestoreImage = stRpy.vecMatRestoreImage; //stCalcUndistortRectifyMapRpy.vecMatRestoreImage;
+    //PR_RestoreImage ( &stRetoreCmd, &stRetoreRpy );
+    //if ( VisionStatus::OK != stRetoreRpy.enStatus) {
+    //    std::cout << "Failed to restore image!" << std::endl;
+    //    return;
+    //}
 
-    cv::Mat matReadRestored = cv::imread("./data/chessboardRestored.png", cv::IMREAD_GRAYSCALE );
-    cv::Mat matReadAgainFloat;
-    matReadRestored.convertTo ( matReadAgainFloat, CV_32FC1 );
+    //cv::Mat matInputFloat;
+    //stRetoreCmd.matInput.convertTo ( matInputFloat, CV_32FC1 );
 
-    cv::Mat matDiff = cv::Scalar::all(255.f) - ( matInputFloat - matReadAgainFloat );
-    cv::imwrite("./data/chessboard_diff.png", matDiff);
+    ////cv::Mat matDiff = cv::Scalar::all(255.f) - ( matInputFloat - stRetoreRpy.matResult );
+    //cv::imwrite("./data/chessboardRestored.png", stRetoreRpy.matResult);
+
+    //cv::Mat matReadRestored = cv::imread("./data/chessboardRestored.png", cv::IMREAD_GRAYSCALE );
+    //cv::Mat matReadAgainFloat;
+    //matReadRestored.convertTo ( matReadAgainFloat, CV_32FC1 );
+
+    //cv::Mat matDiff = cv::Scalar::all(255.f) - ( matInputFloat - matReadAgainFloat );
+    //cv::imwrite("./data/chessboard_diff.png", matDiff);
     PR_DumpTimeLog("./data/TimeLog.log");
 }
 
