@@ -35,7 +35,7 @@ void TestCalibCamera()
     std::cout << "Initial Camera Extrinsic Matrix: " << std::endl;
     printfMat<double>(stRpy.matInitialExtrinsicMatrix);
 
-    std::cout << " Distortion Coefficient: " << std::endl;
+    std::cout << "Distortion Coefficient: " << std::endl;
     printfMat<double>(stRpy.matDistCoeffs);
 
     //PR_CALC_UNDISTORT_RECTIFY_MAP_CMD stCalcUndistortRectifyMapCmd;
@@ -76,7 +76,7 @@ void TestCalibCamera()
 
 void TestCalibCamera_1()
 {
-    std::string strImgPath = "./data/BetterChessboardWith2DCode.png";
+    std::string strImgPath = "./data/CLNChessboardWith2DCode.png";
     PR_CALIBRATE_CAMERA_CMD stCmd;
     PR_CALIBRATE_CAMERA_RPY stRpy;
     stCmd.matInput = cv::imread(strImgPath, cv::IMREAD_GRAYSCALE );
@@ -102,7 +102,7 @@ void TestCalibCamera_1()
     std::cout << "Initial Camera Extrinsic Matrix: " << std::endl;
     printfMat<double>(stRpy.matInitialExtrinsicMatrix);
 
-    std::cout << " Distortion Coefficient: " << std::endl;
+    std::cout << "Distortion Coefficient: " << std::endl;
     printfMat<double>(stRpy.matDistCoeffs);
 
     //PR_CALC_UNDISTORT_RECTIFY_MAP_CMD stCalcUndistortRectifyMapCmd;
@@ -125,6 +125,25 @@ void TestCalibCamera_1()
     matPoint.push_back ( mat2 );
     matPoint.convertTo ( matPoint, CV_64FC1 );
     auto vevVecPoints = matToVector<double>(matPoint);
+
+    {
+        std::ofstream ofStrm;
+        ofStrm.open("./data/UVCoordinate.txt");
+        for (size_t index = 0; index < stRpy.vecImagePoints.size(); ++index) {
+            cv::Point2f ptImage = stRpy.vecImagePoints[index];
+            ofStrm << ptImage.x << ", " << ptImage.y << std::endl;
+        }
+        ofStrm.close();    
+    }
+    {
+        std::ofstream ofStrm;
+        ofStrm.open("./data/XYZCoordinate.txt");
+        for (size_t index = 0; index < stRpy.vecObjectPoints.size(); ++index) {
+            cv::Point3f ptObject = stRpy.vecObjectPoints[index];
+            ofStrm << ptObject.x << ", " << ptObject.y << ", " << ptObject.z << std::endl;
+        }
+        ofStrm.close();    
+    }
     {
         cv::Mat matProject = stRpy.matIntrinsicMatrix * stRpy.matExtrinsicMatrix * matPoint;
         double dScale = matProject.at<double>(2, 0);

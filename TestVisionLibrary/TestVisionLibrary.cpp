@@ -439,7 +439,7 @@ void TestCaliper() {
 
 int _tmain(int argc, _TCHAR* argv[])
 {
-    PR_SetDebugMode ( PR_DEBUG_MODE::DISABLED );
+    PR_SetDebugMode ( PR_DEBUG_MODE::LOG_ALL_CASE );
     //TestVisionAlgorithm();
     std::cout << GetTime() << std::endl;
     //TestInspDevice();

@@ -117,6 +117,9 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>opencv_calib3d300d.lib;opencv_core300d.lib;opencv_features2d300d.lib;opencv_flann300d.lib;opencv_highgui300d.lib;opencv_imgproc300d.lib;opencv_ml300d.lib;opencv_objdetect300d.lib;opencv_photo300d.lib;opencv_stitching300d.lib;opencv_superres300d.lib;opencv_ts300d.lib;opencv_video300d.lib;opencv_videoio300d.lib;opencv_videostab300d.lib;opencv_imgcodecs300d.lib;opencv_xfeatures2d300d.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PostBuildEvent>
+      <Command>$(OutDir)$(TargetName)$(TargetExt) -n &gt; $(ProjectDir)$(ProjectName)_result.txt</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>

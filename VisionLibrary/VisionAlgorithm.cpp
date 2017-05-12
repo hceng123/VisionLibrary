@@ -3223,6 +3223,28 @@ EXIT:
         }
     }
 
+    //If didn't find the block, it may because the two blocks connected together make findContour find two connected blocks.
+    //Need to use Morphology method to remove the dark connecter between them.
+    if ( vecBlockCenters.empty() ) {
+        cv::threshold ( matFilter, matThreshold, nThreshold, 255, cv::THRESH_BINARY_INV );
+        cv::Mat matKernal = cv::getStructuringElement ( cv::MorphShapes::MORPH_RECT, {6, 6} );
+        cv::morphologyEx ( matThreshold, matThreshold, cv::MorphTypes::MORPH_CLOSE, matKernal, cv::Point(-1, -1), 3 );
+        if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE ) {
+            showImage ( "After morphologyEx image", matThreshold );
+        }
+        cv::findContours ( matThreshold, contours, cv::RETR_LIST, cv::CHAIN_APPROX_SIMPLE );
+        for (const auto &contour : contours)  {
+            auto area = cv::contourArea(contour);
+            if (area > 1000)  {
+                cv::RotatedRect rotatedRect = cv::minAreaRect(contour);
+                if (fabs(rotatedRect.size.width - rotatedRect.size.height) / (rotatedRect.size.width + rotatedRect.size.height) < 0.1)   {
+                    vecDrawContours.push_back(contour);
+                    vecBlockCenters.push_back(rotatedRect.center);
+                }
+            }
+        }
+    }
+
     float minDistanceToZero = 10000000;
     cv::Point ptUpperLeftBlockCenter;
     for ( const auto point : vecBlockCenters ) {
