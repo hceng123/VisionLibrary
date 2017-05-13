@@ -3184,6 +3184,30 @@ EXIT:
         }
     }
 
+    if ( fMaxBlockArea <= 0 ) {
+        cv::threshold ( matFilter, matThreshold, nThreshold, 255, cv::THRESH_BINARY_INV );
+        cv::Mat matKernal = cv::getStructuringElement ( cv::MorphShapes::MORPH_ELLIPSE, {6, 6} );
+        cv::morphologyEx ( matThreshold, matThreshold, cv::MorphTypes::MORPH_CLOSE, matKernal, cv::Point(-1, -1), 3 );
+        if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE ) {
+            showImage ( "After morphologyEx image", matThreshold );
+        }
+        cv::findContours(matThreshold, contours, cv::RETR_LIST, cv::CHAIN_APPROX_SIMPLE);
+        for (const auto &contour : contours) {
+            auto area = cv::contourArea(contour);
+            if (area > 1000)  {
+                cv::RotatedRect rotatedRect = cv::minAreaRect(contour);
+                if ((fabs(rotatedRect.size.width - rotatedRect.size.height) / (rotatedRect.size.width + rotatedRect.size.height) < 0.05) &&
+                    (rotatedRect.size.width * 2 * (szBoardPattern.width - 1) < matInput.cols)) {
+                    float fArea = rotatedRect.size.width * rotatedRect.size.height;
+                    if (fArea > fMaxBlockArea) {
+                        size = rotatedRect.size;
+                        fMaxBlockArea = fArea;
+                    }
+                }
+            }
+        }
+    }
+
     if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE ) {
         cv::Mat matDisplay;
         cv::cvtColor ( matROI, matDisplay, CV_GRAY2BGR );

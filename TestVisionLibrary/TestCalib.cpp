@@ -81,6 +81,7 @@ void TestCalibCamera_1()
     PR_CALIBRATE_CAMERA_RPY stRpy;
     stCmd.matInput = cv::imread(strImgPath, cv::IMREAD_GRAYSCALE );
     stCmd.fPatternDist = 2.;
+    stCmd.fMinTmplMatchScore = 80;
     stCmd.szBoardPattern = cv::Size(16, 16); //cv::Size( 5, 5 );
 
     PR_CalibrateCamera ( &stCmd, &stRpy );
