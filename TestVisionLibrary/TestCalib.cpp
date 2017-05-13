@@ -145,10 +145,35 @@ void TestCalibCamera_1()
         ofStrm.close();    
     }
     {
-        cv::Mat matProject = stRpy.matIntrinsicMatrix * stRpy.matExtrinsicMatrix * matPoint;
-        double dScale = matProject.at<double>(2, 0);
-        matProject = matProject / dScale;
-        auto vecVecProjectPoints = matToVector<double>(matProject);
+        cv::Mat matxyz = stRpy.matExtrinsicMatrix * matPoint;
+        double dZ = matxyz.at<double>(2, 0);
+        cv::Mat matxyz1 = matxyz / dZ;
+        cv::Mat matX1(matxyz1, cv::Rect(0, 0, matxyz1.cols, 1));
+        cv::Mat matY1(matxyz1, cv::Rect(0, 1, matxyz1.cols, 1));
+        cv::Mat matxyz1_Square = matxyz1.mul(matxyz1);
+        cv::Mat matxyz1_Square_ROI(matxyz1_Square, cv::Rect(0, 0, matxyz1_Square.cols, 2));
+        cv::Mat matR_2;
+        cv::reduce(matxyz1_Square_ROI, matR_2, 0, cv::ReduceTypes::REDUCE_SUM);
+        cv::Mat matR_4 = matR_2.mul(matR_2);
+        cv::Mat matR_6 = matR_4.mul(matR_2);
+
+        double k1 = stRpy.matDistCoeffs.at<double>(0, 0);
+        double k2 = stRpy.matDistCoeffs.at<double>(0, 1);
+        double p1 = stRpy.matDistCoeffs.at<double>(0, 2);
+        double p2 = stRpy.matDistCoeffs.at<double>(0, 3);
+        double k3 = stRpy.matDistCoeffs.at<double>(0, 4);
+
+        cv::Mat matFactor = cv::Mat::ones(1, matR_2.cols, matR_2.type()) + k1 * matR_2 + k2 * matR_4 + k3 * matR_6;
+
+        cv::Mat matX2 = matX1.mul(matFactor) + 2. * p1 * matX1.mul(matY1) + p2 * (matR_2 + 2. * matX1.mul(matX1));
+        cv::Mat matY2 = matY1.mul(matFactor) + p1 * (matR_2 + 2. * matY1.mul(matY1)) + 2. * p2 * matX1.mul(matY1);
+
+        cv::Mat matXYZ_2 = matX2.clone();
+        matXYZ_2.push_back(matY2);
+        cv::Mat matZ_2 = cv::Mat::ones(1, matXYZ_2.cols, matXYZ_2.type());
+        matXYZ_2.push_back(matZ_2);
+        cv::Mat matUV = stRpy.matIntrinsicMatrix * matXYZ_2;
+        auto vecVecProjectPoints = matToVector<double>(matUV);
 
         std::ofstream ofStrm;
         ofStrm.open("./data/CoordinateDiffFinalMatrix.txt");

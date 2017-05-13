@@ -3085,12 +3085,12 @@ EXIT:
         cv::Rect rectSrchROI ( ToInt32 ( startPoint.x + col * fStepSize - row * fStepOffset ), ToInt32 ( startPoint.y + row * fStepSize + col * fStepOffset ), nSrchSize, nSrchSize );
         if ( rectSrchROI.x < 0 ) rectSrchROI.x = 0;
         if ( rectSrchROI.y < 0 ) rectSrchROI.y = 0;
-        if ( ( rectSrchROI.x + rectSrchROI.width )  > mat.cols ) rectSrchROI.width = mat.cols - rectSrchROI.x;
-        if ( ( rectSrchROI.y + rectSrchROI.height ) > mat.rows ) rectSrchROI.width = mat.rows - rectSrchROI.y;
-        cv::Mat matSrchROI ( mat, rectSrchROI );
+        if ( ( rectSrchROI.x + rectSrchROI.width )  > mat.cols ) rectSrchROI.width  = mat.cols - rectSrchROI.x;
+        if ( ( rectSrchROI.y + rectSrchROI.height ) > mat.rows ) rectSrchROI.height = mat.rows - rectSrchROI.y;
 //#ifdef _DEBUG
 //        std::cout << "Srch ROI " << rectSrchROI.x << ", " << rectSrchROI.y << ", " << rectSrchROI.width << ", " << rectSrchROI.height << std::endl;
 //#endif
+        cv::Mat matSrchROI ( mat, rectSrchROI );
         cv::Point2f ptResult;
         float fRotation, fCorrelation = 0.f;
         enStatus = _matchTemplate ( matSrchROI, matTmpl, PR_OBJECT_MOTION::TRANSLATION, ptResult, fRotation, fCorrelation );
@@ -3227,7 +3227,7 @@ EXIT:
     //Need to use Morphology method to remove the dark connecter between them.
     if ( vecBlockCenters.empty() ) {
         cv::threshold ( matFilter, matThreshold, nThreshold, 255, cv::THRESH_BINARY_INV );
-        cv::Mat matKernal = cv::getStructuringElement ( cv::MorphShapes::MORPH_RECT, {6, 6} );
+        cv::Mat matKernal = cv::getStructuringElement ( cv::MorphShapes::MORPH_ELLIPSE, {6, 6} );
         cv::morphologyEx ( matThreshold, matThreshold, cv::MorphTypes::MORPH_CLOSE, matKernal, cv::Point(-1, -1), 3 );
         if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE ) {
             showImage ( "After morphologyEx image", matThreshold );
@@ -3258,7 +3258,7 @@ EXIT:
         cv::Mat matDisplay;
         cv::cvtColor ( matROI, matDisplay, CV_GRAY2BGR );
         for ( size_t i = 0; i < contours.size(); ++ i ) {
-            cv::drawContours ( matDisplay, contours, ToInt32(i), cv::Scalar(0,0,255) );
+            cv::drawContours ( matDisplay, contours, ToInt32(i), _constRedScalar );
         }
         showImage("findChessBoardBlockSize contour image", matDisplay);
     }

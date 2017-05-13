@@ -91,6 +91,18 @@ void TestCalibrateCamera()
 
     PR_CalibrateCamera ( &stCmd, &stRpy );
     PrintRpy(stRpy);
+
+    std::cout << std::endl << "---------------------------------------------";
+    std::cout << std::endl << "CALIBRATE CAMERA REGRESSION TEST #6 STARTING";
+    std::cout << std::endl << "---------------------------------------------";
+    std::cout << std::endl;
+    
+    stCmd.matInput = cv::imread("./data/ChessboardWith2DCode_1.png", cv::IMREAD_GRAYSCALE );
+    stCmd.fPatternDist = 2;
+    stCmd.szBoardPattern = cv::Size(16, 16);
+
+    PR_CalibrateCamera ( &stCmd, &stRpy );
+    PrintRpy(stRpy);
 }
 
 }
