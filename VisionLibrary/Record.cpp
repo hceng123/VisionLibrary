@@ -8,7 +8,7 @@ namespace Vision
 /******************************************
 * Template Record *
 ******************************************/
-VisionStatus TmplRecord::load(cv::FileStorage &fs)
+VisionStatus ObjRecord::load(cv::FileStorage &fs)
 {
     cv::FileNode fileNode = fs["keypoints"];
     cv::read(fileNode, _vecModelKeyPoint);
@@ -18,37 +18,45 @@ VisionStatus TmplRecord::load(cv::FileStorage &fs)
     return VisionStatus::OK;
 }
 
-VisionStatus TmplRecord::save(const String& strFilePath)
+VisionStatus ObjRecord::save(const String& strFilePath)
 {
     cv::FileStorage fs(strFilePath, cv::FileStorage::WRITE);
     if ( ! fs.isOpened() )
         return VisionStatus::OPEN_FILE_FAIL;
 
-    write ( fs, "type", static_cast<int>(PR_RECORD_TYPE::ALIGNMENT));
+    write ( fs, "type", static_cast<int>(PR_RECORD_TYPE::OBJECT));
     write ( fs, "keypoints", _vecModelKeyPoint );
     write ( fs, "descriptor", _matModelDescritor );
     fs.release();
     return VisionStatus::OK;
 }
 
-void TmplRecord::setModelKeyPoint(const VectorOfKeyPoint vecModelKeyPoint)
+void ObjRecord::setModelKeyPoint(const VectorOfKeyPoint vecModelKeyPoint)
 {
     _vecModelKeyPoint = vecModelKeyPoint;
 }
 
-const VectorOfKeyPoint& TmplRecord::getModelKeyPoint() const
+const VectorOfKeyPoint& ObjRecord::getModelKeyPoint() const
 {
     return _vecModelKeyPoint;
 }
 
-void TmplRecord::setModelDescriptor(const cv::Mat &matModelDescritor)
+void ObjRecord::setModelDescriptor(const cv::Mat &matModelDescritor)
 {
     _matModelDescritor = matModelDescritor;
 }
 
-const cv::Mat& TmplRecord::getModelDescriptor() const
+const cv::Mat& ObjRecord::getModelDescriptor() const
 {
     return _matModelDescritor;
+}
+
+void ObjRecord::setObjCenter(const cv::Point2f ptObjCenter) {
+    _ptObjCenter = ptObjCenter;
+}
+
+cv::Point2f ObjRecord::getObjCenter() const {
+    return _ptObjCenter;
 }
 
 /******************************************

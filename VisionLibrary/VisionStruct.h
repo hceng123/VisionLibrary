@@ -20,6 +20,7 @@ using VectorOfVectorKeyPoint = std::vector<VectorOfKeyPoint>;
 using VectorOfPoint = std::vector<cv::Point>;
 using VectorOfVectorOfPoint = std::vector<VectorOfPoint>;
 using VectorOfPoint2f = std::vector<cv::Point2f>;
+using VectorOfPoint3f = std::vector<cv::Point3f>;
 using VectorOfVectorOfPoint2f = std::vector<VectorOfPoint2f>;
 using VectorOfRect = std::vector<cv::Rect>;
 using ListOfPoint = std::list<cv::Point>;
@@ -34,24 +35,24 @@ struct PR_VERSION_INFO {
 
 struct PR_LRN_OBJ_CMD {
 	PR_SRCH_OBJ_ALGORITHM   enAlgorithm;
-	cv::Mat                 mat;
+	cv::Mat                 matInputImg;
 	cv::Mat                 mask;
 	cv::Rect2f              rectLrn;
 };
 
-struct PR_LRN_TMPL_RPY {
-	Int16                       nStatus;
+struct PR_LRN_OBJ_RPY {
+	VisionStatus                enStatus;
 	std::vector<cv::KeyPoint>   vecKeyPoint;
 	cv::Mat                     matDescritor;
 	cv::Mat                     matTmpl;
 	cv::Point2f                 ptCenter;
     Int32                       nRecordID;
+    cv::Mat                     matResultImg;
 };
 
 struct PR_SRCH_OBJ_CMD {
 	PR_SRCH_OBJ_ALGORITHM  enAlgorithm;
-	cv::Rect2f             rectLrn;
-	cv::Mat                mat;
+	cv::Mat                matInputImg;
 	cv::Rect               rectSrchWindow;
 	cv::Point2f            ptExpectedPos;
     Int32                  nRecordID;
@@ -64,6 +65,7 @@ struct PR_SRCH_OBJ_RPY {
 	cv::Point2f				ptObjPos;
 	cv::Size2f				szOffset;
 	float					fRotation;
+    cv::Mat                 matResultImg;
 };
 
 struct PR_MATCH_TEMPLATE_CMD {
@@ -77,6 +79,7 @@ struct PR_MATCH_TEMPLATE_RPY {
 	VisionStatus            enStatus;
 	cv::Point2f				ptObjPos;
 	float                   fRotation;
+    float                   fMatchScore;
     cv::Mat					matResult;
 };
 
@@ -215,6 +218,7 @@ struct PR_SRCH_FIDUCIAL_MARK_CMD {
 struct PR_SRCH_FIDUCIAL_MARK_RPY {
     VisionStatus            enStatus;
     cv::Point2f             ptPos;
+    float                   fScore;
     cv::Mat                 matResult;
 };
 
@@ -240,20 +244,31 @@ struct PR_FIT_LINE_RPY {
 };
 
 //Detect line is find the lines in the image.
-struct PR_DETECT_LINE_CMD {
+struct PR_CALIPER_CMD {
+    PR_CALIPER_CMD() : bCheckLinerity(false), fPointMaxOffset(0.f), fMinLinerity(0.f), bCheckAngle(false), fExpectedAngle(0.f), fAngleDiffTolerance(0.f) {}
     cv::Mat                 matInput;
     cv::Mat                 matMask;
     cv::Rect                rectROI;
     PR_DETECT_LINE_DIR      enDetectDir;
+    bool                    bCheckLinerity;
+    float                   fPointMaxOffset;
+    float                   fMinLinerity;
+    bool                    bCheckAngle;
+    float                   fExpectedAngle;
+    float                   fAngleDiffTolerance;
 };
 
-struct PR_DETECT_LINE_RPY {
+struct PR_CALIPER_RPY {
     VisionStatus            enStatus;    
     bool                    bReversedFit;   //If it is true, then the result is x = fSlope * y + fIntercept. Otherwise the line is y = fSlope * x + fIntercept.
     float                   fSlope;
     float                   fIntercept;
     PR_Line2f               stLine;
-    cv::Mat                 matResult;
+    bool                    bLinerityCheckPass;
+    float                   fLinerity;
+    bool                    bAngleCheckPass;
+    float                   fAngle;
+    cv::Mat                 matResult;    
 };
 
 struct PR_FIT_PARALLEL_LINE_CMD {
@@ -261,7 +276,7 @@ struct PR_FIT_PARALLEL_LINE_CMD {
     cv::Rect                rectArrROI[2];
     Int32                   nThreshold;
     PR_OBJECT_ATTRIBUTE     enAttribute;
-    PR_RM_FIT_NOISE_METHOD  enRmNoiseMethod;    
+    PR_RM_FIT_NOISE_METHOD  enRmNoiseMethod;
     float                   fErrTol;
 };
 
@@ -480,9 +495,11 @@ struct PR_PICK_COLOR_RPY {
 };
 
 struct PR_CALIBRATE_CAMERA_CMD {
+    PR_CALIBRATE_CAMERA_CMD() : fPatternDist(1.f), fMinTmplMatchScore(90.f) {}
     cv::Mat                 matInput;
     cv::Size                szBoardPattern; // Number of corners per chessboard row and col. szBoardPattern = cv::Size(points_per_row, points_per_col) = cv::Size(columns, rows).
     float                   fPatternDist;   //The real chess board corner to corner distance. Unit: mm.
+    float                   fMinTmplMatchScore;
 };
 
 struct PR_CALIBRATE_CAMERA_RPY {
@@ -495,6 +512,10 @@ struct PR_CALIBRATE_CAMERA_RPY {
     std::vector<cv::Mat>    vecMatRestoreImage; //The remap matrix to restore image. vector size is 2, the matrix dimension is same as input image.
     //Intermediate result.
     cv::Mat                 matCornerPointsImg;
+    VectorOfPoint2f         vecImagePoints;
+    VectorOfPoint3f         vecObjectPoints;
+    cv::Mat                 matInitialIntrinsicMatrix;  //type: CV_64FC1.
+    cv::Mat                 matInitialExtrinsicMatrix;  //type: CV_64FC1.
 };
 
 struct PR_RESTORE_IMG_CMD {

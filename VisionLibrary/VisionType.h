@@ -50,56 +50,49 @@ enum class PR_DEBUG_MODE {
 
 enum class PR_RECORD_TYPE {
     INVALID = -1,
-    ALIGNMENT,
+    OBJECT,
     DEVICE,
     CHIP,
     LEAD,
 };
 
-enum class PR_FIDUCIAL_MARK_TYPE
-{
+enum class PR_FIDUCIAL_MARK_TYPE {
     SQUARE,
     CIRCLE,
 };
 
-enum class PR_RM_FIT_NOISE_METHOD
-{
+enum class PR_RM_FIT_NOISE_METHOD {
     ABSOLUTE_ERR,
     POSITIVE_ERR,
     NEGATIVE_ERR,
 };
 
-enum class PR_EDGE_DIRECTION
-{
+enum class PR_EDGE_DIRECTION {
     HORIZONTAL,
     VERTIAL,
     ALL,
 };
 
-enum class PR_FIT_CIRCLE_METHOD
-{
+enum class PR_FIT_CIRCLE_METHOD {
     LEAST_SQUARE,
     LEAST_SQUARE_REFINE,
     RANSAC,
 };
 
-enum class PR_DIRECTION
-{
+enum class PR_DIRECTION {
     UP,
     DOWN,
     LEFT,
     RIGHT,
 };
 
-enum class PR_OBJECT_ATTRIBUTE
-{
+enum class PR_OBJECT_ATTRIBUTE {
     BRIGHT,
 	DARK,
     END,
 };
 
-enum class PR_FILTER_TYPE
-{
+enum class PR_FILTER_TYPE {
     NORMALIZED_BOX_FILTER,
     GAUSSIAN_FILTER,
     MEDIAN_FILTER,
@@ -107,30 +100,26 @@ enum class PR_FILTER_TYPE
     END,
 };
 
-enum class PR_COMPARE_TYPE
-{
+enum class PR_COMPARE_TYPE {
     SMALLER,
     LARGER,
 };
 
-enum class PR_DETECT_LINE_DIR
-{
+enum class PR_DETECT_LINE_DIR {
     MIN_TO_MAX,
     MAX_TO_MIN,
 };
 
-enum class PR_FILL_HOLE_METHOD
-{
+enum class PR_FILL_HOLE_METHOD {
     CONTOUR,
     MORPHOLOGY,
 };
 
-enum class PR_OBJECT_MOTION
-{
-    TRANSLATION,
-    EUCLIDEAN,
-    AFFINE,
-    HOMOGRAPHY
+enum class PR_OBJECT_MOTION {
+    TRANSLATION,    //Only move in XY
+    EUCLIDEAN,      //Move and rotation in XY
+    AFFINE,         //Move and rotation in XY, and have one direction shape change.
+    HOMOGRAPHY      //Move and rotation in XY, and have multiple shape change.
 };
 
 enum class PR_INSP_BRIDGE_MODE {

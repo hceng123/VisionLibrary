@@ -19,7 +19,7 @@ enum class VisionStatus
 {
 	OK,
     INVALID_PARAM,
-    SRCH_TMPL_FAIL,
+    SRCH_OBJ_FAIL,
     OPEN_FILE_FAIL,
     OBJECT_MISSING,
     OBJECT_SHIFT,                       //5

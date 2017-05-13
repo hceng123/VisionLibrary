@@ -215,28 +215,52 @@ Auto threshold status: 0
 Auto threshold result: 41 89 135 173 
 
 ---------------------------------------------
-DETECT LINE REGRESSION TEST #1 STARTING
+CALIPER REGRESSION TEST #1 STARTING
 ---------------------------------------------
-Fit rect status 0
+Caliper status 0
 ReversedFit = 1
 Line slope = -0.01, intercept = 1309.80
 Line coordinate: (1305.10, 802.00), (1303.15, 1133.00)
+Linerity  = 100.00
+Linerity check pass: 1
+Angle  = 90.34
+Angle check pass: 1
 
 ---------------------------------------------
-DETECT LINE REGRESSION TEST #2 STARTING
+CALIPER REGRESSION TEST #2 STARTING
 ---------------------------------------------
-Fit rect status 0
+Caliper status 0
 ReversedFit = 0
-Line slope = 0.02, intercept = 1293.24
-Line coordinate: (928.00, 1311.99), (1197.00, 1317.42)
+Line slope = 0.05, intercept = 1260.71
+Line coordinate: (928.00, 1306.48), (1197.00, 1319.74)
+Linerity  = 88.15
+Linerity check pass: 1
+Angle  = 2.82
+Angle check pass: 1
 
 ---------------------------------------------
-DETECT LINE REGRESSION TEST #3 STARTING
+CALIPER REGRESSION TEST #3 STARTING
 ---------------------------------------------
-Fit rect status 0
+Caliper status 0
 ReversedFit = 0
-Line slope = -0.01, intercept = 1636.05
-Line coordinate: (1496.00, 1623.54), (1703.00, 1621.81)
+Line slope = -0.04, intercept = 1678.87
+Line coordinate: (1496.00, 1626.21), (1723.00, 1618.21)
+Linerity  = 96.93
+Linerity check pass: 1
+Angle  = -2.02
+Angle check pass: 1
+
+---------------------------------------------
+CALIPER REGRESSION TEST #4 STARTING
+---------------------------------------------
+Caliper status 0
+ReversedFit = 1
+Line slope = 0.30, intercept = 1319.96
+Line coordinate: (1607.71, 970.00), (1634.11, 1059.00)
+Linerity  = 81.11
+Linerity check pass: 1
+Angle  = 73.48
+Angle check pass: 0
 
 ---------------------------------------------
 CALIBRATE CAMERA REGRESSION TEST #1 STARTING
@@ -244,7 +268,7 @@ CALIBRATE CAMERA REGRESSION TEST #1 STARTING
 Calibrate camera status 0
 Camera resolution (23.76, 23.78)
 Camera distoration coefficients:
--5.1 -0.3 -0.0 0.0 -0.0 
+-6.8 -0.3 -0.0 -0.0 -0.0 
 
 ---------------------------------------------
 CALIBRATE CAMERA REGRESSION TEST #2 STARTING
@@ -252,20 +276,36 @@ CALIBRATE CAMERA REGRESSION TEST #2 STARTING
 Calibrate camera status 0
 Camera resolution (6.05, 6.03)
 Camera distoration coefficients:
--14.1 -0.0 -0.0 0.0 -0.0 
+-10.6 -0.0 -0.0 0.0 -0.0 
 
 ---------------------------------------------
 CALIBRATE CAMERA REGRESSION TEST #3 STARTING
 ---------------------------------------------
 Calibrate camera status 0
-Camera resolution (6.03, 6.04)
+Camera resolution (6.01, 6.04)
 Camera distoration coefficients:
--7.9 -0.0 0.0 -0.0 -0.0 
+-21.7 -0.0 0.0 -0.0 -0.0 
 
 ---------------------------------------------
 CALIBRATE CAMERA REGRESSION TEST #4 STARTING
 ---------------------------------------------
 Calibrate camera status 25
+
+---------------------------------------------
+CALIBRATE CAMERA REGRESSION TEST #5 STARTING
+---------------------------------------------
+Calibrate camera status 0
+Camera resolution (15.88, 15.90)
+Camera distoration coefficients:
+0.0 -40.3 0.0 0.0 111.9 
+
+---------------------------------------------
+CALIBRATE CAMERA REGRESSION TEST #6 STARTING
+---------------------------------------------
+Calibrate camera status 0
+Camera resolution (15.89, 15.89)
+Camera distoration coefficients:
+-2.2 0.0 -0.0 0.0 0.0 
 
 ---------------------------------------------
 AUTO LOCATE LEAD REGRESSION TEST #1 STARTING

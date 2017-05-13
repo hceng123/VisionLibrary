@@ -192,7 +192,7 @@ FC /L $(ProjectDir)$(ProjectName)_golden.txt $(ProjectDir)$(ProjectName)_result.
     <ClCompile Include="TestAutoLeadLocate.cpp" />
     <ClCompile Include="TestAutoThreshold.cpp" />
     <ClCompile Include="TestCalibrateCamera.cpp" />
-    <ClCompile Include="TestDetectLine.cpp" />
+    <ClCompile Include="TestCaliper.cpp" />
     <ClCompile Include="TestFitting.cpp" />
     <ClCompile Include="TestInspDevice.cpp" />
     <ClCompile Include="TestInspBridge.cpp" />

@@ -50,10 +50,10 @@ int _tmain(int argc, _TCHAR* argv[])
     ***********************/
     TestAutoThreshold();
 
-    /*******************
-    * Test Detect Line *
-    *******************/
-    TestDetectLine();
+    /***************
+    * Test Caliper *
+    ***************/
+    TestCaliper();
 
     /************************
     * Test Calibrate Camera *
