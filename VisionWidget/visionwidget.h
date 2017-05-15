@@ -33,6 +33,7 @@ private slots:
     void on_matchTmplBtn_clicked();
     void on_captureTemplateBtn_clicked();
     void on_btnCalcCoverage_clicked();
+    void on_btnCalibrateCamera_clicked();
 protected:
     bool checkDisplayImage();
     void drawTmplImage();

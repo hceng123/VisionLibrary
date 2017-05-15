@@ -3292,7 +3292,7 @@ EXIT:
 /*static*/ VisionStatus VisionAlgorithm::calibrateCamera(const PR_CALIBRATE_CAMERA_CMD *const pstCmd, PR_CALIBRATE_CAMERA_RPY *const pstRpy, bool bReplay) {
     assert(pstCmd != nullptr && pstRpy != nullptr);
     char charrMsg[1000];
-    if ( pstCmd->matInput.empty() ) {
+    if ( pstCmd->matInputImg.empty() ) {
         WriteLog("Input image is empty.");
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return pstRpy->enStatus;
@@ -3315,9 +3315,9 @@ EXIT:
     MARK_FUNCTION_START_TIME;
     SETUP_LOGCASE(LogCaseCalibrateCamera);
     
-    cv::Mat matGray = pstCmd->matInput;
-    if ( pstCmd->matInput.channels() > 1 )
-        cv::cvtColor ( pstCmd->matInput, matGray, CV_BGR2GRAY );
+    cv::Mat matGray = pstCmd->matInputImg;
+    if ( pstCmd->matInputImg.channels() > 1 )
+        cv::cvtColor ( pstCmd->matInputImg, matGray, CV_BGR2GRAY );
 
     VectorOfVectorOfPoint2f vecVecImagePoints(1);
     std::vector<std::vector<cv::Point3f> > vevVecObjectPoints(1);

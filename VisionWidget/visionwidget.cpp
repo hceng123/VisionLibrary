@@ -408,3 +408,34 @@ void VisionWidget::on_matchTmplBtn_clicked()
         ui.lineEditObjRotation->clear();
     }
 }
+
+void VisionWidget::on_btnCalibrateCamera_clicked() {
+    if ( _sourceImagePath.empty() ) {
+        QMessageBox::information(this, "Vision Widget", "Please select an image first!", "Quit");
+        return;
+    }
+
+    ui.visionView->setState ( VisionView::VISION_VIEW_STATE::TEST_VISION_LIBRARY );
+    ui.visionView->applyIntermediateResult();
+
+    PR_CALIBRATE_CAMERA_CMD stCmd;
+    PR_CALIBRATE_CAMERA_RPY stRpy;
+    stCmd.matInputImg = ui.visionView->getMat();
+    stCmd.szBoardPattern.height = ui.lineEditChessboardRows->text().toInt();
+    stCmd.szBoardPattern.width = ui.lineEditChessboardCols->text().toInt();
+    stCmd.fPatternDist = ui.lineEditChessboardTmplDist->text().toFloat();
+
+    PR_CalibrateCamera ( &stCmd, &stRpy );
+
+    if ( VisionStatus::OK == stRpy.enStatus )
+    {
+        ui.lineEditResolutionX->setText ( std::to_string ( stRpy.dResolutionX ).c_str() );
+        ui.lineEditResolutionY->setText ( std::to_string ( stRpy.dResolutionY ).c_str() );
+    }else {
+        PR_GET_ERROR_STR_RPY stErrStrRpy;
+        PR_GetErrorStr(stRpy.enStatus, &stErrStrRpy);
+        QMessageBox::critical(nullptr, "Calibrate Camera", stErrStrRpy.achErrorStr, "Quit");
+        ui.lineEditObjCenter->clear();
+        ui.lineEditObjRotation->clear();
+    }
+}
