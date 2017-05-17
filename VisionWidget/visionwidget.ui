@@ -1199,7 +1199,7 @@
         <x>10</x>
         <y>20</y>
         <width>591</width>
-        <height>111</height>
+        <height>151</height>
        </rect>
       </property>
       <property name="title">
@@ -1215,7 +1215,7 @@
         </rect>
        </property>
        <property name="text">
-        <string>Calibreate</string>
+        <string>Calibrate</string>
        </property>
       </widget>
       <widget class="QLabel" name="labelChessboardRows">
@@ -1355,6 +1355,35 @@
          <width>91</width>
          <height>20</height>
         </rect>
+       </property>
+      </widget>
+      <widget class="QLineEdit" name="lineEditTmplMatchMinScore">
+       <property name="enabled">
+        <bool>true</bool>
+       </property>
+       <property name="geometry">
+        <rect>
+         <x>150</x>
+         <y>110</y>
+         <width>91</width>
+         <height>20</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>85</string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="labelTmplMatchMinScore">
+       <property name="geometry">
+        <rect>
+         <x>20</x>
+         <y>110</y>
+         <width>121</width>
+         <height>16</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Tmpl Match Min Score</string>
        </property>
       </widget>
      </widget>

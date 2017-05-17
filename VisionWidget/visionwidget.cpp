@@ -424,6 +424,7 @@ void VisionWidget::on_btnCalibrateCamera_clicked() {
     stCmd.szBoardPattern.height = ui.lineEditChessboardRows->text().toInt();
     stCmd.szBoardPattern.width = ui.lineEditChessboardCols->text().toInt();
     stCmd.fPatternDist = ui.lineEditChessboardTmplDist->text().toFloat();
+    stCmd.fMinTmplMatchScore = ui.lineEditTmplMatchMinScore->text().toFloat();
 
     PR_CalibrateCamera ( &stCmd, &stRpy );
 

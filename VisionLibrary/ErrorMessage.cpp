@@ -53,6 +53,18 @@ VisionStatus GetErrorInfo(VisionStatus enStatus, PR_GET_ERROR_STR_RPY *pstRpy)
         _snprintf(pstRpy->achErrorStr, PR_MAX_ERR_STR_LEN, "The pick point must in ROI.");
         pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::PR_STATUS_FATAL_ERROR;
         break;
+    case VisionStatus::FAILED_TO_FIND_CHESS_BOARD_BLOCK_SIZE:
+        _snprintf(pstRpy->achErrorStr, PR_MAX_ERR_STR_LEN, "Failed to find chessboard block size.");
+        pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::PR_STATUS_FATAL_ERROR;
+        break;
+    case VisionStatus::FAILED_TO_FIND_FIRST_CB_CORNER:
+        _snprintf(pstRpy->achErrorStr, PR_MAX_ERR_STR_LEN, "Failed to find first chessboard corner to calibrate camera.");
+        pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::PR_STATUS_FATAL_ERROR;
+        break;
+    case VisionStatus::FAILED_TO_FIND_ENOUGH_CB_CORNERS:
+        _snprintf(pstRpy->achErrorStr, PR_MAX_ERR_STR_LEN, "Failed to find enough chessboard corners to calibrate camera.");
+        pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::PR_STATUS_FATAL_ERROR;
+        break;
     default:
         _snprintf(pstRpy->achErrorStr, PR_MAX_ERR_STR_LEN, "Undefined error code!");
         pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::PR_STATUS_FATAL_ERROR;

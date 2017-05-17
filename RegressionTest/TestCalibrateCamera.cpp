@@ -37,7 +37,7 @@ void TestCalibrateCamera()
     std::cout << std::endl << "---------------------------------------------";
     std::cout << std::endl;
     
-    stCmd.matInput = cv::imread("./data/ChessBoard.png", cv::IMREAD_GRAYSCALE );
+    stCmd.matInputImg = cv::imread("./data/ChessBoard.png", cv::IMREAD_GRAYSCALE );
     stCmd.fPatternDist = 2;
     stCmd.szBoardPattern = cv::Size(25, 23);
 
@@ -49,7 +49,7 @@ void TestCalibrateCamera()
     std::cout << std::endl << "---------------------------------------------";
     std::cout << std::endl;
     
-    stCmd.matInput = cv::imread("./data/ChessBoard_2.png", cv::IMREAD_GRAYSCALE );
+    stCmd.matInputImg = cv::imread("./data/ChessBoard_2.png", cv::IMREAD_GRAYSCALE );
     stCmd.fPatternDist = 2;
     stCmd.szBoardPattern = cv::Size(8, 5);
 
@@ -61,7 +61,7 @@ void TestCalibrateCamera()
     std::cout << std::endl << "---------------------------------------------";
     std::cout << std::endl;
     
-    stCmd.matInput = cv::imread("./data/ChessBoard_3.png", cv::IMREAD_GRAYSCALE );
+    stCmd.matInputImg = cv::imread("./data/ChessBoard_3.png", cv::IMREAD_GRAYSCALE );
     stCmd.fPatternDist = 2;
     stCmd.szBoardPattern = cv::Size(8, 5);
 
@@ -73,7 +73,7 @@ void TestCalibrateCamera()
     std::cout << std::endl << "---------------------------------------------";
     std::cout << std::endl;
     
-    stCmd.matInput = cv::imread("./data/PhaseImageForCalibCamera.bmp", cv::IMREAD_GRAYSCALE );
+    stCmd.matInputImg = cv::imread("./data/PhaseImageForCalibCamera.bmp", cv::IMREAD_GRAYSCALE );
     stCmd.fPatternDist = 2;
     stCmd.szBoardPattern = cv::Size(5, 5);
 
@@ -85,7 +85,7 @@ void TestCalibrateCamera()
     std::cout << std::endl << "---------------------------------------------";
     std::cout << std::endl;
     
-    stCmd.matInput = cv::imread("./data/ChessboardWith2DCode.png", cv::IMREAD_GRAYSCALE );
+    stCmd.matInputImg = cv::imread("./data/ChessboardWith2DCode.png", cv::IMREAD_GRAYSCALE );
     stCmd.fPatternDist = 2;
     stCmd.szBoardPattern = cv::Size(16, 16);
 
@@ -97,7 +97,7 @@ void TestCalibrateCamera()
     std::cout << std::endl << "---------------------------------------------";
     std::cout << std::endl;
     
-    stCmd.matInput = cv::imread("./data/ChessboardWith2DCode_1.png", cv::IMREAD_GRAYSCALE );
+    stCmd.matInputImg = cv::imread("./data/ChessboardWith2DCode_1.png", cv::IMREAD_GRAYSCALE );
     stCmd.fPatternDist = 2;
     stCmd.szBoardPattern = cv::Size(16, 16);
 

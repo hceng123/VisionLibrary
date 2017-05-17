@@ -11,6 +11,7 @@ void TestLrnObj();
 void TestLrnObj_1();
 void TestSrchObj();
 void TestCalibCamera_1();
+void TestCalibCamera_2();
 
 template<class T>
 void printfMat(const cv::Mat &mat)

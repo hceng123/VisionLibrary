@@ -1496,7 +1496,11 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
 
     ptResult.x = (float)matchLoc.x;
     ptResult.y = (float)matchLoc.y;
-    _refineSrchTemplate ( mat, matTmpl, enMotion, ptResult, fRotation, fCorrelation );
+    try {
+        _refineSrchTemplate ( mat, matTmpl, enMotion, ptResult, fRotation, fCorrelation );
+    }catch (std::exception) {
+        return VisionStatus::OPENCV_EXCEPTION;
+    }
 
     ptResult.x += (float)( matTmpl.cols / 2 + 0.5 );
     ptResult.y += (float)( matTmpl.rows / 2 + 0.5 );
@@ -3077,12 +3081,13 @@ EXIT:
     VisionStatus enStatus;
     cv::cvtColor ( mat, matCornerPointsImg, CV_GRAY2BGR );
     float fStepOffset = 0.f;
+    float fStepSizeY = fStepSize;
     float fMinCorrelation = fMinTmplMatchScore / ConstToPercentage;
     cv::Scalar colorOfResultPoint;
     for ( int row = 0; row < szBoardPattern.height; ++ row )
     for ( int col = 0; col < szBoardPattern.width;  ++ col )
     {        
-        cv::Rect rectSrchROI ( ToInt32 ( startPoint.x + col * fStepSize - row * fStepOffset ), ToInt32 ( startPoint.y + row * fStepSize + col * fStepOffset ), nSrchSize, nSrchSize );
+        cv::Rect rectSrchROI ( ToInt32 ( startPoint.x + col * fStepSize - row * fStepOffset ), ToInt32 ( startPoint.y + row * fStepSizeY + col * fStepOffset ), nSrchSize, nSrchSize );
         if ( rectSrchROI.x < 0 ) rectSrchROI.x = 0;
         if ( rectSrchROI.y < 0 ) rectSrchROI.y = 0;
         if ( ( rectSrchROI.x + rectSrchROI.width )  > mat.cols ) rectSrchROI.width  = mat.cols - rectSrchROI.x;
@@ -3095,7 +3100,8 @@ EXIT:
         float fRotation, fCorrelation = 0.f;
         enStatus = _matchTemplate ( matSrchROI, matTmpl, PR_OBJECT_MOTION::TRANSLATION, ptResult, fRotation, fCorrelation );
         if ( VisionStatus::OK != enStatus )
-            break;
+            fCorrelation = 0;
+        
         ptResult.x += rectSrchROI.x;
         ptResult.y += rectSrchROI.y;
 
@@ -3111,6 +3117,8 @@ EXIT:
         if ( vecCorners.size() == 2 ) {
             fStepSize = CalcUtils::distanceOf2Point ( vecCorners[1], vecCorners[0] );
             fStepOffset = vecCorners[1].y - vecCorners[0].y;
+        }else if ( vecCorners.size() == ( szBoardPattern.width + 1 ) ) {
+            fStepSizeY = CalcUtils::distanceOf2Point ( vecCorners[szBoardPattern.width], vecCorners[0] );
         }
 
         cv::rectangle ( matCornerPointsImg, rectSrchROI, cv::Scalar(255,0,0), 2 );
@@ -3118,7 +3126,11 @@ EXIT:
         cv::line ( matCornerPointsImg, cv::Point2f(ptResult.x - 4, ptResult.y), cv::Point2f(ptResult.x + 4, ptResult.y), colorOfResultPoint, 1);
         cv::line ( matCornerPointsImg, cv::Point2f(ptResult.x, ptResult.y - 4), cv::Point2f(ptResult.x, ptResult.y + 4), colorOfResultPoint, 1);
     }
-    return enStatus;
+
+    if ( ToInt32( vecCorners.size() ) < Config::GetInstance()->getMinPointsToCalibCamera() ) {
+        return VisionStatus::FAILED_TO_FIND_ENOUGH_CB_CORNERS;
+    }
+    return VisionStatus::OK;
 }
 
 /*static*/ void VisionAlgorithm::_calcBoardCornerPositions(cv::Size boardSize, float squareSize, const VectorOfPoint &vecFailedColRow, std::vector<cv::Point3f> &corners, CalibPattern patternType /*= CHESSBOARD*/)
@@ -3223,48 +3235,30 @@ EXIT:
     int nCornerRoiSize = ToInt32 ( fBlockSize * 3 );
     if ( nCornerRoiSize < 300 ) nCornerRoiSize = 300;
     cv::Mat matROI ( matInput, cv::Rect ( 0, 0, nCornerRoiSize, nCornerRoiSize ) );
-    cv::Mat matFilter;
+    cv::Mat matFilter, matThreshold;
     cv::GaussianBlur ( matROI, matFilter, cv::Size(3, 3), 0.5, 0.5 );
-    cv::Mat matThreshold;
     int nThreshold = _autoThreshold ( matFilter );
     nThreshold += 20;
-    cv::threshold ( matFilter, matThreshold, nThreshold, 255, cv::THRESH_BINARY_INV );
-    if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE ) {
-        showImage("_findFirstChessBoardCorner threshold image", matThreshold);
-    }
-    
     VectorOfVectorOfPoint contours, vecDrawContours;
-    cv::findContours ( matThreshold, contours, cv::RETR_LIST, cv::CHAIN_APPROX_SIMPLE );
     VectorOfPoint2f vecBlockCenters;
-    for ( const auto &contour : contours )  {
-        auto area = cv::contourArea ( contour );
-        if ( area > 1000 )  {
-            cv::RotatedRect rotatedRect = cv::minAreaRect ( contour );
-            if ( fabs ( rotatedRect.size.width - rotatedRect.size.height ) / ( rotatedRect.size.width + rotatedRect.size.height ) < 0.1 )   {
-                vecDrawContours.push_back ( contour );
-                vecBlockCenters.push_back ( rotatedRect.center );
-            }
-        }
-    }
 
     //If didn't find the block, it may because the two blocks connected together make findContour find two connected blocks.
     //Need to use Morphology method to remove the dark connecter between them.
-    if ( vecBlockCenters.empty() ) {
-        cv::threshold ( matFilter, matThreshold, nThreshold, 255, cv::THRESH_BINARY_INV );
-        cv::Mat matKernal = cv::getStructuringElement ( cv::MorphShapes::MORPH_ELLIPSE, {6, 6} );
-        cv::morphologyEx ( matThreshold, matThreshold, cv::MorphTypes::MORPH_CLOSE, matKernal, cv::Point(-1, -1), 3 );
-        if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE ) {
-            showImage ( "After morphologyEx image", matThreshold );
-        }
-        cv::findContours ( matThreshold, contours, cv::RETR_LIST, cv::CHAIN_APPROX_SIMPLE );
-        for (const auto &contour : contours)  {
-            auto area = cv::contourArea(contour);
-            if (area > 1000)  {
-                cv::RotatedRect rotatedRect = cv::minAreaRect(contour);
-                if (fabs(rotatedRect.size.width - rotatedRect.size.height) / (rotatedRect.size.width + rotatedRect.size.height) < 0.1)   {
-                    vecDrawContours.push_back(contour);
-                    vecBlockCenters.push_back(rotatedRect.center);
-                }
+    cv::threshold(matFilter, matThreshold, nThreshold, 255, cv::THRESH_BINARY_INV);
+    cv::Mat matKernal = cv::getStructuringElement(cv::MorphShapes::MORPH_ELLIPSE, { 7, 7 });
+    cv::morphologyEx(matThreshold, matThreshold, cv::MorphTypes::MORPH_CLOSE, matKernal, cv::Point(-1, -1), 3);
+    if (Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE) {
+        showImage("After morphologyEx image", matThreshold);
+    }
+    cv::findContours(matThreshold, contours, cv::RETR_LIST, cv::CHAIN_APPROX_SIMPLE);
+    for (const auto &contour : contours) {
+        auto area = cv::contourArea(contour);
+        if (area > 1000) {
+            cv::RotatedRect rotatedRect = cv::minAreaRect(contour);
+            if (fabs(rotatedRect.size.width - rotatedRect.size.height) / (rotatedRect.size.width + rotatedRect.size.height) < 0.1
+                && fabs(rotatedRect.size.width - fBlockSize) / fBlockSize < 0.2) {
+                vecDrawContours.push_back(contour);
+                vecBlockCenters.push_back(rotatedRect.center);
             }
         }
     }
@@ -3333,19 +3327,19 @@ EXIT:
     matTmplROI1.setTo(cv::Scalar::all(PR_MAX_GRAY_LEVEL));
 
     float fBlockSize = _findChessBoardBlockSize ( matGray, pstCmd->szBoardPattern );
-    if ( fBlockSize <= 5 )  {
+    if ( fBlockSize <= 5 ) {
         WriteLog("Failed to find chess board block size");
         pstRpy->enStatus = VisionStatus::FAILED_TO_FIND_CHESS_BOARD_BLOCK_SIZE;
         FINISH_LOGCASE;
         return pstRpy->enStatus;
     }
     float fStepSize = fBlockSize * 2;
-    int nSrchSize = ToInt32( fStepSize - 10 );
-    if ( nSrchSize > 100 ) nSrchSize = 100;
+    int nSrchSize = ToInt32( fStepSize - 20 );
+    if ( nSrchSize > 200 ) nSrchSize = 200;
     cv::Point2f ptFirstCorer = _findFirstChessBoardCorner ( matGray, fBlockSize );
     if ( ptFirstCorer.x <= 0 || ptFirstCorer.y <= 0 ) {
         WriteLog("Failed to find chess board first corner.");
-        pstRpy->enStatus = VisionStatus::FAILED_TO_FIND_CHESS_BOARD_CORNER;
+        pstRpy->enStatus = VisionStatus::FAILED_TO_FIND_FIRST_CB_CORNER;
         FINISH_LOGCASE;
         return pstRpy->enStatus;
     }
@@ -3357,7 +3351,7 @@ EXIT:
     VectorOfPoint vecFailedColRow;
     pstRpy->enStatus = _findChessBoardCorners ( matGray, matTmpl, pstRpy->matCornerPointsImg, ptChessBoardSrchStartPoint, fStepSize, nSrchSize, pstCmd->fMinTmplMatchScore, pstCmd->szBoardPattern, vecVecImagePoints[0], vecFailedColRow );
     if ( VisionStatus::OK != pstRpy->enStatus ) {
-        WriteLog("Failed to find chess board first corners.");
+        WriteLog("Failed to find chess board corners.");
         FINISH_LOGCASE;
         return pstRpy->enStatus;
     }

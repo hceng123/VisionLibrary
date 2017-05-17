@@ -65,6 +65,10 @@ Int32 Config::getInspBridgeMinThreshold() const {
     return _nInspBridgeMinThreshold;
 }
 
+Int32 Config::getMinPointsToCalibCamera() const {
+    return _nMinPointsToCalibCamera;
+}
+
 void Config::load()
 {
 }
