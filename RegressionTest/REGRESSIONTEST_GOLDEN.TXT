@@ -268,7 +268,7 @@ CALIBRATE CAMERA REGRESSION TEST #1 STARTING
 Calibrate camera status 0
 Camera resolution (23.76, 23.78)
 Camera distoration coefficients:
--6.8 -0.3 -0.0 -0.0 -0.0 
+-6.9 -0.3 -0.0 -0.0 -0.0 
 
 ---------------------------------------------
 CALIBRATE CAMERA REGRESSION TEST #2 STARTING

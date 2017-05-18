@@ -228,13 +228,13 @@ void TestCalibCamera_1()
 
 void TestCalibCamera_2()
 {
-    std::string strImgPath = "./data/CLN_Chessboard_1.png";
+    std::string strImgPath = "./data/CLN_Chessboard_2.png";
     PR_CALIBRATE_CAMERA_CMD stCmd;
     PR_CALIBRATE_CAMERA_RPY stRpy;
     stCmd.matInputImg = cv::imread(strImgPath, cv::IMREAD_GRAYSCALE );
     stCmd.fPatternDist = 2.;
-    stCmd.fMinTmplMatchScore = 80;
-    stCmd.szBoardPattern = cv::Size(4, 4); //cv::Size( 5, 5 );
+    stCmd.fMinTmplMatchScore = 85;
+    stCmd.szBoardPattern = cv::Size(10, 9); //cv::Size( 5, 5 );
 
     PR_CalibrateCamera ( &stCmd, &stRpy );
     if ( VisionStatus::OK != stRpy.enStatus ) {

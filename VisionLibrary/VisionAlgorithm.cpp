@@ -3084,12 +3084,17 @@ EXIT:
     float fStepSizeY = fStepSize;
     float fMinCorrelation = fMinTmplMatchScore / ConstToPercentage;
     cv::Scalar colorOfResultPoint;
+    bool bStepUpdatedX = false, bStepUpdatedY = false;
     for ( int row = 0; row < szBoardPattern.height; ++ row )
     for ( int col = 0; col < szBoardPattern.width;  ++ col )
     {        
         cv::Rect rectSrchROI ( ToInt32 ( startPoint.x + col * fStepSize - row * fStepOffset ), ToInt32 ( startPoint.y + row * fStepSizeY + col * fStepOffset ), nSrchSize, nSrchSize );
         if ( rectSrchROI.x < 0 ) rectSrchROI.x = 0;
         if ( rectSrchROI.y < 0 ) rectSrchROI.y = 0;
+        if ( ( rectSrchROI.x + matTmpl.cols ) > mat.cols || ( rectSrchROI.y  + matTmpl.rows ) > mat.rows ) {
+            WriteLog("The chessboard pattern is not correct.");
+            return VisionStatus::CHESSBOARD_PATTERN_NOT_CORRECT;
+        }
         if ( ( rectSrchROI.x + rectSrchROI.width )  > mat.cols ) rectSrchROI.width  = mat.cols - rectSrchROI.x;
         if ( ( rectSrchROI.y + rectSrchROI.height ) > mat.rows ) rectSrchROI.height = mat.rows - rectSrchROI.y;
 //#ifdef _DEBUG
@@ -3114,11 +3119,29 @@ EXIT:
         }
 
         //Get a more accurate step size.
+        //if ( ! bStepUpdatedX && vecCorners.size() >= 2 ) {
+        //    int nSize = vecCorners.size();
+        //    float fDist = CalcUtils::distanceOf2Point ( vecCorners[ nSize - 1 ], vecCorners[ nSize - 2 ] );
+        //    if ( fabs ( fDist - fStepSize ) / fStepSize < 0.1 ) {
+        //        fStepSize = fDist;
+        //        bStepUpdatedX = true;
+        //    }
+        //}
+
+        //if ( ! bStepUpdatedY && row > 0 ) {
+        //    int nSize = vecCorners.size();
+        //    float fDist = vecCorners[ nSize - 1 ].y - vecCorners[0].y;
+        //    if ( fabs ( fDist - fStepSizeY ) / fStepSizeY < 0.1 ) {
+        //        fStepSizeY = fDist;
+        //        bStepUpdatedY = true;
+        //    }
+        //}
+        
         if ( vecCorners.size() == 2 ) {
             fStepSize = CalcUtils::distanceOf2Point ( vecCorners[1], vecCorners[0] );
             fStepOffset = vecCorners[1].y - vecCorners[0].y;
         }else if ( vecCorners.size() == ( szBoardPattern.width + 1 ) ) {
-            fStepSizeY = CalcUtils::distanceOf2Point ( vecCorners[szBoardPattern.width], vecCorners[0] );
+            fStepSizeY = vecCorners[szBoardPattern.width].y - vecCorners[0].y;
         }
 
         cv::rectangle ( matCornerPointsImg, rectSrchROI, cv::Scalar(255,0,0), 2 );

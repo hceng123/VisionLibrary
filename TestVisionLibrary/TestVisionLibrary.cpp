@@ -454,8 +454,8 @@ int _tmain(int argc, _TCHAR* argv[])
 	//TestFitCircle();
 
     //TestCalibCamera();
-    TestCalibCamera_1();
-    //TestCalibCamera_2();
+    //TestCalibCamera_1();
+    TestCalibCamera_2();
 
     //TestCompareInputAndResult();
     //TestRunRestoreImgLogCase();
