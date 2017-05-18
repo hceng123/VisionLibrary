@@ -73,7 +73,7 @@
      </rect>
     </property>
     <property name="currentIndex">
-     <number>5</number>
+     <number>1</number>
     </property>
     <widget class="QWidget" name="tabPreProcess">
      <attribute name="title">
@@ -249,7 +249,7 @@
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>130</y>
+        <y>70</y>
         <width>590</width>
         <height>51</height>
        </rect>
@@ -366,7 +366,7 @@
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>250</y>
+        <y>190</y>
         <width>590</width>
         <height>51</height>
        </rect>
@@ -483,7 +483,7 @@
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>310</y>
+        <y>250</y>
         <width>590</width>
         <height>51</height>
        </rect>
@@ -596,63 +596,11 @@
        </property>
       </widget>
      </widget>
-     <widget class="QGroupBox" name="groupBoxCircleRoundness">
-      <property name="geometry">
-       <rect>
-        <x>10</x>
-        <y>70</y>
-        <width>590</width>
-        <height>51</height>
-       </rect>
-      </property>
-      <property name="title">
-       <string>Circle Roundness</string>
-      </property>
-      <widget class="QLineEdit" name="lineEditRoundnessResult">
-       <property name="enabled">
-        <bool>false</bool>
-       </property>
-       <property name="geometry">
-        <rect>
-         <x>90</x>
-         <y>20</y>
-         <width>101</width>
-         <height>20</height>
-        </rect>
-       </property>
-      </widget>
-      <widget class="QLabel" name="labelRoundness">
-       <property name="geometry">
-        <rect>
-         <x>10</x>
-         <y>20</y>
-         <width>81</width>
-         <height>16</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string>Roundness</string>
-       </property>
-      </widget>
-      <widget class="QPushButton" name="calcRoundnessBtn">
-       <property name="geometry">
-        <rect>
-         <x>480</x>
-         <y>20</y>
-         <width>100</width>
-         <height>23</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string>Calc Roundness</string>
-       </property>
-      </widget>
-     </widget>
      <widget class="QGroupBox" name="groupBoxFitLine_2">
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>190</y>
+        <y>130</y>
         <width>590</width>
         <height>51</height>
        </rect>
@@ -1111,6 +1059,58 @@
          <width>91</width>
          <height>20</height>
         </rect>
+       </property>
+      </widget>
+     </widget>
+     <widget class="QGroupBox" name="groupBoxCircleRoundness">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>120</y>
+        <width>590</width>
+        <height>51</height>
+       </rect>
+      </property>
+      <property name="title">
+       <string>Circle Inspection</string>
+      </property>
+      <widget class="QLineEdit" name="lineEditRoundnessResult">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
+       <property name="geometry">
+        <rect>
+         <x>90</x>
+         <y>20</y>
+         <width>101</width>
+         <height>20</height>
+        </rect>
+       </property>
+      </widget>
+      <widget class="QLabel" name="labelRoundness">
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>20</y>
+         <width>81</width>
+         <height>16</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Roundness</string>
+       </property>
+      </widget>
+      <widget class="QPushButton" name="calcRoundnessBtn">
+       <property name="geometry">
+        <rect>
+         <x>480</x>
+         <y>20</y>
+         <width>100</width>
+         <height>23</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Inspect Circle</string>
        </property>
       </widget>
      </widget>

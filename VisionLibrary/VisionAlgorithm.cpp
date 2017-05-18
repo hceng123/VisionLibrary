@@ -1423,8 +1423,8 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
         pLogCase = std::make_unique<LogCaseRemoveCC>( strLocalPath, true );
     else if (LogCaseDetectEdge::StaticGetFolderPrefix() == folderPrefix )
         pLogCase = std::make_unique<LogCaseDetectEdge>( strLocalPath, true );
-    else if (LogCaseCircleRoundness::StaticGetFolderPrefix() == folderPrefix )
-        pLogCase = std::make_unique<LogCaseCircleRoundness>( strLocalPath, true );
+    else if (LogCaseInspCircle::StaticGetFolderPrefix() == folderPrefix )
+        pLogCase = std::make_unique<LogCaseInspCircle>( strLocalPath, true );
     else if (LogCaseFillHole::StaticGetFolderPrefix() == folderPrefix )
         pLogCase = std::make_unique<LogCaseFillHole>( strLocalPath, true );
     else if (LogCaseMatchTmpl::StaticGetFolderPrefix() == folderPrefix )
@@ -2786,12 +2786,12 @@ EXIT:
     return pstRpy->enStatus;
 }
 
-/*static*/ VisionStatus VisionAlgorithm::circleRoundness(PR_CIRCLE_ROUNDNESS_CMD *pstCmd, PR_CIRCLE_ROUNDNESS_RPY *pstRpy, bool bReplay)
+/*static*/ VisionStatus VisionAlgorithm::inspCircle(const PR_INSP_CIRCLE_CMD *const pstCmd, PR_INSP_CIRCLE_RPY *const pstRpy, bool bReplay)
 {
     assert(pstCmd != nullptr && pstRpy != nullptr);
     char chArrMsg[1000];
 
-    if (pstCmd->matInput.empty()) {
+    if (pstCmd->matInputImg.empty()) {
         WriteLog("Input image is empty");
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return pstRpy->enStatus;
@@ -2799,17 +2799,17 @@ EXIT:
 
     if (pstCmd->rectROI.x < 0 || pstCmd->rectROI.y < 0 ||
         pstCmd->rectROI.width <= 0 || pstCmd->rectROI.height <= 0 ||
-        ( pstCmd->rectROI.x + pstCmd->rectROI.width ) > pstCmd->matInput.cols ||
-        ( pstCmd->rectROI.y + pstCmd->rectROI.height ) > pstCmd->matInput.rows )    {
+        ( pstCmd->rectROI.x + pstCmd->rectROI.width ) > pstCmd->matInputImg.cols ||
+        ( pstCmd->rectROI.y + pstCmd->rectROI.height ) > pstCmd->matInputImg.rows )    {
         WriteLog("The input ROI is invalid");
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return VisionStatus::INVALID_PARAM;
     }
 
     if ( ! pstCmd->matMask.empty() ) {
-        if ( pstCmd->matMask.rows != pstCmd->matInput.rows || pstCmd->matMask.cols != pstCmd->matInput.cols ) {
+        if ( pstCmd->matMask.rows != pstCmd->matInputImg.rows || pstCmd->matMask.cols != pstCmd->matInputImg.cols ) {
             _snprintf(chArrMsg, sizeof(chArrMsg), "The mask size ( %d, %d ) not match with input image size ( %d, %d )",
-                pstCmd->matMask.cols, pstCmd->matMask.rows, pstCmd->matInput.cols, pstCmd->matInput.rows);
+                pstCmd->matMask.cols, pstCmd->matMask.rows, pstCmd->matInputImg.cols, pstCmd->matInputImg.rows);
             WriteLog(chArrMsg);
             pstRpy->enStatus = VisionStatus::INVALID_PARAM;
             return pstRpy->enStatus;
@@ -2823,12 +2823,12 @@ EXIT:
     }
 
     MARK_FUNCTION_START_TIME;
-    SETUP_LOGCASE(LogCaseCircleRoundness);
+    SETUP_LOGCASE(LogCaseInspCircle);
 
-    cv::Mat matROI ( pstCmd->matInput, pstCmd->rectROI);    
+    cv::Mat matROI ( pstCmd->matInputImg, pstCmd->rectROI ); 
     cv::Mat matGray;
 
-    if ( pstCmd->matInput.channels() > 1 )
+    if ( pstCmd->matInputImg.channels() > 1 )
         cv::cvtColor ( matROI, matGray, CV_BGR2GRAY );
     else
         matGray = matROI.clone();
@@ -2866,15 +2866,15 @@ EXIT:
         return pstRpy->enStatus;
     }
 	pstRpy->ptCircleCtr = fitResult.center + cv::Point2f ( ToFloat ( pstCmd->rectROI.x ), ToFloat ( pstCmd->rectROI.y ) );
-    pstRpy->fRadius = fitResult.size.width / 2;
+    pstRpy->fDiameter = ( fitResult.size.width + fitResult.size.height ) / 2;
     
     for ( const auto &point : vecPoints )   {
         cv::Point2f pt2f(point);
-        vecDistance.push_back ( CalcUtils::distanceOf2Point<float> ( pt2f, fitResult.center ) - pstRpy->fRadius );
+        vecDistance.push_back ( CalcUtils::distanceOf2Point<float> ( pt2f, fitResult.center ) - pstRpy->fDiameter / 2 );
     }
     pstRpy->fRoundness = ToFloat ( CalcUtils::calcStdDeviation<float>( vecDistance ) );
-    pstRpy->matResult = pstCmd->matInput.clone();
-	cv::circle ( pstRpy->matResult, pstRpy->ptCircleCtr, (int)pstRpy->fRadius, cv::Scalar(255, 0, 0), 2);
+    pstRpy->matResultImg = pstCmd->matInputImg.clone();
+	cv::circle ( pstRpy->matResultImg, pstRpy->ptCircleCtr, (int)pstRpy->fDiameter / 2, _constBlueScalar, 2);
 
     pstRpy->enStatus = VisionStatus::OK;
     FINISH_LOGCASE;

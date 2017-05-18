@@ -286,12 +286,12 @@ VisionStatus LogCaseFitCircle::RunLogCase() {
     return enStatus;
 }
 
-/*static*/ String LogCaseCircleRoundness::StaticGetFolderPrefix()
+/*static*/ String LogCaseInspCircle::StaticGetFolderPrefix()
 {
-    return "CircleRoundness";
+    return "InspCircle";
 }
 
-VisionStatus LogCaseCircleRoundness::WriteCmd(PR_CIRCLE_ROUNDNESS_CMD *pCmd)
+VisionStatus LogCaseInspCircle::WriteCmd(const PR_INSP_CIRCLE_CMD *const pCmd)
 {
     if ( !_bReplay )    {
         _strLogCasePath = _generateLogCaseName(GetFolderPrefix());
@@ -301,38 +301,38 @@ VisionStatus LogCaseCircleRoundness::WriteCmd(PR_CIRCLE_ROUNDNESS_CMD *pCmd)
 
     CSimpleIni ini(false, false, false);
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
-    ini.LoadFile( cmdRpyFilePath.c_str() );
-    ini.SetValue(_CMD_SECTION.c_str(),     _strKeyROI.c_str(), _formatRect(pCmd->rectROI).c_str());
-    ini.SaveFile( cmdRpyFilePath.c_str() );
-    cv::imwrite( _strLogCasePath + _IMAGE_NAME, pCmd->matInput );
+    ini.LoadFile ( cmdRpyFilePath.c_str() );
+    ini.SetValue ( _CMD_SECTION.c_str(),     _strKeyROI.c_str(), _formatRect(pCmd->rectROI).c_str());
+    ini.SaveFile ( cmdRpyFilePath.c_str() );
+    cv::imwrite ( _strLogCasePath + _IMAGE_NAME, pCmd->matInputImg );
     if ( ! pCmd->matMask.empty() )
         cv::imwrite( _strLogCasePath + _MASK_NAME,  pCmd->matMask );
     return VisionStatus::OK;
 }
 
-VisionStatus LogCaseCircleRoundness::WriteRpy(PR_CIRCLE_ROUNDNESS_RPY *pRpy)
+VisionStatus LogCaseInspCircle::WriteRpy(const PR_INSP_CIRCLE_RPY *const pRpy)
 {
     CSimpleIni ini(false, false, false);
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile( cmdRpyFilePath.c_str() );
-    ini.SetLongValue  (_RPY_SECTION.c_str(), _strKeyStatus.c_str(), ToInt32( pRpy->enStatus ) );
-    ini.SetValue(_RPY_SECTION.c_str(), _strKeyResultCtr.c_str(), _formatCoordinate(pRpy->ptCircleCtr).c_str() );    
-    ini.SetDoubleValue(_RPY_SECTION.c_str(), _strKeyRadius.c_str(), pRpy->fRadius );
-    ini.SetDoubleValue(_RPY_SECTION.c_str(), _strKeyRoundness.c_str(), pRpy->fRoundness );
+    ini.SetLongValue ( _RPY_SECTION.c_str(), _strKeyStatus.c_str(), ToInt32( pRpy->enStatus ) );
+    ini.SetValue ( _RPY_SECTION.c_str(), _strKeyResultCtr.c_str(), _formatCoordinate(pRpy->ptCircleCtr).c_str() );    
+    ini.SetDoubleValue ( _RPY_SECTION.c_str(), _strKeyDiameter.c_str(), pRpy->fDiameter );
+    ini.SetDoubleValue ( _RPY_SECTION.c_str(), _strKeyRoundness.c_str(), pRpy->fRoundness );
     ini.SaveFile( cmdRpyFilePath.c_str() );
-    cv::imwrite( _strLogCasePath + _RESULT_IMAGE_NAME, pRpy->matResult );
+    cv::imwrite( _strLogCasePath + _RESULT_IMAGE_NAME, pRpy->matResultImg );
     return VisionStatus::OK;
 }
 
-VisionStatus LogCaseCircleRoundness::RunLogCase()
+VisionStatus LogCaseInspCircle::RunLogCase()
 {
-    PR_CIRCLE_ROUNDNESS_CMD stCmd;
+    PR_INSP_CIRCLE_CMD stCmd;
     VisionStatus enStatus;
 
     CSimpleIni ini(false, false, false);
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile( cmdRpyFilePath.c_str() );
-    stCmd.matInput = cv::imread( _strLogCasePath + _IMAGE_NAME );
+    stCmd.matInputImg = cv::imread( _strLogCasePath + _IMAGE_NAME );
 
     String strMaskPath = _strLogCasePath + _MASK_NAME;
     if ( FileUtils::Exists ( strMaskPath ) )
@@ -340,8 +340,8 @@ VisionStatus LogCaseCircleRoundness::RunLogCase()
 
     stCmd.rectROI = _parseRect(ini.GetValue(_CMD_SECTION.c_str(), _strKeyROI.c_str(), _DEFAULT_RECT.c_str()));
 
-    PR_CIRCLE_ROUNDNESS_RPY stRpy;
-    enStatus = VisionAlgorithm::circleRoundness( &stCmd, &stRpy, true );
+    PR_INSP_CIRCLE_RPY stRpy;
+    enStatus = VisionAlgorithm::inspCircle( &stCmd, &stRpy, true );
 
     WriteRpy( &stRpy );
     return enStatus;

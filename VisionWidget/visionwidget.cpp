@@ -152,15 +152,15 @@ void VisionWidget::on_calcRoundnessBtn_clicked()
     ui.visionView->setState ( VisionView::VISION_VIEW_STATE::TEST_VISION_LIBRARY );
     ui.visionView->applyIntermediateResult();
 
-    PR_CIRCLE_ROUNDNESS_CMD stCmd;
-	stCmd.matInput = ui.visionView->getMat();
+    PR_INSP_CIRCLE_CMD stCmd;
+	stCmd.matInputImg = ui.visionView->getMat();
     stCmd.matMask = ui.visionView->getMask();
     stCmd.rectROI = ui.visionView->getSelectedWindow();
 
-	PR_CIRCLE_ROUNDNESS_RPY stRpy;
-	VisionStatus enStatus = PR_CircleRoundness(&stCmd, &stRpy);
+	PR_INSP_CIRCLE_RPY stRpy;
+	VisionStatus enStatus = PR_InspCircle(&stCmd, &stRpy);
 	if (VisionStatus::OK == enStatus)	{
-		ui.visionView->setMat ( VisionView::DISPLAY_SOURCE::RESULT, stRpy.matResult );
+		ui.visionView->setMat ( VisionView::DISPLAY_SOURCE::RESULT, stRpy.matResultImg );
         ui.lineEditRoundnessResult->setText( std::to_string(stRpy.fRoundness).c_str() );
     }else {
         PR_GET_ERROR_STR_RPY stErrStrRpy;

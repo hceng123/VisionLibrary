@@ -263,10 +263,10 @@ PR_FUNCTION_ENTRY
 PR_FUNCTION_EXIT
 }
 
-VisionAPI VisionStatus PR_CircleRoundness(PR_CIRCLE_ROUNDNESS_CMD *pstCmd, PR_CIRCLE_ROUNDNESS_RPY *pstRpy)
+VisionAPI VisionStatus PR_InspCircle(PR_INSP_CIRCLE_CMD *pstCmd, PR_INSP_CIRCLE_RPY *pstRpy)
 {
 PR_FUNCTION_ENTRY
-    return VisionAlgorithm::circleRoundness( pstCmd, pstRpy );
+    return VisionAlgorithm::inspCircle( pstCmd, pstRpy );
 PR_FUNCTION_EXIT
 }
 

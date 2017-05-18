@@ -451,18 +451,18 @@ struct PR_DETECT_EDGE_RPY {
     cv::Mat                 matResult;
 };
 
-struct PR_CIRCLE_ROUNDNESS_CMD {
-    cv::Mat                 matInput;
+struct PR_INSP_CIRCLE_CMD {
+    cv::Mat                 matInputImg;
     cv::Mat                 matMask;
-    cv::Rect                rectROI;
+    cv::Rect                rectROI;                
 };
 
-struct PR_CIRCLE_ROUNDNESS_RPY {
+struct PR_INSP_CIRCLE_RPY {
     VisionStatus            enStatus;
     float                   fRoundness;
     cv::Point2f             ptCircleCtr;
-    float                   fRadius;
-    cv::Mat                 matResult;
+    float                   fDiameter;
+    cv::Mat                 matResultImg;
 };
 
 struct PR_FILL_HOLE_CMD {

@@ -119,12 +119,12 @@ private:
     const String _strKeyRadius          = "Radius";
 };
 
-class LogCaseCircleRoundness : public LogCase
+class LogCaseInspCircle : public LogCase
 {
 public:
-    explicit LogCaseCircleRoundness(const String &strPath, bool bReplay = false) : LogCase(strPath, bReplay) {}
-    VisionStatus WriteCmd(PR_CIRCLE_ROUNDNESS_CMD *pCmd);
-    VisionStatus WriteRpy(PR_CIRCLE_ROUNDNESS_RPY *pRpy);
+    explicit LogCaseInspCircle(const String &strPath, bool bReplay = false) : LogCase(strPath, bReplay) {}
+    VisionStatus WriteCmd(const PR_INSP_CIRCLE_CMD *const pCmd);
+    VisionStatus WriteRpy(const PR_INSP_CIRCLE_RPY *const pRpy);
     virtual VisionStatus RunLogCase() override;
     virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
     static String StaticGetFolderPrefix();
@@ -133,7 +133,7 @@ private:
 
     const String _strKeyStatus          = "Status";
     const String _strKeyResultCtr       = "ResultCtr";
-    const String _strKeyRadius          = "Radius";
+    const String _strKeyDiameter        = "Diameter";
     const String _strKeyRoundness       = "Roundness";
 };
 

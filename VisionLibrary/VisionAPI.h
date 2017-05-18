@@ -78,7 +78,7 @@ Example:
 @param pstRpy pointer of reply.
 */
 VisionAPI VisionStatus PR_DetectEdge(PR_DETECT_EDGE_CMD *pstCmd, PR_DETECT_EDGE_RPY *pstRpy);
-VisionAPI VisionStatus PR_CircleRoundness(PR_CIRCLE_ROUNDNESS_CMD *pstCmd, PR_CIRCLE_ROUNDNESS_RPY *pstRpy);
+VisionAPI VisionStatus PR_InspCircle(PR_INSP_CIRCLE_CMD *pstCmd, PR_INSP_CIRCLE_RPY *pstRpy);
 VisionAPI VisionStatus PR_FillHole(PR_FILL_HOLE_CMD *const pstCmd, PR_FILL_HOLE_RPY *pstRpy);
 VisionAPI VisionStatus PR_MatchTmpl(PR_MATCH_TEMPLATE_CMD *const pstCmd, PR_MATCH_TEMPLATE_RPY *pstRpy);
 VisionAPI VisionStatus PR_PickColor(PR_PICK_COLOR_CMD *const pstCmd, PR_PICK_COLOR_RPY *pstRpy);
