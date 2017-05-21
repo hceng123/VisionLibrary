@@ -31,7 +31,7 @@ void TestAutoLocateLead()
     std::cout << std::endl << "---------------------------------------------";
     std::cout << std::endl;
     
-    stCmd.matInput = cv::imread("./data/F1-7-2.bmp", cv::IMREAD_COLOR );
+    stCmd.matInputImg = cv::imread("./data/F1-7-2.bmp", cv::IMREAD_COLOR );
     stCmd.rectSrchWindow = cv::Rect(2332, 1920, 710, 710);
     stCmd.rectChipBody =   cv::Rect(2389, 1977, 596, 596);
     PR_AutoLocateLead (&stCmd, &stRpy);
@@ -42,7 +42,7 @@ void TestAutoLocateLead()
     std::cout << std::endl << "---------------------------------------------";
     std::cout << std::endl;
     
-    stCmd.matInput = cv::imread("./data/F8-58-2.bmp", cv::IMREAD_COLOR );
+    stCmd.matInputImg = cv::imread("./data/F8-58-2.bmp", cv::IMREAD_COLOR );
     stCmd.rectSrchWindow = cv::Rect(3262, 301, 306, 314);
     stCmd.rectChipBody =   cv::Rect(3263, 361, 302, 198);
     PR_AutoLocateLead (&stCmd, &stRpy);
@@ -53,7 +53,7 @@ void TestAutoLocateLead()
     std::cout << std::endl << "---------------------------------------------";
     std::cout << std::endl;
     
-    stCmd.matInput = cv::imread("./data/F8-58-2.bmp", cv::IMREAD_COLOR );
+    stCmd.matInputImg = cv::imread("./data/F8-58-2.bmp", cv::IMREAD_COLOR );
     stCmd.rectSrchWindow = cv::Rect(1579, 2017, 617, 617);
     stCmd.rectChipBody =   cv::Rect(1639, 2077, 497, 497);
     PR_AutoLocateLead (&stCmd, &stRpy);

@@ -40,7 +40,7 @@ void FilterWidget::on_btnRun_clicked()
         return;
 
     PR_FILTER_CMD stCmd;
-    stCmd.matInput = _pVisionView->getMat(VisionView::DISPLAY_SOURCE::ORIGINAL);
+    stCmd.matInputImg = _pVisionView->getMat(VisionView::DISPLAY_SOURCE::ORIGINAL);
     stCmd.rectROI  = _pVisionView->getSelectedWindow();
     stCmd.enType = static_cast<PR_FILTER_TYPE>(ui.cbFilterType->currentIndex());
     stCmd.szKernel.width  = ui.lineEditKernalSizeX->text().toInt();
@@ -53,7 +53,7 @@ void FilterWidget::on_btnRun_clicked()
 
     PR_FILTER_RPY stRpy;
     if ( VisionStatus::OK == PR_Filter(&stCmd, &stRpy) )    {
-        _pVisionView->setMat(VisionView::DISPLAY_SOURCE::INTERMEDIATE, stRpy.matResult );
+        _pVisionView->setMat(VisionView::DISPLAY_SOURCE::INTERMEDIATE, stRpy.matResultImg );
     }
     else
     {

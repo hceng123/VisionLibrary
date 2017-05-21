@@ -22,9 +22,8 @@ RecordManager::~RecordManager()
 {
 }
 
-VisionStatus RecordManager::add(IRecordPtr pRecord, Int32 &recordID)
-{
-    recordID = _generateRecordID();    
+VisionStatus RecordManager::add(IRecordPtr pRecord, Int32 &recordID) {
+    recordID = _generateRecordID(); 
     pRecord->save ( _getRecordFilePath ( recordID ) );
     _mapRecord.insert ( std::make_pair ( recordID, pRecord ) );
 

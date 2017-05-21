@@ -19,11 +19,9 @@ namespace Vision
 {
     float distance = 0.f;
     if ( bReversedFit ) {
-        if (fabs(fSlope) < 0.0001)   {
+        if (fabs(fSlope) < 0.0001) {
             distance = ptInput.x - fIntercept;
-        }
-        else
-        {
+        }else {
             float fSlopeOfPerpendicularLine = -1.f / fSlope;
             float fInterceptOfPerpendicularLine = ptInput.x - fSlopeOfPerpendicularLine * ptInput.y;
             cv::Point2f ptCrossPoint;
@@ -36,7 +34,7 @@ namespace Vision
     }
     else
     {
-        if (fabs(fSlope) < 0.0001)   {
+        if (fabs(fSlope) < 0.0001) {
             distance = ptInput.y - fIntercept;
         }
         else
@@ -120,10 +118,10 @@ namespace Vision
     B.at<float>(0, 0) = -fIntercept1;
     B.at<float>(1, 0) = -fIntercept2;
 
-    cv::Mat matResult;
-    if ( cv::solve(A, B, matResult ) )   {
-        ptResult.x = matResult.at<float>(0, 0);
-        ptResult.y = matResult.at<float>(1, 0);
+    cv::Mat matResultImg;
+    if ( cv::solve(A, B, matResultImg ) )   {
+        ptResult.x = matResultImg.at<float>(0, 0);
+        ptResult.y = matResultImg.at<float>(1, 0);
     }
     return ptResult;
 }

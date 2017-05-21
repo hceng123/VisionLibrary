@@ -28,8 +28,8 @@ static void _TestAutoThreshold(int testCaseNo, const std::string &strImagePath)
 
     for (int nThresholdNum = 1; nThresholdNum <= PR_AUTO_THRESHOLD_MAX_NUM; ++ nThresholdNum ) {
         std::cout << std::endl << "Test with threshold number " << nThresholdNum << std::endl;
-        stCmd.matInput = cv::imread(strImagePath, cv::IMREAD_GRAYSCALE);
-        stCmd.rectROI = cv::Rect(0, 0, stCmd.matInput.cols, stCmd.matInput.rows);
+        stCmd.matInputImg = cv::imread(strImagePath, cv::IMREAD_GRAYSCALE);
+        stCmd.rectROI = cv::Rect(0, 0, stCmd.matInputImg.cols, stCmd.matInputImg.rows);
         stCmd.nThresholdNum = nThresholdNum;
 
         PR_AutoThreshold(&stCmd, &stRpy);

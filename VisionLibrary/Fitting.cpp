@@ -142,11 +142,11 @@ namespace Vision
         ++ i;
     }
 
-    cv::Mat matResult;
-    bool bResult = cv::solve(A, B, matResult, cv::DECOMP_SVD);
+    cv::Mat matResultImg;
+    bool bResult = cv::solve(A, B, matResultImg, cv::DECOMP_SVD);
 
-    fSlope = matResult.at<float>(0, 0);
-    fIntercept = matResult.at<float>(1, 0);
+    fSlope = matResultImg.at<float>(0, 0);
+    fIntercept = matResultImg.at<float>(1, 0);
 }
 
 //Using least square method to fit. Solve equation A * X = B.
@@ -191,12 +191,12 @@ namespace Vision
         }   
     }
 
-    cv::Mat matResult;
-    bool bResult = cv::solve(A, B, matResult, cv::DECOMP_SVD);
+    cv::Mat matResultImg;
+    bool bResult = cv::solve(A, B, matResultImg, cv::DECOMP_SVD);
 
-    fSlope = matResult.at<float>(0, 0);
-    fIntercept1 = matResult.at<float>(1, 0);
-    fIntercept2 = matResult.at<float>(2, 0);
+    fSlope = matResultImg.at<float>(0, 0);
+    fIntercept1 = matResultImg.at<float>(1, 0);
+    fIntercept2 = matResultImg.at<float>(2, 0);
 }
 
 /*static*/ void Fitting::fitParallelLine(const ListOfPoint &listPoints1,
@@ -246,12 +246,12 @@ namespace Vision
         }   
     }
 
-    cv::Mat matResult;
-    bool bResult = cv::solve(A, B, matResult, cv::DECOMP_SVD);
+    cv::Mat matResultImg;
+    bool bResult = cv::solve(A, B, matResultImg, cv::DECOMP_SVD);
 
-    fSlope = matResult.at<float>(0, 0);
-    fIntercept1 = matResult.at<float>(1, 0);
-    fIntercept2 = matResult.at<float>(2, 0);
+    fSlope = matResultImg.at<float>(0, 0);
+    fIntercept1 = matResultImg.at<float>(1, 0);
+    fIntercept2 = matResultImg.at<float>(2, 0);
 }
 
 /*static*/ void Fitting::fitRect(VectorOfVectorOfPoint &vecVecPoint,
@@ -298,12 +298,12 @@ namespace Vision
         }
     }
 
-    cv::Mat matResult;
-    bool bResult = cv::solve(A, B, matResult, cv::DECOMP_QR);
+    cv::Mat matResultImg;
+    bool bResult = cv::solve(A, B, matResultImg, cv::DECOMP_QR);
 
-    fSlope2 = fSlope1 = matResult.at<float>(0, 0);
+    fSlope2 = fSlope1 = matResultImg.at<float>(0, 0);
     for ( int i = 0; i < 4; ++ i )
-        vecIntercept.push_back ( matResult.at < float >( i + 1, 0 ) );
+        vecIntercept.push_back ( matResultImg.at < float >( i + 1, 0 ) );
 }
 
 /*static*/ void Fitting::fitRect(VectorOfListOfPoint &vecListPoint,
@@ -351,13 +351,13 @@ namespace Vision
         }
     }
 
-    cv::Mat matResult;
-    bool bResult = cv::solve(A, B, matResult, cv::DECOMP_QR);
+    cv::Mat matResultImg;
+    bool bResult = cv::solve(A, B, matResultImg, cv::DECOMP_QR);
 
-    fSlope1 = matResult.at<float>(0, 0);
+    fSlope1 = matResultImg.at<float>(0, 0);
     fSlope2 = - fSlope1;
     for ( int i = 0; i < 4; ++ i )
-        vecIntercept.push_back ( matResult.at < float >( i + 1, 0 ) );
+        vecIntercept.push_back ( matResultImg.at < float >( i + 1, 0 ) );
 }
 
 }

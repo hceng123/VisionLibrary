@@ -42,7 +42,7 @@ void TestCalibCamera()
     //PR_CALC_UNDISTORT_RECTIFY_MAP_RPY stCalcUndistortRectifyMapRpy;
     //stCalcUndistortRectifyMapCmd.matIntrinsicMatrix = stRpy.matIntrinsicMatrix;
     //stCalcUndistortRectifyMapCmd.matDistCoeffs      = stRpy.matDistCoeffs;
-    //stCalcUndistortRectifyMapCmd.szImage            = stCmd.matInput.size();
+    //stCalcUndistortRectifyMapCmd.szImage            = stCmd.matInputImg.size();
     //PR_CalcUndistortRectifyMap(&stCalcUndistortRectifyMapCmd, &stCalcUndistortRectifyMapRpy);
     //if ( VisionStatus::OK != stCalcUndistortRectifyMapRpy.enStatus ) {
     //    std::cout << "Failed to calculate undistort rectify map!" << std::endl;
@@ -51,7 +51,7 @@ void TestCalibCamera()
 
     PR_RESTORE_IMG_CMD stRetoreCmd;
     PR_RESTORE_IMG_RPY stRetoreRpy;
-    stRetoreCmd.matInput = cv::imread(strImgPath, cv::IMREAD_GRAYSCALE );
+    stRetoreCmd.matInputImg = cv::imread(strImgPath, cv::IMREAD_GRAYSCALE );
     stRetoreCmd.vecMatRestoreImage = stRpy.vecMatRestoreImage; //stCalcUndistortRectifyMapRpy.vecMatRestoreImage;
     PR_RestoreImage ( &stRetoreCmd, &stRetoreRpy );
     if ( VisionStatus::OK != stRetoreRpy.enStatus) {
@@ -60,10 +60,10 @@ void TestCalibCamera()
     }
 
     cv::Mat matInputFloat;
-    stRetoreCmd.matInput.convertTo ( matInputFloat, CV_32FC1 );
+    stRetoreCmd.matInputImg.convertTo ( matInputFloat, CV_32FC1 );
 
-    //cv::Mat matDiff = cv::Scalar::all(255.f) - ( matInputFloat - stRetoreRpy.matResult );
-    cv::imwrite("./data/chessboardRestored.png", stRetoreRpy.matResult);
+    //cv::Mat matDiff = cv::Scalar::all(255.f) - ( matInputFloat - stRetoreRpy.matResultImg );
+    cv::imwrite("./data/chessboardRestored.png", stRetoreRpy.matResultImg);
 
     cv::Mat matReadRestored = cv::imread("./data/chessboardRestored.png", cv::IMREAD_GRAYSCALE );
     cv::Mat matReadAgainFloat;
@@ -110,7 +110,7 @@ void TestCalibCamera_1()
     //PR_CALC_UNDISTORT_RECTIFY_MAP_RPY stCalcUndistortRectifyMapRpy;
     //stCalcUndistortRectifyMapCmd.matIntrinsicMatrix = stRpy.matIntrinsicMatrix;
     //stCalcUndistortRectifyMapCmd.matDistCoeffs      = stRpy.matDistCoeffs;
-    //stCalcUndistortRectifyMapCmd.szImage            = stCmd.matInput.size();
+    //stCalcUndistortRectifyMapCmd.szImage            = stCmd.matInputImg.size();
     //PR_CalcUndistortRectifyMap(&stCalcUndistortRectifyMapCmd, &stCalcUndistortRectifyMapRpy);
     //if ( VisionStatus::OK != stCalcUndistortRectifyMapRpy.enStatus ) {
     //    std::cout << "Failed to calculate undistort rectify map!" << std::endl;
@@ -203,7 +203,7 @@ void TestCalibCamera_1()
     }
     //PR_RESTORE_IMG_CMD stRetoreCmd;
     //PR_RESTORE_IMG_RPY stRetoreRpy;
-    //stRetoreCmd.matInput = cv::imread(strImgPath, cv::IMREAD_GRAYSCALE );
+    //stRetoreCmd.matInputImg = cv::imread(strImgPath, cv::IMREAD_GRAYSCALE );
     //stRetoreCmd.vecMatRestoreImage = stRpy.vecMatRestoreImage; //stCalcUndistortRectifyMapRpy.vecMatRestoreImage;
     //PR_RestoreImage ( &stRetoreCmd, &stRetoreRpy );
     //if ( VisionStatus::OK != stRetoreRpy.enStatus) {
@@ -212,10 +212,10 @@ void TestCalibCamera_1()
     //}
 
     //cv::Mat matInputFloat;
-    //stRetoreCmd.matInput.convertTo ( matInputFloat, CV_32FC1 );
+    //stRetoreCmd.matInputImg.convertTo ( matInputFloat, CV_32FC1 );
 
-    ////cv::Mat matDiff = cv::Scalar::all(255.f) - ( matInputFloat - stRetoreRpy.matResult );
-    //cv::imwrite("./data/chessboardRestored.png", stRetoreRpy.matResult);
+    ////cv::Mat matDiff = cv::Scalar::all(255.f) - ( matInputFloat - stRetoreRpy.matResultImg );
+    //cv::imwrite("./data/chessboardRestored.png", stRetoreRpy.matResultImg);
 
     //cv::Mat matReadRestored = cv::imread("./data/chessboardRestored.png", cv::IMREAD_GRAYSCALE );
     //cv::Mat matReadAgainFloat;
@@ -342,7 +342,7 @@ void TestCalibCamera_2()
     }
     //PR_RESTORE_IMG_CMD stRetoreCmd;
     //PR_RESTORE_IMG_RPY stRetoreRpy;
-    //stRetoreCmd.matInput = cv::imread(strImgPath, cv::IMREAD_GRAYSCALE );
+    //stRetoreCmd.matInputImg = cv::imread(strImgPath, cv::IMREAD_GRAYSCALE );
     //stRetoreCmd.vecMatRestoreImage = stRpy.vecMatRestoreImage; //stCalcUndistortRectifyMapRpy.vecMatRestoreImage;
     //PR_RestoreImage ( &stRetoreCmd, &stRetoreRpy );
     //if ( VisionStatus::OK != stRetoreRpy.enStatus) {
@@ -351,10 +351,10 @@ void TestCalibCamera_2()
     //}
 
     //cv::Mat matInputFloat;
-    //stRetoreCmd.matInput.convertTo ( matInputFloat, CV_32FC1 );
+    //stRetoreCmd.matInputImg.convertTo ( matInputFloat, CV_32FC1 );
 
-    ////cv::Mat matDiff = cv::Scalar::all(255.f) - ( matInputFloat - stRetoreRpy.matResult );
-    //cv::imwrite("./data/chessboardRestored.png", stRetoreRpy.matResult);
+    ////cv::Mat matDiff = cv::Scalar::all(255.f) - ( matInputFloat - stRetoreRpy.matResultImg );
+    //cv::imwrite("./data/chessboardRestored.png", stRetoreRpy.matResultImg);
 
     //cv::Mat matReadRestored = cv::imread("./data/chessboardRestored.png", cv::IMREAD_GRAYSCALE );
     //cv::Mat matReadAgainFloat;
@@ -367,17 +367,17 @@ void TestCalibCamera_2()
 
 
 void TestCompareInputAndResult() {
-    cv::Mat matInput = cv::imread ( "./Vision/Logcase/RestoreImg_2017_04_27_16_48_50_093/image.png");
-    if ( matInput.empty() )
+    cv::Mat matInputImg = cv::imread ( "./Vision/Logcase/RestoreImg_2017_04_27_16_48_50_093/image.png");
+    if ( matInputImg.empty() )
         return;
 
-    cv::Mat matResult = cv::imread ( "./Vision/Logcase/RestoreImg_2017_04_27_16_48_50_093/result.png" );
-    if ( matResult.empty() )
+    cv::Mat matResultImg = cv::imread ( "./Vision/Logcase/RestoreImg_2017_04_27_16_48_50_093/result.png" );
+    if ( matResultImg.empty() )
         return;
 
     cv::Mat matInputFloat, matResultFloat;
-    matInput.convertTo  ( matInputFloat, CV_32FC1 );
-    matResult.convertTo ( matResultFloat, CV_32FC1 );
+    matInputImg.convertTo  ( matInputFloat, CV_32FC1 );
+    matResultImg.convertTo ( matResultFloat, CV_32FC1 );
 
     cv::Mat matDiff = cv::Scalar::all(255.f) - ( matInputFloat - matResultFloat );
     cv::imwrite("./Vision/Logcase/RestoreImg_2017_04_27_16_48_50_093/chessboard_diff.png", matDiff);

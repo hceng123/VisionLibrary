@@ -326,5 +326,12 @@ PR_FUNCTION_ENTRY
 PR_FUNCTION_EXIT
 }
 
+VisionAPI VisionStatus PR_LrnChip(const PR_LRN_CHIP_CMD *const pstCmd, PR_LRN_CHIP_RPY *const pstRpy)
+{
+PR_FUNCTION_ENTRY
+    return VisionAlgorithm::lrnChip( pstCmd, pstRpy );
+PR_FUNCTION_EXIT
+}
+
 }
 }

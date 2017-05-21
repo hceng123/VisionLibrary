@@ -27,11 +27,11 @@ void TestFitCircle()
     std::cout << std::endl << "------------------------------------------";
     std::cout << std::endl;
     
-    stCmd.matInput = cv::imread("./data/lowangle_250.png");
+    stCmd.matInputImg = cv::imread("./data/lowangle_250.png");
 	stCmd.enRmNoiseMethod = PR_RM_FIT_NOISE_METHOD::ABSOLUTE_ERR;
 	stCmd.fErrTol = 5;
     stCmd.rectROI = cv::Rect ( 407, 373, 226, 226 );
-    stCmd.matMask = cv::Mat::ones ( stCmd.matInput.size(), CV_8UC1 ) * PR_MAX_GRAY_LEVEL;
+    stCmd.matMask = cv::Mat::ones ( stCmd.matInputImg.size(), CV_8UC1 ) * PR_MAX_GRAY_LEVEL;
     cv::circle ( stCmd.matMask, cv::Point(520, 487), 90, cv::Scalar(0), CV_FILLED );
     cv::rectangle ( stCmd.matMask, cv::Rect(493, 590, 51, 21), CV_FILLED, CV_FILLED );
     stCmd.bPreprocessed = false;
@@ -48,11 +48,11 @@ void TestFitCircle()
     std::cout << std::endl << "------------------------------------------";
     std::cout << std::endl;
 
-    stCmd.matInput = cv::imread("./data/Fitting Test.png");
+    stCmd.matInputImg = cv::imread("./data/Fitting Test.png");
 	stCmd.enRmNoiseMethod = PR_RM_FIT_NOISE_METHOD::ABSOLUTE_ERR;
 	stCmd.fErrTol = 5;
     stCmd.rectROI = cv::Rect(464, 106, 214, 214 );
-    stCmd.matMask = cv::Mat::ones(stCmd.matInput.size(), CV_8UC1) * PR_MAX_GRAY_LEVEL;
+    stCmd.matMask = cv::Mat::ones(stCmd.matInputImg.size(), CV_8UC1) * PR_MAX_GRAY_LEVEL;
     cv::circle ( stCmd.matMask, cv::Point(571, 213), 76, cv::Scalar(0), CV_FILLED );
     stCmd.bPreprocessed = false;
 	stCmd.bAutoThreshold = false;
@@ -82,7 +82,7 @@ void TestFitLine()
     std::cout << std::endl << "------------------------------------------";
     std::cout << std::endl;
     
-    stCmd.matInput = cv::imread("./data/lowangle_250.png", cv::IMREAD_GRAYSCALE);
+    stCmd.matInputImg = cv::imread("./data/lowangle_250.png", cv::IMREAD_GRAYSCALE);
     stCmd.bPreprocessed = false;
     stCmd.nThreshold = 200;
     stCmd.enAttribute = PR_OBJECT_ATTRIBUTE::BRIGHT;
@@ -98,7 +98,7 @@ void TestFitLine()
     std::cout << std::endl << "------------------------------------------";
     std::cout << std::endl;
     
-    stCmd.matInput = cv::imread("./data/Fitting Test.png", cv::IMREAD_GRAYSCALE);
+    stCmd.matInputImg = cv::imread("./data/Fitting Test.png", cv::IMREAD_GRAYSCALE);
     stCmd.bPreprocessed = false;
     stCmd.nThreshold = 200;
     stCmd.enAttribute = PR_OBJECT_ATTRIBUTE::DARK;
@@ -114,7 +114,7 @@ void TestFitLine()
     std::cout << std::endl << "------------------------------------------";
     std::cout << std::endl;
     
-    stCmd.matInput = cv::imread("./data/Fitting Test.png", cv::IMREAD_GRAYSCALE);
+    stCmd.matInputImg = cv::imread("./data/Fitting Test.png", cv::IMREAD_GRAYSCALE);
     stCmd.nThreshold = 200;
     stCmd.enAttribute = PR_OBJECT_ATTRIBUTE::DARK;
     stCmd.rectROI = cv::Rect(97, 56, 96, 130);
@@ -145,7 +145,7 @@ void TestFitParellelLine()
     std::cout << std::endl << "---------------------------------------------";
     std::cout << std::endl;    
 
-    stCmd.matInput = cv::imread("./data/lowangle_250.png", cv::IMREAD_GRAYSCALE);
+    stCmd.matInputImg = cv::imread("./data/lowangle_250.png", cv::IMREAD_GRAYSCALE);
     stCmd.nThreshold = 200;
     stCmd.enAttribute = PR_OBJECT_ATTRIBUTE::BRIGHT;
     stCmd.rectArrROI[0] = cv::Rect(139,276,20,400);
@@ -161,7 +161,7 @@ void TestFitParellelLine()
     std::cout << std::endl << "---------------------------------------------";
     std::cout << std::endl;
 
-    stCmd.matInput = cv::imread("./data/lowangle_250.png");
+    stCmd.matInputImg = cv::imread("./data/lowangle_250.png");
     stCmd.nThreshold = 200;
     stCmd.enAttribute = PR_OBJECT_ATTRIBUTE::BRIGHT;
     stCmd.rectArrROI[0] = cv::Rect(444, 291, 149, 25);
@@ -177,7 +177,7 @@ void TestFitParellelLine()
     std::cout << std::endl << "---------------------------------------------";
     std::cout << std::endl;
 
-    stCmd.matInput = cv::imread("./data/Fitting Test.png");
+    stCmd.matInputImg = cv::imread("./data/Fitting Test.png");
     stCmd.nThreshold = 200;
     stCmd.enAttribute = PR_OBJECT_ATTRIBUTE::DARK;
     stCmd.rectArrROI[0] = cv::Rect(97, 56, 96, 130);
@@ -215,7 +215,7 @@ void TestFitRect()
     std::cout << std::endl << "---------------------------------------------";
     std::cout << std::endl;    
 
-    stCmd.matInput = cv::imread("./data/lowangle_250.png");
+    stCmd.matInputImg = cv::imread("./data/lowangle_250.png");
     stCmd.nThreshold = 210;
     stCmd.enAttribute = PR_OBJECT_ATTRIBUTE::BRIGHT;
     stCmd.rectArrROI[0] = cv::Rect(274,284,20, 395);
@@ -234,7 +234,7 @@ void TestFitRect()
     std::cout << std::endl << "---------------------------------------------";
     std::cout << std::endl;
 
-    stCmd.matInput = cv::imread("./data/lowangle_250.png");
+    stCmd.matInputImg = cv::imread("./data/lowangle_250.png");
     stCmd.nThreshold = 210;
     stCmd.enAttribute = PR_OBJECT_ATTRIBUTE::BRIGHT;
     stCmd.rectArrROI[0] = cv::Rect(444,291,149,25);
@@ -253,7 +253,7 @@ void TestFitRect()
     std::cout << std::endl << "---------------------------------------------";
     std::cout << std::endl;
 
-    stCmd.matInput = cv::imread("./data/Fitting Test.png");
+    stCmd.matInputImg = cv::imread("./data/Fitting Test.png");
     stCmd.nThreshold = 200;
     stCmd.enAttribute = PR_OBJECT_ATTRIBUTE::DARK;
     stCmd.rectArrROI[0] = cv::Rect(97, 56, 96, 130);

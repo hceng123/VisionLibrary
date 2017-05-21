@@ -26,7 +26,7 @@ void TestTmplMatch()
     stCmd.enType = PR_FIDUCIAL_MARK_TYPE::SQUARE;
     stCmd.fSize = 54;
     stCmd.fMargin = 8;
-    stCmd.matInput = mat;
+    stCmd.matInputImg = mat;
     stCmd.rectSrchRange = cv::Rect(1459, 155, 500, 500 );
 
     PR_SRCH_FIDUCIAL_MARK_RPY stRpy;
@@ -52,7 +52,7 @@ void TestTmplMatch_Circle()
     stCmd.enType = PR_FIDUCIAL_MARK_TYPE::CIRCLE;
     stCmd.fSize = 64;
     stCmd.fMargin = 8;
-    stCmd.matInput = mat;
+    stCmd.matInputImg = mat;
     stCmd.rectSrchRange = cv::Rect(0, 40, 250, 250 );
 
     PR_SRCH_FIDUCIAL_MARK_RPY stRpy;

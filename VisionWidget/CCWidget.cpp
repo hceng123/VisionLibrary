@@ -20,13 +20,13 @@ VisionStatus CCWidget::_runRemoveCC(cv::Mat &mat)
 {
     PR_REMOVE_CC_CMD stCmd;
     PR_REMOVE_CC_RPY stRpy;
-    stCmd.matInput = _pVisionView->getMat(VisionView::DISPLAY_SOURCE::ORIGINAL);
+    stCmd.matInputImg = _pVisionView->getMat(VisionView::DISPLAY_SOURCE::ORIGINAL);
     stCmd.rectROI  = _pVisionView->getSelectedWindow();
     stCmd.fAreaThreshold = ui.lineEditAreaThreshold->text().toFloat();
     stCmd.nConnectivity = ui.cbConnectivity->currentText().toInt();    
     
     if ( VisionStatus::OK == PR_RemoveCC( &stCmd, &stRpy ) )    {
-        mat = stRpy.matResult;
+        mat = stRpy.matResultImg;
     }else  {
         PR_GET_ERROR_STR_RPY stErrStrRpy;
         PR_GetErrorStr( stRpy.enStatus, &stErrStrRpy );

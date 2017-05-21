@@ -25,6 +25,7 @@ using VectorOfVectorOfPoint2f = std::vector<VectorOfPoint2f>;
 using VectorOfRect = std::vector<cv::Rect>;
 using ListOfPoint = std::list<cv::Point>;
 using VectorOfListOfPoint = std::vector<ListOfPoint>;
+using VectorOfSize2f = std::vector<cv::Size2f>;
 
 #define ToInt32(param)      (static_cast<AOI::Int32>(param))
 #define ToFloat(param)      (static_cast<float>(param))
@@ -69,7 +70,7 @@ struct PR_SRCH_OBJ_RPY {
 };
 
 struct PR_MATCH_TEMPLATE_CMD {
-	cv::Mat                 matInput;
+	cv::Mat                 matInputImg;
 	cv::Mat					matTmpl;
     cv::Rect				rectSrchWindow;
     PR_OBJECT_MOTION        enMotion;
@@ -80,7 +81,7 @@ struct PR_MATCH_TEMPLATE_RPY {
 	cv::Point2f				ptObjPos;
 	float                   fRotation;
     float                   fMatchScore;
-    cv::Mat					matResult;
+    cv::Mat					matResultImg;
 };
 
 struct PR_DefectCriteria {
@@ -166,7 +167,7 @@ struct PR_INSP_DEVICE_CRITERIA {
 };
 
 struct PR_LRN_DEVICE_CMD {
-    cv::Mat                 matInput;
+    cv::Mat                 matInputImg;
     cv::Rect2f              rectDevice;
     bool                    bAutoThreshold;
     Int16                   nElectrodeThreshold;
@@ -180,7 +181,7 @@ struct PR_LRN_DEVICE_RPY {
 };
 
 struct PR_INSP_DEVICE_CMD {
-    cv::Mat                 matInput;
+    cv::Mat                 matInputImg;
     Int32                   nRecordID;
     Int32                   nDeviceCount;
     Int16                   nElectrodeThreshold;
@@ -191,7 +192,7 @@ struct PR_INSP_DEVICE_CMD {
 struct PR_DEVICE_INSP_RESULT {
     Int32                   nStatus;
     cv::Point2f             ptPos;
-    float                   fRotation;    
+    float                   fRotation;
     float                   fOffsetX;
     float                   fOffsetY;
     float                   fScale;
@@ -208,7 +209,7 @@ struct PR_INSP_DEVICE_RPY {
 ******************************************/
 
 struct PR_SRCH_FIDUCIAL_MARK_CMD {
-    cv::Mat                 matInput;
+    cv::Mat                 matInputImg;
     cv::Rect                rectSrchRange;
     PR_FIDUCIAL_MARK_TYPE   enType;
     float                   fSize;
@@ -219,12 +220,12 @@ struct PR_SRCH_FIDUCIAL_MARK_RPY {
     VisionStatus            enStatus;
     cv::Point2f             ptPos;
     float                   fScore;
-    cv::Mat                 matResult;
+    cv::Mat                 matResultImg;
 };
 
 //Fit line is for accurately fit line in the preprocessed image, the line should be obvious compared to the background.
 struct PR_FIT_LINE_CMD {
-    cv::Mat                 matInput;
+    cv::Mat                 matInputImg;
     cv::Mat                 matMask;
     cv::Rect                rectROI;
     bool                    bPreprocessed;
@@ -240,13 +241,13 @@ struct PR_FIT_LINE_RPY {
     float                   fSlope;
     float                   fIntercept;
     PR_Line2f               stLine;
-    cv::Mat                 matResult;
+    cv::Mat                 matResultImg;
 };
 
 //Detect line is find the lines in the image.
 struct PR_CALIPER_CMD {
     PR_CALIPER_CMD() : bCheckLinerity(false), fPointMaxOffset(0.f), fMinLinerity(0.f), bCheckAngle(false), fExpectedAngle(0.f), fAngleDiffTolerance(0.f) {}
-    cv::Mat                 matInput;
+    cv::Mat                 matInputImg;
     cv::Mat                 matMask;
     cv::Rect                rectROI;
     PR_DETECT_LINE_DIR      enDetectDir;
@@ -268,11 +269,11 @@ struct PR_CALIPER_RPY {
     float                   fLinerity;
     bool                    bAngleCheckPass;
     float                   fAngle;
-    cv::Mat                 matResult;    
+    cv::Mat                 matResultImg;    
 };
 
 struct PR_FIT_PARALLEL_LINE_CMD {
-    cv::Mat                 matInput;
+    cv::Mat                 matInputImg;
     cv::Rect                rectArrROI[2];
     Int32                   nThreshold;
     PR_OBJECT_ATTRIBUTE     enAttribute;
@@ -288,12 +289,12 @@ struct PR_FIT_PARALLEL_LINE_RPY {
     float                   fIntercept2;
     PR_Line2f               stLine1;
     PR_Line2f               stLine2;
-    cv::Mat                 matResult;
+    cv::Mat                 matResultImg;
 };
 
 //The rectArrROI is the ROI of the rect edge. the 1st and 2nd should be parallel, and the 3rd and 4th is parallel.
 struct PR_FIT_RECT_CMD {
-    cv::Mat                 matInput;
+    cv::Mat                 matInputImg;
     cv::Rect                rectArrROI[PR_RECT_EDGE_COUNT];
     Int32                   nThreshold;
     PR_OBJECT_ATTRIBUTE     enAttribute;
@@ -309,11 +310,11 @@ struct PR_FIT_RECT_RPY {
     float                   fSlope2;
     float                   fArrIntercept[PR_RECT_EDGE_COUNT];
     PR_Line2f               arrLines[PR_RECT_EDGE_COUNT];
-    cv::Mat                 matResult;
+    cv::Mat                 matResultImg;
 };
 
 struct PR_FIND_EDGE_CMD {
-    cv::Mat                 matInput;
+    cv::Mat                 matInputImg;
     cv::Rect                rectROI;
     bool                    bAutothreshold;
     Int32                   nThreshold;
@@ -327,7 +328,7 @@ struct PR_FIND_EDGE_RPY {
 };
 
 struct PR_FIT_CIRCLE_CMD {
-    cv::Mat                 matInput;    
+    cv::Mat                 matInputImg;    
     cv::Mat                 matMask;
     cv::Rect                rectROI;
     PR_FIT_CIRCLE_METHOD    enMethod;
@@ -345,7 +346,7 @@ struct PR_FIT_CIRCLE_RPY {
     VisionStatus            enStatus;
     cv::Point2f             ptCircleCtr;
     float                   fRadius;
-    cv::Mat                 matResult;
+    cv::Mat                 matResultImg;
 };
 
 struct PR_GET_ERROR_STR_RPY {
@@ -354,7 +355,7 @@ struct PR_GET_ERROR_STR_RPY {
 };
 
 struct PR_OCR_CMD {
-    cv::Mat                 matInput;
+    cv::Mat                 matInputImg;
     PR_DIRECTION            enDirection;
     cv::Rect                rectROI;
 };
@@ -384,17 +385,17 @@ struct PR_RGB_RATIO {
 };
 
 struct PR_COLOR_TO_GRAY_CMD {
-    cv::Mat                 matInput;
+    cv::Mat                 matInputImg;
     PR_RGB_RATIO            stRatio;
 };
 
 struct PR_COLOR_TO_GRAY_RPY {
     VisionStatus            enStatus;
-    cv::Mat                 matResult;
+    cv::Mat                 matResultImg;
 };
 
 struct PR_FILTER_CMD {
-    cv::Mat                 matInput;
+    cv::Mat                 matInputImg;
     cv::Rect                rectROI;
     PR_FILTER_TYPE          enType;
     cv::Size                szKernel;
@@ -407,11 +408,11 @@ struct PR_FILTER_CMD {
 
 struct PR_FILTER_RPY {
     VisionStatus            enStatus;
-    cv::Mat                 matResult;
+    cv::Mat                 matResultImg;
 };
 
 struct PR_AUTO_THRESHOLD_CMD {
-    cv::Mat                 matInput;
+    cv::Mat                 matInputImg;
     cv::Mat                 matMask;
     cv::Rect                rectROI;
     Int16                   nThresholdNum;
@@ -424,7 +425,7 @@ struct PR_AUTO_THRESHOLD_RPY {
 
 //CC is acronym of of connected components.
 struct PR_REMOVE_CC_CMD {
-    cv::Mat                 matInput;
+    cv::Mat                 matInputImg;
     cv::Rect                rectROI;
     Int16                   nConnectivity;      //connect by 4 or 8 points.
     PR_COMPARE_TYPE         enCompareType;
@@ -435,11 +436,11 @@ struct PR_REMOVE_CC_RPY {
     VisionStatus            enStatus;
     Int32                   nTotalCC;
     Int32                   nRemovedCC;
-    cv::Mat                 matResult;
+    cv::Mat                 matResultImg;
 };
 
 struct PR_DETECT_EDGE_CMD {
-    cv::Mat                 matInput;
+    cv::Mat                 matInputImg;
     cv::Rect                rectROI;
     Int16                   nThreshold1;
     Int16                   nThreshold2;
@@ -448,7 +449,7 @@ struct PR_DETECT_EDGE_CMD {
 
 struct PR_DETECT_EDGE_RPY {
     VisionStatus            enStatus;
-    cv::Mat                 matResult;
+    cv::Mat                 matResultImg;
 };
 
 struct PR_INSP_CIRCLE_CMD {
@@ -466,7 +467,7 @@ struct PR_INSP_CIRCLE_RPY {
 };
 
 struct PR_FILL_HOLE_CMD {
-    cv::Mat                 matInput;
+    cv::Mat                 matInputImg;
     cv::Rect                rectROI;
     PR_OBJECT_ATTRIBUTE     enAttribute;
     PR_FILL_HOLE_METHOD     enMethod;
@@ -477,11 +478,11 @@ struct PR_FILL_HOLE_CMD {
 
 struct PR_FILL_HOLE_RPY {
     VisionStatus            enStatus;
-    cv::Mat                 matResult;
+    cv::Mat                 matResultImg;
 };
 
 struct PR_PICK_COLOR_CMD {
-    cv::Mat                 matInput;
+    cv::Mat                 matInputImg;
     cv::Rect                rectROI;
     cv::Point               ptPick;
     Int16                   nColorDiff;
@@ -491,7 +492,7 @@ struct PR_PICK_COLOR_CMD {
 struct PR_PICK_COLOR_RPY {
     VisionStatus            enStatus;
     UInt32                  nPickPointCount;
-    cv::Mat                 matResult;
+    cv::Mat                 matResultImg;
 };
 
 struct PR_CALIBRATE_CAMERA_CMD {
@@ -519,13 +520,13 @@ struct PR_CALIBRATE_CAMERA_RPY {
 };
 
 struct PR_RESTORE_IMG_CMD {
-    cv::Mat                 matInput;
+    cv::Mat                 matInputImg;
     std::vector<cv::Mat>    vecMatRestoreImage;
 };
 
 struct PR_RESTORE_IMG_RPY {
     VisionStatus            enStatus;
-    cv::Mat                 matResult;
+    cv::Mat                 matResultImg;
 };
 
 struct PR_CALC_UNDISTORT_RECTIFY_MAP_CMD {
@@ -540,7 +541,7 @@ struct PR_CALC_UNDISTORT_RECTIFY_MAP_RPY {
 };
 
 struct PR_AUTO_LOCATE_LEAD_CMD {
-    cv::Mat                 matInput;
+    cv::Mat                 matInputImg;
     cv::Rect                rectSrchWindow;
     cv::Rect                rectChipBody;
     PR_OBJECT_ATTRIBUTE     enLeadAttribute;
@@ -548,7 +549,7 @@ struct PR_AUTO_LOCATE_LEAD_CMD {
 
 struct PR_AUTO_LOCATE_LEAD_RPY {
     VisionStatus            enStatus;
-    cv::Mat                 matResult;
+    cv::Mat                 matResultImg;
     VectorOfRect            vecLeadLocation;
 };
 
@@ -581,6 +582,42 @@ struct PR_INSP_BRIDGE_RPY {
     cv::Mat                 matResultImg;
     ITEM_RESULT_VECTOR      vecInspResults;
 };
+
+/******************************************
+* Chip Inspection Section *
+******************************************/
+struct PR_LRN_CHIP_CMD {
+    PR_LRN_CHIP_CMD() : enInspMode(PR_INSP_CHIP_MODE::HEAD), bAutoThreshold(true), nThreshold(0) {}
+    cv::Mat                 matInputImg;
+    cv::Rect2f              rectChip;
+    PR_INSP_CHIP_MODE       enInspMode;
+    bool                    bAutoThreshold;
+    Int16                   nThreshold;
+};
+
+struct PR_LRN_CHIP_RPY {
+    VisionStatus            enStatus;
+    Int32                   nRecordID;
+    cv::Size2f              sizeDevice;
+    cv::Size2f              arrSizeElectrode[PR_ELECTRODE_COUNT];
+    Int16                   nThreshold;
+    cv::Mat                 matResultImg;
+};
+
+struct PR_INSP_CHIP_CMD {
+    cv::Mat                 matInputImg;
+    cv::Rect                rectROI;
+    PR_INSP_CHIP_MODE       enInspMode;
+};
+
+struct PR_INSP_CHIP_RPY {
+    VisionStatus            enStatus;
+    bool                    bFindChip;
+    cv::RotatedRect         rotatedRectResult;   
+};
+/******************************************
+* End of Chip Inspection Section
+******************************************/
 
 }
 }

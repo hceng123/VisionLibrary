@@ -73,7 +73,7 @@
      </rect>
     </property>
     <property name="currentIndex">
-     <number>1</number>
+     <number>3</number>
     </property>
     <widget class="QWidget" name="tabPreProcess">
      <attribute name="title">
@@ -1112,6 +1112,88 @@
        <property name="text">
         <string>Inspect Circle</string>
        </property>
+      </widget>
+     </widget>
+     <widget class="QGroupBox" name="groupBoxChipInspect">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>190</y>
+        <width>590</width>
+        <height>71</height>
+       </rect>
+      </property>
+      <property name="title">
+       <string>Chip Inspection</string>
+      </property>
+      <widget class="QLabel" name="labelChipInspMode">
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>20</y>
+         <width>81</width>
+         <height>16</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Inspect Mode</string>
+       </property>
+      </widget>
+      <widget class="QPushButton" name="btnLrnChip">
+       <property name="geometry">
+        <rect>
+         <x>480</x>
+         <y>20</y>
+         <width>100</width>
+         <height>23</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Learn Chip</string>
+       </property>
+      </widget>
+      <widget class="QComboBox" name="comboBoxChipInspMode">
+       <property name="geometry">
+        <rect>
+         <x>90</x>
+         <y>20</y>
+         <width>71</width>
+         <height>22</height>
+        </rect>
+       </property>
+       <property name="currentIndex">
+        <number>0</number>
+       </property>
+       <item>
+        <property name="text">
+         <string>Head</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>Body</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>Square</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>RNet</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>CAE</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>Circular</string>
+        </property>
+       </item>
       </widget>
      </widget>
     </widget>

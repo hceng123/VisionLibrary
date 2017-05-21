@@ -42,7 +42,7 @@ void ColorWidget::on_btnPickColor_clicked()
 void ColorWidget::on_PickColor()
 {
     PR_PICK_COLOR_CMD stCmd;
-    stCmd.matInput = _pVisionView->getMat(VisionView::DISPLAY_SOURCE::ORIGINAL);
+    stCmd.matInputImg = _pVisionView->getMat(VisionView::DISPLAY_SOURCE::ORIGINAL);
     stCmd.rectROI  = _pVisionView->getSelectedWindow();
     stCmd.ptPick = _pVisionView->getClickedPoint();
     stCmd.nColorDiff = ui.lineEditColorDiff->text().toInt();
@@ -50,7 +50,7 @@ void ColorWidget::on_PickColor()
 
     PR_PICK_COLOR_RPY stRpy;
     if ( VisionStatus::OK == PR_PickColor(&stCmd, &stRpy) )    {
-        _pVisionView->setMat(VisionView::DISPLAY_SOURCE::INTERMEDIATE, stRpy.matResult );
+        _pVisionView->setMat(VisionView::DISPLAY_SOURCE::INTERMEDIATE, stRpy.matResultImg );
     }
     else
     {

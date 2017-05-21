@@ -58,16 +58,17 @@ public:
     static VisionStatus calcUndistortRectifyMap(const PR_CALC_UNDISTORT_RECTIFY_MAP_CMD *const pstCmd, PR_CALC_UNDISTORT_RECTIFY_MAP_RPY *const pstRpy);
     static VisionStatus autoLocateLead(const PR_AUTO_LOCATE_LEAD_CMD *const pstCmd, PR_AUTO_LOCATE_LEAD_RPY *const pstRpy, bool bReplay = false );
     static VisionStatus inspBridge(const PR_INSP_BRIDGE_CMD *const pstCmd, PR_INSP_BRIDGE_RPY *const pstRpy, bool bReplay = false );
+    static VisionStatus lrnChip( const PR_LRN_CHIP_CMD *const pstCmd, PR_LRN_CHIP_RPY *const pstRpy, bool bReplay = false );
 protected:
 	int _findBlob(const cv::Mat &mat, const cv::Mat &matRevs, PR_INSP_SURFACE_CMD *const pInspCmd, PR_INSP_SURFACE_RPY *pInspRpy );
 	int _findLine(const cv::Mat &mat, PR_INSP_SURFACE_CMD *const pInspCmd, PR_INSP_SURFACE_RPY *pInspRpy );
 	int _mergeLines(const vector<PR_Line2f> &vecLines, vector<PR_Line2f> &vecResultLines);
 	int _merge2Line(const PR_Line2f &line1, const PR_Line2f &line2, PR_Line2f &lineResult);
 	int _findLineCrossPoint(const PR_Line2f &line1, const PR_Line2f &line2, cv::Point2f ptResult);
-    static std::vector<Int16> _autoMultiLevelThreshold(const cv::Mat &matInput, const cv::Mat &matMask, int N);
+    static std::vector<Int16> _autoMultiLevelThreshold(const cv::Mat &matInputImg, const cv::Mat &matMask, int N);
     static int _autoThreshold(const cv::Mat &mat, const cv::Mat &matMask = cv::Mat() );
-    VisionStatus _findDeviceElectrode(const cv::Mat &matDeviceROI, VectorOfPoint &vecElectrodePos);
-    VisionStatus _findDeviceEdge(const cv::Mat &matDeviceROI, const cv::Size2f &size, cv::Rect &rectDeviceResult);
+    static VisionStatus _findDeviceElectrode(const cv::Mat &matDeviceROI, VectorOfPoint &vecElectrodePos, VectorOfSize2f &vecElectrodeSize );
+    static VisionStatus _findDeviceEdge(const cv::Mat &matDeviceROI, const cv::Size2f &size, cv::Rect &rectDeviceResult);
     static VisionStatus _writeLrnObjRecord(PR_LRN_OBJ_RPY *const pstRpy);
     VisionStatus _writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRpy);
     static VisionStatus _matchTemplate     (const cv::Mat &mat, const cv::Mat &matTmpl, PR_OBJECT_MOTION enMotion, cv::Point2f &ptResult, float &fRotation, float &fCorrelation);
@@ -92,8 +93,8 @@ protected:
     static VectorOfPoint _findPointsInCircleTol( const VectorOfPoint &vecPoints, const cv::RotatedRect &rotatedRect, float tolerance );
     static std::vector<ListOfPoint::const_iterator> _findPointsOverCircleTol( const ListOfPoint &listPoint, const cv::RotatedRect &rotatedRect, PR_RM_FIT_NOISE_METHOD enMethod, float tolerance );
     static cv::RotatedRect _fitCircleIterate(const VectorOfPoint &vecPoints, PR_RM_FIT_NOISE_METHOD method, float tolerance);
-    static VisionStatus _fillHoleByContour(const cv::Mat &matInput, cv::Mat &matOutput, PR_OBJECT_ATTRIBUTE enAttribute);
-    static VisionStatus _fillHoleByMorph(const cv::Mat      &matInput,
+    static VisionStatus _fillHoleByContour(const cv::Mat &matInputImg, cv::Mat &matOutput, PR_OBJECT_ATTRIBUTE enAttribute);
+    static VisionStatus _fillHoleByMorph(const cv::Mat      &matInputImg,
                                          cv::Mat            &matOutput,
                                          PR_OBJECT_ATTRIBUTE enAttribute,
                                          cv::MorphShapes     enMorphShape,
@@ -109,14 +110,16 @@ protected:
                                                 const cv::Size  &szBoardPattern,
                                                 VectorOfPoint2f &vecCorners,
                                                 VectorOfPoint   &vecFailedRowCol);
-    static float _findChessBoardBlockSize( const cv::Mat &matInput, const cv::Size szBoardPattern );
+    static float _findChessBoardBlockSize( const cv::Mat &matInputImg, const cv::Size szBoardPattern );
     static void _calcBoardCornerPositions(cv::Size boardSize, 
                                           float squareSize,
                                           const VectorOfPoint   &vecFailedRowCol,
                                           std::vector<cv::Point3f> &corners,
                                           CalibPattern patternType = CHESSBOARD );
-    static cv::Point2f _findFirstChessBoardCorner(const cv::Mat &matInput, float fBlockSize);
-    static VisionStatus _inspBridgeItem(const cv::Mat &matGray, cv::Mat &matResult, const PR_INSP_BRIDGE_CMD::INSP_ITEM &inspItem, PR_INSP_BRIDGE_RPY::ITEM_RESULT &inspResult);
+    static cv::Point2f _findFirstChessBoardCorner(const cv::Mat &matInputImg, float fBlockSize);
+    static VisionStatus _inspBridgeItem(const cv::Mat &matGray, cv::Mat &matResultImg, const PR_INSP_BRIDGE_CMD::INSP_ITEM &inspItem, PR_INSP_BRIDGE_RPY::ITEM_RESULT &inspResult);
+    static VisionStatus _lrnChipHeadMode(const cv::Mat &matThreshold, const cv::Rect &rectROI, PR_LRN_CHIP_RPY *const pstRpy);
+    static VisionStatus _writeChipRecord(const PR_LRN_CHIP_CMD *const pstCmd, PR_LRN_CHIP_RPY *const pstRpy);
 protected:
     static const int       _constMinHessian        = 300;
     static const int       _constOctave            = 4;

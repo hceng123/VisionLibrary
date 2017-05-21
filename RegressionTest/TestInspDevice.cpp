@@ -18,7 +18,7 @@ void TestInspDevice()
 
     VisionStatus enStatus;
     PR_LRN_DEVICE_CMD stLrnDeviceCmd;
-    stLrnDeviceCmd.matInput = cv::imread(".\\data\\TmplResistor.png");
+    stLrnDeviceCmd.matInputImg = cv::imread(".\\data\\TmplResistor.png");
     stLrnDeviceCmd.bAutoThreshold = false;
     stLrnDeviceCmd.nElectrodeThreshold = 150;
     stLrnDeviceCmd.rectDevice = cv::Rect2f( 38, 22, 78, 41 );
@@ -35,7 +35,7 @@ void TestInspDevice()
     std::cout << "Success to learn device" << std::endl;
 
     PR_INSP_DEVICE_CMD stInspDeviceCmd;
-    stInspDeviceCmd.matInput = cv::imread(".\\data\\RotatedDevice.png");
+    stInspDeviceCmd.matInputImg = cv::imread(".\\data\\RotatedDevice.png");
     stInspDeviceCmd.nElectrodeThreshold = stLrnDeviceRpy.nElectrodeThreshold;
     stInspDeviceCmd.nDeviceCount = 1;
     stInspDeviceCmd.astDeviceInfo[0].nCriteriaNo = 0;
@@ -56,7 +56,7 @@ void TestInspDevice()
     PR_InspDevice( &stInspDeviceCmd, &stInspDeviceRpy );
     std::cout << "Device inspection status " << stInspDeviceRpy.astDeviceResult[0].nStatus << std::endl;
 
-    stInspDeviceCmd.matInput = cv::imread(".\\data\\ShiftedDevice.png");
+    stInspDeviceCmd.matInputImg = cv::imread(".\\data\\ShiftedDevice.png");
     stInspDeviceCmd.astDeviceInfo[0].stCtrPos = cv::Point(85, 48);
     stInspDeviceCmd.astDeviceInfo[0].stSize = cv::Size2f(99, 52);
     stInspDeviceCmd.astDeviceInfo[0].rectSrchWindow = cv::Rect ( 42, 16, 130, 100 );
@@ -76,7 +76,7 @@ void TestInspDeviceAutoThreshold()
 
     VisionStatus enStatus;
     PR_LRN_DEVICE_CMD stLrnDeviceCmd;
-    stLrnDeviceCmd.matInput = cv::imread(".\\data\\TmplResistor.png");
+    stLrnDeviceCmd.matInputImg = cv::imread(".\\data\\TmplResistor.png");
     stLrnDeviceCmd.bAutoThreshold = true;
     stLrnDeviceCmd.nElectrodeThreshold = 0;
     stLrnDeviceCmd.rectDevice = cv::Rect2f( 38, 22, 78, 41 );
@@ -93,7 +93,7 @@ void TestInspDeviceAutoThreshold()
     std::cout << "Success to learn device" << std::endl;
 
     PR_INSP_DEVICE_CMD stInspDeviceCmd;
-    stInspDeviceCmd.matInput = cv::imread(".\\data\\RotatedDevice.png");
+    stInspDeviceCmd.matInputImg = cv::imread(".\\data\\RotatedDevice.png");
     stInspDeviceCmd.nElectrodeThreshold = stLrnDeviceRpy.nElectrodeThreshold;
     stInspDeviceCmd.nDeviceCount = 1;
     stInspDeviceCmd.astDeviceInfo[0].nCriteriaNo = 0;
@@ -114,7 +114,7 @@ void TestInspDeviceAutoThreshold()
     PR_InspDevice( &stInspDeviceCmd, &stInspDeviceRpy );
     std::cout << "Device inspection status " << stInspDeviceRpy.astDeviceResult[0].nStatus << std::endl;
 
-    stInspDeviceCmd.matInput = cv::imread(".\\data\\ShiftedDevice.png");
+    stInspDeviceCmd.matInputImg = cv::imread(".\\data\\ShiftedDevice.png");
     stInspDeviceCmd.astDeviceInfo[0].stCtrPos = cv::Point(85, 48);
     stInspDeviceCmd.astDeviceInfo[0].stSize = cv::Size2f(99, 52);
     stInspDeviceCmd.astDeviceInfo[0].rectSrchWindow = cv::Rect ( 42, 16, 130, 100 );

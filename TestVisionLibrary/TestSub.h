@@ -27,19 +27,19 @@ void printfMat(const cv::Mat &mat)
 }
 
 template<typename _Tp>
-inline std::vector<std::vector<_Tp>> matToVector(const cv::Mat &matInput) {
+inline std::vector<std::vector<_Tp>> matToVector(const cv::Mat &matInputImg) {
     std::vector<std::vector<_Tp>> vecVecArray;
-    if ( matInput.isContinuous() ) {
-        for ( int row = 0; row < matInput.rows; ++ row ) {            
+    if ( matInputImg.isContinuous() ) {
+        for ( int row = 0; row < matInputImg.rows; ++ row ) {            
             std::vector<_Tp> vecRow;
-            int nRowStart = row * matInput.cols;
-            vecRow.assign ( (_Tp *)matInput.datastart + nRowStart, (_Tp *)matInput.datastart + nRowStart + matInput.cols );
+            int nRowStart = row * matInputImg.cols;
+            vecRow.assign ( (_Tp *)matInputImg.datastart + nRowStart, (_Tp *)matInputImg.datastart + nRowStart + matInputImg.cols );
             vecVecArray.push_back(vecRow);
         }
     }else {
-        for ( int row = 0; row < matInput.rows; ++ row ) {
+        for ( int row = 0; row < matInputImg.rows; ++ row ) {
             std::vector<_Tp> vecRow;
-            vecRow.assign((_Tp*)matInput.ptr<uchar>(row), (_Tp*)matInput.ptr<uchar>(row) + matInput.cols);
+            vecRow.assign((_Tp*)matInputImg.ptr<uchar>(row), (_Tp*)matInputImg.ptr<uchar>(row) + matInputImg.cols);
             vecVecArray.push_back(vecRow);
         }
     }
