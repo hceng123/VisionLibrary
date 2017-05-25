@@ -138,7 +138,7 @@ VisionAPI VisionStatus PR_SrchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd, PR
     }
 }
 
-VisionAPI VisionStatus  PR_FitLine(PR_FIT_LINE_CMD *pstCmd, PR_FIT_LINE_RPY *pstRpy)
+VisionAPI VisionStatus  PR_FitLine(const PR_FIT_LINE_CMD *const pstCmd, PR_FIT_LINE_RPY *const pstRpy)
 {
 PR_FUNCTION_ENTRY
     return VisionAlgorithm::fitLine ( pstCmd, pstRpy );

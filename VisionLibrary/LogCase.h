@@ -141,14 +141,14 @@ class LogCaseFitLine : public LogCase
 {
 public:
     explicit LogCaseFitLine(const String &strPath, bool bReplay = false) : LogCase(strPath, bReplay) {}
-    VisionStatus WriteCmd(PR_FIT_LINE_CMD *pCmd);
-    VisionStatus WriteRpy(PR_FIT_LINE_RPY *pRpy);
+    VisionStatus WriteCmd(const PR_FIT_LINE_CMD *const pCmd);
+    VisionStatus WriteRpy(const PR_FIT_LINE_RPY *const pRpy);
     virtual VisionStatus RunLogCase() override;
     virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
     static String StaticGetFolderPrefix();
 private:
     const String _strKeyMethod          = "Method";
-    const String _strKeySrchWindow      = "SrchWindow";
+    const String _strKeyROI             = "ROI";
     const String _strKeyErrorTol        = "ErrorTolerance";
     const String _strKeyPreprocessed    = "Preprocessed";
     const String _strKeyThreshold       = "Threshold";

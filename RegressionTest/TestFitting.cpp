@@ -38,7 +38,7 @@ void TestFitCircle()
 	stCmd.bAutoThreshold = false;
 	stCmd.nThreshold = 210;
     stCmd.enAttribute = PR_OBJECT_ATTRIBUTE::BRIGHT;
-	stCmd.enMethod = PR_FIT_CIRCLE_METHOD::LEAST_SQUARE_REFINE;
+	stCmd.enMethod = PR_FIT_METHOD::LEAST_SQUARE_REFINE;
     
 	PR_FitCircle(&stCmd, &stRpy);
     PrintRpy(stRpy);
@@ -58,7 +58,7 @@ void TestFitCircle()
 	stCmd.bAutoThreshold = false;
 	stCmd.nThreshold = 200;
     stCmd.enAttribute = PR_OBJECT_ATTRIBUTE::DARK;
-	stCmd.enMethod = PR_FIT_CIRCLE_METHOD::LEAST_SQUARE_REFINE;
+	stCmd.enMethod = PR_FIT_METHOD::LEAST_SQUARE_REFINE;
     
 	PR_FitCircle(&stCmd, &stRpy);    
     PrintRpy(stRpy);

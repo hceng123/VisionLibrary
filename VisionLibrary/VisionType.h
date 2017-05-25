@@ -17,6 +17,7 @@ namespace Vision
 #define PR_MAX_ERR_STR_LEN						(100)
 #define PR_AUTO_THRESHOLD_MAX_NUM               (4)
 #define PR_FIT_LINE_MAX_POINT_COUNT             (10000)
+#define PR_FIT_CIRCLE_MAX_POINT                 (10000)
 static const double PR_MM_TO_UM              =  1000.;
 
 enum class PR_SRCH_OBJ_ALGORITHM {
@@ -73,7 +74,7 @@ enum class PR_EDGE_DIRECTION {
     ALL,
 };
 
-enum class PR_FIT_CIRCLE_METHOD {
+enum class PR_FIT_METHOD {
     LEAST_SQUARE,
     LEAST_SQUARE_REFINE,
     RANSAC,

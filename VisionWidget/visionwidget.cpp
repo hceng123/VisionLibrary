@@ -128,7 +128,7 @@ void VisionWidget::on_fitCircleBtn_clicked()
 	stCmd.bAutoThreshold = false;
 	//stCmd.nThreshold = _nThreshold;
     //stCmd.enAttribute = static_cast<PR_OBJECT_ATTRIBUTE>(_nAttribute);
-	stCmd.enMethod = static_cast<PR_FIT_CIRCLE_METHOD>(ui.comboBoxFitCircleAlgorithm->currentIndex());
+	stCmd.enMethod = static_cast<PR_FIT_METHOD>(ui.comboBoxFitCircleAlgorithm->currentIndex());
 	stCmd.nMaxRansacTime = 20;
 
 	PR_FIT_CIRCLE_RPY stRpy;
@@ -183,12 +183,12 @@ void VisionWidget::on_fitLineBtn_clicked()
     PR_FIT_LINE_CMD stCmd;
 	stCmd.matInputImg = ui.visionView->getMat();
     stCmd.matMask = ui.visionView->getMask();
-	stCmd.enRmNoiseMethod = PR_RM_FIT_NOISE_METHOD::ABSOLUTE_ERR;
+    stCmd.enMethod = static_cast<PR_FIT_METHOD>(ui.comboBoxFitLineAlgorithm->currentIndex());
+	stCmd.enRmNoiseMethod = static_cast<PR_RM_FIT_NOISE_METHOD>(ui.comboBoxFitLineDirection->currentIndex());
 	stCmd.fErrTol = ui.lineEditFitLineErrTol->text().toFloat();
 	stCmd.rectROI = ui.visionView->getSelectedWindow();
-    stCmd.bPreprocessed = false;
-	stCmd.nThreshold = ui.lineEditFitLineThreshold->text().toInt();
-    stCmd.enAttribute = static_cast<PR_OBJECT_ATTRIBUTE> ( ui.comboBoxLineAttribute->currentIndex() );
+    stCmd.bPreprocessed = true;
+    stCmd.nNumOfPtToFinishRansac = 100;
 
 	PR_FIT_LINE_RPY stRpy;
 	VisionStatus enStatus = PR_FitLine(&stCmd, &stRpy);

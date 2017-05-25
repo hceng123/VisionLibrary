@@ -48,7 +48,7 @@ public:
     }
 
     template<typename T>
-    static cv::Rect_<T> resizeRect(const cv::Rect_<T> &rectInput, cv::Size szNew)
+    static cv::Rect_<T> resizeRect(const cv::Rect_<T> &rectInput, cv::Size2f szNew)
     {
         return cv::Rect_<T> (rectInput.x + rectInput.width / 2.f - szNew.width / 2, rectInput.y + rectInput.height / 2.f  - szNew.height / 2,
             szNew.width, szNew.height );

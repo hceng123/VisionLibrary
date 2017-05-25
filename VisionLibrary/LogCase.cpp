@@ -271,7 +271,7 @@ VisionStatus LogCaseFitCircle::RunLogCase() {
         stCmd.matMask = cv::imread( strMaskPath, cv::IMREAD_GRAYSCALE );
 
     stCmd.rectROI = _parseRect(ini.GetValue(_CMD_SECTION.c_str(), _strKeyROI.c_str(), _DEFAULT_RECT.c_str()));
-    stCmd.enMethod = static_cast<PR_FIT_CIRCLE_METHOD> ( ini.GetLongValue ( _CMD_SECTION.c_str(), _strKeyMethod.c_str(), 0 ) );
+    stCmd.enMethod = static_cast<PR_FIT_METHOD> ( ini.GetLongValue ( _CMD_SECTION.c_str(), _strKeyMethod.c_str(), 0 ) );
     stCmd.enRmNoiseMethod = static_cast<PR_RM_FIT_NOISE_METHOD> ( ini.GetLongValue ( _CMD_SECTION.c_str(), _strKeyRmNoiseMethod.c_str(), 0 ) );
     stCmd.bPreprocessed = ini.GetBoolValue ( _CMD_SECTION.c_str(), _strKeyPreprocessed.c_str(), true );
     stCmd.fErrTol = (float)ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyErrorTol.c_str(), 0 );
@@ -347,13 +347,11 @@ VisionStatus LogCaseInspCircle::RunLogCase()
     return enStatus;
 }
 
-/*static*/ String LogCaseFitLine::StaticGetFolderPrefix()
-{
+/*static*/ String LogCaseFitLine::StaticGetFolderPrefix() {
     return "FitLine";
 }
 
-VisionStatus LogCaseFitLine::WriteCmd(PR_FIT_LINE_CMD *pCmd)
-{
+VisionStatus LogCaseFitLine::WriteCmd(const PR_FIT_LINE_CMD *const pCmd) {
     if ( !_bReplay )    {
         _strLogCasePath = _generateLogCaseName(GetFolderPrefix());
         bfs::path dir(_strLogCasePath);
@@ -364,7 +362,8 @@ VisionStatus LogCaseFitLine::WriteCmd(PR_FIT_LINE_CMD *pCmd)
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile( cmdRpyFilePath.c_str() );
 
-    ini.SetValue      (_CMD_SECTION.c_str(), _strKeySrchWindow.c_str(),   _formatRect(pCmd->rectROI).c_str() );
+    ini.SetValue      (_CMD_SECTION.c_str(), _strKeyROI.c_str(),          _formatRect(pCmd->rectROI).c_str() );
+    ini.SetLongValue  (_CMD_SECTION.c_str(), _strKeyMethod.c_str(),       ToInt32( pCmd->enMethod ) );
     ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyErrorTol.c_str(),     pCmd->fErrTol );
     ini.SetBoolValue  (_CMD_SECTION.c_str(), _strKeyPreprocessed.c_str(), pCmd->bPreprocessed);
     ini.SetLongValue  (_CMD_SECTION.c_str(), _strKeyThreshold.c_str(),    pCmd->nThreshold );
@@ -377,8 +376,7 @@ VisionStatus LogCaseFitLine::WriteCmd(PR_FIT_LINE_CMD *pCmd)
     return VisionStatus::OK;
 }
 
-VisionStatus LogCaseFitLine::WriteRpy(PR_FIT_LINE_RPY *pRpy)
-{
+VisionStatus LogCaseFitLine::WriteRpy(const PR_FIT_LINE_RPY *const pRpy) {
     CSimpleIni ini(false, false, false);
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile( cmdRpyFilePath.c_str() );
@@ -395,8 +393,7 @@ VisionStatus LogCaseFitLine::WriteRpy(PR_FIT_LINE_RPY *pRpy)
     return VisionStatus::OK;
 }
 
-VisionStatus LogCaseFitLine::RunLogCase()
-{
+VisionStatus LogCaseFitLine::RunLogCase() {
     PR_FIT_LINE_CMD stCmd;
 
     CSimpleIni ini(false, false, false);
@@ -406,12 +403,14 @@ VisionStatus LogCaseFitLine::RunLogCase()
     if ( FileUtils::Exists ( strMaskPath ) )
         stCmd.matMask = cv::imread( strMaskPath, cv::IMREAD_GRAYSCALE );
 
-    stCmd.matInputImg = cv::imread( _strLogCasePath + _IMAGE_NAME );    
-    stCmd.rectROI = _parseRect ( ini.GetValue(_CMD_SECTION.c_str(), _strKeySrchWindow.c_str(), _DEFAULT_RECT.c_str() ) );
-    stCmd.fErrTol = (float)ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyErrorTol.c_str(), 0 );
-    stCmd.bPreprocessed = ini.GetBoolValue ( _CMD_SECTION.c_str(), _strKeyPreprocessed.c_str(), true );
-    stCmd.nThreshold = ini.GetLongValue( _CMD_SECTION.c_str(), _strKeyThreshold.c_str(), 0);
-    stCmd.enAttribute = static_cast<PR_OBJECT_ATTRIBUTE>(ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyAttribute.c_str(), 0 ) );
+    stCmd.matInputImg = cv::imread( _strLogCasePath + _IMAGE_NAME );
+
+    stCmd.rectROI = _parseRect                           ( ini.GetValue      ( _CMD_SECTION.c_str(), _strKeyROI.c_str(),          _DEFAULT_RECT.c_str() ) );
+    stCmd.enMethod = static_cast<PR_FIT_METHOD>          ( ini.GetLongValue  ( _CMD_SECTION.c_str(), _strKeyMethod.c_str(),       0 ) );
+    stCmd.fErrTol = ToFloat                              ( ini.GetDoubleValue( _CMD_SECTION.c_str(), _strKeyErrorTol.c_str(),     0 ) );
+    stCmd.bPreprocessed =                                  ini.GetBoolValue  ( _CMD_SECTION.c_str(), _strKeyPreprocessed.c_str(), true );
+    stCmd.nThreshold =                                     ini.GetLongValue  ( _CMD_SECTION.c_str(), _strKeyThreshold.c_str(),    0);
+    stCmd.enAttribute = static_cast<PR_OBJECT_ATTRIBUTE> ( ini.GetLongValue  ( _CMD_SECTION.c_str(), _strKeyAttribute.c_str(),    0 ) );
 
     PR_FIT_LINE_RPY stRpy;
     VisionStatus enStatus = VisionAlgorithm::fitLine ( &stCmd, &stRpy, true );

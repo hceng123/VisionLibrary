@@ -225,14 +225,18 @@ struct PR_SRCH_FIDUCIAL_MARK_RPY {
 
 //Fit line is for accurately fit line in the preprocessed image, the line should be obvious compared to the background.
 struct PR_FIT_LINE_CMD {
+    PR_FIT_LINE_CMD() : enMethod ( PR_FIT_METHOD::LEAST_SQUARE_REFINE ), bPreprocessed ( false ), nMaxRansacTime(20) {}
     cv::Mat                 matInputImg;
     cv::Mat                 matMask;
     cv::Rect                rectROI;
+    PR_FIT_METHOD           enMethod;
     bool                    bPreprocessed;
     Int32                   nThreshold;
     PR_OBJECT_ATTRIBUTE     enAttribute;
     PR_RM_FIT_NOISE_METHOD  enRmNoiseMethod;
     float                   fErrTol;
+    int                     nMaxRansacTime;             //Only used when fitting method is ransac.
+    int                     nNumOfPtToFinishRansac;     //Only used when fitting method is ransac.
 };
 
 struct PR_FIT_LINE_RPY {
@@ -331,7 +335,7 @@ struct PR_FIT_CIRCLE_CMD {
     cv::Mat                 matInputImg;    
     cv::Mat                 matMask;
     cv::Rect                rectROI;
-    PR_FIT_CIRCLE_METHOD    enMethod;
+    PR_FIT_METHOD           enMethod;
     PR_RM_FIT_NOISE_METHOD  enRmNoiseMethod;
     bool                    bPreprocessed;
     bool                    bAutoThreshold;

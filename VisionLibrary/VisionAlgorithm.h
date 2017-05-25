@@ -38,7 +38,7 @@ public:
     static void showImage(String windowName, const cv::Mat &mat);
     static VisionStatus runLogCase(const std::string &strPath);    
     VisionStatus srchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd, PR_SRCH_FIDUCIAL_MARK_RPY *pstRpy, bool bReplay = false);
-    static VisionStatus fitLine(PR_FIT_LINE_CMD *pstCmd, PR_FIT_LINE_RPY *pstRpy, bool bReplay = false);
+    static VisionStatus fitLine(const PR_FIT_LINE_CMD *const pstCmd, PR_FIT_LINE_RPY *const pstRpy, bool bReplay = false);
     static VisionStatus caliper(const PR_CALIPER_CMD *const pstCmd, PR_CALIPER_RPY *const pstRpy, bool bReplay = false);
     VisionStatus fitParallelLine(PR_FIT_PARALLEL_LINE_CMD *pstCmd, PR_FIT_PARALLEL_LINE_RPY *pstRpy, bool bReplay = false);
     VisionStatus fitRect(PR_FIT_RECT_CMD *pstCmd, PR_FIT_RECT_RPY *pstRpy, bool bReplay = false);
@@ -89,6 +89,30 @@ protected:
                                                      PR_RM_FIT_NOISE_METHOD method,
                                                      float                  tolerance);
     static VectorOfPoint _randomSelectPoints(const VectorOfPoint &vecPoints, int numOfPtToSelect);
+
+    static VectorOfPoint _findPointInLineTol(const VectorOfPoint   &vecPoint,
+                                             bool                   bReversedFit,
+                                             const float            fSlope,
+                                             const float            fIntercept,
+                                             float                  fTolerance);
+
+    static void _fitLineRansac(const VectorOfPoint &vecPoints,
+                               float                fTolerance,
+                               int                  nMaxRansacTime,
+                               size_t               nFinishThreshold,
+                               bool                 bReversedFit,
+                               float               &fSlope,
+                               float               &fIntercept,
+                               PR_Line2f           &stLine);
+
+    static VisionStatus _fitLineRefine(const VectorOfPoint     &vecPoints,
+                                       PR_RM_FIT_NOISE_METHOD   enRmNoiseMethod,
+                                       float                    fTolerance,
+                                       bool                     bReversedFit,
+                                       float                   &fSlope,
+                                       float                   &fIntercept,
+                                       PR_Line2f               &stLine);
+
     static cv::RotatedRect _fitCircleRansac(const VectorOfPoint &vecPoints, float tolerance, int maxRansacTime, size_t nFinishThreshold);
     static VectorOfPoint _findPointsInCircleTol( const VectorOfPoint &vecPoints, const cv::RotatedRect &rotatedRect, float tolerance );
     static std::vector<ListOfPoint::const_iterator> _findPointsOverCircleTol( const ListOfPoint &listPoint, const cv::RotatedRect &rotatedRect, PR_RM_FIT_NOISE_METHOD enMethod, float tolerance );
@@ -111,10 +135,10 @@ protected:
                                                 VectorOfPoint2f &vecCorners,
                                                 VectorOfPoint   &vecFailedRowCol);
     static float _findChessBoardBlockSize( const cv::Mat &matInputImg, const cv::Size szBoardPattern );
-    static void _calcBoardCornerPositions(cv::Size boardSize, 
-                                          float squareSize,
-                                          const VectorOfPoint   &vecFailedRowCol,
-                                          std::vector<cv::Point3f> &corners,
+    static void _calcBoardCornerPositions(const cv::Size            &szBoardSize, 
+                                          float                     squareSize,
+                                          const VectorOfPoint       &vecFailedRowCol,
+                                          std::vector<cv::Point3f>  &corners,
                                           CalibPattern patternType = CHESSBOARD );
     static cv::Point2f _findFirstChessBoardCorner(const cv::Mat &matInputImg, float fBlockSize);
     static VisionStatus _inspBridgeItem(const cv::Mat &matGray, cv::Mat &matResultImg, const PR_INSP_BRIDGE_CMD::INSP_ITEM &inspItem, PR_INSP_BRIDGE_RPY::ITEM_RESULT &inspResult);

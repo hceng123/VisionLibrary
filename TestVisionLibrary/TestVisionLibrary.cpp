@@ -272,10 +272,10 @@ void TestInspDevice()
 
     VisionStatus enStatus;
     PR_LRN_DEVICE_CMD stLrnDeviceCmd;
-    stLrnDeviceCmd.matInputImg = cv::imread(".\\data\\TmplResistor.png");
+    stLrnDeviceCmd.matInputImg = cv::imread("./data/TmplResistor.png");
     stLrnDeviceCmd.bAutoThreshold = true;
     stLrnDeviceCmd.nElectrodeThreshold = 180;
-    stLrnDeviceCmd.rectDevice = cv::Rect2f( 38, 22, 78, 41 );
+    stLrnDeviceCmd.rectDevice = cv::Rect2f( 39, 27, 104, 65 );
     PR_LRN_DEVICE_RPY stLrnDeviceRpy;
     
     PR_SetDebugMode(PR_DEBUG_MODE::SHOW_IMAGE);
@@ -287,7 +287,7 @@ void TestInspDevice()
     }
 
     PR_INSP_DEVICE_CMD stInspDeviceCmd;
-    stInspDeviceCmd.matInputImg = cv::imread(".\\data\\RotatedDevice.png");
+    stInspDeviceCmd.matInputImg = cv::imread("./data/RotatedDevice.png");
     stInspDeviceCmd.nElectrodeThreshold = stLrnDeviceRpy.nElectrodeThreshold;
     stInspDeviceCmd.nDeviceCount = 1;
     stInspDeviceCmd.astDeviceInfo[0].nCriteriaNo = 0;
@@ -309,7 +309,7 @@ void TestInspDevice()
     PR_InspDevice( &stInspDeviceCmd, &stInspDeviceRpy );
     std::cout << "Device inspection status " << stInspDeviceRpy.astDeviceResult[0].nStatus << std::endl;
 
-    stInspDeviceCmd.matInputImg = cv::imread(".\\data\\ShiftedDevice.png");
+    stInspDeviceCmd.matInputImg = cv::imread("./data/ShiftedDevice.png");
     stInspDeviceCmd.astDeviceInfo[0].stCtrPos = cv::Point(85, 48);
     stInspDeviceCmd.astDeviceInfo[0].stSize = cv::Size2f(99, 52);
     stInspDeviceCmd.astDeviceInfo[0].rectSrchWindow = cv::Rect ( 42, 16, 130, 100 );
@@ -388,6 +388,24 @@ void TestFindEdge()
     std::cout << "Edge count = " << stRpy.nEdgeCount << std::endl;
 }
 
+void TestFindEdge1()
+{
+    PR_FIND_EDGE_CMD stCmd;
+
+    stCmd.matInputImg = cv::imread("./data/HalfCircle.png");
+    stCmd.enDirection = PR_EDGE_DIRECTION::ALL;
+    stCmd.bAutothreshold = true;
+    stCmd.nThreshold = 50;
+    stCmd.fMinLength = 50;
+    stCmd.rectROI = cv::Rect(0, 0, stCmd.matInputImg.cols, stCmd.matInputImg.rows);
+
+    PR_FIND_EDGE_RPY stRpy;
+    PR_FindEdge(&stCmd, &stRpy);
+    
+    std::cout << "Find edge status " << stRpy.nStatus << std::endl;
+    std::cout << "Edge count = " << stRpy.nEdgeCount << std::endl;
+}
+
 void TestFitCircle()
 {
 	PR_SetDebugMode(PR_DEBUG_MODE::SHOW_IMAGE);
@@ -402,7 +420,7 @@ void TestFitCircle()
     stCmd.bPreprocessed = false;
 	stCmd.bAutoThreshold = false;
 	stCmd.nThreshold = 200;
-	stCmd.enMethod = PR_FIT_CIRCLE_METHOD::RANSAC;
+	stCmd.enMethod = PR_FIT_METHOD::RANSAC;
 	stCmd.nMaxRansacTime = 20;
 
 	PR_FIT_CIRCLE_RPY stRpy;
@@ -439,23 +457,24 @@ void TestCaliper() {
 
 int _tmain(int argc, _TCHAR* argv[])
 {
-    PR_SetDebugMode ( PR_DEBUG_MODE::LOG_ALL_CASE );
-    //TestVisionAlgorithm();
-    std::cout << GetTime() << std::endl;
-    //TestInspDevice();
+    PR_SetDebugMode ( PR_DEBUG_MODE::SHOW_IMAGE );
+    TestInspDevice();
     //TestRunLogcase();
     //TestSearchFiducialMark();
     //TestSearchFiducialMark_1();
     //TestSearchFiducialMark_2();
     //TestSearchFiducialMark_3();
     //TestFitLine();
+
     //TestFindEdge();
+    //TestFindEdge1();
+
 	//TestInspDeviceAutoThreshold();
 	//TestFitCircle();
 
     //TestCalibCamera();
     //TestCalibCamera_1();
-    TestCalibCamera_2();
+    //TestCalibCamera_2();
 
     //TestCompareInputAndResult();
     //TestRunRestoreImgLogCase();
