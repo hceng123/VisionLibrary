@@ -609,15 +609,18 @@ struct PR_LRN_CHIP_RPY {
 };
 
 struct PR_INSP_CHIP_CMD {
+    PR_INSP_CHIP_CMD() : nRecordId(-1) {}
     cv::Mat                 matInputImg;
-    cv::Rect                rectROI;
+    cv::Rect                rectSrchWindow;
     PR_INSP_CHIP_MODE       enInspMode;
+    Int32                   nRecordId;
 };
 
 struct PR_INSP_CHIP_RPY {
     VisionStatus            enStatus;
-    bool                    bFindChip;
-    cv::RotatedRect         rotatedRectResult;   
+    bool                    bFoundChip;
+    cv::RotatedRect         rotatedRectResult;
+    cv::Mat                 matResultImg;
 };
 /******************************************
 * End of Chip Inspection Section

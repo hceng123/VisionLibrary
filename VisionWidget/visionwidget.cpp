@@ -460,6 +460,34 @@ void VisionWidget::on_btnLrnChip_clicked() {
     PR_LrnChip ( &stCmd, &stRpy );
     if ( VisionStatus::OK == stRpy.enStatus ) {
         ui.visionView->setMat ( VisionView::DISPLAY_SOURCE::RESULT, stRpy.matResultImg );
+        _nChipRecordId = stRpy.nRecordID;
+    }else {
+        PR_GET_ERROR_STR_RPY stErrStrRpy;
+        PR_GetErrorStr(stRpy.enStatus, &stErrStrRpy);
+        QMessageBox::critical(nullptr, "Learn chip", stErrStrRpy.achErrorStr, "Quit");
+        ui.lineEditObjCenter->clear();
+        ui.lineEditObjRotation->clear();
+    }
+}
+
+void VisionWidget::on_btnInspChip_clicked() {
+    if ( _sourceImagePath.empty() ) {
+        QMessageBox::information(this, "Vision Widget", "Please select an image first!", "Quit");
+        return;
+    }
+
+    ui.visionView->setState ( VisionView::VISION_VIEW_STATE::TEST_VISION_LIBRARY );
+    ui.visionView->applyIntermediateResult();
+
+    PR_INSP_CHIP_CMD stCmd;
+    PR_INSP_CHIP_RPY stRpy;
+    stCmd.matInputImg = ui.visionView->getMat();
+    stCmd.enInspMode = static_cast<PR_INSP_CHIP_MODE> ( ui.comboBoxChipInspMode->currentIndex() );
+    stCmd.rectSrchWindow = ui.visionView->getSelectedWindow();
+    stCmd.nRecordId = _nChipRecordId;
+    PR_InspChip ( &stCmd, &stRpy );
+    if ( VisionStatus::OK == stRpy.enStatus ) {
+        ui.visionView->setMat ( VisionView::DISPLAY_SOURCE::RESULT, stRpy.matResultImg );
     }else {
         PR_GET_ERROR_STR_RPY stErrStrRpy;
         PR_GetErrorStr(stRpy.enStatus, &stErrStrRpy);

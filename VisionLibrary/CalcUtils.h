@@ -112,6 +112,7 @@ public:
     static PR_Line2f calcEndPointOfLine( const ListOfPoint &listPoint, bool bReversedFit, float fSlope, float fIntercept );
     static cv::Point2f lineIntersect(float fSlope1, float fIntercept1, float fSlope2, float fIntercept2);
     static float lineSlope(const PR_Line2f &line);
+    static VectorOfPoint getCornerOfRotatedRect(const cv::RotatedRect &rotatedRect);
 
     template<typename _Tp>
     static cv::Point2f warpPoint(const cv::Mat &matWarp, const cv::Point2f &ptInput)

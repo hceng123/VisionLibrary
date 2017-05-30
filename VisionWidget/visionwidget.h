@@ -35,6 +35,7 @@ private slots:
     void on_btnCalcCoverage_clicked();
     void on_btnCalibrateCamera_clicked();
     void on_btnLrnChip_clicked();
+    void on_btnInspChip_clicked();
 protected:
     bool checkDisplayImage();
     void drawTmplImage();
@@ -51,6 +52,8 @@ private:
     std::unique_ptr<EdgeDetectWidget>   _ptrEdgeDetectWidget;
     std::unique_ptr<ColorWidget>        _ptrColorWidget;
     cv::Mat                             _matTmpl;
+
+    AOI::Int32                          _nChipRecordId = -1;
 };
 
 #endif // VISIONWIDGET_H

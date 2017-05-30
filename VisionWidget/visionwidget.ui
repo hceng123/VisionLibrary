@@ -73,7 +73,7 @@
      </rect>
     </property>
     <property name="currentIndex">
-     <number>0</number>
+     <number>3</number>
     </property>
     <widget class="QWidget" name="tabPreProcess">
      <attribute name="title">
@@ -1140,7 +1140,7 @@
         <x>10</x>
         <y>190</y>
         <width>590</width>
-        <height>71</height>
+        <height>91</height>
        </rect>
       </property>
       <property name="title">
@@ -1214,6 +1214,19 @@
          <string>Circular</string>
         </property>
        </item>
+      </widget>
+      <widget class="QPushButton" name="btnInspChip">
+       <property name="geometry">
+        <rect>
+         <x>480</x>
+         <y>50</y>
+         <width>100</width>
+         <height>23</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Inspect Chip</string>
+       </property>
       </widget>
      </widget>
     </widget>
