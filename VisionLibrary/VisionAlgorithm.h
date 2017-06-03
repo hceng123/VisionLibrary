@@ -68,6 +68,8 @@ protected:
 	int _findLineCrossPoint(const PR_Line2f &line1, const PR_Line2f &line2, cv::Point2f ptResult);
     static std::vector<Int16> _autoMultiLevelThreshold(const cv::Mat &matInputImg, const cv::Mat &matMask, int N);
     static int _autoThreshold(const cv::Mat &mat, const cv::Mat &matMask = cv::Mat() );
+    static bool _isContourRectShape(const VectorOfPoint &vecPoint);
+    static inline float getContourRectRatio( const VectorOfPoint &vecPoint);
     static VisionStatus _findDeviceElectrode(const cv::Mat &matDeviceROI, VectorOfPoint &vecElectrodePos, VectorOfSize2f &vecElectrodeSize, VectorOfVectorOfPoint &vevVecContour );
     static VisionStatus _findDeviceEdge(const cv::Mat &matDeviceROI, const cv::Size2f &size, cv::Rect &rectDeviceResult);
     static VisionStatus _writeLrnObjRecord(PR_LRN_OBJ_RPY *const pstRpy);
@@ -116,6 +118,7 @@ protected:
 
     static cv::RotatedRect _fitCircleRansac(const VectorOfPoint &vecPoints, float tolerance, int maxRansacTime, size_t nFinishThreshold);
     static VectorOfPoint _findPointsInCircleTol( const VectorOfPoint &vecPoints, const cv::RotatedRect &rotatedRect, float tolerance );
+    static VectorOfPoint _findPointsOverCircleTol( const VectorOfPoint &vecPoints, const cv::RotatedRect &rotatedRect, float tolerance );
     static std::vector<ListOfPoint::const_iterator> _findPointsOverCircleTol( const ListOfPoint &listPoint, const cv::RotatedRect &rotatedRect, PR_RM_FIT_NOISE_METHOD enMethod, float tolerance );
     static cv::RotatedRect _fitCircleIterate(const VectorOfPoint &vecPoints, PR_RM_FIT_NOISE_METHOD method, float tolerance);
     static VisionStatus _fillHoleByContour(const cv::Mat &matInputImg, cv::Mat &matOutput, PR_OBJECT_ATTRIBUTE enAttribute);
@@ -148,6 +151,11 @@ protected:
     static VisionStatus _lrnChipSquareMode(const cv::Mat &matThreshold, const cv::Rect &rectChip, const cv::Rect &rectROI, PR_LRN_CHIP_RPY *const pstRpy );
     static VisionStatus _writeChipRecord(const PR_LRN_CHIP_CMD *const pstCmd, PR_LRN_CHIP_RPY *const pstRpy);
     static VisionStatus _inspChipHeadMode(const cv::Mat &matThreshold, const cv::Rect &rectROI, PR_INSP_CHIP_RPY *const pstRpy);
+    static VisionStatus _inspChipSquareMode(const cv::Mat &matThreshold, const cv::Rect &rectROI, PR_INSP_CHIP_RPY *const pstRpy );
+    static VisionStatus _inspChipCAEMode(const cv::Mat &matThreshold, const cv::Rect &rectROI, PR_INSP_CHIP_RPY *const pstRpy);
+    static VisionStatus _inspChipCircularMode(const cv::Mat &matThreshold, const cv::Rect &rectROI, PR_INSP_CHIP_RPY *const pstRpy);
+    static bool _findDataUpEdge( const cv::Mat &matRow, int nStart, int nEnd, int &nEdgePos );
+    static bool _findDataDownEdge( const cv::Mat &matRow, int nStart, int nEnd, int &nEdgePos );
 protected:
     static const int       _constMinHessian        = 300;
     static const int       _constOctave            = 4;

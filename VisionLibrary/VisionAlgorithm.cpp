@@ -680,16 +680,56 @@ VisionStatus VisionAlgorithm::autoThreshold(PR_AUTO_THRESHOLD_CMD *pstCmd, PR_AU
     return pstRpy->enStatus;
 }
 
-int VisionAlgorithm::_autoThreshold(const cv::Mat &mat, const cv::Mat &matMask/* = cv::Mat()*/ )
-{
+int VisionAlgorithm::_autoThreshold(const cv::Mat &mat, const cv::Mat &matMask/* = cv::Mat()*/ ) {
     auto vecThreshold = _autoMultiLevelThreshold ( mat, matMask, 1 );
     return vecThreshold[0];
+}
+
+/*static*/ bool VisionAlgorithm::_isContourRectShape(const VectorOfPoint &vecPoint) {
+    cv::Rect rect = cv::boundingRect ( vecPoint );
+    if ( rect.width <= 0 || rect.height <= 0 )
+        return false;
+
+    cv::Mat matBlack = cv::Mat::zeros ( rect.size() + cv::Size(rect.x, rect.y), CV_8UC1 );
+    VectorOfVectorOfPoint vevVecPoint;
+    vevVecPoint.push_back ( vecPoint );
+    cv::fillPoly ( matBlack, vevVecPoint, cv::Scalar::all(255) );
+    
+    //cv::imshow ( "fill poly image", matBlack );
+    //cv::waitKey(0);
+    cv::Mat matROI(matBlack, rect);
+    cv::Mat matOneRow, matOneCol;
+    cv::reduce ( matROI, matOneRow, 0, cv::ReduceTypes::REDUCE_SUM, CV_32SC1 );
+    cv::reduce ( matROI, matOneCol, 1, cv::ReduceTypes::REDUCE_SUM, CV_32SC1 );
+
+    float fAverageHeight = ToFloat( cv::sum ( matOneRow )[0] / matOneRow.cols );
+    int nConsecutiveOverTolerance = 0;
+    const float FLUCTUATE_TOL = 0.3f;
+    const int FLUCTUATE_WIDTH_TOL = 10;
+    for ( int index = 0; index < matOneRow.cols; ++ index ) {
+        if ( fabs( matOneRow.at<int>(0, index) - fAverageHeight ) / fAverageHeight > FLUCTUATE_TOL )
+            ++ nConsecutiveOverTolerance;
+        else
+            nConsecutiveOverTolerance = 0;
+
+        if ( nConsecutiveOverTolerance >  FLUCTUATE_WIDTH_TOL )
+            return false;
+    }
+    return true;
+}
+
+/*static*/ inline float VisionAlgorithm::getContourRectRatio( const VectorOfPoint &vecPoint) {
+    auto rotatedRect = cv::minAreaRect ( vecPoint );
+    float fMaxDim = std::max ( rotatedRect.size.width, rotatedRect.size.height );
+    float fMinDim = std::min ( rotatedRect.size.width, rotatedRect.size.height );
+    return fMaxDim / fMinDim;
 }
 
 /*static*/ VisionStatus VisionAlgorithm::_findDeviceElectrode(const cv::Mat &matDeviceROI, VectorOfPoint &vecElectrodePos, VectorOfSize2f &vecElectrodeSize, VectorOfVectorOfPoint &vevVecContour ) {
     vector<vector<cv::Point> > vecContours, vecContourAfterFilter;
     vector<cv::Vec4i> hierarchy;
     vecElectrodePos.clear();
+    const float MAX_TWO_DIM_RATIO = 3.f;
 
     cv::Mat matDraw = cv::Mat::zeros ( matDeviceROI.size(), CV_8UC3 );
     // Find contours
@@ -700,7 +740,7 @@ int VisionAlgorithm::_autoThreshold(const cv::Mat &mat, const cv::Mat &matMask/*
     int index = 0;
     for ( auto contour : vecContours ) {
         auto area = cv::contourArea ( contour );
-        if ( area > 200 ) {
+        if ( area > 200 && _isContourRectShape ( contour ) && getContourRectRatio ( contour ) < MAX_TWO_DIM_RATIO ) {
             AOI_COUNTOUR stAoiContour;
             cv::Moments moment = cv::moments( contour );
             stAoiContour.ptCtr.x = static_cast< float >(moment.m10 / moment.m00);
@@ -713,7 +753,7 @@ int VisionAlgorithm::_autoThreshold(const cv::Mat &mat, const cv::Mat &matMask/*
                 vecElectrodeSize.push_back ( rect.size() );
                 vevVecContour.push_back ( contour );
 
-                if ( Config::GetInstance ()->getDebugMode () == PR_DEBUG_MODE::SHOW_IMAGE )   {
+                if ( Config::GetInstance ()->getDebugMode () == PR_DEBUG_MODE::SHOW_IMAGE ) {
                     cv::RNG rng ( 12345 );
                     cv::Scalar color = cv::Scalar ( rng.uniform ( 0, 255 ), rng.uniform ( 0, 255 ), rng.uniform ( 0, 255 ) );
                     cv::drawContours ( matDraw, vecContours, index, color );
@@ -722,11 +762,10 @@ int VisionAlgorithm::_autoThreshold(const cv::Mat &mat, const cv::Mat &matMask/*
         }
         ++ index;
     }
-    if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE ) 
+    if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE )
         showImage("Contours", matDraw );
 
-    if ( vecElectrodePos.size() != PR_ELECTRODE_COUNT )   return VisionStatus::FIND_ELECTRODE_FAIL;
-    
+    if ( vecElectrodePos.size() != PR_ELECTRODE_COUNT )   return VisionStatus::FIND_ELECTRODE_FAIL;    
     return VisionStatus::OK;
 }
 
@@ -740,7 +779,7 @@ int VisionAlgorithm::_autoThreshold(const cv::Mat &mat, const cv::Mat &matMask/*
     _expSmooth<float>(matHorizontalProjection, matHorizontalProjection, _constExpSmoothRatio);
     _findEdge(matHorizontalProjection, static_cast< Int32 >(size.width), nLeftEdge);
     _findEdgeReverse(matHorizontalProjection, static_cast< Int32 >(size.width), nRightEdge);
-    if ( ( nRightEdge - nLeftEdge ) < size.width / 2)
+    if ( ( nRightEdge - nLeftEdge ) < ( size.width / 2 ) )
         return VisionStatus::FIND_EDGE_FAIL;
 
     _calculateVerticalProjection(matThreshold, matVerticalProjection);
@@ -1136,7 +1175,7 @@ int VisionAlgorithm::_findBlob(const cv::Mat &mat, const cv::Mat &matRevs, PR_IN
 		detector->detect ( vecInput, keyPoints, pInspCmd->matMask );
 
         //VectorOfKeyPoint vecKeyPoint = keyPoints[0];
-        for (const auto &vecKeyPoint : keyPoints)    {
+        for (const auto &vecKeyPoint : keyPoints) {
             if (vecKeyPoint.size() > 0 && pInspRpy->n16NDefect < MAX_NUM_OF_DEFECT_RESULT)	{
                 for ( const auto &keyPoint : vecKeyPoint )
                 {
@@ -1144,7 +1183,7 @@ int VisionAlgorithm::_findBlob(const cv::Mat &mat, const cv::Mat &matRevs, PR_IN
                     float fRadius = keyPoint.size / 2;
                     pInspRpy->astDefect[pInspRpy->n16NDefect].fRadius = fRadius;
                     pInspRpy->astDefect[pInspRpy->n16NDefect].fArea = (float)CV_PI * fRadius * fRadius; //Area = PI * R * R
-                    ++pInspRpy->n16NDefect;
+                    ++ pInspRpy->n16NDefect;
                 }
                 drawKeypoints( im_with_keypoints, vecKeyPoint, im_with_keypoints, cv::Scalar(0,0,255), cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS );	
             }
@@ -2490,10 +2529,10 @@ VisionStatus VisionAlgorithm::findEdge(PR_FIND_EDGE_CMD *pstCmd, PR_FIND_EDGE_RP
         cv::RotatedRect rectReult = Fitting::fitCircle ( vecSelectedPoints );
         vecSelectedPoints = _findPointsInCircleTol ( vecPoints, rectReult, tolerance );
 
-        if ( vecSelectedPoints.size() >= numOfPtToFinish ) {
+        if ( vecSelectedPoints.size() >= numOfPtToFinish )
            return Fitting::fitCircle ( vecSelectedPoints );
-        }
-        else if ( vecSelectedPoints.size() > nMaxConsentNum )
+        
+        if ( vecSelectedPoints.size() > nMaxConsentNum )
         {
             fitResult = Fitting::fitCircle ( vecSelectedPoints );
             nMaxConsentNum = vecSelectedPoints.size();
@@ -2525,9 +2564,22 @@ VisionStatus VisionAlgorithm::findEdge(PR_FIND_EDGE_CMD *pstCmd, PR_FIND_EDGE_RP
 {
     VectorOfPoint vecResult;
     for ( const auto &point : vecPoints )  {
-        auto disToCtr = sqrt( ( point.x - rotatedRect.center.x) * (point.x - rotatedRect.center.x)  + ( point.y - rotatedRect.center.y) * ( point.y - rotatedRect.center.y ) );
+        auto disToCtr = sqrt( ( point.x - rotatedRect.center.x) * (point.x - rotatedRect.center.x) + ( point.y - rotatedRect.center.y) * ( point.y - rotatedRect.center.y ) );
         auto err = disToCtr - rotatedRect.size.width / 2;
         if ( fabs ( err ) < tolerance )  {
+            vecResult.push_back(point);
+        }
+    }
+    return vecResult;
+}
+
+/*static*/ VectorOfPoint VisionAlgorithm::_findPointsOverCircleTol( const VectorOfPoint &vecPoints, const cv::RotatedRect &rotatedRect, float tolerance )
+{
+    VectorOfPoint vecResult;
+    for ( const auto &point : vecPoints )  {
+        auto disToCtr = sqrt( ( point.x - rotatedRect.center.x) * (point.x - rotatedRect.center.x) + ( point.y - rotatedRect.center.y) * ( point.y - rotatedRect.center.y ) );
+        auto err = disToCtr - rotatedRect.size.width / 2;
+        if ( fabs ( err ) > tolerance )  {
             vecResult.push_back(point);
         }
     }
@@ -2734,8 +2786,7 @@ VisionStatus VisionAlgorithm::findEdge(PR_FIND_EDGE_CMD *pstCmd, PR_FIND_EDGE_RP
     return pstRpy->enStatus;
 }
 
-/*static*/ VisionStatus VisionAlgorithm::removeCC(PR_REMOVE_CC_CMD *pstCmd, PR_REMOVE_CC_RPY *pstRpy, bool bReplay)
-{
+/*static*/ VisionStatus VisionAlgorithm::removeCC(PR_REMOVE_CC_CMD *pstCmd, PR_REMOVE_CC_RPY *pstRpy, bool bReplay) {
     assert ( pstCmd != nullptr && pstRpy != nullptr );
     char chArrMsg [ 1000 ];
 
@@ -2772,8 +2823,9 @@ VisionStatus VisionAlgorithm::findEdge(PR_FIND_EDGE_CMD *pstCmd, PR_FIND_EDGE_RP
 
     cv::Mat matLabels;
     cv::connectedComponents( matGray, matLabels, pstCmd->nConnectivity, CV_32S);
+    TimeLog::GetInstance()->addTimeLog("cv::connectedComponents", stopWatch.AbsNow() - functionStart);
 
-    double minValue, maxValue;
+    double minValue = 0., maxValue = 0.;
     cv::minMaxIdx ( matLabels, &minValue, &maxValue );
 
     cv::Mat matRemoveMask = cv::Mat::zeros(matLabels.size(), CV_8UC1);
@@ -2789,11 +2841,10 @@ VisionStatus VisionAlgorithm::findEdge(PR_FIND_EDGE_CMD *pstCmd, PR_FIND_EDGE_RP
     int nTotalPixels = matLabels.rows * matLabels.cols;
     pstRpy->nRemovedCC = 0;
 
-    do
-    {
+    do {
         cv::Mat matTemp = matLabels - nCurrentLabel;
         nCurrentLabelCount = nTotalPixels - cv::countNonZero ( matTemp );
-        if ( 0 < nCurrentLabelCount && nCurrentLabelCount < pstCmd->fAreaThreshold )  {
+        if ( 0 < nCurrentLabelCount && nCurrentLabelCount < pstCmd->fAreaThreshold ) {
             matRemoveMask += CalcUtils::genMaskByValue<Int32>( matLabels, nCurrentLabel );
             ++ pstRpy->nRemovedCC;
         }
@@ -2810,7 +2861,6 @@ VisionStatus VisionAlgorithm::findEdge(PR_FIND_EDGE_CMD *pstCmd, PR_FIND_EDGE_RP
     pstRpy->enStatus = VisionStatus::OK;
     FINISH_LOGCASE;
     MARK_FUNCTION_END_TIME;
-
     return pstRpy->enStatus;
 }
 
@@ -3899,6 +3949,9 @@ VisionStatus VisionAlgorithm::findEdge(PR_FIND_EDGE_CMD *pstCmd, PR_FIND_EDGE_RP
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return VisionStatus::INVALID_PARAM;
     }
+
+    MARK_FUNCTION_START_TIME;
+
     cv::Rect rectChipROI = CalcUtils::resizeRect<float> ( pstCmd->rectChip, pstCmd->rectChip.size() + cv::Size2f(20, 20) );
     if ( rectChipROI.x < 0  ) rectChipROI.x = 0;
     if ( rectChipROI.y < 0  ) rectChipROI.y = 0;
@@ -3942,6 +3995,8 @@ VisionStatus VisionAlgorithm::findEdge(PR_FIND_EDGE_CMD *pstCmd, PR_FIND_EDGE_RP
         return pstRpy->enStatus;
     }
 
+    MARK_FUNCTION_END_TIME;
+
     pstRpy->enStatus = VisionStatus::OK;
     pstRpy->sizeDevice = pstCmd->rectChip.size();
     _writeChipRecord ( pstCmd, pstRpy );
@@ -3957,12 +4012,19 @@ VisionStatus VisionAlgorithm::findEdge(PR_FIND_EDGE_CMD *pstCmd, PR_FIND_EDGE_RP
         WriteLog("Failed to find device electrode");
         return pstRpy->enStatus;
     }
-    for ( size_t index = 0; index < PR_ELECTRODE_COUNT && index < vecElectrodeSize.size(); ++ index ) {
-        pstRpy->arrSizeElectrode[index] = vecElectrodeSize[index];
-        cv::Rect2f rectElectrode ( vecPtElectrode[index].x - vecElectrodeSize[index].width / 2 + rectROI.x, vecPtElectrode[index].y - vecElectrodeSize[index].height / 2 + rectROI.y,
-            vecElectrodeSize[index].width, vecElectrodeSize[index].height );
-        cv::rectangle ( pstRpy->matResultImg, rectElectrode, _constBlueScalar );
+    //for ( size_t index = 0; index < PR_ELECTRODE_COUNT && index < vecElectrodeSize.size(); ++ index ) {
+    //    pstRpy->arrSizeElectrode[index] = vecElectrodeSize[index];
+    //    cv::Rect2f rectElectrode ( vecPtElectrode[index].x - vecElectrodeSize[index].width / 2 + rectROI.x, vecPtElectrode[index].y - vecElectrodeSize[index].height / 2 + rectROI.y,
+    //        vecElectrodeSize[index].width, vecElectrodeSize[index].height );
+    //    cv::rectangle ( pstRpy->matResultImg, rectElectrode, _constBlueScalar );
+    //}
+    for ( auto &contour : vecContours ) {
+        for ( auto &point : contour ) {
+            point.x += rectROI.x;
+            point.y += rectROI.y;
+        }
     }
+    cv::polylines( pstRpy->matResultImg, vecContours, true, _constBlueScalar, 2 );
 
     return pstRpy->enStatus;
 }
@@ -3981,40 +4043,31 @@ VisionStatus VisionAlgorithm::findEdge(PR_FIND_EDGE_CMD *pstCmd, PR_FIND_EDGE_RP
             maxContour = contour;
             fMaxArea = rectRotated.size.area();
         }
-    }
-    
+    }    
+   
     int nMaxRansacTime = 20;
     float fFitTolerance = 4;
-    auto fitCircleRect = _fitCircleRansac ( maxContour, fFitTolerance, nMaxRansacTime, maxContour.size() / 2 );
-    
-    cv::Point2f ptCAEWhiteCenter;
-    cv::Moments moment = cv::moments( maxContour );
-    ptCAEWhiteCenter.x = static_cast<float>(moment.m10 / moment.m00);
-    ptCAEWhiteCenter.y = static_cast<float>(moment.m01 / moment.m00);
-    bool bReverseFit = false;
-    if ( fabs ( ptCAEWhiteCenter.x - fitCircleRect.center.x ) > fabs ( ptCAEWhiteCenter.y - fitCircleRect.center.y ) )
-        bReverseFit = true;
+    auto fitCircleResult = _fitCircleRansac ( maxContour, fFitTolerance, nMaxRansacTime, maxContour.size() / 2 );
+    auto vecLeftOverPoints = _findPointsOverCircleTol ( maxContour, fitCircleResult, fFitTolerance );    
     float fSlope = 0.f, fIntercept = 0.f;
     PR_Line2f stLine;
-    _fitLineRansac ( maxContour, fFitTolerance, nMaxRansacTime, maxContour.size() / 4, bReverseFit, fSlope, fIntercept, stLine );
+    _fitLineRansac ( vecLeftOverPoints, fFitTolerance, nMaxRansacTime, vecLeftOverPoints.size() / 2, false, fSlope, fIntercept, stLine );
     float fLineLength = CalcUtils::distanceOf2Point ( stLine.pt1, stLine.pt2 );
 
     if ( PR_DEBUG_MODE::SHOW_IMAGE == Config::GetInstance()->getDebugMode() ) {
         cv::Mat matDisplay;
         cv::cvtColor ( matThreshold, matDisplay, CV_GRAY2BGR );
-        VectorOfVectorOfPoint vevVecPoint;
-        vevVecPoint.push_back ( maxContour );
-        cv::polylines ( matDisplay, vevVecPoint, true, _constBlueScalar, 2 );
-        cv::line ( matDisplay, stLine.pt1, stLine.pt2, _constGreenScalar, 2 ); 
+        cv::circle ( matDisplay, fitCircleResult.center, ToInt32 ( fitCircleResult.size.width / 2 + 0.5 ), _constBlueScalar, 2 );
+        cv::line ( matDisplay, stLine.pt1, stLine.pt2, _constGreenScalar, 2 );
         showImage ( "lrnChipCAEMode", matDisplay );
     }
 
-    if ( fitCircleRect.size.width < rectROI.width / 2 ) {
+    if ( fitCircleResult.size.width < rectROI.width / 2 ) {
         pstRpy->enStatus = VisionStatus::FAIL_TO_FIT_CIRCLE;
         return pstRpy->enStatus;
     }
 
-    if ( fLineLength < fitCircleRect.size.width / 2 || fLineLength > fitCircleRect.size.width ) {
+    if ( fLineLength < fitCircleResult.size.width / 2 || fLineLength > fitCircleResult.size.width ) {
         pstRpy->enStatus = VisionStatus::CAN_NOT_FIND_CAE_LINE;
         return pstRpy->enStatus;
     }
@@ -4026,6 +4079,7 @@ VisionStatus VisionAlgorithm::findEdge(PR_FIND_EDGE_CMD *pstCmd, PR_FIND_EDGE_RP
     VectorOfVectorOfPoint vevVecPoint;
     vevVecPoint.push_back ( maxContour );
     cv::polylines ( pstRpy->matResultImg, vevVecPoint, true, _constBlueScalar, 2 );
+    pstRpy->enStatus = VisionStatus::OK;
     return pstRpy->enStatus;
 }
 
@@ -4068,11 +4122,11 @@ VisionStatus VisionAlgorithm::findEdge(PR_FIND_EDGE_CMD *pstCmd, PR_FIND_EDGE_RP
     cv::transpose ( matOneCol, matOneCol );
     int nLeftX = 0, nRightX = 0, nTopY = 0, nBottomY = 0;
     bool bSuccess = true;
-    bSuccess = ( bSuccess && findEdge ( matOneRow, 0, matOneRow.cols / 2,              true,  nLeftX ) );
-    bSuccess = ( bSuccess && findEdge ( matOneRow, matOneRow.cols / 2, matOneRow.cols, false, nRightX ) );
+    bSuccess = ( bSuccess && _findDataUpEdge   ( matOneRow, 0,                  matOneRow.cols / 2, nLeftX ) );
+    bSuccess = ( bSuccess && _findDataDownEdge ( matOneRow, matOneRow.cols / 2, matOneRow.cols,     nRightX ) );
 
-    bSuccess = ( bSuccess && findEdge ( matOneCol, 0, matOneCol.cols / 2,              true,  nTopY ) );
-    bSuccess = ( bSuccess && findEdge ( matOneCol, matOneCol.cols / 2, matOneCol.cols, false, nBottomY ) );
+    bSuccess = ( bSuccess && _findDataUpEdge   ( matOneCol, 0,                  matOneCol.cols / 2, nTopY ) );
+    bSuccess = ( bSuccess && _findDataDownEdge ( matOneCol, matOneCol.cols / 2, matOneCol.cols,     nBottomY ) );
     cv::rectangle ( pstRpy->matResultImg, cv::Point ( rectROI.x + nLeftX, rectROI.y + nTopY),
         cv::Point ( rectROI.x + nRightX, rectROI.y + nBottomY ), _constGreenScalar, 2 );
     
@@ -4081,9 +4135,9 @@ VisionStatus VisionAlgorithm::findEdge(PR_FIND_EDGE_CMD *pstCmd, PR_FIND_EDGE_RP
         return pstRpy->enStatus;
     }
 
-    const float CONST_INPUT_ERROR_TOL = 0.1f; //10% input error tolerance
-    if ( abs ( nRightX - nLeftX - rectChip.width ) / ToFloat ( rectChip.width )  > CONST_INPUT_ERROR_TOL ||
-        abs ( nBottomY - nTopY - rectChip.height ) / ToFloat ( rectChip.height ) > CONST_INPUT_ERROR_TOL ) {
+    const float INPUT_ERROR_TOL = 0.1f; //10% input error tolerance
+    if ( abs ( nRightX - nLeftX - rectChip.width ) / ToFloat ( rectChip.width )  > INPUT_ERROR_TOL ||
+        abs ( nBottomY - nTopY - rectChip.height ) / ToFloat ( rectChip.height ) > INPUT_ERROR_TOL ) {
         WriteLog("The found chip edges are not match with input chip window");
         pstRpy->enStatus = VisionStatus::CAN_NOT_FIND_SQUARE_EDGE;
         return pstRpy->enStatus;
@@ -4122,6 +4176,28 @@ VisionStatus VisionAlgorithm::findEdge(PR_FIND_EDGE_CMD *pstCmd, PR_FIND_EDGE_RP
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return VisionStatus::INVALID_PARAM;
     }
+
+    ChipRecordPtr ptrRecord = nullptr;
+    if ( pstCmd->nRecordId > 0 ) {
+        ptrRecord = std::static_pointer_cast<ChipRecord> (RecordManager::getInstance ()->get ( pstCmd->nRecordId ));
+        if (nullptr == ptrRecord) {
+            _snprintf ( charrMsg, sizeof ( charrMsg ), "Failed to get record ID %d in system.", pstCmd->nRecordId );
+            WriteLog ( charrMsg );
+            pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+            return pstRpy->enStatus;
+        }
+
+        if (ptrRecord->getInspMode () != pstCmd->enInspMode) {
+            _snprintf ( charrMsg, sizeof ( charrMsg ), "The record insp mode %d if record %d is not match with input insp mode %d",
+                ToInt32 ( ptrRecord->getInspMode () ), pstCmd->nRecordId, ToInt32 ( pstCmd->enInspMode ) );
+            WriteLog ( charrMsg );
+            pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+            return pstRpy->enStatus;
+        }
+    }
+
+    MARK_FUNCTION_START_TIME;
+
     cv::Mat matROI ( pstCmd->matInputImg, pstCmd->rectSrchWindow );
     cv::Mat matGray, matBlur, matThreshold;
     if ( matROI.channels() > 1 ) {
@@ -4136,37 +4212,31 @@ VisionStatus VisionAlgorithm::findEdge(PR_FIND_EDGE_CMD *pstCmd, PR_FIND_EDGE_RP
     if (Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE)
         showImage("Blur image", matBlur);
 
-    ChipRecordPtr ptrRecord = std::static_pointer_cast<ChipRecord> ( RecordManager::getInstance()->get ( pstCmd->nRecordId ) );
-    if ( nullptr == ptrRecord ) {
-        _snprintf(charrMsg, sizeof (charrMsg), "Failed to get record ID %d in system.", pstCmd->nRecordId );
-        WriteLog ( charrMsg );
-        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
-        return pstRpy->enStatus;
-    }
-
-    if ( ptrRecord->getInspMode() != pstCmd->enInspMode ) {
-        _snprintf(charrMsg, sizeof (charrMsg), "The record insp mode %d if record %d is not match with input insp mode %d", 
-            ToInt32( ptrRecord->getInspMode() ), pstCmd->nRecordId, ToInt32 ( pstCmd->enInspMode ) );
-        WriteLog ( charrMsg );
-        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
-        return pstRpy->enStatus;
-    } 
+    int nThreshold = 100;
+    if ( ptrRecord != nullptr )
+        nThreshold = ptrRecord->getThreshold();
+    else
+        nThreshold = _autoThreshold ( matBlur );
 
     cv::ThresholdTypes enThresholdType = cv::THRESH_BINARY;
     if ( PR_INSP_CHIP_MODE::SQUARE == pstCmd->enInspMode )
         enThresholdType = cv::THRESH_BINARY_INV;
-    cv::threshold ( matBlur, matThreshold, ptrRecord->getThreshold(), 255, enThresholdType );
+    cv::threshold ( matBlur, matThreshold, nThreshold, 255, enThresholdType );
     if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE )
         showImage("Threshold image", matThreshold);
 
     if ( PR_INSP_CHIP_MODE::HEAD == pstCmd->enInspMode ) {
         _inspChipHeadMode ( matThreshold, pstCmd->rectSrchWindow, pstRpy );
     }else if ( PR_INSP_CHIP_MODE::SQUARE == pstCmd->enInspMode ) {
-        //_lrnChipSquareMode ( matThreshold, pstCmd->rectChip, rectChipROI, pstRpy );
+        _inspChipSquareMode ( matThreshold, pstCmd->rectSrchWindow, pstRpy );
     }else
     if ( PR_INSP_CHIP_MODE::CAE == pstCmd->enInspMode ) {
-        //_lrnChipCAEMode ( matThreshold, rectChipROI, pstRpy );
-    }
+        _inspChipCAEMode ( matThreshold, pstCmd->rectSrchWindow, pstRpy );
+    }else
+    if ( PR_INSP_CHIP_MODE::CIRCULAR == pstCmd->enInspMode )
+        _inspChipCircularMode ( matThreshold, pstCmd->rectSrchWindow, pstRpy );
+
+    MARK_FUNCTION_END_TIME;
     return pstRpy->enStatus;
 }
 
@@ -4180,20 +4250,231 @@ VisionStatus VisionAlgorithm::findEdge(PR_FIND_EDGE_CMD *pstCmd, PR_FIND_EDGE_RP
         return pstRpy->enStatus;
     }
 
-    for ( size_t index = 0; index < PR_ELECTRODE_COUNT && index < vecElectrodeSize.size(); ++ index ) {
-        cv::Rect2f rectElectrode ( vecPtElectrode[index].x - vecElectrodeSize[index].width / 2 + rectROI.x, vecPtElectrode[index].y - vecElectrodeSize[index].height / 2 + rectROI.y,
-            vecElectrodeSize[index].width, vecElectrodeSize[index].height );
-        cv::rectangle ( pstRpy->matResultImg, rectElectrode, _constBlueScalar );
+    //Draw the electrodes.
+    for ( auto &contour : vecContours ) {
+        for ( auto &point : contour ) {
+            point.x += rectROI.x;
+            point.y += rectROI.y;
+        }
     }
+    cv::polylines( pstRpy->matResultImg, vecContours, true, _constBlueScalar, 2 );
 
     VectorOfPoint vecTwoContourTogether = vecContours[0];
     vecTwoContourTogether.insert ( vecTwoContourTogether.end(), vecContours[1].begin(), vecContours[1].end() );
     pstRpy->rotatedRectResult = cv::minAreaRect ( vecTwoContourTogether );
-    pstRpy->rotatedRectResult.center.x += rectROI.x;
-    pstRpy->rotatedRectResult.center.y += rectROI.y;
     VectorOfVectorOfPoint vevVecPoints;
     vevVecPoints.push_back ( CalcUtils::getCornerOfRotatedRect ( pstRpy->rotatedRectResult ) );
     cv::polylines( pstRpy->matResultImg, vevVecPoints, true, _constGreenScalar, 2 );
+    pstRpy->enStatus = VisionStatus::OK;
+    return pstRpy->enStatus;
+}
+
+/*static*/ VisionStatus VisionAlgorithm::_inspChipSquareMode(const cv::Mat &matThreshold, const cv::Rect &rectROI, PR_INSP_CHIP_RPY *const pstRpy ) {
+    cv::Mat matOneRow, matOneCol;
+    cv::reduce ( matThreshold, matOneRow, 0, cv::ReduceTypes::REDUCE_SUM, CV_32SC1 );
+    matOneRow /= 255;
+
+    if ( PR_DEBUG_MODE::SHOW_IMAGE == Config::GetInstance()->getDebugMode() ) {
+        int nHeight = matThreshold.rows;
+        cv::Mat matDisplay = cv::Mat::ones ( matThreshold.size(), CV_8UC3 ) * 255;
+        matDisplay.setTo( cv::Scalar::all ( 255 ) );
+        for ( int i = 1; i < matOneRow.cols; ++ i ) {
+            cv::Point pt1 ( i - 1, nHeight - matOneRow.at<int>(0, i - 1) );
+            cv::Point pt2 ( i, nHeight - matOneRow.at<int>(0, i) );
+            cv::line ( matDisplay, pt1, pt2, _constBlueScalar, 2 );
+        }
+        showImage("Project Curve Row", matDisplay );
+    }
+    cv::reduce ( matThreshold, matOneCol, 1, cv::ReduceTypes::REDUCE_SUM, CV_32SC1 );
+    matOneCol /= 255;
+    cv::transpose ( matOneCol, matOneCol );
+
+    if ( PR_DEBUG_MODE::SHOW_IMAGE == Config::GetInstance()->getDebugMode() ) {
+        int nHeight = matThreshold.cols;
+        cv::Mat matDisplay = cv::Mat::ones ( cv::Size ( matThreshold.rows, matThreshold.cols ), CV_8UC3 ) * 255;
+        matDisplay.setTo( cv::Scalar::all ( 255 ) );
+        for ( int i = 1; i < matOneCol.cols; ++ i ) {
+            cv::Point pt1 ( i - 1, nHeight - matOneCol.at<int>(0, i - 1) );
+            cv::Point pt2 ( i, nHeight - matOneCol.at<int>(0, i) );
+            cv::line ( matDisplay, pt1, pt2, _constBlueScalar, 2 );
+        }
+        showImage("Project Curve Col", matDisplay );
+    }
+
+    
+    int nLeftX = 0, nRightX = 0, nTopY = 0, nBottomY = 0;
+    bool bSuccess = true;
+    bSuccess = ( bSuccess && _findDataUpEdge   ( matOneRow, 0,                  matOneRow.cols / 2, nLeftX ) );
+    bSuccess = ( bSuccess && _findDataDownEdge ( matOneRow, matOneRow.cols / 2, matOneRow.cols,     nRightX ) );
+
+    bSuccess = ( bSuccess && _findDataUpEdge   ( matOneCol, 0,                  matOneCol.cols / 2, nTopY ) );
+    bSuccess = ( bSuccess && _findDataDownEdge ( matOneCol, matOneCol.cols / 2, matOneCol.cols,     nBottomY ) );
+    cv::rectangle ( pstRpy->matResultImg, cv::Point ( rectROI.x + nLeftX, rectROI.y + nTopY),
+        cv::Point ( rectROI.x + nRightX, rectROI.y + nBottomY ), _constGreenScalar, 2 );
+    
+    if( ! bSuccess ) {
+        pstRpy->enStatus = VisionStatus::CAN_NOT_FIND_SQUARE_EDGE;
+        return pstRpy->enStatus;
+    }
+
+    pstRpy->rotatedRectResult.angle = 0;
+    pstRpy->rotatedRectResult.center.x = (nLeftX + nRightX  ) / 2.f + rectROI.x;
+    pstRpy->rotatedRectResult.center.y = (nTopY  + nBottomY ) / 2.f + rectROI.y;
+    pstRpy->rotatedRectResult.size.width  = ToFloat ( nRightX - nLeftX + 1 );
+    pstRpy->rotatedRectResult.size.height = ToFloat ( nBottomY - nTopY + 1 );
+    VectorOfVectorOfPoint vevVecPoints;
+    vevVecPoints.push_back ( CalcUtils::getCornerOfRotatedRect ( pstRpy->rotatedRectResult ) );
+    cv::polylines( pstRpy->matResultImg, vevVecPoints, true, _constGreenScalar, 2 );
+    pstRpy->enStatus = VisionStatus::OK;
+    return pstRpy->enStatus;
+}
+
+/*static*/ bool VisionAlgorithm::_findDataUpEdge( const cv::Mat &matRow, int nStart, int nEnd, int &nEdgePos ) {
+    const int EDGE_SIZE = 20;
+    int EDGE_MIN_DIFF = matRow.cols / 3;
+    nEdgePos = -1;
+    for (int index = nStart; index < nEnd - EDGE_SIZE; ++index) {
+        int nDiff = matRow.at<int> ( 0, index + EDGE_SIZE ) - matRow.at<int> ( 0, index );       
+        if (nDiff > EDGE_MIN_DIFF)
+            nEdgePos = index + EDGE_SIZE / 2;
+    }
+    if ( nEdgePos < 0 )
+        return false;
+    return true;
+}
+
+/*static*/ bool VisionAlgorithm::_findDataDownEdge ( const cv::Mat &matRow, int nStart, int nEnd, int &nEdgePos ) {
+    const int EDGE_SIZE = 20;
+    int EDGE_MIN_DIFF = matRow.cols / 4;
+    nEdgePos = -1;
+    for (int index = nEnd - EDGE_SIZE - 1; index >= nStart; -- index) {
+        int nDiff = matRow.at<int>( 0, index ) - matRow.at<int> ( 0, index + EDGE_SIZE );     
+        if ( nDiff > EDGE_MIN_DIFF )
+            nEdgePos = index + EDGE_SIZE / 2;
+    }
+    if ( nEdgePos < 0 )
+        return false;
+    return true;
+}
+
+/*static*/ VisionStatus VisionAlgorithm::_inspChipCAEMode(const cv::Mat &matThreshold, const cv::Rect &rectROI, PR_INSP_CHIP_RPY *const pstRpy) {
+    cv::Mat matFillHole;
+    _fillHoleByContour ( matThreshold, matFillHole, PR_OBJECT_ATTRIBUTE::BRIGHT );
+
+    VectorOfVectorOfPoint contours;
+    cv::findContours( matFillHole, contours, cv::RETR_CCOMP, cv::CHAIN_APPROX_SIMPLE );
+    VectorOfPoint maxContour;
+    float fMaxArea = std::numeric_limits<float>::min();
+    for ( const auto &contour : contours ) {
+        auto rectRotated = cv::minAreaRect ( contour );
+        if ( rectRotated.size.area() > fMaxArea ) {
+            maxContour = contour;
+            fMaxArea = rectRotated.size.area();
+        }
+    }
+    
+    int nMaxRansacTime = 20;
+    float fFitTolerance = 4;
+    auto fitCircleResult = _fitCircleRansac ( maxContour, fFitTolerance, nMaxRansacTime, maxContour.size() / 2 );
+    auto vecLeftOverPoints = _findPointsOverCircleTol ( maxContour, fitCircleResult, fFitTolerance );    
+    float fSlope = 0.f, fIntercept = 0.f;
+    PR_Line2f stLine;
+    _fitLineRansac ( vecLeftOverPoints, fFitTolerance, nMaxRansacTime, vecLeftOverPoints.size() / 2, false, fSlope, fIntercept, stLine );
+    float fLineLength = CalcUtils::distanceOf2Point ( stLine.pt1, stLine.pt2 );
+
+    if ( PR_DEBUG_MODE::SHOW_IMAGE == Config::GetInstance()->getDebugMode() ) {
+        cv::Mat matDisplay;
+        cv::cvtColor ( matThreshold, matDisplay, CV_GRAY2BGR );
+        cv::circle ( matDisplay, fitCircleResult.center, ToInt32 ( fitCircleResult.size.width / 2 + 0.5 ), _constBlueScalar, 2 );
+        cv::line ( matDisplay, stLine.pt1, stLine.pt2, _constGreenScalar, 2 ); 
+        showImage ( "lrnChipCAEMode", matDisplay );
+    }
+
+    if ( fitCircleResult.size.width < rectROI.width / 2 ) {
+        pstRpy->enStatus = VisionStatus::FAIL_TO_FIT_CIRCLE;
+        return pstRpy->enStatus;
+    }
+
+    if ( fLineLength < fitCircleResult.size.width / 2 || fLineLength > fitCircleResult.size.width ) {
+        pstRpy->enStatus = VisionStatus::CAN_NOT_FIND_CAE_LINE;
+        return pstRpy->enStatus;
+    }
+    pstRpy->enStatus = VisionStatus::OK;
+    for ( auto &point : maxContour ) {
+        point.x += rectROI.x;
+        point.y += rectROI.y;       
+    }
+    VectorOfVectorOfPoint vevVecPoint;
+    vevVecPoint.push_back ( maxContour );
+    cv::polylines ( pstRpy->matResultImg, vevVecPoint, true, _constBlueScalar, 2 );
+
+    fitCircleResult.center.x += rectROI.x;
+    fitCircleResult.center.y += rectROI.y;
+    pstRpy->rotatedRectResult = fitCircleResult;
+    pstRpy->enStatus = VisionStatus::OK;
+    return pstRpy->enStatus;
+}
+
+/*static*/ VisionStatus VisionAlgorithm::_inspChipCircularMode(const cv::Mat &matThreshold, const cv::Rect &rectROI, PR_INSP_CHIP_RPY *const pstRpy) {
+    cv::Mat matLabels;
+    cv::connectedComponents( matThreshold, matLabels, 4, CV_32S );
+
+    double minValue = 0., maxValue = 0.;
+    cv::minMaxIdx ( matLabels, &minValue, &maxValue );
+    float fMaxArea = std::numeric_limits<float>::min();
+    cv::Mat matMaxComponent;
+    //0 represents the background label, so need to ignore.
+    for ( int nLabel = 1; nLabel <= maxValue; ++ nLabel ) {
+        cv::Mat matCC = CalcUtils::genMaskByValue<Int32>( matLabels, nLabel );
+        float fArea = cv::countNonZero ( matCC );
+        if ( fArea > fMaxArea ) {
+            fMaxArea = fArea;
+            matMaxComponent = matCC;
+        }
+    }
+
+    if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE )
+        showImage("Max Component", matMaxComponent );
+    
+    VectorOfVectorOfPoint contours;
+    cv::findContours( matMaxComponent, contours, cv::RETR_CCOMP, cv::CHAIN_APPROX_SIMPLE );
+    if ( contours.size() <= 0 ) {
+        pstRpy->enStatus = VisionStatus::CAN_NOT_FIND_CIRCULAR_CHIP;
+        return pstRpy->enStatus;
+    }
+    
+    VectorOfPoint maxContour;
+    fMaxArea = std::numeric_limits<float>::min();
+    for ( const auto &contour : contours ) {
+        auto rectRotated = cv::minAreaRect ( contour );
+        if ( rectRotated.size.area() > fMaxArea ) {
+            maxContour = contour;
+            fMaxArea = rectRotated.size.area();
+        }
+    }
+
+    int nMaxRansacTime = 20;
+    float fFitTolerance = 4;
+    auto fitCircleResult = _fitCircleRansac ( maxContour, fFitTolerance, nMaxRansacTime, maxContour.size() / 2 );
+
+    if ( PR_DEBUG_MODE::SHOW_IMAGE == Config::GetInstance()->getDebugMode() ) {
+        cv::Mat matDisplay;
+        cv::cvtColor ( matThreshold, matDisplay, CV_GRAY2BGR );
+        cv::circle ( matDisplay, fitCircleResult.center, ToInt32 ( fitCircleResult.size.width / 2 + 0.5 ), _constBlueScalar, 2 );
+        showImage ( "inspChipCircularMode", matDisplay );
+    }
+
+    auto vecInTolPoints = _findPointsInCircleTol ( maxContour, fitCircleResult, fFitTolerance );
+    if ( vecInTolPoints.size() < maxContour.size() / 2 ) {
+        pstRpy->enStatus = VisionStatus::CAN_NOT_FIND_CIRCULAR_CHIP;
+        return pstRpy->enStatus;
+    }
+
+    fitCircleResult.center.x += rectROI.x;
+    fitCircleResult.center.y += rectROI.y;
+    pstRpy->rotatedRectResult = fitCircleResult;
+
+    cv::circle ( pstRpy->matResultImg, fitCircleResult.center, ToInt32 ( fitCircleResult.size.width / 2 + 0.5 ), _constBlueScalar, 2 );
     pstRpy->enStatus = VisionStatus::OK;
     return pstRpy->enStatus;
 }

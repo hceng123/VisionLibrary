@@ -92,16 +92,22 @@ public:
         return sqrt(variance);
     }
 
+    //template<typename _Tp>
+    //static cv::Mat genMaskByValue(const cv::Mat &matInputImg, const _Tp value)
+    //{
+    //    cv::Mat matResultImg = cv::Mat::zeros(matInputImg.size(), CV_8UC1);
+    //    for (int row = 0; row < matInputImg.rows; ++ row)
+    //        for (int col = 0; col < matInputImg.cols; ++ col)
+    //        {
+    //            if (value == matInputImg.at<_Tp>(row, col))
+    //                matResultImg.at<uchar>(row, col) = 1;
+    //        }
+    //    return matResultImg;
+    //}
     template<typename _Tp>
-    static cv::Mat genMaskByValue(const cv::Mat &matInputImg, const _Tp value)
-    {
-        cv::Mat matResultImg = cv::Mat::zeros(matInputImg.size(), CV_8UC1);
-        for (int row = 0; row < matInputImg.rows; ++row)
-            for (int col = 0; col < matInputImg.cols; ++col)
-            {
-                if (value == matInputImg.at<_Tp>(row, col))
-                    matResultImg.at<uchar>(row, col) = 1;
-            }
+    static cv::Mat genMaskByValue(const cv::Mat &matInputImg, const _Tp value) {
+        cv::Mat matResultImg;
+        cv::compare ( matInputImg, value, matResultImg, cv::CmpTypes::CMP_EQ );
         return matResultImg;
     }
 

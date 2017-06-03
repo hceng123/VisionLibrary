@@ -49,9 +49,10 @@ enum class VisionStatus
     FAILED_TO_FIND_LEAD,
     CAN_NOT_FIND_CAE_LINE,      //Can not find the line of capacitor
     CAN_NOT_FIND_SQUARE_EDGE,
+    CAN_NOT_FIND_CIRCULAR_CHIP,
 };
 
 }
 }
 
-#endif
+#endif /*_VISION_STATUS_H_*/

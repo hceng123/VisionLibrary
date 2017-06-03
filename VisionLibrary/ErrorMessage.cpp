@@ -73,8 +73,16 @@ VisionStatus GetErrorInfo(VisionStatus enStatus, PR_GET_ERROR_STR_RPY *pstRpy)
         _snprintf(pstRpy->achErrorStr, PR_MAX_ERR_STR_LEN, "The chessboard pattern is not correct.");
         pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::PR_STATUS_FATAL_ERROR;
         break;
+    case VisionStatus::CAN_NOT_FIND_CAE_LINE:
+        _snprintf(pstRpy->achErrorStr, PR_MAX_ERR_STR_LEN, "Can not find the line of CAE.");
+        pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::PR_STATUS_FATAL_ERROR;
+        break;
     case VisionStatus::CAN_NOT_FIND_SQUARE_EDGE:
         _snprintf(pstRpy->achErrorStr, PR_MAX_ERR_STR_LEN, "Can not find square chip edges.");
+        pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::PR_STATUS_FATAL_ERROR;
+        break;
+    case VisionStatus::CAN_NOT_FIND_CIRCULAR_CHIP:
+        _snprintf(pstRpy->achErrorStr, PR_MAX_ERR_STR_LEN, "Can not find circular chip.");
         pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::PR_STATUS_FATAL_ERROR;
         break;
     default:
