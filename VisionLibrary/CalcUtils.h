@@ -92,18 +92,6 @@ public:
         return sqrt(variance);
     }
 
-    //template<typename _Tp>
-    //static cv::Mat genMaskByValue(const cv::Mat &matInputImg, const _Tp value)
-    //{
-    //    cv::Mat matResultImg = cv::Mat::zeros(matInputImg.size(), CV_8UC1);
-    //    for (int row = 0; row < matInputImg.rows; ++ row)
-    //        for (int col = 0; col < matInputImg.cols; ++ col)
-    //        {
-    //            if (value == matInputImg.at<_Tp>(row, col))
-    //                matResultImg.at<uchar>(row, col) = 1;
-    //        }
-    //    return matResultImg;
-    //}
     template<typename _Tp>
     static cv::Mat genMaskByValue(const cv::Mat &matInputImg, const _Tp value) {
         cv::Mat matResultImg;
@@ -145,7 +133,7 @@ public:
     static inline std::vector<std::vector<_Tp>> matToVector(const cv::Mat &matInputImg) {
     std::vector<std::vector<_Tp>> vecVecArray;
     if ( matInputImg.isContinuous() ) {
-        for ( int row = 0; row < matInputImg.rows; ++ row ) {            
+        for ( int row = 0; row < matInputImg.rows; ++ row ) {
             std::vector<_Tp> vecRow;
             int nRowStart = row * matInputImg.cols;
             vecRow.assign ( (_Tp *)matInputImg.datastart + nRowStart, (_Tp *)matInputImg.datastart + nRowStart + matInputImg.cols );

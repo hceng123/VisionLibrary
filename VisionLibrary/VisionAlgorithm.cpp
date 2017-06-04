@@ -693,7 +693,7 @@ int VisionAlgorithm::_autoThreshold(const cv::Mat &mat, const cv::Mat &matMask/*
     cv::Mat matBlack = cv::Mat::zeros ( rect.size() + cv::Size(rect.x, rect.y), CV_8UC1 );
     VectorOfVectorOfPoint vevVecPoint;
     vevVecPoint.push_back ( vecPoint );
-    cv::fillPoly ( matBlack, vevVecPoint, cv::Scalar::all(255) );
+    cv::fillPoly ( matBlack, vevVecPoint, cv::Scalar::all(PR_MAX_GRAY_LEVEL) );
     
     //cv::imshow ( "fill poly image", matBlack );
     //cv::waitKey(0);
@@ -4197,6 +4197,7 @@ VisionStatus VisionAlgorithm::findEdge(PR_FIND_EDGE_CMD *pstCmd, PR_FIND_EDGE_RP
     }
 
     MARK_FUNCTION_START_TIME;
+    SETUP_LOGCASE(LogCaseInspChip);
 
     cv::Mat matROI ( pstCmd->matInputImg, pstCmd->rectSrchWindow );
     cv::Mat matGray, matBlur, matThreshold;
@@ -4227,15 +4228,16 @@ VisionStatus VisionAlgorithm::findEdge(PR_FIND_EDGE_CMD *pstCmd, PR_FIND_EDGE_RP
 
     if ( PR_INSP_CHIP_MODE::HEAD == pstCmd->enInspMode ) {
         _inspChipHeadMode ( matThreshold, pstCmd->rectSrchWindow, pstRpy );
+    }else if ( PR_INSP_CHIP_MODE::BODY == pstCmd->enInspMode ) {
+        _inspChipBodyMode ( matThreshold, pstCmd->rectSrchWindow, pstRpy );
     }else if ( PR_INSP_CHIP_MODE::SQUARE == pstCmd->enInspMode ) {
         _inspChipSquareMode ( matThreshold, pstCmd->rectSrchWindow, pstRpy );
-    }else
-    if ( PR_INSP_CHIP_MODE::CAE == pstCmd->enInspMode ) {
+    }else if ( PR_INSP_CHIP_MODE::CAE == pstCmd->enInspMode ) {
         _inspChipCAEMode ( matThreshold, pstCmd->rectSrchWindow, pstRpy );
-    }else
-    if ( PR_INSP_CHIP_MODE::CIRCULAR == pstCmd->enInspMode )
+    }else if ( PR_INSP_CHIP_MODE::CIRCULAR == pstCmd->enInspMode )
         _inspChipCircularMode ( matThreshold, pstCmd->rectSrchWindow, pstRpy );
 
+    FINISH_LOGCASE;
     MARK_FUNCTION_END_TIME;
     return pstRpy->enStatus;
 }
@@ -4262,6 +4264,107 @@ VisionStatus VisionAlgorithm::findEdge(PR_FIND_EDGE_CMD *pstCmd, PR_FIND_EDGE_RP
     VectorOfPoint vecTwoContourTogether = vecContours[0];
     vecTwoContourTogether.insert ( vecTwoContourTogether.end(), vecContours[1].begin(), vecContours[1].end() );
     pstRpy->rotatedRectResult = cv::minAreaRect ( vecTwoContourTogether );
+    VectorOfVectorOfPoint vevVecPoints;
+    vevVecPoints.push_back ( CalcUtils::getCornerOfRotatedRect ( pstRpy->rotatedRectResult ) );
+    cv::polylines( pstRpy->matResultImg, vevVecPoints, true, _constGreenScalar, 2 );
+    pstRpy->enStatus = VisionStatus::OK;
+    return pstRpy->enStatus;
+}
+
+/*static*/ VisionStatus VisionAlgorithm::_inspChipBodyMode(const cv::Mat &matThreshold, const cv::Rect &rectROI, PR_INSP_CHIP_RPY *const pstRpy) {
+    cv::Mat matLabels;
+    cv::connectedComponents( matThreshold, matLabels, 4, CV_32S );
+
+    double minValue = 0., maxValue = 0.;
+    cv::minMaxIdx ( matLabels, &minValue, &maxValue );
+    float fMaxArea = std::numeric_limits<float>::min();
+    cv::Mat matMaxComponent;
+    //0 represents the background label, so need to ignore.
+    for ( int nLabel = 1; nLabel <= maxValue; ++ nLabel ) {
+        cv::Mat matCC = CalcUtils::genMaskByValue<Int32>( matLabels, nLabel );
+        float fArea = ToFloat ( cv::countNonZero ( matCC ) );
+        if ( fArea > fMaxArea ) {
+            fMaxArea = fArea;
+            matMaxComponent = matCC;
+        }
+    }
+
+    if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE )
+        showImage("Max Component", matMaxComponent );
+    
+    VectorOfVectorOfPoint contours;
+    cv::findContours( matMaxComponent, contours, cv::RETR_CCOMP, cv::CHAIN_APPROX_SIMPLE );
+    if ( contours.size() <= 0 ) {
+        pstRpy->enStatus = VisionStatus::CAN_NOT_FIND_CIRCULAR_CHIP;
+        return pstRpy->enStatus;
+    }
+    
+    VectorOfPoint maxContour;
+    fMaxArea = std::numeric_limits<float>::min();
+    for ( const auto &contour : contours ) {
+        auto rectRotated = cv::minAreaRect ( contour );
+        if ( rectRotated.size.area() > fMaxArea ) {
+            maxContour = contour;
+            fMaxArea = rectRotated.size.area();
+        }
+    }
+
+    auto rectBody = cv::minAreaRect ( maxContour );
+
+    if ( PR_DEBUG_MODE::SHOW_IMAGE == Config::GetInstance()->getDebugMode() ) {
+        cv::Mat matDisplay;
+        cv::cvtColor ( matThreshold, matDisplay, CV_GRAY2BGR );
+        VectorOfVectorOfPoint vevVecPoints;
+        vevVecPoints.push_back ( CalcUtils::getCornerOfRotatedRect ( rectBody ) );
+        cv::polylines( matDisplay, vevVecPoints, true, _constGreenScalar, 2 );
+        showImage ( "inspChipCircularMode", matDisplay );
+    }
+
+    float fTolerance = 4.f;
+    if ( rectBody.size.width <= 2 * fTolerance || rectBody.size.height <= 2 * fTolerance ) {
+        pstRpy->enStatus = VisionStatus::CAN_NOT_FIND_CHIP_BODY;
+        return pstRpy->enStatus;
+    }
+
+    float fMaxDim = std::max ( rectBody.size.width, rectBody.size.height );
+    float fMinDim = std::min ( rectBody.size.width, rectBody.size.height );
+    if ( fMaxDim / fMinDim  > 2.5 ) {
+        pstRpy->enStatus = VisionStatus::CAN_NOT_FIND_CHIP_BODY;
+        return pstRpy->enStatus;
+    }
+
+    cv::Mat matVerify = cv::Mat::zeros ( rectROI.size(), CV_8UC1 );
+    auto rectEnlarge = rectBody;
+    rectEnlarge.size.width  += 2 * fTolerance;
+    rectEnlarge.size.height += 2 * fTolerance;
+    VectorOfVectorOfPoint vevVecPoint;
+    vevVecPoint.push_back ( CalcUtils::getCornerOfRotatedRect( rectEnlarge ) );
+    cv::fillPoly ( matVerify, vevVecPoint, cv::Scalar::all ( PR_MAX_GRAY_LEVEL ) );
+
+    auto rectDeflate = rectBody;
+    rectDeflate.size.width  -= 2 * fTolerance;
+    rectDeflate.size.height -= 2 * fTolerance;
+    vevVecPoint.clear();
+    vevVecPoint.push_back ( CalcUtils::getCornerOfRotatedRect( rectDeflate ) );
+    cv::fillPoly ( matVerify, vevVecPoint, cv::Scalar::all(0) );
+    if ( PR_DEBUG_MODE::SHOW_IMAGE == Config::GetInstance()->getDebugMode() )
+        showImage ( "Verify Mat", matVerify );
+
+    int nInTolPointCount = 0;
+    for ( const auto &point : maxContour ) {
+        if ( matVerify.at<uchar>(point) > 0 )
+            ++ nInTolPointCount;
+    }
+
+    if ( nInTolPointCount < ToInt32 ( maxContour.size() ) / 2 ) {
+        pstRpy->enStatus = VisionStatus::CAN_NOT_FIND_CHIP_BODY;
+        return pstRpy->enStatus;
+    }
+
+    rectBody.center.x += rectROI.x;
+    rectBody.center.y += rectROI.y;
+    pstRpy->rotatedRectResult = rectBody;
+
     VectorOfVectorOfPoint vevVecPoints;
     vevVecPoints.push_back ( CalcUtils::getCornerOfRotatedRect ( pstRpy->rotatedRectResult ) );
     cv::polylines( pstRpy->matResultImg, vevVecPoints, true, _constGreenScalar, 2 );
@@ -4426,7 +4529,7 @@ VisionStatus VisionAlgorithm::findEdge(PR_FIND_EDGE_CMD *pstCmd, PR_FIND_EDGE_RP
     //0 represents the background label, so need to ignore.
     for ( int nLabel = 1; nLabel <= maxValue; ++ nLabel ) {
         cv::Mat matCC = CalcUtils::genMaskByValue<Int32>( matLabels, nLabel );
-        float fArea = cv::countNonZero ( matCC );
+        float fArea = ToFloat ( cv::countNonZero ( matCC ) );
         if ( fArea > fMaxArea ) {
             fMaxArea = fArea;
             matMaxComponent = matCC;

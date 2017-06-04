@@ -482,6 +482,27 @@ private:
     const String _strKeyBridgeWindow    = "BridgeWindow";
 };
 
+class LogCaseInspChip : public LogCase
+{
+public:
+    explicit LogCaseInspChip(const String &strPath, bool bReplay = false) : LogCase(strPath, bReplay) {}
+    VisionStatus WriteCmd(const PR_INSP_CHIP_CMD *const pCmd);
+    VisionStatus WriteRpy(const PR_INSP_CHIP_RPY *const pRpy);
+    virtual VisionStatus RunLogCase() override;
+    virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
+    static String StaticGetFolderPrefix();
+private:
+    const String _strKeySrchWindow      = "SrchWindow";
+    const String _strKeyInspMode        = "InspMode";
+    const String _strKeyRecordId        = "RecordId";
+
+    const String _strKeyStatus          = "Status";
+    const String _strKeyFindChip        = "FindChip";
+    const String _strKeyCenter          = "Center";
+    const String _strKeySize            = "Size";
+    const String _strKeyAngle           = "Angle";
+};
+
 }
 }
 #endif

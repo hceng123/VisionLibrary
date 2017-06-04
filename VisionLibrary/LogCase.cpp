@@ -1395,5 +1395,62 @@ VisionStatus LogCaseInspBridge::RunLogCase() {
     return enStatus;
 }
 
+/*static*/ String LogCaseInspChip::StaticGetFolderPrefix()
+{
+    return "InspChip";
+}
+
+VisionStatus LogCaseInspChip::WriteCmd(const PR_INSP_CHIP_CMD *const pCmd) {
+    if ( !_bReplay ) {
+        _strLogCasePath = _generateLogCaseName(GetFolderPrefix());
+        bfs::path dir(_strLogCasePath);
+        bfs::create_directories(dir);
+    }
+
+    CSimpleIni ini(false, false, false);
+    auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
+    ini.LoadFile(cmdRpyFilePath.c_str());    
+    ini.SetValue ( _CMD_SECTION.c_str(), _strKeySrchWindow.c_str(), _formatRect ( pCmd->rectSrchWindow ).c_str() );
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyInspMode.c_str(), ToInt32( pCmd->enInspMode ) );
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyRecordId.c_str(), pCmd->nRecordId );
+    ini.SaveFile(cmdRpyFilePath.c_str());
+
+    cv::imwrite(_strLogCasePath + _IMAGE_NAME,     pCmd->matInputImg);
+    return VisionStatus::OK;
+}
+
+VisionStatus LogCaseInspChip::WriteRpy(const PR_INSP_CHIP_RPY *const pRpy) {
+    CSimpleIni ini(false, false, false);
+    auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
+    ini.LoadFile(cmdRpyFilePath.c_str());    
+    ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyStatus.c_str(),    ToInt32 ( pRpy->enStatus ) );
+    ini.SetBoolValue(_RPY_SECTION.c_str(), _strKeyFindChip.c_str(), pRpy->bFoundChip );
+    ini.SetValue ( _RPY_SECTION.c_str(), _strKeyCenter.c_str(), _formatCoordinate ( pRpy->rotatedRectResult.center ).c_str() );
+    ini.SetValue ( _RPY_SECTION.c_str(), _strKeySize.c_str()  , _formatCoordinate ( pRpy->rotatedRectResult.size ).  c_str() );
+    ini.SetDoubleValue(_RPY_SECTION.c_str(), _strKeyAngle.c_str(), pRpy->rotatedRectResult.angle );
+
+    ini.SaveFile(cmdRpyFilePath.c_str());
+    cv::imwrite ( _strLogCasePath + _RESULT_IMAGE_NAME, pRpy->matResultImg );
+    return VisionStatus::OK;
+}
+
+VisionStatus LogCaseInspChip::RunLogCase() {
+    PR_INSP_CHIP_CMD stCmd;
+    VisionStatus enStatus;
+
+    CSimpleIni ini(false, false, false);
+    auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
+    ini.LoadFile(cmdRpyFilePath.c_str());
+    stCmd.matInputImg = cv::imread(_strLogCasePath + _IMAGE_NAME, cv::IMREAD_COLOR);
+    stCmd.rectSrchWindow = _parseRect ( ini.GetValue ( _CMD_SECTION.c_str(), _strKeySrchWindow.c_str(), _DEFAULT_RECT.c_str() ) );
+    stCmd.enInspMode = static_cast<PR_INSP_CHIP_MODE> ( ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyInspMode.c_str(), 0 ) );
+    stCmd.nRecordId = ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyRecordId.c_str(), -1 );
+
+    PR_INSP_CHIP_RPY stRpy;
+    enStatus = VisionAlgorithm::inspChip ( &stCmd, &stRpy, true );
+    WriteRpy(&stRpy);
+    return enStatus;
+}
+
 }
 }
