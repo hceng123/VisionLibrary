@@ -352,8 +352,9 @@ namespace
     }
 
     struct AOI_COUNTOUR {
-        cv::Point2f ptCtr;
-        float       fArea;
+        cv::Point2f     ptCtr;
+        float           fArea;
+        VectorOfPoint   contour;
     };
 
     bool _isSimilarContourExist(const std::vector<AOI_COUNTOUR> &vecAoiCountour, const AOI_COUNTOUR &stCountourInput)
@@ -629,8 +630,7 @@ std::vector<Int16> VisionAlgorithm::_autoMultiLevelThreshold(const cv::Mat &matI
     return vecThreshold;
 }
 
-VisionStatus VisionAlgorithm::autoThreshold(PR_AUTO_THRESHOLD_CMD *pstCmd, PR_AUTO_THRESHOLD_RPY *pstRpy, bool bReplay)
-{
+VisionStatus VisionAlgorithm::autoThreshold(PR_AUTO_THRESHOLD_CMD *pstCmd, PR_AUTO_THRESHOLD_RPY *pstRpy, bool bReplay) {
     assert ( pstCmd != nullptr && pstRpy != nullptr );
     char charrMsg[1000];
     if (pstCmd->matInputImg.empty()) {
@@ -642,7 +642,7 @@ VisionStatus VisionAlgorithm::autoThreshold(PR_AUTO_THRESHOLD_CMD *pstCmd, PR_AU
     if (pstCmd->rectROI.x < 0 || pstCmd->rectROI.y < 0 ||
         pstCmd->rectROI.width <= 0 || pstCmd->rectROI.height <= 0 ||
         ( pstCmd->rectROI.x + pstCmd->rectROI.width ) > pstCmd->matInputImg.cols ||
-        ( pstCmd->rectROI.y + pstCmd->rectROI.height ) > pstCmd->matInputImg.rows )    {
+        ( pstCmd->rectROI.y + pstCmd->rectROI.height ) > pstCmd->matInputImg.rows ) {
         WriteLog("The auto threshold range is invalid");
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return VisionStatus::INVALID_PARAM;
@@ -685,35 +685,81 @@ int VisionAlgorithm::_autoThreshold(const cv::Mat &mat, const cv::Mat &matMask/*
     return vecThreshold[0];
 }
 
+//Need to use the in tolerance method to check.
 /*static*/ bool VisionAlgorithm::_isContourRectShape(const VectorOfPoint &vecPoint) {
     cv::Rect rect = cv::boundingRect ( vecPoint );
     if ( rect.width <= 0 || rect.height <= 0 )
         return false;
 
-    cv::Mat matBlack = cv::Mat::zeros ( rect.size() + cv::Size(rect.x, rect.y), CV_8UC1 );
+    auto rectHead = cv::minAreaRect ( vecPoint );
+
+    float fTolerance = 4.f;
+    if ( rectHead.size.width <= 2 * fTolerance || rectHead.size.height <= 2 * fTolerance ) {
+        return false;
+    }
+
+    if ( fabs ( rectHead.angle ) < 5 ) {
+        if ( ! _isContourRectShapeProjection ( vecPoint ) )
+            return false;
+    }
+
+    cv::Mat matVerify = cv::Mat::zeros ( rect.size() + cv::Size(rect.x, rect.y), CV_8UC1 );
+    auto rectEnlarge = rectHead;
+    rectEnlarge.size.width  += 2 * fTolerance;
+    rectEnlarge.size.height += 2 * fTolerance;
     VectorOfVectorOfPoint vevVecPoint;
+    vevVecPoint.push_back ( CalcUtils::getCornerOfRotatedRect( rectEnlarge ) );
+    cv::fillPoly ( matVerify, vevVecPoint, cv::Scalar::all ( PR_MAX_GRAY_LEVEL ) );
+
+    auto rectDeflate = rectHead;
+    rectDeflate.size.width  -= 2 * fTolerance;
+    rectDeflate.size.height -= 2 * fTolerance;
+    vevVecPoint.clear();
+    vevVecPoint.push_back ( CalcUtils::getCornerOfRotatedRect( rectDeflate ) );
+    cv::fillPoly ( matVerify, vevVecPoint, cv::Scalar::all(0) );
+    if ( PR_DEBUG_MODE::SHOW_IMAGE == Config::GetInstance()->getDebugMode() )
+        showImage ( "Verify Mat", matVerify );
+
+    int nInTolPointCount = 0;
+    for ( const auto &point : vecPoint ) {
+        if ( matVerify.at<uchar>(point) > 0 )
+            ++ nInTolPointCount;
+    }
+
+    if ( nInTolPointCount < ToInt32 ( vecPoint.size() * 0.5 ) )
+        return false;
+    return true;
+}
+
+/*static*/ bool VisionAlgorithm::_isContourRectShapeProjection ( const VectorOfPoint &vecPoint ) {
+    cv::Rect rect = cv::boundingRect ( vecPoint );
+    if (rect.width <= 0 || rect.height <= 0)
+        return false;
+
+    VectorOfVectorOfPoint vevVecPoint;
+    cv::Mat matBlack = cv::Mat::zeros ( rect.size () + cv::Size ( rect.x, rect.y ), CV_8UC1 );
     vevVecPoint.push_back ( vecPoint );
-    cv::fillPoly ( matBlack, vevVecPoint, cv::Scalar::all(PR_MAX_GRAY_LEVEL) );
-    
+    cv::fillPoly ( matBlack, vevVecPoint, cv::Scalar::all ( PR_MAX_GRAY_LEVEL ) );
+
     //cv::imshow ( "fill poly image", matBlack );
     //cv::waitKey(0);
-    cv::Mat matROI(matBlack, rect);
+    cv::Mat matROI ( matBlack, rect );
     cv::Mat matOneRow, matOneCol;
     cv::reduce ( matROI, matOneRow, 0, cv::ReduceTypes::REDUCE_SUM, CV_32SC1 );
     cv::reduce ( matROI, matOneCol, 1, cv::ReduceTypes::REDUCE_SUM, CV_32SC1 );
 
-    float fAverageHeight = ToFloat( cv::sum ( matOneRow )[0] / matOneRow.cols );
+    float fAverageHeight = ToFloat ( cv::sum ( matOneRow )[0] / matOneRow.cols );
     int nConsecutiveOverTolerance = 0;
     const float FLUCTUATE_TOL = 0.3f;
     const int FLUCTUATE_WIDTH_TOL = 10;
-    for ( int index = 0; index < matOneRow.cols; ++ index ) {
-        if ( fabs( matOneRow.at<int>(0, index) - fAverageHeight ) / fAverageHeight > FLUCTUATE_TOL )
+    for (int index = 0; index < matOneRow.cols; ++ index) {
+        if (fabs ( matOneRow.at<int> ( 0, index ) - fAverageHeight ) / fAverageHeight > FLUCTUATE_TOL)
             ++ nConsecutiveOverTolerance;
         else
             nConsecutiveOverTolerance = 0;
 
-        if ( nConsecutiveOverTolerance >  FLUCTUATE_WIDTH_TOL )
-            return false;
+        if ( nConsecutiveOverTolerance > FLUCTUATE_WIDTH_TOL )
+            return false;        
     }
     return true;
 }
@@ -725,11 +771,11 @@ int VisionAlgorithm::_autoThreshold(const cv::Mat &mat, const cv::Mat &matMask/*
     return fMaxDim / fMinDim;
 }
 
-/*static*/ VisionStatus VisionAlgorithm::_findDeviceElectrode(const cv::Mat &matDeviceROI, VectorOfPoint &vecElectrodePos, VectorOfSize2f &vecElectrodeSize, VectorOfVectorOfPoint &vevVecContour ) {
+/*static*/ VisionStatus VisionAlgorithm::_findDeviceElectrode ( const cv::Mat &matDeviceROI, VectorOfPoint &vecElectrodePos, VectorOfSize2f &vecElectrodeSize, VectorOfVectorOfPoint &vevVecContour ) {
     vector<vector<cv::Point> > vecContours, vecContourAfterFilter;
     vector<cv::Vec4i> hierarchy;
     vecElectrodePos.clear();
-    const float MAX_TWO_DIM_RATIO = 3.f;
+    const float MAX_TWO_DIM_RATIO = 4.f;
 
     cv::Mat matDraw = cv::Mat::zeros ( matDeviceROI.size(), CV_8UC3 );
     // Find contours
@@ -740,20 +786,17 @@ int VisionAlgorithm::_autoThreshold(const cv::Mat &mat, const cv::Mat &matMask/*
     int index = 0;
     for ( auto contour : vecContours ) {
         auto area = cv::contourArea ( contour );
-        if ( area > 200 && _isContourRectShape ( contour ) && getContourRectRatio ( contour ) < MAX_TWO_DIM_RATIO ) {
+        if ( area > 200 && getContourRectRatio ( contour ) < MAX_TWO_DIM_RATIO && _isContourRectShape ( contour ) ) {
             AOI_COUNTOUR stAoiContour;
             cv::Moments moment = cv::moments( contour );
             stAoiContour.ptCtr.x = static_cast< float >(moment.m10 / moment.m00);
             stAoiContour.ptCtr.y = static_cast< float >(moment.m01 / moment.m00);
+            stAoiContour.fArea = ToFloat ( area );
             if ( ! _isSimilarContourExist ( vecAoiContour, stAoiContour ) ) {
+                stAoiContour.contour = contour;
                 vecAoiContour.push_back ( stAoiContour );
-                vecElectrodePos.push_back ( stAoiContour.ptCtr );
 
-                cv::Rect rect = cv::boundingRect ( contour );
-                vecElectrodeSize.push_back ( rect.size() );
-                vevVecContour.push_back ( contour );
-
-                if ( Config::GetInstance ()->getDebugMode () == PR_DEBUG_MODE::SHOW_IMAGE ) {
+                if ( Config::GetInstance()->getDebugMode () == PR_DEBUG_MODE::SHOW_IMAGE ) {
                     cv::RNG rng ( 12345 );
                     cv::Scalar color = cv::Scalar ( rng.uniform ( 0, 255 ), rng.uniform ( 0, 255 ), rng.uniform ( 0, 255 ) );
                     cv::drawContours ( matDraw, vecContours, index, color );
@@ -765,7 +808,28 @@ int VisionAlgorithm::_autoThreshold(const cv::Mat &mat, const cv::Mat &matMask/*
     if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE )
         showImage("Contours", matDraw );
 
-    if ( vecElectrodePos.size() != PR_ELECTRODE_COUNT )   return VisionStatus::FIND_ELECTRODE_FAIL;    
+    if ( vecAoiContour.size() < PR_ELECTRODE_COUNT )
+        return VisionStatus::FIND_ELECTRODE_FAIL;
+
+    if ( vecAoiContour.size() > PR_ELECTRODE_COUNT ) {
+        std::sort ( vecAoiContour.begin(), vecAoiContour.end(), [](const AOI_COUNTOUR &stA, const AOI_COUNTOUR &stB ) {
+            return stB.fArea < stA.fArea;
+        });
+        vecAoiContour = std::vector<AOI_COUNTOUR>( vecAoiContour.begin(), vecAoiContour.begin() + PR_ELECTRODE_COUNT );
+    }
+
+    float fArea1 = vecAoiContour[0].fArea;
+    float fArea2 = vecAoiContour[1].fArea;
+    if ( fabs ( fArea1 - fArea2 ) / fArea1 > 0.2 )
+        return VisionStatus::FIND_ELECTRODE_FAIL;
+
+    for ( const auto &stAOIContour : vecAoiContour ) {
+        vecElectrodePos.push_back ( stAOIContour.ptCtr );
+        auto rotatedRect = cv::minAreaRect ( stAOIContour.contour );
+        vecElectrodeSize.push_back ( rotatedRect.size );
+        vevVecContour.push_back ( stAOIContour.contour );
+    }
+
     return VisionStatus::OK;
 }
 
@@ -1105,7 +1169,7 @@ VisionStatus VisionAlgorithm::inspSurface(PR_INSP_SURFACE_CMD *const pInspCmd, P
 	cv::Mat matCmpResult = pInspCmd->matInsp - matRotatedTmpl;
 	cv::Mat matRevsCmdResult = matRotatedTmpl - pInspCmd->matInsp;
 
-    if (Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE)   {
+    if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE ) {
         cv::imshow("Mask", matRotatedMask );
         cv::imshow("Masked Inspection", pInspCmd->matInsp );
         cv::imshow("Rotated template", matRotatedTmpl);
@@ -1116,7 +1180,7 @@ VisionStatus VisionAlgorithm::inspSurface(PR_INSP_SURFACE_CMD *const pInspCmd, P
 
 	pInspRpy->n16NDefect = 0;
 	_findBlob(matCmpResult, matRevsCmdResult, pInspCmd, pInspRpy);
-	_findLine(matCmpResult, pInspCmd, pInspRpy );	
+	_findLine(matCmpResult, pInspCmd, pInspRpy );
     MARK_FUNCTION_END_TIME;
 	return VisionStatus::OK;
 }
@@ -1477,6 +1541,8 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
         pLogCase = std::make_unique<LogCaseAutoLocateLead>( strLocalPath, true );
     else if (LogCaseInspBridge::StaticGetFolderPrefix() == folderPrefix )
         pLogCase = std::make_unique<LogCaseInspBridge>( strLocalPath, true );
+    else if (LogCaseInspChip::StaticGetFolderPrefix() == folderPrefix )
+        pLogCase = std::make_unique<LogCaseInspChip>( strLocalPath, true );
 
     if ( nullptr != pLogCase )
         enStatus = pLogCase->RunLogCase();
@@ -4084,24 +4150,6 @@ VisionStatus VisionAlgorithm::findEdge(PR_FIND_EDGE_CMD *pstCmd, PR_FIND_EDGE_RP
 }
 
 /*static*/ VisionStatus VisionAlgorithm::_lrnChipSquareMode(const cv::Mat &matThreshold, const cv::Rect &rectChip, const cv::Rect &rectROI, PR_LRN_CHIP_RPY *const pstRpy ) {
-    auto findEdge = [](const cv::Mat &matRow, int nStart, int nEnd, bool bSrchUpEdge, int &nEdgePos) -> bool {
-        const int EDGE_SIZE = 20;
-        int nMaxDiff = std::numeric_limits<int>::min();
-        for ( int index = nStart; index < nEnd - EDGE_SIZE; ++ index ) {
-            int nDiff = 0;
-            if ( bSrchUpEdge )
-                nDiff = matRow.at<int>(0, index + EDGE_SIZE ) - matRow.at<int>(0, index );
-            else
-                nDiff = matRow.at<int>(0, index ) - matRow.at<int>(0, index + EDGE_SIZE );            
-            if ( nDiff > nMaxDiff ) {
-                nMaxDiff = nDiff;
-                nEdgePos = index + EDGE_SIZE / 2;
-            }
-        }
-        if ( nMaxDiff < 30 )
-            return false;
-        return true;
-    };
     cv::Mat matOneRow, matOneCol;
     cv::reduce ( matThreshold, matOneRow, 0, cv::ReduceTypes::REDUCE_SUM, CV_32SC1 );
     matOneRow /= 255;
@@ -4210,7 +4258,7 @@ VisionStatus VisionAlgorithm::findEdge(PR_FIND_EDGE_CMD *pstCmd, PR_FIND_EDGE_RP
     }
 
     cv::GaussianBlur ( matGray, matBlur, cv::Size(5, 5), 2, 2 );
-    if (Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE)
+    if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE )
         showImage("Blur image", matBlur);
 
     int nThreshold = 100;
@@ -4237,6 +4285,8 @@ VisionStatus VisionAlgorithm::findEdge(PR_FIND_EDGE_CMD *pstCmd, PR_FIND_EDGE_RP
     }else if ( PR_INSP_CHIP_MODE::CIRCULAR == pstCmd->enInspMode )
         _inspChipCircularMode ( matThreshold, pstCmd->rectSrchWindow, pstRpy );
 
+    pstRpy->rotatedRectResult.angle = fabs ( - pstRpy->rotatedRectResult.angle );
+
     FINISH_LOGCASE;
     MARK_FUNCTION_END_TIME;
     return pstRpy->enStatus;
@@ -4247,7 +4297,7 @@ VisionStatus VisionAlgorithm::findEdge(PR_FIND_EDGE_CMD *pstCmd, PR_FIND_EDGE_RP
     VectorOfSize2f vecElectrodeSize;
     VectorOfVectorOfPoint vecContours;
     pstRpy->enStatus = _findDeviceElectrode ( matThreshold, vecPtElectrode, vecElectrodeSize, vecContours );
-    if ( pstRpy->enStatus != VisionStatus::OK) {
+    if ( pstRpy->enStatus != VisionStatus::OK ) {
         WriteLog("Failed to find device electrode");
         return pstRpy->enStatus;
     }
@@ -4403,7 +4453,6 @@ VisionStatus VisionAlgorithm::findEdge(PR_FIND_EDGE_CMD *pstCmd, PR_FIND_EDGE_RP
         }
         showImage("Project Curve Col", matDisplay );
     }
-
     
     int nLeftX = 0, nRightX = 0, nTopY = 0, nBottomY = 0;
     bool bSuccess = true;
@@ -4433,7 +4482,7 @@ VisionStatus VisionAlgorithm::findEdge(PR_FIND_EDGE_CMD *pstCmd, PR_FIND_EDGE_RP
 }
 
 /*static*/ bool VisionAlgorithm::_findDataUpEdge( const cv::Mat &matRow, int nStart, int nEnd, int &nEdgePos ) {
-    const int EDGE_SIZE = 20;
+    const int EDGE_SIZE = 30;
     int EDGE_MIN_DIFF = matRow.cols / 3;
     nEdgePos = -1;
     for (int index = nStart; index < nEnd - EDGE_SIZE; ++index) {
@@ -4447,7 +4496,7 @@ VisionStatus VisionAlgorithm::findEdge(PR_FIND_EDGE_CMD *pstCmd, PR_FIND_EDGE_RP
 }
 
 /*static*/ bool VisionAlgorithm::_findDataDownEdge ( const cv::Mat &matRow, int nStart, int nEnd, int &nEdgePos ) {
-    const int EDGE_SIZE = 20;
+    const int EDGE_SIZE = 30;
     int EDGE_MIN_DIFF = matRow.cols / 4;
     nEdgePos = -1;
     for (int index = nEnd - EDGE_SIZE - 1; index >= nStart; -- index) {

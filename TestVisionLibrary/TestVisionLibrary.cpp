@@ -494,6 +494,8 @@ int _tmain(int argc, _TCHAR* argv[])
     //TestLrnObj_1();
     //TestSrchObj();
 
+    //TestInspChipHead();
+
     std::cout << "Press any key to exist." << std::endl;
     getchar();
 

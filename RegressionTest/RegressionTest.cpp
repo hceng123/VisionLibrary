@@ -67,8 +67,33 @@ int _tmain(int argc, _TCHAR* argv[])
 
     /**********************
     * Test Inspect Bridge *
-    **********************/
+    ***********************/
     TestInspBridge();
+
+    /*************************
+    * Test Inspect Chip Head *
+    **************************/
+    TestInspChipHead();
+
+    /***************************
+    * Test Inspect Chip Body *
+    ****************************/
+    TestInspChipBody();
+
+    /***************************
+    * Test Inspect Chip Square *
+    ****************************/
+    TestInspChipSquare();
+
+    /************************
+    * Test Inspect Chip CAE *
+    *************************/
+    TestInspChipCAE();
+
+    /*****************************
+    * Test Inspect Chip Circular *
+    ******************************/
+    TestInspChipCircular();
 
 	return 0;
 }

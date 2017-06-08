@@ -618,7 +618,6 @@ struct PR_INSP_CHIP_CMD {
 
 struct PR_INSP_CHIP_RPY {
     VisionStatus            enStatus;
-    bool                    bFoundChip;
     cv::RotatedRect         rotatedRectResult;
     cv::Mat                 matResultImg;
 };

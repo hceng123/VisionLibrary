@@ -47,5 +47,8 @@
     <ClCompile Include="TestSrchObj.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="TestInspChip.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

@@ -194,6 +194,7 @@ FC /L $(ProjectDir)$(ProjectName)_golden.txt $(ProjectDir)$(ProjectName)_result.
     <ClCompile Include="TestCalibrateCamera.cpp" />
     <ClCompile Include="TestCaliper.cpp" />
     <ClCompile Include="TestFitting.cpp" />
+    <ClCompile Include="TestInspChip.cpp" />
     <ClCompile Include="TestInspDevice.cpp" />
     <ClCompile Include="TestInspBridge.cpp" />
     <ClCompile Include="TestLogCase.cpp" />

@@ -69,6 +69,7 @@ protected:
     static std::vector<Int16> _autoMultiLevelThreshold(const cv::Mat &matInputImg, const cv::Mat &matMask, int N);
     static int _autoThreshold(const cv::Mat &mat, const cv::Mat &matMask = cv::Mat() );
     static bool _isContourRectShape(const VectorOfPoint &vecPoint);
+    static bool _isContourRectShapeProjection(const VectorOfPoint &vecPoint);
     static inline float getContourRectRatio( const VectorOfPoint &vecPoint);
     static VisionStatus _findDeviceElectrode(const cv::Mat &matDeviceROI, VectorOfPoint &vecElectrodePos, VectorOfSize2f &vecElectrodeSize, VectorOfVectorOfPoint &vevVecContour );
     static VisionStatus _findDeviceEdge(const cv::Mat &matDeviceROI, const cv::Size2f &size, cv::Rect &rectDeviceResult);

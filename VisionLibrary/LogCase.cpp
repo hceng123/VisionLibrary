@@ -1330,7 +1330,7 @@ VisionStatus LogCaseInspBridge::WriteCmd(const PR_INSP_BRIDGE_CMD *const pCmd) {
     }
     ini.SaveFile(cmdRpyFilePath.c_str());
 
-    cv::imwrite(_strLogCasePath + _IMAGE_NAME,     pCmd->matInputImg);
+    cv::imwrite ( _strLogCasePath + _IMAGE_NAME,     pCmd->matInputImg);
     return VisionStatus::OK;
 }
 
@@ -1395,8 +1395,7 @@ VisionStatus LogCaseInspBridge::RunLogCase() {
     return enStatus;
 }
 
-/*static*/ String LogCaseInspChip::StaticGetFolderPrefix()
-{
+/*static*/ String LogCaseInspChip::StaticGetFolderPrefix() {
     return "InspChip";
 }
 
@@ -1424,7 +1423,6 @@ VisionStatus LogCaseInspChip::WriteRpy(const PR_INSP_CHIP_RPY *const pRpy) {
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile(cmdRpyFilePath.c_str());    
     ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyStatus.c_str(),    ToInt32 ( pRpy->enStatus ) );
-    ini.SetBoolValue(_RPY_SECTION.c_str(), _strKeyFindChip.c_str(), pRpy->bFoundChip );
     ini.SetValue ( _RPY_SECTION.c_str(), _strKeyCenter.c_str(), _formatCoordinate ( pRpy->rotatedRectResult.center ).c_str() );
     ini.SetValue ( _RPY_SECTION.c_str(), _strKeySize.c_str()  , _formatCoordinate ( pRpy->rotatedRectResult.size ).  c_str() );
     ini.SetDoubleValue(_RPY_SECTION.c_str(), _strKeyAngle.c_str(), pRpy->rotatedRectResult.angle );

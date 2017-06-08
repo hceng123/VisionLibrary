@@ -497,7 +497,6 @@ private:
     const String _strKeyRecordId        = "RecordId";
 
     const String _strKeyStatus          = "Status";
-    const String _strKeyFindChip        = "FindChip";
     const String _strKeyCenter          = "Center";
     const String _strKeySize            = "Size";
     const String _strKeyAngle           = "Angle";
