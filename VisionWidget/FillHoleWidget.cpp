@@ -23,7 +23,7 @@ void FillHoleWidget::on_btnRun_clicked()
         return;
 
     PR_FILL_HOLE_CMD stCmd;
-    stCmd.matInput = _pVisionView->getMat(VisionView::DISPLAY_SOURCE::ORIGINAL);
+    stCmd.matInputImg = _pVisionView->getMat(VisionView::DISPLAY_SOURCE::ORIGINAL);
     stCmd.rectROI  = _pVisionView->getSelectedWindow();
     stCmd.enMethod = static_cast<PR_FILL_HOLE_METHOD>(ui.cbAlgorithm->currentIndex());
     stCmd.enAttribute = static_cast<PR_OBJECT_ATTRIBUTE>(ui.cbObjectAttribute->currentIndex());
@@ -34,7 +34,7 @@ void FillHoleWidget::on_btnRun_clicked()
 
     PR_FILL_HOLE_RPY stRpy;
     if ( VisionStatus::OK == PR_FillHole(&stCmd, &stRpy) )    {
-        _pVisionView->setMat(VisionView::DISPLAY_SOURCE::INTERMEDIATE, stRpy.matResult );
+        _pVisionView->setMat(VisionView::DISPLAY_SOURCE::INTERMEDIATE, stRpy.matResultImg );
     }
     else
     {

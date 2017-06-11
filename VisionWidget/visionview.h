@@ -123,7 +123,7 @@ protected:
     void _calcMoveRange();
     void _moveImage();
     void _applyMask();
-    void _cutImageForDisplay(const cv::Mat &matInput, cv::Mat &matOutput);
+    void _cutImageForDisplay(const cv::Mat &matInputImg, cv::Mat &matOutput);
 private:
     cv::Rect                        _rectLrnWindow;
     cv::Rect                        _rectSrchWindow;

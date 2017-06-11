@@ -17,6 +17,10 @@ VisionStatus GetErrorInfo(VisionStatus enStatus, PR_GET_ERROR_STR_RPY *pstRpy)
         _snprintf(pstRpy->achErrorStr, PR_MAX_ERR_STR_LEN, "Input parameter is invalid.");
         pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::PR_STATUS_FATAL_ERROR;
         break;
+    case VisionStatus::FIND_ELECTRODE_FAIL:
+        _snprintf(pstRpy->achErrorStr, PR_MAX_ERR_STR_LEN, "Failed to find electrode of chip.");
+        pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::PR_STATUS_FATAL_ERROR;
+        break;
     case VisionStatus::NOT_ENOUGH_POINTS_TO_FIT:
         _snprintf(pstRpy->achErrorStr, PR_MAX_ERR_STR_LEN, "Not enough points to fit.");
         pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::PR_STATUS_FATAL_ERROR;
@@ -51,6 +55,38 @@ VisionStatus GetErrorInfo(VisionStatus enStatus, PR_GET_ERROR_STR_RPY *pstRpy)
         break;
     case VisionStatus::PICK_PT_NOT_IN_ROI:
         _snprintf(pstRpy->achErrorStr, PR_MAX_ERR_STR_LEN, "The pick point must in ROI.");
+        pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::PR_STATUS_FATAL_ERROR;
+        break;
+    case VisionStatus::FAILED_TO_FIND_CHESS_BOARD_BLOCK_SIZE:
+        _snprintf(pstRpy->achErrorStr, PR_MAX_ERR_STR_LEN, "Failed to find chessboard block size.");
+        pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::PR_STATUS_FATAL_ERROR;
+        break;
+    case VisionStatus::FAILED_TO_FIND_FIRST_CB_CORNER:
+        _snprintf(pstRpy->achErrorStr, PR_MAX_ERR_STR_LEN, "Failed to find first chessboard corner to calibrate camera.");
+        pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::PR_STATUS_FATAL_ERROR;
+        break;
+    case VisionStatus::FAILED_TO_FIND_ENOUGH_CB_CORNERS:
+        _snprintf(pstRpy->achErrorStr, PR_MAX_ERR_STR_LEN, "Failed to find enough chessboard corners to calibrate camera.");
+        pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::PR_STATUS_FATAL_ERROR;
+        break;
+    case VisionStatus::CHESSBOARD_PATTERN_NOT_CORRECT:
+        _snprintf(pstRpy->achErrorStr, PR_MAX_ERR_STR_LEN, "The chessboard pattern is not correct.");
+        pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::PR_STATUS_FATAL_ERROR;
+        break;
+    case VisionStatus::CAN_NOT_FIND_CAE_LINE:
+        _snprintf(pstRpy->achErrorStr, PR_MAX_ERR_STR_LEN, "Can not find the line of CAE.");
+        pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::PR_STATUS_FATAL_ERROR;
+        break;
+    case VisionStatus::CAN_NOT_FIND_SQUARE_EDGE:
+        _snprintf(pstRpy->achErrorStr, PR_MAX_ERR_STR_LEN, "Can not find square chip edges.");
+        pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::PR_STATUS_FATAL_ERROR;
+        break;
+    case VisionStatus::CAN_NOT_FIND_CIRCULAR_CHIP:
+        _snprintf(pstRpy->achErrorStr, PR_MAX_ERR_STR_LEN, "Can not find circular chip.");
+        pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::PR_STATUS_FATAL_ERROR;
+        break;
+    case VisionStatus::CAN_NOT_FIND_CHIP_BODY:
+        _snprintf(pstRpy->achErrorStr, PR_MAX_ERR_STR_LEN, "Can not find chip body.");
         pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::PR_STATUS_FATAL_ERROR;
         break;
     default:

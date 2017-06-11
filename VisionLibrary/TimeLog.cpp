@@ -31,7 +31,8 @@ void TimeLog::addTimeLog(const std::string &strMsg, __int64 nTimeSpan)
     if ( _vecStringTimeLog.size() > 5000 )
         _vecStringTimeLog.clear();
     std::string strLog = strMsg;
-    strLog += "\t" + std::to_string( nTimeSpan);
+    strLog += "\t" + std::to_string( nTimeSpan );
+    strLog += "\t" + _stopWatch.GetLocalTimeStr();
     _vecStringTimeLog.push_back(strLog);
 }
 

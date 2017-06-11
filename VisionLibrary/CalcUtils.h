@@ -48,6 +48,20 @@ public:
     }
 
     template<typename T>
+    static cv::Rect_<T> resizeRect(const cv::Rect_<T> &rectInput, cv::Size2f szNew)
+    {
+        return cv::Rect_<T> (rectInput.x + rectInput.width / 2.f - szNew.width / 2, rectInput.y + rectInput.height / 2.f  - szNew.height / 2,
+            szNew.width, szNew.height );
+    }
+
+    template<typename T>
+    static cv::Rect_<T> Rect(const cv::Rect_<T> &rectInput, float fScale)
+    {
+        return cv::Rect_<T> (cv::Point_<T>(rectInput.x + ( 1.f - fScale ) * rectInput.width, rectInput.y + ( 1.f - fScale ) * rectInput.height ),
+            cv::Point_<T>(rectInput.x + ( 1.f + fScale ) * rectInput.width, rectInput.y + ( 1.f + fScale ) * rectInput.height ) );
+    }
+
+    template<typename T>
     static double MatSquareSum(const cv::Mat &mat)
     {
         double dSum = 0;
@@ -79,16 +93,10 @@ public:
     }
 
     template<typename _Tp>
-    static cv::Mat genMaskByValue(const cv::Mat &matInput, const _Tp value)
-    {
-        cv::Mat matResult = cv::Mat::zeros(matInput.size(), CV_8UC1);
-        for (int row = 0; row < matInput.rows; ++row)
-            for (int col = 0; col < matInput.cols; ++col)
-            {
-                if (value == matInput.at<_Tp>(row, col))
-                    matResult.at<uchar>(row, col) = 1;
-            }
-        return matResult;
+    static cv::Mat genMaskByValue(const cv::Mat &matInputImg, const _Tp value) {
+        cv::Mat matResultImg;
+        cv::compare ( matInputImg, value, matResultImg, cv::CmpTypes::CMP_EQ );
+        return matResultImg;
     }
 
     static double radian2Degree( double dRadian );
@@ -98,6 +106,7 @@ public:
     static PR_Line2f calcEndPointOfLine( const ListOfPoint &listPoint, bool bReversedFit, float fSlope, float fIntercept );
     static cv::Point2f lineIntersect(float fSlope1, float fIntercept1, float fSlope2, float fIntercept2);
     static float lineSlope(const PR_Line2f &line);
+    static VectorOfPoint getCornerOfRotatedRect(const cv::RotatedRect &rotatedRect);
 
     template<typename _Tp>
     static cv::Point2f warpPoint(const cv::Mat &matWarp, const cv::Point2f &ptInput)
@@ -106,8 +115,8 @@ public:
         matPoint.at<_Tp>(0, 0) = ptInput.x;
         matPoint.at<_Tp>(1, 0) = ptInput.y;
         matPoint.at<_Tp>(2, 0) = 1.f;
-        cv::Mat matResult = matWarp * matPoint;
-        return cv::Point_<_Tp> ( ToFloat ( matResult.at<_Tp>(0, 0) ),  ToFloat ( matResult.at<_Tp>(1, 0) ) );
+        cv::Mat matResultImg = matWarp * matPoint;
+        return cv::Point_<_Tp> ( ToFloat ( matResultImg.at<_Tp>(0, 0) ),  ToFloat ( matResultImg.at<_Tp>(1, 0) ) );
     }
 
     template<typename _Tp>
@@ -121,19 +130,19 @@ public:
     }
 
     template<typename _Tp>
-    static inline std::vector<std::vector<_Tp>> matToVector(const cv::Mat &matInput) {
+    static inline std::vector<std::vector<_Tp>> matToVector(const cv::Mat &matInputImg) {
     std::vector<std::vector<_Tp>> vecVecArray;
-    if ( matInput.isContinuous() ) {
-        for ( int row = 0; row < matInput.rows; ++ row ) {            
+    if ( matInputImg.isContinuous() ) {
+        for ( int row = 0; row < matInputImg.rows; ++ row ) {
             std::vector<_Tp> vecRow;
-            int nRowStart = row * matInput.cols;
-            vecRow.assign ( (_Tp *)matInput.datastart + nRowStart, (_Tp *)matInput.datastart + nRowStart + matInput.cols );
+            int nRowStart = row * matInputImg.cols;
+            vecRow.assign ( (_Tp *)matInputImg.datastart + nRowStart, (_Tp *)matInputImg.datastart + nRowStart + matInputImg.cols );
             vecVecArray.push_back(vecRow);
         }
     }else {
-        for ( int row = 0; row < matInput.rows; ++ row ) {
+        for ( int row = 0; row < matInputImg.rows; ++ row ) {
             std::vector<_Tp> vecRow;
-            vecRow.assign((_Tp*)matInput.ptr<uchar>(row), (_Tp*)matInput.ptr<uchar>(row) + matInput.cols);
+            vecRow.assign((_Tp*)matInputImg.ptr<uchar>(row), (_Tp*)matInputImg.ptr<uchar>(row) + matInputImg.cols);
             vecVecArray.push_back(vecRow);
         }
     }

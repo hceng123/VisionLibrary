@@ -10,13 +10,14 @@ namespace Vision
 #define MAX_NUM_OF_DEFECT_RESULT				(20)
 #define PARALLEL_LINE_SLOPE_DIFF_LMT			(0.1)
 #define PARALLEL_LINE_MERGE_DIST_LMT			(20)
-#define DEVICE_ELECTRODE_COUNT                  (2)
+#define PR_ELECTRODE_COUNT                      (2)
 #define PR_MAX_GRAY_LEVEL                       (255)
 #define PR_MIN_GRAY_LEVEL                       (0)
 #define PR_RECT_EDGE_COUNT                      (4)
 #define PR_MAX_ERR_STR_LEN						(100)
 #define PR_AUTO_THRESHOLD_MAX_NUM               (4)
 #define PR_FIT_LINE_MAX_POINT_COUNT             (10000)
+#define PR_FIT_CIRCLE_MAX_POINT                 (10000)
 static const double PR_MM_TO_UM              =  1000.;
 
 enum class PR_SRCH_OBJ_ALGORITHM {
@@ -73,7 +74,7 @@ enum class PR_EDGE_DIRECTION {
     ALL,
 };
 
-enum class PR_FIT_CIRCLE_METHOD {
+enum class PR_FIT_METHOD {
     LEAST_SQUARE,
     LEAST_SQUARE_REFINE,
     RANSAC,
@@ -132,6 +133,15 @@ enum class PR_INSP_BRIDGE_DIRECTION {
     RIGHT,
     UP,
     DOWN,
+};
+
+enum class PR_INSP_CHIP_MODE {
+    HEAD,
+    BODY,
+    SQUARE,
+    RNET,
+    CAE,
+    CIRCULAR,
 };
 
 }

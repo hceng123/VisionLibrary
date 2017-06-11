@@ -138,7 +138,7 @@ VisionAPI VisionStatus PR_SrchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd, PR
     }
 }
 
-VisionAPI VisionStatus  PR_FitLine(PR_FIT_LINE_CMD *pstCmd, PR_FIT_LINE_RPY *pstRpy)
+VisionAPI VisionStatus  PR_FitLine(const PR_FIT_LINE_CMD *const pstCmd, PR_FIT_LINE_RPY *const pstRpy)
 {
 PR_FUNCTION_ENTRY
     return VisionAlgorithm::fitLine ( pstCmd, pstRpy );
@@ -263,10 +263,10 @@ PR_FUNCTION_ENTRY
 PR_FUNCTION_EXIT
 }
 
-VisionAPI VisionStatus PR_CircleRoundness(PR_CIRCLE_ROUNDNESS_CMD *pstCmd, PR_CIRCLE_ROUNDNESS_RPY *pstRpy)
+VisionAPI VisionStatus PR_InspCircle(PR_INSP_CIRCLE_CMD *pstCmd, PR_INSP_CIRCLE_RPY *pstRpy)
 {
 PR_FUNCTION_ENTRY
-    return VisionAlgorithm::circleRoundness( pstCmd, pstRpy );
+    return VisionAlgorithm::inspCircle( pstCmd, pstRpy );
 PR_FUNCTION_EXIT
 }
 
@@ -323,6 +323,20 @@ VisionAPI VisionStatus PR_InspBridge(const PR_INSP_BRIDGE_CMD *const pstCmd, PR_
 {
 PR_FUNCTION_ENTRY
     return VisionAlgorithm::inspBridge( pstCmd, pstRpy );
+PR_FUNCTION_EXIT
+}
+
+VisionAPI VisionStatus PR_LrnChip(const PR_LRN_CHIP_CMD *const pstCmd, PR_LRN_CHIP_RPY *const pstRpy)
+{
+PR_FUNCTION_ENTRY
+    return VisionAlgorithm::lrnChip( pstCmd, pstRpy );
+PR_FUNCTION_EXIT
+}
+
+VisionAPI VisionStatus PR_InspChip(const PR_INSP_CHIP_CMD *const pstCmd, PR_INSP_CHIP_RPY *const pstRpy)
+{
+PR_FUNCTION_ENTRY
+    return VisionAlgorithm::inspChip( pstCmd, pstRpy );
 PR_FUNCTION_EXIT
 }
 

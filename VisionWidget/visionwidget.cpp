@@ -89,6 +89,7 @@ void VisionWidget::on_selectImageBtn_clicked()
 
 void VisionWidget::on_checkBoxByerFormat_clicked(bool checked)
 {
+    _sourceImagePath = ui.imagePathEdit->text().toStdString();
     if ( _sourceImagePath.empty() )
         return;
 
@@ -118,7 +119,7 @@ void VisionWidget::on_fitCircleBtn_clicked()
     ui.visionView->applyIntermediateResult();
 
     PR_FIT_CIRCLE_CMD stCmd;
-	stCmd.matInput = ui.visionView->getMat();
+	stCmd.matInputImg = ui.visionView->getMat();
     stCmd.matMask = ui.visionView->getMask();
     stCmd.rectROI = ui.visionView->getSelectedWindow();    
 	stCmd.enRmNoiseMethod = static_cast<PR_RM_FIT_NOISE_METHOD>(ui.comboBoxFitCircleDirection->currentIndex());
@@ -127,14 +128,14 @@ void VisionWidget::on_fitCircleBtn_clicked()
 	stCmd.bAutoThreshold = false;
 	//stCmd.nThreshold = _nThreshold;
     //stCmd.enAttribute = static_cast<PR_OBJECT_ATTRIBUTE>(_nAttribute);
-	stCmd.enMethod = static_cast<PR_FIT_CIRCLE_METHOD>(ui.comboBoxFitCircleAlgorithm->currentIndex());
+	stCmd.enMethod = static_cast<PR_FIT_METHOD>(ui.comboBoxFitCircleAlgorithm->currentIndex());
 	stCmd.nMaxRansacTime = 20;
 
 	PR_FIT_CIRCLE_RPY stRpy;
 	VisionStatus enStatus = PR_FitCircle(&stCmd, &stRpy);
     if ( VisionStatus::OK == enStatus )
     {
-        ui.visionView->setMat(VisionView::DISPLAY_SOURCE::RESULT, stRpy.matResult );
+        ui.visionView->setMat(VisionView::DISPLAY_SOURCE::RESULT, stRpy.matResultImg );
     }else {
         PR_GET_ERROR_STR_RPY stErrStrRpy;
         PR_GetErrorStr(enStatus, &stErrStrRpy);
@@ -152,15 +153,15 @@ void VisionWidget::on_calcRoundnessBtn_clicked()
     ui.visionView->setState ( VisionView::VISION_VIEW_STATE::TEST_VISION_LIBRARY );
     ui.visionView->applyIntermediateResult();
 
-    PR_CIRCLE_ROUNDNESS_CMD stCmd;
-	stCmd.matInput = ui.visionView->getMat();
+    PR_INSP_CIRCLE_CMD stCmd;
+	stCmd.matInputImg = ui.visionView->getMat();
     stCmd.matMask = ui.visionView->getMask();
     stCmd.rectROI = ui.visionView->getSelectedWindow();
 
-	PR_CIRCLE_ROUNDNESS_RPY stRpy;
-	VisionStatus enStatus = PR_CircleRoundness(&stCmd, &stRpy);
+	PR_INSP_CIRCLE_RPY stRpy;
+	VisionStatus enStatus = PR_InspCircle(&stCmd, &stRpy);
 	if (VisionStatus::OK == enStatus)	{
-		ui.visionView->setMat ( VisionView::DISPLAY_SOURCE::RESULT, stRpy.matResult );
+		ui.visionView->setMat ( VisionView::DISPLAY_SOURCE::RESULT, stRpy.matResultImg );
         ui.lineEditRoundnessResult->setText( std::to_string(stRpy.fRoundness).c_str() );
     }else {
         PR_GET_ERROR_STR_RPY stErrStrRpy;
@@ -180,20 +181,20 @@ void VisionWidget::on_fitLineBtn_clicked()
     ui.visionView->applyIntermediateResult();
 
     PR_FIT_LINE_CMD stCmd;
-	stCmd.matInput = ui.visionView->getMat();
+	stCmd.matInputImg = ui.visionView->getMat();
     stCmd.matMask = ui.visionView->getMask();
-	stCmd.enRmNoiseMethod = PR_RM_FIT_NOISE_METHOD::ABSOLUTE_ERR;
+    stCmd.enMethod = static_cast<PR_FIT_METHOD>(ui.comboBoxFitLineAlgorithm->currentIndex());
+	stCmd.enRmNoiseMethod = static_cast<PR_RM_FIT_NOISE_METHOD>(ui.comboBoxFitLineDirection->currentIndex());
 	stCmd.fErrTol = ui.lineEditFitLineErrTol->text().toFloat();
 	stCmd.rectROI = ui.visionView->getSelectedWindow();
-    stCmd.bPreprocessed = false;
-	stCmd.nThreshold = ui.lineEditFitLineThreshold->text().toInt();
-    stCmd.enAttribute = static_cast<PR_OBJECT_ATTRIBUTE> ( ui.comboBoxLineAttribute->currentIndex() );
+    stCmd.bPreprocessed = true;
+    stCmd.nNumOfPtToFinishRansac = 100;
 
 	PR_FIT_LINE_RPY stRpy;
 	VisionStatus enStatus = PR_FitLine(&stCmd, &stRpy);
     if ( VisionStatus::OK == enStatus )
     {
-        ui.visionView->setMat ( VisionView::DISPLAY_SOURCE::RESULT, stRpy.matResult );
+        ui.visionView->setMat ( VisionView::DISPLAY_SOURCE::RESULT, stRpy.matResultImg );
     }else {
         PR_GET_ERROR_STR_RPY stErrStrRpy;
         PR_GetErrorStr(enStatus, &stErrStrRpy);
@@ -212,7 +213,7 @@ void VisionWidget::on_detectLineBtn_clicked()
     ui.visionView->applyIntermediateResult();
 
     PR_CALIPER_CMD stCmd;
-    stCmd.matInput = ui.visionView->getMat();
+    stCmd.matInputImg = ui.visionView->getMat();
     stCmd.matMask = ui.visionView->getMask();
     stCmd.rectROI = ui.visionView->getSelectedWindow();
     stCmd.enDetectDir = static_cast<PR_DETECT_LINE_DIR> ( ui.comboBoxDetectLineDirection->currentIndex() );
@@ -220,7 +221,7 @@ void VisionWidget::on_detectLineBtn_clicked()
     PR_CALIPER_RPY stRpy;
 	VisionStatus enStatus = PR_Caliper(&stCmd, &stRpy);
 	if (VisionStatus::OK == enStatus)	{
-		ui.visionView->setMat ( VisionView::DISPLAY_SOURCE::RESULT, stRpy.matResult );
+		ui.visionView->setMat ( VisionView::DISPLAY_SOURCE::RESULT, stRpy.matResultImg );
     }
 }
 
@@ -385,7 +386,7 @@ void VisionWidget::on_matchTmplBtn_clicked()
     ui.visionView->applyIntermediateResult();
 
     PR_MATCH_TEMPLATE_CMD stCmd;
-    stCmd.matInput = ui.visionView->getMat();
+    stCmd.matInputImg = ui.visionView->getMat();
     stCmd.matTmpl = _matTmpl;
     stCmd.rectSrchWindow = ui.visionView->getSelectedWindow();
     stCmd.enMotion = static_cast<PR_OBJECT_MOTION>( ui.cbMotion->currentIndex() );
@@ -394,7 +395,7 @@ void VisionWidget::on_matchTmplBtn_clicked()
     VisionStatus enStatus = PR_MatchTmpl( &stCmd, &stRpy );
     if ( VisionStatus::OK == enStatus )
     {
-        ui.visionView->setMat ( VisionView::DISPLAY_SOURCE::RESULT, stRpy.matResult );
+        ui.visionView->setMat ( VisionView::DISPLAY_SOURCE::RESULT, stRpy.matResultImg );
         char chArrCenter[100];
         _snprintf( chArrCenter, sizeof ( chArrCenter ), "%.3f, %.3f", stRpy.ptObjPos.x, stRpy.ptObjPos.y);
         ui.lineEditObjCenter->setText( chArrCenter );
@@ -404,6 +405,93 @@ void VisionWidget::on_matchTmplBtn_clicked()
         PR_GET_ERROR_STR_RPY stErrStrRpy;
         PR_GetErrorStr(enStatus, &stErrStrRpy);
         QMessageBox::critical(nullptr, "Match Template", stErrStrRpy.achErrorStr, "Quit");
+        ui.lineEditObjCenter->clear();
+        ui.lineEditObjRotation->clear();
+    }
+}
+
+void VisionWidget::on_btnCalibrateCamera_clicked() {
+    if ( _sourceImagePath.empty() ) {
+        QMessageBox::information(this, "Vision Widget", "Please select an image first!", "Quit");
+        return;
+    }
+
+    ui.visionView->setState ( VisionView::VISION_VIEW_STATE::TEST_VISION_LIBRARY );
+    ui.visionView->applyIntermediateResult();
+
+    PR_CALIBRATE_CAMERA_CMD stCmd;
+    PR_CALIBRATE_CAMERA_RPY stRpy;
+    stCmd.matInputImg = ui.visionView->getMat();
+    stCmd.szBoardPattern.height = ui.lineEditChessboardRows->text().toInt();
+    stCmd.szBoardPattern.width = ui.lineEditChessboardCols->text().toInt();
+    stCmd.fPatternDist = ui.lineEditChessboardTmplDist->text().toFloat();
+    stCmd.fMinTmplMatchScore = ui.lineEditTmplMatchMinScore->text().toFloat();
+
+    PR_CalibrateCamera ( &stCmd, &stRpy );
+
+    if ( VisionStatus::OK == stRpy.enStatus )
+    {
+        ui.lineEditResolutionX->setText ( std::to_string ( stRpy.dResolutionX ).c_str() );
+        ui.lineEditResolutionY->setText ( std::to_string ( stRpy.dResolutionY ).c_str() );
+    }else {
+        PR_GET_ERROR_STR_RPY stErrStrRpy;
+        PR_GetErrorStr(stRpy.enStatus, &stErrStrRpy);
+        QMessageBox::critical(nullptr, "Calibrate Camera", stErrStrRpy.achErrorStr, "Quit");
+        ui.lineEditObjCenter->clear();
+        ui.lineEditObjRotation->clear();
+    }
+}
+
+void VisionWidget::on_btnLrnChip_clicked() {
+    if ( _sourceImagePath.empty() ) {
+        QMessageBox::information(this, "Vision Widget", "Please select an image first!", "Quit");
+        return;
+    }
+
+    ui.visionView->setState ( VisionView::VISION_VIEW_STATE::TEST_VISION_LIBRARY );
+    ui.visionView->applyIntermediateResult();
+
+    PR_LRN_CHIP_CMD stCmd;
+    PR_LRN_CHIP_RPY stRpy;
+    stCmd.bAutoThreshold = true;
+    stCmd.matInputImg = ui.visionView->getMat();
+    stCmd.enInspMode = static_cast<PR_INSP_CHIP_MODE> ( ui.comboBoxChipInspMode->currentIndex() );
+    stCmd.rectChip = ui.visionView->getSelectedWindow();
+    PR_LrnChip ( &stCmd, &stRpy );
+    if ( VisionStatus::OK == stRpy.enStatus ) {
+        ui.visionView->setMat ( VisionView::DISPLAY_SOURCE::RESULT, stRpy.matResultImg );
+        _nChipRecordId = stRpy.nRecordID;
+    }else {
+        PR_GET_ERROR_STR_RPY stErrStrRpy;
+        PR_GetErrorStr(stRpy.enStatus, &stErrStrRpy);
+        QMessageBox::critical(nullptr, "Learn chip", stErrStrRpy.achErrorStr, "Quit");
+        ui.lineEditObjCenter->clear();
+        ui.lineEditObjRotation->clear();
+    }
+}
+
+void VisionWidget::on_btnInspChip_clicked() {
+    if ( _sourceImagePath.empty() ) {
+        QMessageBox::information(this, "Vision Widget", "Please select an image first!", "Quit");
+        return;
+    }
+
+    ui.visionView->setState ( VisionView::VISION_VIEW_STATE::TEST_VISION_LIBRARY );
+    ui.visionView->applyIntermediateResult();
+
+    PR_INSP_CHIP_CMD stCmd;
+    PR_INSP_CHIP_RPY stRpy;
+    stCmd.matInputImg = ui.visionView->getMat();
+    stCmd.enInspMode = static_cast<PR_INSP_CHIP_MODE> ( ui.comboBoxChipInspMode->currentIndex() );
+    stCmd.rectSrchWindow = ui.visionView->getSelectedWindow();
+    stCmd.nRecordId = _nChipRecordId;
+    PR_InspChip ( &stCmd, &stRpy );
+    if ( VisionStatus::OK == stRpy.enStatus ) {
+        ui.visionView->setMat ( VisionView::DISPLAY_SOURCE::RESULT, stRpy.matResultImg );
+    }else {
+        PR_GET_ERROR_STR_RPY stErrStrRpy;
+        PR_GetErrorStr(stRpy.enStatus, &stErrStrRpy);
+        QMessageBox::critical(nullptr, "Learn chip", stErrStrRpy.achErrorStr, "Quit");
         ui.lineEditObjCenter->clear();
         ui.lineEditObjRotation->clear();
     }

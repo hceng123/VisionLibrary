@@ -137,7 +137,7 @@ int TestVisionAlgorithm()
 
 	//PR_AlignCmd stAlignCmd;
 	//PR_AlignRpy stAlignRpy;
-	//stAlignCmd.matInput = matRotated;
+	//stAlignCmd.matInputImg = matRotated;
 	//stAlignCmd.rectLrn = omega;
 	//stAlignCmd.rectSrchWindow.x = stFindObjRpy.ptObjPos.x - ( omega.width + 30.f ) / 2.0f;
 	//stAlignCmd.rectSrchWindow.y = stFindObjRpy.ptObjPos.y - ( omega.height + 30.f) / 2.0f;
@@ -238,7 +238,7 @@ void TestSearchFiducialMark_2()
     stCmd.enType = PR_FIDUCIAL_MARK_TYPE::SQUARE;
     stCmd.fSize = 54;
     stCmd.fMargin = 8;
-    stCmd.matInput = mat;
+    stCmd.matInputImg = mat;
     stCmd.rectSrchRange = cv::Rect(1459,155, 500, 500 );
 
     PR_SRCH_FIDUCIAL_MARK_RPY stRpy;
@@ -258,7 +258,7 @@ void TestSearchFiducialMark_3()
     stCmd.enType = PR_FIDUCIAL_MARK_TYPE::CIRCLE;
     stCmd.fSize = 64;
     stCmd.fMargin = 8;
-    stCmd.matInput = mat;
+    stCmd.matInputImg = mat;
     stCmd.rectSrchRange = cv::Rect(0, 40, 250, 250 );
 
     PR_SRCH_FIDUCIAL_MARK_RPY stRpy;
@@ -272,10 +272,10 @@ void TestInspDevice()
 
     VisionStatus enStatus;
     PR_LRN_DEVICE_CMD stLrnDeviceCmd;
-    stLrnDeviceCmd.matInput = cv::imread(".\\data\\TmplResistor.png");
+    stLrnDeviceCmd.matInputImg = cv::imread("./data/TmplResistor.png");
     stLrnDeviceCmd.bAutoThreshold = true;
     stLrnDeviceCmd.nElectrodeThreshold = 180;
-    stLrnDeviceCmd.rectDevice = cv::Rect2f( 38, 22, 78, 41 );
+    stLrnDeviceCmd.rectDevice = cv::Rect2f( 39, 27, 104, 65 );
     PR_LRN_DEVICE_RPY stLrnDeviceRpy;
     
     PR_SetDebugMode(PR_DEBUG_MODE::SHOW_IMAGE);
@@ -287,7 +287,7 @@ void TestInspDevice()
     }
 
     PR_INSP_DEVICE_CMD stInspDeviceCmd;
-    stInspDeviceCmd.matInput = cv::imread(".\\data\\RotatedDevice.png");
+    stInspDeviceCmd.matInputImg = cv::imread("./data/RotatedDevice.png");
     stInspDeviceCmd.nElectrodeThreshold = stLrnDeviceRpy.nElectrodeThreshold;
     stInspDeviceCmd.nDeviceCount = 1;
     stInspDeviceCmd.astDeviceInfo[0].nCriteriaNo = 0;
@@ -309,7 +309,7 @@ void TestInspDevice()
     PR_InspDevice( &stInspDeviceCmd, &stInspDeviceRpy );
     std::cout << "Device inspection status " << stInspDeviceRpy.astDeviceResult[0].nStatus << std::endl;
 
-    stInspDeviceCmd.matInput = cv::imread(".\\data\\ShiftedDevice.png");
+    stInspDeviceCmd.matInputImg = cv::imread("./data/ShiftedDevice.png");
     stInspDeviceCmd.astDeviceInfo[0].stCtrPos = cv::Point(85, 48);
     stInspDeviceCmd.astDeviceInfo[0].stSize = cv::Size2f(99, 52);
     stInspDeviceCmd.astDeviceInfo[0].rectSrchWindow = cv::Rect ( 42, 16, 130, 100 );
@@ -327,8 +327,8 @@ void TestRunLogcase()
 void TestAutoThreshold() {
     PR_AUTO_THRESHOLD_CMD stCmd;
     PR_AUTO_THRESHOLD_RPY stRpy;
-    stCmd.matInput = cv::imread ( "./data/Compare.png", cv::IMREAD_GRAYSCALE );
-    stCmd.rectROI = cv::Rect(0, 0, stCmd.matInput.cols, stCmd.matInput.rows );
+    stCmd.matInputImg = cv::imread ( "./data/Compare.png", cv::IMREAD_GRAYSCALE );
+    stCmd.rectROI = cv::Rect(0, 0, stCmd.matInputImg.cols, stCmd.matInputImg.rows );
     stCmd.nThresholdNum = 1;
     PR_AutoThreshold ( &stCmd, &stRpy);
     if ( stRpy.enStatus == VisionStatus::OK )
@@ -352,7 +352,7 @@ void TestFitLine()
     std::cout << std::endl;
 
     PR_FIT_LINE_CMD stCmd;
-    stCmd.matInput = cv::imread("./data/lowangle_250.png", cv::IMREAD_COLOR);
+    stCmd.matInputImg = cv::imread("./data/lowangle_250.png", cv::IMREAD_COLOR);
     stCmd.nThreshold = 200;
     stCmd.rectROI = cv::Rect(139,276,20,400);
     stCmd.fErrTol = 8;
@@ -365,8 +365,8 @@ void TestFitLine()
     char chArrMsg[100];
     _snprintf(chArrMsg, sizeof ( chArrMsg ), "(%f, %f), (%f, %f)", stRpy.stLine.pt1.x, stRpy.stLine.pt1.y, stRpy.stLine.pt2.x, stRpy.stLine.pt2.y);
     std::cout << "Line coordinate: " << chArrMsg << std::endl;
-    cv::line (stCmd.matInput, stRpy.stLine.pt1, stRpy.stLine.pt2, cv::Scalar(255, 0, 0 ), 2 );
-    cv::imshow("Result image", stCmd.matInput);
+    cv::line (stCmd.matInputImg, stRpy.stLine.pt1, stRpy.stLine.pt2, cv::Scalar(255, 0, 0 ), 2 );
+    cv::imshow("Result image", stCmd.matInputImg);
     cv::waitKey(0);
 }
 
@@ -374,7 +374,7 @@ void TestFindEdge()
 {
     PR_FIND_EDGE_CMD stCmd;
 
-    stCmd.matInput = cv::imread("./data/Resisters1.png");
+    stCmd.matInputImg = cv::imread("./data/Resisters1.png");
     stCmd.enDirection = PR_EDGE_DIRECTION::ALL;
     stCmd.bAutothreshold = true;
     stCmd.nThreshold = 50;
@@ -388,12 +388,30 @@ void TestFindEdge()
     std::cout << "Edge count = " << stRpy.nEdgeCount << std::endl;
 }
 
+void TestFindEdge1()
+{
+    PR_FIND_EDGE_CMD stCmd;
+
+    stCmd.matInputImg = cv::imread("./data/HalfCircle.png");
+    stCmd.enDirection = PR_EDGE_DIRECTION::ALL;
+    stCmd.bAutothreshold = true;
+    stCmd.nThreshold = 50;
+    stCmd.fMinLength = 50;
+    stCmd.rectROI = cv::Rect(0, 0, stCmd.matInputImg.cols, stCmd.matInputImg.rows);
+
+    PR_FIND_EDGE_RPY stRpy;
+    PR_FindEdge(&stCmd, &stRpy);
+    
+    std::cout << "Find edge status " << stRpy.nStatus << std::endl;
+    std::cout << "Edge count = " << stRpy.nEdgeCount << std::endl;
+}
+
 void TestFitCircle()
 {
 	PR_SetDebugMode(PR_DEBUG_MODE::SHOW_IMAGE);
 
 	PR_FIT_CIRCLE_CMD stCmd;
-	stCmd.matInput = cv::imread("./data/001.bmp");
+	stCmd.matInputImg = cv::imread("./data/001.bmp");
 	stCmd.enRmNoiseMethod = PR_RM_FIT_NOISE_METHOD::ABSOLUTE_ERR;
 	stCmd.fErrTol = 5;
 	//stCmd.ptRangeCtr = cv::Point2f(240, 235);
@@ -402,7 +420,7 @@ void TestFitCircle()
     stCmd.bPreprocessed = false;
 	stCmd.bAutoThreshold = false;
 	stCmd.nThreshold = 200;
-	stCmd.enMethod = PR_FIT_CIRCLE_METHOD::RANSAC;
+	stCmd.enMethod = PR_FIT_METHOD::RANSAC;
 	stCmd.nMaxRansacTime = 20;
 
 	PR_FIT_CIRCLE_RPY stRpy;
@@ -411,11 +429,11 @@ void TestFitCircle()
 		std::cout << "Failed to fit circle, VisionStatus = " << ToInt32( stRpy.enStatus ) << std::endl;
 		return;
 	}
-	cv::Mat matResult = stCmd.matInput.clone();
-	//cv::circle(matResult, stCmd.ptRangeCtr, (int)stCmd.fRangeInnterRadius, cv::Scalar(0, 255, 0), 1);
-	//cv::circle(matResult, stCmd.ptRangeCtr, (int)stCmd.fRangeOutterRadius, cv::Scalar(0, 255, 0), 1);
-	cv::circle(matResult, stRpy.ptCircleCtr, (int)stRpy.fRadius, cv::Scalar(255, 0, 0), 2);
-	cv::imshow("Fit result", matResult);
+	cv::Mat matResultImg = stCmd.matInputImg.clone();
+	//cv::circle(matResultImg, stCmd.ptRangeCtr, (int)stCmd.fRangeInnterRadius, cv::Scalar(0, 255, 0), 1);
+	//cv::circle(matResultImg, stCmd.ptRangeCtr, (int)stCmd.fRangeOutterRadius, cv::Scalar(0, 255, 0), 1);
+	cv::circle(matResultImg, stRpy.ptCircleCtr, (int)stRpy.fRadius, cv::Scalar(255, 0, 0), 2);
+	cv::imshow("Fit result", matResultImg);
 	cv::waitKey(0);
 }
 
@@ -423,7 +441,7 @@ void TestCaliper() {
     PR_CALIPER_CMD stCmd;
     PR_CALIPER_RPY stRpy;
 
-    stCmd.matInput = cv::imread("./data/F1-5-1_Threshold.png");
+    stCmd.matInputImg = cv::imread("./data/F1-5-1_Threshold.png");
     stCmd.rectROI = cv::Rect(1591, 970, 51, 90);
     stCmd.enDetectDir = PR_DETECT_LINE_DIR::MAX_TO_MIN;
     stCmd.bCheckLinerity = true;
@@ -440,8 +458,7 @@ void TestCaliper() {
 int _tmain(int argc, _TCHAR* argv[])
 {
     PR_SetDebugMode ( PR_DEBUG_MODE::SHOW_IMAGE );
-    //TestVisionAlgorithm();
-    std::cout << GetTime() << std::endl;
+    TestTemplate();
     //TestInspDevice();
     //TestRunLogcase();
     //TestSearchFiducialMark();
@@ -449,12 +466,16 @@ int _tmain(int argc, _TCHAR* argv[])
     //TestSearchFiducialMark_2();
     //TestSearchFiducialMark_3();
     //TestFitLine();
+
     //TestFindEdge();
+    //TestFindEdge1();
+
 	//TestInspDeviceAutoThreshold();
 	//TestFitCircle();
 
     //TestCalibCamera();
-    TestCalibCamera_1();
+    //TestCalibCamera_1();
+    //TestCalibCamera_2();
 
     //TestCompareInputAndResult();
     //TestRunRestoreImgLogCase();
@@ -473,6 +494,8 @@ int _tmain(int argc, _TCHAR* argv[])
     //TestLrnObj();
     //TestLrnObj_1();
     //TestSrchObj();
+
+    //TestInspChipHead();
 
     std::cout << "Press any key to exist." << std::endl;
     getchar();

@@ -53,7 +53,7 @@ int SrchFiducialProcedure::run(const std::string &imagePath)
 int SrchFiducialProcedure::srchFiducial(const std::string &imagePath)
 {
     PR_SRCH_FIDUCIAL_MARK_CMD stCmd;
-	stCmd.matInput = _pVisionView->getMat();
+	stCmd.matInputImg = _pVisionView->getMat();
     stCmd.rectSrchRange = _rectSrchWindow;
 	stCmd.enType = static_cast<PR_FIDUCIAL_MARK_TYPE>(_nFiducialType);
 	stCmd.fSize = _fFiducialSize;	
@@ -65,7 +65,7 @@ int SrchFiducialProcedure::srchFiducial(const std::string &imagePath)
 		std::cout << "Failed to search fiducial mark, VisionStatus = " << ToInt32(stRpy.enStatus) << std::endl;
 		return static_cast<int> ( visionStatus );
 	}
-	_matResult = stRpy.matResult;	
+	_matResult = stRpy.matResultImg;	
     return ToInt(STATUS::OK);
 }
 

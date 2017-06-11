@@ -32,7 +32,7 @@ void TestCaliper() {
     std::cout << std::endl << "---------------------------------------------";
     std::cout << std::endl;
 
-    stCmd.matInput = cv::imread("./data/F1-5-1_Threshold.png");
+    stCmd.matInputImg = cv::imread("./data/F1-5-1_Threshold.png");
     stCmd.rectROI = cv::Rect(1216, 802, 142, 332);
     stCmd.enDetectDir = PR_DETECT_LINE_DIR::MAX_TO_MIN;
     stCmd.bCheckLinerity = true;
@@ -50,7 +50,7 @@ void TestCaliper() {
     std::cout << std::endl << "---------------------------------------------";
     std::cout << std::endl;
 
-    stCmd.matInput = cv::imread("./data/F1-5-1_Threshold.png");
+    stCmd.matInputImg = cv::imread("./data/F1-5-1_Threshold.png");
     stCmd.rectROI = cv::Rect(928, 1276, 270, 120);
     stCmd.enDetectDir = PR_DETECT_LINE_DIR::MIN_TO_MAX;
     stCmd.fExpectedAngle = 0;
@@ -63,7 +63,7 @@ void TestCaliper() {
     std::cout << std::endl << "---------------------------------------------";
     std::cout << std::endl;
 
-    stCmd.matInput = cv::imread("./data/F1-5-1_Threshold.png");
+    stCmd.matInputImg = cv::imread("./data/F1-5-1_Threshold.png");
     stCmd.rectROI = cv::Rect(1496, 1576, 228, 88);
     stCmd.enDetectDir = PR_DETECT_LINE_DIR::MAX_TO_MIN;
     stCmd.fExpectedAngle = 0;
@@ -76,7 +76,7 @@ void TestCaliper() {
     std::cout << std::endl << "---------------------------------------------";
     std::cout << std::endl;
 
-    stCmd.matInput = cv::imread("./data/F1-5-1_Threshold.png");
+    stCmd.matInputImg = cv::imread("./data/F1-5-1_Threshold.png");
     stCmd.rectROI = cv::Rect(1591, 970, 51, 90);
     stCmd.enDetectDir = PR_DETECT_LINE_DIR::MAX_TO_MIN;
     stCmd.bCheckLinerity = true;

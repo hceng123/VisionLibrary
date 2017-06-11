@@ -67,7 +67,7 @@ int FitParallelLineProcedure::run(const std::string &imagePath)
 int FitParallelLineProcedure::fitParallelLine(const std::string &imagePath)
 {
     PR_FIT_PARALLEL_LINE_CMD stCmd;
-	stCmd.matInput = _pVisionView->getMat();
+	stCmd.matInputImg = _pVisionView->getMat();
 	stCmd.enRmNoiseMethod = PR_RM_FIT_NOISE_METHOD::ABSOLUTE_ERR;
 	stCmd.fErrTol = _fErrorTol;
 	stCmd.rectArrROI[0] = _vecSrchWindow[0];
@@ -82,7 +82,7 @@ int FitParallelLineProcedure::fitParallelLine(const std::string &imagePath)
         PR_GetErrorStr(visionStatus, &stErrStrRpy);
         QMessageBox::critical(nullptr, "Fit Parallel Line", stErrStrRpy.achErrorStr, "Quit");
 	}
-	_matResult = stRpy.matResult;	
+	_matResult = stRpy.matResultImg;	
     return ToInt(visionStatus);
 }
 

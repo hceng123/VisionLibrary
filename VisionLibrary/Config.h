@@ -29,6 +29,7 @@ protected:
     Int32           _nRemoveCCMaxComponent      = 500;
     String          _strOcrCharList             = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-";
     Int32           _nInspBridgeMinThreshold    = 100;
+    Int32           _nMinPointsToCalibCamera    = 10;
 public:
     static Config*          GetInstance();
     String                  getRecordDir() const;
@@ -41,6 +42,7 @@ public:
     Int32                   getRemoveCCMaxComponents();
     String                  getOcrCharList() const;
     Int32                   getInspBridgeMinThreshold() const;
+    Int32                   getMinPointsToCalibCamera() const;
     void load();
 };
 

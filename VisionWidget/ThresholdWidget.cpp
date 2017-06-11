@@ -27,7 +27,7 @@ void ThresholdWidget::on_btnAutoThreshold_clicked()
     PR_AUTO_THRESHOLD_CMD stCmd;
     PR_AUTO_THRESHOLD_RPY stRpy;
 
-    stCmd.matInput = _pVisionView->getMat(VisionView::DISPLAY_SOURCE::ORIGINAL);
+    stCmd.matInputImg = _pVisionView->getMat(VisionView::DISPLAY_SOURCE::ORIGINAL);
     stCmd.rectROI = _pVisionView->getSelectedWindow();
     stCmd.nThresholdNum = ui.cbAutoThresLevel->currentText().toInt();
 

@@ -268,7 +268,7 @@ CALIBRATE CAMERA REGRESSION TEST #1 STARTING
 Calibrate camera status 0
 Camera resolution (23.76, 23.78)
 Camera distoration coefficients:
--6.8 -0.3 -0.0 -0.0 -0.0 
+-6.9 -0.3 -0.0 -0.0 -0.0 
 
 ---------------------------------------------
 CALIBRATE CAMERA REGRESSION TEST #2 STARTING
@@ -560,3 +560,51 @@ Inspect Item 0. With Bridge: 0
 Inspect Item 1. With Bridge: 0
 Inspect Item 2. With Bridge: 1
 Bridge window 0 : 1543, 2094, 17, 14
+
+---------------------------------------------
+INSP CHIP HEAD REGRESSION TEST #1 STARTING
+---------------------------------------------
+Inspect chip status 0
+Center: (1594.00, 1826.23)
+Size: (144.03, 304.20)
+Angle  = 0.55
+
+---------------------------------------------
+INSP CHIP HEAD REGRESSION TEST #2 STARTING
+---------------------------------------------
+Inspect chip status 0
+Center: (1594.01, 1826.23)
+Size: (144.03, 304.21)
+Angle  = 0.55
+
+---------------------------------------------
+INSP CHIP BODY REGRESSION TEST #1 STARTING
+---------------------------------------------
+Inspect chip status 0
+Center: (1068.59, 1232.97)
+Size: (55.14, 30.56)
+Angle  = 85.24
+
+---------------------------------------------
+INSP CHIP SQUARE REGRESSION TEST #1 STARTING
+---------------------------------------------
+Inspect chip status 0
+Center: (2588.00, 2290.50)
+Size: (473.00, 500.00)
+Angle  = 0.00
+
+---------------------------------------------
+INSP CHIP CAE REGRESSION TEST #1 STARTING
+---------------------------------------------
+Inspect chip status 0
+Center: (1892.66, 1465.97)
+Size: (567.39, 567.39)
+Angle  = 0.00
+
+---------------------------------------------
+INSP CHIP CIRCULAR REGRESSION TEST #1 STARTING
+---------------------------------------------
+Inspect chip status 0
+Center: (1895.24, 2145.72)
+Size: (578.51, 578.51)
+Angle  = 0.00

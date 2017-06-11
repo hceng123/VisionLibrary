@@ -453,18 +453,18 @@ void VisionView::_zoomRect(cv::Rect &rect, float fZoomFactor)
         return;
     }
 
-    cv::Mat matResult = cv::Mat::zeros ( mat.size(), mat.type() );
+    cv::Mat matResultImg = cv::Mat::zeros ( mat.size(), mat.type() );
     
-    if ( matResult.rows >= matZoomResult.rows && matResult.cols >= matZoomResult.cols ) {
-        cv::Rect rectROIDst( ( matResult.cols - matZoomResult.cols ) / 2, ( matResult.rows - matZoomResult.rows ) / 2, matZoomResult.cols, matZoomResult.rows );
-        cv::Mat matDst ( matResult, rectROIDst);
+    if ( matResultImg.rows >= matZoomResult.rows && matResultImg.cols >= matZoomResult.cols ) {
+        cv::Rect rectROIDst( ( matResultImg.cols - matZoomResult.cols ) / 2, ( matResultImg.rows - matZoomResult.rows ) / 2, matZoomResult.cols, matZoomResult.rows );
+        cv::Mat matDst ( matResultImg, rectROIDst);
         matZoomResult.copyTo ( matDst );
-    }else if  ( matResult.rows <= matZoomResult.rows && matResult.cols <= matZoomResult.cols )  {
-        cv::Rect rectROISrc ( ( matZoomResult.cols - matResult.cols ) / 2, ( matZoomResult.rows - matResult.rows ) / 2, matResult.cols, matResult.rows );
+    }else if  ( matResultImg.rows <= matZoomResult.rows && matResultImg.cols <= matZoomResult.cols )  {
+        cv::Rect rectROISrc ( ( matZoomResult.cols - matResultImg.cols ) / 2, ( matZoomResult.rows - matResultImg.rows ) / 2, matResultImg.cols, matResultImg.rows );
         cv::Mat matSrc( matZoomResult, rectROISrc);
-        matSrc.copyTo ( matResult );
+        matSrc.copyTo ( matResultImg );
     }
-    matOutput = matResult;
+    matOutput = matResultImg;
 }
 
 void VisionView::zoomIn()
@@ -597,35 +597,35 @@ void VisionView::_applyMask()
     }
 }
 
-void VisionView::_cutImageForDisplay(const cv::Mat &matInput, cv::Mat &matOutput)
+void VisionView::_cutImageForDisplay(const cv::Mat &matInputImg, cv::Mat &matOutput)
 {
-    if ( matInput.empty() )
+    if ( matInputImg.empty() )
         return;
 
     auto displayWidth = this->size().width();
     auto displayHeight = this->size().height();
 
-    if (matInput.cols >= displayWidth && matInput.rows >= displayHeight)  {
-        cv::Rect rectROISrc( (matInput.cols - displayWidth) / 2 - _szDisplayCenterOffset.width, (matInput.rows - displayHeight) / 2 - _szDisplayCenterOffset.height, displayWidth, displayHeight);
-        cv::Mat matSrc( matInput, rectROISrc);
+    if (matInputImg.cols >= displayWidth && matInputImg.rows >= displayHeight)  {
+        cv::Rect rectROISrc( (matInputImg.cols - displayWidth) / 2 - _szDisplayCenterOffset.width, (matInputImg.rows - displayHeight) / 2 - _szDisplayCenterOffset.height, displayWidth, displayHeight);
+        cv::Mat matSrc( matInputImg, rectROISrc);
         matSrc.copyTo ( matOutput );
     }
-    else if (matInput.cols >= displayWidth && matInput.rows <= displayHeight)  {
-        cv::Rect rectROISrc( (matInput.cols - displayWidth) / 2 - _szDisplayCenterOffset.width, 0, displayWidth, matInput.rows);
-        cv::Mat matSrc(matInput, rectROISrc);
-        cv::Rect rectROIDst(0, ( displayHeight - matInput.rows ) / 2, displayWidth, matInput.rows );
+    else if (matInputImg.cols >= displayWidth && matInputImg.rows <= displayHeight)  {
+        cv::Rect rectROISrc( (matInputImg.cols - displayWidth) / 2 - _szDisplayCenterOffset.width, 0, displayWidth, matInputImg.rows);
+        cv::Mat matSrc(matInputImg, rectROISrc);
+        cv::Rect rectROIDst(0, ( displayHeight - matInputImg.rows ) / 2, displayWidth, matInputImg.rows );
         cv::Mat matDst(matOutput, rectROIDst);
         matSrc.copyTo(matDst);
-    }else if (matInput.cols <= displayWidth && matInput.rows >= displayHeight)  {
-        cv::Rect rectROISrc(0, (matInput.rows - displayHeight) / 2 - _szDisplayCenterOffset.height, matInput.cols, displayHeight);
-        cv::Mat matSrc(matInput, rectROISrc);
-        cv::Rect rectROIDst(( displayWidth - matInput.cols ) / 2, 0, matInput.cols, displayHeight );
+    }else if (matInputImg.cols <= displayWidth && matInputImg.rows >= displayHeight)  {
+        cv::Rect rectROISrc(0, (matInputImg.rows - displayHeight) / 2 - _szDisplayCenterOffset.height, matInputImg.cols, displayHeight);
+        cv::Mat matSrc(matInputImg, rectROISrc);
+        cv::Rect rectROIDst(( displayWidth - matInputImg.cols ) / 2, 0, matInputImg.cols, displayHeight );
         cv::Mat matDst(matOutput, rectROIDst);
         matSrc.copyTo(matDst);
-    }else if (matInput.cols <= displayWidth && matInput.rows <= displayHeight) {
-        cv::Rect rectROIDst((displayWidth - matInput.cols) / 2, (displayHeight - matInput.rows) / 2, matInput.cols, matInput.rows);
+    }else if (matInputImg.cols <= displayWidth && matInputImg.rows <= displayHeight) {
+        cv::Rect rectROIDst((displayWidth - matInputImg.cols) / 2, (displayHeight - matInputImg.rows) / 2, matInputImg.cols, matInputImg.rows);
         cv::Mat matDst(matOutput, rectROIDst);
-        matInput.copyTo(matDst);
+        matInputImg.copyTo(matDst);
     }
     else
     {

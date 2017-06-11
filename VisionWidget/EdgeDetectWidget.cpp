@@ -22,7 +22,7 @@ void EdgeDetectWidget::on_btnRun_clicked()
         return;
 
     PR_DETECT_EDGE_CMD stCmd;
-    stCmd.matInput = _pVisionView->getMat();
+    stCmd.matInputImg = _pVisionView->getMat();
     stCmd.rectROI = _pVisionView->getSelectedWindow();
     stCmd.nThreshold1 = ui.lineEditThreshold1->text().toInt();
     stCmd.nThreshold2 = ui.lineEditThreshold2->text().toInt();
@@ -32,7 +32,7 @@ void EdgeDetectWidget::on_btnRun_clicked()
     PR_DetectEdge ( &stCmd, &stRpy );
 
      if ( VisionStatus::OK == stRpy.enStatus )    {
-        _pVisionView->setMat ( VisionView::DISPLAY_SOURCE::INTERMEDIATE, stRpy.matResult );
+        _pVisionView->setMat ( VisionView::DISPLAY_SOURCE::INTERMEDIATE, stRpy.matResultImg );
     }else  {
         PR_GET_ERROR_STR_RPY stErrStrRpy;
         PR_GetErrorStr( stRpy.enStatus, &stErrStrRpy );

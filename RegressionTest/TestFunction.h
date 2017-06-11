@@ -21,6 +21,11 @@ void TestCaliper();
 void TestCalibrateCamera();
 void TestAutoLocateLead();
 void TestInspBridge();
+void TestInspChipHead();
+void TestInspChipBody();
+void TestInspChipSquare();
+void TestInspChipCAE();
+void TestInspChipCircular();
 
 }
 }
