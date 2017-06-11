@@ -1086,7 +1086,7 @@ VisionStatus VisionAlgorithm::inspDevice(PR_INSP_DEVICE_CMD *pstInspDeviceCmd, P
         return pstRpy->enStatus;
     }
 
-    if ( pstCmd->matTmpl.rows >= pstCmd->rectSrchWindow.height || pstCmd->matTmpl.cols >= pstCmd->rectSrchWindow.width )    {
+    if ( pstCmd->matTmpl.rows > pstCmd->rectSrchWindow.height || pstCmd->matTmpl.cols > pstCmd->rectSrchWindow.width )    {
         WriteLog("The template is bigger than search window");
         pstRpy->enStatus = VisionStatus::TMPL_IS_BIGGER_THAN_ROI;
         return pstRpy->enStatus;
@@ -1130,7 +1130,6 @@ VisionStatus VisionAlgorithm::inspDevice(PR_INSP_DEVICE_CMD *pstInspDeviceCmd, P
 
     FINISH_LOGCASE;
     MARK_FUNCTION_END_TIME;
-
     return pstRpy->enStatus;
 }
 

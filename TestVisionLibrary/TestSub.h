@@ -13,6 +13,7 @@ void TestSrchObj();
 void TestCalibCamera_1();
 void TestCalibCamera_2();
 void TestInspChipHead();
+void TestTemplate();
 
 template<class T>
 void printfMat(const cv::Mat &mat)

@@ -618,7 +618,7 @@ struct PR_INSP_CHIP_CMD {
 
 struct PR_INSP_CHIP_RPY {
     VisionStatus            enStatus;
-    cv::RotatedRect         rotatedRectResult;
+    cv::RotatedRect         rotatedRectResult;  //The angle start from left to right, and rotate by anti-clockwise.
     cv::Mat                 matResultImg;
 };
 /******************************************

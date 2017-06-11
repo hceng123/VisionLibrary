@@ -458,7 +458,8 @@ void TestCaliper() {
 int _tmain(int argc, _TCHAR* argv[])
 {
     PR_SetDebugMode ( PR_DEBUG_MODE::SHOW_IMAGE );
-    TestInspDevice();
+    TestTemplate();
+    //TestInspDevice();
     //TestRunLogcase();
     //TestSearchFiducialMark();
     //TestSearchFiducialMark_1();
