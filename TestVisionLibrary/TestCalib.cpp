@@ -180,7 +180,7 @@ void TestCalibCamera_1()
         ofStrm.open("./data/CoordinateDiffFinalMatrix.txt");
         for (size_t index = 0; index < stRpy.vecImagePoints.size(); ++index) {
             cv::Point2f ptImage = stRpy.vecImagePoints[index];
-            cv::Point2f ptProject = cv::Point2f ( vecVecProjectPoints[0][index], vecVecProjectPoints[1][index]);
+            cv::Point2f ptProject = cv::Point2f ( ToFloat( vecVecProjectPoints[0][index] ), ToFloat( vecVecProjectPoints[1][index] ) );
             ofStrm << ptImage.x - ptProject.x << ", " << ptImage.y - ptProject.y << std::endl;
         }
         ofStrm.close();
@@ -196,7 +196,7 @@ void TestCalibCamera_1()
         ofStrm.open("./data/CoordinateDiffInitialMatrix.txt");
         for (size_t index = 0; index < stRpy.vecImagePoints.size(); ++index) {
             cv::Point2f ptImage = stRpy.vecImagePoints[index];
-            cv::Point2f ptProject = cv::Point2f ( vecVecProjectPoints[0][index], vecVecProjectPoints[1][index] );
+            cv::Point2f ptProject = cv::Point2f ( ToFloat ( vecVecProjectPoints[0][index] ), ToFloat( vecVecProjectPoints[1][index] ) );
             ofStrm << ptImage.x - ptProject.x << ", " << ptImage.y - ptProject.y << std::endl;
         }
         ofStrm.close();
@@ -319,7 +319,7 @@ void TestCalibCamera_2()
         ofStrm.open("./data/CoordinateDiffFinalMatrix.txt");
         for (size_t index = 0; index < stRpy.vecImagePoints.size(); ++index) {
             cv::Point2f ptImage = stRpy.vecImagePoints[index];
-            cv::Point2f ptProject = cv::Point2f ( vecVecProjectPoints[0][index], vecVecProjectPoints[1][index]);
+            cv::Point2f ptProject = cv::Point2f ( ToFloat ( vecVecProjectPoints[0][index] ), ToFloat( vecVecProjectPoints[1][index] ) );
             ofStrm << ptImage.x - ptProject.x << ", " << ptImage.y - ptProject.y << std::endl;
         }
         ofStrm.close();
@@ -335,7 +335,7 @@ void TestCalibCamera_2()
         ofStrm.open("./data/CoordinateDiffInitialMatrix.txt");
         for (size_t index = 0; index < stRpy.vecImagePoints.size(); ++index) {
             cv::Point2f ptImage = stRpy.vecImagePoints[index];
-            cv::Point2f ptProject = cv::Point2f ( vecVecProjectPoints[0][index], vecVecProjectPoints[1][index] );
+            cv::Point2f ptProject = cv::Point2f ( ToFloat ( vecVecProjectPoints[0][index] ), ToFloat ( vecVecProjectPoints[1][index] ) );
             ofStrm << ptImage.x - ptProject.x << ", " << ptImage.y - ptProject.y << std::endl;
         }
         ofStrm.close();
