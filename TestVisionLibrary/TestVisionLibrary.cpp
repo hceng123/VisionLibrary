@@ -458,7 +458,7 @@ void TestCaliper() {
 int _tmain(int argc, _TCHAR* argv[])
 {
     PR_SetDebugMode ( PR_DEBUG_MODE::SHOW_IMAGE );
-    TestTemplate();
+    //TestTemplate();
     //TestInspDevice();
     //TestRunLogcase();
     //TestSearchFiducialMark();
@@ -487,7 +487,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
     //TestAutoThreshold();
 
-    //TestCaliper();
+    TestCaliper();
 
     //PR_FreeAllRecord();
 

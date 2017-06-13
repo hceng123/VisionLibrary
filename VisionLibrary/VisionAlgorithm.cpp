@@ -2038,13 +2038,13 @@ VisionStatus VisionAlgorithm::srchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd
     std::vector<int> vecX, vecY, vecIndexCanFormLine, vecProjection;
     VectorOfVectorOfPoint vecVecPoint;
 
+    cv::Mat matROI ( pstCmd->matInputImg, pstCmd->rectROI );
+
     cv::Mat matGray;
     if ( pstCmd->matInputImg.channels() > 1 )
-        cv::cvtColor ( pstCmd->matInputImg, matGray, CV_BGR2GRAY );
+        cv::cvtColor ( matROI, matGray, CV_BGR2GRAY );
     else
-        matGray = pstCmd->matInputImg.clone();
-
-    cv::Mat matROI ( matGray, pstCmd->rectROI );
+        matGray = matROI.clone();
 
     if ( ! pstCmd->matMask.empty() ) {
         cv::Mat matROIMask ( pstCmd->matMask, pstCmd->rectROI );
@@ -2052,7 +2052,7 @@ VisionStatus VisionAlgorithm::srchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd
         matROI.setTo(cv::Scalar(PR_MIN_GRAY_LEVEL), matROIMask);
     }
 
-    cv::findNonZero ( matROI, vecPoints );
+    cv::findNonZero ( matGray, vecPoints );
 
     if ( vecPoints.size() < 2 ) {
         WriteLog("Not enough points to detect line");
@@ -2081,10 +2081,10 @@ VisionStatus VisionAlgorithm::srchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd
 
     int maxValue = *std::max_element ( vecProjection.begin(), vecProjection.end() );
     
+    //Find the possible coordinate can form lines.
     for ( size_t index = 0; index < vecProjection.size(); ++ index ) {
-        if ( vecProjection[ index ] > 0.8 * maxValue ) {
+        if ( vecProjection[ index ] > 0.8 * maxValue )
             vecIndexCanFormLine.push_back ( ToInt32 ( index ) );
-        }
     }
 
     auto initialLinePos = 0;
@@ -2093,23 +2093,23 @@ VisionStatus VisionAlgorithm::srchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd
     else
         initialLinePos = vecIndexCanFormLine.back();
 
-    int rs = std::max ( int ( 0.1*(vecIndexCanFormLine.back() - vecIndexCanFormLine[0] ) ), 20 );
+    int rs = std::max ( int ( 0.1 *(vecIndexCanFormLine.back() - vecIndexCanFormLine[0] ) ), 20 );
     
     if ( pstRpy->bReversedFit ) vecVecPoint.resize( matROI.rows );
     else                        vecVecPoint.resize( matROI.cols );
 
+    //Find all the points around the initial line pos.
     for ( const auto &point : vecPoints ) {
         if (pstRpy->bReversedFit) {
-            if (point.x > initialLinePos - rs && point.x < initialLinePos + rs) {
-                vecVecPoint[point.y].push_back(point);
-            }
+            if ( point.x > initialLinePos - rs && point.x < initialLinePos + rs )
+                vecVecPoint[point.y].push_back ( point );
         }else {
-            if (point.y > initialLinePos - rs && point.y < initialLinePos + rs) {
-                vecVecPoint[point.x].push_back(point);
-            }
+            if ( point.y > initialLinePos - rs && point.y < initialLinePos + rs )
+                vecVecPoint[point.x].push_back ( point );
         }
     }
 
+    //Find the extreme point on each row or column.
     for ( const auto &vecPointTmp : vecVecPoint ) {
         if ( ! vecPointTmp.empty() ) {
             auto point = PR_DETECT_LINE_DIR::MIN_TO_MAX == pstCmd->enDetectDir ? vecPointTmp.front() : vecPointTmp.back();
@@ -2130,7 +2130,7 @@ VisionStatus VisionAlgorithm::srchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd
     if ( pstCmd->bCheckLinerity ) {
         int nInTolerancePointCount = 0;
         for (const auto &point : vecFitPoint) {
-            if (CalcUtils::ptDisToLine(point, pstRpy->bReversedFit, pstRpy->fSlope, pstRpy->fIntercept) < pstCmd->fPointMaxOffset)
+            if ( CalcUtils::ptDisToLine(point, pstRpy->bReversedFit, pstRpy->fSlope, pstRpy->fIntercept) < pstCmd->fPointMaxOffset )
                 ++nInTolerancePointCount;
         }
         pstRpy->fLinerity = nInTolerancePointCount * 100.f / vecFitPoint.size();
@@ -2148,7 +2148,11 @@ VisionStatus VisionAlgorithm::srchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd
     else
         pstRpy->bAngleCheckPass = false;
 
-    cv::cvtColor ( matGray, pstRpy->matResultImg, CV_GRAY2BGR );
+    if ( pstCmd->matInputImg.channels() > 1 )
+        pstRpy->matResultImg = pstCmd->matInputImg.clone();
+    else
+        cv::cvtColor ( pstCmd->matInputImg, pstRpy->matResultImg, CV_GRAY2BGR );
+
     cv::line( pstRpy->matResultImg, pstRpy->stLine.pt1, pstRpy->stLine.pt2, _constBlueScalar, 2 );
     cv::rectangle ( pstRpy->matResultImg, pstCmd->rectROI, _constGreenScalar );
     pstRpy->enStatus = VisionStatus::OK;

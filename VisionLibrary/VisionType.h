@@ -106,6 +106,10 @@ enum class PR_COMPARE_TYPE {
     LARGER,
 };
 
+//If the dark part coordinate is larger than bright part, then choose MAX_TO_MIN mode.
+//In other words, dark part on the right, then use MAX_TO_MIN mode.
+//If dark part on the left, then use MIN_TO_MAX.
+//The direction means the direction from dark to bright.
 enum class PR_DETECT_LINE_DIR {
     MIN_TO_MAX,
     MAX_TO_MIN,
