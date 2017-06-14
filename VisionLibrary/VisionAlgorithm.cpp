@@ -2023,7 +2023,7 @@ VisionStatus VisionAlgorithm::srchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd
         return pstRpy->enStatus;
     }
 
-    if ( pstCmd->bCheckAngle && ( pstCmd->fExpectedAngle < 0.f || pstCmd->fExpectedAngle > 180 || pstCmd->fAngleDiffTolerance <= 0.f ) ) {
+    if ( pstCmd->bCheckAngle && ( pstCmd->fExpectedAngle < 0.f || pstCmd->fExpectedAngle > 180.f || pstCmd->fAngleDiffTolerance <= 0.f ) ) {
         _snprintf(charrMsg, sizeof(charrMsg), "Angle check parameter is invalid. ExpectedAngle = %.2f, AngleDiffTolerance = %.2f",
             pstCmd->fExpectedAngle, pstCmd->fAngleDiffTolerance );
         WriteLog(charrMsg);
@@ -2040,19 +2040,27 @@ VisionStatus VisionAlgorithm::srchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd
 
     cv::Mat matROI ( pstCmd->matInputImg, pstCmd->rectROI );
 
-    cv::Mat matGray;
+    cv::Mat matGray, matThreshold, matROIMask;
     if ( pstCmd->matInputImg.channels() > 1 )
         cv::cvtColor ( matROI, matGray, CV_BGR2GRAY );
     else
         matGray = matROI.clone();
 
-    if ( ! pstCmd->matMask.empty() ) {
-        cv::Mat matROIMask ( pstCmd->matMask, pstCmd->rectROI );
+    if ( ! pstCmd->matMask.empty() )
+        matROIMask = cv::Mat ( pstCmd->matMask, pstCmd->rectROI );
+
+    int nThreshold = _autoThreshold ( matGray, matROIMask );
+
+    cv::threshold ( matGray, matThreshold, nThreshold, PR_MAX_GRAY_LEVEL, cv::THRESH_BINARY );
+    if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE )
+        showImage("Calibper threshold image", matThreshold );
+
+    if ( ! pstCmd->matMask.empty() ) {        
         matROIMask = cv::Scalar(PR_MAX_GRAY_LEVEL) - matROIMask;
-        matROI.setTo(cv::Scalar(PR_MIN_GRAY_LEVEL), matROIMask);
+        matThreshold.setTo ( cv::Scalar(0), matROIMask );
     }
 
-    cv::findNonZero ( matGray, vecPoints );
+    cv::findNonZero ( matThreshold, vecPoints );
 
     if ( vecPoints.size() < 2 ) {
         WriteLog("Not enough points to detect line");
@@ -2125,6 +2133,29 @@ VisionStatus VisionAlgorithm::srchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd
 
     Fitting::fitLine ( vecFitPoint, pstRpy->fSlope, pstRpy->fIntercept, pstRpy->bReversedFit );
     pstRpy->stLine = CalcUtils::calcEndPointOfLine ( vecFitPoint, pstRpy->bReversedFit, pstRpy->fSlope, pstRpy->fIntercept );
+
+    const int MIN_DIST_FROM_LINE_TO_ROI_EDGE = 5;
+    if ( pstRpy->bReversedFit ) {
+        if ( pstRpy->fSlope < 0.5 && 
+            (fabs ( pstRpy->stLine.pt1.x - pstCmd->rectROI.x ) <= MIN_DIST_FROM_LINE_TO_ROI_EDGE ||
+             fabs ( pstRpy->stLine.pt2.x - pstCmd->rectROI.x ) <= MIN_DIST_FROM_LINE_TO_ROI_EDGE ||
+             fabs ( pstRpy->stLine.pt1.x - pstCmd->rectROI.x - pstCmd->rectROI.width ) <= MIN_DIST_FROM_LINE_TO_ROI_EDGE ||
+             fabs ( pstRpy->stLine.pt2.x - pstCmd->rectROI.x - pstCmd->rectROI.width ) <= MIN_DIST_FROM_LINE_TO_ROI_EDGE ) ) {
+            pstRpy->enStatus = VisionStatus::CALIPER_CAN_NOT_FIND_LINE;
+            FINISH_LOGCASE;
+            return pstRpy->enStatus;
+        }
+    }else {
+        if ( pstRpy->fSlope < 0.5 && 
+            (fabs ( pstRpy->stLine.pt1.y - pstCmd->rectROI.y ) <= MIN_DIST_FROM_LINE_TO_ROI_EDGE ||
+             fabs ( pstRpy->stLine.pt2.y - pstCmd->rectROI.y ) <= MIN_DIST_FROM_LINE_TO_ROI_EDGE ||
+             fabs ( pstRpy->stLine.pt1.y - pstCmd->rectROI.y - pstCmd->rectROI.height ) <= MIN_DIST_FROM_LINE_TO_ROI_EDGE ||
+             fabs ( pstRpy->stLine.pt2.y - pstCmd->rectROI.y - pstCmd->rectROI.height ) <= MIN_DIST_FROM_LINE_TO_ROI_EDGE ) ) {
+            pstRpy->enStatus = VisionStatus::CALIPER_CAN_NOT_FIND_LINE;
+            FINISH_LOGCASE;
+            return pstRpy->enStatus;
+        }
+    }
     
     pstRpy->bLinerityCheckPass = false;
     if ( pstCmd->bCheckLinerity ) {

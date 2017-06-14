@@ -222,6 +222,12 @@ void VisionWidget::on_detectLineBtn_clicked()
 	VisionStatus enStatus = PR_Caliper(&stCmd, &stRpy);
 	if (VisionStatus::OK == enStatus)	{
 		ui.visionView->setMat ( VisionView::DISPLAY_SOURCE::RESULT, stRpy.matResultImg );
+    }else {
+        PR_GET_ERROR_STR_RPY stErrStrRpy;
+        PR_GetErrorStr(enStatus, &stErrStrRpy);
+        QMessageBox::critical(nullptr, "Caliper", stErrStrRpy.achErrorStr, "Quit");
+        ui.lineEditObjCenter->clear();
+        ui.lineEditObjRotation->clear();
     }
 }
 
