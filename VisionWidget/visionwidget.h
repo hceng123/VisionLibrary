@@ -36,6 +36,7 @@ private slots:
     void on_btnCalibrateCamera_clicked();
     void on_btnLrnChip_clicked();
     void on_btnInspChip_clicked();
+    void on_btnCountEdge_clicked();
 protected:
     bool checkDisplayImage();
     void drawTmplImage();

@@ -1326,8 +1326,7 @@ int VisionAlgorithm::_findLine(const cv::Mat &mat, PR_INSP_SURFACE_CMD *const pI
 	return 0;
 }
 
-int VisionAlgorithm::_merge2Line(const PR_Line2f &line1, const PR_Line2f &line2, PR_Line2f &lineResult)
-{
+/*static*/ int VisionAlgorithm::_merge2Line(const PR_Line2f &line1, const PR_Line2f &line2, PR_Line2f &lineResult) {
 	float fLineSlope1 = ( line1.pt2.y - line1.pt1.y ) / ( line1.pt2.x - line1.pt1.x );
 	float fLineSlope2 = ( line2.pt2.y - line2.pt1.y ) / ( line2.pt2.x - line2.pt1.x );
 
@@ -1349,7 +1348,7 @@ int VisionAlgorithm::_merge2Line(const PR_Line2f &line1, const PR_Line2f &line2,
         fDistanceOfLine = fabs ( ( line1.pt1.x + line1.pt2.x ) / 2.f - ( line2.pt1.x + line2.pt2.x ) / 2.f );
     else if (fabs(fPerpendicularLineSlope1) > 100 || fabs(fPerpendicularLineSlope2) > 100 )
         fDistanceOfLine = fabs ( ( line1.pt1.y + line1.pt2.y ) / 2.f - ( line2.pt1.y + line2.pt2.y ) / 2.f );
-    else{
+    else {
         cv::Point2f ptCrossPointWithLine1, ptCrossPointWithLine2;
 
         //Find perpendicular line, get the cross points with two lines, then can get the distance of two lines.
@@ -1402,7 +1401,7 @@ int VisionAlgorithm::_merge2Line(const PR_Line2f &line1, const PR_Line2f &line2,
 	return static_cast<int>(VisionStatus::OK);
 }
 
-int VisionAlgorithm::_mergeLines(const vector<PR_Line2f> &vecLines, vector<PR_Line2f> &vecResultLines)
+/*static*/ int VisionAlgorithm::_mergeLines(const vector<PR_Line2f> &vecLines, vector<PR_Line2f> &vecResultLines)
 {
 	if ( vecLines.size() < 2 )  {
         vecResultLines = vecLines;
@@ -2397,66 +2396,60 @@ EXIT:
     return pstRpy->enStatus;
 }
 
-VisionStatus VisionAlgorithm::findEdge(PR_FIND_EDGE_CMD *pstCmd, PR_FIND_EDGE_RPY *pstRpy)
+/*static*/ VisionStatus VisionAlgorithm::findEdge(PR_FIND_EDGE_CMD *pstCmd, PR_FIND_EDGE_RPY *pstRpy)
 {
-    char charrMsg [ 1000 ];
-    if (NULL == pstCmd || NULL == pstRpy) {
-        _snprintf(charrMsg, sizeof(charrMsg), "Input is invalid, pstCmd = %d, pstRpy = %d", (int)pstCmd, (int)pstRpy);
-        WriteLog(charrMsg);
-        pstRpy->nStatus = ToInt32 ( VisionStatus::INVALID_PARAM );
-        return VisionStatus::INVALID_PARAM;
-    }
+    assert ( pstCmd != nullptr && pstRpy != nullptr );
+    char charrMsg [ 1000 ];    
 
-    if (pstCmd->matInputImg.empty()) {
+    if ( pstCmd->matInputImg.empty() ) {
         WriteLog("Input image is empty");
-        pstRpy->nStatus = ToInt32 ( VisionStatus::INVALID_PARAM );
-        return VisionStatus::INVALID_PARAM;
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
     }
 
     cv::Mat matROI(pstCmd->matInputImg, pstCmd->rectROI);
     if ( matROI.empty() ){
         WriteLog("ROI image is empty");
-        pstRpy->nStatus = ToInt32 ( VisionStatus::INVALID_PARAM );
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return VisionStatus::INVALID_PARAM;
     }
 
     if ( ! pstCmd->bAutothreshold && ( pstCmd->nThreshold <= 0 || pstCmd->nThreshold >= PR_MAX_GRAY_LEVEL ) )  {
          _snprintf(charrMsg, sizeof(charrMsg), "The threshold = %d is invalid", pstCmd->nThreshold);
         WriteLog(charrMsg);
-        pstRpy->nStatus = ToInt32 ( VisionStatus::INVALID_PARAM );
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return VisionStatus::INVALID_PARAM;
     }    
 
     cv::Mat matROIGray, matThreshold, matBlur, matCannyResult;
-    cv::cvtColor(matROI, matROIGray, CV_BGR2GRAY);
+    cv::cvtColor ( matROI, matROIGray, CV_BGR2GRAY );
 
     auto threshold = pstCmd->nThreshold;
     if ( pstCmd->bAutothreshold )
-        threshold = _autoThreshold(matROIGray);
+        threshold = _autoThreshold ( matROIGray );
 
-    cv::threshold( matROIGray, matThreshold, pstCmd->nThreshold, 255, cv::THRESH_BINARY);
+    cv::threshold( matROIGray, matThreshold, pstCmd->nThreshold, 255, cv::THRESH_BINARY );
     if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE )
         showImage("Threshold Result", matThreshold );
 
     cv::blur ( matThreshold, matBlur, cv::Size(2, 2) );
 
-    /// Detect edges using canny
+    // Detect edges using canny
     cv::Canny( matBlur, matCannyResult, pstCmd->nThreshold, 255);
     if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE )
         showImage("Canny Result", matCannyResult );
 
-    vector<cv::Vec4i> lines;
+    std::vector<cv::Vec4i> lines;
     auto voteThreshold = ToInt32 ( pstCmd->fMinLength );
-    cv::HoughLinesP(matCannyResult, lines, 1, CV_PI / 180, voteThreshold, pstCmd->fMinLength, 10);
-    vector<PR_Line2f> vecLines, vecLinesAfterMerge;
-    for ( size_t i = 0; i < lines.size(); ++ i )
-    {
+    cv::HoughLinesP ( matCannyResult, lines, 1, CV_PI / 180, voteThreshold, pstCmd->fMinLength, 10 );
+    std::vector<PR_Line2f> vecLines, vecLinesAfterMerge, vecLineDisplay;
+    for ( size_t i = 0; i < lines.size(); ++ i ) {
         cv::Point2f pt1((float)lines[i][0], (float)lines[i][1]);
         cv::Point2f pt2((float)lines[i][2], (float)lines[i][3]);
         PR_Line2f line(pt1, pt2);
         vecLines.push_back(line);
     }
-    _mergeLines(vecLines, vecLinesAfterMerge);
+    _mergeLines ( vecLines, vecLinesAfterMerge );
     if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE )   {
         cv::Mat matResultImage = matROI.clone();
         for ( const auto &line : vecLinesAfterMerge )
@@ -2464,22 +2457,30 @@ VisionStatus VisionAlgorithm::findEdge(PR_FIND_EDGE_CMD *pstCmd, PR_FIND_EDGE_RP
         showImage("Find edge Result", matResultImage );
     }
     Int32 nLineCount = 0;
-    if ( PR_EDGE_DIRECTION::ALL == pstCmd->enDirection )
-        pstRpy->nEdgeCount = ToInt32(vecLinesAfterMerge.size());
-    else
-    {
-        for ( const auto &line : vecLinesAfterMerge )
-        {
-            float fSlope = CalcUtils::lineSlope(line);
-            if ( PR_EDGE_DIRECTION::HORIZONTAL == pstCmd->enDirection && fabs ( fSlope ) < 0.1 )
+    if ( PR_EDGE_DIRECTION::BOTH == pstCmd->enDirection ) {
+        pstRpy->nEdgeCount = ToInt32 ( vecLinesAfterMerge.size() );
+        vecLineDisplay = vecLinesAfterMerge;
+    }else {
+        for ( const auto &line : vecLinesAfterMerge ) {
+            float fSlope = CalcUtils::lineSlope ( line );
+            if ( PR_EDGE_DIRECTION::HORIZONTAL == pstCmd->enDirection && fabs ( fSlope ) < 0.1 ) {
                 ++ nLineCount;
-            else if ( PR_EDGE_DIRECTION::VERTIAL == pstCmd->enDirection && fabs ( fSlope ) > 10 )
+                vecLineDisplay.push_back ( line );
+            }else if ( PR_EDGE_DIRECTION::VERTIAL == pstCmd->enDirection && fabs ( fSlope ) > 10 ) {
                 ++ nLineCount;
+                vecLineDisplay.push_back ( line );
+            }
         }
         pstRpy->nEdgeCount = nLineCount;
     }
-    pstRpy->nStatus = ToInt32 ( VisionStatus::OK );
-    return VisionStatus::OK;
+    pstRpy->matResultImg = pstCmd->matInputImg.clone();
+    for ( const auto &line : vecLineDisplay ) {
+        cv::Point2f pt1( line.pt1.x + pstCmd->rectROI.x, line.pt1.y + pstCmd->rectROI.y );
+        cv::Point2f pt2( line.pt2.x + pstCmd->rectROI.x, line.pt2.y + pstCmd->rectROI.y );
+        cv::line ( pstRpy->matResultImg, pt1, pt2, _constBlueScalar, 2 );
+    }
+    pstRpy->enStatus = VisionStatus::OK;
+    return pstRpy->enStatus;
 }
 
 /*static*/ VisionStatus VisionAlgorithm::fitCircle(PR_FIT_CIRCLE_CMD *pstCmd, PR_FIT_CIRCLE_RPY *pstRpy, bool bReplay)

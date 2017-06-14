@@ -327,8 +327,9 @@ struct PR_FIND_EDGE_CMD {
 };
 
 struct PR_FIND_EDGE_RPY {
-    Int32                   nStatus;
+    VisionStatus            enStatus;
     Int32                   nEdgeCount;
+    cv::Mat                 matResultImg;
 };
 
 struct PR_FIT_CIRCLE_CMD {

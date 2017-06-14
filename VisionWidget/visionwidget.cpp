@@ -502,3 +502,33 @@ void VisionWidget::on_btnInspChip_clicked() {
         ui.lineEditObjRotation->clear();
     }
 }
+
+void VisionWidget::on_btnCountEdge_clicked() {
+    if ( _sourceImagePath.empty() ) {
+        QMessageBox::information(this, "Vision Widget", "Please select an image first!", "Quit");
+        return;
+    }
+
+    ui.visionView->setState ( VisionView::VISION_VIEW_STATE::TEST_VISION_LIBRARY );
+    ui.visionView->applyIntermediateResult();
+
+    PR_FIND_EDGE_CMD stCmd;
+    PR_FIND_EDGE_RPY stRpy;
+    stCmd.matInputImg = ui.visionView->getMat();
+    stCmd.rectROI = ui.visionView->getSelectedWindow();
+    stCmd.bAutothreshold = ui.checkBoxCountEdgeAutoThreshold->isChecked();
+    stCmd.nThreshold = ui.lineEditFitCountEdgeThreshold->text().toInt();
+    stCmd.enDirection = static_cast<PR_EDGE_DIRECTION> ( ui.cbCountEdgeDirection->currentIndex() );
+    stCmd.fMinLength = ui.lineEditCountEdgeMinLength->text().toFloat();
+    PR_FindEdge ( &stCmd, &stRpy );
+    if ( VisionStatus::OK == stRpy.enStatus ) {
+        ui.visionView->setMat ( VisionView::DISPLAY_SOURCE::RESULT, stRpy.matResultImg );
+        ui.lineEditEdgeCount->setText ( std::to_string( stRpy.nEdgeCount ).c_str() );
+    }else {
+        PR_GET_ERROR_STR_RPY stErrStrRpy;
+        PR_GetErrorStr(stRpy.enStatus, &stErrStrRpy);
+        QMessageBox::critical(nullptr, "Find Edge", stErrStrRpy.achErrorStr, "Quit");
+        ui.lineEditObjCenter->clear();
+        ui.lineEditObjRotation->clear();
+    }
+}

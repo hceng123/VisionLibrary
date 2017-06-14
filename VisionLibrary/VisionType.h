@@ -71,7 +71,7 @@ enum class PR_RM_FIT_NOISE_METHOD {
 enum class PR_EDGE_DIRECTION {
     HORIZONTAL,
     VERTIAL,
-    ALL,
+    BOTH,
 };
 
 enum class PR_FIT_METHOD {
