@@ -107,6 +107,11 @@ public:
     static cv::Point2f lineIntersect(float fSlope1, float fIntercept1, float fSlope2, float fIntercept2);
     static float lineSlope(const PR_Line2f &line);
     static VectorOfPoint getCornerOfRotatedRect(const cv::RotatedRect &rotatedRect);
+    static float guassianValue(float ssq, float x );
+    static cv::Mat generateGuassinDiffKernel ( int nOneSideWidth, float ssq );
+    static void filter2D_Conv(cv::InputArray src, cv::OutputArray dst, int ddepth,
+                   cv::InputArray kernel, cv::Point anchor = cv::Point(-1,-1),
+                   double delta = 0, int borderType = cv::BORDER_DEFAULT );
 
     template<typename _Tp>
     static cv::Point2f warpPoint(const cv::Mat &matWarp, const cv::Point2f &ptInput)

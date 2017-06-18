@@ -173,6 +173,7 @@ public:
     static String StaticGetFolderPrefix();
 private:
     const String _strKeyROI             = "ROI";
+    const String _strKeyAlgorithm       = "Algorithm";
     const String _strKeyDir             = "Direction";
     const String _strKeyCheckLinerity   = "CheckLinerity";
     const String _strKeyPointMaxOffset  = "PointMaxOffset";
@@ -225,8 +226,8 @@ class LogCaseFitRect : public LogCase
 {
 public:
     explicit LogCaseFitRect(const String &strPath, bool bReplay = false) : LogCase(strPath, bReplay) {}
-    VisionStatus WriteCmd(PR_FIT_RECT_CMD *pCmd);
-    VisionStatus WriteRpy(PR_FIT_RECT_RPY *pRpy);
+    VisionStatus WriteCmd(const PR_FIT_RECT_CMD *const pCmd);
+    VisionStatus WriteRpy(const PR_FIT_RECT_RPY *const pRpy);
     virtual VisionStatus RunLogCase() override;
     virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
     static String StaticGetFolderPrefix();
@@ -257,6 +258,26 @@ private:
     const String _strKeyLineThreePoint2 = "LineThreePoint2";
     const String _strKeyLineFourPoint1  = "LineFourPoint1";
     const String _strKeyLineFourPoint2  = "LineFourPoint2";
+};
+
+class LogCaseFindEdge : public LogCase
+{
+public:
+    explicit LogCaseFindEdge(const String &strPath, bool bReplay = false) : LogCase(strPath, bReplay) {}
+    VisionStatus WriteCmd(const PR_FIND_EDGE_CMD *const pCmd);
+    VisionStatus WriteRpy(const PR_FIND_EDGE_RPY *const pRpy);
+    virtual VisionStatus RunLogCase() override;
+    virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
+    static String StaticGetFolderPrefix();
+private:
+    const String _strKeyROI             = "ROI";
+    const String _strKeyAutoThreshold   = "AutoThreshold";
+    const String _strKeyThreshold       = "Threshold";
+    const String _strKeyDirection       = "Direction";
+    const String _strKeyMinLength       = "MinLength";
+
+    const String _strKeyStatus          = "Status";
+    const String _strKeyEdgeCount       = "EdgeCount";
 };
 
 class LogCaseSrchFiducial : public LogCase

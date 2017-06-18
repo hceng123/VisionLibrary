@@ -73,7 +73,7 @@
      </rect>
     </property>
     <property name="currentIndex">
-     <number>3</number>
+     <number>0</number>
     </property>
     <widget class="QWidget" name="tabPreProcess">
      <attribute name="title">
@@ -616,7 +616,7 @@
        </property>
       </widget>
      </widget>
-     <widget class="QGroupBox" name="groupBoxFitLine_2">
+     <widget class="QGroupBox" name="groupBoxCaliper">
       <property name="geometry">
        <rect>
         <x>10</x>
@@ -626,9 +626,9 @@
        </rect>
       </property>
       <property name="title">
-       <string>Detect Line</string>
+       <string>Caliper</string>
       </property>
-      <widget class="QPushButton" name="detectLineBtn">
+      <widget class="QPushButton" name="btnCaliper">
        <property name="geometry">
         <rect>
          <x>500</x>
@@ -638,10 +638,10 @@
         </rect>
        </property>
        <property name="text">
-        <string>Detect Line</string>
+        <string>Caliper</string>
        </property>
       </widget>
-      <widget class="QComboBox" name="comboBoxDetectLineDirection">
+      <widget class="QComboBox" name="comboBoxCaliperDirection">
        <property name="geometry">
         <rect>
          <x>60</x>
@@ -676,6 +676,42 @@
        <property name="text">
         <string>Direction</string>
        </property>
+      </widget>
+      <widget class="QLabel" name="labelCaliperAlgorithm">
+       <property name="geometry">
+        <rect>
+         <x>160</x>
+         <y>20</y>
+         <width>51</width>
+         <height>16</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Algorithm</string>
+       </property>
+      </widget>
+      <widget class="QComboBox" name="comboBoxCaliperAlgorithm">
+       <property name="geometry">
+        <rect>
+         <x>210</x>
+         <y>20</y>
+         <width>141</width>
+         <height>22</height>
+        </rect>
+       </property>
+       <property name="currentIndex">
+        <number>0</number>
+       </property>
+       <item>
+        <property name="text">
+         <string>Projection</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>Section Avg Guassian Diff</string>
+        </property>
+       </item>
       </widget>
      </widget>
     </widget>
@@ -1361,7 +1397,7 @@
         </rect>
        </property>
        <property name="currentIndex">
-        <number>0</number>
+        <number>2</number>
        </property>
        <item>
         <property name="text">

@@ -113,7 +113,7 @@ VisionAPI void PR_SetDebugMode(PR_DEBUG_MODE enDebugMode)
     Config::GetInstance()->setDebugMode(enDebugMode);
 }
 
-VisionAPI VisionStatus  PR_RunLogCase(const std::string &strPath)
+VisionAPI VisionStatus PR_RunLogCase(const std::string &strPath)
 {
     try
     {
@@ -167,19 +167,12 @@ VisionAPI VisionStatus  PR_FitParallelLine(PR_FIT_PARALLEL_LINE_CMD *pstCmd, PR_
 
 VisionAPI VisionStatus  PR_FitRect(PR_FIT_RECT_CMD *pstCmd, PR_FIT_RECT_RPY *pstRpy)
 {
-    try
-    {
-        VisionAlgorithmPtr pVA = VisionAlgorithm::create();
-        return pVA->fitRect ( pstCmd, pstRpy );
-    }catch(std::exception &e)
-    {
-        WriteLog(e.what());
-        pstRpy->enStatus = VisionStatus::OPENCV_EXCEPTION;
-        return VisionStatus::OPENCV_EXCEPTION;
-    }
+PR_FUNCTION_ENTRY
+        return VisionAlgorithm::fitRect ( pstCmd, pstRpy );
+PR_FUNCTION_EXIT
 }
 
-VisionAPI VisionStatus  PR_FindEdge(PR_FIND_EDGE_CMD *pstCmd, PR_FIND_EDGE_RPY *pstRpy)
+VisionAPI VisionStatus  PR_FindEdge(const PR_FIND_EDGE_CMD *const pstCmd, PR_FIND_EDGE_RPY *const pstRpy)
 {
 PR_FUNCTION_ENTRY
         return VisionAlgorithm::findEdge ( pstCmd, pstRpy );
@@ -188,14 +181,9 @@ PR_FUNCTION_EXIT
 
 VisionStatus  PR_FitCircle(PR_FIT_CIRCLE_CMD *pstCmd, PR_FIT_CIRCLE_RPY *pstRpy)
 {
-    try
-    {
+PR_FUNCTION_ENTRY
         return VisionAlgorithm::fitCircle ( pstCmd, pstRpy );
-    }catch(std::exception &e)
-    {
-        WriteLog(e.what());
-        return VisionStatus::OPENCV_EXCEPTION;
-    }
+PR_FUNCTION_EXIT
 }
 
 VisionAPI VisionStatus PR_GetErrorStr(VisionStatus enStatus, PR_GET_ERROR_STR_RPY *pstRpy)

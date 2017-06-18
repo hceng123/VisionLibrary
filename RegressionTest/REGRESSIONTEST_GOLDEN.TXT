@@ -262,6 +262,54 @@ Linerity check pass: 1
 Angle  = 73.48
 Angle check pass: 0
 
+-------------------------------------------------
+CALIPER GUASSIAN DIFF REGRESSION TEST #1 STARTING
+-------------------------------------------------
+Caliper status 0
+ReversedFit = 1
+Line slope = 0.02, intercept = 414.44
+Line coordinate: (429.36, 745.00), (439.78, 1265.00)
+Linerity  = 90.48
+Linerity check pass: 1
+Angle  = 88.85
+Angle check pass: 1
+
+-------------------------------------------------
+CALIPER GUASSIAN DIFF REGRESSION TEST #2 STARTING
+-------------------------------------------------
+Caliper status 0
+ReversedFit = 1
+Line slope = 0.02, intercept = 774.07
+Line coordinate: (786.26, 760.00), (796.21, 1380.00)
+Linerity  = 100.00
+Linerity check pass: 1
+Angle  = 89.08
+Angle check pass: 1
+
+-------------------------------------------------
+CALIPER GUASSIAN DIFF REGRESSION TEST #3 STARTING
+-------------------------------------------------
+Caliper status 0
+ReversedFit = 0
+Line slope = -0.03, intercept = 1351.17
+Line coordinate: (1004.00, 1320.12), (1224.00, 1313.31)
+Linerity  = 100.00
+Linerity check pass: 1
+Angle  = -1.77
+Angle check pass: 1
+
+-------------------------------------------------
+CALIPER GUASSIAN DIFF REGRESSION TEST #4 STARTING
+-------------------------------------------------
+Caliper status 0
+ReversedFit = 0
+Line slope = -0.01, intercept = 1870.23
+Line coordinate: (957.00, 1860.71), (1137.00, 1858.91)
+Linerity  = 95.24
+Linerity check pass: 1
+Angle  = -0.57
+Angle check pass: 1
+
 ---------------------------------------------
 CALIBRATE CAMERA REGRESSION TEST #1 STARTING
 ---------------------------------------------

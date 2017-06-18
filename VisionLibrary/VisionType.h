@@ -9,7 +9,7 @@ namespace Vision
 #define MAX_NUM_OF_DEFECT_CRITERIA				(5)
 #define MAX_NUM_OF_DEFECT_RESULT				(20)
 #define PARALLEL_LINE_SLOPE_DIFF_LMT			(0.1)
-#define PARALLEL_LINE_MERGE_DIST_LMT			(20)
+#define PARALLEL_LINE_MERGE_DIST_LMT			(10)
 #define PR_ELECTRODE_COUNT                      (2)
 #define PR_MAX_GRAY_LEVEL                       (255)
 #define PR_MIN_GRAY_LEVEL                       (0)
@@ -146,6 +146,11 @@ enum class PR_INSP_CHIP_MODE {
     RNET,
     CAE,
     CIRCULAR,
+};
+
+enum class PR_CALIPER_ALGORITHM {
+    PROJECTION,
+    SECTION_AVG_GUASSIAN_DIFF,
 };
 
 }

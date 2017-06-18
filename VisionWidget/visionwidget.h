@@ -24,7 +24,7 @@ private slots:
 	void on_fitCircleBtn_clicked();
     void on_calcRoundnessBtn_clicked();
     void on_fitLineBtn_clicked();
-    void on_detectLineBtn_clicked();
+    void on_btnCaliper_clicked();
     void on_fitParallelLineBtn_clicked();
     void on_fitRectBtn_clicked();
     void on_ocrBtn_clicked();

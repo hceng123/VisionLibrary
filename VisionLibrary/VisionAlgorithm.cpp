@@ -15,6 +15,7 @@
 #include "Fitting.h"
 #include <iostream>
 #include <limits>
+#include <algorithm>
 
 using namespace cv::xfeatures2d;
 namespace bfs = boost::filesystem;
@@ -1334,7 +1335,7 @@ int VisionAlgorithm::_findLine(const cv::Mat &mat, PR_INSP_SURFACE_CMD *const pI
         && fabs ( fLineSlope1 - fLineSlope2 ) > PARALLEL_LINE_SLOPE_DIFF_LMT )
 		return -1;
 	else if ( ( fabs(fLineSlope1) > 10.f || fabs(fLineSlope2) > 10.f )
-        && fabs ( 1 / fLineSlope1 - 1 / fLineSlope2 ) > PARALLEL_LINE_SLOPE_DIFF_LMT )     
+        && fabs ( 1 / fLineSlope1 - 1 / fLineSlope2 ) > PARALLEL_LINE_SLOPE_DIFF_LMT )
 		return -1;
 
     //Find the intersection point with Y axis.
@@ -1344,7 +1345,8 @@ int VisionAlgorithm::_findLine(const cv::Mat &mat, PR_INSP_SURFACE_CMD *const pI
 	float fPerpendicularLineSlope1 =  - 1.f / fLineSlope1;
     float fPerpendicularLineSlope2 =  - 1.f / fLineSlope2;
     float fDistanceOfLine = 0.f;
-    if (fabs(fPerpendicularLineSlope1) < 0.01 || fabs(fPerpendicularLineSlope2) < 0.01 )
+    const float HORIZONTAL_LINE_SLOPE = 0.1f;
+    if (fabs(fPerpendicularLineSlope1) < HORIZONTAL_LINE_SLOPE || fabs(fPerpendicularLineSlope2) < HORIZONTAL_LINE_SLOPE )
         fDistanceOfLine = fabs ( ( line1.pt1.x + line1.pt2.x ) / 2.f - ( line2.pt1.x + line2.pt2.x ) / 2.f );
     else if (fabs(fPerpendicularLineSlope1) > 100 || fabs(fPerpendicularLineSlope2) > 100 )
         fDistanceOfLine = fabs ( ( line1.pt1.y + line1.pt2.y ) / 2.f - ( line2.pt1.y + line2.pt2.y ) / 2.f );
@@ -1365,11 +1367,20 @@ int VisionAlgorithm::_findLine(const cv::Mat &mat, PR_INSP_SURFACE_CMD *const pI
 	if ( fDistanceOfLine > PARALLEL_LINE_MERGE_DIST_LMT )
 		return -1;
 
-	std::vector<cv::Point> vecPoint;
-	vecPoint.push_back ( line1.pt1 );
-	vecPoint.push_back ( line1.pt2 );
-	vecPoint.push_back ( line2.pt1 );
-	vecPoint.push_back ( line2.pt2 );
+    std::vector<cv::Point> vecPoint;
+    vecPoint.push_back ( line1.pt1 );
+    vecPoint.push_back ( line1.pt2 );
+    vecPoint.push_back ( line2.pt1 );
+    vecPoint.push_back ( line2.pt2 );
+    //{line1.pt1, line1.pt2, line2.pt1, line2.pt2 }
+    if ( fabs ( fLineSlope1 ) < HORIZONTAL_LINE_SLOPE && fabs ( fLineSlope2 ) < HORIZONTAL_LINE_SLOPE ) {
+        lineResult.pt1 = *std::min_element ( vecPoint.begin(), vecPoint.end(), []( const cv::Point &pt1, const cv::Point &pt2 ) { return pt1.x < pt2.x; } );
+        lineResult.pt2 = *std::max_element ( vecPoint.begin(), vecPoint.end(), []( const cv::Point &pt1, const cv::Point &pt2 ) { return pt1.x < pt2.x; } );
+        float fAverageY = ( line1.pt1.y + line1.pt2.y + line2.pt1.y + line2.pt2.y ) / 4.f;
+        lineResult.pt1.y = fAverageY;
+        lineResult.pt2.y = fAverageY;
+        return 0;
+    }
 
 	std::vector<float> vecPerpendicularLineB;
 	//Find the expression of perpendicular lines y = a * x + b
@@ -1385,7 +1396,7 @@ int VisionAlgorithm::_findLine(const cv::Mat &mat, PR_INSP_SURFACE_CMD *const pI
 	size_t nMaxIndex = 0, nMinIndex = 0;
 	float fMaxB = fPerpendicularLineB1;
 	float fMinB = fPerpendicularLineB1;
-	for ( size_t i = 1; i < vecPerpendicularLineB.size(); ++ i )	{
+	for ( size_t i = 1; i < vecPerpendicularLineB.size(); ++ i ) {
 		if ( vecPerpendicularLineB[i] > fMaxB )	{
 			fMaxB = vecPerpendicularLineB[i];
 			nMaxIndex = i;
@@ -1515,6 +1526,8 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
         pLogCase = std::make_unique<LogCaseFitParallelLine>( strLocalPath, true );
     else if (LogCaseFitRect::StaticGetFolderPrefix() == folderPrefix)
         pLogCase = std::make_unique<LogCaseFitRect>( strLocalPath, true );
+    else if (LogCaseFindEdge::StaticGetFolderPrefix() == folderPrefix)
+        pLogCase = std::make_unique<LogCaseFindEdge>( strLocalPath, true );
     else if (LogCaseSrchFiducial::StaticGetFolderPrefix() == folderPrefix)
         pLogCase = std::make_unique<LogCaseSrchFiducial>( strLocalPath, true );
     else if (LogCaseOcr::StaticGetFolderPrefix() == folderPrefix)
@@ -2031,11 +2044,7 @@ VisionStatus VisionAlgorithm::srchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd
     }
 
     MARK_FUNCTION_START_TIME;
-    SETUP_LOGCASE(LogCaseCaliper);
-
-    VectorOfPoint vecPoints, vecFitPoint;
-    std::vector<int> vecX, vecY, vecIndexCanFormLine, vecProjection;
-    VectorOfVectorOfPoint vecVecPoint;
+    SETUP_LOGCASE(LogCaseCaliper);   
 
     cv::Mat matROI ( pstCmd->matInputImg, pstCmd->rectROI );
 
@@ -2048,90 +2057,21 @@ VisionStatus VisionAlgorithm::srchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd
     if ( ! pstCmd->matMask.empty() )
         matROIMask = cv::Mat ( pstCmd->matMask, pstCmd->rectROI );
 
-    int nThreshold = _autoThreshold ( matGray, matROIMask );
-
-    cv::threshold ( matGray, matThreshold, nThreshold, PR_MAX_GRAY_LEVEL, cv::THRESH_BINARY );
-    if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE )
-        showImage("Calibper threshold image", matThreshold );
-
-    if ( ! pstCmd->matMask.empty() ) {        
-        matROIMask = cv::Scalar(PR_MAX_GRAY_LEVEL) - matROIMask;
-        matThreshold.setTo ( cv::Scalar(0), matROIMask );
-    }
-
-    cv::findNonZero ( matThreshold, vecPoints );
-
-    if ( vecPoints.size() < 2 ) {
-        WriteLog("Not enough points to detect line");
-        pstRpy->enStatus = VisionStatus::NOT_ENOUGH_POINTS_TO_FIT;
-        FINISH_LOGCASE;
+    VectorOfPoint vecFitPoint;
+    if ( pstCmd->enAlgorithm == PR_CALIPER_ALGORITHM::PROJECTION )
+        _caliperByProjection ( matGray, matROIMask, pstCmd->rectROI, pstCmd->enDetectDir, vecFitPoint, pstRpy );
+    else if ( pstCmd->enAlgorithm == PR_CALIPER_ALGORITHM::SECTION_AVG_GUASSIAN_DIFF )
+        _caliperBySectionAvgGussianDiff ( matGray, pstCmd->rectROI, pstCmd->enDetectDir, vecFitPoint, pstRpy );
+    else {
+        WriteLog("The caliper algorithm is invalid");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return pstRpy->enStatus;
     }
 
-    for ( auto &point : vecPoints ) {
-        vecX.push_back ( point.x );
-        vecY.push_back ( point.y );
+    if ( pstRpy->enStatus != VisionStatus::OK ) {
+        FINISH_LOGCASE;
+        return pstRpy->enStatus;
     }
-
-    pstRpy->bReversedFit = false;
-    if ( CalcUtils::calcStdDeviation ( vecY ) > CalcUtils::calcStdDeviation ( vecX ) )
-        pstRpy->bReversedFit = true;
-
-    auto projectSize = pstRpy->bReversedFit ? matROI.cols : matROI.rows;
-    vecProjection.resize ( projectSize, 0 );
-    for ( const auto &point : vecPoints ) {
-        if ( pstRpy->bReversedFit )
-            ++ vecProjection[point.x];
-        else
-            ++ vecProjection[point.y];
-    }
-
-    int maxValue = *std::max_element ( vecProjection.begin(), vecProjection.end() );
-    
-    //Find the possible coordinate can form lines.
-    for ( size_t index = 0; index < vecProjection.size(); ++ index ) {
-        if ( vecProjection[ index ] > 0.8 * maxValue )
-            vecIndexCanFormLine.push_back ( ToInt32 ( index ) );
-    }
-
-    auto initialLinePos = 0;
-    if ( PR_DETECT_LINE_DIR::MIN_TO_MAX == pstCmd->enDetectDir )
-        initialLinePos = vecIndexCanFormLine[0];
-    else
-        initialLinePos = vecIndexCanFormLine.back();
-
-    int rs = std::max ( int ( 0.1 *(vecIndexCanFormLine.back() - vecIndexCanFormLine[0] ) ), 20 );
-    
-    if ( pstRpy->bReversedFit ) vecVecPoint.resize( matROI.rows );
-    else                        vecVecPoint.resize( matROI.cols );
-
-    //Find all the points around the initial line pos.
-    for ( const auto &point : vecPoints ) {
-        if (pstRpy->bReversedFit) {
-            if ( point.x > initialLinePos - rs && point.x < initialLinePos + rs )
-                vecVecPoint[point.y].push_back ( point );
-        }else {
-            if ( point.y > initialLinePos - rs && point.y < initialLinePos + rs )
-                vecVecPoint[point.x].push_back ( point );
-        }
-    }
-
-    //Find the extreme point on each row or column.
-    for ( const auto &vecPointTmp : vecVecPoint ) {
-        if ( ! vecPointTmp.empty() ) {
-            auto point = PR_DETECT_LINE_DIR::MIN_TO_MAX == pstCmd->enDetectDir ? vecPointTmp.front() : vecPointTmp.back();
-            if ( pstRpy->bReversedFit ) {
-                if (point.x != initialLinePos - rs && point.x != initialLinePos - rs)
-                    vecFitPoint.push_back ( point + cv::Point ( pstCmd->rectROI.x, pstCmd->rectROI.y ) );
-            }else {
-                if (point.y != initialLinePos - rs && point.y != initialLinePos - rs)
-                    vecFitPoint.push_back ( point + cv::Point ( pstCmd->rectROI.x, pstCmd->rectROI.y ) );
-            }
-        }
-    }
-
-    Fitting::fitLine ( vecFitPoint, pstRpy->fSlope, pstRpy->fIntercept, pstRpy->bReversedFit );
-    pstRpy->stLine = CalcUtils::calcEndPointOfLine ( vecFitPoint, pstRpy->bReversedFit, pstRpy->fSlope, pstRpy->fIntercept );
 
     const int MIN_DIST_FROM_LINE_TO_ROI_EDGE = 5;
     if ( pstRpy->bReversedFit ) {
@@ -2141,7 +2081,6 @@ VisionStatus VisionAlgorithm::srchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd
              fabs ( pstRpy->stLine.pt1.x - pstCmd->rectROI.x - pstCmd->rectROI.width ) <= MIN_DIST_FROM_LINE_TO_ROI_EDGE ||
              fabs ( pstRpy->stLine.pt2.x - pstCmd->rectROI.x - pstCmd->rectROI.width ) <= MIN_DIST_FROM_LINE_TO_ROI_EDGE ) ) {
             pstRpy->enStatus = VisionStatus::CALIPER_CAN_NOT_FIND_LINE;
-            FINISH_LOGCASE;
             return pstRpy->enStatus;
         }
     }else {
@@ -2151,7 +2090,6 @@ VisionStatus VisionAlgorithm::srchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd
              fabs ( pstRpy->stLine.pt1.y - pstCmd->rectROI.y - pstCmd->rectROI.height ) <= MIN_DIST_FROM_LINE_TO_ROI_EDGE ||
              fabs ( pstRpy->stLine.pt2.y - pstCmd->rectROI.y - pstCmd->rectROI.height ) <= MIN_DIST_FROM_LINE_TO_ROI_EDGE ) ) {
             pstRpy->enStatus = VisionStatus::CALIPER_CAN_NOT_FIND_LINE;
-            FINISH_LOGCASE;
             return pstRpy->enStatus;
         }
     }
@@ -2160,8 +2098,8 @@ VisionStatus VisionAlgorithm::srchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd
     if ( pstCmd->bCheckLinerity ) {
         int nInTolerancePointCount = 0;
         for (const auto &point : vecFitPoint) {
-            if ( CalcUtils::ptDisToLine(point, pstRpy->bReversedFit, pstRpy->fSlope, pstRpy->fIntercept) < pstCmd->fPointMaxOffset )
-                ++nInTolerancePointCount;
+            if ( CalcUtils::ptDisToLine ( point, pstRpy->bReversedFit, pstRpy->fSlope, pstRpy->fIntercept ) < pstCmd->fPointMaxOffset )
+                ++ nInTolerancePointCount;
         }
         pstRpy->fLinerity = nInTolerancePointCount * 100.f / vecFitPoint.size();
         if ( pstRpy->fLinerity >= pstCmd->fMinLinerity )
@@ -2189,6 +2127,185 @@ VisionStatus VisionAlgorithm::srchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd
 
     FINISH_LOGCASE;
     MARK_FUNCTION_END_TIME;
+    return pstRpy->enStatus;
+}
+
+/*static*/ VisionStatus VisionAlgorithm::_caliperByProjection(const cv::Mat &matGray, const cv::Mat &matROIMask, const cv::Rect &rectROI, PR_DETECT_LINE_DIR enDetectDir, VectorOfPoint &vecFitPoint, PR_CALIPER_RPY *const pstRpy) {
+    VectorOfPoint vecPoints;
+    std::vector<int> vecX, vecY, vecIndexCanFormLine, vecProjection;
+    VectorOfVectorOfPoint vecVecPoint;
+
+    int nThreshold = _autoThreshold ( matGray, matROIMask );
+    cv::Mat matThreshold;
+    cv::threshold ( matGray, matThreshold, nThreshold, PR_MAX_GRAY_LEVEL, cv::THRESH_BINARY );
+    if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE )
+        showImage("Calibper threshold image", matThreshold );
+
+    if ( ! matROIMask.empty() ) {   
+        cv::Mat matROIMaskReverse = cv::Scalar(PR_MAX_GRAY_LEVEL) - matROIMask;
+        matThreshold.setTo ( cv::Scalar(0), matROIMaskReverse );
+    }
+
+    cv::findNonZero ( matThreshold, vecPoints );
+
+    if ( vecPoints.size() < 2 ) {
+        WriteLog("Not enough points to detect line");
+        pstRpy->enStatus = VisionStatus::NOT_ENOUGH_POINTS_TO_FIT;
+        return pstRpy->enStatus;
+    }
+
+    for ( auto &point : vecPoints ) {
+        vecX.push_back ( point.x );
+        vecY.push_back ( point.y );
+    }
+
+    pstRpy->bReversedFit = false;
+    if ( CalcUtils::calcStdDeviation ( vecY ) > CalcUtils::calcStdDeviation ( vecX ) )
+        pstRpy->bReversedFit = true;
+
+    auto projectSize = pstRpy->bReversedFit ? matGray.cols : matGray.rows;
+    vecProjection.resize ( projectSize, 0 );
+    for ( const auto &point : vecPoints ) {
+        if ( pstRpy->bReversedFit )
+            ++ vecProjection[point.x];
+        else
+            ++ vecProjection[point.y];
+    }
+
+    int maxValue = *std::max_element ( vecProjection.begin(), vecProjection.end() );
+    
+    //Find the possible coordinate can form lines.
+    for ( size_t index = 0; index < vecProjection.size(); ++ index ) {
+        if ( vecProjection[ index ] > 0.8 * maxValue )
+            vecIndexCanFormLine.push_back ( ToInt32 ( index ) );
+    }
+
+    auto initialLinePos = 0;
+    if ( PR_DETECT_LINE_DIR::MIN_TO_MAX == enDetectDir )
+        initialLinePos = vecIndexCanFormLine[0];
+    else
+        initialLinePos = vecIndexCanFormLine.back();
+
+    int rs = std::max ( int ( 0.1 *(vecIndexCanFormLine.back() - vecIndexCanFormLine[0] ) ), 20 );
+    
+    if ( pstRpy->bReversedFit ) vecVecPoint.resize( matGray.rows );
+    else                        vecVecPoint.resize( matGray.cols );
+
+    //Find all the points around the initial line pos.
+    for ( const auto &point : vecPoints ) {
+        if (pstRpy->bReversedFit) {
+            if ( point.x > initialLinePos - rs && point.x < initialLinePos + rs )
+                vecVecPoint[point.y].push_back ( point );
+        }else {
+            if ( point.y > initialLinePos - rs && point.y < initialLinePos + rs )
+                vecVecPoint[point.x].push_back ( point );
+        }
+    }
+
+    //Find the extreme point on each row or column.
+    for ( const auto &vecPointTmp : vecVecPoint ) {
+        if ( ! vecPointTmp.empty() ) {
+            auto point = PR_DETECT_LINE_DIR::MIN_TO_MAX == enDetectDir ? vecPointTmp.front() : vecPointTmp.back();
+            if ( pstRpy->bReversedFit ) {
+                if (point.x != initialLinePos - rs && point.x != initialLinePos - rs)
+                    vecFitPoint.push_back ( point + cv::Point ( rectROI.x, rectROI.y ) );
+            }else {
+                if (point.y != initialLinePos - rs && point.y != initialLinePos - rs)
+                    vecFitPoint.push_back ( point + cv::Point ( rectROI.x, rectROI.y ) );
+            }
+        }
+    }
+
+    Fitting::fitLine ( vecFitPoint, pstRpy->fSlope, pstRpy->fIntercept, pstRpy->bReversedFit );
+    pstRpy->stLine = CalcUtils::calcEndPointOfLine ( vecFitPoint, pstRpy->bReversedFit, pstRpy->fSlope, pstRpy->fIntercept );
+
+    
+    pstRpy->enStatus = VisionStatus::OK;
+    return pstRpy->enStatus;
+}
+
+/*static*/ int VisionAlgorithm::_findMaxDiffPosInX( const cv::Mat &matInput, const cv::Mat &matGuassianDiffKernel, PR_DETECT_LINE_DIR enDirection ) {
+    cv::Mat matAverage;
+    cv::reduce ( matInput, matAverage, 0, cv::ReduceTypes::REDUCE_AVG );
+
+    cv::Mat matGuassianDiffResult;   
+    CalcUtils::filter2D_Conv ( matAverage, matGuassianDiffResult, CV_32F, matGuassianDiffKernel );
+    double minValue = 0., maxValue = 0.;
+    cv::Point ptMin, ptMax;
+    cv::minMaxLoc ( matGuassianDiffResult, &minValue, &maxValue, &ptMin, &ptMax );
+    if ( PR_DETECT_LINE_DIR::MIN_TO_MAX == enDirection )
+        return ptMin.x;
+    return ptMax.x;
+}
+
+/*static*/ int VisionAlgorithm::_findMaxDiffPosInY( const cv::Mat &matInput, const cv::Mat &matGuassianDiffKernel, PR_DETECT_LINE_DIR enDirection ) {
+    cv::Mat matAverage;
+    cv::reduce ( matInput, matAverage, 1, cv::ReduceTypes::REDUCE_AVG );
+
+    cv::Mat matGuassianDiffResult;   
+    CalcUtils::filter2D_Conv ( matAverage, matGuassianDiffResult, CV_32F, matGuassianDiffKernel );
+    double minValue = 0., maxValue = 0.;
+    cv::Point ptMin, ptMax;
+    cv::minMaxLoc ( matGuassianDiffResult, &minValue, &maxValue, &ptMin, &ptMax );
+    if ( PR_DETECT_LINE_DIR::MIN_TO_MAX == enDirection )
+        return ptMin.y;
+    return ptMax.y;
+}
+
+VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &matInputImg, const cv::Rect &rectROI, PR_DETECT_LINE_DIR enDirection, VectorOfPoint &vecFitPoint, PR_CALIPER_RPY *const pstRpy) {
+    const int DIVIDE_SECTION = 20;
+    bool bDivideInX = true;
+    if ( matInputImg.rows > matInputImg.cols )
+        bDivideInX = false;
+
+    int COLS = matInputImg.cols;
+    int ROWS = matInputImg.rows;
+    const int GUASSIAN_DIFF_WIDTH = 2;
+    const float GUASSIAN_KERNEL_SSQ = 1.f;
+    cv::Mat matGuassinKernel = CalcUtils::generateGuassinDiffKernel ( GUASSIAN_DIFF_WIDTH, GUASSIAN_KERNEL_SSQ );
+
+    if ( bDivideInX ) {
+        cv::transpose ( matGuassinKernel, matGuassinKernel );
+        int nInterval = matInputImg.cols / DIVIDE_SECTION;
+        int nCurrentProcessedPos = 0;
+        while ( nCurrentProcessedPos < matInputImg.cols ) {
+            int nROISize = ( nCurrentProcessedPos + nInterval ) < matInputImg.cols ? nInterval : matInputImg.cols - nCurrentProcessedPos;
+            cv::Mat matSubROI ( matInputImg, cv::Rect ( nCurrentProcessedPos, 0, nROISize , ROWS ) );
+            int nJumpPos = _findMaxDiffPosInY ( matSubROI, matGuassinKernel, enDirection );
+            vecFitPoint.push_back ( cv::Point ( ToInt32 ( nCurrentProcessedPos + nInterval / 2.f + 0.5f ), nJumpPos ) );
+            nCurrentProcessedPos += nInterval;
+        }
+        pstRpy->bReversedFit = false;
+    }else {
+        int nInterval = matInputImg.rows / DIVIDE_SECTION;
+        int nCurrentProcessedPos = 0;
+        while ( nCurrentProcessedPos < matInputImg.rows ) {
+            int nROISize = ( nCurrentProcessedPos + nInterval ) < matInputImg.rows ? nInterval : matInputImg.rows - nCurrentProcessedPos;
+            cv::Mat matSubROI ( matInputImg, cv::Rect ( 0, nCurrentProcessedPos, COLS, nROISize ) );
+            int nJumpPos = _findMaxDiffPosInX ( matSubROI, matGuassinKernel, enDirection );
+            vecFitPoint.push_back ( cv::Point ( nJumpPos, ToInt32 ( nCurrentProcessedPos + nInterval / 2.f + 0.5f ) ) );
+            nCurrentProcessedPos += nInterval;
+        }
+        pstRpy->bReversedFit = true;
+    }
+    if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE ) {
+        cv::Mat matDisplay;
+        cv::cvtColor ( matInputImg, matDisplay, CV_GRAY2BGR );
+        for ( const auto &point : vecFitPoint ) {
+            cv::circle ( matDisplay, point, 4, cv::Scalar(0, 0, 255 ), 2 );
+        }
+        showImage ( "Find out point", matDisplay );
+        cv::waitKey(0);
+    }
+
+    for ( auto &point : vecFitPoint ) {
+        point.x += rectROI.x;
+        point.y += rectROI.y;
+    }
+
+    Fitting::fitLine ( vecFitPoint, pstRpy->fSlope, pstRpy->fIntercept, pstRpy->bReversedFit );
+    pstRpy->stLine = CalcUtils::calcEndPointOfLine ( vecFitPoint, pstRpy->bReversedFit, pstRpy->fSlope, pstRpy->fIntercept );
+    pstRpy->enStatus = VisionStatus::OK;
     return pstRpy->enStatus;
 }
 
@@ -2272,7 +2389,7 @@ EXIT:
     return pstRpy->enStatus;
 }
 
-VisionStatus VisionAlgorithm::fitRect(PR_FIT_RECT_CMD *pstCmd, PR_FIT_RECT_RPY *pstRpy, bool bReplay)
+/*static*/ VisionStatus VisionAlgorithm::fitRect(const PR_FIT_RECT_CMD *const pstCmd, PR_FIT_RECT_RPY *const pstRpy, bool bReplay /*= false*/ )
 {
     char charrMsg [ 1000 ];
     if (NULL == pstCmd || NULL == pstRpy) {
@@ -2367,7 +2484,7 @@ VisionStatus VisionAlgorithm::fitRect(PR_FIT_RECT_CMD *pstCmd, PR_FIT_RECT_RPY *
     }while ( hasPointOutTol && iterateCount < 20 );
 
     int nLineNumber = 1;
-    for ( const auto &listPoint : vecListPoint )  {
+    for ( const auto &listPoint : vecListPoint ) {
         if (listPoint.size() < 2)  {
             pstRpy->enStatus = VisionStatus::TOO_MUCH_NOISE_TO_FIT;
             _snprintf(charrMsg, sizeof(charrMsg), "Rect line %d has too much noise to fit", nLineNumber);
@@ -2396,10 +2513,10 @@ EXIT:
     return pstRpy->enStatus;
 }
 
-/*static*/ VisionStatus VisionAlgorithm::findEdge(PR_FIND_EDGE_CMD *pstCmd, PR_FIND_EDGE_RPY *pstRpy)
+/*static*/ VisionStatus VisionAlgorithm::findEdge(const PR_FIND_EDGE_CMD *const pstCmd, PR_FIND_EDGE_RPY *const pstRpy, bool bReplay /*= false*/)
 {
     assert ( pstCmd != nullptr && pstRpy != nullptr );
-    char charrMsg [ 1000 ];    
+    char charrMsg [ 1000 ];
 
     if ( pstCmd->matInputImg.empty() ) {
         WriteLog("Input image is empty");
@@ -2414,18 +2531,21 @@ EXIT:
         return VisionStatus::INVALID_PARAM;
     }
 
-    if ( ! pstCmd->bAutothreshold && ( pstCmd->nThreshold <= 0 || pstCmd->nThreshold >= PR_MAX_GRAY_LEVEL ) )  {
+    if ( ! pstCmd->bAutoThreshold && ( pstCmd->nThreshold <= 0 || pstCmd->nThreshold >= PR_MAX_GRAY_LEVEL ) )  {
          _snprintf(charrMsg, sizeof(charrMsg), "The threshold = %d is invalid", pstCmd->nThreshold);
         WriteLog(charrMsg);
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return VisionStatus::INVALID_PARAM;
-    }    
+    }
+
+    MARK_FUNCTION_START_TIME;
+    SETUP_LOGCASE(LogCaseFindEdge);
 
     cv::Mat matROIGray, matThreshold, matBlur, matCannyResult;
     cv::cvtColor ( matROI, matROIGray, CV_BGR2GRAY );
 
     auto threshold = pstCmd->nThreshold;
-    if ( pstCmd->bAutothreshold )
+    if ( pstCmd->bAutoThreshold )
         threshold = _autoThreshold ( matROIGray );
 
     cv::threshold( matROIGray, matThreshold, pstCmd->nThreshold, 255, cv::THRESH_BINARY );
@@ -2440,7 +2560,7 @@ EXIT:
         showImage("Canny Result", matCannyResult );
 
     std::vector<cv::Vec4i> lines;
-    auto voteThreshold = ToInt32 ( pstCmd->fMinLength );
+    auto voteThreshold = ToInt32 ( pstCmd->fMinLength / 2.f );
     cv::HoughLinesP ( matCannyResult, lines, 1, CV_PI / 180, voteThreshold, pstCmd->fMinLength, 10 );
     std::vector<PR_Line2f> vecLines, vecLinesAfterMerge, vecLineDisplay;
     for ( size_t i = 0; i < lines.size(); ++ i ) {
@@ -2450,29 +2570,33 @@ EXIT:
         vecLines.push_back(line);
     }
     _mergeLines ( vecLines, vecLinesAfterMerge );
-    if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE )   {
+    if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE ) {
         cv::Mat matResultImage = matROI.clone();
         for ( const auto &line : vecLinesAfterMerge )
             cv::line ( matResultImage, line.pt1, line.pt2, cv::Scalar(255, 0, 0), 2);
         showImage("Find edge Result", matResultImage );
     }
     Int32 nLineCount = 0;
-    if ( PR_EDGE_DIRECTION::BOTH == pstCmd->enDirection ) {
-        pstRpy->nEdgeCount = ToInt32 ( vecLinesAfterMerge.size() );
-        vecLineDisplay = vecLinesAfterMerge;
-    }else {
-        for ( const auto &line : vecLinesAfterMerge ) {
-            float fSlope = CalcUtils::lineSlope ( line );
-            if ( PR_EDGE_DIRECTION::HORIZONTAL == pstCmd->enDirection && fabs ( fSlope ) < 0.1 ) {
-                ++ nLineCount;
-                vecLineDisplay.push_back ( line );
-            }else if ( PR_EDGE_DIRECTION::VERTIAL == pstCmd->enDirection && fabs ( fSlope ) > 10 ) {
+    //if ( PR_EDGE_DIRECTION::BOTH == pstCmd->enDirection ) {
+    //    pstRpy->nEdgeCount = ToInt32 ( vecLinesAfterMerge.size() );
+    //    vecLineDisplay = vecLinesAfterMerge;
+    //}else {
+    for (const auto &line : vecLinesAfterMerge) {
+        float fSlope = CalcUtils::lineSlope ( line );
+        if ( fabs ( fSlope ) < 0.1 ) {
+            if (PR_EDGE_DIRECTION::HORIZONTAL == pstCmd->enDirection || PR_EDGE_DIRECTION::BOTH == pstCmd->enDirection) {
                 ++ nLineCount;
                 vecLineDisplay.push_back ( line );
             }
         }
-        pstRpy->nEdgeCount = nLineCount;
+        else if ( ( line.pt1.x == line.pt2.x ) || fabs ( fSlope ) > 10 ) {
+            if ( PR_EDGE_DIRECTION::VERTIAL == pstCmd->enDirection || PR_EDGE_DIRECTION::BOTH == pstCmd->enDirection) {
+                ++ nLineCount;
+                vecLineDisplay.push_back ( line );
+            }
+        }
     }
+    pstRpy->nEdgeCount = nLineCount;
     pstRpy->matResultImg = pstCmd->matInputImg.clone();
     for ( const auto &line : vecLineDisplay ) {
         cv::Point2f pt1( line.pt1.x + pstCmd->rectROI.x, line.pt1.y + pstCmd->rectROI.y );
@@ -2480,6 +2604,8 @@ EXIT:
         cv::line ( pstRpy->matResultImg, pt1, pt2, _constBlueScalar, 2 );
     }
     pstRpy->enStatus = VisionStatus::OK;
+    FINISH_LOGCASE;
+    MARK_FUNCTION_END_TIME;
     return pstRpy->enStatus;
 }
 
@@ -2551,7 +2677,7 @@ EXIT:
             showImage("Threshold image", matThreshold);
     }
 
-    if ( ! pstCmd->matMask.empty() )    {
+    if ( ! pstCmd->matMask.empty() ) {
         cv::Mat matROIMask(pstCmd->matMask, pstCmd->rectROI);
         matROIMask = cv::Scalar(255) - matROIMask;
         matThreshold.setTo(cv::Scalar(0), matROIMask);

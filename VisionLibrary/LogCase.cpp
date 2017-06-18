@@ -433,6 +433,7 @@ VisionStatus LogCaseCaliper::WriteCmd(const PR_CALIPER_CMD *const pCmd) {
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile( cmdRpyFilePath.c_str() );
     ini.SetValue(_CMD_SECTION.c_str(), _strKeyROI.c_str(), _formatRect(pCmd->rectROI).c_str() );
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyAlgorithm.c_str(), ToInt32( pCmd->enAlgorithm ) );
     ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyDir.c_str(), ToInt32( pCmd->enDetectDir ) );
     ini.SetBoolValue(_CMD_SECTION.c_str(), _strKeyCheckLinerity.c_str(), pCmd->bCheckLinerity);
     ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyPointMaxOffset.c_str(), pCmd->fPointMaxOffset );
@@ -480,6 +481,7 @@ VisionStatus LogCaseCaliper::RunLogCase() {
 
     stCmd.matInputImg = cv::imread( _strLogCasePath + _IMAGE_NAME );    
     stCmd.rectROI = _parseRect ( ini.GetValue(_CMD_SECTION.c_str(), _strKeyROI.c_str(), _DEFAULT_RECT.c_str() ) );
+    stCmd.enAlgorithm = static_cast<PR_CALIPER_ALGORITHM>(ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyAlgorithm.c_str(), 0 ) );
     stCmd.enDetectDir = static_cast<PR_DETECT_LINE_DIR>(ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyDir.c_str(), 0 ) );
     stCmd.bCheckLinerity = ini.GetBoolValue(_CMD_SECTION.c_str(), _strKeyCheckLinerity.c_str(), false );
     stCmd.fPointMaxOffset = ToFloat ( ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyPointMaxOffset.c_str(), 0. ) );
@@ -569,7 +571,7 @@ VisionStatus LogCaseFitParallelLine::RunLogCase()
     return "FitRect";
 }
 
-VisionStatus LogCaseFitRect::WriteCmd(PR_FIT_RECT_CMD *pCmd)
+VisionStatus LogCaseFitRect::WriteCmd(const PR_FIT_RECT_CMD *const pCmd)
 {
     if (!_bReplay)    {
         _strLogCasePath = _generateLogCaseName(GetFolderPrefix());
@@ -592,7 +594,7 @@ VisionStatus LogCaseFitRect::WriteCmd(PR_FIT_RECT_CMD *pCmd)
     return VisionStatus::OK;
 }
 
-VisionStatus LogCaseFitRect::WriteRpy(PR_FIT_RECT_RPY *pRpy)
+VisionStatus LogCaseFitRect::WriteRpy(const PR_FIT_RECT_RPY *const pRpy)
 {
     CSimpleIni ini(false, false, false);
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
@@ -645,8 +647,62 @@ VisionStatus LogCaseFitRect::RunLogCase()
     return enStatus;
 }
 
-/*static*/ String LogCaseSrchFiducial::StaticGetFolderPrefix()
-{
+/*static*/ String LogCaseFindEdge::StaticGetFolderPrefix() {
+    return "FindEdge";
+}
+
+VisionStatus LogCaseFindEdge::WriteCmd(const PR_FIND_EDGE_CMD *const pCmd) {
+    if (!_bReplay)    {
+        _strLogCasePath = _generateLogCaseName(GetFolderPrefix());
+        bfs::path dir(_strLogCasePath);
+        bfs::create_directories(dir);
+    }
+
+    CSimpleIni ini(false, false, false);
+    auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
+    ini.LoadFile(cmdRpyFilePath.c_str());
+    ini.SetValue(_CMD_SECTION.c_str(), _strKeyROI.c_str(), _formatRect(pCmd->rectROI).c_str());
+    ini.SetBoolValue(_CMD_SECTION.c_str(), _strKeyAutoThreshold.c_str(), pCmd->bAutoThreshold);
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyThreshold.c_str(), pCmd->nThreshold);
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyDirection.c_str(), ToInt32 ( pCmd->enDirection ) );
+    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyMinLength.c_str(), pCmd->fMinLength);
+    ini.SaveFile(cmdRpyFilePath.c_str());
+    cv::imwrite(_strLogCasePath + _IMAGE_NAME, pCmd->matInputImg);
+    return VisionStatus::OK;
+}
+
+VisionStatus LogCaseFindEdge::WriteRpy(const PR_FIND_EDGE_RPY *const pRpy) {
+    CSimpleIni ini(false, false, false);
+    auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
+    ini.LoadFile(cmdRpyFilePath.c_str());
+    ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyStatus.c_str(),    ToInt32(pRpy->enStatus));
+    ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyEdgeCount.c_str(), ToInt32(pRpy->nEdgeCount));
+    ini.SaveFile(cmdRpyFilePath.c_str());
+    cv::imwrite(_strLogCasePath + _RESULT_IMAGE_NAME, pRpy->matResultImg);
+    return VisionStatus::OK;
+}
+
+VisionStatus LogCaseFindEdge::RunLogCase() {
+    PR_FIND_EDGE_CMD stCmd;
+    PR_FIND_EDGE_RPY stRpy;
+    VisionStatus enStatus;
+
+    CSimpleIni ini(false, false, false);
+    auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
+    ini.LoadFile(cmdRpyFilePath.c_str());
+    stCmd.matInputImg = cv::imread(_strLogCasePath + _IMAGE_NAME);
+    stCmd.rectROI = _parseRect(ini.GetValue(_CMD_SECTION.c_str(), _strKeyROI.c_str(), _DEFAULT_RECT.c_str()));
+    stCmd.bAutoThreshold = ini.GetBoolValue(_CMD_SECTION.c_str(), _strKeyAutoThreshold.c_str(), 0);    
+    stCmd.nThreshold = ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyThreshold.c_str(), 0);    
+    stCmd.enDirection = static_cast<PR_EDGE_DIRECTION> ( ini.GetLongValue ( _CMD_SECTION.c_str(), _strKeyDirection.c_str(), 0 ) );
+    stCmd.fMinLength = (float)ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyMinLength.c_str(), 0);   
+
+    enStatus = VisionAlgorithm::findEdge(&stCmd, &stRpy, true);
+    WriteRpy(&stRpy);
+    return enStatus;
+}
+
+/*static*/ String LogCaseSrchFiducial::StaticGetFolderPrefix() {
     return "SrchFiducial";
 }
 

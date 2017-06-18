@@ -250,10 +250,18 @@ struct PR_FIT_LINE_RPY {
 
 //Detect line is find the lines in the image.
 struct PR_CALIPER_CMD {
-    PR_CALIPER_CMD() : bCheckLinerity(false), fPointMaxOffset(0.f), fMinLinerity(0.f), bCheckAngle(false), fExpectedAngle(0.f), fAngleDiffTolerance(0.f) {}
+    PR_CALIPER_CMD() :
+        enAlgorithm         ( PR_CALIPER_ALGORITHM::PROJECTION ),
+        bCheckLinerity      (false),
+        fPointMaxOffset     (0.f),
+        fMinLinerity        (0.f),
+        bCheckAngle         (false),
+        fExpectedAngle      (0.f),
+        fAngleDiffTolerance (0.f) {}
     cv::Mat                 matInputImg;
     cv::Mat                 matMask;
     cv::Rect                rectROI;
+    PR_CALIPER_ALGORITHM    enAlgorithm;
     PR_DETECT_LINE_DIR      enDetectDir;
     bool                    bCheckLinerity;
     float                   fPointMaxOffset;
@@ -320,7 +328,7 @@ struct PR_FIT_RECT_RPY {
 struct PR_FIND_EDGE_CMD {
     cv::Mat                 matInputImg;
     cv::Rect                rectROI;
-    bool                    bAutothreshold;
+    bool                    bAutoThreshold;
     Int32                   nThreshold;
     PR_EDGE_DIRECTION       enDirection;
     float                   fMinLength;

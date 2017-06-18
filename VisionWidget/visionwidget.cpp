@@ -202,8 +202,7 @@ void VisionWidget::on_fitLineBtn_clicked()
     }
 }
 
-void VisionWidget::on_detectLineBtn_clicked()
-{
+void VisionWidget::on_btnCaliper_clicked() {
     if ( _sourceImagePath.empty() ) {
         QMessageBox::information(this, "Vision Widget", "Please select an image first!", "Quit");
         return;
@@ -216,7 +215,8 @@ void VisionWidget::on_detectLineBtn_clicked()
     stCmd.matInputImg = ui.visionView->getMat();
     stCmd.matMask = ui.visionView->getMask();
     stCmd.rectROI = ui.visionView->getSelectedWindow();
-    stCmd.enDetectDir = static_cast<PR_DETECT_LINE_DIR> ( ui.comboBoxDetectLineDirection->currentIndex() );
+    stCmd.enDetectDir = static_cast<PR_DETECT_LINE_DIR> ( ui.comboBoxCaliperDirection->currentIndex() );
+    stCmd.enAlgorithm = static_cast<PR_CALIPER_ALGORITHM> ( ui.comboBoxCaliperAlgorithm->currentIndex() );
 
     PR_CALIPER_RPY stRpy;
 	VisionStatus enStatus = PR_Caliper(&stCmd, &stRpy);
@@ -516,7 +516,7 @@ void VisionWidget::on_btnCountEdge_clicked() {
     PR_FIND_EDGE_RPY stRpy;
     stCmd.matInputImg = ui.visionView->getMat();
     stCmd.rectROI = ui.visionView->getSelectedWindow();
-    stCmd.bAutothreshold = ui.checkBoxCountEdgeAutoThreshold->isChecked();
+    stCmd.bAutoThreshold = ui.checkBoxCountEdgeAutoThreshold->isChecked();
     stCmd.nThreshold = ui.lineEditFitCountEdgeThreshold->text().toInt();
     stCmd.enDirection = static_cast<PR_EDGE_DIRECTION> ( ui.cbCountEdgeDirection->currentIndex() );
     stCmd.fMinLength = ui.lineEditCountEdgeMinLength->text().toFloat();

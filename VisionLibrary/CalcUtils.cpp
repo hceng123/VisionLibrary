@@ -139,5 +139,35 @@ namespace Vision
     return vecPoint;
 }
 
+float CalcUtils::guassianValue(float ssq, float x )
+{
+    return exp( -(x * x) / ( 2.0 * ssq ) ) / ( CV_PI * ssq );
+}
+
+/*static*/ cv::Mat CalcUtils::generateGuassinDiffKernel(int nOneSideWidth, float ssq) {
+    std::vector<float> vecGuassian;
+    for ( int i = -nOneSideWidth; i <= nOneSideWidth; ++ i )
+        vecGuassian.push_back ( i * guassianValue ( ssq, i ) );
+    cv::Mat matGuassian ( vecGuassian );
+    cv::transpose ( matGuassian, matGuassian );
+    cv::Mat matTmp( matGuassian, cv::Range::all(), cv::Range ( 0, nOneSideWidth ) );
+    float fSum = fabs ( cv::sum(matTmp)[0] );
+    matGuassian /= fSum;
+    return matGuassian;
+}
+
+/*static*/ void CalcUtils::filter2D_Conv(cv::InputArray src, cv::OutputArray dst, int ddepth,
+                   cv::InputArray kernel, cv::Point anchor,
+                   double delta, int borderType )
+{
+    cv::Mat newKernel;
+    const int FLIP_H_Z = -1;
+    cv::flip ( kernel, newKernel, FLIP_H_Z );
+    cv::Point newAnchor = anchor;
+    if ( anchor.x > 0 && anchor.y >= 0 )
+        newAnchor = cv::Point ( newKernel.cols - anchor.x - 1, newKernel.rows - anchor.y - 1 );
+    cv::filter2D ( src, dst, ddepth, newKernel, newAnchor, delta, borderType );
+}
+
 }
 }

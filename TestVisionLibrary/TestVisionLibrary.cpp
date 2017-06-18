@@ -376,7 +376,7 @@ void TestFindEdge()
 
     stCmd.matInputImg = cv::imread("./data/Resisters1.png");
     stCmd.enDirection = PR_EDGE_DIRECTION::ALL;
-    stCmd.bAutothreshold = true;
+    stCmd.bAutoThreshold = true;
     stCmd.nThreshold = 50;
     stCmd.fMinLength = 20;
     stCmd.rectROI = cv::Rect(163, 189, 46, 97);
@@ -394,7 +394,7 @@ void TestFindEdge1()
 
     stCmd.matInputImg = cv::imread("./data/HalfCircle.png");
     stCmd.enDirection = PR_EDGE_DIRECTION::ALL;
-    stCmd.bAutothreshold = true;
+    stCmd.bAutoThreshold = true;
     stCmd.nThreshold = 50;
     stCmd.fMinLength = 50;
     stCmd.rectROI = cv::Rect(0, 0, stCmd.matInputImg.cols, stCmd.matInputImg.rows);
