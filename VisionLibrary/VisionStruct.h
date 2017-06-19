@@ -35,8 +35,8 @@ struct PR_VERSION_INFO {
 };
 
 struct PR_LRN_OBJ_CMD {
-	PR_SRCH_OBJ_ALGORITHM   enAlgorithm;
-	cv::Mat                 matInputImg;
+    cv::Mat                 matInputImg;
+	PR_SRCH_OBJ_ALGORITHM   enAlgorithm;	
 	cv::Mat                 mask;
 	cv::Rect2f              rectLrn;
 };
@@ -632,6 +632,38 @@ struct PR_INSP_CHIP_RPY {
 };
 /******************************************
 * End of Chip Inspection Section
+******************************************/
+
+/******************************************
+* Inspect Contour Section *
+******************************************/
+struct PR_LRN_CONTOUR_CMD {
+    cv::Mat                 matInputImg;
+	cv::Mat                 matMask;
+	cv::Rect2f              rectROI;
+    bool                    bAutoThreshold;
+    Int16                   nThreshold;
+};
+
+struct PR_LRN_CONTOUR_RPY {
+    VisionStatus            enStatus;
+    Int16                   nThreshold;
+    Int32                   nContourNum;
+};
+
+struct PR_INSP_CONTOUR_CMD {
+    cv::Mat                 matInputImg;
+	cv::Mat                 matMask;
+	cv::Rect2f              rectROI;
+};
+
+struct PR_INSP_CONTOUR_RPY {
+    VisionStatus            enStatus;
+    cv::Mat                 matResultImg;
+};
+
+/******************************************
+* End of Inspect Contour Section *
 ******************************************/
 
 }
