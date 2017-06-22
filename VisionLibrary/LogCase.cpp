@@ -8,6 +8,7 @@
 #include "SimpleIni.h"
 #include "VisionAlgorithm.h"
 #include "FileUtils.h"
+#include "JoinSplit.h"
 
 namespace bfs = boost::filesystem;
 
@@ -100,6 +101,34 @@ String LogCase::_generateLogCaseName(const String &strFolderPrefix)
     String strTime = (boost::format(strFmt) % (stTM->tm_year + 1900) % (stTM->tm_mon + 1) % stTM->tm_mday % stTM->tm_hour % stTM->tm_min % stTM->tm_sec % nMilliseconds).str();
     String strLogCasePath = _strLogCasePath + strFolderPrefix + strTime + "\\";    
     return strLogCasePath;
+}
+
+void LogCase::_zip() {
+    String strPath = _strLogCasePath;
+    if ( ! strPath.empty() && ( strPath.back() == '\\' || strPath.back() == '/' ) )
+        strPath = strPath.substr ( 0, strPath.length() - 1 );
+    joinDir ( strPath.c_str(), _EXTENSION.c_str() );
+    FileUtils::RemoveAll( strPath );
+}
+
+String LogCase::unzip(const String &strFilePath) {
+    char chFolderToken = '\\';
+    size_t pos = strFilePath.find_last_of ( '\\' );
+    if ( pos == String::npos ) {
+        chFolderToken = '/';
+        pos = strFilePath.find_last_of ( chFolderToken );
+    }
+    String strFileName = strFilePath.substr ( pos + 1 );
+    String strParentDir = strFilePath.substr ( 0, pos + 1 );
+
+    size_t posDot = strFilePath.find_last_of ( '.' );
+    String strTargetDir = strFilePath.substr ( 0, posDot - 1 );
+    strTargetDir.push_back ( chFolderToken );
+    if ( ! FileUtils::Exists( strTargetDir ) )
+        FileUtils::MakeDirectory ( strTargetDir );
+    splitFiles ( strParentDir.c_str(), strFileName.c_str(), strTargetDir.c_str() );
+    FileUtils::Remove ( strFilePath );
+    return strTargetDir;
 }
 
 /*static*/ String LogCaseLrnObj::StaticGetFolderPrefix()
@@ -853,7 +882,8 @@ VisionStatus LogCaseRemoveCC::WriteRpy(PR_REMOVE_CC_RPY *pRpy)
     ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyRemovedCC.c_str(), pRpy->nRemovedCC);
     ini.SaveFile(cmdRpyFilePath.c_str());
 
-    cv::imwrite(_strLogCasePath + _RESULT_IMAGE_NAME, pRpy->matResultImg);
+    cv::imwrite ( _strLogCasePath + _RESULT_IMAGE_NAME, pRpy->matResultImg);
+    _zip();
     return VisionStatus::OK;
 }
 
@@ -1328,18 +1358,18 @@ VisionStatus LogCaseAutoLocateLead::WriteRpy(PR_AUTO_LOCATE_LEAD_RPY *const pRpy
 
 VisionStatus LogCaseAutoLocateLead::RunLogCase() {
     PR_AUTO_LOCATE_LEAD_CMD stCmd;
-    VisionStatus enStatus;
-
+    PR_AUTO_LOCATE_LEAD_RPY stRpy;
+    
     CSimpleIni ini(false, false, false);
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile(cmdRpyFilePath.c_str());
-    stCmd.matInputImg = cv::imread(_strLogCasePath + _IMAGE_NAME, cv::IMREAD_COLOR);  
+    stCmd.matInputImg = cv::imread(_strLogCasePath + _IMAGE_NAME, cv::IMREAD_COLOR);
 
     stCmd.rectSrchWindow = _parseRect ( ini.GetValue ( _CMD_SECTION.c_str(), _strKeySrchWindow.c_str(), _DEFAULT_RECT.c_str() ) );
     stCmd.rectChipBody   = _parseRect ( ini.GetValue ( _CMD_SECTION.c_str(), _strKeyChipWindow.c_str(), _DEFAULT_RECT.c_str() ) );
-    PR_AUTO_LOCATE_LEAD_RPY stRpy;
-    enStatus = VisionAlgorithm::autoLocateLead ( &stCmd, &stRpy, true );
-    WriteRpy(&stRpy);    
+    
+    VisionStatus enStatus = VisionAlgorithm::autoLocateLead ( &stCmd, &stRpy, true );
+    WriteRpy ( &stRpy );
     return enStatus;
 }
 

@@ -1486,21 +1486,22 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
     cv::destroyWindow ( strWindowName );
 }
 
-/*static*/ VisionStatus VisionAlgorithm::runLogCase(const std::string &strPath)
+/*static*/ VisionStatus VisionAlgorithm::runLogCase(const String &strFilePath)
 {
-    if ( strPath.length() < 2 )
+    if ( strFilePath.length() < 2 )
         return VisionStatus::INVALID_PARAM;
 
-    if (  ! bfs::exists ( strPath ) )
+    if (  ! bfs::exists ( strFilePath ) )
         return VisionStatus::PATH_NOT_EXIST;
 
     VisionStatus enStatus = VisionStatus::OK;
-    auto strLocalPath = strPath;
+    auto strLocalPath = LogCase::unzip ( strFilePath );
+
     char chFolderToken = '\\';
-    if ( strPath.find('/') != string::npos )
+    if ( strLocalPath.find('/') != string::npos )
         chFolderToken = '/';
 
-    if ( strPath[ strPath.length() - 1 ] != chFolderToken )
+    if ( strLocalPath[ strLocalPath.length() - 1 ] != chFolderToken )
         strLocalPath.append ( std::string { chFolderToken } );
 
     auto pos = strLocalPath.rfind ( chFolderToken, strLocalPath.length() - 2 );

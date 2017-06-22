@@ -15,6 +15,7 @@ public:
     explicit LogCase(const String &strPath, bool bReplay = false);
     virtual String GetFolderPrefix() const = 0;
     virtual VisionStatus RunLogCase()  = 0;
+    static String unzip(const String &strFilePath);
 protected:
     String _formatCoordinate(const cv::Point2f &pt);
     cv::Point2f _parseCoordinate(const String &strCoordinate);
@@ -31,6 +32,7 @@ protected:
         return strValue;
     }
     String _generateLogCaseName(const String &strFolderPrefix);
+    void _zip();
     String      _strLogCasePath;
     const String _CMD_RPY_FILE_NAME = "cmdrpy.log";
     const String _CMD_SECTION       = "CMD";
@@ -41,6 +43,7 @@ protected:
     const String _DEFAULT_COORD     = "0, 0";
     const String _DEFAULT_RECT      = "0, 0, 0, 0";
     const String _DEFAULT_SIZE      = "0, 0";
+    const String _EXTENSION         = ".logcase";
     bool         _bReplay;
 };
 

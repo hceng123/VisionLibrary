@@ -65,9 +65,21 @@ void DialogVisionToolBox::on_btnCheckIntensity_clicked()
 
 void DialogVisionToolBox::on_btnReplayLogcase_clicked()
 {
-    QString dir = QFileDialog::getExistingDirectory(this, tr("Open Logcase"),
-                                             "./Vision/Logcase/",
-                                             QFileDialog::ShowDirsOnly
-                                             | QFileDialog::DontResolveSymlinks);
-    PR_RunLogCase(dir.toStdString());
+    //QString dir = QFileDialog::getExistingDirectory(this, tr("Open Logcase"),
+    //                                         "./Vision/Logcase/",
+    //                                         QFileDialog::ShowDirsOnly
+    //                                         | QFileDialog::DontResolveSymlinks);
+    //PR_RunLogCase(dir.toStdString());
+
+    QFileDialog dialog(this);
+    dialog.setFileMode(QFileDialog::ExistingFile);
+    dialog.setAcceptMode(QFileDialog::AcceptOpen);
+    dialog.setNameFilter(tr("Log Files (*.logcase)"));
+    dialog.setViewMode(QFileDialog::Detail);
+    if ( ! dialog.exec() )
+        return;
+
+    QStringList fileNames = dialog.selectedFiles();
+    std::string filePath = fileNames[0].toStdString();
+    PR_RunLogCase( filePath );
 }

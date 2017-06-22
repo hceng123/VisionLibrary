@@ -14,39 +14,42 @@ TimeLog *TimeLog::GetInstance()
 
 void TimeLog::addTimeLog(const std::string &strMsg)
 {
-    std::lock_guard<std::mutex> mutexTime(_mutexTimeLog);
-
-    if ( _vecStringTimeLog.size() > 5000 )
-        _vecStringTimeLog.clear();
-    std::string strLog = strMsg;
+    String strLog = strMsg;
     strLog += "\t" + std::to_string( _stopWatch.Now() );
     strLog += "\t" + _stopWatch.GetLocalTimeStr();
+
+    std::lock_guard<std::mutex> mutexTime(_mutexTimeLog);
+
+    if ( _vecStringTimeLog.size() > 10000 )
+        _vecStringTimeLog.clear();    
     _vecStringTimeLog.push_back(strLog);
 }
 
-void TimeLog::addTimeLog(const std::string &strMsg, __int64 nTimeSpan)
-{
-     std::lock_guard<std::mutex> mutexTime(_mutexTimeLog);
-
-    if ( _vecStringTimeLog.size() > 5000 )
-        _vecStringTimeLog.clear();
-    std::string strLog = strMsg;
-    strLog += "\t" + std::to_string( nTimeSpan );
+void TimeLog::addTimeLog(const std::string &strMsg, __int64 nTimeSpan) {
+    String strLog = strMsg;
+    strLog += "\t" + std::to_string ( nTimeSpan );
     strLog += "\t" + _stopWatch.GetLocalTimeStr();
-    _vecStringTimeLog.push_back(strLog);
+
+    std::lock_guard<std::mutex> mutexTime ( _mutexTimeLog );
+
+    if ( _vecStringTimeLog.size () > 5000 )
+        _vecStringTimeLog.clear ();
+    
+    _vecStringTimeLog.push_back ( strLog );
 }
 
-void TimeLog::dumpTimeLog(const std::string &strFilePath)
-{
+void TimeLog::dumpTimeLog(const std::string &strFilePath) {
     std::ofstream file(strFilePath);
     if ( ! file.is_open() )
         return;
 
-    std::lock_guard<std::mutex> mutexTime(_mutexTimeLog);
-    for( const auto &strLog : _vecStringTimeLog )
-        file << strLog << std::endl;
-
+    std::unique_lock<std::mutex> mutexTime(_mutexTimeLog);
+    auto vecLocalTimeLog = _vecStringTimeLog;
     _vecStringTimeLog.clear();
+    mutexTime.unlock();
+
+    for( const auto &strLog : vecLocalTimeLog )
+        file << strLog << std::endl;
     file.close();
 }
 

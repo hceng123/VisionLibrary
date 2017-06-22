@@ -256,7 +256,7 @@ namespace Vision
         bfs::path const directoryPath(directoryPathname);
 
         if (bfs::exists(directoryPath))
-            throw Exception::ItemNotFound(MakeMessage(FMT_ALREADY_EXISTS, directoryPath), MakeAttributes(directoryPath));
+            throw Exception::ItemExists(MakeMessage(FMT_ALREADY_EXISTS, directoryPath), MakeAttributes(directoryPath));
 
         bfs::create_directory(directoryPath);
     }

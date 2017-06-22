@@ -139,19 +139,19 @@ namespace Vision
     return vecPoint;
 }
 
-float CalcUtils::guassianValue(float ssq, float x )
+/*static*/ float CalcUtils::guassianValue(float ssq, float x )
 {
-    return exp( -(x * x) / ( 2.0 * ssq ) ) / ( CV_PI * ssq );
+    return ToFloat ( exp ( - ( x * x ) / ( 2.0 * ssq ) ) / ( CV_PI * ssq ) );
 }
 
 /*static*/ cv::Mat CalcUtils::generateGuassinDiffKernel(int nOneSideWidth, float ssq) {
     std::vector<float> vecGuassian;
     for ( int i = -nOneSideWidth; i <= nOneSideWidth; ++ i )
-        vecGuassian.push_back ( i * guassianValue ( ssq, i ) );
+        vecGuassian.push_back ( ToFloat ( i ) * guassianValue ( ssq, ToFloat ( i ) ) );
     cv::Mat matGuassian ( vecGuassian );
     cv::transpose ( matGuassian, matGuassian );
     cv::Mat matTmp( matGuassian, cv::Range::all(), cv::Range ( 0, nOneSideWidth ) );
-    float fSum = fabs ( cv::sum(matTmp)[0] );
+    float fSum = ToFloat ( fabs ( cv::sum(matTmp)[0] ) );
     matGuassian /= fSum;
     return matGuassian;
 }
