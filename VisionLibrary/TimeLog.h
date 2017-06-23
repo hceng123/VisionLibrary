@@ -8,25 +8,31 @@
 #include <thread>
 #include "BaseType.h"
 #include "StopWatch.h"
+#include <atomic>
 
 namespace AOI
 {
 namespace Vision
 {
 
-class TimeLog:private Uncopyable
+class TimeLog : private Uncopyable
 {
 protected:
-    TimeLog()   {};
+    TimeLog(): _anIndex ( 0 ), _vecStringTimeLog ( _SIZE, "" ) {
+    };
 public:
     static TimeLog *GetInstance();
     void addTimeLog(const std::string &strMsg);
     void addTimeLog(const std::string &strMsg, __int64 nTimeSpan);
     void dumpTimeLog(const std::string &strFilePath);
-protected:
-    std::mutex      _mutexTimeLog;
-    StringVector    _vecStringTimeLog;
-    CStopWatch      _stopWatch;
+private:
+    static std::atomic<TimeLog*>    _pInstance;
+    static std::mutex               _mutex;
+    static const size_t             _SIZE   = 5000;
+
+    std::atomic<size_t>             _anIndex;
+    StringVector                    _vecStringTimeLog;
+    CStopWatch                      _stopWatch;
 };
 
 }

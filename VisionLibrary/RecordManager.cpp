@@ -4,6 +4,8 @@
 #include "Config.h"
 #include "opencv2/core.hpp"
 #include "VisionType.h"
+#include "FileUtils.h"
+#include "JoinSplit.h"
 
 namespace bfs = boost::filesystem;
 
@@ -23,22 +25,24 @@ RecordManager::~RecordManager()
 }
 
 VisionStatus RecordManager::add(IRecordPtr pRecord, Int32 &recordID) {
-    recordID = _generateRecordID(); 
-    pRecord->save ( _getRecordFilePath ( recordID ) );
+    recordID = _generateRecordID();
+    String strFilePath = _getRecordFilePath ( recordID );
+    FileUtils::MakeDirectory ( strFilePath );    
+    pRecord->save ( strFilePath );
+    joinDir ( strFilePath.c_str(), Config::GetInstance()->getRecordExt().c_str() );
+    FileUtils::RemoveAll ( strFilePath );
     _mapRecord.insert ( std::make_pair ( recordID, pRecord ) );
 
-    String strLog = "Add record " + std::to_string(recordID) + ";";
+    String strLog = "Add record " + std::to_string ( recordID)  + ";";
     WriteLog(strLog);
     return VisionStatus::OK;
 }
 
-IRecordPtr RecordManager::get(Int32 nRecordID)
-{
+IRecordPtr RecordManager::get(Int32 nRecordID) {
     return _mapRecord[nRecordID];
 }
 
-VisionStatus RecordManager::free(Int32 nRecordID)
-{
+VisionStatus RecordManager::free(Int32 nRecordID) {
     IRecordPtr pRecord = _mapRecord[nRecordID];
     if ( pRecord != nullptr )
         _mapRecord.erase(nRecordID);
@@ -116,8 +120,7 @@ IRecordPtr RecordManager::_createRecordPtr(Int32 recordType)
     return nullptr;
 }
 
-Int32 RecordManager::_generateRecordID()
-{
+Int32 RecordManager::_generateRecordID() {
     const int       START_RECORD_ID =       1;
     auto strRecordDir = Config::GetInstance()->getRecordDir();
     if ( ! bfs::exists( strRecordDir ) )   {
@@ -126,20 +129,19 @@ Int32 RecordManager::_generateRecordID()
     }
     Int32Vector vecRecord;
     for ( auto &p : bfs::directory_iterator(strRecordDir)) {
-        if ( ! bfs::is_directory ( p.status() ) ) 
-        {
+        if ( ! bfs::is_directory ( p.status() ) ) {
             String path = p.path().string();
             auto pos = path.rfind('.');
-            if ( pos != String::npos )  {
-                auto strRecordID = path.substr(pos + 1);
+            if ( pos != String::npos ) {
+                auto strRecordID = path.substr(pos - 3, 3);
                 auto nRecordID = stoi ( strRecordID );
-                vecRecord.push_back(nRecordID);
+                vecRecord.push_back ( nRecordID );
             }
         }
     }
-    std::sort(vecRecord.begin(), vecRecord.end());
+    std::sort ( vecRecord.begin(), vecRecord.end() );
     auto targetRecordID = START_RECORD_ID;
-    for ( auto recordID : vecRecord )   {
+    for ( auto recordID : vecRecord ) {
         if ( recordID != targetRecordID )
             return targetRecordID;
         ++ targetRecordID;
@@ -148,11 +150,10 @@ Int32 RecordManager::_generateRecordID()
     return targetRecordID;
 }
 
-String RecordManager::_getRecordFilePath(Int32 recordID)
-{
+String RecordManager::_getRecordFilePath(Int32 recordID) {
     char chArrRecordID[10];
-    _snprintf( chArrRecordID, sizeof(chArrRecordID), "%02d", recordID );
-    String strFilePath = Config::GetInstance()->getRecordDir() + Config::GetInstance()->getRecordPreFix() + String(chArrRecordID);
+    _snprintf( chArrRecordID, sizeof(chArrRecordID), "%03d", recordID );
+    String strFilePath = Config::GetInstance()->getRecordDir() + String ( chArrRecordID );
     return strFilePath;
 }
 

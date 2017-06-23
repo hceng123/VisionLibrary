@@ -480,7 +480,7 @@ private:
     const String _strKeyChipWindow      = "ChipWindow";
 
     const String _strKeyStatus          = "Status";
-    const String _strLeadLocation       = "LoadLocation_";
+    const String _strLeadLocation       = "LeadLocation_";  //End with _ because it will concatenate with lead number.
 };
 
 class LogCaseInspBridge : public LogCase

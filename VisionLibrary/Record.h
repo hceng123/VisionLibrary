@@ -17,7 +17,7 @@ public:
     IRecord(PR_RECORD_TYPE enType):_enType(enType)   {}
     virtual VisionStatus load(cv::FileStorage &fileStorage) = 0;
     virtual VisionStatus save(const String& strFilePath) = 0;
-    virtual PR_RECORD_TYPE getType() { return _enType;};
+    virtual PR_RECORD_TYPE getType() { return _enType;};    
 protected:
     PR_RECORD_TYPE  _enType;
     const String    _strKeyType     = "type";

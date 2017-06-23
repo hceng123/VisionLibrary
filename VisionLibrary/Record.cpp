@@ -1,4 +1,5 @@
 #include "Record.h"
+#include "Config.h"
 
 namespace AOI
 {
@@ -121,9 +122,9 @@ VisionStatus ChipRecord::load(cv::FileStorage &fs)
     return VisionStatus::OK;
 }
 
-VisionStatus ChipRecord::save(const String& strFilePath)
-{
-    cv::FileStorage fs(strFilePath, cv::FileStorage::WRITE);
+VisionStatus ChipRecord::save(const String& strFilePath) {
+    String strParamFilePath = strFilePath + "/" + Config::GetInstance()->getRecordParamFile();
+    cv::FileStorage fs(strParamFilePath, cv::FileStorage::WRITE);
     if ( ! fs.isOpened() )
         return VisionStatus::OPEN_FILE_FAIL;
 
