@@ -47,11 +47,16 @@ enum class VisionStatus
     FAILED_TO_FIND_ENOUGH_CB_CORNERS,
     CHESSBOARD_PATTERN_NOT_CORRECT,
     FAILED_TO_FIND_LEAD,
+
+    //Learn and inspect chip status
     CAN_NOT_FIND_CAE_LINE,      //Can not find the line of capacitor
     CAN_NOT_FIND_SQUARE_EDGE,
     CAN_NOT_FIND_CIRCULAR_CHIP,
     CAN_NOT_FIND_CHIP_BODY,
     CALIPER_CAN_NOT_FIND_LINE,
+    
+    //Learn and inspect contour Status
+    CAN_NOT_FIND_CONTOUR,
 };
 
 }

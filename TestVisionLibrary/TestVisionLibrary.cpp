@@ -102,7 +102,7 @@ int TestVisionAlgorithm()
 	PR_SRCH_OBJ_RPY stSrchTmplRpy;
 	stSrchTmplCmd.matInputImg = matRotated;
 	//stSrchTmplCmd.rectLrn = omega;
-	stSrchTmplCmd.nRecordID = stLrnTmplRpy.nRecordID;
+	stSrchTmplCmd.nRecordId = stLrnTmplRpy.nRecordId;
 	stSrchTmplCmd.ptExpectedPos = stLrnTmplRpy.ptCenter;
 	cv::Rect rectSrchWindow ( cv::Point(100, 80), cv::Point ( stSrchTmplCmd.matInputImg.cols - 70, stSrchTmplCmd.matInputImg.rows - 60 ) );
 	stSrchTmplCmd.rectSrchWindow = rectSrchWindow;
@@ -179,7 +179,7 @@ void TestSearchFiducialMark()
 	PR_SRCH_OBJ_RPY stSrchTmplRpy;
 	stSrchTmplCmd.matInputImg = cv::imread(".\\data\\FiducialSrch_BK.png");
 	//stSrchTmplCmd.rectLrn = omega;
-	stSrchTmplCmd.nRecordID = stLrnTmplRpy.nRecordID;
+	stSrchTmplCmd.nRecordId = stLrnTmplRpy.nRecordId;
 	stSrchTmplCmd.ptExpectedPos = stLrnTmplRpy.ptCenter;
 	cv::Rect rectSrchWindow ( 40, 40, 390, 390 );
 	stSrchTmplCmd.rectSrchWindow = rectSrchWindow;
@@ -212,7 +212,7 @@ void TestSearchFiducialMark_1()
 	PR_SRCH_OBJ_RPY stSrchTmplRpy;
 	stSrchTmplCmd.matInputImg = cv::imread(".\\data\\PCB_FiducialMark2.jpg");
 	//stSrchTmplCmd.rectLrn = omega;
-	stSrchTmplCmd.nRecordID = stLrnTmplRpy.nRecordID;
+	stSrchTmplCmd.nRecordId = stLrnTmplRpy.nRecordId;
 	stSrchTmplCmd.ptExpectedPos = stLrnTmplRpy.ptCenter;
 	cv::Rect rectSrchWindow ( 300, 600, 270, 270 );
 	stSrchTmplCmd.rectSrchWindow = rectSrchWindow;

@@ -51,7 +51,7 @@ void TestSrchObj() {
     PR_SRCH_OBJ_RPY stRpy;
 
     stCmd.enAlgorithm = PR_SRCH_OBJ_ALGORITHM::SIFT;
-    stCmd.nRecordID = 1;
+    stCmd.nRecordId = 1;
     stCmd.matInputImg = cv::imread("./data/OCV/ProcessedTwoAndThree.png", cv::IMREAD_GRAYSCALE );
     if ( stCmd.matInputImg.empty() ) {
         std::cout << "Failed to read image!" << std::endl;

@@ -114,19 +114,17 @@ void LogCase::_zip() {
 String LogCase::unzip(const String &strFilePath) {
     char chFolderToken = '\\';
     size_t pos = strFilePath.find_last_of ( '\\' );
-    if ( pos == String::npos ) {
+    if ( String::npos == pos ) {
         chFolderToken = '/';
         pos = strFilePath.find_last_of ( chFolderToken );
     }
-    String strFileName = strFilePath.substr ( pos + 1 );
-    String strParentDir = strFilePath.substr ( 0, pos + 1 );
 
     size_t posDot = strFilePath.find_last_of ( '.' );
     String strTargetDir = strFilePath.substr ( 0, posDot - 1 );
     strTargetDir.push_back ( chFolderToken );
     if ( ! FileUtils::Exists( strTargetDir ) )
         FileUtils::MakeDirectory ( strTargetDir );
-    splitFiles ( strParentDir.c_str(), strFileName.c_str(), strTargetDir.c_str() );
+    splitFiles ( strFilePath.c_str(), strTargetDir.c_str() );
     FileUtils::Remove ( strFilePath );
     return strTargetDir;
 }
@@ -160,7 +158,7 @@ VisionStatus LogCaseLrnObj::WriteRpy(const PR_LRN_OBJ_RPY *const pstRpy) {
     ini.LoadFile( cmdRpyFilePath.c_str() );
     ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyStatus.c_str(), ToInt32(pstRpy->enStatus) );
     ini.SetValue(_RPY_SECTION.c_str(), _strKeyCenterPos.c_str(), _formatCoordinate(pstRpy->ptCenter).c_str() );
-    ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyRecordId.c_str(), pstRpy->nRecordID );
+    ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyRecordId.c_str(), pstRpy->nRecordId );
     ini.SaveFile( cmdRpyFilePath.c_str() );
 
     if ( ! pstRpy->matResultImg.empty() )
@@ -203,7 +201,7 @@ VisionStatus LogCaseSrchObj::WriteCmd(const PR_SRCH_OBJ_CMD *const pstCmd) {
     ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyAlgorithm.c_str(), static_cast<long>(pstCmd->enAlgorithm) );
     ini.SetValue(_CMD_SECTION.c_str(), _strKeySrchWindow.c_str(), _formatRect(pstCmd->rectSrchWindow).c_str() );
     ini.SetValue(_CMD_SECTION.c_str(), _strKeyExpectedPos.c_str(), _formatCoordinate(pstCmd->ptExpectedPos).c_str() );
-    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyRecordId.c_str(), pstCmd->nRecordID );
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyRecordId.c_str(), pstCmd->nRecordId );
     ini.SaveFile( cmdRpyFilePath.c_str() );
     cv::imwrite( _strLogCasePath + _IMAGE_NAME, pstCmd->matInputImg );
     return VisionStatus::OK;
@@ -236,7 +234,7 @@ VisionStatus LogCaseSrchObj::RunLogCase() {
     stCmd.enAlgorithm = static_cast<PR_SRCH_OBJ_ALGORITHM> ( ini.GetLongValue ( _CMD_SECTION.c_str(), _strKeyAlgorithm.c_str(), ToInt32(PR_SRCH_OBJ_ALGORITHM::SURF) ) );
     stCmd.rectSrchWindow = _parseRect ( ini.GetValue(_CMD_SECTION.c_str(), _strKeySrchWindow.c_str(), "" ) );
     stCmd.ptExpectedPos = _parseCoordinate ( ini.GetValue ( _CMD_SECTION.c_str(), _strKeyExpectedPos.c_str(), _DEFAULT_COORD.c_str() ) );
-    stCmd.nRecordID = ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyRecordId.c_str(), 0 );
+    stCmd.nRecordId = ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyRecordId.c_str(), 0 );
 
     stCmd.matInputImg = cv::imread( _strLogCasePath + _IMAGE_NAME, cv::IMREAD_GRAYSCALE );
 

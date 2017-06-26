@@ -18,8 +18,7 @@ namespace Vision
 class TimeLog : private Uncopyable
 {
 protected:
-    TimeLog(): _anIndex ( 0 ), _vecStringTimeLog ( _SIZE, "" ) {
-    };
+    TimeLog(): _anIndex ( 0 ), _vecStringTimeLog ( _SIZE, "" ) {};
 public:
     static TimeLog *GetInstance();
     void addTimeLog(const std::string &strMsg);

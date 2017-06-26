@@ -11,10 +11,10 @@ namespace AOI
 namespace Vision
 {
 
-class IRecord
+class Record
 {
 public:
-    IRecord(PR_RECORD_TYPE enType):_enType(enType)   {}
+    Record(PR_RECORD_TYPE enType):_enType(enType)   {}
     virtual VisionStatus load(cv::FileStorage &fileStorage) = 0;
     virtual VisionStatus save(const String& strFilePath) = 0;
     virtual PR_RECORD_TYPE getType() { return _enType;};    
@@ -22,12 +22,12 @@ protected:
     PR_RECORD_TYPE  _enType;
     const String    _strKeyType     = "type";
 };
-using IRecordPtr = std::shared_ptr<IRecord>;
+using RecordPtr = std::shared_ptr<Record>;
 
-class ObjRecord : public IRecord
+class ObjRecord : public Record
 {
 public:
-    ObjRecord(PR_RECORD_TYPE enType):IRecord(enType)   {}
+    ObjRecord(PR_RECORD_TYPE enType):Record(enType)   {}
     virtual VisionStatus load(cv::FileStorage &fileStorage) override;
     virtual VisionStatus save(const String& strFilePath) override;
     void setModelKeyPoint(const VectorOfKeyPoint vecModelKeyPoint);
@@ -43,10 +43,10 @@ protected:
 };
 using ObjRecordPtr = std::shared_ptr<ObjRecord>;
 
-class DeviceRecord : public IRecord
+class DeviceRecord : public Record
 {
 public:
-    DeviceRecord(PR_RECORD_TYPE enType):IRecord(enType)   {}
+    DeviceRecord(PR_RECORD_TYPE enType):Record(enType)   {}
     virtual VisionStatus load(cv::FileStorage &fileStorage) override;
     virtual VisionStatus save(const String& strFilePath) override;
     void setSize(const cv::Size2f &size);
@@ -59,10 +59,10 @@ protected:
 };
 using DeviceRecordPtr = std::shared_ptr<DeviceRecord>;
 
-class ChipRecord : public IRecord
+class ChipRecord : public Record
 {
 public:
-    ChipRecord(PR_RECORD_TYPE enType) : IRecord(enType)   {}
+    ChipRecord(PR_RECORD_TYPE enType) : Record(enType)   {}
     virtual VisionStatus load(cv::FileStorage &fileStorage) override;
     virtual VisionStatus save(const String& strFilePath) override;
     void setInspMode ( PR_INSP_CHIP_MODE enInspMode );
@@ -81,6 +81,32 @@ protected:
     String              _strKeyThreshold    = "Threshold";
 };
 using ChipRecordPtr = std::shared_ptr<ChipRecord>;
+
+class ContourRecord : public Record {
+    public:
+    ContourRecord(PR_RECORD_TYPE enType) : Record(enType)   {}
+    virtual VisionStatus load(cv::FileStorage &fileStorage) override;
+    virtual VisionStatus save(const String& strFilePath) override;
+    void setSize(const cv::Size2f &size);
+    const cv::Size2f& getSize() const;
+    void setThreshold(Int16 nThreshold);
+    Int16 getThreshold() const;
+    cv::Mat getTmpl() const;
+    void setTmpl(const cv::Mat &matTmpl);
+    cv::Mat getMask() const;
+    void setMask(const cv::Mat &matMask);
+    String getTmplFileName() const;
+    String getMaskFileName() const;
+protected:
+    Int16               _nThreshold;
+    cv::Mat             _matTmpl;
+    cv::Mat             _matMask;
+
+    String              _strKeyThreshold    = "Threshold";
+    String              _strTmplFileName    = "Tmpl.png";
+    String              _strMaskFileName    = "Mask.png";
+};
+using ContourRecordPtr = std::shared_ptr<ContourRecord>;
 
 }
 }

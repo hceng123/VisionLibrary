@@ -1,5 +1,6 @@
 #include "Record.h"
 #include "Config.h"
+#include "opencv2/highgui.hpp"
 
 namespace AOI
 {
@@ -158,6 +159,65 @@ void ChipRecord::setThreshold(Int16 nThreshold) {
 
 Int16 ChipRecord::getThreshold() const {
     return _nThreshold;
+}
+
+/******************************************
+* Contour Record *
+******************************************/
+VisionStatus ContourRecord::load(cv::FileStorage &fs)
+{
+    cv::FileNode fileNode;
+
+    fileNode = fs[_strKeyThreshold];
+    cv::read(fileNode, _nThreshold, 0 );
+    return VisionStatus::OK;
+}
+
+VisionStatus ContourRecord::save(const String& strFilePath) {
+    String strParamFilePath = strFilePath + "/" + Config::GetInstance()->getRecordParamFile();
+    cv::FileStorage fs(strParamFilePath, cv::FileStorage::WRITE);
+    if ( ! fs.isOpened() )
+        return VisionStatus::OPEN_FILE_FAIL;
+
+    write ( fs, _strKeyType, ToInt32 ( PR_RECORD_TYPE::CONTOUR ) );
+    write ( fs, _strKeyThreshold, _nThreshold );
+    cv::imwrite ( strFilePath + "/" + _strTmplFileName, _matTmpl );
+    cv::imwrite ( strFilePath + "/" + _strMaskFileName, _matMask );
+    
+    fs.release();
+    return VisionStatus::OK;
+}
+
+void ContourRecord::setThreshold(Int16 nThreshold) {
+    _nThreshold = nThreshold;
+}
+
+Int16 ContourRecord::getThreshold() const {
+    return _nThreshold;
+}
+
+cv::Mat ContourRecord::getTmpl() const {
+    return _matTmpl;
+}
+
+void ContourRecord::setTmpl( const cv::Mat &matTmpl ) {
+    _matTmpl = matTmpl;
+}
+
+cv::Mat ContourRecord::getMask () const {
+    return _matMask;
+}
+
+void ContourRecord::setMask ( const cv::Mat &matMask ) {
+    _matMask = matMask;
+}
+
+String ContourRecord::getTmplFileName() const {
+    return _strTmplFileName;
+}
+
+String ContourRecord::getMaskFileName() const {
+    return _strMaskFileName;
 }
 
 }

@@ -47,7 +47,7 @@ struct PR_LRN_OBJ_RPY {
 	cv::Mat                     matDescritor;
 	cv::Mat                     matTmpl;
 	cv::Point2f                 ptCenter;
-    Int32                       nRecordID;
+    Int32                       nRecordId;
     cv::Mat                     matResultImg;
 };
 
@@ -56,7 +56,7 @@ struct PR_SRCH_OBJ_CMD {
 	cv::Mat                matInputImg;
 	cv::Rect               rectSrchWindow;
 	cv::Point2f            ptExpectedPos;
-    Int32                  nRecordID;
+    Int32                  nRecordId;
 };
 
 struct PR_SRCH_OBJ_RPY {
@@ -175,14 +175,14 @@ struct PR_LRN_DEVICE_CMD {
 
 struct PR_LRN_DEVICE_RPY {
     Int32                   nStatus;
-    Int32                   nRecordID;
+    Int32                   nRecordId;
     cv::Size2f              sizeDevice;
     Int16                   nElectrodeThreshold;
 };
 
 struct PR_INSP_DEVICE_CMD {
     cv::Mat                 matInputImg;
-    Int32                   nRecordID;
+    Int32                   nRecordId;
     Int32                   nDeviceCount;
     Int16                   nElectrodeThreshold;
     PR_SINGLE_DEVICE_INFO   astDeviceInfo[PR_MAX_DEVICE_COUNT];
@@ -610,7 +610,7 @@ struct PR_LRN_CHIP_CMD {
 
 struct PR_LRN_CHIP_RPY {
     VisionStatus            enStatus;
-    Int32                   nRecordID;
+    Int32                   nRecordId;
     cv::Size2f              sizeDevice;
     cv::Size2f              arrSizeElectrode[PR_ELECTRODE_COUNT];
     Int16                   nThreshold;
@@ -640,7 +640,7 @@ struct PR_INSP_CHIP_RPY {
 struct PR_LRN_CONTOUR_CMD {
     cv::Mat                 matInputImg;
 	cv::Mat                 matMask;
-	cv::Rect2f              rectROI;
+	cv::Rect                rectROI;
     bool                    bAutoThreshold;
     Int16                   nThreshold;
 };
@@ -648,7 +648,11 @@ struct PR_LRN_CONTOUR_CMD {
 struct PR_LRN_CONTOUR_RPY {
     VisionStatus            enStatus;
     Int16                   nThreshold;
+    VectorOfVectorOfPoint   vecContours;
     Int32                   nContourNum;
+    cv::Mat                 matResultImg;
+    Int32                   nRecordId;
+
 };
 
 struct PR_INSP_CONTOUR_CMD {

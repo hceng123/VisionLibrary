@@ -125,23 +125,23 @@ VisionAlgorithm::VisionAlgorithm()
     }
 
     char charrMsg[1000];
-    if ( pstCmd->nRecordID <= 0 ) {
-        _snprintf(charrMsg, sizeof (charrMsg), "The input record ID %d is invalid.", pstCmd->nRecordID );
+    if ( pstCmd->nRecordId <= 0 ) {
+        _snprintf(charrMsg, sizeof (charrMsg), "The input record ID %d is invalid.", pstCmd->nRecordId );
         WriteLog ( charrMsg );
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return pstRpy->enStatus;
     }
 
-    ObjRecordPtr ptrRecord = std::static_pointer_cast<ObjRecord> ( RecordManager::getInstance()->get ( pstCmd->nRecordID ) );
+    ObjRecordPtr ptrRecord = std::static_pointer_cast<ObjRecord> ( RecordManager::getInstance()->get ( pstCmd->nRecordId ) );
     if ( nullptr == ptrRecord ) {
-        _snprintf(charrMsg, sizeof (charrMsg), "Failed to get record ID %d in system.", pstCmd->nRecordID );
+        _snprintf(charrMsg, sizeof (charrMsg), "Failed to get record ID %d in system.", pstCmd->nRecordId );
         WriteLog ( charrMsg );
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return pstRpy->enStatus;
     }
 
     if ( ptrRecord->getType() != PR_RECORD_TYPE::OBJECT ) {
-        _snprintf(charrMsg, sizeof (charrMsg), "The type of record ID %d is not OBJECT.", pstCmd->nRecordID );
+        _snprintf(charrMsg, sizeof (charrMsg), "The type of record ID %d is not OBJECT.", pstCmd->nRecordId );
         WriteLog ( charrMsg );
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return pstRpy->enStatus;
@@ -1463,7 +1463,7 @@ int VisionAlgorithm::_findLineCrossPoint(const PR_Line2f &line1, const PR_Line2f
     ptrRecord->setModelKeyPoint(pstRpy->vecKeyPoint);
     ptrRecord->setModelDescriptor(pstRpy->matDescritor);
     ptrRecord->setObjCenter ( cv::Point2f ( ToFloat( pstRpy->matTmpl.cols ) / 2.f , ToFloat( pstRpy->matTmpl.rows ) / 2.f ) );
-    RecordManager::getInstance()->add ( ptrRecord, pstRpy->nRecordID );
+    RecordManager::getInstance()->add ( ptrRecord, pstRpy->nRecordId );
     return VisionStatus::OK;
 }
 
@@ -1472,7 +1472,7 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
     DeviceRecordPtr ptrRecord = std::make_shared<DeviceRecord>( PR_RECORD_TYPE::DEVICE );
     ptrRecord->setElectrodeThreshold ( pLrnDeviceRpy->nElectrodeThreshold );
     ptrRecord->setSize ( pLrnDeviceRpy->sizeDevice );
-    RecordManager::getInstance()->add( ptrRecord, pLrnDeviceRpy->nRecordID );
+    RecordManager::getInstance()->add( ptrRecord, pLrnDeviceRpy->nRecordId );
     return VisionStatus::OK;
 }
 
@@ -4171,7 +4171,7 @@ EXIT:
         pstCmd->rectChip.width <= 0 || pstCmd->rectChip.height <= 0 ||
         ( pstCmd->rectChip.x + pstCmd->rectChip.width ) > pstCmd->matInputImg.cols ||
         ( pstCmd->rectChip.y + pstCmd->rectChip.height ) > pstCmd->matInputImg.rows ) {
-        _snprintf( charrMsg, sizeof( charrMsg ), "The input search window (%d, %d, %d, %d) is invalid",
+        _snprintf( charrMsg, sizeof( charrMsg ), "The input chip window (%d, %d, %d, %d) is invalid",
             pstCmd->rectChip.x, pstCmd->rectChip.y, pstCmd->rectChip.width, pstCmd->rectChip.height );
         WriteLog(charrMsg);
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
@@ -4210,12 +4210,12 @@ EXIT:
         pstRpy->matResultImg = pstCmd->matInputImg.clone();
     else
         cv::cvtColor ( pstCmd->matInputImg, pstRpy->matResultImg, CV_GRAY2BGR );
+
     if ( PR_INSP_CHIP_MODE::HEAD == pstCmd->enInspMode ) {
         _lrnChipHeadMode ( matThreshold, rectChipROI, pstRpy );
     }else if ( PR_INSP_CHIP_MODE::SQUARE == pstCmd->enInspMode ) {
         _lrnChipSquareMode ( matThreshold, pstCmd->rectChip, rectChipROI, pstRpy );
-    }else
-    if ( PR_INSP_CHIP_MODE::CAE == pstCmd->enInspMode ) {
+    }else if ( PR_INSP_CHIP_MODE::CAE == pstCmd->enInspMode ) {
         _lrnChipCAEMode ( matThreshold, rectChipROI, pstRpy );
     }
 
@@ -4262,7 +4262,7 @@ EXIT:
     _fillHoleByContour ( matThreshold, matFillHole, PR_OBJECT_ATTRIBUTE::BRIGHT );
 
     VectorOfVectorOfPoint contours;
-    cv::findContours( matFillHole, contours, cv::RETR_CCOMP, cv::CHAIN_APPROX_SIMPLE );
+    cv::findContours( matFillHole, contours, cv::RETR_LIST, cv::CHAIN_APPROX_SIMPLE );
     VectorOfPoint maxContour;
     float fMaxArea = std::numeric_limits<float>::min();
     for ( const auto &contour : contours ) {
@@ -4357,13 +4357,12 @@ EXIT:
     return pstRpy->enStatus;
 }
 
-/*static*/ VisionStatus VisionAlgorithm::_writeChipRecord(const PR_LRN_CHIP_CMD *const pstCmd, PR_LRN_CHIP_RPY *const pstRpy)
-{
+/*static*/ VisionStatus VisionAlgorithm::_writeChipRecord(const PR_LRN_CHIP_CMD *const pstCmd, PR_LRN_CHIP_RPY *const pstRpy) {
     ChipRecordPtr ptrRecord = std::make_shared<ChipRecord>( PR_RECORD_TYPE::CHIP );
     ptrRecord->setThreshold ( pstRpy->nThreshold );
     ptrRecord->setSize ( pstRpy->sizeDevice );
     ptrRecord->setInspMode ( pstCmd->enInspMode );
-    RecordManager::getInstance()->add( ptrRecord, pstRpy->nRecordID );
+    RecordManager::getInstance()->add( ptrRecord, pstRpy->nRecordId );
     return VisionStatus::OK;
 }
 
@@ -4794,8 +4793,92 @@ EXIT:
 }
 
 /*static*/ VisionStatus VisionAlgorithm::lrnContour(const PR_LRN_CONTOUR_CMD *const pstCmd, PR_LRN_CONTOUR_RPY *const pstRpy, bool bReplay /*= false*/ ) {
+    assert(pstCmd != nullptr && pstRpy != nullptr);
+    char charrMsg[1000];
+    if ( pstCmd->matInputImg.empty() ) {
+        WriteLog("Input image is empty.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+   
+    if (pstCmd->rectROI.x < 0 || pstCmd->rectROI.y < 0 ||
+        pstCmd->rectROI.width <= 0 || pstCmd->rectROI.height <= 0 ||
+        ( pstCmd->rectROI.x + pstCmd->rectROI.width ) > pstCmd->matInputImg.cols ||
+        ( pstCmd->rectROI.y + pstCmd->rectROI.height ) > pstCmd->matInputImg.rows ) {
+        _snprintf( charrMsg, sizeof( charrMsg ), "The input ROI rect (%d, %d, %d, %d) is invalid",
+            pstCmd->rectROI.x, pstCmd->rectROI.y, pstCmd->rectROI.width, pstCmd->rectROI.height );
+        WriteLog(charrMsg);
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return VisionStatus::INVALID_PARAM;
+    }
+
+    MARK_FUNCTION_START_TIME;
+
+    cv::Mat matROI ( pstCmd->matInputImg, pstCmd->rectROI );
+    cv::Mat matGray, matBlur, matThreshold;
+    if ( matROI.channels() > 1 )
+        cv::cvtColor ( matROI, matGray, CV_BGR2GRAY );
+    else
+        matGray = matROI.clone();
+    cv::GaussianBlur ( matGray, matBlur, cv::Size(5, 5), 2, 2 );
+    if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE )
+        showImage("Blur image", matBlur);
+
+    pstRpy->nThreshold = pstCmd->nThreshold;
+    if ( pstCmd->bAutoThreshold )
+        pstRpy->nThreshold = _autoThreshold ( matBlur );
+    cv::threshold ( matBlur, matThreshold, pstRpy->nThreshold, PR_MAX_GRAY_LEVEL, cv::ThresholdTypes::THRESH_BINARY );
+    _fillHoleByContour ( matThreshold, matThreshold, PR_OBJECT_ATTRIBUTE::BRIGHT );
+
+    VectorOfVectorOfPoint vecContours;
+    cv::findContours ( matThreshold, vecContours, cv::RETR_LIST, cv::CHAIN_APPROX_SIMPLE );
+
+    cv::Mat matDraw = matROI.clone();
+    // Filter contours
+    std::vector<AOI_COUNTOUR> vecAoiContour;
+    int index = 0;
+    for ( auto contour : vecContours ) {
+        auto area = cv::contourArea ( contour );
+        if ( area > 1000 ) {
+            pstRpy->vecContours.push_back ( contour );
+            if (Config::GetInstance ()->getDebugMode () == PR_DEBUG_MODE::SHOW_IMAGE) {
+                cv::RNG rng ( 12345 );
+                cv::Scalar color = cv::Scalar ( rng.uniform ( 0, 255 ), rng.uniform ( 0, 255 ), rng.uniform ( 0, 255 ) );
+                cv::drawContours ( matDraw, vecContours, index, color );
+            }
+        }
+        ++ index;
+    }
+    if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE )
+        showImage("Contours", matDraw );
+    if ( pstRpy->vecContours.empty() ) {
+        pstRpy->enStatus = VisionStatus::CAN_NOT_FIND_CONTOUR;
+        return pstRpy->enStatus;
+    }
+    pstRpy->matResultImg = pstCmd->matInputImg;
+    cv::Mat matInspMask = cv::Mat::zeros ( matROI.size(), CV_8UC1 );
+    const int CONTOUR_INSP_WITH = 30;
+    for ( size_t index = 0; index < pstRpy->vecContours.size(); ++ index  ) {
+        cv::drawContours ( matInspMask, pstRpy->vecContours, index, cv::Scalar::all ( PR_MAX_GRAY_LEVEL ), CONTOUR_INSP_WITH );
+        for ( auto &point : pstRpy->vecContours[index] ) {
+            point.x += pstCmd->rectROI.x;
+            point.y += pstCmd->rectROI.y;
+        }
+    }
+    cv::polylines( pstRpy->matResultImg, pstRpy->vecContours, true, _constBlueScalar, 2 );
+    _writeContourRecord ( pstRpy, matROI, matInspMask );
+
     pstRpy->enStatus = VisionStatus::OK;
     return pstRpy->enStatus;
+}
+
+/*static*/ VisionStatus VisionAlgorithm::_writeContourRecord(PR_LRN_CONTOUR_RPY *const pstRpy, const cv::Mat &matTmpl, const cv::Mat &matInspMask) {
+    ContourRecordPtr ptrRecord = std::make_shared<ContourRecord>( PR_RECORD_TYPE::CONTOUR );
+    ptrRecord->setThreshold ( pstRpy->nThreshold );
+    ptrRecord->setTmpl ( matTmpl );
+    ptrRecord->setMask ( matInspMask );
+    RecordManager::getInstance()->add( ptrRecord, pstRpy->nRecordId );
+    return VisionStatus::OK;
 }
 
 /*static*/ VisionStatus VisionAlgorithm::inspContour ( const PR_INSP_CONTOUR_CMD *const pstCmd, PR_INSP_CONTOUR_RPY *const pstRpy, bool bReplay /*= false*/ ) {

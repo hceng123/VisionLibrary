@@ -54,6 +54,7 @@ enum class PR_RECORD_TYPE {
     OBJECT,
     DEVICE,
     CHIP,
+    CONTOUR,
     LEAD,
 };
 

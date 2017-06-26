@@ -105,7 +105,7 @@ short gz_uncompress(gzFile in, FILE   *out)
 /* ===========================================================================
  * Uncompress the given file and remove the original. @1
  */
-short file_uncompress(char *file, char *outfile)
+static short file_uncompress(const char *file, char *outfile)
 {
     FILE  *typeCheck;
     FILE  *out;
@@ -247,32 +247,18 @@ static int extractFiles (const char *destDir, stJAndSHeader *ptrHeader, FILE *fi
 /* ========================================================================
 PURPOSE :
 */
-int splitFiles (const char *sourceDir, const char *sourceName, const char *destDir)
+int splitFiles (const char *sourceFilePath, const char *destDir)
 {
-    stJAndSHeader
-        *splitHdr = NULL;
-    FILE
-        *fileHdl = NULL;        
-    char
-        splitName[_MAX_DIR],
-        zipName[_MAX_DIR];
-    short
-        nErr = EZERO;
+    stJAndSHeader *splitHdr = NULL;
+    FILE *fileHdl = NULL;        
+    char splitName[_MAX_DIR];
+    short nErr = EZERO;
 
-    // Generate the full join name
-    if (strlen(sourceDir))
+    sprintf ( splitName, "%s%s", sourceFilePath, ".CAT" );
+
+    if ((nErr = file_uncompress( sourceFilePath, splitName)) != 0) // @1
     {
-        sprintf (splitName, "%s%s%s", sourceDir, sourceName, ".CAT");
-        sprintf (zipName, "%s%s", sourceDir, sourceName);
-    }
-    else
-    {
-        sprintf (splitName, ".\\%s%s", sourceName, ".CAT");
-        sprintf (zipName, ".\\%s", sourceName);
-    }
-    if ((nErr = file_uncompress(zipName, splitName)) != 0) // @1
-    {
-        String msg = String("Failed uncompress from ") + zipName + " to "+ splitName;
+        String msg = String("Failed uncompress from ") + sourceFilePath + " to "+ splitName;
         throw std::exception ( msg.c_str() );
         return nErr;
     }
@@ -289,8 +275,11 @@ int splitFiles (const char *sourceDir, const char *sourceName, const char *destD
             // Populate the header from the join file
             if (readHeader (splitHdr, fileHdl) == 0)
             {
+                String strDestDir ( destDir );
+                if ( strDestDir.back() != '\\' && strDestDir.back() != '/' )
+                    strDestDir.push_back ( '/' );
                 // ... and split out all the files.
-                extractFiles ( destDir, splitHdr, fileHdl );
+                extractFiles ( strDestDir.c_str(), splitHdr, fileHdl );
             }
 			fclose(fileHdl);
         }

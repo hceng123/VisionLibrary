@@ -48,6 +48,8 @@ VisionWidget::VisionWidget(QWidget *parent)
     _ptrCcWidget = std::make_unique<CCWidget>(this);
     _ptrCcWidget->setVisionView ( ui.visionView );
     ui.verticalLayout->addWidget(_ptrCcWidget.get());
+
+    PR_Init();
 }
 
 VisionWidget::~VisionWidget()
@@ -466,7 +468,7 @@ void VisionWidget::on_btnLrnChip_clicked() {
     PR_LrnChip ( &stCmd, &stRpy );
     if ( VisionStatus::OK == stRpy.enStatus ) {
         ui.visionView->setMat ( VisionView::DISPLAY_SOURCE::RESULT, stRpy.matResultImg );
-        _nChipRecordId = stRpy.nRecordID;
+        _nChipRecordId = stRpy.nRecordId;
     }else {
         PR_GET_ERROR_STR_RPY stErrStrRpy;
         PR_GetErrorStr(stRpy.enStatus, &stErrStrRpy);
@@ -528,6 +530,59 @@ void VisionWidget::on_btnCountEdge_clicked() {
         PR_GET_ERROR_STR_RPY stErrStrRpy;
         PR_GetErrorStr(stRpy.enStatus, &stErrStrRpy);
         QMessageBox::critical(nullptr, "Find Edge", stErrStrRpy.achErrorStr, "Quit");
+        ui.lineEditObjCenter->clear();
+        ui.lineEditObjRotation->clear();
+    }
+}
+
+void VisionWidget::on_btnLrnContour_clicked() {
+    if ( _sourceImagePath.empty() ) {
+        QMessageBox::information(this, "Vision Widget", "Please select an image first!", "Quit");
+        return;
+    }
+
+    ui.visionView->setState ( VisionView::VISION_VIEW_STATE::TEST_VISION_LIBRARY );
+    ui.visionView->applyIntermediateResult();
+
+    PR_LRN_CONTOUR_CMD stCmd;
+    PR_LRN_CONTOUR_RPY stRpy;
+    stCmd.bAutoThreshold = true;
+    stCmd.matInputImg = ui.visionView->getMat();
+    stCmd.rectROI = ui.visionView->getSelectedWindow();
+    PR_LrnContour ( &stCmd, &stRpy );
+    if ( VisionStatus::OK == stRpy.enStatus ) {
+        ui.visionView->setMat ( VisionView::DISPLAY_SOURCE::RESULT, stRpy.matResultImg );
+        _nContourRecordId = stRpy.nRecordId;
+    }else {
+        PR_GET_ERROR_STR_RPY stErrStrRpy;
+        PR_GetErrorStr(stRpy.enStatus, &stErrStrRpy);
+        QMessageBox::critical(nullptr, "Learn chip", stErrStrRpy.achErrorStr, "Quit");
+        ui.lineEditObjCenter->clear();
+        ui.lineEditObjRotation->clear();
+    }
+}
+
+void VisionWidget::on_btnInspContour_clicked() {
+    if ( _sourceImagePath.empty() ) {
+        QMessageBox::information(this, "Vision Widget", "Please select an image first!", "Quit");
+        return;
+    }
+
+    ui.visionView->setState ( VisionView::VISION_VIEW_STATE::TEST_VISION_LIBRARY );
+    ui.visionView->applyIntermediateResult();
+
+    PR_INSP_CONTOUR_CMD stCmd;
+    PR_INSP_CONTOUR_RPY stRpy;
+    stCmd.matInputImg = ui.visionView->getMat();
+    //stCmd.rectSrchWindow = ui.visionView->getSelectedWindow();
+    //stCmd.nRecordId = _nChipRecordId;
+    PR_InspContour ( &stCmd, &stRpy );
+    if ( VisionStatus::OK == stRpy.enStatus ) {
+        ui.visionView->setMat ( VisionView::DISPLAY_SOURCE::RESULT, stRpy.matResultImg );
+    }else {
+        PR_GET_ERROR_STR_RPY stErrStrRpy;
+        PR_GetErrorStr(stRpy.enStatus, &stErrStrRpy);
+        QMessageBox::critical(nullptr, "Learn chip", stErrStrRpy.achErrorStr, "Quit");
         ui.lineEditObjCenter->clear();
         ui.lineEditObjRotation->clear();
     }

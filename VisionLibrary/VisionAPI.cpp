@@ -72,9 +72,9 @@ VisionAPI void PR_DumpTimeLog(const std::string &strPath)
     TimeLog::GetInstance()->dumpTimeLog(strPath);
 }
 
-VisionAPI VisionStatus PR_FreeRecord(Int32 nRecordID)
+VisionAPI VisionStatus PR_FreeRecord(Int32 nRecordId)
 {
-    return RecordManager::getInstance()->free(nRecordID);
+    return RecordManager::getInstance()->free(nRecordId);
 }
 
 VisionAPI VisionStatus  PR_FreeAllRecord()

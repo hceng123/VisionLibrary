@@ -9,7 +9,7 @@ HISTORY : 20170622 XSG Created.
 #define _JOIN_SPLIT_H_
 
 int joinDir (const char *sourceDir, const char *extName);
-int splitFiles (const char *sourceDir, const char *sourceName, const char *destDir);
+int splitFiles (const char *sourceFilePath, const char *destDir);
 
 #endif /*_JOIN_SPLIT_H_*/
 

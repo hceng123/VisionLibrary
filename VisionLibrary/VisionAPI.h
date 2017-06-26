@@ -19,7 +19,7 @@ VisionAPI VisionStatus PR_Init();
 VisionAPI void         PR_SetDebugMode(PR_DEBUG_MODE enDebugMode);
 VisionAPI VisionStatus PR_RunLogCase(const std::string &strPath);
 VisionAPI void         PR_DumpTimeLog(const std::string &strPath);
-VisionAPI VisionStatus PR_FreeRecord(Int32 nRecordID);
+VisionAPI VisionStatus PR_FreeRecord(Int32 nRecordId);
 VisionAPI VisionStatus PR_FreeAllRecord();
 
 VisionAPI VisionStatus PR_LrnObj(const PR_LRN_OBJ_CMD *const pstCmd, PR_LRN_OBJ_RPY *const pstRpy);
