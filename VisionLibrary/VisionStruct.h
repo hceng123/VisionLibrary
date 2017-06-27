@@ -656,9 +656,12 @@ struct PR_LRN_CONTOUR_RPY {
 };
 
 struct PR_INSP_CONTOUR_CMD {
+    PR_INSP_CONTOUR_CMD() : nRecordId (0), nDefectThreshold(30) {}
     cv::Mat                 matInputImg;
 	cv::Mat                 matMask;
 	cv::Rect2f              rectROI;
+    Int32                   nRecordId;
+    Int16       			nDefectThreshold;
 };
 
 struct PR_INSP_CONTOUR_RPY {

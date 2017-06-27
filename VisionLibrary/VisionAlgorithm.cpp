@@ -2219,7 +2219,6 @@ VisionStatus VisionAlgorithm::srchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd
 
     Fitting::fitLine ( vecFitPoint, pstRpy->fSlope, pstRpy->fIntercept, pstRpy->bReversedFit );
     pstRpy->stLine = CalcUtils::calcEndPointOfLine ( vecFitPoint, pstRpy->bReversedFit, pstRpy->fSlope, pstRpy->fIntercept );
-
     
     pstRpy->enStatus = VisionStatus::OK;
     return pstRpy->enStatus;
@@ -4851,37 +4850,99 @@ EXIT:
     }
     if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE )
         showImage("Contours", matDraw );
+
     if ( pstRpy->vecContours.empty() ) {
         pstRpy->enStatus = VisionStatus::CAN_NOT_FIND_CONTOUR;
         return pstRpy->enStatus;
     }
     pstRpy->matResultImg = pstCmd->matInputImg;
-    cv::Mat matInspMask = cv::Mat::zeros ( matROI.size(), CV_8UC1 );
-    const int CONTOUR_INSP_WITH = 30;
+
+    cv::Mat matContour = cv::Mat::zeros ( matROI.size(), CV_8UC1 );
+    cv::fillPoly ( matContour, pstRpy->vecContours, cv::Scalar::all ( PR_MAX_GRAY_LEVEL ) );
+
     for ( size_t index = 0; index < pstRpy->vecContours.size(); ++ index  ) {
-        cv::drawContours ( matInspMask, pstRpy->vecContours, index, cv::Scalar::all ( PR_MAX_GRAY_LEVEL ), CONTOUR_INSP_WITH );
         for ( auto &point : pstRpy->vecContours[index] ) {
             point.x += pstCmd->rectROI.x;
             point.y += pstCmd->rectROI.y;
         }
     }
     cv::polylines( pstRpy->matResultImg, pstRpy->vecContours, true, _constBlueScalar, 2 );
-    _writeContourRecord ( pstRpy, matROI, matInspMask );
+    _writeContourRecord ( pstRpy, matROI, matContour );
 
     pstRpy->enStatus = VisionStatus::OK;
     return pstRpy->enStatus;
 }
 
-/*static*/ VisionStatus VisionAlgorithm::_writeContourRecord(PR_LRN_CONTOUR_RPY *const pstRpy, const cv::Mat &matTmpl, const cv::Mat &matInspMask) {
+/*static*/ VisionStatus VisionAlgorithm::_writeContourRecord(PR_LRN_CONTOUR_RPY *const pstRpy, const cv::Mat &matTmpl, const cv::Mat &matContour) {
     ContourRecordPtr ptrRecord = std::make_shared<ContourRecord>( PR_RECORD_TYPE::CONTOUR );
     ptrRecord->setThreshold ( pstRpy->nThreshold );
     ptrRecord->setTmpl ( matTmpl );
-    ptrRecord->setMask ( matInspMask );
+    ptrRecord->setContourMat ( matContour );
     RecordManager::getInstance()->add( ptrRecord, pstRpy->nRecordId );
     return VisionStatus::OK;
 }
 
 /*static*/ VisionStatus VisionAlgorithm::inspContour ( const PR_INSP_CONTOUR_CMD *const pstCmd, PR_INSP_CONTOUR_RPY *const pstRpy, bool bReplay /*= false*/ ) {
+    assert(pstCmd != nullptr && pstRpy != nullptr);
+    char charrMsg[1000];
+    if ( pstCmd->matInputImg.empty() ) {
+        WriteLog("Input image is empty.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+   
+    if (pstCmd->rectROI.x < 0 || pstCmd->rectROI.y < 0 ||
+        pstCmd->rectROI.width <= 0 || pstCmd->rectROI.height <= 0 ||
+        ( pstCmd->rectROI.x + pstCmd->rectROI.width ) > pstCmd->matInputImg.cols ||
+        ( pstCmd->rectROI.y + pstCmd->rectROI.height ) > pstCmd->matInputImg.rows ) {
+        _snprintf( charrMsg, sizeof( charrMsg ), "The input ROI rect (%d, %d, %d, %d) is invalid",
+            pstCmd->rectROI.x, pstCmd->rectROI.y, pstCmd->rectROI.width, pstCmd->rectROI.height );
+        WriteLog(charrMsg);
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return VisionStatus::INVALID_PARAM;
+    }
+
+    if ( pstCmd->nRecordId <= 0 ) {
+        WriteLog("The input record id is invalid.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return VisionStatus::INVALID_PARAM;
+    }
+    
+    ContourRecordPtr ptrRecord = std::static_pointer_cast<ContourRecord> (RecordManager::getInstance ()->get ( pstCmd->nRecordId ));
+    if ( nullptr == ptrRecord ) {
+        _snprintf ( charrMsg, sizeof (charrMsg), "Failed to get record ID %d in system.", pstCmd->nRecordId );
+        WriteLog ( charrMsg );
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    MARK_FUNCTION_START_TIME;
+
+    cv::Mat matROI ( pstCmd->matInputImg, pstCmd->rectROI );
+    cv::Mat matGray, matBlur, matThreshold;
+    if ( matROI.channels() > 1 )
+        cv::cvtColor ( matROI, matGray, CV_BGR2GRAY );
+    else
+        matGray = matROI.clone();
+    cv::GaussianBlur ( matGray, matBlur, cv::Size(5, 5), 2, 2 );
+    if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE )
+        showImage("Blur image", matBlur);    
+
+    cv::Point2f ptResult;
+    float fRotation = 0.f, fCorrelation = 0.f;
+    cv::Mat matTmpl = ptrRecord->getTmpl();
+    pstRpy->enStatus = _matchTemplate ( matROI, matTmpl, PR_OBJECT_MOTION::TRANSLATION, ptResult, fRotation, fCorrelation );
+    if ( pstRpy->enStatus != VisionStatus::OK ) {
+        WriteLog ( "Template match fail." );
+        return pstRpy->enStatus;
+    }
+
+    cv::Mat matCompareROI = cv::Mat ( matROI, cv::Rect ( ToInt32 ( ptResult.x - matTmpl.cols / 2.f ), ToInt32 ( ptResult.y - matTmpl.rows / 2.f ), matTmpl.cols, matTmpl.rows ) );
+    cv::Mat matDiff = matTmpl - matCompareROI;
+
+    cv::Mat matDefect = matDiff > pstCmd->nDefectThreshold;
+
+    MARK_FUNCTION_END_TIME;
     pstRpy->enStatus = VisionStatus::OK;
     return pstRpy->enStatus;
 }

@@ -93,18 +93,20 @@ class ContourRecord : public Record {
     Int16 getThreshold() const;
     cv::Mat getTmpl() const;
     void setTmpl(const cv::Mat &matTmpl);
-    cv::Mat getMask() const;
-    void setMask(const cv::Mat &matMask);
+    void setContourMat(const cv::Mat &matContour);
+    void setContour ( const VectorOfVectorOfPoint &vecContours );
+    VectorOfVectorOfPoint getContour() const;
     String getTmplFileName() const;
-    String getMaskFileName() const;
+    String getContourFileName() const;
 protected:
-    Int16               _nThreshold;
-    cv::Mat             _matTmpl;
-    cv::Mat             _matMask;
+    Int16                   _nThreshold;
+    cv::Mat                 _matTmpl;
+    cv::Mat                 _matContour;
+    VectorOfVectorOfPoint   _vecContours;
 
-    String              _strKeyThreshold    = "Threshold";
-    String              _strTmplFileName    = "Tmpl.png";
-    String              _strMaskFileName    = "Mask.png";
+    String                  _strKeyThreshold    = "Threshold";
+    String                  _strTmplFileName    = "Tmpl.png";
+    String                  _strContourFileName = "Contour.png";
 };
 using ContourRecordPtr = std::shared_ptr<ContourRecord>;
 

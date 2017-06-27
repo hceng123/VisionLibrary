@@ -164,7 +164,7 @@ protected:
     static int _findMaxDiffPosInX( const cv::Mat &matInput, const cv::Mat &matGuassianDiffKernel, PR_DETECT_LINE_DIR enDirection );
     static int _findMaxDiffPosInY( const cv::Mat &matInput, const cv::Mat &matGuassianDiffKernel, PR_DETECT_LINE_DIR enDirection );
     static VisionStatus _caliperBySectionAvgGussianDiff(const cv::Mat &matInputImg, const cv::Rect &rectROI, PR_DETECT_LINE_DIR enDirection, VectorOfPoint &vecFitPoint, PR_CALIPER_RPY *const pstRpy);
-    static VisionStatus _writeContourRecord(PR_LRN_CONTOUR_RPY *const pstRpy, const cv::Mat &matTmpl, const cv::Mat &matInspMask);
+    static VisionStatus _writeContourRecord(PR_LRN_CONTOUR_RPY *const pstRpy, const cv::Mat &matTmpl, const cv::Mat &matContour);
 protected:
     static const int       _constMinHessian        = 300;
     static const int       _constOctave            = 4;

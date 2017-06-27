@@ -170,6 +170,8 @@ VisionStatus ContourRecord::load(cv::FileStorage &fs)
 
     fileNode = fs[_strKeyThreshold];
     cv::read(fileNode, _nThreshold, 0 );
+
+    //_matTmpl = cv::imread ( )
     return VisionStatus::OK;
 }
 
@@ -182,7 +184,7 @@ VisionStatus ContourRecord::save(const String& strFilePath) {
     write ( fs, _strKeyType, ToInt32 ( PR_RECORD_TYPE::CONTOUR ) );
     write ( fs, _strKeyThreshold, _nThreshold );
     cv::imwrite ( strFilePath + "/" + _strTmplFileName, _matTmpl );
-    cv::imwrite ( strFilePath + "/" + _strMaskFileName, _matMask );
+    cv::imwrite ( strFilePath + "/" + _strContourFileName, _matContour );
     
     fs.release();
     return VisionStatus::OK;
@@ -204,20 +206,24 @@ void ContourRecord::setTmpl( const cv::Mat &matTmpl ) {
     _matTmpl = matTmpl;
 }
 
-cv::Mat ContourRecord::getMask () const {
-    return _matMask;
+void ContourRecord::setContourMat(const cv::Mat &matContour) {
+    _matContour = matContour;
 }
 
-void ContourRecord::setMask ( const cv::Mat &matMask ) {
-    _matMask = matMask;
+void ContourRecord::setContour ( const VectorOfVectorOfPoint &vecContours ) {
+    _vecContours = vecContours;
+}
+
+VectorOfVectorOfPoint ContourRecord::getContour() const {
+    return _vecContours;
 }
 
 String ContourRecord::getTmplFileName() const {
     return _strTmplFileName;
 }
 
-String ContourRecord::getMaskFileName() const {
-    return _strMaskFileName;
+String ContourRecord::getContourFileName() const {
+    return _strContourFileName;
 }
 
 }
