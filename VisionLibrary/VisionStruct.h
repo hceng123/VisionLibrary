@@ -662,6 +662,11 @@ struct PR_INSP_CONTOUR_CMD {
 	cv::Rect2f              rectROI;
     Int32                   nRecordId;
     Int16       			nDefectThreshold;
+    float                   fMinDefectArea;
+    float                   fDefectInnerDepthTol;   // If the defect's inner depth exceed the tolerance, then it is a true defect.
+    float                   fDefectOuterDepthTol;   // If the defect's outer depth exceed the tolerance, then it is a true defect.
+    float                   fInnerMaskDepth;
+    float                   fOuterMaskDepth;
 };
 
 struct PR_INSP_CONTOUR_RPY {
