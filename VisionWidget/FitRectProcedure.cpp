@@ -113,8 +113,8 @@ int FitRectProcedure::fitRect(const std::string &imagePath)
 	PR_FIT_RECT_RPY stRpy;
 	VisionStatus visionStatus = PR_FitRect(&stCmd, &stRpy);
 	if (VisionStatus::OK != visionStatus)	{
-		PR_GET_ERROR_STR_RPY stErrStrRpy;
-        PR_GetErrorStr(visionStatus, &stErrStrRpy);
+		PR_GET_ERROR_INFO_RPY stErrStrRpy;
+        PR_GetErrorInfo(visionStatus, &stErrStrRpy);
         QMessageBox::critical(nullptr, "Fit Rect Fail", stErrStrRpy.achErrorStr, "Quit");
 	}
 	_matResult = stRpy.matResultImg;	

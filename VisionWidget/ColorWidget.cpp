@@ -54,8 +54,8 @@ void ColorWidget::on_PickColor()
     }
     else
     {
-        PR_GET_ERROR_STR_RPY stErrStrRpy;
-        PR_GetErrorStr( stRpy.enStatus, &stErrStrRpy );
+        PR_GET_ERROR_INFO_RPY stErrStrRpy;
+        PR_GetErrorInfo( stRpy.enStatus, &stErrStrRpy );
         QMessageBox::critical(nullptr, "Pick color failed", stErrStrRpy.achErrorStr, "Quit");
     }
 }

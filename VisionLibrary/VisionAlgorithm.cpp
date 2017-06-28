@@ -97,7 +97,7 @@ VisionAlgorithm::VisionAlgorithm()
 
     if ( pstRpy->vecKeyPoint.size() < _constLeastFeatures ) {
         WriteLog("detectAndCompute can not find feature.");
-        pstRpy->enStatus = VisionStatus::LEARN_FAIL;
+        pstRpy->enStatus = VisionStatus::LEARN_OBJECT_FAIL;
         FINISH_LOGCASE;
         return pstRpy->enStatus;
     }
@@ -843,14 +843,14 @@ int VisionAlgorithm::_autoThreshold(const cv::Mat &mat, const cv::Mat &matMask/*
     _findEdge(matHorizontalProjection, static_cast< Int32 >(size.width), nLeftEdge);
     _findEdgeReverse(matHorizontalProjection, static_cast< Int32 >(size.width), nRightEdge);
     if ( ( nRightEdge - nLeftEdge ) < ( size.width / 2 ) )
-        return VisionStatus::FIND_EDGE_FAIL;
+        return VisionStatus::FIND_DEVICE_EDGE_FAIL;
 
     _calculateVerticalProjection(matThreshold, matVerticalProjection);
     _expSmooth<float>(matVerticalProjection, matVerticalProjection, _constExpSmoothRatio);
     _findEdge(matHorizontalProjection, static_cast< Int32 >(size.height), nTopEdge);
     _findEdgeReverse(matHorizontalProjection, static_cast< Int32 >(size.height), nBottomEdge);
     if ( (nBottomEdge - nTopEdge ) < size.height / 2 )
-        return VisionStatus::FIND_EDGE_FAIL;
+        return VisionStatus::FIND_DEVICE_EDGE_FAIL;
 
     rectDeviceResult = cv::Rect ( cv::Point ( nLeftEdge, nTopEdge ), cv::Point ( nRightEdge, nBottomEdge ) );
     return VisionStatus::OK;
@@ -1079,15 +1079,15 @@ VisionStatus VisionAlgorithm::inspDevice(PR_INSP_DEVICE_CMD *pstInspDeviceCmd, P
     if (pstCmd->rectSrchWindow.x < 0 || pstCmd->rectSrchWindow.y < 0 ||
         pstCmd->rectSrchWindow.width <= 0 || pstCmd->rectSrchWindow.height <= 0 ||
         ( pstCmd->rectSrchWindow.x + pstCmd->rectSrchWindow.width ) > pstCmd->matInputImg.cols ||
-        ( pstCmd->rectSrchWindow.y + pstCmd->rectSrchWindow.height ) > pstCmd->matInputImg.rows )    {
+        ( pstCmd->rectSrchWindow.y + pstCmd->rectSrchWindow.height ) > pstCmd->matInputImg.rows ) {
         WriteLog("The search window is invalid");
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return pstRpy->enStatus;
     }
 
-    if ( pstCmd->matTmpl.rows > pstCmd->rectSrchWindow.height || pstCmd->matTmpl.cols > pstCmd->rectSrchWindow.width )    {
+    if ( pstCmd->matTmpl.rows > pstCmd->rectSrchWindow.height || pstCmd->matTmpl.cols > pstCmd->rectSrchWindow.width ) {
         WriteLog("The template is bigger than search window");
-        pstRpy->enStatus = VisionStatus::TMPL_IS_BIGGER_THAN_ROI;
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return pstRpy->enStatus;
     }
    
@@ -4867,8 +4867,7 @@ EXIT:
             point.y += pstCmd->rectROI.y;
         }
     }
-    cv::polylines( pstRpy->matResultImg, pstRpy->vecContours, true, _constBlueScalar, 2 );
-    
+    cv::polylines( pstRpy->matResultImg, pstRpy->vecContours, true, _constBlueScalar, 2 );    
 
     pstRpy->enStatus = VisionStatus::OK;
     return pstRpy->enStatus;
@@ -4941,8 +4940,12 @@ EXIT:
         return pstRpy->enStatus;
     }
 
+    pstRpy->enStatus = VisionStatus::OK;
+
     cv::Mat matCompareROI = cv::Mat ( matBlur, cv::Rect ( ToInt32 ( ptResult.x - matTmpl.cols / 2.f ), ToInt32 ( ptResult.y - matTmpl.rows / 2.f ), matTmpl.cols, matTmpl.rows ) );
-    cv::Mat matDiff = matTmpl - matCompareROI;
+    cv::Mat matDiff_1 = matTmpl - matCompareROI;
+    cv::Mat matDiff_2 = matCompareROI - matTmpl;
+    cv::Mat matDiff = matDiff_1 + matDiff_2;
     if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE )
         showImage ( "Original Diff Image", matDiff );
 
@@ -4952,7 +4955,7 @@ EXIT:
     if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE )
         showImage ( "Defect image", matDiff );
     // Filter contours
-    VectorOfVectorOfPoint vecContours, vecDefectContours;
+    VectorOfVectorOfPoint vecContours, vecDefectContour;
     cv::findContours ( matDiff, vecContours, cv::RETR_LIST, cv::CHAIN_APPROX_SIMPLE );
     const float DEFECT_ON_CONTOUR_RATIO = 1.2f;
     int index = 0;
@@ -4974,31 +4977,33 @@ EXIT:
 
             //Defect inside contour.
             if ( fInnerFarthestDist > 0 && fabs ( fInnerNearestDist ) < pstCmd->fInnerMaskDepth * DEFECT_ON_CONTOUR_RATIO && length > pstCmd->fDefectInnerLengthTol ) {
-                vecDefectContours.push_back ( contour );
-            }else if ( fOuterFarthestDist < 0 && fabs ( fOuterFarthestDist ) < pstCmd->fOuterMaskDepth * DEFECT_ON_CONTOUR_RATIO && length > pstCmd->fDefectOuterLengthTol ) {
-                vecDefectContours.push_back ( contour );
+                vecDefectContour.push_back ( contour );
+            }else 
+            if ( fOuterFarthestDist < 0 && fabs ( fOuterNearestDist ) < pstCmd->fOuterMaskDepth * DEFECT_ON_CONTOUR_RATIO && length > pstCmd->fDefectOuterLengthTol ) {
+                vecDefectContour.push_back ( contour );
             }
         }
         ++ index;
     }
 
-    if ( pstCmd->matInputImg.channels() > 1)
+    if ( pstCmd->matInputImg.channels() > 1 )
         pstRpy->matResultImg = pstCmd->matInputImg.clone();
     else
         cv::cvtColor ( pstCmd->matInputImg, pstRpy->matResultImg, CV_GRAY2BGR );
 
-    if ( ! vecDefectContours.empty() ) {
-        for ( auto &contour : vecDefectContours ) {
+    if ( ! vecDefectContour.empty() ) {
+        for ( auto &contour : vecDefectContour ) {
             for ( auto &point : contour ) {
                 point.x += pstCmd->rectROI.x;
                 point.y += pstCmd->rectROI.y;
             }
         }
-        cv::polylines ( pstRpy->matResultImg, vecDefectContours, true, _constRedScalar, 2 );
+        cv::polylines ( pstRpy->matResultImg, vecDefectContour, true, _constRedScalar, 2 );
+        pstRpy->vecDefectContour = vecDefectContour;
+        pstRpy->enStatus = VisionStatus::CONTOUR_DEFECT_REJECT;
     }
 
-    MARK_FUNCTION_END_TIME;
-    pstRpy->enStatus = VisionStatus::OK;
+    MARK_FUNCTION_END_TIME;    
     return pstRpy->enStatus;
 }
 
@@ -5022,8 +5027,8 @@ VectorOfPoint VisionAlgorithm::_findNearestContour(const cv::Point2f &ptInput, c
                                                               float               &fInnerNearestDist,
                                                               float               &fOuterFarthestDist,
                                                               float               &fOuterNearestDist) {
-    fOuterNearestDist = fInnerFarthestDist = std::numeric_limits<float>::min();
-    fInnerNearestDist = fOuterFarthestDist = std::numeric_limits<float>::max();
+    fOuterNearestDist = fInnerFarthestDist = - std::numeric_limits<float>::max();
+    fInnerNearestDist = fOuterFarthestDist =   std::numeric_limits<float>::max();
     for ( const auto &point : contourInput ) {
         auto distance = cv::pointPolygonTest ( contourTarget, point, true );
         // distance < 0 means the point is outside of the target contour.
@@ -5032,10 +5037,7 @@ VectorOfPoint VisionAlgorithm::_findNearestContour(const cv::Point2f &ptInput, c
                 fOuterFarthestDist = distance;
             if ( distance > fOuterNearestDist )
                 fOuterNearestDist = distance;
-        }
-
-        // distance < 0 means the point is inside of the target contour.
-        if ( distance > 0 ) {
+        }else if ( distance > 0 ) { // distance > 0 means the point is inside of the target contour.        
             if ( distance > fInnerFarthestDist )
                 fInnerFarthestDist = distance;
             if ( distance < fInnerNearestDist )

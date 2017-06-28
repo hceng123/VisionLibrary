@@ -362,9 +362,9 @@ struct PR_FIT_CIRCLE_RPY {
     cv::Mat                 matResultImg;
 };
 
-struct PR_GET_ERROR_STR_RPY {
+struct PR_GET_ERROR_INFO_RPY {
+    PR_STATUS_ERROR_LEVEL	enErrorLevel;
 	char				    achErrorStr[PR_MAX_ERR_STR_LEN];
-	PR_STATUS_ERROR_LEVEL	enErrorLevel;
 };
 
 struct PR_OCR_CMD {
@@ -671,6 +671,7 @@ struct PR_INSP_CONTOUR_CMD {
 
 struct PR_INSP_CONTOUR_RPY {
     VisionStatus            enStatus;
+    VectorOfVectorOfPoint   vecDefectContour;
     cv::Mat                 matResultImg;
 };
 
