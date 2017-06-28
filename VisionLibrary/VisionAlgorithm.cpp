@@ -742,8 +742,6 @@ int VisionAlgorithm::_autoThreshold(const cv::Mat &mat, const cv::Mat &matMask/*
     vevVecPoint.push_back ( vecPoint );
     cv::fillPoly ( matBlack, vevVecPoint, cv::Scalar::all ( PR_MAX_GRAY_LEVEL ) );
 
-    //cv::imshow ( "fill poly image", matBlack );
-    //cv::waitKey(0);
     cv::Mat matROI ( matBlack, rect );
     cv::Mat matOneRow, matOneCol;
     cv::reduce ( matROI, matOneRow, 0, cv::ReduceTypes::REDUCE_SUM, CV_32SC1 );
@@ -1240,7 +1238,7 @@ int VisionAlgorithm::_findBlob(const cv::Mat &mat, const cv::Mat &matRevs, PR_IN
 
         //VectorOfKeyPoint vecKeyPoint = keyPoints[0];
         for (const auto &vecKeyPoint : keyPoints) {
-            if (vecKeyPoint.size() > 0 && pInspRpy->n16NDefect < MAX_NUM_OF_DEFECT_RESULT)	{
+            if (vecKeyPoint.size() > 0 && pInspRpy->n16NDefect < MAX_NUM_OF_DEFECT_RESULT) {
                 for ( const auto &keyPoint : vecKeyPoint )
                 {
                     pInspRpy->astDefect[pInspRpy->n16NDefect].enType = PR_DEFECT_TYPE::BLOB;
@@ -1296,11 +1294,11 @@ int VisionAlgorithm::_findLine(const cv::Mat &mat, PR_INSP_SURFACE_CMD *const pI
 		cv::Mat color_dst;
 		cv::cvtColor(matSobelResult, color_dst, CV_GRAY2BGR);
 
-		vector<cv::Vec4i> lines;
-		HoughLinesP ( matSobelResult, lines, 1, CV_PI / 180, 30, stDefectCriteria.fLength, 10 );
+		std::vector<cv::Vec4i> lines;
+		cv::HoughLinesP ( matSobelResult, lines, 1, CV_PI / 180, 30, stDefectCriteria.fLength, 10 );
 
 		//_mergeLines ( )
-		vector<PR_Line2f> vecLines, vecLinesAfterMerge;
+		std::vector<PR_Line2f> vecLines, vecLinesAfterMerge;
 		for (size_t i = 0; i < lines.size(); i++)
 		{
 			cv::Point2f pt1 ( (float)lines[i][0], (float)lines[i][1] );
@@ -1318,10 +1316,8 @@ int VisionAlgorithm::_findLine(const cv::Mat &mat, PR_INSP_SURFACE_CMD *const pI
 				++pInspRpy->n16NDefect;
 			}
 		}
-        if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE )   {
-            cv::imshow("Detected Lines", color_dst);
-            cv::waitKey(0);
-        }
+        if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE )
+            showImage("Detected Lines", color_dst);
 	}
     MARK_FUNCTION_END_TIME;
 	return 0;
@@ -4827,7 +4823,7 @@ EXIT:
     if ( pstCmd->bAutoThreshold )
         pstRpy->nThreshold = _autoThreshold ( matBlur );
     cv::threshold ( matBlur, matThreshold, pstRpy->nThreshold, PR_MAX_GRAY_LEVEL, cv::ThresholdTypes::THRESH_BINARY );
-    _fillHoleByContour ( matThreshold, matThreshold, PR_OBJECT_ATTRIBUTE::BRIGHT );
+    //_fillHoleByContour ( matThreshold, matThreshold, PR_OBJECT_ATTRIBUTE::BRIGHT );
 
     VectorOfVectorOfPoint vecContours;
     cv::findContours ( matThreshold, vecContours, cv::RETR_LIST, cv::CHAIN_APPROX_SIMPLE );
@@ -4855,29 +4851,35 @@ EXIT:
         pstRpy->enStatus = VisionStatus::CAN_NOT_FIND_CONTOUR;
         return pstRpy->enStatus;
     }
-    pstRpy->matResultImg = pstCmd->matInputImg;
+
+    if ( pstCmd->matInputImg.channels() > 1)
+        pstRpy->matResultImg = pstCmd->matInputImg.clone();
+    else
+        cv::cvtColor ( pstCmd->matInputImg, pstRpy->matResultImg, CV_GRAY2BGR );
 
     cv::Mat matContour = cv::Mat::zeros ( matROI.size(), CV_8UC1 );
     cv::fillPoly ( matContour, pstRpy->vecContours, cv::Scalar::all ( PR_MAX_GRAY_LEVEL ) );
+    _writeContourRecord ( pstRpy, matBlur, matContour, pstRpy->vecContours );
 
-    for ( size_t index = 0; index < pstRpy->vecContours.size(); ++ index  ) {
+    for ( size_t index = 0; index < pstRpy->vecContours.size(); ++ index ) {
         for ( auto &point : pstRpy->vecContours[index] ) {
             point.x += pstCmd->rectROI.x;
             point.y += pstCmd->rectROI.y;
         }
     }
     cv::polylines( pstRpy->matResultImg, pstRpy->vecContours, true, _constBlueScalar, 2 );
-    _writeContourRecord ( pstRpy, matROI, matContour );
+    
 
     pstRpy->enStatus = VisionStatus::OK;
     return pstRpy->enStatus;
 }
 
-/*static*/ VisionStatus VisionAlgorithm::_writeContourRecord(PR_LRN_CONTOUR_RPY *const pstRpy, const cv::Mat &matTmpl, const cv::Mat &matContour) {
+/*static*/ VisionStatus VisionAlgorithm::_writeContourRecord(PR_LRN_CONTOUR_RPY *const pstRpy, const cv::Mat &matTmpl, const cv::Mat &matContour, const VectorOfVectorOfPoint &vecContours) {
     ContourRecordPtr ptrRecord = std::make_shared<ContourRecord>( PR_RECORD_TYPE::CONTOUR );
     ptrRecord->setThreshold ( pstRpy->nThreshold );
     ptrRecord->setTmpl ( matTmpl );
     ptrRecord->setContourMat ( matContour );
+    ptrRecord->setContour ( vecContours );
     RecordManager::getInstance()->add( ptrRecord, pstRpy->nRecordId );
     return VisionStatus::OK;
 }
@@ -4931,20 +4933,154 @@ EXIT:
     cv::Point2f ptResult;
     float fRotation = 0.f, fCorrelation = 0.f;
     cv::Mat matTmpl = ptrRecord->getTmpl();
-    pstRpy->enStatus = _matchTemplate ( matROI, matTmpl, PR_OBJECT_MOTION::TRANSLATION, ptResult, fRotation, fCorrelation );
+    if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE )
+        showImage ( "Template image", matTmpl );
+    pstRpy->enStatus = _matchTemplate ( matBlur, matTmpl, PR_OBJECT_MOTION::TRANSLATION, ptResult, fRotation, fCorrelation );
     if ( pstRpy->enStatus != VisionStatus::OK ) {
         WriteLog ( "Template match fail." );
         return pstRpy->enStatus;
     }
 
-    cv::Mat matCompareROI = cv::Mat ( matROI, cv::Rect ( ToInt32 ( ptResult.x - matTmpl.cols / 2.f ), ToInt32 ( ptResult.y - matTmpl.rows / 2.f ), matTmpl.cols, matTmpl.rows ) );
+    cv::Mat matCompareROI = cv::Mat ( matBlur, cv::Rect ( ToInt32 ( ptResult.x - matTmpl.cols / 2.f ), ToInt32 ( ptResult.y - matTmpl.rows / 2.f ), matTmpl.cols, matTmpl.rows ) );
     cv::Mat matDiff = matTmpl - matCompareROI;
+    if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE )
+        showImage ( "Original Diff Image", matDiff );
 
-    cv::Mat matDefect = matDiff > pstCmd->nDefectThreshold;
+    cv::Mat matContourMask = _generateContourMask ( matTmpl.size(), ptrRecord->getContour(), pstCmd->fInnerMaskDepth, pstCmd->fOuterMaskDepth );    
+    matDiff = matDiff > pstCmd->nDefectThreshold;
+    matDiff.setTo ( cv::Scalar(0), matContourMask );
+    if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE )
+        showImage ( "Defect image", matDiff );
+    // Filter contours
+    VectorOfVectorOfPoint vecContours, vecDefectContours;
+    cv::findContours ( matDiff, vecContours, cv::RETR_LIST, cv::CHAIN_APPROX_SIMPLE );
+    const float DEFECT_ON_CONTOUR_RATIO = 1.2f;
+    int index = 0;
+    for ( auto contour : vecContours ) {
+        auto area = cv::contourArea ( contour );
+        if ( area > pstCmd->fMinDefectArea ) {
+            cv::Moments moment = cv::moments( contour );
+            cv::Point2f ptCenter;
+            ptCenter.x = static_cast< float >(moment.m10 / moment.m00);
+            ptCenter.y = static_cast< float >(moment.m01 / moment.m00);
+
+            auto contourTarget = _findNearestContour ( ptCenter, ptrRecord->getContour() );
+
+            float fInnerFarthestDist, fInnerNearestDist, fOuterFarthestDist, fOuterNearestDist;
+            _getContourToContourDistance ( contour, contourTarget, fInnerFarthestDist, fInnerNearestDist, fOuterFarthestDist, fOuterNearestDist );
+
+            auto minRect = cv::minAreaRect ( contour );
+            auto length = minRect.size.width > minRect.size.height ?  minRect.size.width : minRect.size.height;
+
+            //Defect inside contour.
+            if ( fInnerFarthestDist > 0 && fabs ( fInnerNearestDist ) < pstCmd->fInnerMaskDepth * DEFECT_ON_CONTOUR_RATIO && length > pstCmd->fDefectInnerLengthTol ) {
+                vecDefectContours.push_back ( contour );
+            }else if ( fOuterFarthestDist < 0 && fabs ( fOuterFarthestDist ) < pstCmd->fOuterMaskDepth * DEFECT_ON_CONTOUR_RATIO && length > pstCmd->fDefectOuterLengthTol ) {
+                vecDefectContours.push_back ( contour );
+            }
+        }
+        ++ index;
+    }
+
+    if ( pstCmd->matInputImg.channels() > 1)
+        pstRpy->matResultImg = pstCmd->matInputImg.clone();
+    else
+        cv::cvtColor ( pstCmd->matInputImg, pstRpy->matResultImg, CV_GRAY2BGR );
+
+    if ( ! vecDefectContours.empty() ) {
+        for ( auto &contour : vecDefectContours ) {
+            for ( auto &point : contour ) {
+                point.x += pstCmd->rectROI.x;
+                point.y += pstCmd->rectROI.y;
+            }
+        }
+        cv::polylines ( pstRpy->matResultImg, vecDefectContours, true, _constRedScalar, 2 );
+    }
 
     MARK_FUNCTION_END_TIME;
     pstRpy->enStatus = VisionStatus::OK;
     return pstRpy->enStatus;
+}
+
+VectorOfPoint VisionAlgorithm::_findNearestContour(const cv::Point2f &ptInput, const VectorOfVectorOfPoint &vecContours) {
+    float fNearestDist = std::numeric_limits<float>::max();
+    VectorOfPoint contourResult;
+    cv::Point ptNearestPoint;
+    for ( const auto &contour : vecContours ) {        
+        float fDist = CalcUtils::calcPointToContourDist ( ptInput, contour, ptNearestPoint );
+        if ( fDist < fNearestDist ) {
+            contourResult = contour;
+            fNearestDist = fDist;
+        }
+    }
+    return contourResult;
+}
+
+/*static*/ void VisionAlgorithm::_getContourToContourDistance(const VectorOfPoint &contourInput,
+                                                              const VectorOfPoint &contourTarget,
+                                                              float               &fInnerFarthestDist,
+                                                              float               &fInnerNearestDist,
+                                                              float               &fOuterFarthestDist,
+                                                              float               &fOuterNearestDist) {
+    fOuterNearestDist = fInnerFarthestDist = std::numeric_limits<float>::min();
+    fInnerNearestDist = fOuterFarthestDist = std::numeric_limits<float>::max();
+    for ( const auto &point : contourInput ) {
+        auto distance = cv::pointPolygonTest ( contourTarget, point, true );
+        // distance < 0 means the point is outside of the target contour.
+        if ( distance < 0 ) {
+            if ( distance < fOuterFarthestDist )
+                fOuterFarthestDist = distance;
+            if ( distance > fOuterNearestDist )
+                fOuterNearestDist = distance;
+        }
+
+        // distance < 0 means the point is inside of the target contour.
+        if ( distance > 0 ) {
+            if ( distance > fInnerFarthestDist )
+                fInnerFarthestDist = distance;
+            if ( distance < fInnerNearestDist )
+                fInnerNearestDist = distance;
+        }
+    }
+}
+
+/*static*/ cv::Mat VisionAlgorithm::_generateContourMask ( const cv::Size &size, const VectorOfVectorOfPoint &vecContours, float fInnerDepth, float fOuterDepth ) {
+    cv::Mat matMask = cv::Mat::zeros ( size, CV_8UC1 );
+    if ( fabs ( fInnerDepth - fOuterDepth ) < 1 ) {
+        for ( int index = 0; index < (int) ( vecContours.size() ); ++ index )
+            cv::drawContours ( matMask, vecContours, index, cv::Scalar::all(255), 2.f * fOuterDepth );
+        return matMask;
+    }
+
+    cv::Mat matOuterMask = matMask.clone();
+    cv::Mat matInnerMask = matMask.clone();
+
+    {//Generate Outer Mask
+        for ( int index = 0; index < (int) ( vecContours.size() ); ++ index )
+            cv::drawContours ( matOuterMask, vecContours, index, cv::Scalar::all(255), 2.f * fOuterDepth );
+        cv::fillPoly ( matOuterMask, vecContours, cv::Scalar::all(0) );
+    }
+
+    {
+        cv::Mat matTmpOuterMask = matMask.clone();
+        for ( int index = 0; index < (int) ( vecContours.size() ); ++ index ) {
+            cv::drawContours ( matTmpOuterMask, vecContours, index, cv::Scalar::all(255), 2.f * fInnerDepth );
+            cv::drawContours ( matInnerMask, vecContours, index, cv::Scalar::all(255), 2.f * fInnerDepth );
+        }
+        cv::fillPoly ( matTmpOuterMask, vecContours, cv::Scalar::all(0) );
+        matInnerMask -= matTmpOuterMask;
+    }
+    matMask = matInnerMask + matOuterMask;
+
+    if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE ) {
+        cv::Mat matDisplay = cv::Mat::zeros ( size, CV_8UC3 );
+        matDisplay.setTo ( cv::Scalar ( 0, 255, 0 ), matOuterMask );
+        matDisplay.setTo ( cv::Scalar ( 255, 0, 0 ), matInnerMask );
+        for ( int index = 0; index < (int)(vecContours.size ()); ++index )
+            cv::drawContours ( matDisplay, vecContours, index, cv::Scalar ( 0, 0, 255 ), 1 );
+        showImage ( "Result Mask", matDisplay );
+    }
+    return matMask;
 }
 
 }

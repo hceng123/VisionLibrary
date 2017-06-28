@@ -169,5 +169,51 @@ namespace Vision
     cv::filter2D ( src, dst, ddepth, newKernel, newAnchor, delta, borderType );
 }
 
+float CalcUtils::calcPointToContourDist(const cv::Point &ptInput, const VectorOfPoint &contour, cv::Point &ptResult ) {
+    cv::Point ptNearestPoint1, ptNearestPoint2;
+    float fNearestDist1, fNearestDist2;
+    fNearestDist1 = fNearestDist2 = std::numeric_limits<float>::max();
+    for ( const auto &ptOfContour : contour ) {
+        auto distance = distanceOf2Point<int> ( ptOfContour, ptInput );
+        if ( distance < fNearestDist1 ) {
+            fNearestDist2 = fNearestDist1;
+            ptNearestPoint2 = ptNearestPoint1;
+
+            fNearestDist1 = distance;
+            ptNearestPoint1 = ptOfContour;            
+        }else if ( distance < fNearestDist2 ) {
+            fNearestDist2 = distance;
+            ptNearestPoint2 = ptOfContour;
+        }
+    }
+    float C = distanceOf2Point<int>( ptNearestPoint1, ptNearestPoint2 );
+    if ( C < 5 ) {
+        ptResult.x = ToInt32 ( ( ptNearestPoint1.x + ptNearestPoint2.x ) / 2.f + 0.5f );
+        ptResult.y = ToInt32 ( ( ptNearestPoint1.y + ptNearestPoint2.y ) / 2.f + 0.5f );
+        float fDistance = distanceOf2Point<int> ( ptInput, ptResult );
+        return fDistance;
+    }
+    float A = distanceOf2Point<int> ( ptInput, ptNearestPoint1 );
+    float B = distanceOf2Point<int> ( ptInput, ptNearestPoint2 );    
+    
+    float cosOfAngle = ( A*A + C*C - B*B ) / ( 2.f * A * C );
+    float angle = acos ( cosOfAngle );
+    float fDistance;
+    if ( angle <= CV_PI / 2 ) {
+        fDistance = A * sin ( angle );
+        float D = A * cos ( angle );
+        float DCRatio = D / C;
+        ptResult.x = ToInt32 ( ptNearestPoint1.x * (1.f - DCRatio) + ptNearestPoint2.x * DCRatio + 0.5f );
+        ptResult.y = ToInt32 ( ptNearestPoint1.y * (1.f - DCRatio) + ptNearestPoint2.y * DCRatio + 0.5f );
+    }else {
+        fDistance = A * ToFloat ( sin ( CV_PI - angle ) );
+        float D = A * ToFloat ( cos ( CV_PI - angle ) );
+        float DCRatio = D / C;
+        ptResult.x = ToInt32 ( ptNearestPoint1.x + D / C * ( ptNearestPoint1.x - ptNearestPoint2.x) );
+        ptResult.y = ToInt32 ( ptNearestPoint1.y + D / C * ( ptNearestPoint1.y - ptNearestPoint2.y) );
+    }    
+    return fDistance;
+}
+
 }
 }

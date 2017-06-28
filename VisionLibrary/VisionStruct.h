@@ -656,15 +656,15 @@ struct PR_LRN_CONTOUR_RPY {
 };
 
 struct PR_INSP_CONTOUR_CMD {
-    PR_INSP_CONTOUR_CMD() : nRecordId (0), nDefectThreshold(30) {}
+    PR_INSP_CONTOUR_CMD() : nRecordId (0), nDefectThreshold(30), fMinDefectArea (100.f), fDefectInnerLengthTol(20), fDefectOuterLengthTol(20), fInnerMaskDepth(5), fOuterMaskDepth(5) {}
     cv::Mat                 matInputImg;
 	cv::Mat                 matMask;
 	cv::Rect2f              rectROI;
     Int32                   nRecordId;
     Int16       			nDefectThreshold;
     float                   fMinDefectArea;
-    float                   fDefectInnerDepthTol;   // If the defect's inner depth exceed the tolerance, then it is a true defect.
-    float                   fDefectOuterDepthTol;   // If the defect's outer depth exceed the tolerance, then it is a true defect.
+    float                   fDefectInnerLengthTol;   // If the defect's inner length exceed the tolerance, then it is a true defect.
+    float                   fDefectOuterLengthTol;   // If the defect's outer length exceed the tolerance, then it is a true defect.
     float                   fInnerMaskDepth;
     float                   fOuterMaskDepth;
 };

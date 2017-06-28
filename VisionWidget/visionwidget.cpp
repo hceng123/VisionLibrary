@@ -574,8 +574,8 @@ void VisionWidget::on_btnInspContour_clicked() {
     PR_INSP_CONTOUR_CMD stCmd;
     PR_INSP_CONTOUR_RPY stRpy;
     stCmd.matInputImg = ui.visionView->getMat();
-    //stCmd.rectSrchWindow = ui.visionView->getSelectedWindow();
-    //stCmd.nRecordId = _nChipRecordId;
+    stCmd.rectROI = ui.visionView->getSelectedWindow();
+    stCmd.nRecordId = _nContourRecordId;
     PR_InspContour ( &stCmd, &stRpy );
     if ( VisionStatus::OK == stRpy.enStatus ) {
         ui.visionView->setMat ( VisionView::DISPLAY_SOURCE::RESULT, stRpy.matResultImg );
