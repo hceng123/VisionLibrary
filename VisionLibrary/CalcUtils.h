@@ -107,7 +107,7 @@ public:
         matPoint.at<_Tp>(1, 0) = ptInput.y;
         matPoint.at<_Tp>(2, 0) = 1.f;
         cv::Mat matResultImg = matWarp * matPoint;
-        return cv::Point_<_Tp> ( ToFloat ( matResultImg.at<_Tp>(0, 0) ),  ToFloat ( matResultImg.at<_Tp>(1, 0) ) );
+        return cv::Point_<_Tp> ( ToFloat ( matResultImg.at<_Tp>(0, 0) ), ToFloat ( matResultImg.at<_Tp>(1, 0) ) );
     }
 
     template<typename _Tp>
@@ -147,6 +147,7 @@ public:
     static PR_Line2f calcEndPointOfLine( const ListOfPoint &listPoint, bool bReversedFit, float fSlope, float fIntercept );
     static cv::Point2f lineIntersect(float fSlope1, float fIntercept1, float fSlope2, float fIntercept2);
     static float lineSlope(const PR_Line2f &line);
+    static void lineSlopeIntercept(const PR_Line2f &line, float &fSlope, float &fIntercept);
     static VectorOfPoint getCornerOfRotatedRect(const cv::RotatedRect &rotatedRect);
     static float guassianValue(float ssq, float x );
     static cv::Mat generateGuassinDiffKernel ( int nOneSideWidth, float ssq );

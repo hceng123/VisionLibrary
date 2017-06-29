@@ -1999,11 +1999,8 @@ VisionStatus VisionAlgorithm::srchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd
         return pstRpy->enStatus;
     }
     
-    if (pstCmd->rectROI.x < 0 || pstCmd->rectROI.y < 0 ||
-        pstCmd->rectROI.width <= 0 || pstCmd->rectROI.height <= 0 ||
-        ( pstCmd->rectROI.x + pstCmd->rectROI.width ) > pstCmd->matInputImg.cols ||
-        ( pstCmd->rectROI.y + pstCmd->rectROI.height ) > pstCmd->matInputImg.rows )    {
-        WriteLog("The OCR search range is invalid");
+    if (pstCmd->rectRotatedROI.size.width <= 0 || pstCmd->rectRotatedROI.size.height <= 0 ) {
+        WriteLog("The caliper ROI size is invalid.");
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return pstRpy->enStatus;
     }
@@ -2043,7 +2040,12 @@ VisionStatus VisionAlgorithm::srchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd
     MARK_FUNCTION_START_TIME;
     SETUP_LOGCASE(LogCaseCaliper);   
 
-    cv::Mat matROI ( pstCmd->matInputImg, pstCmd->rectROI );
+    cv::Mat matROI;
+    cv::Rect rectNewROI ( pstCmd->rectRotatedROI.center.x -  pstCmd->rectRotatedROI.size.width / 2.f, pstCmd->rectRotatedROI.center.y -  pstCmd->rectRotatedROI.size.height / 2.f,
+        pstCmd->rectRotatedROI.size.width, pstCmd->rectRotatedROI.size.height );
+    pstRpy->enStatus = _extractRotatedROI ( pstCmd->matInputImg, pstCmd->rectRotatedROI, matROI );
+    if ( pstRpy->enStatus != VisionStatus::OK )
+        return pstRpy->enStatus;
 
     cv::Mat matGray, matThreshold, matROIMask;
     if ( pstCmd->matInputImg.channels() > 1 )
@@ -2052,13 +2054,13 @@ VisionStatus VisionAlgorithm::srchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd
         matGray = matROI.clone();
 
     if ( ! pstCmd->matMask.empty() )
-        matROIMask = cv::Mat ( pstCmd->matMask, pstCmd->rectROI );
+         _extractRotatedROI ( pstCmd->matMask, pstCmd->rectRotatedROI, matROIMask );
 
     VectorOfPoint vecFitPoint;
     if ( pstCmd->enAlgorithm == PR_CALIPER_ALGORITHM::PROJECTION )
-        _caliperByProjection ( matGray, matROIMask, pstCmd->rectROI, pstCmd->enDetectDir, vecFitPoint, pstRpy );
+        _caliperByProjection ( matGray, matROIMask, rectNewROI, pstCmd->enDetectDir, vecFitPoint, pstRpy );
     else if ( pstCmd->enAlgorithm == PR_CALIPER_ALGORITHM::SECTION_AVG_GUASSIAN_DIFF )
-        _caliperBySectionAvgGussianDiff ( matGray, pstCmd->rectROI, pstCmd->enDetectDir, vecFitPoint, pstRpy );
+        _caliperBySectionAvgGussianDiff ( matGray, rectNewROI, pstCmd->enDetectDir, vecFitPoint, pstRpy );
     else {
         WriteLog("The caliper algorithm is invalid");
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
@@ -2073,24 +2075,24 @@ VisionStatus VisionAlgorithm::srchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd
     const int MIN_DIST_FROM_LINE_TO_ROI_EDGE = 5;
     if ( pstRpy->bReversedFit ) {
         if ( pstRpy->fSlope < 0.5 && 
-            (fabs ( pstRpy->stLine.pt1.x - pstCmd->rectROI.x ) <= MIN_DIST_FROM_LINE_TO_ROI_EDGE ||
-             fabs ( pstRpy->stLine.pt2.x - pstCmd->rectROI.x ) <= MIN_DIST_FROM_LINE_TO_ROI_EDGE ||
-             fabs ( pstRpy->stLine.pt1.x - pstCmd->rectROI.x - pstCmd->rectROI.width ) <= MIN_DIST_FROM_LINE_TO_ROI_EDGE ||
-             fabs ( pstRpy->stLine.pt2.x - pstCmd->rectROI.x - pstCmd->rectROI.width ) <= MIN_DIST_FROM_LINE_TO_ROI_EDGE ) ) {
+            (fabs ( pstRpy->stLine.pt1.x - rectNewROI.x ) <= MIN_DIST_FROM_LINE_TO_ROI_EDGE ||
+             fabs ( pstRpy->stLine.pt2.x - rectNewROI.x ) <= MIN_DIST_FROM_LINE_TO_ROI_EDGE ||
+             fabs ( pstRpy->stLine.pt1.x - rectNewROI.x - rectNewROI.width ) <= MIN_DIST_FROM_LINE_TO_ROI_EDGE ||
+             fabs ( pstRpy->stLine.pt2.x - rectNewROI.x - rectNewROI.width ) <= MIN_DIST_FROM_LINE_TO_ROI_EDGE ) ) {
             pstRpy->enStatus = VisionStatus::CALIPER_CAN_NOT_FIND_LINE;
             return pstRpy->enStatus;
         }
     }else {
         if ( pstRpy->fSlope < 0.5 && 
-            (fabs ( pstRpy->stLine.pt1.y - pstCmd->rectROI.y ) <= MIN_DIST_FROM_LINE_TO_ROI_EDGE ||
-             fabs ( pstRpy->stLine.pt2.y - pstCmd->rectROI.y ) <= MIN_DIST_FROM_LINE_TO_ROI_EDGE ||
-             fabs ( pstRpy->stLine.pt1.y - pstCmd->rectROI.y - pstCmd->rectROI.height ) <= MIN_DIST_FROM_LINE_TO_ROI_EDGE ||
-             fabs ( pstRpy->stLine.pt2.y - pstCmd->rectROI.y - pstCmd->rectROI.height ) <= MIN_DIST_FROM_LINE_TO_ROI_EDGE ) ) {
+            (fabs ( pstRpy->stLine.pt1.y - rectNewROI.y ) <= MIN_DIST_FROM_LINE_TO_ROI_EDGE ||
+             fabs ( pstRpy->stLine.pt2.y - rectNewROI.y ) <= MIN_DIST_FROM_LINE_TO_ROI_EDGE ||
+             fabs ( pstRpy->stLine.pt1.y - rectNewROI.y - rectNewROI.height ) <= MIN_DIST_FROM_LINE_TO_ROI_EDGE ||
+             fabs ( pstRpy->stLine.pt2.y - rectNewROI.y - rectNewROI.height ) <= MIN_DIST_FROM_LINE_TO_ROI_EDGE ) ) {
             pstRpy->enStatus = VisionStatus::CALIPER_CAN_NOT_FIND_LINE;
             return pstRpy->enStatus;
         }
     }
-    
+
     pstRpy->bLinerityCheckPass = false;
     if ( pstCmd->bCheckLinerity ) {
         int nInTolerancePointCount = 0;
@@ -2106,6 +2108,14 @@ VisionStatus VisionAlgorithm::srchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd
         pstRpy->bLinerityCheckPass = false;
     }
 
+    if ( fabs ( pstCmd->rectRotatedROI.angle ) > 0.1 ) {
+        cv::Mat matWarpBack = cv::getRotationMatrix2D ( pstCmd->rectRotatedROI.center, pstCmd->rectRotatedROI.angle, 1. );
+        pstRpy->stLine.pt1 = CalcUtils::warpPoint<float> ( matWarpBack, pstRpy->stLine.pt1 );
+        pstRpy->stLine.pt2 = CalcUtils::warpPoint<float> ( matWarpBack, pstRpy->stLine.pt2 );
+        pstRpy->bReversedFit = false;
+        CalcUtils::lineSlopeIntercept ( pstRpy->stLine, pstRpy->fSlope, pstRpy->fIntercept );
+    }  
+
     pstRpy->bAngleCheckPass = true;
     pstRpy->fAngle = ToFloat ( CalcUtils::calcSlopeDegree<float> ( pstRpy->stLine.pt1, pstRpy->stLine.pt2 ) );
     if ( pstCmd->bCheckAngle && fabs ( pstRpy->fAngle - pstCmd->fExpectedAngle ) < pstCmd->fAngleDiffTolerance )
@@ -2119,12 +2129,46 @@ VisionStatus VisionAlgorithm::srchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd
         cv::cvtColor ( pstCmd->matInputImg, pstRpy->matResultImg, CV_GRAY2BGR );
 
     cv::line( pstRpy->matResultImg, pstRpy->stLine.pt1, pstRpy->stLine.pt2, _constBlueScalar, 2 );
-    cv::rectangle ( pstRpy->matResultImg, pstCmd->rectROI, _constGreenScalar );
+    VectorOfVectorOfPoint vevVecPoints;
+    vevVecPoints.push_back ( CalcUtils::getCornerOfRotatedRect ( pstCmd->rectRotatedROI ) );
+    cv::polylines ( pstRpy->matResultImg, vevVecPoints, true, _constGreenScalar, 2 );
     pstRpy->enStatus = VisionStatus::OK;
 
     FINISH_LOGCASE;
     MARK_FUNCTION_END_TIME;
     return pstRpy->enStatus;
+}
+
+/*static*/ VisionStatus VisionAlgorithm::_extractRotatedROI(const cv::Mat &matInputImg, const cv::RotatedRect &rectRotatedROI, cv::Mat &matROI ) {
+    if ( fabs ( rectRotatedROI.angle ) < 0.1 ) {
+        cv::Rect rectBounding = rectRotatedROI.boundingRect();
+        if ( rectBounding.x < 0 || rectBounding.y < 0 ||
+            rectBounding.width <= 0 || rectBounding.height <= 0 ||
+            (rectBounding.x + rectBounding.width) > matInputImg.cols ||
+            (rectBounding.y + rectBounding.height) > matInputImg.rows ) {
+            char charrMsg[1000];
+            _snprintf ( charrMsg, sizeof(charrMsg), "The ROI rect (%d, %d, %d, %d) is invalid",
+                rectBounding.x,rectBounding.y, rectBounding.width, rectBounding.height );
+            WriteLog ( charrMsg );
+            return VisionStatus::INVALID_PARAM;
+        }
+        matROI = cv::Mat(matInputImg, rectBounding );
+        return VisionStatus::OK;
+    }
+    cv::Rect rectBounding = rectRotatedROI.boundingRect();
+    if ( rectBounding.x < 0 ) rectBounding.x = 0;
+    if ( rectBounding.y < 0 ) rectBounding.y = 0;
+    if ( ( rectBounding.x + rectBounding.width ) > matInputImg.cols )
+        rectBounding.width = matInputImg.cols - rectBounding.x;
+    if ( ( rectBounding.y + rectBounding.height ) > matInputImg.rows )
+        rectBounding.height = matInputImg.rows - rectBounding.y;
+
+    cv::Mat matBoundingROI ( matInputImg, rectBounding );
+    cv::Point ptNewCenter ( rectRotatedROI.center.x - rectBounding.x, rectRotatedROI.center.y - rectBounding.y ); 
+    cv::Mat matWarp = cv::getRotationMatrix2D ( ptNewCenter, - rectRotatedROI.angle, 1. );
+    cv::Mat matRotatedBoundingROI;
+	cv::warpAffine( matBoundingROI, matRotatedBoundingROI, matROI, rectRotatedROI.size );
+    return VisionStatus::OK;
 }
 
 /*static*/ VisionStatus VisionAlgorithm::_caliperByProjection(const cv::Mat &matGray, const cv::Mat &matROIMask, const cv::Rect &rectROI, PR_DETECT_LINE_DIR enDetectDir, VectorOfPoint &vecFitPoint, PR_CALIPER_RPY *const pstRpy) {

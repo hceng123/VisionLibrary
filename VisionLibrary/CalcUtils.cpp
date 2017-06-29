@@ -130,6 +130,11 @@ namespace Vision
     return ( line.pt2.y - line.pt1.y ) / ( line.pt2.x - line.pt1.x );
 }
 
+/*static*/ void CalcUtils::lineSlopeIntercept(const PR_Line2f &line, float &fSlope, float &fIntercept) {
+    fSlope = ( line.pt2.y - line.pt1.y ) / ( line.pt2.x - line.pt1.x );
+    fIntercept = line.pt2.y  - fSlope * line.pt2.x;
+}
+
 /*static*/ VectorOfPoint CalcUtils::getCornerOfRotatedRect(const cv::RotatedRect &rotatedRect) {
     VectorOfPoint vecPoint;
     cv::Point2f arrPt[4];

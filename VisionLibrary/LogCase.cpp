@@ -459,7 +459,8 @@ VisionStatus LogCaseCaliper::WriteCmd(const PR_CALIPER_CMD *const pCmd) {
     CSimpleIni ini(false, false, false);
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile( cmdRpyFilePath.c_str() );
-    ini.SetValue(_CMD_SECTION.c_str(), _strKeyROI.c_str(), _formatRect(pCmd->rectROI).c_str() );
+    ini.SetValue(_CMD_SECTION.c_str(), _strKeyRoiSize.c_str(), _formatSize(pCmd->rectRotatedROI.size).c_str() );
+    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyRoiAngle.c_str(), pCmd->rectRotatedROI.angle );
     ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyAlgorithm.c_str(), ToInt32( pCmd->enAlgorithm ) );
     ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyDir.c_str(), ToInt32( pCmd->enDetectDir ) );
     ini.SetBoolValue(_CMD_SECTION.c_str(), _strKeyCheckLinerity.c_str(), pCmd->bCheckLinerity);
@@ -507,7 +508,8 @@ VisionStatus LogCaseCaliper::RunLogCase() {
         stCmd.matMask = cv::imread( strMaskPath, cv::IMREAD_GRAYSCALE );
 
     stCmd.matInputImg = cv::imread( _strLogCasePath + _IMAGE_NAME );    
-    stCmd.rectROI = _parseRect ( ini.GetValue(_CMD_SECTION.c_str(), _strKeyROI.c_str(), _DEFAULT_RECT.c_str() ) );
+    stCmd.rectRotatedROI.size = _parseSize ( ini.GetValue(_CMD_SECTION.c_str(), _strKeyRoiSize.c_str(), _DEFAULT_SIZE.c_str() ) );
+    stCmd.rectRotatedROI.angle = ini.GetDoubleValue ( _CMD_SECTION.c_str(), _strKeyRoiAngle.c_str(), 0. );
     stCmd.enAlgorithm = static_cast<PR_CALIPER_ALGORITHM>(ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyAlgorithm.c_str(), 0 ) );
     stCmd.enDetectDir = static_cast<PR_DETECT_LINE_DIR>(ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyDir.c_str(), 0 ) );
     stCmd.bCheckLinerity = ini.GetBoolValue(_CMD_SECTION.c_str(), _strKeyCheckLinerity.c_str(), false );

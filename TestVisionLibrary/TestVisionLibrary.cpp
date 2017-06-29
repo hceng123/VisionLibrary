@@ -375,7 +375,7 @@ void TestFindEdge()
     PR_FIND_EDGE_CMD stCmd;
 
     stCmd.matInputImg = cv::imread("./data/Resisters1.png");
-    stCmd.enDirection = PR_EDGE_DIRECTION::ALL;
+    stCmd.enDirection = PR_EDGE_DIRECTION::BOTH;
     stCmd.bAutoThreshold = true;
     stCmd.nThreshold = 50;
     stCmd.fMinLength = 20;
@@ -384,7 +384,7 @@ void TestFindEdge()
     PR_FIND_EDGE_RPY stRpy;
     PR_FindEdge(&stCmd, &stRpy);
     
-    std::cout << "Find edge status " << stRpy.nStatus << std::endl; 
+    std::cout << "Find edge status " << ToInt32 ( stRpy.enStatus ) << std::endl; 
     std::cout << "Edge count = " << stRpy.nEdgeCount << std::endl;
 }
 
@@ -393,7 +393,7 @@ void TestFindEdge1()
     PR_FIND_EDGE_CMD stCmd;
 
     stCmd.matInputImg = cv::imread("./data/HalfCircle.png");
-    stCmd.enDirection = PR_EDGE_DIRECTION::ALL;
+    stCmd.enDirection = PR_EDGE_DIRECTION::BOTH;
     stCmd.bAutoThreshold = true;
     stCmd.nThreshold = 50;
     stCmd.fMinLength = 50;
@@ -402,7 +402,7 @@ void TestFindEdge1()
     PR_FIND_EDGE_RPY stRpy;
     PR_FindEdge(&stCmd, &stRpy);
     
-    std::cout << "Find edge status " << stRpy.nStatus << std::endl;
+    std::cout << "Find edge status " << ToInt32 ( stRpy.enStatus ) << std::endl;
     std::cout << "Edge count = " << stRpy.nEdgeCount << std::endl;
 }
 
@@ -442,7 +442,9 @@ void TestCaliper() {
     PR_CALIPER_RPY stRpy;
 
     stCmd.matInputImg = cv::imread("./data/F1-5-1_Threshold.png");
-    stCmd.rectROI = cv::Rect(1591, 970, 51, 90);
+    cv::Rect rectROI(1591, 970, 51, 90);
+    stCmd.rectRotatedROI.center = cv::Point ( rectROI.x + rectROI.width / 2, rectROI.y + rectROI.height / 2 );
+    stCmd.rectRotatedROI.size = rectROI.size();
     stCmd.enDetectDir = PR_DETECT_LINE_DIR::MAX_TO_MIN;
     stCmd.bCheckLinerity = true;
     stCmd.fPointMaxOffset = 5;

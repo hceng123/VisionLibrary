@@ -173,6 +173,7 @@ protected:
         float &fOuterFarthestDist,
         float &fOuterNearestDist);
     static cv::Mat _generateContourMask ( const cv::Size &size, const VectorOfVectorOfPoint &vecContours, float fInnerDepth, float fOuterDepth );
+    static VisionStatus _extractRotatedROI(const cv::Mat &matInputImg, const cv::RotatedRect &rectRotatedROI, cv::Mat &matROI );
 protected:
     static const int       _constMinHessian        = 300;
     static const int       _constOctave            = 4;

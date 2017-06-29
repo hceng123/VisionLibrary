@@ -260,7 +260,7 @@ struct PR_CALIPER_CMD {
         fAngleDiffTolerance (0.f) {}
     cv::Mat                 matInputImg;
     cv::Mat                 matMask;
-    cv::Rect                rectROI;
+    cv::RotatedRect         rectRotatedROI;
     PR_CALIPER_ALGORITHM    enAlgorithm;
     PR_DETECT_LINE_DIR      enDetectDir;
     bool                    bCheckLinerity;
@@ -281,7 +281,7 @@ struct PR_CALIPER_RPY {
     float                   fLinerity;
     bool                    bAngleCheckPass;
     float                   fAngle;
-    cv::Mat                 matResultImg;    
+    cv::Mat                 matResultImg;
 };
 
 struct PR_FIT_PARALLEL_LINE_CMD {
