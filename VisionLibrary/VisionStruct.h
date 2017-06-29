@@ -659,7 +659,7 @@ struct PR_INSP_CONTOUR_CMD {
     PR_INSP_CONTOUR_CMD() : nRecordId (0), nDefectThreshold(30), fMinDefectArea (100.f), fDefectInnerLengthTol(20), fDefectOuterLengthTol(20), fInnerMaskDepth(5), fOuterMaskDepth(5) {}
     cv::Mat                 matInputImg;
 	cv::Mat                 matMask;
-	cv::Rect2f              rectROI;
+	cv::Rect                rectROI;
     Int32                   nRecordId;
     Int16       			nDefectThreshold;
     float                   fMinDefectArea;

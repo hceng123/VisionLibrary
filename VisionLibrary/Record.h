@@ -15,7 +15,7 @@ class Record
 {
 public:
     Record(PR_RECORD_TYPE enType):_enType(enType)   {}
-    virtual VisionStatus load(cv::FileStorage &fileStorage) = 0;
+    virtual VisionStatus load(cv::FileStorage &fileStorage, const String& strFilePath = "") = 0;
     virtual VisionStatus save(const String& strFilePath) = 0;
     virtual PR_RECORD_TYPE getType() { return _enType;};    
 protected:
@@ -28,7 +28,7 @@ class ObjRecord : public Record
 {
 public:
     ObjRecord(PR_RECORD_TYPE enType):Record(enType)   {}
-    virtual VisionStatus load(cv::FileStorage &fileStorage) override;
+    virtual VisionStatus load(cv::FileStorage &fileStorage, const String& strFilePath = "") override;
     virtual VisionStatus save(const String& strFilePath) override;
     void setModelKeyPoint(const VectorOfKeyPoint vecModelKeyPoint);
     const VectorOfKeyPoint& getModelKeyPoint() const;
@@ -47,7 +47,7 @@ class DeviceRecord : public Record
 {
 public:
     DeviceRecord(PR_RECORD_TYPE enType):Record(enType)   {}
-    virtual VisionStatus load(cv::FileStorage &fileStorage) override;
+    virtual VisionStatus load(cv::FileStorage &fileStorage, const String& strFilePath = "") override;
     virtual VisionStatus save(const String& strFilePath) override;
     void setSize(const cv::Size2f &size);
     const cv::Size2f& getSize() const;
@@ -63,7 +63,7 @@ class ChipRecord : public Record
 {
 public:
     ChipRecord(PR_RECORD_TYPE enType) : Record(enType)   {}
-    virtual VisionStatus load(cv::FileStorage &fileStorage) override;
+    virtual VisionStatus load(cv::FileStorage &fileStorage, const String& strFilePath = "") override;
     virtual VisionStatus save(const String& strFilePath) override;
     void setInspMode ( PR_INSP_CHIP_MODE enInspMode );
     PR_INSP_CHIP_MODE getInspMode() const;
@@ -85,7 +85,7 @@ using ChipRecordPtr = std::shared_ptr<ChipRecord>;
 class ContourRecord : public Record {
     public:
     ContourRecord(PR_RECORD_TYPE enType) : Record(enType)   {}
-    virtual VisionStatus load(cv::FileStorage &fileStorage) override;
+    virtual VisionStatus load(cv::FileStorage &fileStorage, const String& strFilePath = "") override;
     virtual VisionStatus save(const String& strFilePath) override;
     void setSize(const cv::Size2f &size);
     const cv::Size2f& getSize() const;

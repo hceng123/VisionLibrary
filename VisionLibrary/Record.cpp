@@ -10,7 +10,7 @@ namespace Vision
 /******************************************
 * Template Record *
 ******************************************/
-VisionStatus ObjRecord::load(cv::FileStorage &fs)
+VisionStatus ObjRecord::load(cv::FileStorage &fs, const String& strFilePath)
 {
     cv::FileNode fileNode = fs["keypoints"];
     cv::read(fileNode, _vecModelKeyPoint);
@@ -64,7 +64,7 @@ cv::Point2f ObjRecord::getObjCenter() const {
 /******************************************
 * Device Record *
 ******************************************/
-VisionStatus DeviceRecord::load(cv::FileStorage &fs)
+VisionStatus DeviceRecord::load(cv::FileStorage &fs, const String& strFilePath)
 {
     cv::FileNode fileNode = fs["size"];
     cv::read<float>(fileNode, _size, cv::Size2f(0, 0));
@@ -108,7 +108,7 @@ Int16 DeviceRecord::getElectrodeThreshold() const
 /******************************************
 * Chip Record *
 ******************************************/
-VisionStatus ChipRecord::load(cv::FileStorage &fs)
+VisionStatus ChipRecord::load(cv::FileStorage &fs, const String& strFilePath)
 {
     cv::FileNode fileNode = fs[_strKeySize];
     cv::read<float>(fileNode, _size, cv::Size2f(0, 0) );
@@ -164,14 +164,30 @@ Int16 ChipRecord::getThreshold() const {
 /******************************************
 * Contour Record *
 ******************************************/
-VisionStatus ContourRecord::load(cv::FileStorage &fs)
+VisionStatus ContourRecord::load(cv::FileStorage &fs, const String& strFilePath)
 {
     cv::FileNode fileNode;
 
     fileNode = fs[_strKeyThreshold];
     cv::read(fileNode, _nThreshold, 0 );
 
-    //_matTmpl = cv::imread ( )
+    _matTmpl = cv::imread ( strFilePath + "/" + _strTmplFileName, cv::IMREAD_GRAYSCALE );
+    if ( _matTmpl.empty() )
+        return VisionStatus::INVALID_RECORD_FILE;
+
+    _matContour = cv::imread ( strFilePath + "/" + _strContourFileName, cv::IMREAD_GRAYSCALE );
+    if ( _matContour.empty() )
+        return VisionStatus::INVALID_RECORD_FILE;
+
+    VectorOfVectorOfPoint vecContours;
+    cv::findContours ( _matContour, vecContours, cv::RETR_LIST, cv::CHAIN_APPROX_SIMPLE );
+
+    // Filter contours
+    for ( auto contour : vecContours ) {
+        auto area = cv::contourArea ( contour );
+        if ( area > 1000 )
+            _vecContours.push_back ( contour );
+    }
     return VisionStatus::OK;
 }
 

@@ -4830,7 +4830,6 @@ EXIT:
 
     cv::Mat matDraw = matROI.clone();
     // Filter contours
-    std::vector<AOI_COUNTOUR> vecAoiContour;
     int index = 0;
     for ( auto contour : vecContours ) {
         auto area = cv::contourArea ( contour );
@@ -4857,9 +4856,7 @@ EXIT:
     else
         cv::cvtColor ( pstCmd->matInputImg, pstRpy->matResultImg, CV_GRAY2BGR );
 
-    cv::Mat matContour = cv::Mat::zeros ( matROI.size(), CV_8UC1 );
-    cv::fillPoly ( matContour, pstRpy->vecContours, cv::Scalar::all ( PR_MAX_GRAY_LEVEL ) );
-    _writeContourRecord ( pstRpy, matBlur, matContour, pstRpy->vecContours );
+    _writeContourRecord ( pstRpy, matBlur, matThreshold, pstRpy->vecContours );
 
     for ( size_t index = 0; index < pstRpy->vecContours.size(); ++ index ) {
         for ( auto &point : pstRpy->vecContours[index] ) {
@@ -4867,7 +4864,7 @@ EXIT:
             point.y += pstCmd->rectROI.y;
         }
     }
-    cv::polylines( pstRpy->matResultImg, pstRpy->vecContours, true, _constBlueScalar, 2 );    
+    cv::polylines( pstRpy->matResultImg, pstRpy->vecContours, true, _constBlueScalar, 2 );
 
     pstRpy->enStatus = VisionStatus::OK;
     return pstRpy->enStatus;
@@ -5030,14 +5027,14 @@ VectorOfPoint VisionAlgorithm::_findNearestContour(const cv::Point2f &ptInput, c
     fOuterNearestDist = fInnerFarthestDist = - std::numeric_limits<float>::max();
     fInnerNearestDist = fOuterFarthestDist =   std::numeric_limits<float>::max();
     for ( const auto &point : contourInput ) {
-        auto distance = cv::pointPolygonTest ( contourTarget, point, true );
+        auto distance = ToFloat ( cv::pointPolygonTest ( contourTarget, point, true ) );
         // distance < 0 means the point is outside of the target contour.
         if ( distance < 0 ) {
             if ( distance < fOuterFarthestDist )
                 fOuterFarthestDist = distance;
             if ( distance > fOuterNearestDist )
                 fOuterNearestDist = distance;
-        }else if ( distance > 0 ) { // distance > 0 means the point is inside of the target contour.        
+        }else if ( distance > 0 ) { // distance > 0 means the point is inside of the target contour.
             if ( distance > fInnerFarthestDist )
                 fInnerFarthestDist = distance;
             if ( distance < fInnerNearestDist )
@@ -5050,7 +5047,7 @@ VectorOfPoint VisionAlgorithm::_findNearestContour(const cv::Point2f &ptInput, c
     cv::Mat matMask = cv::Mat::zeros ( size, CV_8UC1 );
     if ( fabs ( fInnerDepth - fOuterDepth ) < 1 ) {
         for ( int index = 0; index < (int) ( vecContours.size() ); ++ index )
-            cv::drawContours ( matMask, vecContours, index, cv::Scalar::all(255), 2.f * fOuterDepth );
+            cv::drawContours ( matMask, vecContours, index, cv::Scalar(PR_MAX_GRAY_LEVEL), ToInt32 ( 2.f * fOuterDepth ) );
         return matMask;
     }
 
@@ -5059,15 +5056,15 @@ VectorOfPoint VisionAlgorithm::_findNearestContour(const cv::Point2f &ptInput, c
 
     {//Generate Outer Mask
         for ( int index = 0; index < (int) ( vecContours.size() ); ++ index )
-            cv::drawContours ( matOuterMask, vecContours, index, cv::Scalar::all(255), 2.f * fOuterDepth );
+            cv::drawContours ( matOuterMask, vecContours, index, cv::Scalar(PR_MAX_GRAY_LEVEL), ToInt32 ( 2.f * fOuterDepth ) );
         cv::fillPoly ( matOuterMask, vecContours, cv::Scalar::all(0) );
     }
 
     {
         cv::Mat matTmpOuterMask = matMask.clone();
         for ( int index = 0; index < (int) ( vecContours.size() ); ++ index ) {
-            cv::drawContours ( matTmpOuterMask, vecContours, index, cv::Scalar::all(255), 2.f * fInnerDepth );
-            cv::drawContours ( matInnerMask, vecContours, index, cv::Scalar::all(255), 2.f * fInnerDepth );
+            cv::drawContours ( matTmpOuterMask, vecContours, index, cv::Scalar(PR_MAX_GRAY_LEVEL), ToInt32 ( 2.f * fInnerDepth ) );
+            cv::drawContours ( matInnerMask, vecContours, index, cv::Scalar(PR_MAX_GRAY_LEVEL), ToInt32 ( 2.f * fInnerDepth ) );
         }
         cv::fillPoly ( matTmpOuterMask, vecContours, cv::Scalar::all(0) );
         matInnerMask -= matTmpOuterMask;
@@ -5076,10 +5073,10 @@ VectorOfPoint VisionAlgorithm::_findNearestContour(const cv::Point2f &ptInput, c
 
     if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE ) {
         cv::Mat matDisplay = cv::Mat::zeros ( size, CV_8UC3 );
-        matDisplay.setTo ( cv::Scalar ( 0, 255, 0 ), matOuterMask );
-        matDisplay.setTo ( cv::Scalar ( 255, 0, 0 ), matInnerMask );
+        matDisplay.setTo ( _constGreenScalar, matOuterMask );
+        matDisplay.setTo ( _constBlueScalar,  matInnerMask );
         for ( int index = 0; index < (int)(vecContours.size ()); ++index )
-            cv::drawContours ( matDisplay, vecContours, index, cv::Scalar ( 0, 0, 255 ), 1 );
+            cv::drawContours ( matDisplay, vecContours, index, _constRedScalar, 1 );
         showImage ( "Result Mask", matDisplay );
     }
     return matMask;

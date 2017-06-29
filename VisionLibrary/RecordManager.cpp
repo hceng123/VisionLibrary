@@ -68,12 +68,15 @@ VisionStatus RecordManager::load() {
         bfs::create_directories ( strRecordDir );
         return VisionStatus::OK;
     }
-    Int32Vector vecRecord;
+    VisionStatus enStatus = VisionStatus::OK;
     for ( auto &p : bfs::directory_iterator ( strRecordDir ) ) {
-        if ( bfs::is_regular_file ( p.status() ) )
-            _loadOneRecord ( p.path().string() );        
+        if ( bfs::is_regular_file ( p.status() ) ) {
+            enStatus = _loadOneRecord ( p.path().string() );
+            if ( enStatus != VisionStatus::OK )
+                return enStatus;
+        }
     }
-    return VisionStatus::OK;
+    return enStatus;
 }
 
 VisionStatus RecordManager::_loadOneRecord(const String &strFilePath) {
@@ -102,7 +105,7 @@ VisionStatus RecordManager::_loadOneRecord(const String &strFilePath) {
             FileUtils::RemoveAll ( strTargetDir );
             return VisionStatus::INVALID_RECORD_TYPE;
         }
-        pRecord->load ( fs );
+        pRecord->load ( fs, strTargetDir );
         fs.release();        
         _mapRecord.insert(PairRecord(nRecordId, pRecord));
         FileUtils::RemoveAll ( strTargetDir );
@@ -119,6 +122,9 @@ RecordPtr RecordManager::_createRecordPtr(Int32 recordType) {
         break;
     case PR_RECORD_TYPE::CHIP:
         return std::make_shared<ChipRecord>( enRecordType );
+        break;
+    case PR_RECORD_TYPE::CONTOUR:
+        return std::make_shared<ContourRecord> ( enRecordType );
         break;
     default:
         return nullptr;
