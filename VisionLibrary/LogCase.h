@@ -175,6 +175,7 @@ public:
     virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
     static String StaticGetFolderPrefix();
 private:
+    const String _strKeyRoiCenter       = "RoiCenter";
     const String _strKeyRoiSize         = "RoiSize";
     const String _strKeyRoiAngle        = "RoiAngle";
     const String _strKeyAlgorithm       = "Algorithm";

@@ -2109,9 +2109,9 @@ VisionStatus VisionAlgorithm::srchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd
     }
 
     if ( fabs ( pstCmd->rectRotatedROI.angle ) > 0.1 ) {
-        cv::Mat matWarpBack = cv::getRotationMatrix2D ( pstCmd->rectRotatedROI.center, pstCmd->rectRotatedROI.angle, 1. );
-        pstRpy->stLine.pt1 = CalcUtils::warpPoint<float> ( matWarpBack, pstRpy->stLine.pt1 );
-        pstRpy->stLine.pt2 = CalcUtils::warpPoint<float> ( matWarpBack, pstRpy->stLine.pt2 );
+        cv::Mat matWarpBack = cv::getRotationMatrix2D ( pstCmd->rectRotatedROI.center, -pstCmd->rectRotatedROI.angle, 1. );
+        pstRpy->stLine.pt1 = CalcUtils::warpPoint<double> ( matWarpBack, pstRpy->stLine.pt1 );
+        pstRpy->stLine.pt2 = CalcUtils::warpPoint<double> ( matWarpBack, pstRpy->stLine.pt2 );
         pstRpy->bReversedFit = false;
         CalcUtils::lineSlopeIntercept ( pstRpy->stLine, pstRpy->fSlope, pstRpy->fIntercept );
     }  
@@ -2155,7 +2155,7 @@ VisionStatus VisionAlgorithm::srchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd
         matROI = cv::Mat(matInputImg, rectBounding );
         return VisionStatus::OK;
     }
-    cv::Rect rectBounding = rectRotatedROI.boundingRect();
+    auto rectBounding = rectRotatedROI.boundingRect();
     if ( rectBounding.x < 0 ) rectBounding.x = 0;
     if ( rectBounding.y < 0 ) rectBounding.y = 0;
     if ( ( rectBounding.x + rectBounding.width ) > matInputImg.cols )
@@ -2164,10 +2164,29 @@ VisionStatus VisionAlgorithm::srchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd
         rectBounding.height = matInputImg.rows - rectBounding.y;
 
     cv::Mat matBoundingROI ( matInputImg, rectBounding );
-    cv::Point ptNewCenter ( rectRotatedROI.center.x - rectBounding.x, rectRotatedROI.center.y - rectBounding.y ); 
-    cv::Mat matWarp = cv::getRotationMatrix2D ( ptNewCenter, - rectRotatedROI.angle, 1. );
-    cv::Mat matRotatedBoundingROI;
-	cv::warpAffine( matBoundingROI, matRotatedBoundingROI, matROI, rectRotatedROI.size );
+    cv::Point2f ptNewCenter ( rectRotatedROI.center.x - rectBounding.x, rectRotatedROI.center.y - rectBounding.y ); 
+    cv::Mat matWarp = cv::getRotationMatrix2D ( ptNewCenter, rectRotatedROI.angle, 1. );
+    auto vecVec = CalcUtils::matToVector<double>(matWarp);
+    auto rectWarppedPoly = CalcUtils::warpRect<double>( matWarp, rectBounding );
+    auto rectWarppedPolyBounding = cv::boundingRect ( rectWarppedPoly );
+    cv::Mat matWarpResult;
+	cv::warpAffine( matBoundingROI, matWarpResult, matWarp, rectWarppedPolyBounding.size() );
+    auto ptWarppedCenter = CalcUtils::warpPoint<double> ( matWarp, ptNewCenter );
+    cv::Rect rectSubROI( ptWarppedCenter.x - rectRotatedROI.size.width / 2.f, ptWarppedCenter.y - rectRotatedROI.size.height / 2.f,
+        rectRotatedROI.size.width, rectRotatedROI.size.height );
+    if ( rectSubROI.x < 0 ) rectSubROI.x = 0;
+    if ( rectSubROI.y < 0 ) rectSubROI.y = 0;
+    if ( ( rectSubROI.x + rectSubROI.width ) > matWarpResult.cols )
+        rectSubROI.width = matWarpResult.cols - rectSubROI.x;
+    if ( ( rectSubROI.y + rectSubROI.height ) > matWarpResult.rows )
+        rectSubROI.height = matWarpResult.rows - rectSubROI.y;
+    matROI = cv::Mat( matWarpResult, rectSubROI );
+    if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE ) {
+        showImage("Bouding ROI", matBoundingROI );
+        showImage("Warpped ROI", matWarpResult );
+        showImage("Result ROI", matROI );
+        //cv::waitKey ( 0 );
+    }    
     return VisionStatus::OK;
 }
 
