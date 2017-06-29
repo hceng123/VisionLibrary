@@ -769,7 +769,7 @@ void VisionView::setBinaryThreshold(int nThreshold, bool bReverseThres)
 void VisionView::getFitCircleRange(cv::Point &ptCtr, float &fInnterRadius, float &fOutterRadius) const
 {
     auto displayWidth = this->size().width();
-    auto displayHeight = this->size().height();    
+    auto displayHeight = this->size().height();
     
     cv::Mat mat = _matArray[ToInt32(_enDisplaySource)];
     ptCtr.x = ( _ptCircleCtr.x - ( displayWidth  - mat.cols * _fZoomFactor ) / 2 ) / _fZoomFactor;
