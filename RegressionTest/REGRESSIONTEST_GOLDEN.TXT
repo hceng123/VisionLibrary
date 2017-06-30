@@ -265,11 +265,11 @@ CALIPER GUASSIAN DIFF REGRESSION TEST #1 STARTING
 -------------------------------------------------
 Caliper status 0
 ReversedFit = 1
-Line slope = 0.02, intercept = 414.44
-Line coordinate: (429.36, 745.00), (439.78, 1265.00)
-Linerity  = 90.48
+Line slope = 0.01, intercept = 415.80
+Line coordinate: (425.55, 732.00), (432.64, 1264.00)
+Linerity  = 100.00
 Linerity check pass: 1
-Angle  = 88.85
+Angle  = 89.24
 Angle check pass: 1
 
 -------------------------------------------------
@@ -277,11 +277,11 @@ CALIPER GUASSIAN DIFF REGRESSION TEST #2 STARTING
 -------------------------------------------------
 Caliper status 0
 ReversedFit = 1
-Line slope = 0.02, intercept = 774.07
-Line coordinate: (786.26, 760.00), (796.21, 1380.00)
+Line slope = 0.02, intercept = 763.10
+Line coordinate: (781.25, 744.00), (796.67, 1376.00)
 Linerity  = 100.00
 Linerity check pass: 1
-Angle  = 89.08
+Angle  = 88.60
 Angle check pass: 1
 
 -------------------------------------------------
@@ -289,8 +289,8 @@ CALIPER GUASSIAN DIFF REGRESSION TEST #3 STARTING
 -------------------------------------------------
 Caliper status 0
 ReversedFit = 0
-Line slope = -0.01, intercept = 1327.58
-Line coordinate: (1004.00, 1318.59), (1213.00, 1316.71)
+Line slope = -0.01, intercept = 1327.45
+Line coordinate: (998.00, 1318.62), (1213.00, 1316.72)
 Linerity  = 100.00
 Linerity check pass: 1
 Angle  = -0.51
@@ -301,11 +301,11 @@ CALIPER GUASSIAN DIFF REGRESSION TEST #4 STARTING
 -------------------------------------------------
 Caliper status 0
 ReversedFit = 0
-Line slope = -0.01, intercept = 1870.23
-Line coordinate: (957.00, 1860.71), (1137.00, 1858.91)
+Line slope = -0.01, intercept = 1870.44
+Line coordinate: (952.00, 1860.77), (1140.00, 1858.86)
 Linerity  = 95.24
 Linerity check pass: 1
-Angle  = -0.57
+Angle  = -0.58
 Angle check pass: 1
 
 -----------------------------------------------
@@ -313,11 +313,11 @@ CALIPER ROTATED ROI REGRESSION TEST #1 STARTING
 -----------------------------------------------
 Caliper status 0
 ReversedFit = 0
-Line slope = -2.24, intercept = 315.10
-Line coordinate: (67.10, 164.50), (103.81, 82.09)
+Line slope = -2.25, intercept = 315.48
+Line coordinate: (65.91, 167.26), (103.79, 82.08)
 Linerity  = 100.00
 Linerity check pass: 1
-Angle  = -65.99
+Angle  = -66.02
 Angle check pass: 1
 
 -----------------------------------------------

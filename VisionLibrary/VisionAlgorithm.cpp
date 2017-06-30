@@ -2173,8 +2173,7 @@ VisionStatus VisionAlgorithm::srchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd
     auto rectWarppedPolyBounding = cv::boundingRect ( rectWarppedPoly );
     cv::Mat matWarpResult;
 	cv::warpAffine( matBoundingROI, matWarpResult, matWarp, rectWarppedPolyBounding.size() );
-    auto ptWarppedCenter = CalcUtils::warpPoint<double> ( matWarp, ptNewCenter );
-    cv::Rect2f rectSubROI( ptWarppedCenter.x - rectRotatedROI.size.width / 2.f, ptWarppedCenter.y - rectRotatedROI.size.height / 2.f,
+    cv::Rect2f rectSubROI( ptNewCenter.x - rectRotatedROI.size.width / 2.f, ptNewCenter.y - rectRotatedROI.size.height / 2.f,
         rectRotatedROI.size.width, rectRotatedROI.size.height );
     if ( rectSubROI.x < 0 ) rectSubROI.x = 0;
     if ( rectSubROI.y < 0 ) rectSubROI.y = 0;
@@ -2336,7 +2335,8 @@ VisionStatus VisionAlgorithm::srchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd
 
 VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &matInputImg, const cv::Rect &rectROI, PR_CALIPER_DIR enDirection, VectorOfPoint &vecFitPoint, PR_CALIPER_RPY *const pstRpy) {
     const int DIVIDE_SECTION = 20;
-    bool bDivideInX = true;
+    const int GUASSIAN_DIFF_WIDTH = 2;
+    const float GUASSIAN_KERNEL_SSQ = 1.f;
     if ( matInputImg.rows > matInputImg.cols )
         pstRpy->bReversedFit = true;
     else
@@ -2346,31 +2346,42 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
 
     int COLS = matInputImg.cols;
     int ROWS = matInputImg.rows;
-    const int GUASSIAN_DIFF_WIDTH = 2;
-    const float GUASSIAN_KERNEL_SSQ = 1.f;
+    
     cv::Mat matGuassinKernel = CalcUtils::generateGuassinDiffKernel ( GUASSIAN_DIFF_WIDTH, GUASSIAN_KERNEL_SSQ );
 
     if ( pstRpy->bReversedFit ) {
-        int nInterval = matInputImg.rows / DIVIDE_SECTION;
+        auto nInterval = ToInt32 (ToFloat ( matInputImg.rows ) / ToFloat ( DIVIDE_SECTION ) + 0.5f );
         int nCurrentProcessedPos = 0;
         while ( nCurrentProcessedPos < matInputImg.rows ) {
             int nROISize = ( nCurrentProcessedPos + nInterval ) < matInputImg.rows ? nInterval : matInputImg.rows - nCurrentProcessedPos;
             cv::Mat matSubROI ( matInputImg, cv::Rect ( 0, nCurrentProcessedPos, COLS, nROISize ) );
             int nJumpPos = _findMaxDiffPosInX ( matSubROI, matGuassinKernel, enDirection );
-            if ( nJumpPos > 0 )
-                vecFitPoint.push_back ( cv::Point ( nJumpPos, ToInt32 ( nCurrentProcessedPos + nInterval / 2.f + 0.5f ) ) );
+            if ( nJumpPos > 0 ) {
+                if ( nCurrentProcessedPos == 0 )
+                    vecFitPoint.emplace_back ( nJumpPos, nCurrentProcessedPos );
+                else if ( ( nCurrentProcessedPos + nInterval ) >= matInputImg.rows )
+                    vecFitPoint.emplace_back ( nJumpPos, matInputImg.rows );
+                else
+                    vecFitPoint.push_back ( cv::Point ( nJumpPos, ToInt32 ( nCurrentProcessedPos + nInterval / 2.f + 0.5f ) ) );
+            }
             nCurrentProcessedPos += nInterval;
         }
     }else {
         cv::transpose ( matGuassinKernel, matGuassinKernel );
-        int nInterval = matInputImg.cols / DIVIDE_SECTION;
+        int nInterval = ToInt32 ( ToFloat ( matInputImg.cols ) / ToFloat ( DIVIDE_SECTION ) + 0.5f );
         int nCurrentProcessedPos = 0;
         while ( nCurrentProcessedPos < matInputImg.cols ) {
             int nROISize = ( nCurrentProcessedPos + nInterval ) < matInputImg.cols ? nInterval : matInputImg.cols - nCurrentProcessedPos;
             cv::Mat matSubROI ( matInputImg, cv::Rect ( nCurrentProcessedPos, 0, nROISize , ROWS ) );
             int nJumpPos = _findMaxDiffPosInY ( matSubROI, matGuassinKernel, enDirection );
-            if ( nJumpPos > 0 )
-                vecFitPoint.push_back ( cv::Point ( ToInt32 ( nCurrentProcessedPos + nInterval / 2.f + 0.5f ), nJumpPos ) );
+            if ( nJumpPos > 0 ) {
+                if ( nCurrentProcessedPos == 0 )
+                    vecFitPoint.emplace_back ( nCurrentProcessedPos, nJumpPos );
+                else if ( ( nCurrentProcessedPos + nInterval ) >= matInputImg.cols )
+                    vecFitPoint.emplace_back (  matInputImg.cols, nJumpPos );
+                else
+                    vecFitPoint.emplace_back ( ToInt32 ( nCurrentProcessedPos + nInterval / 2.f + 0.5f ), nJumpPos );
+            }
             nCurrentProcessedPos += nInterval;
         }
     }

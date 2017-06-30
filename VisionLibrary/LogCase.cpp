@@ -512,15 +512,15 @@ VisionStatus LogCaseCaliper::WriteRpy(const PR_CALIPER_RPY *const pRpy) {
 VisionStatus LogCaseCaliper::RunLogCase() {
     PR_CALIPER_CMD stCmd;
     VisionStatus enStatus;
-
-    CSimpleIni ini(false, false, false);
-    auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
-    ini.LoadFile( cmdRpyFilePath.c_str() );
+    
+    stCmd.matInputImg = cv::imread( _strLogCasePath + _IMAGE_NAME );
     String strMaskPath = _strLogCasePath + _MASK_NAME;
     if ( FileUtils::Exists ( strMaskPath ) )
         stCmd.matMask = cv::imread( strMaskPath, cv::IMREAD_GRAYSCALE );
 
-    stCmd.matInputImg = cv::imread( _strLogCasePath + _IMAGE_NAME );
+    CSimpleIni ini(false, false, false);
+    auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
+    ini.LoadFile( cmdRpyFilePath.c_str() );    
     stCmd.rectRotatedROI.center = _parseCoordinate ( ini.GetValue(_CMD_SECTION.c_str(), _strKeyRoiCenter.c_str(), _DEFAULT_COORD.c_str() ) );
     stCmd.rectRotatedROI.size = _parseSize ( ini.GetValue(_CMD_SECTION.c_str(), _strKeyRoiSize.c_str(), _DEFAULT_SIZE.c_str() ) );
     stCmd.rectRotatedROI.angle = ToFloat ( ini.GetDoubleValue ( _CMD_SECTION.c_str(), _strKeyRoiAngle.c_str(), 0. ) );
