@@ -35,7 +35,9 @@ void TestCaliper() {
     std::cout << std::endl;
 
     stCmd.matInputImg = cv::imread("./data/F1-5-1_Threshold.png");
-    stCmd.rectROI = cv::Rect(1216, 802, 142, 332);
+    cv::Rect rectROI = cv::Rect(1216, 802, 142, 332);
+    stCmd.rectRotatedROI.center = cv::Point ( rectROI.x + rectROI.width / 2, rectROI.y + rectROI.height / 2 );
+    stCmd.rectRotatedROI.size = rectROI.size();
     stCmd.enDetectDir = PR_DETECT_LINE_DIR::MAX_TO_MIN;
     stCmd.bCheckLinerity = true;
     stCmd.fPointMaxOffset = 5;
@@ -53,7 +55,9 @@ void TestCaliper() {
     std::cout << std::endl;
 
     stCmd.matInputImg = cv::imread("./data/F1-5-1_Threshold.png");
-    stCmd.rectROI = cv::Rect(928, 1276, 270, 120);
+    rectROI = cv::Rect(928, 1276, 270, 120);
+    stCmd.rectRotatedROI.center = cv::Point ( rectROI.x + rectROI.width / 2, rectROI.y + rectROI.height / 2 );
+    stCmd.rectRotatedROI.size = rectROI.size();
     stCmd.enDetectDir = PR_DETECT_LINE_DIR::MIN_TO_MAX;
     stCmd.fExpectedAngle = 0;
     
@@ -66,7 +70,9 @@ void TestCaliper() {
     std::cout << std::endl;
 
     stCmd.matInputImg = cv::imread("./data/F1-5-1_Threshold.png");
-    stCmd.rectROI = cv::Rect(1496, 1576, 228, 88);
+    rectROI = cv::Rect(1496, 1576, 228, 88);
+    stCmd.rectRotatedROI.center = cv::Point ( rectROI.x + rectROI.width / 2, rectROI.y + rectROI.height / 2 );
+    stCmd.rectRotatedROI.size = rectROI.size();
     stCmd.enDetectDir = PR_DETECT_LINE_DIR::MAX_TO_MIN;
     stCmd.fExpectedAngle = 0;
     
@@ -79,7 +85,9 @@ void TestCaliper() {
     std::cout << std::endl;
 
     stCmd.matInputImg = cv::imread("./data/F1-5-1_Threshold.png");
-    stCmd.rectROI = cv::Rect(1591, 970, 51, 90);
+    rectROI = cv::Rect(1591, 970, 51, 90);
+    stCmd.rectRotatedROI.center = cv::Point ( rectROI.x + rectROI.width / 2, rectROI.y + rectROI.height / 2 );
+    stCmd.rectRotatedROI.size = rectROI.size();
     stCmd.enDetectDir = PR_DETECT_LINE_DIR::MAX_TO_MIN;
     stCmd.bCheckLinerity = true;
     stCmd.fPointMaxOffset = 5;
@@ -104,7 +112,9 @@ void TestCaliperSectionAvgGuassianDiff() {
     std::cout << std::endl;
 
     stCmd.matInputImg = cv::imread("./data/CognexEdge.png");
-    stCmd.rectROI = cv::Rect(304, 732, 208, 532);
+    cv::Rect rectROI = cv::Rect(304, 732, 208, 532);
+    stCmd.rectRotatedROI.center = cv::Point ( rectROI.x + rectROI.width / 2, rectROI.y + rectROI.height / 2 );
+    stCmd.rectRotatedROI.size = rectROI.size();
     stCmd.enAlgorithm = PR_CALIPER_ALGORITHM::SECTION_AVG_GUASSIAN_DIFF;
     stCmd.enDetectDir = PR_DETECT_LINE_DIR::MAX_TO_MIN;
     stCmd.bCheckLinerity = true;
@@ -122,7 +132,9 @@ void TestCaliperSectionAvgGuassianDiff() {
     std::cout << std::endl << "-------------------------------------------------";
     std::cout << std::endl;
 
-    stCmd.rectROI = cv::Rect(728, 744, 164, 632);
+    rectROI = cv::Rect(728, 744, 164, 632);
+    stCmd.rectRotatedROI.center = cv::Point ( rectROI.x + rectROI.width / 2, rectROI.y + rectROI.height / 2 );
+    stCmd.rectRotatedROI.size = rectROI.size();
     stCmd.enDetectDir = PR_DETECT_LINE_DIR::MIN_TO_MAX;
     stCmd.fExpectedAngle = 90;
     
@@ -135,7 +147,9 @@ void TestCaliperSectionAvgGuassianDiff() {
     std::cout << std::endl;
 
     stCmd.matInputImg = cv::imread("./data/F1-5-1_Threshold.png");
-    stCmd.rectROI = cv::Rect(998, 1298, 226, 68);
+    rectROI = cv::Rect(998, 1298, 226, 68);
+    stCmd.rectRotatedROI.center = cv::Point ( rectROI.x + rectROI.width / 2, rectROI.y + rectROI.height / 2 );
+    stCmd.rectRotatedROI.size = rectROI.size();
     stCmd.enDetectDir = PR_DETECT_LINE_DIR::MAX_TO_MIN;
     stCmd.fExpectedAngle = 0;
     
@@ -148,7 +162,9 @@ void TestCaliperSectionAvgGuassianDiff() {
     std::cout << std::endl;
 
     stCmd.matInputImg = cv::imread("./data/F1-5-1_Threshold.png");
-    stCmd.rectROI = cv::Rect(952, 1820, 188, 70);
+    rectROI = cv::Rect(952, 1820, 188, 70);
+    stCmd.rectRotatedROI.center = cv::Point ( rectROI.x + rectROI.width / 2, rectROI.y + rectROI.height / 2 );
+    stCmd.rectRotatedROI.size = rectROI.size();
     stCmd.enDetectDir = PR_DETECT_LINE_DIR::MIN_TO_MAX;
     stCmd.fExpectedAngle = 0;
 

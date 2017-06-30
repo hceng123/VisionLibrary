@@ -468,7 +468,31 @@ void TestCaliper_1() {
     stCmd.rectRotatedROI.center = cv::Point (85, 121 );
     stCmd.rectRotatedROI.size = cv::Size(100, 30);
     stCmd.rectRotatedROI.angle = 110;
-    stCmd.enDetectDir = PR_DETECT_LINE_DIR::MAX_TO_MIN;
+    stCmd.enAlgorithm = PR_CALIPER_ALGORITHM::SECTION_AVG_GUASSIAN_DIFF;
+    stCmd.enDetectDir = PR_DETECT_LINE_DIR::AUTO;
+    stCmd.bCheckLinerity = true;
+    stCmd.fPointMaxOffset = 5;
+    stCmd.fMinLinerity = 60.;
+    stCmd.bCheckAngle = true;
+    stCmd.fExpectedAngle = 90;
+    stCmd.fAngleDiffTolerance = 5;
+    
+    PR_Caliper ( &stCmd, &stRpy );
+    std::cout << "PR_Caliper status: " << ToInt32 ( stRpy.enStatus ) << std::endl;
+}
+
+void TestCaliper_2() {
+    PR_CALIPER_CMD stCmd;
+    PR_CALIPER_RPY stRpy;
+
+    stCmd.matInputImg = cv::imread("./data/TestRotatedCaliper.png");
+    //cv::Rect rectROI(1591, 970, 51, 90);
+    cv::Rect rectROI(546, 320, 300, 100 );
+    stCmd.rectRotatedROI.center = cv::Point (171, 34 );
+    stCmd.rectRotatedROI.size = cv::Size(200, 30);
+    stCmd.rectRotatedROI.angle = 20;
+    stCmd.enAlgorithm = PR_CALIPER_ALGORITHM::SECTION_AVG_GUASSIAN_DIFF;
+    stCmd.enDetectDir = PR_DETECT_LINE_DIR::AUTO;
     stCmd.bCheckLinerity = true;
     stCmd.fPointMaxOffset = 5;
     stCmd.fMinLinerity = 60.;
@@ -514,6 +538,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
     //TestCaliper();
     TestCaliper_1();
+    //TestCaliper_2();
 
     //PR_FreeAllRecord();
 

@@ -114,6 +114,7 @@ enum class PR_COMPARE_TYPE {
 enum class PR_DETECT_LINE_DIR {
     MIN_TO_MAX,
     MAX_TO_MIN,
+    AUTO,
 };
 
 enum class PR_FILL_HOLE_METHOD {

@@ -2190,6 +2190,24 @@ VisionStatus VisionAlgorithm::srchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd
     return VisionStatus::OK;
 }
 
+/*static*/ VisionStatus VisionAlgorithm::_calcCaliperDirection(const cv::Mat &matRoiImg, bool bReverseFit, PR_DETECT_LINE_DIR &enDirection ) {
+    cv::Mat matLeftTop, matRightBottom;
+    if ( bReverseFit ) {
+        matLeftTop =     cv::Mat ( matRoiImg, cv::Rect ( 0, 0, matRoiImg.cols / 2, matRoiImg.rows ) );
+        matRightBottom = cv::Mat ( matRoiImg, cv::Rect ( matRoiImg.cols / 2, 0, matRoiImg.cols / 2, matRoiImg.rows ) );
+    }else {
+        matLeftTop =     cv::Mat ( matRoiImg, cv::Rect ( 0, 0, matRoiImg.cols, matRoiImg.rows / 2 ) );
+        matRightBottom = cv::Mat ( matRoiImg, cv::Rect ( 0, matRoiImg.rows / 2, matRoiImg.cols, matRoiImg.rows / 2 ) );
+    }
+    auto sumOfLeftTop = cv::sum ( matLeftTop )[0];
+    auto sumOfRightBottom = cv::sum ( matRightBottom )[0];
+    if ( sumOfLeftTop < sumOfRightBottom )
+        enDirection = PR_DETECT_LINE_DIR::MIN_TO_MAX;
+    else
+        enDirection = PR_DETECT_LINE_DIR::MAX_TO_MIN;
+    return VisionStatus::OK;
+}
+
 /*static*/ VisionStatus VisionAlgorithm::_caliperByProjection(const cv::Mat &matGray, const cv::Mat &matROIMask, const cv::Rect &rectROI, PR_DETECT_LINE_DIR enDetectDir, VectorOfPoint &vecFitPoint, PR_CALIPER_RPY *const pstRpy) {
     VectorOfPoint vecPoints;
     std::vector<int> vecX, vecY, vecIndexCanFormLine, vecProjection;
@@ -2222,6 +2240,9 @@ VisionStatus VisionAlgorithm::srchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd
     pstRpy->bReversedFit = false;
     if ( CalcUtils::calcStdDeviation ( vecY ) > CalcUtils::calcStdDeviation ( vecX ) )
         pstRpy->bReversedFit = true;
+
+    if ( PR_DETECT_LINE_DIR::AUTO == enDetectDir )
+        _calcCaliperDirection ( matGray, pstRpy->bReversedFit, enDetectDir );
 
     auto projectSize = pstRpy->bReversedFit ? matGray.cols : matGray.rows;
     vecProjection.resize ( projectSize, 0 );
@@ -2315,7 +2336,11 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     const int DIVIDE_SECTION = 20;
     bool bDivideInX = true;
     if ( matInputImg.rows > matInputImg.cols )
-        bDivideInX = false;
+        pstRpy->bReversedFit = true;
+    else
+        pstRpy->bReversedFit = false;
+    if ( PR_DETECT_LINE_DIR::AUTO == enDirection )
+        _calcCaliperDirection ( matInputImg, pstRpy->bReversedFit, enDirection );
 
     int COLS = matInputImg.cols;
     int ROWS = matInputImg.rows;
@@ -2323,7 +2348,17 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     const float GUASSIAN_KERNEL_SSQ = 1.f;
     cv::Mat matGuassinKernel = CalcUtils::generateGuassinDiffKernel ( GUASSIAN_DIFF_WIDTH, GUASSIAN_KERNEL_SSQ );
 
-    if ( bDivideInX ) {
+    if ( pstRpy->bReversedFit ) {
+        int nInterval = matInputImg.rows / DIVIDE_SECTION;
+        int nCurrentProcessedPos = 0;
+        while ( nCurrentProcessedPos < matInputImg.rows ) {
+            int nROISize = ( nCurrentProcessedPos + nInterval ) < matInputImg.rows ? nInterval : matInputImg.rows - nCurrentProcessedPos;
+            cv::Mat matSubROI ( matInputImg, cv::Rect ( 0, nCurrentProcessedPos, COLS, nROISize ) );
+            int nJumpPos = _findMaxDiffPosInX ( matSubROI, matGuassinKernel, enDirection );
+            vecFitPoint.push_back ( cv::Point ( nJumpPos, ToInt32 ( nCurrentProcessedPos + nInterval / 2.f + 0.5f ) ) );
+            nCurrentProcessedPos += nInterval;
+        }
+    }else {
         cv::transpose ( matGuassinKernel, matGuassinKernel );
         int nInterval = matInputImg.cols / DIVIDE_SECTION;
         int nCurrentProcessedPos = 0;
@@ -2334,19 +2369,8 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
             vecFitPoint.push_back ( cv::Point ( ToInt32 ( nCurrentProcessedPos + nInterval / 2.f + 0.5f ), nJumpPos ) );
             nCurrentProcessedPos += nInterval;
         }
-        pstRpy->bReversedFit = false;
-    }else {
-        int nInterval = matInputImg.rows / DIVIDE_SECTION;
-        int nCurrentProcessedPos = 0;
-        while ( nCurrentProcessedPos < matInputImg.rows ) {
-            int nROISize = ( nCurrentProcessedPos + nInterval ) < matInputImg.rows ? nInterval : matInputImg.rows - nCurrentProcessedPos;
-            cv::Mat matSubROI ( matInputImg, cv::Rect ( 0, nCurrentProcessedPos, COLS, nROISize ) );
-            int nJumpPos = _findMaxDiffPosInX ( matSubROI, matGuassinKernel, enDirection );
-            vecFitPoint.push_back ( cv::Point ( nJumpPos, ToInt32 ( nCurrentProcessedPos + nInterval / 2.f + 0.5f ) ) );
-            nCurrentProcessedPos += nInterval;
-        }
-        pstRpy->bReversedFit = true;
     }
+
     if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE ) {
         cv::Mat matDisplay;
         cv::cvtColor ( matInputImg, matDisplay, CV_GRAY2BGR );

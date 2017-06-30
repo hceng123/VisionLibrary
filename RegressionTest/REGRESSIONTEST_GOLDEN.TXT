@@ -337,7 +337,7 @@ Camera distoration coefficients:
 ---------------------------------------------
 CALIBRATE CAMERA REGRESSION TEST #4 STARTING
 ---------------------------------------------
-Calibrate camera status 25
+Calibrate camera status 23
 
 ---------------------------------------------
 CALIBRATE CAMERA REGRESSION TEST #5 STARTING
