@@ -528,6 +528,46 @@ private:
     const String _strKeyAngle           = "Angle";
 };
 
+class LogCaseLrnContour : public LogCase
+{
+public:
+    explicit LogCaseLrnContour(const String &strPath, bool bReplay = false) : LogCase(strPath, bReplay) {}
+    VisionStatus WriteCmd(const PR_LRN_CONTOUR_CMD *const pCmd);
+    VisionStatus WriteRpy(const PR_LRN_CONTOUR_RPY *const pRpy);
+    virtual VisionStatus RunLogCase() override;
+    virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
+    static String StaticGetFolderPrefix();
+private:
+    const String _strKeyROI             = "ROI";
+    const String _strKeyAutoThreshold   = "AutoThreshold";
+    const String _strKeyThreshold       = "Threshold";
+
+    const String _strKeyStatus          = "Status";
+    const String _strKeyRecordId        = "RecordId";
+};
+
+class LogCaseInspContour : public LogCase
+{
+public:
+    explicit LogCaseInspContour(const String &strPath, bool bReplay = false) : LogCase(strPath, bReplay) {}
+    VisionStatus WriteCmd(const PR_INSP_CONTOUR_CMD *const pCmd);
+    VisionStatus WriteRpy(const PR_INSP_CONTOUR_RPY *const pRpy);
+    virtual VisionStatus RunLogCase() override;
+    virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
+    static String StaticGetFolderPrefix();
+private:
+    const String _strKeyROI             = "ROI";
+    const String _strKeyRecordId        = "RecordId";
+    const String _strKeyDefectThreshold = "DefectThreshold";
+    const String _strKeyMinDefectArea   = "MinThresholdArea";
+    const String _strKeyInnerLengthTol  = "InnerLengthTol";
+    const String _strKeyOuterLengthTol  = "OuterLengthTol";
+    const String _strKeyInnerMaskDepth  = "InnerMaskDepth";
+    const String _strKeyOuterMaskDepth  = "OuterMaskDepth";
+
+    const String _strKeyStatus          = "Status";    
+};
+
 }
 }
 #endif

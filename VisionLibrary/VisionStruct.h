@@ -37,7 +37,7 @@ struct PR_VERSION_INFO {
 struct PR_LRN_OBJ_CMD {
     cv::Mat                 matInputImg;
 	PR_SRCH_OBJ_ALGORITHM   enAlgorithm;	
-	cv::Mat                 mask;
+	cv::Mat                 matMask;
 	cv::Rect2f              rectLrn;
 };
 
@@ -52,86 +52,86 @@ struct PR_LRN_OBJ_RPY {
 };
 
 struct PR_SRCH_OBJ_CMD {
-	PR_SRCH_OBJ_ALGORITHM  enAlgorithm;
-	cv::Mat                matInputImg;
-	cv::Rect               rectSrchWindow;
-	cv::Point2f            ptExpectedPos;
+    PR_SRCH_OBJ_ALGORITHM  enAlgorithm;
+    cv::Mat                matInputImg;
+    cv::Rect               rectSrchWindow;
+    cv::Point2f            ptExpectedPos;
     Int32                  nRecordId;
 };
 
 struct PR_SRCH_OBJ_RPY {
-	VisionStatus		    enStatus;
-	float					fMatchScore;
-	cv::Mat					matHomography;
-	cv::Point2f				ptObjPos;
-	cv::Size2f				szOffset;
-	float					fRotation;
+    VisionStatus            enStatus;
+    float                   fMatchScore;
+    cv::Mat                 matHomography;
+    cv::Point2f             ptObjPos;
+    cv::Size2f              szOffset;
+    float                   fRotation;
     cv::Mat                 matResultImg;
 };
 
 struct PR_MATCH_TEMPLATE_CMD {
-	cv::Mat                 matInputImg;
-	cv::Mat					matTmpl;
-    cv::Rect				rectSrchWindow;
+    cv::Mat                 matInputImg;
+    cv::Mat                 matTmpl;
+    cv::Rect                rectSrchWindow;
     PR_OBJECT_MOTION        enMotion;
 };
 
 struct PR_MATCH_TEMPLATE_RPY {
-	VisionStatus            enStatus;
-	cv::Point2f				ptObjPos;
-	float                   fRotation;
+    VisionStatus            enStatus;
+    cv::Point2f             ptObjPos;
+    float                   fRotation;
     float                   fMatchScore;
-    cv::Mat					matResultImg;
+    cv::Mat                 matResultImg;
 };
 
 struct PR_DefectCriteria {
-	PR_DEFECT_ATTRIBUTE		enAttribute;
-	Byte					ubContrast;
-	float					fArea;	// For general defect.
-	float					fLength;// For line defect only. If != 0, will regard as line defect detecton and rAreaThreshold will be ignored
-	float					fWidth;	// For noise removal. Note: unit is in 8192 coord sys (in old convention is phy coord sys, which is no good)
+    PR_DEFECT_ATTRIBUTE     enAttribute;
+    Byte                    ubContrast;
+    float                   fArea;	// For general defect.
+    float                   fLength;// For line defect only. If != 0, will regard as line defect detecton and rAreaThreshold will be ignored
+    float                   fWidth;	// For noise removal. Note: unit is in 8192 coord sys (in old convention is phy coord sys, which is no good)
 };
 
 struct PR_INSP_SURFACE_CMD {
-	cv::Mat					matInsp;	
-	cv::Mat					matTmpl;
-    cv::Mat					matMask;
-	cv::Rect2f				rectLrn;
-	cv::Point2f				ptObjPos;
-	float					fRotation;
-	UInt16					u16NumOfDefectCriteria;
-	PR_DefectCriteria		astDefectCriteria[MAX_NUM_OF_DEFECT_CRITERIA];
+    cv::Mat                 matInsp;
+    cv::Mat                 matTmpl;
+    cv::Mat                 matMask;
+    cv::Rect2f              rectLrn;
+    cv::Point2f             ptObjPos;
+    float                   fRotation;
+    UInt16                  u16NumOfDefectCriteria;
+    PR_DefectCriteria       astDefectCriteria[MAX_NUM_OF_DEFECT_CRITERIA];
 };
 
 struct PR_Defect {
-	PR_DEFECT_TYPE		enType;
-	float				fArea;
-	float				fRadius;
-	float				fLength;
-	Int16				n16Constrast;
+    PR_DEFECT_TYPE      enType;
+    float               fArea;
+    float               fRadius;
+    float               fLength;
+    Int16               n16Constrast;
 };
 
 struct PR_INSP_SURFACE_RPY {
-	Int16				nStatus;
-	Int16				n16NDefect;
-	PR_Defect			astDefect[MAX_NUM_OF_DEFECT_RESULT];
+    Int16               nStatus;
+    Int16               n16NDefect;
+    PR_Defect           astDefect[MAX_NUM_OF_DEFECT_RESULT];
 };
 
 template<typename _Tp> class PR_Line_
 {
 public:
-	PR_Line_()
-	{
-		pt1.x = 0;
-		pt1.y = 0;
-		pt2.x = 0;
-		pt2.y = 0;
-	}
-	PR_Line_(cv::Point_<_Tp> inPt1, cv::Point_<_Tp> inPt2 ) : pt1( inPt1 ), pt2 ( inPt2 )
-	{
-	}
-	cv::Point_<_Tp> pt1;
-	cv::Point_<_Tp> pt2;
+    PR_Line_ ()
+    {
+        pt1.x = 0;
+        pt1.y = 0;
+        pt2.x = 0;
+        pt2.y = 0;
+    }
+    PR_Line_ ( cv::Point_<_Tp> inPt1, cv::Point_<_Tp> inPt2 ) : pt1 ( inPt1 ), pt2 ( inPt2 )
+    {
+    }
+    cv::Point_<_Tp> pt1;
+    cv::Point_<_Tp> pt2;
 };
 
 using PR_Line = PR_Line_<int>;
@@ -144,8 +144,8 @@ using PR_Line2f = PR_Line_<float>;
 #define PR_MAX_CRITERIA_COUNT       (5)
 
 struct PR_INSP_DEVICE_ITEM {
-	bool        bCheckMissed;			//check if the device is missed
-	bool        bCheckShift;			//check if the device shift exceed tolerance
+	bool        bCheckMissed;           //check if the device is missed
+	bool        bCheckShift;            //check if the device shift exceed tolerance
     bool        bCheckRotation;         //check if rotation exceed tolerance
     bool        bCheckScale;
 };
@@ -159,8 +159,8 @@ struct PR_SINGLE_DEVICE_INFO {
 };
 
 struct PR_INSP_DEVICE_CRITERIA {
-	float                   fMaxOffsetX; 
-	float                   fMaxOffsetY;
+    float                   fMaxOffsetX;
+    float                   fMaxOffsetY;
     float                   fMaxRotate;
     float                   fMaxScale;
     float                   fMinScale;
@@ -248,7 +248,20 @@ struct PR_FIT_LINE_RPY {
     cv::Mat                 matResultImg;
 };
 
-//Detect line is find the lines in the image.
+// Detect line is find the lines in the image.
+// The cv::RotatedRect, the angle is the direction of width. Facing right is 0. Clock-Wise is positive, Anti-Clock_Wise is negtive.
+// The angle unit is degree.
+//                |   /
+//                |  /
+//                | /
+//                |/ -60 degree
+// -------------------------------------
+//               /|\ ) 60 degree
+//              / | \
+//             /  |  \
+//            /   |   \
+//           /120 |    \
+
 struct PR_CALIPER_CMD {
     PR_CALIPER_CMD() :
         enAlgorithm         ( PR_CALIPER_ALGORITHM::PROJECTION ),
@@ -262,7 +275,7 @@ struct PR_CALIPER_CMD {
     cv::Mat                 matMask;
     cv::RotatedRect         rectRotatedROI;
     PR_CALIPER_ALGORITHM    enAlgorithm;
-    PR_DETECT_LINE_DIR      enDetectDir;
+    PR_CALIPER_DIR          enDetectDir;
     bool                    bCheckLinerity;
     float                   fPointMaxOffset;
     float                   fMinLinerity;
@@ -649,7 +662,6 @@ struct PR_LRN_CONTOUR_RPY {
     VisionStatus            enStatus;
     Int16                   nThreshold;
     VectorOfVectorOfPoint   vecContours;
-    Int32                   nContourNum;
     cv::Mat                 matResultImg;
     Int32                   nRecordId;
 
@@ -661,7 +673,7 @@ struct PR_INSP_CONTOUR_CMD {
 	cv::Mat                 matMask;
 	cv::Rect                rectROI;
     Int32                   nRecordId;
-    Int16       			nDefectThreshold;
+    Int16                   nDefectThreshold;
     float                   fMinDefectArea;
     float                   fDefectInnerLengthTol;   // If the defect's inner length exceed the tolerance, then it is a true defect.
     float                   fDefectOuterLengthTol;   // If the defect's outer length exceed the tolerance, then it is a true defect.

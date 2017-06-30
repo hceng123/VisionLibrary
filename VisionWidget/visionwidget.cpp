@@ -216,8 +216,10 @@ void VisionWidget::on_btnCaliper_clicked() {
     PR_CALIPER_CMD stCmd;
     stCmd.matInputImg = ui.visionView->getMat();
     stCmd.matMask = ui.visionView->getMask();
-    stCmd.rectROI = ui.visionView->getSelectedWindow();
-    stCmd.enDetectDir = static_cast<PR_DETECT_LINE_DIR> ( ui.comboBoxCaliperDirection->currentIndex() );
+    auto rectROI = ui.visionView->getSelectedWindow();
+    stCmd.rectRotatedROI.center = cv::Point ( rectROI.x + rectROI.width / 2, rectROI.y + rectROI.height / 2 );
+    stCmd.rectRotatedROI.size = rectROI.size();
+    stCmd.enDetectDir = static_cast<PR_CALIPER_DIR> ( ui.comboBoxCaliperDirection->currentIndex() );
     stCmd.enAlgorithm = static_cast<PR_CALIPER_ALGORITHM> ( ui.comboBoxCaliperAlgorithm->currentIndex() );
 
     PR_CALIPER_RPY stRpy;
