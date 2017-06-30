@@ -54,6 +54,7 @@ enum class PR_RECORD_TYPE {
     OBJECT,
     DEVICE,
     CHIP,
+    CONTOUR,
     LEAD,
 };
 
@@ -110,9 +111,10 @@ enum class PR_COMPARE_TYPE {
 //In other words, dark part on the right, then use MAX_TO_MIN mode.
 //If dark part on the left, then use MIN_TO_MAX.
 //The direction means the direction from dark to bright.
-enum class PR_DETECT_LINE_DIR {
+enum class PR_CALIPER_DIR {
     MIN_TO_MAX,
     MAX_TO_MIN,
+    AUTO,
 };
 
 enum class PR_FILL_HOLE_METHOD {

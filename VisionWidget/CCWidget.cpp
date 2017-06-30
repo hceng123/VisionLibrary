@@ -28,8 +28,8 @@ VisionStatus CCWidget::_runRemoveCC(cv::Mat &mat)
     if ( VisionStatus::OK == PR_RemoveCC( &stCmd, &stRpy ) )    {
         mat = stRpy.matResultImg;
     }else  {
-        PR_GET_ERROR_STR_RPY stErrStrRpy;
-        PR_GetErrorStr( stRpy.enStatus, &stErrStrRpy );
+        PR_GET_ERROR_INFO_RPY stErrStrRpy;
+        PR_GetErrorInfo( stRpy.enStatus, &stErrStrRpy );
         QMessageBox::critical(this, "Filter failed", stErrStrRpy.achErrorStr, "Quit");
     }
     return stRpy.enStatus;

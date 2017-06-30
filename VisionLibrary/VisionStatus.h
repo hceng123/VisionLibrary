@@ -8,50 +8,58 @@ namespace Vision
 
 enum class PR_STATUS_ERROR_LEVEL
 {  
-    PR_STATUS_NO_ERROR,					// No error status
-    PR_STATUS_WARNING,					// Warning status
-    PR_STATUS_INFORMATION,				// Informative
-    PR_STATUS_GENERAL_ERROR,			// Unexpected output but no need to restart application
-    PR_STATUS_FATAL_ERROR				// Fatal error and need to restart application
+    NO_ERROR,               // No error status.
+    INSP_STATUS,            // Normal inspection status.
+    LEARN_FAIL,             // Learn fail, may need to investigate or report to developer engineer.
+    FATAL_ERROR,            // Fatal error need to report to developer engineer.
 };
 
 enum class VisionStatus
 {
 	OK,
+
+    //Fatal system Error
+    OPENCV_EXCEPTION,
     INVALID_PARAM,
-    SRCH_OBJ_FAIL,
+    PATH_NOT_EXIST,
+    INVALID_LOGCASE,    
     OPEN_FILE_FAIL,
-    OBJECT_MISSING,
-    OBJECT_SHIFT,                       //5
+    INVALID_RECORD_FILE,
+    INVALID_RECORD_TYPE,    
+    GUASSIAN_FILTER_KERNEL_INVALID,
+    MEDIAN_FILTER_KERNEL_INVALID,
+
+    LEARN_OBJECT_FAIL,
+    SRCH_OBJ_FAIL,
+    OBJECT_SHIFT,
     OBJECT_ROTATE,
     OBJECT_SCALE_FAIL,
-    INVALID_RECORD_TYPE,
-    FIND_EDGE_FAIL,
-    FIND_ELECTRODE_FAIL,                //10
-    NOT_SUPPORTED_OPTION,
-    PATH_NOT_EXIST,
-    INVALID_LOGCASE,
-    LEARN_FAIL,
+    
+    FIND_DEVICE_EDGE_FAIL,
+    FIND_ELECTRODE_FAIL,    
     NOT_ENOUGH_POINTS_TO_FIT,
     TOO_MUCH_NOISE_TO_FIT,
     FAIL_TO_FIT_CIRCLE,
-    OPENCV_EXCEPTION,                   //18
-    OCR_FAIL,
-    GUASSIAN_FILTER_KERNEL_INVALID,
-    MEDIAN_FILTER_KERNEL_INVALID,
+    
+    OCR_FAIL,    
     TOO_MUCH_CC_TO_REMOVE,
-    TMPL_IS_BIGGER_THAN_ROI,
     PICK_PT_NOT_IN_ROI,
     FAILED_TO_FIND_CHESS_BOARD_BLOCK_SIZE,
     FAILED_TO_FIND_FIRST_CB_CORNER,
     FAILED_TO_FIND_ENOUGH_CB_CORNERS,
     CHESSBOARD_PATTERN_NOT_CORRECT,
     FAILED_TO_FIND_LEAD,
+
+    //Learn and inspect chip status
     CAN_NOT_FIND_CAE_LINE,      //Can not find the line of capacitor
     CAN_NOT_FIND_SQUARE_EDGE,
     CAN_NOT_FIND_CIRCULAR_CHIP,
     CAN_NOT_FIND_CHIP_BODY,
     CALIPER_CAN_NOT_FIND_LINE,
+    
+    //Learn and inspect contour Status
+    CAN_NOT_FIND_CONTOUR,
+    CONTOUR_DEFECT_REJECT,
 };
 
 }

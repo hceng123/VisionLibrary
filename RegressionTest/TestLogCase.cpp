@@ -16,17 +16,11 @@ void TestRunLogcase()
     std::cout << std::endl << "------------------------------------------";
     std::cout << std::endl;
 
-    VisionStatus enStatus;
-    enStatus = PR_RunLogCase(".\\Logcase\\LrnObj_Success");
+    VisionStatus enStatus = VisionStatus::OK;
+    enStatus = PR_RunLogCase(".\\Logcase\\AutoThreshold_Success.logcase");
     std::cout << "Run logcase result " << static_cast<int> ( enStatus ) << std::endl;
 
-    enStatus = PR_RunLogCase(".\\Logcase\\LrnObj_Success\\");
-    std::cout << "Run logcase result " << static_cast<int> ( enStatus ) << std::endl;
-
-    enStatus = PR_RunLogCase("./Logcase/LrnObj_Success");
-    std::cout << "Run logcase result " << static_cast<int> ( enStatus ) << std::endl;
-
-    enStatus = PR_RunLogCase("./Logcase/LrnObj_Success/");
+    enStatus = PR_RunLogCase("./Logcase/AutoThreshold_Success.logcase");
     std::cout << "Run logcase result " << static_cast<int> ( enStatus ) << std::endl;
 }
 

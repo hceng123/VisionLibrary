@@ -101,9 +101,9 @@ void VisionView::mouseReleaseEvent(QMouseEvent *event)
                     int npts = Mat(_vecPolylinePoint).rows;
 
                     if (MASK_EDIT_STATE::ADD == _enMaskEditState)
-                        cv::fillPoly(_matMaskForDisplay, &pts, &npts, 1, Scalar(255, 255, 255));
+                        cv::fillPoly(_matMaskForDisplay, &pts, &npts, 1, cv::Scalar(255) );
                     else
-                        cv::fillPoly(_matMaskForDisplay, &pts, &npts, 1, Scalar(0, 0, 0));
+                        cv::fillPoly(_matMaskForDisplay, &pts, &npts, 1, cv::Scalar(0) );
 
                     _vecPolylinePoint.clear();
                     _ptLeftClickStartPos = Point(0, 0);
@@ -156,17 +156,17 @@ void VisionView::mouseMoveEvent(QMouseEvent *event)
                 rectMask.height = _ptLeftClickEndPos.y - _ptLeftClickStartPos.y;
 
                 if ( MASK_EDIT_STATE::ADD == _enMaskEditState )
-                    cv::rectangle ( _matMaskForDisplay, rectMask, Scalar(255, 255, 255), CV_FILLED, CV_AA );
+                    cv::rectangle ( _matMaskForDisplay, rectMask, cv::Scalar(255), CV_FILLED, CV_AA );
                 else
-                    cv::rectangle ( _matMaskForDisplay, rectMask, Scalar(0, 0, 0 ), CV_FILLED, CV_AA );
+                    cv::rectangle ( _matMaskForDisplay, rectMask, cv::Scalar(0), CV_FILLED, CV_AA );
             }else if ( MASK_SHAPE_CIRCLE == _enMaskShape )  {
                 float fOffsetX = _ptLeftClickEndPos.x - _ptLeftClickStartPos.x;
                 float fOffsetY = _ptLeftClickEndPos.y - _ptLeftClickStartPos.y;
                 float fRadius = sqrt ( fOffsetX * fOffsetX + fOffsetY * fOffsetY );
                 if ( MASK_EDIT_STATE::ADD == _enMaskEditState )
-                    cv::circle( _matMaskForDisplay, _ptLeftClickStartPos, fRadius, Scalar(255, 255, 255), CV_FILLED);
+                    cv::circle( _matMaskForDisplay, _ptLeftClickStartPos, fRadius, cv::Scalar(255), CV_FILLED);
                 else
-                    cv::circle( _matMaskForDisplay, _ptLeftClickStartPos, fRadius, Scalar(0, 0, 0), CV_FILLED);
+                    cv::circle( _matMaskForDisplay, _ptLeftClickStartPos, fRadius, cv::Scalar(0), CV_FILLED);
             }else if ( MASK_SHAPE_POLYLINE == _enMaskShape )  {
 
             }
@@ -769,7 +769,7 @@ void VisionView::setBinaryThreshold(int nThreshold, bool bReverseThres)
 void VisionView::getFitCircleRange(cv::Point &ptCtr, float &fInnterRadius, float &fOutterRadius) const
 {
     auto displayWidth = this->size().width();
-    auto displayHeight = this->size().height();    
+    auto displayHeight = this->size().height();
     
     cv::Mat mat = _matArray[ToInt32(_enDisplaySource)];
     ptCtr.x = ( _ptCircleCtr.x - ( displayWidth  - mat.cols * _fZoomFactor ) / 2 ) / _fZoomFactor;

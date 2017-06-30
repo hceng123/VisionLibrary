@@ -80,6 +80,7 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_WINDLL;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(BuildLevel)\ExtLibs\opencv\include;$(BuildLevel)\ExtLibs\boost_1_59_0;$(BuildLevel)\JoinSplit;</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -92,6 +93,7 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_WINDLL;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(BuildLevel)\ExtLibs\opencv\include;$(BuildLevel)\ExtLibs\boost_1_59_0;$(BuildLevel)\JoinSplit;</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -106,6 +108,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_WINDLL;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(BuildLevel)\ExtLibs\opencv\include;$(BuildLevel)\JoinSplit;$(BuildLevel)\ExtLibs\boost_1_59_0;</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -123,6 +126,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_WINDLL;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(BuildLevel)\ExtLibs\opencv\include;$(BuildLevel)\ExtLibs\boost_1_59_0;$(BuildLevel)\JoinSplit;</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -170,6 +174,14 @@
     <ClCompile Include="TimeLog.cpp" />
     <ClCompile Include="VisionAlgorithm.cpp" />
     <ClCompile Include="VisionAPI.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\ExtLibs\zlib\zlib.vcxproj">
+      <Project>{cbd9195c-24a9-4367-a837-3eac4db9262e}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\JoinSplit\JoinSplit.vcxproj">
+      <Project>{88f7bea9-0810-464d-a949-8f63f38bed25}</Project>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -72,9 +72,9 @@ VisionAPI void PR_DumpTimeLog(const std::string &strPath)
     TimeLog::GetInstance()->dumpTimeLog(strPath);
 }
 
-VisionAPI VisionStatus PR_FreeRecord(Int32 nRecordID)
+VisionAPI VisionStatus PR_FreeRecord(Int32 nRecordId)
 {
-    return RecordManager::getInstance()->free(nRecordID);
+    return RecordManager::getInstance()->free(nRecordId);
 }
 
 VisionAPI VisionStatus  PR_FreeAllRecord()
@@ -186,7 +186,7 @@ PR_FUNCTION_ENTRY
 PR_FUNCTION_EXIT
 }
 
-VisionAPI VisionStatus PR_GetErrorStr(VisionStatus enStatus, PR_GET_ERROR_STR_RPY *pstRpy)
+VisionAPI VisionStatus PR_GetErrorInfo(VisionStatus enStatus, PR_GET_ERROR_INFO_RPY *pstRpy)
 {
     return GetErrorInfo(enStatus, pstRpy);
 }
@@ -319,6 +319,20 @@ VisionAPI VisionStatus PR_InspChip(const PR_INSP_CHIP_CMD *const pstCmd, PR_INSP
 {
 PR_FUNCTION_ENTRY
     return VisionAlgorithm::inspChip( pstCmd, pstRpy );
+PR_FUNCTION_EXIT
+}
+
+VisionAPI VisionStatus PR_LrnContour(const PR_LRN_CONTOUR_CMD *const pstCmd, PR_LRN_CONTOUR_RPY *const pstRpy)
+{
+PR_FUNCTION_ENTRY
+    return VisionAlgorithm::lrnContour ( pstCmd, pstRpy );
+PR_FUNCTION_EXIT
+}
+
+VisionAPI VisionStatus PR_InspContour(const PR_INSP_CONTOUR_CMD *const pstCmd, PR_INSP_CONTOUR_RPY *const pstRpy)
+{
+PR_FUNCTION_ENTRY
+    return VisionAlgorithm::inspContour ( pstCmd, pstRpy );
 PR_FUNCTION_EXIT
 }
 

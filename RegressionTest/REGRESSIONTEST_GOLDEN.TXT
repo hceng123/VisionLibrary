@@ -3,21 +3,19 @@
 INSPECT DEVICE REGRESSION TEST #1 STARTING
 ------------------------------------------
 Success to learn device
-Device inspection status 6
-Device inspection status 5
+Device inspection status 13
+Device inspection status 12
 
 ---------------------------------------------------------
 INSPECT DEVICE AUTO THRESHOLD REGRESSION TEST #1 STARTING
 ---------------------------------------------------------
 Success to learn device
-Device inspection status 6
-Device inspection status 5
+Device inspection status 13
+Device inspection status 12
 
 ------------------------------------------
 LOGCASE REGRESSION TEST #1 STARTING
 ------------------------------------------
-Run logcase result 0
-Run logcase result 0
 Run logcase result 0
 Run logcase result 0
 
@@ -291,11 +289,11 @@ CALIPER GUASSIAN DIFF REGRESSION TEST #3 STARTING
 -------------------------------------------------
 Caliper status 0
 ReversedFit = 0
-Line slope = -0.03, intercept = 1351.17
-Line coordinate: (1004.00, 1320.12), (1224.00, 1313.31)
+Line slope = -0.01, intercept = 1327.58
+Line coordinate: (1004.00, 1318.59), (1213.00, 1316.71)
 Linerity  = 100.00
 Linerity check pass: 1
-Angle  = -1.77
+Angle  = -0.51
 Angle check pass: 1
 
 -------------------------------------------------
@@ -309,6 +307,42 @@ Linerity  = 95.24
 Linerity check pass: 1
 Angle  = -0.57
 Angle check pass: 1
+
+-----------------------------------------------
+CALIPER ROTATED ROI REGRESSION TEST #1 STARTING
+-----------------------------------------------
+Caliper status 0
+ReversedFit = 0
+Line slope = -2.24, intercept = 315.10
+Line coordinate: (67.10, 164.50), (103.81, 82.09)
+Linerity  = 100.00
+Linerity check pass: 1
+Angle  = -65.99
+Angle check pass: 1
+
+-----------------------------------------------
+CALIPER ROTATED ROI REGRESSION TEST #2 STARTING
+-----------------------------------------------
+Caliper status 0
+ReversedFit = 0
+Line slope = 0.44, intercept = -40.17
+Line coordinate: (130.27, 17.25), (261.41, 75.05)
+Linerity  = 99.31
+Linerity check pass: 1
+Angle  = 23.78
+Angle check pass: 1
+
+-----------------------------------------------
+CALIPER ROTATED ROI REGRESSION TEST #3 STARTING
+-----------------------------------------------
+Caliper status 32
+Error Msg: Caliper can not find the line.
+
+-----------------------------------------------
+CALIPER ROTATED ROI REGRESSION TEST #4 STARTING
+-----------------------------------------------
+Caliper status 32
+Error Msg: Caliper can not find the line.
 
 ---------------------------------------------
 CALIBRATE CAMERA REGRESSION TEST #1 STARTING
@@ -337,7 +371,7 @@ Camera distoration coefficients:
 ---------------------------------------------
 CALIBRATE CAMERA REGRESSION TEST #4 STARTING
 ---------------------------------------------
-Calibrate camera status 25
+Calibrate camera status 23
 
 ---------------------------------------------
 CALIBRATE CAMERA REGRESSION TEST #5 STARTING

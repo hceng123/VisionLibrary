@@ -73,7 +73,7 @@
      </rect>
     </property>
     <property name="currentIndex">
-     <number>0</number>
+     <number>3</number>
     </property>
     <widget class="QWidget" name="tabPreProcess">
      <attribute name="title">
@@ -1426,6 +1426,45 @@
        </property>
        <property name="text">
         <string>Direction</string>
+       </property>
+      </widget>
+     </widget>
+     <widget class="QGroupBox" name="groupBoxContourInspect">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>390</y>
+        <width>590</width>
+        <height>91</height>
+       </rect>
+      </property>
+      <property name="title">
+       <string>Contour Inspection</string>
+      </property>
+      <widget class="QPushButton" name="btnLrnContour">
+       <property name="geometry">
+        <rect>
+         <x>480</x>
+         <y>20</y>
+         <width>100</width>
+         <height>23</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Learn Contour</string>
+       </property>
+      </widget>
+      <widget class="QPushButton" name="btnInspContour">
+       <property name="geometry">
+        <rect>
+         <x>480</x>
+         <y>50</y>
+         <width>100</width>
+         <height>23</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Inspect Contour</string>
        </property>
       </widget>
      </widget>

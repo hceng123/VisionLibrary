@@ -36,7 +36,7 @@ public:
     static VisionStatus matchTemplate(PR_MATCH_TEMPLATE_CMD *const pstCmd, PR_MATCH_TEMPLATE_RPY *pstRpy, bool bReplay = false);
 	VisionStatus inspSurface(PR_INSP_SURFACE_CMD *const pInspCmd, PR_INSP_SURFACE_RPY *pInspRpy);
     static void showImage(String windowName, const cv::Mat &mat);
-    static VisionStatus runLogCase(const std::string &strPath);    
+    static VisionStatus runLogCase(const String &strFilePath);   
     VisionStatus srchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd, PR_SRCH_FIDUCIAL_MARK_RPY *pstRpy, bool bReplay = false);
     static VisionStatus fitLine(const PR_FIT_LINE_CMD *const pstCmd, PR_FIT_LINE_RPY *const pstRpy, bool bReplay = false);
     static VisionStatus caliper(const PR_CALIPER_CMD *const pstCmd, PR_CALIPER_RPY *const pstRpy, bool bReplay = false);
@@ -60,6 +60,8 @@ public:
     static VisionStatus inspBridge(const PR_INSP_BRIDGE_CMD *const pstCmd, PR_INSP_BRIDGE_RPY *const pstRpy, bool bReplay = false );
     static VisionStatus lrnChip( const PR_LRN_CHIP_CMD *const pstCmd, PR_LRN_CHIP_RPY *const pstRpy, bool bReplay = false );
     static VisionStatus inspChip( const PR_INSP_CHIP_CMD *const pstCmd, PR_INSP_CHIP_RPY *const pstRpy, bool bReplay = false );
+    static VisionStatus lrnContour(const PR_LRN_CONTOUR_CMD *const pstCmd, PR_LRN_CONTOUR_RPY *const pstRpy, bool bReplay = false );
+    static VisionStatus inspContour(const PR_INSP_CONTOUR_CMD *const pstCmd, PR_INSP_CONTOUR_RPY *const pstRpy, bool bReplay = false );
 protected:
 	int _findBlob(const cv::Mat &mat, const cv::Mat &matRevs, PR_INSP_SURFACE_CMD *const pInspCmd, PR_INSP_SURFACE_RPY *pInspRpy );
 	int _findLine(const cv::Mat &mat, PR_INSP_SURFACE_CMD *const pInspCmd, PR_INSP_SURFACE_RPY *pInspRpy );
@@ -158,10 +160,22 @@ protected:
     static VisionStatus _inspChipCircularMode(const cv::Mat &matThreshold, const cv::Rect &rectROI, PR_INSP_CHIP_RPY *const pstRpy);
     static bool _findDataUpEdge( const cv::Mat &matRow, int nStart, int nEnd, int &nEdgePos );
     static bool _findDataDownEdge( const cv::Mat &matRow, int nStart, int nEnd, int &nEdgePos );
-    static VisionStatus _caliperByProjection(const cv::Mat &matGray, const cv::Mat &matROIMask, const cv::Rect &rectROI, PR_DETECT_LINE_DIR enDetectDir, VectorOfPoint &vecFitPoint, PR_CALIPER_RPY *const pstRpy);
-    static int _findMaxDiffPosInX( const cv::Mat &matInput, const cv::Mat &matGuassianDiffKernel, PR_DETECT_LINE_DIR enDirection );
-    static int _findMaxDiffPosInY( const cv::Mat &matInput, const cv::Mat &matGuassianDiffKernel, PR_DETECT_LINE_DIR enDirection );
-    static VisionStatus _caliperBySectionAvgGussianDiff(const cv::Mat &matInputImg, const cv::Rect &rectROI, PR_DETECT_LINE_DIR enDirection, VectorOfPoint &vecFitPoint, PR_CALIPER_RPY *const pstRpy);
+    static VisionStatus _caliperByProjection(const cv::Mat &matGray, const cv::Mat &matROIMask, const cv::Rect &rectROI, PR_CALIPER_DIR enDetectDir, VectorOfPoint &vecFitPoint, PR_CALIPER_RPY *const pstRpy);
+    static int _findMaxDiffPosInX( const cv::Mat &matInput, const cv::Mat &matGuassianDiffKernel, PR_CALIPER_DIR enDirection );
+    static int _findMaxDiffPosInY( const cv::Mat &matInput, const cv::Mat &matGuassianDiffKernel, PR_CALIPER_DIR enDirection );
+    static VisionStatus _caliperBySectionAvgGussianDiff(const cv::Mat &matInputImg, const cv::Rect &rectROI, PR_CALIPER_DIR enDirection, VectorOfPoint &vecFitPoint, PR_CALIPER_RPY *const pstRpy);
+    static VisionStatus _extractRotatedROI(const cv::Mat &matInputImg, const cv::RotatedRect &rectRotatedROI, cv::Mat &matROI );
+    static VisionStatus _calcCaliperDirection(const cv::Mat &matROIImg, bool bReverseFit, PR_CALIPER_DIR &enDirection );
+    static VisionStatus _writeContourRecord(PR_LRN_CONTOUR_RPY *const pstRpy, const cv::Mat &matTmpl, const cv::Mat &matContour, const VectorOfVectorOfPoint &vecContours);
+    static VectorOfPoint _findNearestContour(const cv::Point2f &ptInput, const VectorOfVectorOfPoint &vecContours);
+    static void _getContourToContourDistance(const VectorOfPoint &contourInput,
+        const VectorOfPoint &contourTarget,
+        float &fInnerFarthestDist,
+        float &fInnerNearestDist,
+        float &fOuterFarthestDist,
+        float &fOuterNearestDist);
+    static cv::Mat _generateContourMask ( const cv::Size &size, const VectorOfVectorOfPoint &vecContours, float fInnerDepth, float fOuterDepth );
+    
 protected:
     static const int       _constMinHessian        = 300;
     static const int       _constOctave            = 4;

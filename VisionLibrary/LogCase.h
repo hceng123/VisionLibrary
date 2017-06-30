@@ -15,6 +15,7 @@ public:
     explicit LogCase(const String &strPath, bool bReplay = false);
     virtual String GetFolderPrefix() const = 0;
     virtual VisionStatus RunLogCase()  = 0;
+    static String unzip(const String &strFilePath);
 protected:
     String _formatCoordinate(const cv::Point2f &pt);
     cv::Point2f _parseCoordinate(const String &strCoordinate);
@@ -31,6 +32,7 @@ protected:
         return strValue;
     }
     String _generateLogCaseName(const String &strFolderPrefix);
+    void _zip();
     String      _strLogCasePath;
     const String _CMD_RPY_FILE_NAME = "cmdrpy.log";
     const String _CMD_SECTION       = "CMD";
@@ -41,6 +43,7 @@ protected:
     const String _DEFAULT_COORD     = "0, 0";
     const String _DEFAULT_RECT      = "0, 0, 0, 0";
     const String _DEFAULT_SIZE      = "0, 0";
+    const String _EXTENSION         = ".logcase";
     bool         _bReplay;
 };
 
@@ -172,7 +175,9 @@ public:
     virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
     static String StaticGetFolderPrefix();
 private:
-    const String _strKeyROI             = "ROI";
+    const String _strKeyRoiCenter       = "RoiCenter";
+    const String _strKeyRoiSize         = "RoiSize";
+    const String _strKeyRoiAngle        = "RoiAngle";
     const String _strKeyAlgorithm       = "Algorithm";
     const String _strKeyDir             = "Direction";
     const String _strKeyCheckLinerity   = "CheckLinerity";
@@ -477,7 +482,7 @@ private:
     const String _strKeyChipWindow      = "ChipWindow";
 
     const String _strKeyStatus          = "Status";
-    const String _strLeadLocation       = "LoadLocation_";
+    const String _strLeadLocation       = "LeadLocation_";  //End with _ because it will concatenate with lead number.
 };
 
 class LogCaseInspBridge : public LogCase
@@ -521,6 +526,46 @@ private:
     const String _strKeyCenter          = "Center";
     const String _strKeySize            = "Size";
     const String _strKeyAngle           = "Angle";
+};
+
+class LogCaseLrnContour : public LogCase
+{
+public:
+    explicit LogCaseLrnContour(const String &strPath, bool bReplay = false) : LogCase(strPath, bReplay) {}
+    VisionStatus WriteCmd(const PR_LRN_CONTOUR_CMD *const pCmd);
+    VisionStatus WriteRpy(const PR_LRN_CONTOUR_RPY *const pRpy);
+    virtual VisionStatus RunLogCase() override;
+    virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
+    static String StaticGetFolderPrefix();
+private:
+    const String _strKeyROI             = "ROI";
+    const String _strKeyAutoThreshold   = "AutoThreshold";
+    const String _strKeyThreshold       = "Threshold";
+
+    const String _strKeyStatus          = "Status";
+    const String _strKeyRecordId        = "RecordId";
+};
+
+class LogCaseInspContour : public LogCase
+{
+public:
+    explicit LogCaseInspContour(const String &strPath, bool bReplay = false) : LogCase(strPath, bReplay) {}
+    VisionStatus WriteCmd(const PR_INSP_CONTOUR_CMD *const pCmd);
+    VisionStatus WriteRpy(const PR_INSP_CONTOUR_RPY *const pRpy);
+    virtual VisionStatus RunLogCase() override;
+    virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
+    static String StaticGetFolderPrefix();
+private:
+    const String _strKeyROI             = "ROI";
+    const String _strKeyRecordId        = "RecordId";
+    const String _strKeyDefectThreshold = "DefectThreshold";
+    const String _strKeyMinDefectArea   = "MinThresholdArea";
+    const String _strKeyInnerLengthTol  = "InnerLengthTol";
+    const String _strKeyOuterLengthTol  = "OuterLengthTol";
+    const String _strKeyInnerMaskDepth  = "InnerMaskDepth";
+    const String _strKeyOuterMaskDepth  = "OuterMaskDepth";
+
+    const String _strKeyStatus          = "Status";    
 };
 
 }

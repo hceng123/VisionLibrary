@@ -97,21 +97,7 @@ public:
         cv::Mat matResultImg;
         cv::compare ( matInputImg, value, matResultImg, cv::CmpTypes::CMP_EQ );
         return matResultImg;
-    }
-
-    static double radian2Degree( double dRadian );
-    static double degree2Radian( double dDegree );
-    static float ptDisToLine(const cv::Point2f &ptInput, bool bReversedFit, float fSlope, float fIntercept );
-    static PR_Line2f calcEndPointOfLine( const VectorOfPoint &vecPoint, bool bReversedFit, float fSlope, float fIntercept );
-    static PR_Line2f calcEndPointOfLine( const ListOfPoint &listPoint, bool bReversedFit, float fSlope, float fIntercept );
-    static cv::Point2f lineIntersect(float fSlope1, float fIntercept1, float fSlope2, float fIntercept2);
-    static float lineSlope(const PR_Line2f &line);
-    static VectorOfPoint getCornerOfRotatedRect(const cv::RotatedRect &rotatedRect);
-    static float guassianValue(float ssq, float x );
-    static cv::Mat generateGuassinDiffKernel ( int nOneSideWidth, float ssq );
-    static void filter2D_Conv(cv::InputArray src, cv::OutputArray dst, int ddepth,
-                   cv::InputArray kernel, cv::Point anchor = cv::Point(-1,-1),
-                   double delta = 0, int borderType = cv::BORDER_DEFAULT );
+    }    
 
     template<typename _Tp>
     static cv::Point2f warpPoint(const cv::Mat &matWarp, const cv::Point2f &ptInput)
@@ -121,7 +107,7 @@ public:
         matPoint.at<_Tp>(1, 0) = ptInput.y;
         matPoint.at<_Tp>(2, 0) = 1.f;
         cv::Mat matResultImg = matWarp * matPoint;
-        return cv::Point_<_Tp> ( ToFloat ( matResultImg.at<_Tp>(0, 0) ),  ToFloat ( matResultImg.at<_Tp>(1, 0) ) );
+        return cv::Point_<_Tp> ( ToFloat ( matResultImg.at<_Tp>(0, 0) ), ToFloat ( matResultImg.at<_Tp>(1, 0) ) );
     }
 
     template<typename _Tp>
@@ -136,23 +122,39 @@ public:
 
     template<typename _Tp>
     static inline std::vector<std::vector<_Tp>> matToVector(const cv::Mat &matInputImg) {
-    std::vector<std::vector<_Tp>> vecVecArray;
-    if ( matInputImg.isContinuous() ) {
-        for ( int row = 0; row < matInputImg.rows; ++ row ) {
-            std::vector<_Tp> vecRow;
-            int nRowStart = row * matInputImg.cols;
-            vecRow.assign ( (_Tp *)matInputImg.datastart + nRowStart, (_Tp *)matInputImg.datastart + nRowStart + matInputImg.cols );
-            vecVecArray.push_back(vecRow);
+        std::vector<std::vector<_Tp>> vecVecArray;
+        if ( matInputImg.isContinuous () ) {
+            for ( int row = 0; row < matInputImg.rows; ++row ) {
+                std::vector<_Tp> vecRow;
+                int nRowStart = row * matInputImg.cols;
+                vecRow.assign ( (_Tp *)matInputImg.datastart + nRowStart, (_Tp *)matInputImg.datastart + nRowStart + matInputImg.cols );
+                vecVecArray.push_back ( vecRow );
+            }
+        } else {
+            for ( int row = 0; row < matInputImg.rows; ++row ) {
+                std::vector<_Tp> vecRow;
+                vecRow.assign ( (_Tp*)matInputImg.ptr<uchar> ( row ), (_Tp*)matInputImg.ptr<uchar> ( row ) +matInputImg.cols );
+                vecVecArray.push_back ( vecRow );
+            }
         }
-    }else {
-        for ( int row = 0; row < matInputImg.rows; ++ row ) {
-            std::vector<_Tp> vecRow;
-            vecRow.assign((_Tp*)matInputImg.ptr<uchar>(row), (_Tp*)matInputImg.ptr<uchar>(row) + matInputImg.cols);
-            vecVecArray.push_back(vecRow);
-        }
+        return vecVecArray;
     }
-    return vecVecArray;
-}
+
+    static double radian2Degree( double dRadian );
+    static double degree2Radian( double dDegree );
+    static float ptDisToLine(const cv::Point2f &ptInput, bool bReversedFit, float fSlope, float fIntercept );
+    static PR_Line2f calcEndPointOfLine( const VectorOfPoint &vecPoint, bool bReversedFit, float fSlope, float fIntercept );
+    static PR_Line2f calcEndPointOfLine( const ListOfPoint &listPoint, bool bReversedFit, float fSlope, float fIntercept );
+    static cv::Point2f lineIntersect(float fSlope1, float fIntercept1, float fSlope2, float fIntercept2);
+    static float lineSlope(const PR_Line2f &line);
+    static void lineSlopeIntercept(const PR_Line2f &line, float &fSlope, float &fIntercept);
+    static VectorOfPoint getCornerOfRotatedRect(const cv::RotatedRect &rotatedRect);
+    static float guassianValue(float ssq, float x );
+    static cv::Mat generateGuassinDiffKernel ( int nOneSideWidth, float ssq );
+    static void filter2D_Conv(cv::InputArray src, cv::OutputArray dst, int ddepth,
+                   cv::InputArray kernel, cv::Point anchor = cv::Point(-1,-1),
+                   double delta = 0, int borderType = cv::BORDER_DEFAULT );
+    static float calcPointToContourDist(const cv::Point &ptInput, const VectorOfPoint &contour, cv::Point &ptResult );
 };
 
 }

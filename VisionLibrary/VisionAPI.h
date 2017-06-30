@@ -19,7 +19,7 @@ VisionAPI VisionStatus PR_Init();
 VisionAPI void         PR_SetDebugMode(PR_DEBUG_MODE enDebugMode);
 VisionAPI VisionStatus PR_RunLogCase(const std::string &strPath);
 VisionAPI void         PR_DumpTimeLog(const std::string &strPath);
-VisionAPI VisionStatus PR_FreeRecord(Int32 nRecordID);
+VisionAPI VisionStatus PR_FreeRecord(Int32 nRecordId);
 VisionAPI VisionStatus PR_FreeAllRecord();
 
 VisionAPI VisionStatus PR_LrnObj(const PR_LRN_OBJ_CMD *const pstCmd, PR_LRN_OBJ_RPY *const pstRpy);
@@ -58,7 +58,7 @@ Example:
 */
 VisionAPI VisionStatus PR_FindEdge(const PR_FIND_EDGE_CMD *const pstCmd, PR_FIND_EDGE_RPY *const pstRpy);
 VisionAPI VisionStatus PR_FitCircle(PR_FIT_CIRCLE_CMD *pstCmd, PR_FIT_CIRCLE_RPY *pstRpy);
-VisionAPI VisionStatus PR_GetErrorStr(VisionStatus enStatus, PR_GET_ERROR_STR_RPY *pstRpy);
+VisionAPI VisionStatus PR_GetErrorInfo(VisionStatus enStatus, PR_GET_ERROR_INFO_RPY *pstRpy);
 VisionAPI VisionStatus PR_Ocr(PR_OCR_CMD *pstCmd, PR_OCR_RPY *pstRpy);
 VisionAPI VisionStatus PR_PointLineDistance(PR_POINT_LINE_DISTANCE_CMD *pstCmd, PR_POINT_LINE_DISTANCE_RPY *pstRpy);
 VisionAPI VisionStatus PR_ColorToGray(PR_COLOR_TO_GRAY_CMD *pstCmd, PR_COLOR_TO_GRAY_RPY *pstRpy);
@@ -89,6 +89,8 @@ VisionAPI VisionStatus PR_AutoLocateLead(const PR_AUTO_LOCATE_LEAD_CMD *const ps
 VisionAPI VisionStatus PR_InspBridge(const PR_INSP_BRIDGE_CMD *const pstCmd, PR_INSP_BRIDGE_RPY *const pstRpy);
 VisionAPI VisionStatus PR_LrnChip(const PR_LRN_CHIP_CMD *const pstCmd, PR_LRN_CHIP_RPY *const pstRpy);
 VisionAPI VisionStatus PR_InspChip(const PR_INSP_CHIP_CMD *const pstCmd, PR_INSP_CHIP_RPY *const pstRpy);
+VisionAPI VisionStatus PR_LrnContour(const PR_LRN_CONTOUR_CMD *const pstCmd, PR_LRN_CONTOUR_RPY *const pstRpy);
+VisionAPI VisionStatus PR_InspContour(const PR_INSP_CONTOUR_CMD *const pstCmd, PR_INSP_CONTOUR_RPY *const pstRpy);
 }
 }
 

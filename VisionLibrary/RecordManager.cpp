@@ -4,6 +4,8 @@
 #include "Config.h"
 #include "opencv2/core.hpp"
 #include "VisionType.h"
+#include "FileUtils.h"
+#include "JoinSplit.h"
 
 namespace bfs = boost::filesystem;
 
@@ -22,93 +24,107 @@ RecordManager::~RecordManager()
 {
 }
 
-VisionStatus RecordManager::add(IRecordPtr pRecord, Int32 &recordID) {
-    recordID = _generateRecordID(); 
-    pRecord->save ( _getRecordFilePath ( recordID ) );
+VisionStatus RecordManager::add(RecordPtr pRecord, Int32 &recordID) {
+    recordID = _generateRecordID();
+    String strFilePath = _getRecordFilePath ( recordID );
+    FileUtils::MakeDirectory ( strFilePath );    
+    pRecord->save ( strFilePath );
+    joinDir ( strFilePath.c_str(), Config::GetInstance()->getRecordExt().c_str() );
+    FileUtils::RemoveAll ( strFilePath );
     _mapRecord.insert ( std::make_pair ( recordID, pRecord ) );
 
-    String strLog = "Add record " + std::to_string(recordID) + ";";
+    String strLog = "Add record " + std::to_string ( recordID)  + ";";
     WriteLog(strLog);
     return VisionStatus::OK;
 }
 
-IRecordPtr RecordManager::get(Int32 nRecordID)
-{
-    return _mapRecord[nRecordID];
+RecordPtr RecordManager::get(Int32 nRecordId) {
+    return _mapRecord[nRecordId];
 }
 
-VisionStatus RecordManager::free(Int32 nRecordID)
-{
-    IRecordPtr pRecord = _mapRecord[nRecordID];
+VisionStatus RecordManager::free(Int32 nRecordId) {
+    RecordPtr pRecord = _mapRecord[nRecordId];
     if ( pRecord != nullptr )
-        _mapRecord.erase(nRecordID);
+        _mapRecord.erase(nRecordId);
     
-    bfs::remove( _getRecordFilePath ( nRecordID ) );
+    String strRecordFilePath = _getRecordFilePath ( nRecordId ) + Config::GetInstance()->getRecordExt();
+    FileUtils::Remove ( strRecordFilePath );
     
-    String strLog = "Free record " + std::to_string(nRecordID) + ";";
+    String strLog = "Free record " + std::to_string ( nRecordId ) + ";";
     WriteLog(strLog);
     return VisionStatus::OK;
 }
 
-VisionStatus RecordManager::freeAllRecord()
-{
+VisionStatus RecordManager::freeAllRecord() {
     _mapRecord.clear();
-    bfs::remove_all( Config::GetInstance()->getRecordDir() );
+    FileUtils::RemoveAll ( Config::GetInstance()->getRecordDir() );
     WriteLog("All record is freed");
     return VisionStatus::OK;
 }
 
-VisionStatus RecordManager::load()
-{
+VisionStatus RecordManager::load() {
     auto strRecordDir = Config::GetInstance()->getRecordDir();
     if ( ! bfs::exists( strRecordDir ) )   {
-        bfs::create_directories(strRecordDir);
+        bfs::create_directories ( strRecordDir );
         return VisionStatus::OK;
     }
-    Int32Vector vecRecord;
-    for ( auto &p : bfs::directory_iterator(strRecordDir)) {
-        if ( ! bfs::is_directory ( p.status() ) )
-        {
-            _loadOneRecord ( p.path().string() );
+    VisionStatus enStatus = VisionStatus::OK;
+    for ( auto &p : bfs::directory_iterator ( strRecordDir ) ) {
+        if ( bfs::is_regular_file ( p.status() ) ) {
+            enStatus = _loadOneRecord ( p.path().string() );
+            if ( enStatus != VisionStatus::OK )
+                return enStatus;
         }
     }
-    return VisionStatus::OK;
+    return enStatus;
 }
 
-VisionStatus RecordManager::_loadOneRecord(const String &strFilePath)
-{
+VisionStatus RecordManager::_loadOneRecord(const String &strFilePath) {
     auto pos = strFilePath.rfind('.');
-    if (pos != String::npos)  {
-        auto strRecordID = strFilePath.substr(pos + 1);
-        auto nRecordID = stoi(strRecordID);
+    if ( pos != String::npos )  {
+        auto strRecordID = strFilePath.substr ( pos - 3, 3 );
+        auto nRecordId = stoi ( strRecordID );
+        String strTargetDir = Config::GetInstance()->getRecordDir() + strRecordID;
+        if ( ! FileUtils::Exists ( strTargetDir ) )
+            FileUtils::MakeDirectory ( strTargetDir );
+        splitFiles ( strFilePath.c_str(), strTargetDir.c_str() );
 
-        cv::FileStorage fs( strFilePath, cv::FileStorage::READ);
+        String strParamFile = strTargetDir + "/" + Config::GetInstance()->getRecordParamFile();
+        cv::FileStorage fs ( strParamFile, cv::FileStorage::READ );
         cv::FileNode fileNode = fs["type"];
         Int32 recordType;
-        cv::read(fileNode, recordType, static_cast<Int32> ( PR_RECORD_TYPE::INVALID ) );
+        cv::read ( fileNode, recordType, static_cast<Int32> ( PR_RECORD_TYPE::INVALID ) );
         if ( static_cast<Int32> ( PR_RECORD_TYPE::INVALID ) == recordType ) {
             fs.release();
+            FileUtils::RemoveAll ( strTargetDir );
             return VisionStatus::INVALID_RECORD_TYPE;
         }
-        IRecordPtr pRecord = _createRecordPtr ( recordType );
-        if ( nullptr == pRecord )   {
+        RecordPtr pRecord = _createRecordPtr ( recordType );
+        if ( nullptr == pRecord ) {
             fs.release();
+            FileUtils::RemoveAll ( strTargetDir );
             return VisionStatus::INVALID_RECORD_TYPE;
         }
-        pRecord->load(fs);
-        fs.release();
-        _mapRecord.insert(PairRecord(nRecordID, pRecord));
+        pRecord->load ( fs, strTargetDir );
+        fs.release();        
+        _mapRecord.insert(PairRecord(nRecordId, pRecord));
+        FileUtils::RemoveAll ( strTargetDir );
     }
     return VisionStatus::OK;
 }
 
-IRecordPtr RecordManager::_createRecordPtr(Int32 recordType)
-{
+RecordPtr RecordManager::_createRecordPtr(Int32 recordType) {
     PR_RECORD_TYPE enRecordType = static_cast<PR_RECORD_TYPE>(recordType);
     switch(enRecordType)
     {
     case PR_RECORD_TYPE::OBJECT:
         return std::make_shared<ObjRecord>( enRecordType );
+        break;
+    case PR_RECORD_TYPE::CHIP:
+        return std::make_shared<ChipRecord>( enRecordType );
+        break;
+    case PR_RECORD_TYPE::CONTOUR:
+        return std::make_shared<ContourRecord> ( enRecordType );
         break;
     default:
         return nullptr;
@@ -116,30 +132,28 @@ IRecordPtr RecordManager::_createRecordPtr(Int32 recordType)
     return nullptr;
 }
 
-Int32 RecordManager::_generateRecordID()
-{
-    const int       START_RECORD_ID =       1;
+Int32 RecordManager::_generateRecordID() {
+    const int START_RECORD_ID = 1;
     auto strRecordDir = Config::GetInstance()->getRecordDir();
-    if ( ! bfs::exists( strRecordDir ) )   {
+    if ( ! bfs::exists( strRecordDir ) ) {
         bfs::create_directories( strRecordDir );
         return START_RECORD_ID;
     }
     Int32Vector vecRecord;
-    for ( auto &p : bfs::directory_iterator(strRecordDir)) {
-        if ( ! bfs::is_directory ( p.status() ) ) 
-        {
+    for ( auto &p : bfs::directory_iterator ( strRecordDir ) ) {
+        if ( ! bfs::is_directory ( p.status() ) ) {
             String path = p.path().string();
             auto pos = path.rfind('.');
-            if ( pos != String::npos )  {
-                auto strRecordID = path.substr(pos + 1);
-                auto nRecordID = stoi ( strRecordID );
-                vecRecord.push_back(nRecordID);
+            if ( pos != String::npos ) {
+                auto strRecordID = path.substr(pos - 3, 3);
+                auto nRecordId = stoi ( strRecordID );
+                vecRecord.push_back ( nRecordId );
             }
         }
     }
-    std::sort(vecRecord.begin(), vecRecord.end());
+    std::sort ( vecRecord.begin(), vecRecord.end() );
     auto targetRecordID = START_RECORD_ID;
-    for ( auto recordID : vecRecord )   {
+    for ( auto recordID : vecRecord ) {
         if ( recordID != targetRecordID )
             return targetRecordID;
         ++ targetRecordID;
@@ -148,11 +162,10 @@ Int32 RecordManager::_generateRecordID()
     return targetRecordID;
 }
 
-String RecordManager::_getRecordFilePath(Int32 recordID)
-{
+String RecordManager::_getRecordFilePath(Int32 recordID) {
     char chArrRecordID[10];
-    _snprintf( chArrRecordID, sizeof(chArrRecordID), "%02d", recordID );
-    String strFilePath = Config::GetInstance()->getRecordDir() + Config::GetInstance()->getRecordPreFix() + String(chArrRecordID);
+    _snprintf( chArrRecordID, sizeof(chArrRecordID), "%03d", recordID );
+    String strFilePath = Config::GetInstance()->getRecordDir() + String ( chArrRecordID );
     return strFilePath;
 }
 

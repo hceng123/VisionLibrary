@@ -93,11 +93,11 @@ VisionAlgorithm::VisionAlgorithm()
     else
         detector = SURF::create (_constMinHessian, _constOctave, _constOctaveLayer );
     cv::Mat matROI( pstCmd->matInputImg, pstCmd->rectLrn );
-    detector->detectAndCompute ( matROI, pstCmd->mask, pstRpy->vecKeyPoint, pstRpy->matDescritor );
+    detector->detectAndCompute ( matROI, pstCmd->matMask, pstRpy->vecKeyPoint, pstRpy->matDescritor );
 
     if ( pstRpy->vecKeyPoint.size() < _constLeastFeatures ) {
         WriteLog("detectAndCompute can not find feature.");
-        pstRpy->enStatus = VisionStatus::LEARN_FAIL;
+        pstRpy->enStatus = VisionStatus::LEARN_OBJECT_FAIL;
         FINISH_LOGCASE;
         return pstRpy->enStatus;
     }
@@ -109,7 +109,7 @@ VisionAlgorithm::VisionAlgorithm()
     pstRpy->ptCenter.x = pstCmd->rectLrn.x + pstCmd->rectLrn.width  / 2.0f;
     pstRpy->ptCenter.y = pstCmd->rectLrn.y + pstCmd->rectLrn.height / 2.0f;
     matROI.copyTo(pstRpy->matTmpl);
-    _writeLrnObjRecord(pstRpy);        
+    _writeLrnObjRecord(pstRpy);
 
     FINISH_LOGCASE;
     MARK_FUNCTION_END_TIME;
@@ -125,23 +125,23 @@ VisionAlgorithm::VisionAlgorithm()
     }
 
     char charrMsg[1000];
-    if ( pstCmd->nRecordID <= 0 ) {
-        _snprintf(charrMsg, sizeof (charrMsg), "The input record ID %d is invalid.", pstCmd->nRecordID );
+    if ( pstCmd->nRecordId <= 0 ) {
+        _snprintf(charrMsg, sizeof (charrMsg), "The input record ID %d is invalid.", pstCmd->nRecordId );
         WriteLog ( charrMsg );
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return pstRpy->enStatus;
     }
 
-    ObjRecordPtr ptrRecord = std::static_pointer_cast<ObjRecord> ( RecordManager::getInstance()->get ( pstCmd->nRecordID ) );
+    ObjRecordPtr ptrRecord = std::static_pointer_cast<ObjRecord> ( RecordManager::getInstance()->get ( pstCmd->nRecordId ) );
     if ( nullptr == ptrRecord ) {
-        _snprintf(charrMsg, sizeof (charrMsg), "Failed to get record ID %d in system.", pstCmd->nRecordID );
+        _snprintf(charrMsg, sizeof (charrMsg), "Failed to get record ID %d in system.", pstCmd->nRecordId );
         WriteLog ( charrMsg );
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return pstRpy->enStatus;
     }
 
     if ( ptrRecord->getType() != PR_RECORD_TYPE::OBJECT ) {
-        _snprintf(charrMsg, sizeof (charrMsg), "The type of record ID %d is not OBJECT.", pstCmd->nRecordID );
+        _snprintf(charrMsg, sizeof (charrMsg), "The type of record ID %d is not OBJECT.", pstCmd->nRecordId );
         WriteLog ( charrMsg );
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return pstRpy->enStatus;
@@ -742,8 +742,6 @@ int VisionAlgorithm::_autoThreshold(const cv::Mat &mat, const cv::Mat &matMask/*
     vevVecPoint.push_back ( vecPoint );
     cv::fillPoly ( matBlack, vevVecPoint, cv::Scalar::all ( PR_MAX_GRAY_LEVEL ) );
 
-    //cv::imshow ( "fill poly image", matBlack );
-    //cv::waitKey(0);
     cv::Mat matROI ( matBlack, rect );
     cv::Mat matOneRow, matOneCol;
     cv::reduce ( matROI, matOneRow, 0, cv::ReduceTypes::REDUCE_SUM, CV_32SC1 );
@@ -754,7 +752,7 @@ int VisionAlgorithm::_autoThreshold(const cv::Mat &mat, const cv::Mat &matMask/*
     const float FLUCTUATE_TOL = 0.3f;
     const int FLUCTUATE_WIDTH_TOL = 10;
     for (int index = 0; index < matOneRow.cols; ++ index) {
-        if (fabs ( matOneRow.at<int> ( 0, index ) - fAverageHeight ) / fAverageHeight > FLUCTUATE_TOL)
+        if ( fabs ( matOneRow.at<int> ( 0, index ) - fAverageHeight ) / fAverageHeight > FLUCTUATE_TOL )
             ++ nConsecutiveOverTolerance;
         else
             nConsecutiveOverTolerance = 0;
@@ -773,7 +771,7 @@ int VisionAlgorithm::_autoThreshold(const cv::Mat &mat, const cv::Mat &matMask/*
 }
 
 /*static*/ VisionStatus VisionAlgorithm::_findDeviceElectrode ( const cv::Mat &matDeviceROI, VectorOfPoint &vecElectrodePos, VectorOfSize2f &vecElectrodeSize, VectorOfVectorOfPoint &vevVecContour ) {
-    vector<vector<cv::Point> > vecContours, vecContourAfterFilter;
+    VectorOfVectorOfPoint vecContours;
     vector<cv::Vec4i> hierarchy;
     vecElectrodePos.clear();
     const float MAX_TWO_DIM_RATIO = 4.f;
@@ -845,14 +843,14 @@ int VisionAlgorithm::_autoThreshold(const cv::Mat &mat, const cv::Mat &matMask/*
     _findEdge(matHorizontalProjection, static_cast< Int32 >(size.width), nLeftEdge);
     _findEdgeReverse(matHorizontalProjection, static_cast< Int32 >(size.width), nRightEdge);
     if ( ( nRightEdge - nLeftEdge ) < ( size.width / 2 ) )
-        return VisionStatus::FIND_EDGE_FAIL;
+        return VisionStatus::FIND_DEVICE_EDGE_FAIL;
 
     _calculateVerticalProjection(matThreshold, matVerticalProjection);
     _expSmooth<float>(matVerticalProjection, matVerticalProjection, _constExpSmoothRatio);
     _findEdge(matHorizontalProjection, static_cast< Int32 >(size.height), nTopEdge);
     _findEdgeReverse(matHorizontalProjection, static_cast< Int32 >(size.height), nBottomEdge);
     if ( (nBottomEdge - nTopEdge ) < size.height / 2 )
-        return VisionStatus::FIND_EDGE_FAIL;
+        return VisionStatus::FIND_DEVICE_EDGE_FAIL;
 
     rectDeviceResult = cv::Rect ( cv::Point ( nLeftEdge, nTopEdge ), cv::Point ( nRightEdge, nBottomEdge ) );
     return VisionStatus::OK;
@@ -1081,15 +1079,15 @@ VisionStatus VisionAlgorithm::inspDevice(PR_INSP_DEVICE_CMD *pstInspDeviceCmd, P
     if (pstCmd->rectSrchWindow.x < 0 || pstCmd->rectSrchWindow.y < 0 ||
         pstCmd->rectSrchWindow.width <= 0 || pstCmd->rectSrchWindow.height <= 0 ||
         ( pstCmd->rectSrchWindow.x + pstCmd->rectSrchWindow.width ) > pstCmd->matInputImg.cols ||
-        ( pstCmd->rectSrchWindow.y + pstCmd->rectSrchWindow.height ) > pstCmd->matInputImg.rows )    {
+        ( pstCmd->rectSrchWindow.y + pstCmd->rectSrchWindow.height ) > pstCmd->matInputImg.rows ) {
         WriteLog("The search window is invalid");
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return pstRpy->enStatus;
     }
 
-    if ( pstCmd->matTmpl.rows > pstCmd->rectSrchWindow.height || pstCmd->matTmpl.cols > pstCmd->rectSrchWindow.width )    {
+    if ( pstCmd->matTmpl.rows > pstCmd->rectSrchWindow.height || pstCmd->matTmpl.cols > pstCmd->rectSrchWindow.width ) {
         WriteLog("The template is bigger than search window");
-        pstRpy->enStatus = VisionStatus::TMPL_IS_BIGGER_THAN_ROI;
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return pstRpy->enStatus;
     }
    
@@ -1240,7 +1238,7 @@ int VisionAlgorithm::_findBlob(const cv::Mat &mat, const cv::Mat &matRevs, PR_IN
 
         //VectorOfKeyPoint vecKeyPoint = keyPoints[0];
         for (const auto &vecKeyPoint : keyPoints) {
-            if (vecKeyPoint.size() > 0 && pInspRpy->n16NDefect < MAX_NUM_OF_DEFECT_RESULT)	{
+            if (vecKeyPoint.size() > 0 && pInspRpy->n16NDefect < MAX_NUM_OF_DEFECT_RESULT) {
                 for ( const auto &keyPoint : vecKeyPoint )
                 {
                     pInspRpy->astDefect[pInspRpy->n16NDefect].enType = PR_DEFECT_TYPE::BLOB;
@@ -1296,11 +1294,11 @@ int VisionAlgorithm::_findLine(const cv::Mat &mat, PR_INSP_SURFACE_CMD *const pI
 		cv::Mat color_dst;
 		cv::cvtColor(matSobelResult, color_dst, CV_GRAY2BGR);
 
-		vector<cv::Vec4i> lines;
-		HoughLinesP ( matSobelResult, lines, 1, CV_PI / 180, 30, stDefectCriteria.fLength, 10 );
+		std::vector<cv::Vec4i> lines;
+		cv::HoughLinesP ( matSobelResult, lines, 1, CV_PI / 180, 30, stDefectCriteria.fLength, 10 );
 
 		//_mergeLines ( )
-		vector<PR_Line2f> vecLines, vecLinesAfterMerge;
+		std::vector<PR_Line2f> vecLines, vecLinesAfterMerge;
 		for (size_t i = 0; i < lines.size(); i++)
 		{
 			cv::Point2f pt1 ( (float)lines[i][0], (float)lines[i][1] );
@@ -1318,10 +1316,8 @@ int VisionAlgorithm::_findLine(const cv::Mat &mat, PR_INSP_SURFACE_CMD *const pI
 				++pInspRpy->n16NDefect;
 			}
 		}
-        if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE )   {
-            cv::imshow("Detected Lines", color_dst);
-            cv::waitKey(0);
-        }
+        if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE )
+            showImage("Detected Lines", color_dst);
 	}
     MARK_FUNCTION_END_TIME;
 	return 0;
@@ -1463,7 +1459,7 @@ int VisionAlgorithm::_findLineCrossPoint(const PR_Line2f &line1, const PR_Line2f
     ptrRecord->setModelKeyPoint(pstRpy->vecKeyPoint);
     ptrRecord->setModelDescriptor(pstRpy->matDescritor);
     ptrRecord->setObjCenter ( cv::Point2f ( ToFloat( pstRpy->matTmpl.cols ) / 2.f , ToFloat( pstRpy->matTmpl.rows ) / 2.f ) );
-    RecordManager::getInstance()->add ( ptrRecord, pstRpy->nRecordID );
+    RecordManager::getInstance()->add ( ptrRecord, pstRpy->nRecordId );
     return VisionStatus::OK;
 }
 
@@ -1472,7 +1468,7 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
     DeviceRecordPtr ptrRecord = std::make_shared<DeviceRecord>( PR_RECORD_TYPE::DEVICE );
     ptrRecord->setElectrodeThreshold ( pLrnDeviceRpy->nElectrodeThreshold );
     ptrRecord->setSize ( pLrnDeviceRpy->sizeDevice );
-    RecordManager::getInstance()->add( ptrRecord, pLrnDeviceRpy->nRecordID );
+    RecordManager::getInstance()->add( ptrRecord, pLrnDeviceRpy->nRecordId );
     return VisionStatus::OK;
 }
 
@@ -1486,21 +1482,22 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
     cv::destroyWindow ( strWindowName );
 }
 
-/*static*/ VisionStatus VisionAlgorithm::runLogCase(const std::string &strPath)
+/*static*/ VisionStatus VisionAlgorithm::runLogCase(const String &strFilePath)
 {
-    if ( strPath.length() < 2 )
+    if ( strFilePath.length() < 2 )
         return VisionStatus::INVALID_PARAM;
 
-    if (  ! bfs::exists ( strPath ) )
+    if (  ! bfs::exists ( strFilePath ) )
         return VisionStatus::PATH_NOT_EXIST;
 
     VisionStatus enStatus = VisionStatus::OK;
-    auto strLocalPath = strPath;
+    auto strLocalPath = LogCase::unzip ( strFilePath );
+
     char chFolderToken = '\\';
-    if ( strPath.find('/') != string::npos )
+    if ( strLocalPath.find('/') != string::npos )
         chFolderToken = '/';
 
-    if ( strPath[ strPath.length() - 1 ] != chFolderToken )
+    if ( strLocalPath[ strLocalPath.length() - 1 ] != chFolderToken )
         strLocalPath.append ( std::string { chFolderToken } );
 
     auto pos = strLocalPath.rfind ( chFolderToken, strLocalPath.length() - 2 );
@@ -1538,6 +1535,8 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
         pLogCase = std::make_unique<LogCaseDetectEdge>( strLocalPath, true );
     else if (LogCaseInspCircle::StaticGetFolderPrefix() == folderPrefix )
         pLogCase = std::make_unique<LogCaseInspCircle>( strLocalPath, true );
+    else if (LogCaseAutoThreshold::StaticGetFolderPrefix() == folderPrefix )
+        pLogCase = std::make_unique<LogCaseAutoThreshold>( strLocalPath, true );
     else if (LogCaseFillHole::StaticGetFolderPrefix() == folderPrefix )
         pLogCase = std::make_unique<LogCaseFillHole>( strLocalPath, true );
     else if (LogCaseMatchTmpl::StaticGetFolderPrefix() == folderPrefix )
@@ -1554,6 +1553,10 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
         pLogCase = std::make_unique<LogCaseInspBridge>( strLocalPath, true );
     else if (LogCaseInspChip::StaticGetFolderPrefix() == folderPrefix )
         pLogCase = std::make_unique<LogCaseInspChip>( strLocalPath, true );
+    else if (LogCaseLrnContour::StaticGetFolderPrefix() == folderPrefix )
+        pLogCase = std::make_unique<LogCaseLrnContour>( strLocalPath, true );
+    else if (LogCaseInspContour::StaticGetFolderPrefix() == folderPrefix )
+        pLogCase = std::make_unique<LogCaseInspContour>( strLocalPath, true );
 
     if ( nullptr != pLogCase )
         enStatus = pLogCase->RunLogCase();
@@ -2002,11 +2005,8 @@ VisionStatus VisionAlgorithm::srchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd
         return pstRpy->enStatus;
     }
     
-    if (pstCmd->rectROI.x < 0 || pstCmd->rectROI.y < 0 ||
-        pstCmd->rectROI.width <= 0 || pstCmd->rectROI.height <= 0 ||
-        ( pstCmd->rectROI.x + pstCmd->rectROI.width ) > pstCmd->matInputImg.cols ||
-        ( pstCmd->rectROI.y + pstCmd->rectROI.height ) > pstCmd->matInputImg.rows )    {
-        WriteLog("The OCR search range is invalid");
+    if (pstCmd->rectRotatedROI.size.width <= 0 || pstCmd->rectRotatedROI.size.height <= 0 ) {
+        WriteLog("The caliper ROI size is invalid.");
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return pstRpy->enStatus;
     }
@@ -2035,18 +2035,15 @@ VisionStatus VisionAlgorithm::srchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd
         return pstRpy->enStatus;
     }
 
-    if ( pstCmd->bCheckAngle && ( pstCmd->fExpectedAngle < 0.f || pstCmd->fExpectedAngle > 180.f || pstCmd->fAngleDiffTolerance <= 0.f ) ) {
-        _snprintf(charrMsg, sizeof(charrMsg), "Angle check parameter is invalid. ExpectedAngle = %.2f, AngleDiffTolerance = %.2f",
-            pstCmd->fExpectedAngle, pstCmd->fAngleDiffTolerance );
-        WriteLog(charrMsg);
-        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
-        return pstRpy->enStatus;
-    }
-
     MARK_FUNCTION_START_TIME;
     SETUP_LOGCASE(LogCaseCaliper);   
 
-    cv::Mat matROI ( pstCmd->matInputImg, pstCmd->rectROI );
+    cv::Mat matROI;
+    cv::Rect2f rectNewROI ( pstCmd->rectRotatedROI.center.x -  pstCmd->rectRotatedROI.size.width / 2.f, pstCmd->rectRotatedROI.center.y -  pstCmd->rectRotatedROI.size.height / 2.f,
+        pstCmd->rectRotatedROI.size.width, pstCmd->rectRotatedROI.size.height );
+    pstRpy->enStatus = _extractRotatedROI ( pstCmd->matInputImg, pstCmd->rectRotatedROI, matROI );
+    if ( pstRpy->enStatus != VisionStatus::OK )
+        return pstRpy->enStatus;
 
     cv::Mat matGray, matThreshold, matROIMask;
     if ( pstCmd->matInputImg.channels() > 1 )
@@ -2055,13 +2052,13 @@ VisionStatus VisionAlgorithm::srchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd
         matGray = matROI.clone();
 
     if ( ! pstCmd->matMask.empty() )
-        matROIMask = cv::Mat ( pstCmd->matMask, pstCmd->rectROI );
+         _extractRotatedROI ( pstCmd->matMask, pstCmd->rectRotatedROI, matROIMask );
 
     VectorOfPoint vecFitPoint;
     if ( pstCmd->enAlgorithm == PR_CALIPER_ALGORITHM::PROJECTION )
-        _caliperByProjection ( matGray, matROIMask, pstCmd->rectROI, pstCmd->enDetectDir, vecFitPoint, pstRpy );
+        _caliperByProjection ( matGray, matROIMask, rectNewROI, pstCmd->enDetectDir, vecFitPoint, pstRpy );
     else if ( pstCmd->enAlgorithm == PR_CALIPER_ALGORITHM::SECTION_AVG_GUASSIAN_DIFF )
-        _caliperBySectionAvgGussianDiff ( matGray, pstCmd->rectROI, pstCmd->enDetectDir, vecFitPoint, pstRpy );
+        _caliperBySectionAvgGussianDiff ( matGray, rectNewROI, pstCmd->enDetectDir, vecFitPoint, pstRpy );
     else {
         WriteLog("The caliper algorithm is invalid");
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
@@ -2074,26 +2071,29 @@ VisionStatus VisionAlgorithm::srchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd
     }
 
     const int MIN_DIST_FROM_LINE_TO_ROI_EDGE = 5;
+    const float HORIZONTAL_SLOPE_TOL = 0.1f;
     if ( pstRpy->bReversedFit ) {
-        if ( pstRpy->fSlope < 0.5 && 
-            (fabs ( pstRpy->stLine.pt1.x - pstCmd->rectROI.x ) <= MIN_DIST_FROM_LINE_TO_ROI_EDGE ||
-             fabs ( pstRpy->stLine.pt2.x - pstCmd->rectROI.x ) <= MIN_DIST_FROM_LINE_TO_ROI_EDGE ||
-             fabs ( pstRpy->stLine.pt1.x - pstCmd->rectROI.x - pstCmd->rectROI.width ) <= MIN_DIST_FROM_LINE_TO_ROI_EDGE ||
-             fabs ( pstRpy->stLine.pt2.x - pstCmd->rectROI.x - pstCmd->rectROI.width ) <= MIN_DIST_FROM_LINE_TO_ROI_EDGE ) ) {
+        if ( pstRpy->fSlope < HORIZONTAL_SLOPE_TOL && 
+            (fabs ( pstRpy->stLine.pt1.x - rectNewROI.x ) <= MIN_DIST_FROM_LINE_TO_ROI_EDGE ||
+             fabs ( pstRpy->stLine.pt2.x - rectNewROI.x ) <= MIN_DIST_FROM_LINE_TO_ROI_EDGE ||
+             fabs ( pstRpy->stLine.pt1.x - rectNewROI.x - rectNewROI.width ) <= MIN_DIST_FROM_LINE_TO_ROI_EDGE ||
+             fabs ( pstRpy->stLine.pt2.x - rectNewROI.x - rectNewROI.width ) <= MIN_DIST_FROM_LINE_TO_ROI_EDGE ) ) {
             pstRpy->enStatus = VisionStatus::CALIPER_CAN_NOT_FIND_LINE;
+            FINISH_LOGCASE;
             return pstRpy->enStatus;
         }
     }else {
-        if ( pstRpy->fSlope < 0.5 && 
-            (fabs ( pstRpy->stLine.pt1.y - pstCmd->rectROI.y ) <= MIN_DIST_FROM_LINE_TO_ROI_EDGE ||
-             fabs ( pstRpy->stLine.pt2.y - pstCmd->rectROI.y ) <= MIN_DIST_FROM_LINE_TO_ROI_EDGE ||
-             fabs ( pstRpy->stLine.pt1.y - pstCmd->rectROI.y - pstCmd->rectROI.height ) <= MIN_DIST_FROM_LINE_TO_ROI_EDGE ||
-             fabs ( pstRpy->stLine.pt2.y - pstCmd->rectROI.y - pstCmd->rectROI.height ) <= MIN_DIST_FROM_LINE_TO_ROI_EDGE ) ) {
+        if ( pstRpy->fSlope < HORIZONTAL_SLOPE_TOL &&
+            (fabs ( pstRpy->stLine.pt1.y - rectNewROI.y ) <= MIN_DIST_FROM_LINE_TO_ROI_EDGE ||
+             fabs ( pstRpy->stLine.pt2.y - rectNewROI.y ) <= MIN_DIST_FROM_LINE_TO_ROI_EDGE ||
+             fabs ( pstRpy->stLine.pt1.y - rectNewROI.y - rectNewROI.height ) <= MIN_DIST_FROM_LINE_TO_ROI_EDGE ||
+             fabs ( pstRpy->stLine.pt2.y - rectNewROI.y - rectNewROI.height ) <= MIN_DIST_FROM_LINE_TO_ROI_EDGE ) ) {
             pstRpy->enStatus = VisionStatus::CALIPER_CAN_NOT_FIND_LINE;
+            FINISH_LOGCASE;
             return pstRpy->enStatus;
         }
     }
-    
+
     pstRpy->bLinerityCheckPass = false;
     if ( pstCmd->bCheckLinerity ) {
         int nInTolerancePointCount = 0;
@@ -2109,6 +2109,14 @@ VisionStatus VisionAlgorithm::srchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd
         pstRpy->bLinerityCheckPass = false;
     }
 
+    if ( fabs ( pstCmd->rectRotatedROI.angle ) > 0.1 ) {
+        cv::Mat matWarpBack = cv::getRotationMatrix2D ( pstCmd->rectRotatedROI.center, -pstCmd->rectRotatedROI.angle, 1. );
+        pstRpy->stLine.pt1 = CalcUtils::warpPoint<double> ( matWarpBack, pstRpy->stLine.pt1 );
+        pstRpy->stLine.pt2 = CalcUtils::warpPoint<double> ( matWarpBack, pstRpy->stLine.pt2 );
+        pstRpy->bReversedFit = false;
+        CalcUtils::lineSlopeIntercept ( pstRpy->stLine, pstRpy->fSlope, pstRpy->fIntercept );
+    }  
+
     pstRpy->bAngleCheckPass = true;
     pstRpy->fAngle = ToFloat ( CalcUtils::calcSlopeDegree<float> ( pstRpy->stLine.pt1, pstRpy->stLine.pt2 ) );
     if ( pstCmd->bCheckAngle && fabs ( pstRpy->fAngle - pstCmd->fExpectedAngle ) < pstCmd->fAngleDiffTolerance )
@@ -2122,7 +2130,9 @@ VisionStatus VisionAlgorithm::srchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd
         cv::cvtColor ( pstCmd->matInputImg, pstRpy->matResultImg, CV_GRAY2BGR );
 
     cv::line( pstRpy->matResultImg, pstRpy->stLine.pt1, pstRpy->stLine.pt2, _constBlueScalar, 2 );
-    cv::rectangle ( pstRpy->matResultImg, pstCmd->rectROI, _constGreenScalar );
+    VectorOfVectorOfPoint vevVecPoints;
+    vevVecPoints.push_back ( CalcUtils::getCornerOfRotatedRect ( pstCmd->rectRotatedROI ) );
+    cv::polylines ( pstRpy->matResultImg, vevVecPoints, true, _constGreenScalar, 2 );
     pstRpy->enStatus = VisionStatus::OK;
 
     FINISH_LOGCASE;
@@ -2130,7 +2140,77 @@ VisionStatus VisionAlgorithm::srchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd
     return pstRpy->enStatus;
 }
 
-/*static*/ VisionStatus VisionAlgorithm::_caliperByProjection(const cv::Mat &matGray, const cv::Mat &matROIMask, const cv::Rect &rectROI, PR_DETECT_LINE_DIR enDetectDir, VectorOfPoint &vecFitPoint, PR_CALIPER_RPY *const pstRpy) {
+/*static*/ VisionStatus VisionAlgorithm::_extractRotatedROI(const cv::Mat &matInputImg, const cv::RotatedRect &rectRotatedROI, cv::Mat &matROI ) {
+    if ( fabs ( rectRotatedROI.angle ) < 0.1 ) {
+        cv::Rect rectBounding ( ToInt32 ( rectRotatedROI.center.x - rectRotatedROI.size.width / 2.f ), ToInt32 ( rectRotatedROI.center.y - rectRotatedROI.size.height / 2.f ),
+            ToInt32 ( rectRotatedROI.size.width ), ToInt32 ( rectRotatedROI.size.height ) );
+        if ( rectBounding.x < 0 || rectBounding.y < 0 ||
+            rectBounding.width <= 0 || rectBounding.height <= 0 ||
+            (rectBounding.x + rectBounding.width) > matInputImg.cols ||
+            (rectBounding.y + rectBounding.height) > matInputImg.rows ) {
+            char charrMsg[1000];
+            _snprintf ( charrMsg, sizeof(charrMsg), "The ROI rect (%d, %d, %d, %d) is invalid",
+                rectBounding.x,rectBounding.y, rectBounding.width, rectBounding.height );
+            WriteLog ( charrMsg );
+            return VisionStatus::INVALID_PARAM;
+        }
+        matROI = cv::Mat ( matInputImg, rectBounding );
+        return VisionStatus::OK;
+    }
+    auto rectBounding = rectRotatedROI.boundingRect();
+    if ( rectBounding.x < 0 ) rectBounding.x = 0;
+    if ( rectBounding.y < 0 ) rectBounding.y = 0;
+    if ( ( rectBounding.x + rectBounding.width ) > matInputImg.cols )
+        rectBounding.width = matInputImg.cols - rectBounding.x;
+    if ( ( rectBounding.y + rectBounding.height ) > matInputImg.rows )
+        rectBounding.height = matInputImg.rows - rectBounding.y;
+
+    cv::Mat matBoundingROI ( matInputImg, rectBounding );
+    cv::Point2f ptNewCenter ( rectRotatedROI.center.x - rectBounding.x, rectRotatedROI.center.y - rectBounding.y ); 
+    cv::Mat matWarp = cv::getRotationMatrix2D ( ptNewCenter, rectRotatedROI.angle, 1. );
+    auto vecVec = CalcUtils::matToVector<double>(matWarp);
+    auto rectWarppedPoly = CalcUtils::warpRect<double>( matWarp, rectBounding );
+    auto rectWarppedPolyBounding = cv::boundingRect ( rectWarppedPoly );
+    cv::Mat matWarpResult;
+	cv::warpAffine( matBoundingROI, matWarpResult, matWarp, rectWarppedPolyBounding.size() );
+    auto ptWarppedCenter = CalcUtils::warpPoint<double> ( matWarp, ptNewCenter );
+    cv::Rect2f rectSubROI( ptWarppedCenter.x - rectRotatedROI.size.width / 2.f, ptWarppedCenter.y - rectRotatedROI.size.height / 2.f,
+        rectRotatedROI.size.width, rectRotatedROI.size.height );
+    if ( rectSubROI.x < 0 ) rectSubROI.x = 0;
+    if ( rectSubROI.y < 0 ) rectSubROI.y = 0;
+    if ( ( rectSubROI.x + rectSubROI.width ) > matWarpResult.cols )
+        rectSubROI.width = matWarpResult.cols - rectSubROI.x;
+    if ( ( rectSubROI.y + rectSubROI.height ) > matWarpResult.rows )
+        rectSubROI.height = matWarpResult.rows - rectSubROI.y;
+    matROI = cv::Mat( matWarpResult, rectSubROI );
+    if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE ) {
+        showImage("Bouding ROI", matBoundingROI );
+        showImage("Warpped ROI", matWarpResult );
+        showImage("Result ROI", matROI );
+        //cv::waitKey ( 0 );
+    }    
+    return VisionStatus::OK;
+}
+
+/*static*/ VisionStatus VisionAlgorithm::_calcCaliperDirection(const cv::Mat &matRoiImg, bool bReverseFit, PR_CALIPER_DIR &enDirection ) {
+    cv::Mat matLeftTop, matRightBottom;
+    if ( bReverseFit ) {
+        matLeftTop =     cv::Mat ( matRoiImg, cv::Rect ( 0, 0, matRoiImg.cols / 2, matRoiImg.rows ) );
+        matRightBottom = cv::Mat ( matRoiImg, cv::Rect ( matRoiImg.cols / 2, 0, matRoiImg.cols / 2, matRoiImg.rows ) );
+    }else {
+        matLeftTop =     cv::Mat ( matRoiImg, cv::Rect ( 0, 0, matRoiImg.cols, matRoiImg.rows / 2 ) );
+        matRightBottom = cv::Mat ( matRoiImg, cv::Rect ( 0, matRoiImg.rows / 2, matRoiImg.cols, matRoiImg.rows / 2 ) );
+    }
+    auto sumOfLeftTop = cv::sum ( matLeftTop )[0];
+    auto sumOfRightBottom = cv::sum ( matRightBottom )[0];
+    if ( sumOfLeftTop < sumOfRightBottom )
+        enDirection = PR_CALIPER_DIR::MIN_TO_MAX;
+    else
+        enDirection = PR_CALIPER_DIR::MAX_TO_MIN;
+    return VisionStatus::OK;
+}
+
+/*static*/ VisionStatus VisionAlgorithm::_caliperByProjection(const cv::Mat &matGray, const cv::Mat &matROIMask, const cv::Rect &rectROI, PR_CALIPER_DIR enDetectDir, VectorOfPoint &vecFitPoint, PR_CALIPER_RPY *const pstRpy) {
     VectorOfPoint vecPoints;
     std::vector<int> vecX, vecY, vecIndexCanFormLine, vecProjection;
     VectorOfVectorOfPoint vecVecPoint;
@@ -2163,6 +2243,9 @@ VisionStatus VisionAlgorithm::srchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd
     if ( CalcUtils::calcStdDeviation ( vecY ) > CalcUtils::calcStdDeviation ( vecX ) )
         pstRpy->bReversedFit = true;
 
+    if ( PR_CALIPER_DIR::AUTO == enDetectDir )
+        _calcCaliperDirection ( matGray, pstRpy->bReversedFit, enDetectDir );
+
     auto projectSize = pstRpy->bReversedFit ? matGray.cols : matGray.rows;
     vecProjection.resize ( projectSize, 0 );
     for ( const auto &point : vecPoints ) {
@@ -2181,7 +2264,7 @@ VisionStatus VisionAlgorithm::srchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd
     }
 
     auto initialLinePos = 0;
-    if ( PR_DETECT_LINE_DIR::MIN_TO_MAX == enDetectDir )
+    if ( PR_CALIPER_DIR::MIN_TO_MAX == enDetectDir )
         initialLinePos = vecIndexCanFormLine[0];
     else
         initialLinePos = vecIndexCanFormLine.back();
@@ -2205,7 +2288,7 @@ VisionStatus VisionAlgorithm::srchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd
     //Find the extreme point on each row or column.
     for ( const auto &vecPointTmp : vecVecPoint ) {
         if ( ! vecPointTmp.empty() ) {
-            auto point = PR_DETECT_LINE_DIR::MIN_TO_MAX == enDetectDir ? vecPointTmp.front() : vecPointTmp.back();
+            auto point = PR_CALIPER_DIR::MIN_TO_MAX == enDetectDir ? vecPointTmp.front() : vecPointTmp.back();
             if ( pstRpy->bReversedFit ) {
                 if (point.x != initialLinePos - rs && point.x != initialLinePos - rs)
                     vecFitPoint.push_back ( point + cv::Point ( rectROI.x, rectROI.y ) );
@@ -2218,13 +2301,12 @@ VisionStatus VisionAlgorithm::srchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd
 
     Fitting::fitLine ( vecFitPoint, pstRpy->fSlope, pstRpy->fIntercept, pstRpy->bReversedFit );
     pstRpy->stLine = CalcUtils::calcEndPointOfLine ( vecFitPoint, pstRpy->bReversedFit, pstRpy->fSlope, pstRpy->fIntercept );
-
     
     pstRpy->enStatus = VisionStatus::OK;
     return pstRpy->enStatus;
 }
 
-/*static*/ int VisionAlgorithm::_findMaxDiffPosInX( const cv::Mat &matInput, const cv::Mat &matGuassianDiffKernel, PR_DETECT_LINE_DIR enDirection ) {
+/*static*/ int VisionAlgorithm::_findMaxDiffPosInX( const cv::Mat &matInput, const cv::Mat &matGuassianDiffKernel, PR_CALIPER_DIR enDirection ) {
     cv::Mat matAverage;
     cv::reduce ( matInput, matAverage, 0, cv::ReduceTypes::REDUCE_AVG );
 
@@ -2233,12 +2315,12 @@ VisionStatus VisionAlgorithm::srchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd
     double minValue = 0., maxValue = 0.;
     cv::Point ptMin, ptMax;
     cv::minMaxLoc ( matGuassianDiffResult, &minValue, &maxValue, &ptMin, &ptMax );
-    if ( PR_DETECT_LINE_DIR::MIN_TO_MAX == enDirection )
+    if ( PR_CALIPER_DIR::MIN_TO_MAX == enDirection )
         return ptMin.x;
     return ptMax.x;
 }
 
-/*static*/ int VisionAlgorithm::_findMaxDiffPosInY( const cv::Mat &matInput, const cv::Mat &matGuassianDiffKernel, PR_DETECT_LINE_DIR enDirection ) {
+/*static*/ int VisionAlgorithm::_findMaxDiffPosInY( const cv::Mat &matInput, const cv::Mat &matGuassianDiffKernel, PR_CALIPER_DIR enDirection ) {
     cv::Mat matAverage;
     cv::reduce ( matInput, matAverage, 1, cv::ReduceTypes::REDUCE_AVG );
 
@@ -2247,16 +2329,20 @@ VisionStatus VisionAlgorithm::srchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd
     double minValue = 0., maxValue = 0.;
     cv::Point ptMin, ptMax;
     cv::minMaxLoc ( matGuassianDiffResult, &minValue, &maxValue, &ptMin, &ptMax );
-    if ( PR_DETECT_LINE_DIR::MIN_TO_MAX == enDirection )
+    if ( PR_CALIPER_DIR::MIN_TO_MAX == enDirection )
         return ptMin.y;
     return ptMax.y;
 }
 
-VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &matInputImg, const cv::Rect &rectROI, PR_DETECT_LINE_DIR enDirection, VectorOfPoint &vecFitPoint, PR_CALIPER_RPY *const pstRpy) {
+VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &matInputImg, const cv::Rect &rectROI, PR_CALIPER_DIR enDirection, VectorOfPoint &vecFitPoint, PR_CALIPER_RPY *const pstRpy) {
     const int DIVIDE_SECTION = 20;
     bool bDivideInX = true;
     if ( matInputImg.rows > matInputImg.cols )
-        bDivideInX = false;
+        pstRpy->bReversedFit = true;
+    else
+        pstRpy->bReversedFit = false;
+    if ( PR_CALIPER_DIR::AUTO == enDirection )
+        _calcCaliperDirection ( matInputImg, pstRpy->bReversedFit, enDirection );
 
     int COLS = matInputImg.cols;
     int ROWS = matInputImg.rows;
@@ -2264,7 +2350,18 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     const float GUASSIAN_KERNEL_SSQ = 1.f;
     cv::Mat matGuassinKernel = CalcUtils::generateGuassinDiffKernel ( GUASSIAN_DIFF_WIDTH, GUASSIAN_KERNEL_SSQ );
 
-    if ( bDivideInX ) {
+    if ( pstRpy->bReversedFit ) {
+        int nInterval = matInputImg.rows / DIVIDE_SECTION;
+        int nCurrentProcessedPos = 0;
+        while ( nCurrentProcessedPos < matInputImg.rows ) {
+            int nROISize = ( nCurrentProcessedPos + nInterval ) < matInputImg.rows ? nInterval : matInputImg.rows - nCurrentProcessedPos;
+            cv::Mat matSubROI ( matInputImg, cv::Rect ( 0, nCurrentProcessedPos, COLS, nROISize ) );
+            int nJumpPos = _findMaxDiffPosInX ( matSubROI, matGuassinKernel, enDirection );
+            if ( nJumpPos > 0 )
+                vecFitPoint.push_back ( cv::Point ( nJumpPos, ToInt32 ( nCurrentProcessedPos + nInterval / 2.f + 0.5f ) ) );
+            nCurrentProcessedPos += nInterval;
+        }
+    }else {
         cv::transpose ( matGuassinKernel, matGuassinKernel );
         int nInterval = matInputImg.cols / DIVIDE_SECTION;
         int nCurrentProcessedPos = 0;
@@ -2272,22 +2369,12 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
             int nROISize = ( nCurrentProcessedPos + nInterval ) < matInputImg.cols ? nInterval : matInputImg.cols - nCurrentProcessedPos;
             cv::Mat matSubROI ( matInputImg, cv::Rect ( nCurrentProcessedPos, 0, nROISize , ROWS ) );
             int nJumpPos = _findMaxDiffPosInY ( matSubROI, matGuassinKernel, enDirection );
-            vecFitPoint.push_back ( cv::Point ( ToInt32 ( nCurrentProcessedPos + nInterval / 2.f + 0.5f ), nJumpPos ) );
+            if ( nJumpPos > 0 )
+                vecFitPoint.push_back ( cv::Point ( ToInt32 ( nCurrentProcessedPos + nInterval / 2.f + 0.5f ), nJumpPos ) );
             nCurrentProcessedPos += nInterval;
         }
-        pstRpy->bReversedFit = false;
-    }else {
-        int nInterval = matInputImg.rows / DIVIDE_SECTION;
-        int nCurrentProcessedPos = 0;
-        while ( nCurrentProcessedPos < matInputImg.rows ) {
-            int nROISize = ( nCurrentProcessedPos + nInterval ) < matInputImg.rows ? nInterval : matInputImg.rows - nCurrentProcessedPos;
-            cv::Mat matSubROI ( matInputImg, cv::Rect ( 0, nCurrentProcessedPos, COLS, nROISize ) );
-            int nJumpPos = _findMaxDiffPosInX ( matSubROI, matGuassinKernel, enDirection );
-            vecFitPoint.push_back ( cv::Point ( nJumpPos, ToInt32 ( nCurrentProcessedPos + nInterval / 2.f + 0.5f ) ) );
-            nCurrentProcessedPos += nInterval;
-        }
-        pstRpy->bReversedFit = true;
     }
+
     if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE ) {
         cv::Mat matDisplay;
         cv::cvtColor ( matInputImg, matDisplay, CV_GRAY2BGR );
@@ -2296,6 +2383,12 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
         }
         showImage ( "Find out point", matDisplay );
         cv::waitKey(0);
+    }
+
+    if ( vecFitPoint.size() < 2 ) {
+        WriteLog("_caliperBySectionAvgGussianDiff can not find enough points");
+        pstRpy->enStatus = VisionStatus::CALIPER_CAN_NOT_FIND_LINE;
+        return pstRpy->enStatus;
     }
 
     for ( auto &point : vecFitPoint ) {
@@ -4170,7 +4263,7 @@ EXIT:
         pstCmd->rectChip.width <= 0 || pstCmd->rectChip.height <= 0 ||
         ( pstCmd->rectChip.x + pstCmd->rectChip.width ) > pstCmd->matInputImg.cols ||
         ( pstCmd->rectChip.y + pstCmd->rectChip.height ) > pstCmd->matInputImg.rows ) {
-        _snprintf( charrMsg, sizeof( charrMsg ), "The input search window (%d, %d, %d, %d) is invalid",
+        _snprintf( charrMsg, sizeof( charrMsg ), "The input chip window (%d, %d, %d, %d) is invalid",
             pstCmd->rectChip.x, pstCmd->rectChip.y, pstCmd->rectChip.width, pstCmd->rectChip.height );
         WriteLog(charrMsg);
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
@@ -4209,12 +4302,12 @@ EXIT:
         pstRpy->matResultImg = pstCmd->matInputImg.clone();
     else
         cv::cvtColor ( pstCmd->matInputImg, pstRpy->matResultImg, CV_GRAY2BGR );
+
     if ( PR_INSP_CHIP_MODE::HEAD == pstCmd->enInspMode ) {
         _lrnChipHeadMode ( matThreshold, rectChipROI, pstRpy );
     }else if ( PR_INSP_CHIP_MODE::SQUARE == pstCmd->enInspMode ) {
         _lrnChipSquareMode ( matThreshold, pstCmd->rectChip, rectChipROI, pstRpy );
-    }else
-    if ( PR_INSP_CHIP_MODE::CAE == pstCmd->enInspMode ) {
+    }else if ( PR_INSP_CHIP_MODE::CAE == pstCmd->enInspMode ) {
         _lrnChipCAEMode ( matThreshold, rectChipROI, pstRpy );
     }
 
@@ -4261,7 +4354,7 @@ EXIT:
     _fillHoleByContour ( matThreshold, matFillHole, PR_OBJECT_ATTRIBUTE::BRIGHT );
 
     VectorOfVectorOfPoint contours;
-    cv::findContours( matFillHole, contours, cv::RETR_CCOMP, cv::CHAIN_APPROX_SIMPLE );
+    cv::findContours( matFillHole, contours, cv::RETR_LIST, cv::CHAIN_APPROX_SIMPLE );
     VectorOfPoint maxContour;
     float fMaxArea = std::numeric_limits<float>::min();
     for ( const auto &contour : contours ) {
@@ -4356,13 +4449,12 @@ EXIT:
     return pstRpy->enStatus;
 }
 
-/*static*/ VisionStatus VisionAlgorithm::_writeChipRecord(const PR_LRN_CHIP_CMD *const pstCmd, PR_LRN_CHIP_RPY *const pstRpy)
-{
+/*static*/ VisionStatus VisionAlgorithm::_writeChipRecord(const PR_LRN_CHIP_CMD *const pstCmd, PR_LRN_CHIP_RPY *const pstRpy) {
     ChipRecordPtr ptrRecord = std::make_shared<ChipRecord>( PR_RECORD_TYPE::CHIP );
     ptrRecord->setThreshold ( pstRpy->nThreshold );
     ptrRecord->setSize ( pstRpy->sizeDevice );
     ptrRecord->setInspMode ( pstCmd->enInspMode );
-    RecordManager::getInstance()->add( ptrRecord, pstRpy->nRecordID );
+    RecordManager::getInstance()->add( ptrRecord, pstRpy->nRecordId );
     return VisionStatus::OK;
 }
 
@@ -4790,6 +4882,306 @@ EXIT:
     cv::circle ( pstRpy->matResultImg, fitCircleResult.center, ToInt32 ( fitCircleResult.size.width / 2 + 0.5 ), _constBlueScalar, 2 );
     pstRpy->enStatus = VisionStatus::OK;
     return pstRpy->enStatus;
+}
+
+/*static*/ VisionStatus VisionAlgorithm::lrnContour(const PR_LRN_CONTOUR_CMD *const pstCmd, PR_LRN_CONTOUR_RPY *const pstRpy, bool bReplay /*= false*/ ) {
+    assert(pstCmd != nullptr && pstRpy != nullptr);
+    char charrMsg[1000];
+    if ( pstCmd->matInputImg.empty() ) {
+        WriteLog("Input image is empty.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+   
+    if (pstCmd->rectROI.x < 0 || pstCmd->rectROI.y < 0 ||
+        pstCmd->rectROI.width <= 0 || pstCmd->rectROI.height <= 0 ||
+        ( pstCmd->rectROI.x + pstCmd->rectROI.width ) > pstCmd->matInputImg.cols ||
+        ( pstCmd->rectROI.y + pstCmd->rectROI.height ) > pstCmd->matInputImg.rows ) {
+        _snprintf( charrMsg, sizeof( charrMsg ), "The input ROI rect (%d, %d, %d, %d) is invalid",
+            pstCmd->rectROI.x, pstCmd->rectROI.y, pstCmd->rectROI.width, pstCmd->rectROI.height );
+        WriteLog(charrMsg);
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return VisionStatus::INVALID_PARAM;
+    }
+
+    MARK_FUNCTION_START_TIME;
+    SETUP_LOGCASE(LogCaseLrnContour);
+
+    cv::Mat matROI ( pstCmd->matInputImg, pstCmd->rectROI );
+    cv::Mat matGray, matBlur, matThreshold;
+    if ( matROI.channels() > 1 )
+        cv::cvtColor ( matROI, matGray, CV_BGR2GRAY );
+    else
+        matGray = matROI.clone();
+    cv::GaussianBlur ( matGray, matBlur, cv::Size(5, 5), 2, 2 );
+    if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE )
+        showImage("Blur image", matBlur);
+
+    pstRpy->nThreshold = pstCmd->nThreshold;
+    if ( pstCmd->bAutoThreshold )
+        pstRpy->nThreshold = _autoThreshold ( matBlur );
+    cv::threshold ( matBlur, matThreshold, pstRpy->nThreshold, PR_MAX_GRAY_LEVEL, cv::ThresholdTypes::THRESH_BINARY );
+    cv::Mat matContour = matThreshold.clone();
+
+    VectorOfVectorOfPoint vecContours;
+    cv::findContours ( matThreshold, vecContours, cv::RETR_LIST, cv::CHAIN_APPROX_SIMPLE );
+
+    cv::Mat matDraw = matROI.clone();
+    // Filter contours
+    int index = 0;
+    for ( auto contour : vecContours ) {
+        auto area = cv::contourArea ( contour );
+        if ( area > 1000 ) {
+            pstRpy->vecContours.push_back ( contour );
+            if (Config::GetInstance ()->getDebugMode () == PR_DEBUG_MODE::SHOW_IMAGE) {
+                cv::RNG rng ( 12345 );
+                cv::Scalar color = cv::Scalar ( rng.uniform ( 0, 255 ), rng.uniform ( 0, 255 ), rng.uniform ( 0, 255 ) );
+                cv::drawContours ( matDraw, vecContours, index, color );
+            }
+        }
+        ++ index;
+    }
+    if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE )
+        showImage("Contours", matDraw );
+
+    if ( pstRpy->vecContours.empty() ) {
+        pstRpy->enStatus = VisionStatus::CAN_NOT_FIND_CONTOUR;
+        return pstRpy->enStatus;
+    }
+
+    if ( pstCmd->matInputImg.channels() > 1)
+        pstRpy->matResultImg = pstCmd->matInputImg.clone();
+    else
+        cv::cvtColor ( pstCmd->matInputImg, pstRpy->matResultImg, CV_GRAY2BGR );
+
+    _writeContourRecord ( pstRpy, matBlur, matContour, pstRpy->vecContours );
+
+    for ( size_t index = 0; index < pstRpy->vecContours.size(); ++ index ) {
+        for ( auto &point : pstRpy->vecContours[index] ) {
+            point.x += pstCmd->rectROI.x;
+            point.y += pstCmd->rectROI.y;
+        }
+    }
+    cv::polylines( pstRpy->matResultImg, pstRpy->vecContours, true, _constBlueScalar, 2 );
+
+    FINISH_LOGCASE;
+    MARK_FUNCTION_END_TIME;
+    pstRpy->enStatus = VisionStatus::OK;
+    return pstRpy->enStatus;
+}
+
+/*static*/ VisionStatus VisionAlgorithm::_writeContourRecord(PR_LRN_CONTOUR_RPY *const pstRpy, const cv::Mat &matTmpl, const cv::Mat &matContour, const VectorOfVectorOfPoint &vecContours) {
+    ContourRecordPtr ptrRecord = std::make_shared<ContourRecord>( PR_RECORD_TYPE::CONTOUR );
+    ptrRecord->setThreshold ( pstRpy->nThreshold );
+    ptrRecord->setTmpl ( matTmpl );
+    ptrRecord->setContourMat ( matContour );
+    ptrRecord->setContour ( vecContours );
+    RecordManager::getInstance()->add( ptrRecord, pstRpy->nRecordId );
+    return VisionStatus::OK;
+}
+
+/*static*/ VisionStatus VisionAlgorithm::inspContour ( const PR_INSP_CONTOUR_CMD *const pstCmd, PR_INSP_CONTOUR_RPY *const pstRpy, bool bReplay /*= false*/ ) {
+    assert(pstCmd != nullptr && pstRpy != nullptr);
+    char charrMsg[1000];
+    if ( pstCmd->matInputImg.empty() ) {
+        WriteLog("Input image is empty.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+   
+    if (pstCmd->rectROI.x < 0 || pstCmd->rectROI.y < 0 ||
+        pstCmd->rectROI.width <= 0 || pstCmd->rectROI.height <= 0 ||
+        ( pstCmd->rectROI.x + pstCmd->rectROI.width ) > pstCmd->matInputImg.cols ||
+        ( pstCmd->rectROI.y + pstCmd->rectROI.height ) > pstCmd->matInputImg.rows ) {
+        _snprintf( charrMsg, sizeof( charrMsg ), "The input ROI rect (%d, %d, %d, %d) is invalid",
+            pstCmd->rectROI.x, pstCmd->rectROI.y, pstCmd->rectROI.width, pstCmd->rectROI.height );
+        WriteLog(charrMsg);
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return VisionStatus::INVALID_PARAM;
+    }
+
+    if ( pstCmd->nRecordId <= 0 ) {
+        WriteLog("The input record id is invalid.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return VisionStatus::INVALID_PARAM;
+    }
+    
+    ContourRecordPtr ptrRecord = std::static_pointer_cast<ContourRecord> (RecordManager::getInstance ()->get ( pstCmd->nRecordId ));
+    if ( nullptr == ptrRecord ) {
+        _snprintf ( charrMsg, sizeof (charrMsg), "Failed to get record ID %d in system.", pstCmd->nRecordId );
+        WriteLog ( charrMsg );
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    MARK_FUNCTION_START_TIME;
+    SETUP_LOGCASE(LogCaseInspContour);
+
+    cv::Mat matROI ( pstCmd->matInputImg, pstCmd->rectROI );
+    cv::Mat matGray, matBlur, matThreshold;
+    if ( matROI.channels() > 1 )
+        cv::cvtColor ( matROI, matGray, CV_BGR2GRAY );
+    else
+        matGray = matROI.clone();
+    cv::GaussianBlur ( matGray, matBlur, cv::Size(5, 5), 2, 2 );
+    if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE )
+        showImage("Blur image", matBlur);    
+
+    cv::Point2f ptResult;
+    float fRotation = 0.f, fCorrelation = 0.f;
+    cv::Mat matTmpl = ptrRecord->getTmpl();
+    if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE )
+        showImage ( "Template image", matTmpl );
+    pstRpy->enStatus = _matchTemplate ( matBlur, matTmpl, PR_OBJECT_MOTION::TRANSLATION, ptResult, fRotation, fCorrelation );
+    if ( pstRpy->enStatus != VisionStatus::OK ) {
+        WriteLog ( "Template match fail." );
+        return pstRpy->enStatus;
+    }
+
+    pstRpy->enStatus = VisionStatus::OK;
+
+    cv::Mat matCompareROI = cv::Mat ( matBlur, cv::Rect ( ToInt32 ( ptResult.x - matTmpl.cols / 2.f ), ToInt32 ( ptResult.y - matTmpl.rows / 2.f ), matTmpl.cols, matTmpl.rows ) );
+    cv::Mat matDiff_1 = matTmpl - matCompareROI;
+    cv::Mat matDiff_2 = matCompareROI - matTmpl;
+    cv::Mat matDiff = matDiff_1 + matDiff_2;
+    if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE )
+        showImage ( "Original Diff Image", matDiff );
+
+    cv::Mat matContourMask = _generateContourMask ( matTmpl.size(), ptrRecord->getContour(), pstCmd->fInnerMaskDepth, pstCmd->fOuterMaskDepth );    
+    matDiff = matDiff > pstCmd->nDefectThreshold;
+    matDiff.setTo ( cv::Scalar(0), matContourMask );
+    if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE )
+        showImage ( "Defect image", matDiff );
+    // Filter contours
+    VectorOfVectorOfPoint vecContours, vecDefectContour;
+    cv::findContours ( matDiff, vecContours, cv::RETR_LIST, cv::CHAIN_APPROX_SIMPLE );
+    const float DEFECT_ON_CONTOUR_RATIO = 1.2f;
+    int index = 0;
+    for ( auto contour : vecContours ) {
+        auto area = cv::contourArea ( contour );
+        if ( area > pstCmd->fMinDefectArea ) {
+            cv::Moments moment = cv::moments( contour );
+            cv::Point2f ptCenter;
+            ptCenter.x = static_cast< float >(moment.m10 / moment.m00);
+            ptCenter.y = static_cast< float >(moment.m01 / moment.m00);
+
+            auto contourTarget = _findNearestContour ( ptCenter, ptrRecord->getContour() );
+
+            float fInnerFarthestDist, fInnerNearestDist, fOuterFarthestDist, fOuterNearestDist;
+            _getContourToContourDistance ( contour, contourTarget, fInnerFarthestDist, fInnerNearestDist, fOuterFarthestDist, fOuterNearestDist );
+
+            auto minRect = cv::minAreaRect ( contour );
+            auto length = minRect.size.width > minRect.size.height ?  minRect.size.width : minRect.size.height;
+
+            //Defect inside contour.
+            if ( fInnerFarthestDist > 0 && fabs ( fInnerNearestDist ) < pstCmd->fInnerMaskDepth * DEFECT_ON_CONTOUR_RATIO && length > pstCmd->fDefectInnerLengthTol ) {
+                vecDefectContour.push_back ( contour );
+            }else 
+            if ( fOuterFarthestDist < 0 && fabs ( fOuterNearestDist ) < pstCmd->fOuterMaskDepth * DEFECT_ON_CONTOUR_RATIO && length > pstCmd->fDefectOuterLengthTol ) {
+                vecDefectContour.push_back ( contour );
+            }
+        }
+        ++ index;
+    }
+
+    if ( pstCmd->matInputImg.channels() > 1 )
+        pstRpy->matResultImg = pstCmd->matInputImg.clone();
+    else
+        cv::cvtColor ( pstCmd->matInputImg, pstRpy->matResultImg, CV_GRAY2BGR );
+
+    if ( ! vecDefectContour.empty() ) {
+        for ( auto &contour : vecDefectContour ) {
+            for ( auto &point : contour ) {
+                point.x += pstCmd->rectROI.x;
+                point.y += pstCmd->rectROI.y;
+            }
+        }
+        cv::polylines ( pstRpy->matResultImg, vecDefectContour, true, _constRedScalar, 2 );
+        pstRpy->vecDefectContour = vecDefectContour;
+        pstRpy->enStatus = VisionStatus::CONTOUR_DEFECT_REJECT;
+    }
+
+    FINISH_LOGCASE;
+    MARK_FUNCTION_END_TIME;
+    return pstRpy->enStatus;
+}
+
+VectorOfPoint VisionAlgorithm::_findNearestContour(const cv::Point2f &ptInput, const VectorOfVectorOfPoint &vecContours) {
+    float fNearestDist = std::numeric_limits<float>::max();
+    VectorOfPoint contourResult;
+    cv::Point ptNearestPoint;
+    for ( const auto &contour : vecContours ) {
+        float fDist = CalcUtils::calcPointToContourDist ( ptInput, contour, ptNearestPoint );
+        if ( fDist < fNearestDist ) {
+            contourResult = contour;
+            fNearestDist = fDist;
+        }
+    }
+    return contourResult;
+}
+
+/*static*/ void VisionAlgorithm::_getContourToContourDistance(const VectorOfPoint &contourInput,
+                                                              const VectorOfPoint &contourTarget,
+                                                              float               &fInnerFarthestDist,
+                                                              float               &fInnerNearestDist,
+                                                              float               &fOuterFarthestDist,
+                                                              float               &fOuterNearestDist) {
+    fOuterNearestDist = fInnerFarthestDist = - std::numeric_limits<float>::max();
+    fInnerNearestDist = fOuterFarthestDist =   std::numeric_limits<float>::max();
+    for ( const auto &point : contourInput ) {
+        auto distance = ToFloat ( cv::pointPolygonTest ( contourTarget, point, true ) );
+        // distance < 0 means the point is outside of the target contour.
+        if ( distance < 0 ) {
+            if ( distance < fOuterFarthestDist )
+                fOuterFarthestDist = distance;
+            if ( distance > fOuterNearestDist )
+                fOuterNearestDist = distance;
+        }else if ( distance > 0 ) { // distance > 0 means the point is inside of the target contour.
+            if ( distance > fInnerFarthestDist )
+                fInnerFarthestDist = distance;
+            if ( distance < fInnerNearestDist )
+                fInnerNearestDist = distance;
+        }
+    }
+}
+
+/*static*/ cv::Mat VisionAlgorithm::_generateContourMask ( const cv::Size &size, const VectorOfVectorOfPoint &vecContours, float fInnerDepth, float fOuterDepth ) {
+    cv::Mat matMask = cv::Mat::zeros ( size, CV_8UC1 );
+    if ( fabs ( fInnerDepth - fOuterDepth ) < 1 ) {
+        for ( int index = 0; index < (int) ( vecContours.size() ); ++ index )
+            cv::drawContours ( matMask, vecContours, index, cv::Scalar(PR_MAX_GRAY_LEVEL), ToInt32 ( 2.f * fOuterDepth ) );
+        return matMask;
+    }
+
+    cv::Mat matOuterMask = matMask.clone();
+    cv::Mat matInnerMask = matMask.clone();
+
+    {//Generate Outer Mask
+        for ( int index = 0; index < (int) ( vecContours.size() ); ++ index )
+            cv::drawContours ( matOuterMask, vecContours, index, cv::Scalar(PR_MAX_GRAY_LEVEL), ToInt32 ( 2.f * fOuterDepth ) );
+        cv::fillPoly ( matOuterMask, vecContours, cv::Scalar::all(0) );
+    }
+
+    {
+        cv::Mat matTmpOuterMask = matMask.clone();
+        for ( int index = 0; index < (int) ( vecContours.size() ); ++ index ) {
+            cv::drawContours ( matTmpOuterMask, vecContours, index, cv::Scalar(PR_MAX_GRAY_LEVEL), ToInt32 ( 2.f * fInnerDepth ) );
+            cv::drawContours ( matInnerMask, vecContours, index, cv::Scalar(PR_MAX_GRAY_LEVEL), ToInt32 ( 2.f * fInnerDepth ) );
+        }
+        cv::fillPoly ( matTmpOuterMask, vecContours, cv::Scalar::all(0) );
+        matInnerMask -= matTmpOuterMask;
+    }
+    matMask = matInnerMask + matOuterMask;
+
+    if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE ) {
+        cv::Mat matDisplay = cv::Mat::zeros ( size, CV_8UC3 );
+        matDisplay.setTo ( _constGreenScalar, matOuterMask );
+        matDisplay.setTo ( _constBlueScalar,  matInnerMask );
+        for ( int index = 0; index < (int)(vecContours.size ()); ++index )
+            cv::drawContours ( matDisplay, vecContours, index, _constRedScalar, 1 );
+        showImage ( "Result Mask", matDisplay );
+    }
+    return matMask;
 }
 
 }

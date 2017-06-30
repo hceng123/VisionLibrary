@@ -130,6 +130,11 @@ namespace Vision
     return ( line.pt2.y - line.pt1.y ) / ( line.pt2.x - line.pt1.x );
 }
 
+/*static*/ void CalcUtils::lineSlopeIntercept(const PR_Line2f &line, float &fSlope, float &fIntercept) {
+    fSlope = ( line.pt2.y - line.pt1.y ) / ( line.pt2.x - line.pt1.x );
+    fIntercept = line.pt2.y  - fSlope * line.pt2.x;
+}
+
 /*static*/ VectorOfPoint CalcUtils::getCornerOfRotatedRect(const cv::RotatedRect &rotatedRect) {
     VectorOfPoint vecPoint;
     cv::Point2f arrPt[4];
@@ -139,19 +144,19 @@ namespace Vision
     return vecPoint;
 }
 
-float CalcUtils::guassianValue(float ssq, float x )
+/*static*/ float CalcUtils::guassianValue(float ssq, float x )
 {
-    return exp( -(x * x) / ( 2.0 * ssq ) ) / ( CV_PI * ssq );
+    return ToFloat ( exp ( - ( x * x ) / ( 2.0 * ssq ) ) / ( CV_PI * ssq ) );
 }
 
 /*static*/ cv::Mat CalcUtils::generateGuassinDiffKernel(int nOneSideWidth, float ssq) {
     std::vector<float> vecGuassian;
     for ( int i = -nOneSideWidth; i <= nOneSideWidth; ++ i )
-        vecGuassian.push_back ( i * guassianValue ( ssq, i ) );
+        vecGuassian.push_back ( ToFloat ( i ) * guassianValue ( ssq, ToFloat ( i ) ) );
     cv::Mat matGuassian ( vecGuassian );
     cv::transpose ( matGuassian, matGuassian );
     cv::Mat matTmp( matGuassian, cv::Range::all(), cv::Range ( 0, nOneSideWidth ) );
-    float fSum = fabs ( cv::sum(matTmp)[0] );
+    float fSum = ToFloat ( fabs ( cv::sum(matTmp)[0] ) );
     matGuassian /= fSum;
     return matGuassian;
 }
@@ -167,6 +172,52 @@ float CalcUtils::guassianValue(float ssq, float x )
     if ( anchor.x > 0 && anchor.y >= 0 )
         newAnchor = cv::Point ( newKernel.cols - anchor.x - 1, newKernel.rows - anchor.y - 1 );
     cv::filter2D ( src, dst, ddepth, newKernel, newAnchor, delta, borderType );
+}
+
+float CalcUtils::calcPointToContourDist(const cv::Point &ptInput, const VectorOfPoint &contour, cv::Point &ptResult ) {
+    cv::Point ptNearestPoint1, ptNearestPoint2;
+    float fNearestDist1, fNearestDist2;
+    fNearestDist1 = fNearestDist2 = std::numeric_limits<float>::max();
+    for ( const auto &ptOfContour : contour ) {
+        auto distance = distanceOf2Point<int> ( ptOfContour, ptInput );
+        if ( distance < fNearestDist1 ) {
+            fNearestDist2 = fNearestDist1;
+            ptNearestPoint2 = ptNearestPoint1;
+
+            fNearestDist1 = distance;
+            ptNearestPoint1 = ptOfContour;            
+        }else if ( distance < fNearestDist2 ) {
+            fNearestDist2 = distance;
+            ptNearestPoint2 = ptOfContour;
+        }
+    }
+    float C = distanceOf2Point<int>( ptNearestPoint1, ptNearestPoint2 );
+    if ( C < 5 ) {
+        ptResult.x = ToInt32 ( ( ptNearestPoint1.x + ptNearestPoint2.x ) / 2.f + 0.5f );
+        ptResult.y = ToInt32 ( ( ptNearestPoint1.y + ptNearestPoint2.y ) / 2.f + 0.5f );
+        float fDistance = distanceOf2Point<int> ( ptInput, ptResult );
+        return fDistance;
+    }
+    float A = distanceOf2Point<int> ( ptInput, ptNearestPoint1 );
+    float B = distanceOf2Point<int> ( ptInput, ptNearestPoint2 );    
+    
+    float cosOfAngle = ( A*A + C*C - B*B ) / ( 2.f * A * C );
+    float angle = acos ( cosOfAngle );
+    float fDistance;
+    if ( angle <= CV_PI / 2 ) {
+        fDistance = A * sin ( angle );
+        float D = A * cos ( angle );
+        float DCRatio = D / C;
+        ptResult.x = ToInt32 ( ptNearestPoint1.x * (1.f - DCRatio) + ptNearestPoint2.x * DCRatio + 0.5f );
+        ptResult.y = ToInt32 ( ptNearestPoint1.y * (1.f - DCRatio) + ptNearestPoint2.y * DCRatio + 0.5f );
+    }else {
+        fDistance = A * ToFloat ( sin ( CV_PI - angle ) );
+        float D = A * ToFloat ( cos ( CV_PI - angle ) );
+        float DCRatio = D / C;
+        ptResult.x = ToInt32 ( ptNearestPoint1.x + D / C * ( ptNearestPoint1.x - ptNearestPoint2.x) );
+        ptResult.y = ToInt32 ( ptNearestPoint1.y + D / C * ( ptNearestPoint1.y - ptNearestPoint2.y) );
+    }    
+    return fDistance;
 }
 
 }

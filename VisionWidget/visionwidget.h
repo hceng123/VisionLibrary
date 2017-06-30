@@ -37,6 +37,8 @@ private slots:
     void on_btnLrnChip_clicked();
     void on_btnInspChip_clicked();
     void on_btnCountEdge_clicked();
+    void on_btnLrnContour_clicked();
+    void on_btnInspContour_clicked();
 protected:
     bool checkDisplayImage();
     void drawTmplImage();
@@ -55,6 +57,7 @@ private:
     cv::Mat                             _matTmpl;
 
     AOI::Int32                          _nChipRecordId = -1;
+    AOI::Int32                          _nContourRecordId = -1;
 };
 
 #endif // VISIONWIDGET_H
