@@ -2058,7 +2058,7 @@ VisionStatus VisionAlgorithm::srchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd
     if ( pstCmd->enAlgorithm == PR_CALIPER_ALGORITHM::PROJECTION )
         _caliperByProjection ( matGray, matROIMask, rectNewROI, pstCmd->enDetectDir, vecFitPoint, pstRpy );
     else if ( pstCmd->enAlgorithm == PR_CALIPER_ALGORITHM::SECTION_AVG_GUASSIAN_DIFF )
-        _caliperBySectionAvgGussianDiff ( matGray, rectNewROI, pstCmd->enDetectDir, vecFitPoint, pstRpy );
+        _caliperBySectionAvgGussianDiff ( matGray, matROIMask, rectNewROI, pstCmd->enDetectDir, vecFitPoint, pstRpy );
     else {
         WriteLog("The caliper algorithm is invalid");
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
@@ -2186,7 +2186,6 @@ VisionStatus VisionAlgorithm::srchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd
         showImage("Bouding ROI", matBoundingROI );
         showImage("Warpped ROI", matWarpResult );
         showImage("Result ROI", matROI );
-        //cv::waitKey ( 0 );
     }    
     return VisionStatus::OK;
 }
@@ -2333,7 +2332,7 @@ VisionStatus VisionAlgorithm::srchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd
     return ptMax.y;
 }
 
-VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &matInputImg, const cv::Rect &rectROI, PR_CALIPER_DIR enDirection, VectorOfPoint &vecFitPoint, PR_CALIPER_RPY *const pstRpy) {
+VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &matInputImg, const cv::Mat &matROIMask, const cv::Rect &rectROI, PR_CALIPER_DIR enDirection, VectorOfPoint &vecFitPoint, PR_CALIPER_RPY *const pstRpy) {
     const int DIVIDE_SECTION = 20;
     const int GUASSIAN_DIFF_WIDTH = 2;
     const float GUASSIAN_KERNEL_SSQ = 1.f;
@@ -2360,9 +2359,12 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
                 if ( nCurrentProcessedPos == 0 )
                     vecFitPoint.emplace_back ( nJumpPos, nCurrentProcessedPos );
                 else if ( ( nCurrentProcessedPos + nInterval ) >= matInputImg.rows )
-                    vecFitPoint.emplace_back ( nJumpPos, matInputImg.rows );
+                    vecFitPoint.emplace_back ( nJumpPos, matInputImg.rows - 1 );
                 else
                     vecFitPoint.push_back ( cv::Point ( nJumpPos, ToInt32 ( nCurrentProcessedPos + nInterval / 2.f + 0.5f ) ) );
+
+                if ( ! matROIMask.empty() && matROIMask.at<uchar>(vecFitPoint.back()) == 0 )
+                    vecFitPoint.pop_back();
             }
             nCurrentProcessedPos += nInterval;
         }
@@ -2378,9 +2380,11 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
                 if ( nCurrentProcessedPos == 0 )
                     vecFitPoint.emplace_back ( nCurrentProcessedPos, nJumpPos );
                 else if ( ( nCurrentProcessedPos + nInterval ) >= matInputImg.cols )
-                    vecFitPoint.emplace_back (  matInputImg.cols, nJumpPos );
+                    vecFitPoint.emplace_back (  matInputImg.cols - 1, nJumpPos );
                 else
                     vecFitPoint.emplace_back ( ToInt32 ( nCurrentProcessedPos + nInterval / 2.f + 0.5f ), nJumpPos );
+                if ( ! matROIMask.empty() && matROIMask.at<uchar>(vecFitPoint.back()) == 0 )
+                    vecFitPoint.pop_back();
             }
             nCurrentProcessedPos += nInterval;
         }
@@ -2394,7 +2398,7 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
         }
         showImage ( "Find out point", matDisplay );
         cv::waitKey(0);
-    }
+    }   
 
     if ( vecFitPoint.size() < 2 ) {
         WriteLog("_caliperBySectionAvgGussianDiff can not find enough points");
