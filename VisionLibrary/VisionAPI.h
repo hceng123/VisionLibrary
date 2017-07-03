@@ -2,7 +2,7 @@
 #define _VISION_API_H_
 
 #ifdef DLLEXPORT
-    #define VisionAPI   __declspec(dllexport) 
+    #define VisionAPI   __declspec(dllexport)
 #else
     #define VisionAPI   __declspec(dllimport)
 #endif

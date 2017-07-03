@@ -259,6 +259,27 @@ void TestCaliperRoatedROI() {
     
     PR_Caliper ( &stCmd, &stRpy );
     PrintRpy(stRpy);
+
+    std::cout << std::endl << "-----------------------------------------------";
+    std::cout << std::endl << "CALIPER ROTATED ROI REGRESSION TEST #5 STARTING";
+    std::cout << std::endl << "-----------------------------------------------";
+    std::cout << std::endl;
+    stCmd.matInputImg = cv::imread("./data/FindAngle_1.png");
+    stCmd.matMask = cv::imread("./data/FindAngle_1_Mask.png", cv::IMREAD_GRAYSCALE);
+    stCmd.rectRotatedROI.center = cv::Point2f (420.80f, 268.00f );
+    stCmd.rectRotatedROI.size = cv::Size(330, 185);
+    stCmd.rectRotatedROI.angle = -12;
+    stCmd.enAlgorithm = PR_CALIPER_ALGORITHM::SECTION_AVG_GUASSIAN_DIFF;
+    stCmd.enDetectDir = PR_CALIPER_DIR::AUTO;
+    stCmd.bCheckLinerity = true;
+    stCmd.fPointMaxOffset = 5;
+    stCmd.fMinLinerity = 60.;
+    stCmd.bCheckAngle = true;
+    stCmd.fExpectedAngle = -12;
+    stCmd.fAngleDiffTolerance = 5;
+    
+    PR_Caliper ( &stCmd, &stRpy );
+    PrintRpy(stRpy);
 }
 
 }

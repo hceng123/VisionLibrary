@@ -266,7 +266,7 @@ CALIPER GUASSIAN DIFF REGRESSION TEST #1 STARTING
 Caliper status 0
 ReversedFit = 1
 Line slope = 0.01, intercept = 415.80
-Line coordinate: (425.55, 732.00), (432.64, 1264.00)
+Line coordinate: (425.55, 732.00), (432.63, 1263.00)
 Linerity  = 100.00
 Linerity check pass: 1
 Angle  = 89.24
@@ -277,8 +277,8 @@ CALIPER GUASSIAN DIFF REGRESSION TEST #2 STARTING
 -------------------------------------------------
 Caliper status 0
 ReversedFit = 1
-Line slope = 0.02, intercept = 763.10
-Line coordinate: (781.25, 744.00), (796.67, 1376.00)
+Line slope = 0.02, intercept = 763.09
+Line coordinate: (781.25, 744.00), (796.65, 1375.00)
 Linerity  = 100.00
 Linerity check pass: 1
 Angle  = 88.60
@@ -301,8 +301,8 @@ CALIPER GUASSIAN DIFF REGRESSION TEST #4 STARTING
 -------------------------------------------------
 Caliper status 0
 ReversedFit = 0
-Line slope = -0.01, intercept = 1870.44
-Line coordinate: (952.00, 1860.77), (1140.00, 1858.86)
+Line slope = -0.01, intercept = 1870.49
+Line coordinate: (952.00, 1860.78), (1139.00, 1858.87)
 Linerity  = 95.24
 Linerity check pass: 1
 Angle  = -0.58
@@ -343,6 +343,18 @@ CALIPER ROTATED ROI REGRESSION TEST #4 STARTING
 -----------------------------------------------
 Caliper status 32
 Error Msg: Caliper can not find the line.
+
+-----------------------------------------------
+CALIPER ROTATED ROI REGRESSION TEST #5 STARTING
+-----------------------------------------------
+Caliper status 0
+ReversedFit = 0
+Line slope = -0.21, intercept = 355.15
+Line coordinate: (284.78, 295.66), (581.38, 233.70)
+Linerity  = 100.00
+Linerity check pass: 1
+Angle  = -11.80
+Angle check pass: 1
 
 ---------------------------------------------
 CALIBRATE CAMERA REGRESSION TEST #1 STARTING

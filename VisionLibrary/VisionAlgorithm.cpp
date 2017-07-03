@@ -5121,7 +5121,7 @@ EXIT:
     return pstRpy->enStatus;
 }
 
-VectorOfPoint VisionAlgorithm::_findNearestContour(const cv::Point2f &ptInput, const VectorOfVectorOfPoint &vecContours) {
+/*static*/ VectorOfPoint VisionAlgorithm::_findNearestContour(const cv::Point2f &ptInput, const VectorOfVectorOfPoint &vecContours) {
     float fNearestDist = std::numeric_limits<float>::max();
     VectorOfPoint contourResult;
     cv::Point ptNearestPoint;
@@ -5171,13 +5171,13 @@ VectorOfPoint VisionAlgorithm::_findNearestContour(const cv::Point2f &ptInput, c
     cv::Mat matOuterMask = matMask.clone();
     cv::Mat matInnerMask = matMask.clone();
 
-    {//Generate Outer Mask
+    {// Generate outer mask
         for ( int index = 0; index < (int) ( vecContours.size() ); ++ index )
             cv::drawContours ( matOuterMask, vecContours, index, cv::Scalar(PR_MAX_GRAY_LEVEL), ToInt32 ( 2.f * fOuterDepth ) );
         cv::fillPoly ( matOuterMask, vecContours, cv::Scalar::all(0) );
     }
 
-    {
+    {// Generate inner mask
         cv::Mat matTmpOuterMask = matMask.clone();
         for ( int index = 0; index < (int) ( vecContours.size() ); ++ index ) {
             cv::drawContours ( matTmpOuterMask, vecContours, index, cv::Scalar(PR_MAX_GRAY_LEVEL), ToInt32 ( 2.f * fInnerDepth ) );

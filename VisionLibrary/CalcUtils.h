@@ -100,8 +100,7 @@ public:
     }    
 
     template<typename _Tp>
-    static cv::Point2f warpPoint(const cv::Mat &matWarp, const cv::Point2f &ptInput)
-    {
+    static cv::Point2f warpPoint(const cv::Mat &matWarp, const cv::Point2f &ptInput) {
         cv::Mat matPoint = cv::Mat::zeros(3, 1, matWarp.type());
         matPoint.at<_Tp>(0, 0) = ptInput.x;
         matPoint.at<_Tp>(1, 0) = ptInput.y;
@@ -130,7 +129,7 @@ public:
                 vecRow.assign ( (_Tp *)matInputImg.datastart + nRowStart, (_Tp *)matInputImg.datastart + nRowStart + matInputImg.cols );
                 vecVecArray.push_back ( vecRow );
             }
-        } else {
+        }else {
             for ( int row = 0; row < matInputImg.rows; ++row ) {
                 std::vector<_Tp> vecRow;
                 vecRow.assign ( (_Tp*)matInputImg.ptr<uchar> ( row ), (_Tp*)matInputImg.ptr<uchar> ( row ) +matInputImg.cols );
