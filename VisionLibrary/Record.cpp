@@ -76,7 +76,8 @@ VisionStatus DeviceRecord::load(cv::FileStorage &fs, const String& strFilePath)
 
 VisionStatus DeviceRecord::save(const String& strFilePath)
 {
-    cv::FileStorage fs(strFilePath, cv::FileStorage::WRITE);
+    String strParamFilePath = strFilePath + "/" + Config::GetInstance()->getRecordParamFile();
+    cv::FileStorage fs(strParamFilePath, cv::FileStorage::WRITE);
     if ( ! fs.isOpened() )
         return VisionStatus::OPEN_FILE_FAIL;
 

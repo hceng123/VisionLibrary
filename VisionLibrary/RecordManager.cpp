@@ -24,17 +24,21 @@ RecordManager::~RecordManager()
 {
 }
 
-VisionStatus RecordManager::add(RecordPtr pRecord, Int32 &recordID) {
-    recordID = _generateRecordID();
-    String strFilePath = _getRecordFilePath ( recordID );
-    FileUtils::MakeDirectory ( strFilePath );    
+VisionStatus RecordManager::add(RecordPtr pRecord, Int32 &nRecordId) {
+    nRecordId = _generateRecordID();
+    String strFilePath = _getRecordFilePath ( nRecordId );
+    FileUtils::MakeDirectory ( strFilePath );
     pRecord->save ( strFilePath );
     joinDir ( strFilePath.c_str(), Config::GetInstance()->getRecordExt().c_str() );
     FileUtils::RemoveAll ( strFilePath );
-    _mapRecord.insert ( std::make_pair ( recordID, pRecord ) );
-
-    String strLog = "Add record " + std::to_string ( recordID)  + ";";
-    WriteLog(strLog);
+    if ( _mapRecord.find ( nRecordId ) != _mapRecord.end() ) {
+        String strLog = "Record " + std::to_string ( nRecordId ) + " already exist in memory, this is a serious problem.";
+        WriteLog(strLog);
+    }else {
+        _mapRecord.insert ( std::make_pair ( nRecordId, pRecord ) );
+        String strLog = "Add record " + std::to_string ( nRecordId )  + ";";
+        WriteLog(strLog);
+    }    
     return VisionStatus::OK;
 }
 

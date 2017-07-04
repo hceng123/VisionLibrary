@@ -4991,8 +4991,7 @@ EXIT:
     ptrRecord->setTmpl ( matTmpl );
     ptrRecord->setContourMat ( matContour );
     ptrRecord->setContour ( vecContours );
-    RecordManager::getInstance()->add( ptrRecord, pstRpy->nRecordId );
-    return VisionStatus::OK;
+    return RecordManager::getInstance()->add( ptrRecord, pstRpy->nRecordId );
 }
 
 /*static*/ VisionStatus VisionAlgorithm::inspContour ( const PR_INSP_CONTOUR_CMD *const pstCmd, PR_INSP_CONTOUR_RPY *const pstRpy, bool bReplay /*= false*/ ) {
@@ -5021,7 +5020,7 @@ EXIT:
         return VisionStatus::INVALID_PARAM;
     }
     
-    ContourRecordPtr ptrRecord = std::static_pointer_cast<ContourRecord> (RecordManager::getInstance ()->get ( pstCmd->nRecordId ));
+    ContourRecordPtr ptrRecord = std::static_pointer_cast<ContourRecord> ( RecordManager::getInstance()->get ( pstCmd->nRecordId ) );
     if ( nullptr == ptrRecord ) {
         _snprintf ( charrMsg, sizeof (charrMsg), "Failed to get record ID %d in system.", pstCmd->nRecordId );
         WriteLog ( charrMsg );

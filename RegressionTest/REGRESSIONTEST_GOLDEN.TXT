@@ -702,3 +702,25 @@ Inspect chip status 0
 Center: (1895.24, 2145.72)
 Size: (578.51, 578.51)
 Angle  = 0.00
+
+---------------------------------------------
+INSPECT CONTOUR REGRESSION TEST #1 STARTING
+---------------------------------------------
+Learn contour status: 0
+Result threshold: 153
+Number of contour: 2
+Inspect contour status: 0
+Number of defects: 0
+Inspect contour status: 34
+Number of defects: 2
+
+---------------------------------------------
+INSPECT CONTOUR REGRESSION TEST #2 STARTING
+---------------------------------------------
+Learn contour status: 0
+Result threshold: 133
+Number of contour: 2
+Inspect contour status: 0
+Number of defects: 0
+Inspect contour status: 34
+Number of defects: 2

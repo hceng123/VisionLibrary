@@ -75,9 +75,9 @@ int _tmain(int argc, _TCHAR* argv[])
     **************************/
     TestInspChipHead();
 
-    /***************************
+    /*************************
     * Test Inspect Chip Body *
-    ****************************/
+    **************************/
     TestInspChipBody();
 
     /***************************
@@ -94,6 +94,11 @@ int _tmain(int argc, _TCHAR* argv[])
     * Test Inspect Chip Circular *
     ******************************/
     TestInspChipCircular();
+
+    /*****************************
+    * Test Inspect Contour *
+    ******************************/
+    TestInspContour();
 
 	return 0;
 }

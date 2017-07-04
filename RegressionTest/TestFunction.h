@@ -26,6 +26,7 @@ void TestInspChipBody();
 void TestInspChipSquare();
 void TestInspChipCAE();
 void TestInspChipCircular();
+void TestInspContour();
 
 }
 }
