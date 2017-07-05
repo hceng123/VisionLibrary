@@ -691,6 +691,58 @@ struct PR_INSP_CONTOUR_RPY {
 * End of Inspect Contour Section *
 ******************************************/
 
+/******************************************
+* Inspect Hole Section *
+******************************************/
+struct PR_INSP_HOLE_CMD {
+    struct GRAY_SCALE_RANGE {
+        Int16               nStart;
+        Int16               nEnd;
+    };
+    struct COLOR_RANGE {
+        Int16               nStartB;    //Blue range start.
+        Int16               nEndB;      //Blue range end.
+        Int16               nStartG;    //Green range start.
+        Int16               nEndG;      //Green range end.
+        Int16               nStartR;    //Red range start.
+        Int16               nEndR;      //Red range end.
+    };
+    struct RATIO_MODE_CRITERIA {
+        float               fMaxRatio;
+        float               fMinRatio;
+    };
+    struct BLOB_MODE_CRITERIA {
+        struct ADVANCED_CRITERIA {
+            float           fMaxLengthWidthRatio;
+            float           fMinLengthWidthRatio;
+            float           fMaxCircularity;
+            float           fMinCircularity;
+        };
+        float               fMaxArea;
+        float               fMinArea;
+        Int16               nMaxBlobCount;
+        Int16               nMinBlobCount;
+        bool                bEnableAdvancedCriteria;
+        ADVANCED_CRITERIA   stAdvancedCriteria;
+    };
+    cv::Mat                 matInputImg;
+    cv::Rect                rectROI;
+    PR_IMG_SEGMENT_METHOD   enSegmentMethod;
+    GRAY_SCALE_RANGE        stGrayScaleRange;   //It is used when enSegmentMethod is PR_IMG_SEGMENT_METHOD::GRAY_SCALE_RANGE.
+    COLOR_RANGE             stColorRange;       //It is used when enSegmentMethod is PR_IMG_SEGMENT_METHOD::COLOR_RANGE.
+    PR_INSP_HOLE_MODE       enInspMode;
+    RATIO_MODE_CRITERIA     stRatioModeCriteria;
+    BLOB_MODE_CRITERIA      stBlobModeCriteria;
+};
+
+struct PR_INSP_HOLE_RPY {
+    VisionStatus            enStatus;
+    cv::Mat                 matResultImg;
+};
+/******************************************
+* End of Inspect Hole Section *
+******************************************/
+
 }
 }
 #endif

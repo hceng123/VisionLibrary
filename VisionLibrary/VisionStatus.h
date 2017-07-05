@@ -57,9 +57,13 @@ enum class VisionStatus
     CAN_NOT_FIND_CHIP_BODY,
     CALIPER_CAN_NOT_FIND_LINE,
     
-    //Learn and inspect contour Status
+    //Learn and inspect contour status
     CAN_NOT_FIND_CONTOUR,
     CONTOUR_DEFECT_REJECT,
+
+    //Inspect hole status
+    RATIO_UNDER_LIMIT,
+    RATIO_OVER_LIMIT,
 };
 
 }

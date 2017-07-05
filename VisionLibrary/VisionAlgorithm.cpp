@@ -50,6 +50,7 @@ if ( ! bReplay )    {   \
 /*static*/ const cv::Scalar VisionAlgorithm::_constRedScalar   = cv::Scalar(0, 0, 255);
 /*static*/ const cv::Scalar VisionAlgorithm::_constBlueScalar  = cv::Scalar(255, 0, 0);
 /*static*/ const cv::Scalar VisionAlgorithm::_constGreenScalar = cv::Scalar(0, 255, 0);
+/*static*/ const cv::Scalar VisionAlgorithm::_constYellowScalar(0, 255, 255);
 /*static*/ const String VisionAlgorithm::_strRecordLogPrefix   = "tmplDir.";
 /*static*/ const float VisionAlgorithm::_constExpSmoothRatio   = 0.3f;
 
@@ -5007,7 +5008,7 @@ EXIT:
         pstCmd->rectROI.width <= 0 || pstCmd->rectROI.height <= 0 ||
         ( pstCmd->rectROI.x + pstCmd->rectROI.width ) > pstCmd->matInputImg.cols ||
         ( pstCmd->rectROI.y + pstCmd->rectROI.height ) > pstCmd->matInputImg.rows ) {
-        _snprintf( charrMsg, sizeof( charrMsg ), "The input ROI rect (%d, %d, %d, %d) is invalid",
+        _snprintf( charrMsg, sizeof( charrMsg ), "The input ROI rect (%d, %d, %d, %d) is invalid.",
             pstCmd->rectROI.x, pstCmd->rectROI.y, pstCmd->rectROI.width, pstCmd->rectROI.height );
         WriteLog(charrMsg);
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
@@ -5196,6 +5197,88 @@ EXIT:
         showImage ( "Result Mask", matDisplay );
     }
     return matMask;
+}
+
+/*static*/ VisionStatus VisionAlgorithm::inspHole(const PR_INSP_HOLE_CMD *const pstCmd, PR_INSP_HOLE_RPY *const pstRpy, bool bReplay /*= false*/) {
+    assert(pstCmd != nullptr && pstRpy != nullptr);
+    char charrMsg[1000];
+    if ( pstCmd->matInputImg.empty() ) {
+        WriteLog("Input image is empty.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+   
+    if (pstCmd->rectROI.x < 0 || pstCmd->rectROI.y < 0 ||
+        pstCmd->rectROI.width <= 0 || pstCmd->rectROI.height <= 0 ||
+        ( pstCmd->rectROI.x + pstCmd->rectROI.width ) > pstCmd->matInputImg.cols ||
+        ( pstCmd->rectROI.y + pstCmd->rectROI.height ) > pstCmd->matInputImg.rows ) {
+        _snprintf( charrMsg, sizeof( charrMsg ), "The input ROI rect (%d, %d, %d, %d) is invalid",
+            pstCmd->rectROI.x, pstCmd->rectROI.y, pstCmd->rectROI.width, pstCmd->rectROI.height );
+        WriteLog(charrMsg);
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return VisionStatus::INVALID_PARAM;
+    }
+
+    MARK_FUNCTION_START_TIME;
+
+    cv::Mat matROI(pstCmd->matInputImg, pstCmd->rectROI), matBlur, matSegmentResult;
+    cv::GaussianBlur ( matROI, matBlur, cv::Size(5, 5), 2, 2 );
+    if ( pstCmd->enSegmentMethod == PR_IMG_SEGMENT_METHOD::GRAY_SCALE_RANGE ) {
+        pstRpy->enStatus = _segmentImgByGrayScaleRange ( matBlur, pstCmd->stGrayScaleRange, matSegmentResult );
+        if ( pstRpy->enStatus != VisionStatus::OK )
+            return pstRpy->enStatus;
+    }else if ( pstCmd->enSegmentMethod == PR_IMG_SEGMENT_METHOD::COLOR_RANGE ) {
+    }else {
+    }
+
+    if ( pstCmd->enInspMode == PR_INSP_HOLE_MODE::RATIO )
+        _inspHoleByRatioMode ( matSegmentResult, pstCmd->stRatioModeCriteria, pstRpy );
+    
+    cv::Mat matSegmentInWholeImg = cv::Mat::zeros ( pstCmd->matInputImg.size(), CV_8UC1);
+    cv::Mat matCopyROI(matSegmentInWholeImg, pstCmd->rectROI);
+    matSegmentResult.copyTo ( matSegmentInWholeImg );
+    if ( pstCmd->matInputImg.channels() > 1)
+        pstRpy->matResultImg = pstCmd->matInputImg.clone();
+    else
+        cv::cvtColor ( pstCmd->matInputImg, pstRpy->matResultImg, CV_GRAY2BGR );
+    pstRpy->matResultImg.setTo ( _constYellowScalar, matSegmentInWholeImg );
+    MARK_FUNCTION_END_TIME;
+    return pstRpy->enStatus;
+}
+
+/*static*/ VisionStatus VisionAlgorithm::_segmentImgByGrayScaleRange(const cv::Mat &matInput, const PR_INSP_HOLE_CMD::GRAY_SCALE_RANGE &stGrayScaleRange, cv::Mat &matResult) {
+    if (stGrayScaleRange.nStart < 0 ||
+        stGrayScaleRange.nStart >= stGrayScaleRange.nEnd ||
+        stGrayScaleRange.nEnd > PR_MAX_GRAY_LEVEL ) {
+        char charrMsg[1000];
+        _snprintf ( charrMsg, sizeof(charrMsg), "The gray scale range (%d, %d, %d, %d) is invalid.",
+            stGrayScaleRange.nStart, stGrayScaleRange.nEnd );
+        WriteLog ( charrMsg );
+        return VisionStatus::INVALID_PARAM;
+    }
+    cv::Mat matGray;
+    if ( matInput.channels() > 1 )
+        cv::cvtColor ( matInput, matGray, CV_BGR2GRAY );
+    else
+        matGray = matInput;
+    cv::Mat matRange1, matRange2;
+    matRange1 = matGray >= stGrayScaleRange.nStart;
+    matRange2 = matGray <= stGrayScaleRange.nEnd;
+    matResult = matRange1 | matRange2;
+    return VisionStatus::OK;
+}
+
+/*static*/ VisionStatus VisionAlgorithm::_inspHoleByRatioMode(const cv::Mat &matInput, const PR_INSP_HOLE_CMD::RATIO_MODE_CRITERIA &stCriteria, PR_INSP_HOLE_RPY *const pstRpy) {
+    auto fSelectedCount = ToFloat ( cv::countNonZero ( matInput ) );
+    float fRatio = fSelectedCount / ( matInput.rows * matInput.cols );
+    if ( fRatio < stCriteria.fMinRatio ) {
+        pstRpy->enStatus = VisionStatus::RATIO_UNDER_LIMIT;
+        return pstRpy->enStatus;
+    }else if ( fRatio > stCriteria.fMaxRatio ) {
+        pstRpy->enStatus = VisionStatus::RATIO_OVER_LIMIT;
+        return pstRpy->enStatus;
+    }
+    return VisionStatus::OK;
 }
 
 }
