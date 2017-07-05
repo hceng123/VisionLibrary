@@ -5224,24 +5224,27 @@ EXIT:
     cv::Mat matROI(pstCmd->matInputImg, pstCmd->rectROI), matBlur, matSegmentResult;
     cv::GaussianBlur ( matROI, matBlur, cv::Size(5, 5), 2, 2 );
     if ( pstCmd->enSegmentMethod == PR_IMG_SEGMENT_METHOD::GRAY_SCALE_RANGE ) {
-        pstRpy->enStatus = _segmentImgByGrayScaleRange ( matBlur, pstCmd->stGrayScaleRange, matSegmentResult );
-        if ( pstRpy->enStatus != VisionStatus::OK )
-            return pstRpy->enStatus;
+        pstRpy->enStatus = _segmentImgByGrayScaleRange ( matBlur, pstCmd->stGrayScaleRange, matSegmentResult );        
     }else if ( pstCmd->enSegmentMethod == PR_IMG_SEGMENT_METHOD::COLOR_RANGE ) {
+        pstRpy->enStatus = _setmentImgByColorRange ( matBlur, pstCmd->stColorRange, matSegmentResult );
     }else {
     }
+
+    if ( pstRpy->enStatus != VisionStatus::OK )
+            return pstRpy->enStatus;
 
     if ( pstCmd->enInspMode == PR_INSP_HOLE_MODE::RATIO )
         _inspHoleByRatioMode ( matSegmentResult, pstCmd->stRatioModeCriteria, pstRpy );
     
     cv::Mat matSegmentInWholeImg = cv::Mat::zeros ( pstCmd->matInputImg.size(), CV_8UC1);
     cv::Mat matCopyROI(matSegmentInWholeImg, pstCmd->rectROI);
-    matSegmentResult.copyTo ( matSegmentInWholeImg );
+    matSegmentResult.copyTo ( matCopyROI );
     if ( pstCmd->matInputImg.channels() > 1)
         pstRpy->matResultImg = pstCmd->matInputImg.clone();
     else
         cv::cvtColor ( pstCmd->matInputImg, pstRpy->matResultImg, CV_GRAY2BGR );
     pstRpy->matResultImg.setTo ( _constYellowScalar, matSegmentInWholeImg );
+
     MARK_FUNCTION_END_TIME;
     return pstRpy->enStatus;
 }
@@ -5251,7 +5254,7 @@ EXIT:
         stGrayScaleRange.nStart >= stGrayScaleRange.nEnd ||
         stGrayScaleRange.nEnd > PR_MAX_GRAY_LEVEL ) {
         char charrMsg[1000];
-        _snprintf ( charrMsg, sizeof(charrMsg), "The gray scale range (%d, %d, %d, %d) is invalid.",
+        _snprintf ( charrMsg, sizeof(charrMsg), "The gray scale range (%d, %d) is invalid.",
             stGrayScaleRange.nStart, stGrayScaleRange.nEnd );
         WriteLog ( charrMsg );
         return VisionStatus::INVALID_PARAM;
@@ -5264,7 +5267,34 @@ EXIT:
     cv::Mat matRange1, matRange2;
     matRange1 = matGray >= stGrayScaleRange.nStart;
     matRange2 = matGray <= stGrayScaleRange.nEnd;
-    matResult = matRange1 | matRange2;
+    matResult = matRange1 & matRange2;
+    return VisionStatus::OK;
+}
+
+/*static*/ VisionStatus VisionAlgorithm::_setmentImgByColorRange(const cv::Mat &matInput, const PR_INSP_HOLE_CMD::COLOR_RANGE &stColorRange, cv::Mat &matResult) {
+    if (stColorRange.nStartB < 0 || stColorRange.nStartB >= stColorRange.nEndB || stColorRange.nEndB > PR_MAX_GRAY_LEVEL ||
+        stColorRange.nStartG < 0 || stColorRange.nStartG >= stColorRange.nEndG || stColorRange.nEndG > PR_MAX_GRAY_LEVEL ||
+        stColorRange.nStartR < 0 || stColorRange.nStartR >= stColorRange.nEndR || stColorRange.nEndR > PR_MAX_GRAY_LEVEL ) {
+        char charrMsg[1000];
+        _snprintf ( charrMsg, sizeof(charrMsg), "The color scale range (%d, %d, %d, %d, %d, %d) is invalid.",
+            stColorRange.nStartB, stColorRange.nEndB, stColorRange.nStartG, stColorRange.nEndG, stColorRange.nStartR, stColorRange.nEndR );
+        WriteLog ( charrMsg );
+        return VisionStatus::INVALID_PARAM;
+    }
+    if ( matInput.channels() < 3 ) {
+        WriteLog ( "Input image must be color for color range segment." );
+        return VisionStatus::INVALID_PARAM;
+    }
+    std::vector<cv::Mat> vecChannels;
+    cv::split( matInput, vecChannels );
+    cv::Mat matRange1, matRange2, matRange3, matRange4, matRange5, matRange6;
+    matRange1 = vecChannels[BGR_CHANNEL::BLUE] >= stColorRange.nStartB;
+    matRange2 = vecChannels[BGR_CHANNEL::BLUE] <= stColorRange.nEndB;
+    matRange3 = vecChannels[BGR_CHANNEL::GREEN] >= stColorRange.nStartG;
+    matRange4 = vecChannels[BGR_CHANNEL::GREEN] <= stColorRange.nEndG;
+    matRange5 = vecChannels[BGR_CHANNEL::RED] >= stColorRange.nStartR;
+    matRange6 = vecChannels[BGR_CHANNEL::RED] <= stColorRange.nEndR;
+    matResult = matRange1 & matRange2 & matRange3 & matRange4 & matRange5 & matRange6;
     return VisionStatus::OK;
 }
 

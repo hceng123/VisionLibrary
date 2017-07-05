@@ -140,6 +140,14 @@ VisionStatus GetErrorInfo(VisionStatus enStatus, PR_GET_ERROR_INFO_RPY *pstRpy)
         _snprintf(pstRpy->achErrorStr, PR_MAX_ERR_STR_LEN, "Rejected by contour defect.");
         pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::INSP_STATUS;
         break;
+    case VisionStatus::RATIO_UNDER_LIMIT:
+        _snprintf(pstRpy->achErrorStr, PR_MAX_ERR_STR_LEN, "The ratio under limitation.");
+        pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::INSP_STATUS;
+        break;
+    case VisionStatus::RATIO_OVER_LIMIT:
+        _snprintf(pstRpy->achErrorStr, PR_MAX_ERR_STR_LEN, "The ratio over limitation.");
+        pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::INSP_STATUS;
+        break;
     default:
         _snprintf(pstRpy->achErrorStr, PR_MAX_ERR_STR_LEN, "Undefined error code!");
         pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::FATAL_ERROR;

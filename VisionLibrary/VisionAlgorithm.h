@@ -26,6 +26,11 @@ class VisionAlgorithm : private Uncopyable
 {
 public:
     enum CalibPattern { NOT_EXISTING, CHESSBOARD, CIRCLES_GRID, ASYMMETRIC_CIRCLES_GRID };
+    enum BGR_CHANNEL {
+        BLUE,
+        GREEN,
+        RED,
+    };
 
     explicit VisionAlgorithm();
     static unique_ptr<VisionAlgorithm> create();
@@ -177,6 +182,7 @@ protected:
         float &fOuterNearestDist);
     static cv::Mat _generateContourMask ( const cv::Size &size, const VectorOfVectorOfPoint &vecContours, float fInnerDepth, float fOuterDepth );
     static VisionStatus _segmentImgByGrayScaleRange(const cv::Mat &matInput, const PR_INSP_HOLE_CMD::GRAY_SCALE_RANGE &stGrayScaleRange, cv::Mat &matResult);
+    static VisionStatus _setmentImgByColorRange(const cv::Mat &matInput, const PR_INSP_HOLE_CMD::COLOR_RANGE &stColorRange, cv::Mat &matResult);
     static VisionStatus _inspHoleByRatioMode(const cv::Mat &matInput, const PR_INSP_HOLE_CMD::RATIO_MODE_CRITERIA &stCriteria, PR_INSP_HOLE_RPY *const pstRpy);
 protected:
     static const int       _constMinHessian        = 300;
