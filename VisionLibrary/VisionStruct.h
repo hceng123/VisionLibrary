@@ -696,10 +696,13 @@ struct PR_INSP_CONTOUR_RPY {
 ******************************************/
 struct PR_INSP_HOLE_CMD {
     struct GRAY_SCALE_RANGE {
+        GRAY_SCALE_RANGE() : nStart(0), nEnd(PR_MAX_GRAY_LEVEL) {}
         Int16               nStart;
         Int16               nEnd;
     };
+
     struct COLOR_RANGE {
+        COLOR_RANGE() : nStartB(0), nEndB(PR_MAX_GRAY_LEVEL), nStartG(0), nEndG(PR_MAX_GRAY_LEVEL), nStartR(0), nEndR(PR_MAX_GRAY_LEVEL) {}
         Int16               nStartB;    //Blue range start.
         Int16               nEndB;      //Blue range end.
         Int16               nStartG;    //Green range start.
@@ -707,17 +710,23 @@ struct PR_INSP_HOLE_CMD {
         Int16               nStartR;    //Red range start.
         Int16               nEndR;      //Red range end.
     };
+
     struct RATIO_MODE_CRITERIA {
+        RATIO_MODE_CRITERIA() : fMinRatio(0.1f), fMaxRatio(1.f) {}
         float               fMaxRatio;
         float               fMinRatio;
     };
+
     struct BLOB_MODE_CRITERIA {
         struct ADVANCED_CRITERIA {
+            ADVANCED_CRITERIA() : fMaxLengthWidthRatio(1.f), fMinLengthWidthRatio(0.1f), fMaxCircularity(1.f), fMinCircularity(0.1f) {}
             float           fMaxLengthWidthRatio;
             float           fMinLengthWidthRatio;
             float           fMaxCircularity;
             float           fMinCircularity;
         };
+
+        BLOB_MODE_CRITERIA() : fMaxArea(1000000.f), fMinArea(500.f), nMinBlobCount(0), nMaxBlobCount(10), bEnableAdvancedCriteria(false) {}
         float               fMaxArea;
         float               fMinArea;
         Int16               nMaxBlobCount;
@@ -725,7 +734,9 @@ struct PR_INSP_HOLE_CMD {
         bool                bEnableAdvancedCriteria;
         ADVANCED_CRITERIA   stAdvancedCriteria;
     };
+
     cv::Mat                 matInputImg;
+    cv::Mat                 matMask;
     cv::Rect                rectROI;
     PR_IMG_SEGMENT_METHOD   enSegmentMethod;
     GRAY_SCALE_RANGE        stGrayScaleRange;   //It is used when enSegmentMethod is PR_IMG_SEGMENT_METHOD::GRAY_SCALE_RANGE.
@@ -736,7 +747,17 @@ struct PR_INSP_HOLE_CMD {
 };
 
 struct PR_INSP_HOLE_RPY {
+    struct RATIO_MODE_RESULT {
+        float               fRatio;
+    };
+
+    struct BLOB_MODE_RESULT {
+        VectorOfKeyPoint    vecBlobs;
+    };
+
     VisionStatus            enStatus;
+    RATIO_MODE_RESULT       stRatioModeResult;
+    BLOB_MODE_RESULT        stBlobModeResult;
     cv::Mat                 matResultImg;
 };
 /******************************************

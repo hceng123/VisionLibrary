@@ -64,6 +64,7 @@ enum class VisionStatus
     //Inspect hole status
     RATIO_UNDER_LIMIT,
     RATIO_OVER_LIMIT,
+    BLOB_COUNT_OUT_OF_RANGE,
 };
 
 }
