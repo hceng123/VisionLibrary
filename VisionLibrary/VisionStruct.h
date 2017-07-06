@@ -28,6 +28,7 @@ using VectorOfListOfPoint = std::vector<ListOfPoint>;
 using VectorOfSize2f = std::vector<cv::Size2f>;
 
 #define ToInt32(param)      (static_cast<AOI::Int32>(param))
+#define ToInt16(param)      (static_cast<AOI::Int16>(param))
 #define ToFloat(param)      (static_cast<float>(param))
 
 struct PR_VERSION_INFO {
@@ -718,6 +719,12 @@ struct PR_INSP_HOLE_CMD {
     };
 
     struct BLOB_MODE_CRITERIA {
+        BLOB_MODE_CRITERIA() : fMaxArea(1000000.f), fMinArea(500.f), nMinBlobCount(0), nMaxBlobCount(10), bEnableAdvancedCriteria(false) {}
+        float               fMaxArea;
+        float               fMinArea;
+        Int16               nMaxBlobCount;
+        Int16               nMinBlobCount;
+        bool                bEnableAdvancedCriteria;
         struct ADVANCED_CRITERIA {
             ADVANCED_CRITERIA() : fMaxLengthWidthRatio(1.f), fMinLengthWidthRatio(0.1f), fMaxCircularity(1.f), fMinCircularity(0.1f) {}
             float           fMaxLengthWidthRatio;
@@ -725,13 +732,6 @@ struct PR_INSP_HOLE_CMD {
             float           fMaxCircularity;
             float           fMinCircularity;
         };
-
-        BLOB_MODE_CRITERIA() : fMaxArea(1000000.f), fMinArea(500.f), nMinBlobCount(0), nMaxBlobCount(10), bEnableAdvancedCriteria(false) {}
-        float               fMaxArea;
-        float               fMinArea;
-        Int16               nMaxBlobCount;
-        Int16               nMinBlobCount;
-        bool                bEnableAdvancedCriteria;
         ADVANCED_CRITERIA   stAdvancedCriteria;
     };
 

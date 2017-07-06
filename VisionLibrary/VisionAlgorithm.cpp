@@ -1558,6 +1558,8 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
         pLogCase = std::make_unique<LogCaseLrnContour>( strLocalPath, true );
     else if (LogCaseInspContour::StaticGetFolderPrefix() == folderPrefix )
         pLogCase = std::make_unique<LogCaseInspContour>( strLocalPath, true );
+    else if (LogCaseInspHole::StaticGetFolderPrefix() == folderPrefix )
+        pLogCase = std::make_unique<LogCaseInspHole>( strLocalPath, true );
 
     if ( nullptr != pLogCase )
         enStatus = pLogCase->RunLogCase();
@@ -5236,6 +5238,7 @@ EXIT:
     }
 
     MARK_FUNCTION_START_TIME;
+    SETUP_LOGCASE(LogCaseInspHole);
 
     cv::Mat matROI(pstCmd->matInputImg, pstCmd->rectROI), matBlur, matSegmentResult;
     cv::GaussianBlur ( matROI, matBlur, cv::Size(5, 5), 2, 2 );
@@ -5267,19 +5270,20 @@ EXIT:
         cv::cvtColor ( pstCmd->matInputImg, pstRpy->matResultImg, CV_GRAY2BGR );
     pstRpy->matResultImg.setTo ( _constYellowScalar, matSegmentInWholeImg );
 
+    pstRpy->stRatioModeResult.fRatio = 0.f;
     if ( pstCmd->enInspMode == PR_INSP_HOLE_MODE::RATIO )
         _inspHoleByRatioMode ( matSegmentResult, matMaskROI, pstCmd->stRatioModeCriteria, pstRpy );
     else {
         _inspHoleByBlobMode ( matSegmentResult, matMaskROI, pstCmd->stBlobModeCriteria, pstRpy );
+        
         for ( auto &keypoint : pstRpy->stBlobModeResult.vecBlobs ) {
             keypoint.pt.x += pstCmd->rectROI.x;
             keypoint.pt.y += pstCmd->rectROI.y;
         }
         cv::drawKeypoints( pstRpy->matResultImg,  pstRpy->stBlobModeResult.vecBlobs, pstRpy->matResultImg, _constRedScalar, cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
-    }
+    }    
     
-    
-
+    FINISH_LOGCASE;
     MARK_FUNCTION_END_TIME;
     return pstRpy->enStatus;
 }
@@ -5335,7 +5339,7 @@ EXIT:
 
 /*static*/ VisionStatus VisionAlgorithm::_inspHoleByRatioMode(const cv::Mat &matInput, const cv::Mat &matMask, const PR_INSP_HOLE_CMD::RATIO_MODE_CRITERIA &stCriteria, PR_INSP_HOLE_RPY *const pstRpy) {
     cv::Mat matInputLocal = matInput.clone();
-    if ( matMask.empty() )
+    if ( ! matMask.empty() )
         matInputLocal.setTo ( cv::Scalar(0), cv::Scalar(PR_MAX_GRAY_LEVEL) - matMask );
     
     auto fSelectedCount = ToFloat ( cv::countNonZero ( matInputLocal ) );
@@ -5399,7 +5403,7 @@ EXIT:
         showImage("Find blob result", matDisplay );
     }
 
-    if ( keyPoints[0].size() < stCriteria.nMinBlobCount || keyPoints[0].size() > stCriteria.nMaxBlobCount ) {
+    if ( ToInt16 ( keyPoints[0].size() ) < stCriteria.nMinBlobCount || ToInt16 ( keyPoints[0].size() ) > stCriteria.nMaxBlobCount ) {
         pstRpy->enStatus = VisionStatus::BLOB_COUNT_OUT_OF_RANGE;
         return pstRpy->enStatus;
     }
