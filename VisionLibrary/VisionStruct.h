@@ -28,6 +28,7 @@ using VectorOfListOfPoint = std::vector<ListOfPoint>;
 using VectorOfSize2f = std::vector<cv::Size2f>;
 
 #define ToInt32(param)      (static_cast<AOI::Int32>(param))
+#define ToInt16(param)      (static_cast<AOI::Int16>(param))
 #define ToFloat(param)      (static_cast<float>(param))
 
 struct PR_VERSION_INFO {
@@ -689,6 +690,78 @@ struct PR_INSP_CONTOUR_RPY {
 
 /******************************************
 * End of Inspect Contour Section *
+******************************************/
+
+/******************************************
+* Inspect Hole Section *
+******************************************/
+struct PR_INSP_HOLE_CMD {
+    struct GRAY_SCALE_RANGE {
+        GRAY_SCALE_RANGE() : nStart(0), nEnd(PR_MAX_GRAY_LEVEL) {}
+        Int16               nStart;
+        Int16               nEnd;
+    };
+
+    struct COLOR_RANGE {
+        COLOR_RANGE() : nStartB(0), nEndB(PR_MAX_GRAY_LEVEL), nStartG(0), nEndG(PR_MAX_GRAY_LEVEL), nStartR(0), nEndR(PR_MAX_GRAY_LEVEL) {}
+        Int16               nStartB;    //Blue range start.
+        Int16               nEndB;      //Blue range end.
+        Int16               nStartG;    //Green range start.
+        Int16               nEndG;      //Green range end.
+        Int16               nStartR;    //Red range start.
+        Int16               nEndR;      //Red range end.
+    };
+
+    struct RATIO_MODE_CRITERIA {
+        RATIO_MODE_CRITERIA() : fMinRatio(0.1f), fMaxRatio(1.f) {}
+        float               fMaxRatio;
+        float               fMinRatio;
+    };
+
+    struct BLOB_MODE_CRITERIA {
+        BLOB_MODE_CRITERIA() : fMaxArea(1000000.f), fMinArea(500.f), nMinBlobCount(0), nMaxBlobCount(10), bEnableAdvancedCriteria(false) {}
+        float               fMaxArea;
+        float               fMinArea;
+        Int16               nMaxBlobCount;
+        Int16               nMinBlobCount;
+        bool                bEnableAdvancedCriteria;
+        struct ADVANCED_CRITERIA {
+            ADVANCED_CRITERIA() : fMaxLengthWidthRatio(1.f), fMinLengthWidthRatio(0.1f), fMaxCircularity(1.f), fMinCircularity(0.1f) {}
+            float           fMaxLengthWidthRatio;
+            float           fMinLengthWidthRatio;
+            float           fMaxCircularity;
+            float           fMinCircularity;
+        };
+        ADVANCED_CRITERIA   stAdvancedCriteria;
+    };
+
+    cv::Mat                 matInputImg;
+    cv::Mat                 matMask;
+    cv::Rect                rectROI;
+    PR_IMG_SEGMENT_METHOD   enSegmentMethod;
+    GRAY_SCALE_RANGE        stGrayScaleRange;   //It is used when enSegmentMethod is PR_IMG_SEGMENT_METHOD::GRAY_SCALE_RANGE.
+    COLOR_RANGE             stColorRange;       //It is used when enSegmentMethod is PR_IMG_SEGMENT_METHOD::COLOR_RANGE.
+    PR_INSP_HOLE_MODE       enInspMode;
+    RATIO_MODE_CRITERIA     stRatioModeCriteria;
+    BLOB_MODE_CRITERIA      stBlobModeCriteria;
+};
+
+struct PR_INSP_HOLE_RPY {
+    struct RATIO_MODE_RESULT {
+        float               fRatio;
+    };
+
+    struct BLOB_MODE_RESULT {
+        VectorOfKeyPoint    vecBlobs;
+    };
+
+    VisionStatus            enStatus;
+    RATIO_MODE_RESULT       stRatioModeResult;
+    BLOB_MODE_RESULT        stBlobModeResult;
+    cv::Mat                 matResultImg;
+};
+/******************************************
+* End of Inspect Hole Section *
 ******************************************/
 
 }

@@ -9,8 +9,6 @@
 #include <list>
 #include <memory>
 
-using namespace std;
-
 namespace AOI
 {
 namespace Vision
@@ -26,9 +24,14 @@ class VisionAlgorithm : private Uncopyable
 {
 public:
     enum CalibPattern { NOT_EXISTING, CHESSBOARD, CIRCLES_GRID, ASYMMETRIC_CIRCLES_GRID };
+    enum BGR_CHANNEL {
+        BLUE,
+        GREEN,
+        RED,
+    };
 
     explicit VisionAlgorithm();
-    static unique_ptr<VisionAlgorithm> create();
+    static std::unique_ptr<VisionAlgorithm> create();
     static VisionStatus lrnObj(const PR_LRN_OBJ_CMD *const pstCmd, PR_LRN_OBJ_RPY *const pstRpy, bool bReplay = false);
     static VisionStatus srchObj(const PR_SRCH_OBJ_CMD *const pstCmd, PR_SRCH_OBJ_RPY *const pstRpy, bool bReplay = false);
     VisionStatus lrnDevice(PR_LRN_DEVICE_CMD *pstLrnDeviceCmd, PR_LRN_DEVICE_RPY *pstLrnDeivceRpy);
@@ -62,10 +65,11 @@ public:
     static VisionStatus inspChip( const PR_INSP_CHIP_CMD *const pstCmd, PR_INSP_CHIP_RPY *const pstRpy, bool bReplay = false );
     static VisionStatus lrnContour(const PR_LRN_CONTOUR_CMD *const pstCmd, PR_LRN_CONTOUR_RPY *const pstRpy, bool bReplay = false );
     static VisionStatus inspContour(const PR_INSP_CONTOUR_CMD *const pstCmd, PR_INSP_CONTOUR_RPY *const pstRpy, bool bReplay = false );
+    static VisionStatus inspHole(const PR_INSP_HOLE_CMD *const pstCmd, PR_INSP_HOLE_RPY *const pstRpy, bool bReplay = false);
 protected:
 	int _findBlob(const cv::Mat &mat, const cv::Mat &matRevs, PR_INSP_SURFACE_CMD *const pInspCmd, PR_INSP_SURFACE_RPY *pInspRpy );
 	int _findLine(const cv::Mat &mat, PR_INSP_SURFACE_CMD *const pInspCmd, PR_INSP_SURFACE_RPY *pInspRpy );
-	static int _mergeLines(const vector<PR_Line2f> &vecLines, vector<PR_Line2f> &vecResultLines);
+	static int _mergeLines(const std::vector<PR_Line2f> &vecLines, std::vector<PR_Line2f> &vecResultLines);
 	static int _merge2Line(const PR_Line2f &line1, const PR_Line2f &line2, PR_Line2f &lineResult);
 	int _findLineCrossPoint(const PR_Line2f &line1, const PR_Line2f &line2, cv::Point2f ptResult);
     static std::vector<Int16> _autoMultiLevelThreshold(const cv::Mat &matInputImg, const cv::Mat &matMask, int N);
@@ -175,7 +179,10 @@ protected:
         float &fOuterFarthestDist,
         float &fOuterNearestDist);
     static cv::Mat _generateContourMask ( const cv::Size &size, const VectorOfVectorOfPoint &vecContours, float fInnerDepth, float fOuterDepth );
-    
+    static VisionStatus _segmentImgByGrayScaleRange(const cv::Mat &matInput, const PR_INSP_HOLE_CMD::GRAY_SCALE_RANGE &stGrayScaleRange, cv::Mat &matResult);
+    static VisionStatus _setmentImgByColorRange(const cv::Mat &matInput, const PR_INSP_HOLE_CMD::COLOR_RANGE &stColorRange, cv::Mat &matResult);
+    static VisionStatus _inspHoleByRatioMode(const cv::Mat &matInput, const cv::Mat &matMask, const PR_INSP_HOLE_CMD::RATIO_MODE_CRITERIA &stCriteria, PR_INSP_HOLE_RPY *const pstRpy);
+    static VisionStatus _inspHoleByBlobMode(const cv::Mat &matInput, const cv::Mat &matMask, const PR_INSP_HOLE_CMD::BLOB_MODE_CRITERIA &stCriteria, PR_INSP_HOLE_RPY *const pstRpy);
 protected:
     static const int       _constMinHessian        = 300;
     static const int       _constOctave            = 4;
@@ -187,6 +194,7 @@ protected:
     static const cv::Scalar _constRedScalar;
     static const cv::Scalar _constBlueScalar;
     static const cv::Scalar _constGreenScalar;
+    static const cv::Scalar _constYellowScalar;
     static OcrTesseractPtr  _ptrOcrTesseract;
 private:
     VisionAlgorithmPtr _pInstance = nullptr;

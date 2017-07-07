@@ -11,7 +11,7 @@ namespace Vision
 #define PARALLEL_LINE_SLOPE_DIFF_LMT			(0.1)
 #define PARALLEL_LINE_MERGE_DIST_LMT			(10)
 #define PR_ELECTRODE_COUNT                      (2)
-#define PR_MAX_GRAY_LEVEL                       (255)
+const int PR_MAX_GRAY_LEVEL =                   255;
 #define PR_MIN_GRAY_LEVEL                       (0)
 #define PR_RECT_EDGE_COUNT                      (4)
 #define PR_MAX_ERR_STR_LEN						(100)
@@ -153,6 +153,17 @@ enum class PR_INSP_CHIP_MODE {
 enum class PR_CALIPER_ALGORITHM {
     PROJECTION,
     SECTION_AVG_GUASSIAN_DIFF,
+};
+
+enum class PR_IMG_SEGMENT_METHOD {
+    GRAY_SCALE_RANGE,
+    COLOR_RANGE,
+};
+
+enum class PR_INSP_HOLE_MODE {
+    RATIO,
+    BLOB,
+    SIM,
 };
 
 }

@@ -39,6 +39,7 @@ private slots:
     void on_btnCountEdge_clicked();
     void on_btnLrnContour_clicked();
     void on_btnInspContour_clicked();
+    void on_btnInspHole_clicked();
 protected:
     bool checkDisplayImage();
     void drawTmplImage();

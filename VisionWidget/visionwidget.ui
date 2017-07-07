@@ -1358,7 +1358,7 @@
         <string>150</string>
        </property>
       </widget>
-      <widget class="QLabel" name="labeCountEdgeMinLength">
+      <widget class="QLabel" name="labelCountEdgeMinLength">
        <property name="geometry">
         <rect>
          <x>10</x>
@@ -1435,7 +1435,7 @@
         <x>10</x>
         <y>390</y>
         <width>590</width>
-        <height>91</height>
+        <height>71</height>
        </rect>
       </property>
       <property name="title">
@@ -1445,7 +1445,7 @@
        <property name="geometry">
         <rect>
          <x>480</x>
-         <y>20</y>
+         <y>10</y>
          <width>100</width>
          <height>23</height>
         </rect>
@@ -1458,13 +1458,169 @@
        <property name="geometry">
         <rect>
          <x>480</x>
-         <y>50</y>
+         <y>40</y>
          <width>100</width>
          <height>23</height>
         </rect>
        </property>
        <property name="text">
         <string>Inspect Contour</string>
+       </property>
+      </widget>
+     </widget>
+     <widget class="QGroupBox" name="groupBoxHoleInspect">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>480</y>
+        <width>590</width>
+        <height>81</height>
+       </rect>
+      </property>
+      <property name="title">
+       <string>Inspect Hole</string>
+      </property>
+      <widget class="QPushButton" name="btnInspHole">
+       <property name="geometry">
+        <rect>
+         <x>480</x>
+         <y>20</y>
+         <width>100</width>
+         <height>23</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Inspect Hole</string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="labelHoleInspMode">
+       <property name="geometry">
+        <rect>
+         <x>20</x>
+         <y>50</y>
+         <width>81</width>
+         <height>16</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Inspect Mode</string>
+       </property>
+      </widget>
+      <widget class="QComboBox" name="comboBoxHoleInspMode">
+       <property name="geometry">
+        <rect>
+         <x>110</x>
+         <y>50</y>
+         <width>71</width>
+         <height>22</height>
+        </rect>
+       </property>
+       <property name="currentIndex">
+        <number>0</number>
+       </property>
+       <item>
+        <property name="text">
+         <string>Ratio</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>Blob</string>
+        </property>
+       </item>
+      </widget>
+      <widget class="QComboBox" name="comboBoxInspHoleImgSegmentMethod">
+       <property name="geometry">
+        <rect>
+         <x>110</x>
+         <y>20</y>
+         <width>91</width>
+         <height>22</height>
+        </rect>
+       </property>
+       <property name="currentIndex">
+        <number>0</number>
+       </property>
+       <item>
+        <property name="text">
+         <string>Gray Range</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>Color Range</string>
+        </property>
+       </item>
+      </widget>
+      <widget class="QLabel" name="labelHoleImgSegmentMethod">
+       <property name="geometry">
+        <rect>
+         <x>20</x>
+         <y>20</y>
+         <width>81</width>
+         <height>16</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Segment Method</string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="labelInspHoleImgSegmentStart">
+       <property name="geometry">
+        <rect>
+         <x>210</x>
+         <y>20</y>
+         <width>31</width>
+         <height>16</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Start</string>
+       </property>
+      </widget>
+      <widget class="QLineEdit" name="lineEditInspHoleImgSegmentEnd">
+       <property name="geometry">
+        <rect>
+         <x>310</x>
+         <y>20</y>
+         <width>31</width>
+         <height>20</height>
+        </rect>
+       </property>
+       <property name="inputMethodHints">
+        <set>Qt::ImhDigitsOnly</set>
+       </property>
+       <property name="text">
+        <string>150</string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="labelInspHoleImgSegmentEnd">
+       <property name="geometry">
+        <rect>
+         <x>290</x>
+         <y>20</y>
+         <width>21</width>
+         <height>16</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>End</string>
+       </property>
+      </widget>
+      <widget class="QLineEdit" name="lineEditInspHoleImgSegmentStart">
+       <property name="geometry">
+        <rect>
+         <x>240</x>
+         <y>20</y>
+         <width>31</width>
+         <height>20</height>
+        </rect>
+       </property>
+       <property name="inputMethodHints">
+        <set>Qt::ImhDigitsOnly</set>
+       </property>
+       <property name="text">
+        <string>100</string>
        </property>
       </widget>
      </widget>
@@ -1547,7 +1703,7 @@
      <attribute name="title">
       <string>Calibrate</string>
      </attribute>
-     <widget class="QGroupBox" name="groupBox_2">
+     <widget class="QGroupBox" name="groupBoxCalibrateCamera">
       <property name="geometry">
        <rect>
         <x>10</x>

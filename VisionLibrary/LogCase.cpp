@@ -251,7 +251,7 @@ VisionStatus LogCaseSrchObj::RunLogCase() {
     return "FitCircle";
 }
 
-VisionStatus LogCaseFitCircle::WriteCmd(PR_FIT_CIRCLE_CMD *pCmd) {
+VisionStatus LogCaseFitCircle::WriteCmd(PR_FIT_CIRCLE_CMD *pstCmd) {
     if ( !_bReplay )    {
         _strLogCasePath = _generateLogCaseName(GetFolderPrefix());
         bfs::path dir(_strLogCasePath);
@@ -261,31 +261,31 @@ VisionStatus LogCaseFitCircle::WriteCmd(PR_FIT_CIRCLE_CMD *pCmd) {
     CSimpleIni ini(false, false, false);
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile( cmdRpyFilePath.c_str() );
-    ini.SetValue(_CMD_SECTION.c_str(),     _strKeyROI.c_str(), _formatRect(pCmd->rectROI).c_str());
-    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyMethod.c_str(), static_cast<long>(pCmd->enMethod) );
-    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyRmNoiseMethod.c_str(), static_cast<long>(pCmd->enRmNoiseMethod) );
-    ini.SetBoolValue( _CMD_SECTION.c_str(), _strKeyPreprocessed.c_str(), pCmd->bPreprocessed);
-    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyErrorTol.c_str(), pCmd->fErrTol );
-    ini.SetBoolValue( _CMD_SECTION.c_str(), _strKeyAutoThreshold.c_str(), pCmd->bAutoThreshold);
-    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyThreshold.c_str(), pCmd->nThreshold );
-    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyAttribute.c_str(), ToInt32 ( pCmd->enAttribute ) );
+    ini.SetValue(_CMD_SECTION.c_str(),     _strKeyROI.c_str(), _formatRect(pstCmd->rectROI).c_str());
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyMethod.c_str(), static_cast<long>(pstCmd->enMethod) );
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyRmNoiseMethod.c_str(), static_cast<long>(pstCmd->enRmNoiseMethod) );
+    ini.SetBoolValue( _CMD_SECTION.c_str(), _strKeyPreprocessed.c_str(), pstCmd->bPreprocessed);
+    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyErrorTol.c_str(), pstCmd->fErrTol );
+    ini.SetBoolValue( _CMD_SECTION.c_str(), _strKeyAutoThreshold.c_str(), pstCmd->bAutoThreshold);
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyThreshold.c_str(), pstCmd->nThreshold );
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyAttribute.c_str(), ToInt32 ( pstCmd->enAttribute ) );
     ini.SaveFile( cmdRpyFilePath.c_str() );
-    cv::imwrite( _strLogCasePath + _IMAGE_NAME, pCmd->matInputImg );
-    if ( ! pCmd->matMask.empty() )
-        cv::imwrite( _strLogCasePath + _MASK_NAME,  pCmd->matMask );
+    cv::imwrite( _strLogCasePath + _IMAGE_NAME, pstCmd->matInputImg );
+    if ( ! pstCmd->matMask.empty() )
+        cv::imwrite( _strLogCasePath + _MASK_NAME,  pstCmd->matMask );
     return VisionStatus::OK;
 }
 
-VisionStatus LogCaseFitCircle::WriteRpy(PR_FIT_CIRCLE_RPY *pRpy) {
+VisionStatus LogCaseFitCircle::WriteRpy(PR_FIT_CIRCLE_RPY *pstRpy) {
     CSimpleIni ini(false, false, false);
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile( cmdRpyFilePath.c_str() );
-    ini.SetLongValue  (_RPY_SECTION.c_str(), _strKeyStatus.c_str(), ToInt32( pRpy->enStatus ) );
-    ini.SetValue(_RPY_SECTION.c_str(), _strKeyResultCtr.c_str(), _formatCoordinate(pRpy->ptCircleCtr).c_str() );    
-    ini.SetDoubleValue(_RPY_SECTION.c_str(), _strKeyRadius.c_str(), pRpy->fRadius );
+    ini.SetLongValue  (_RPY_SECTION.c_str(), _strKeyStatus.c_str(), ToInt32( pstRpy->enStatus ) );
+    ini.SetValue(_RPY_SECTION.c_str(), _strKeyResultCtr.c_str(), _formatCoordinate(pstRpy->ptCircleCtr).c_str() );    
+    ini.SetDoubleValue(_RPY_SECTION.c_str(), _strKeyRadius.c_str(), pstRpy->fRadius );
     ini.SaveFile( cmdRpyFilePath.c_str() );
-    if ( ! pRpy->matResultImg.empty() )
-        cv::imwrite( _strLogCasePath + _RESULT_IMAGE_NAME, pRpy->matResultImg );
+    if ( ! pstRpy->matResultImg.empty() )
+        cv::imwrite( _strLogCasePath + _RESULT_IMAGE_NAME, pstRpy->matResultImg );
     _zip();
     return VisionStatus::OK;
 }
@@ -324,7 +324,7 @@ VisionStatus LogCaseFitCircle::RunLogCase() {
     return "InspCircle";
 }
 
-VisionStatus LogCaseInspCircle::WriteCmd(const PR_INSP_CIRCLE_CMD *const pCmd)
+VisionStatus LogCaseInspCircle::WriteCmd(const PR_INSP_CIRCLE_CMD *const pstCmd)
 {
     if ( !_bReplay )    {
         _strLogCasePath = _generateLogCaseName(GetFolderPrefix());
@@ -335,26 +335,26 @@ VisionStatus LogCaseInspCircle::WriteCmd(const PR_INSP_CIRCLE_CMD *const pCmd)
     CSimpleIni ini(false, false, false);
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile ( cmdRpyFilePath.c_str() );
-    ini.SetValue ( _CMD_SECTION.c_str(),     _strKeyROI.c_str(), _formatRect(pCmd->rectROI).c_str());
+    ini.SetValue ( _CMD_SECTION.c_str(),     _strKeyROI.c_str(), _formatRect(pstCmd->rectROI).c_str());
     ini.SaveFile ( cmdRpyFilePath.c_str() );
-    cv::imwrite ( _strLogCasePath + _IMAGE_NAME, pCmd->matInputImg );
-    if ( ! pCmd->matMask.empty() )
-        cv::imwrite( _strLogCasePath + _MASK_NAME,  pCmd->matMask );
+    cv::imwrite ( _strLogCasePath + _IMAGE_NAME, pstCmd->matInputImg );
+    if ( ! pstCmd->matMask.empty() )
+        cv::imwrite( _strLogCasePath + _MASK_NAME,  pstCmd->matMask );
     return VisionStatus::OK;
 }
 
-VisionStatus LogCaseInspCircle::WriteRpy(const PR_INSP_CIRCLE_RPY *const pRpy)
+VisionStatus LogCaseInspCircle::WriteRpy(const PR_INSP_CIRCLE_RPY *const pstRpy)
 {
     CSimpleIni ini(false, false, false);
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile( cmdRpyFilePath.c_str() );
-    ini.SetLongValue ( _RPY_SECTION.c_str(), _strKeyStatus.c_str(), ToInt32( pRpy->enStatus ) );
-    ini.SetValue ( _RPY_SECTION.c_str(), _strKeyResultCtr.c_str(), _formatCoordinate(pRpy->ptCircleCtr).c_str() );    
-    ini.SetDoubleValue ( _RPY_SECTION.c_str(), _strKeyDiameter.c_str(), pRpy->fDiameter );
-    ini.SetDoubleValue ( _RPY_SECTION.c_str(), _strKeyRoundness.c_str(), pRpy->fRoundness );
+    ini.SetLongValue ( _RPY_SECTION.c_str(), _strKeyStatus.c_str(), ToInt32( pstRpy->enStatus ) );
+    ini.SetValue ( _RPY_SECTION.c_str(), _strKeyResultCtr.c_str(), _formatCoordinate(pstRpy->ptCircleCtr).c_str() );    
+    ini.SetDoubleValue ( _RPY_SECTION.c_str(), _strKeyDiameter.c_str(), pstRpy->fDiameter );
+    ini.SetDoubleValue ( _RPY_SECTION.c_str(), _strKeyRoundness.c_str(), pstRpy->fRoundness );
     ini.SaveFile( cmdRpyFilePath.c_str() );
-    if ( ! pRpy->matResultImg.empty() )
-        cv::imwrite( _strLogCasePath + _RESULT_IMAGE_NAME, pRpy->matResultImg );
+    if ( ! pstRpy->matResultImg.empty() )
+        cv::imwrite( _strLogCasePath + _RESULT_IMAGE_NAME, pstRpy->matResultImg );
     _zip();
     return VisionStatus::OK;
 }
@@ -386,7 +386,7 @@ VisionStatus LogCaseInspCircle::RunLogCase()
     return "FitLine";
 }
 
-VisionStatus LogCaseFitLine::WriteCmd(const PR_FIT_LINE_CMD *const pCmd) {
+VisionStatus LogCaseFitLine::WriteCmd(const PR_FIT_LINE_CMD *const pstCmd) {
     if ( !_bReplay )    {
         _strLogCasePath = _generateLogCaseName(GetFolderPrefix());
         bfs::path dir(_strLogCasePath);
@@ -397,35 +397,35 @@ VisionStatus LogCaseFitLine::WriteCmd(const PR_FIT_LINE_CMD *const pCmd) {
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile( cmdRpyFilePath.c_str() );
 
-    ini.SetValue      (_CMD_SECTION.c_str(), _strKeyROI.c_str(),          _formatRect(pCmd->rectROI).c_str() );
-    ini.SetLongValue  (_CMD_SECTION.c_str(), _strKeyMethod.c_str(),       ToInt32( pCmd->enMethod ) );
-    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyErrorTol.c_str(),     pCmd->fErrTol );
-    ini.SetBoolValue  (_CMD_SECTION.c_str(), _strKeyPreprocessed.c_str(), pCmd->bPreprocessed);
-    ini.SetLongValue  (_CMD_SECTION.c_str(), _strKeyThreshold.c_str(),    pCmd->nThreshold );
-    ini.SetLongValue  (_CMD_SECTION.c_str(), _strKeyAttribute.c_str(),    ToInt32 ( pCmd->enAttribute ) );
+    ini.SetValue      (_CMD_SECTION.c_str(), _strKeyROI.c_str(),          _formatRect(pstCmd->rectROI).c_str() );
+    ini.SetLongValue  (_CMD_SECTION.c_str(), _strKeyMethod.c_str(),       ToInt32( pstCmd->enMethod ) );
+    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyErrorTol.c_str(),     pstCmd->fErrTol );
+    ini.SetBoolValue  (_CMD_SECTION.c_str(), _strKeyPreprocessed.c_str(), pstCmd->bPreprocessed);
+    ini.SetLongValue  (_CMD_SECTION.c_str(), _strKeyThreshold.c_str(),    pstCmd->nThreshold );
+    ini.SetLongValue  (_CMD_SECTION.c_str(), _strKeyAttribute.c_str(),    ToInt32 ( pstCmd->enAttribute ) );
 
     ini.SaveFile( cmdRpyFilePath.c_str() );
-    cv::imwrite( _strLogCasePath + _IMAGE_NAME, pCmd->matInputImg );
-    if ( ! pCmd->matMask.empty() )
-        cv::imwrite( _strLogCasePath + _MASK_NAME,  pCmd->matMask );
+    cv::imwrite( _strLogCasePath + _IMAGE_NAME, pstCmd->matInputImg );
+    if ( ! pstCmd->matMask.empty() )
+        cv::imwrite( _strLogCasePath + _MASK_NAME,  pstCmd->matMask );
     return VisionStatus::OK;
 }
 
-VisionStatus LogCaseFitLine::WriteRpy(const PR_FIT_LINE_RPY *const pRpy) {
+VisionStatus LogCaseFitLine::WriteRpy(const PR_FIT_LINE_RPY *const pstRpy) {
     CSimpleIni ini(false, false, false);
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile( cmdRpyFilePath.c_str() );
 
-    ini.SetLongValue  (_RPY_SECTION.c_str(), _strKeyStatus.c_str(),      ToInt32(pRpy->enStatus) );
-    ini.SetBoolValue  (_RPY_SECTION.c_str(), _strKeyReversedFit.c_str(), pRpy->bReversedFit );
-    ini.SetDoubleValue(_RPY_SECTION.c_str(), _strKeySlope.c_str(),       pRpy->fSlope );    
-    ini.SetDoubleValue(_RPY_SECTION.c_str(), _strKeyIntercept.c_str(),   pRpy->fIntercept );
-    ini.SetValue      (_RPY_SECTION.c_str(), _strKeyPoint1.c_str(),      _formatCoordinate ( pRpy->stLine.pt1 ).c_str() );
-    ini.SetValue      (_RPY_SECTION.c_str(), _strKeyPoint2.c_str(),      _formatCoordinate ( pRpy->stLine.pt2 ).c_str() );
+    ini.SetLongValue  (_RPY_SECTION.c_str(), _strKeyStatus.c_str(),      ToInt32(pstRpy->enStatus) );
+    ini.SetBoolValue  (_RPY_SECTION.c_str(), _strKeyReversedFit.c_str(), pstRpy->bReversedFit );
+    ini.SetDoubleValue(_RPY_SECTION.c_str(), _strKeySlope.c_str(),       pstRpy->fSlope );    
+    ini.SetDoubleValue(_RPY_SECTION.c_str(), _strKeyIntercept.c_str(),   pstRpy->fIntercept );
+    ini.SetValue      (_RPY_SECTION.c_str(), _strKeyPoint1.c_str(),      _formatCoordinate ( pstRpy->stLine.pt1 ).c_str() );
+    ini.SetValue      (_RPY_SECTION.c_str(), _strKeyPoint2.c_str(),      _formatCoordinate ( pstRpy->stLine.pt2 ).c_str() );
 
     ini.SaveFile( cmdRpyFilePath.c_str() );
-    if ( ! pRpy->matResultImg.empty() )
-        cv::imwrite( _strLogCasePath + _RESULT_IMAGE_NAME, pRpy->matResultImg );
+    if ( ! pstRpy->matResultImg.empty() )
+        cv::imwrite( _strLogCasePath + _RESULT_IMAGE_NAME, pstRpy->matResultImg );
     _zip();
     return VisionStatus::OK;
 }
@@ -459,7 +459,7 @@ VisionStatus LogCaseFitLine::RunLogCase() {
     return "Caliper";
 }
 
-VisionStatus LogCaseCaliper::WriteCmd(const PR_CALIPER_CMD *const pCmd) {
+VisionStatus LogCaseCaliper::WriteCmd(const PR_CALIPER_CMD *const pstCmd) {
     if ( !_bReplay )    {
         _strLogCasePath = _generateLogCaseName(GetFolderPrefix());
         bfs::path dir(_strLogCasePath);
@@ -469,42 +469,42 @@ VisionStatus LogCaseCaliper::WriteCmd(const PR_CALIPER_CMD *const pCmd) {
     CSimpleIni ini(false, false, false);
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile( cmdRpyFilePath.c_str() );
-    ini.SetValue(_CMD_SECTION.c_str(), _strKeyRoiCenter.c_str(), _formatCoordinate(pCmd->rectRotatedROI.center).c_str());
-    ini.SetValue(_CMD_SECTION.c_str(), _strKeyRoiSize.c_str(), _formatSize(pCmd->rectRotatedROI.size).c_str() );
-    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyRoiAngle.c_str(), pCmd->rectRotatedROI.angle );
-    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyAlgorithm.c_str(), ToInt32( pCmd->enAlgorithm ) );
-    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyDir.c_str(), ToInt32( pCmd->enDetectDir ) );
-    ini.SetBoolValue(_CMD_SECTION.c_str(), _strKeyCheckLinerity.c_str(), pCmd->bCheckLinerity);
-    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyPointMaxOffset.c_str(), pCmd->fPointMaxOffset );
-    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyMinLinerity.c_str(), pCmd->fMinLinerity );
-    ini.SetBoolValue(_CMD_SECTION.c_str(), _strKeyCheckAngle.c_str(), pCmd->bCheckAngle );
-    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyExpectedAngle.c_str(), pCmd->fExpectedAngle );
-    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyAngleDiffTol.c_str(), pCmd->fAngleDiffTolerance );
+    ini.SetValue(_CMD_SECTION.c_str(), _strKeyRoiCenter.c_str(), _formatCoordinate(pstCmd->rectRotatedROI.center).c_str());
+    ini.SetValue(_CMD_SECTION.c_str(), _strKeyRoiSize.c_str(), _formatSize(pstCmd->rectRotatedROI.size).c_str() );
+    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyRoiAngle.c_str(), pstCmd->rectRotatedROI.angle );
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyAlgorithm.c_str(), ToInt32( pstCmd->enAlgorithm ) );
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyDir.c_str(), ToInt32( pstCmd->enDetectDir ) );
+    ini.SetBoolValue(_CMD_SECTION.c_str(), _strKeyCheckLinerity.c_str(), pstCmd->bCheckLinerity);
+    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyPointMaxOffset.c_str(), pstCmd->fPointMaxOffset );
+    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyMinLinerity.c_str(), pstCmd->fMinLinerity );
+    ini.SetBoolValue(_CMD_SECTION.c_str(), _strKeyCheckAngle.c_str(), pstCmd->bCheckAngle );
+    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyExpectedAngle.c_str(), pstCmd->fExpectedAngle );
+    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyAngleDiffTol.c_str(), pstCmd->fAngleDiffTolerance );
     ini.SaveFile( cmdRpyFilePath.c_str() );
 
-    cv::imwrite( _strLogCasePath + _IMAGE_NAME, pCmd->matInputImg );
-    if ( ! pCmd->matMask.empty() )
-        cv::imwrite( _strLogCasePath + _MASK_NAME,  pCmd->matMask );
+    cv::imwrite( _strLogCasePath + _IMAGE_NAME, pstCmd->matInputImg );
+    if ( ! pstCmd->matMask.empty() )
+        cv::imwrite( _strLogCasePath + _MASK_NAME,  pstCmd->matMask );
     return VisionStatus::OK;
 }
 
-VisionStatus LogCaseCaliper::WriteRpy(const PR_CALIPER_RPY *const pRpy) {
+VisionStatus LogCaseCaliper::WriteRpy(const PR_CALIPER_RPY *const pstRpy) {
     CSimpleIni ini(false, false, false);
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile( cmdRpyFilePath.c_str() );
-    ini.SetLongValue  (_RPY_SECTION.c_str(), _strKeyStatus.c_str(),      ToInt32(pRpy->enStatus) );
-    ini.SetBoolValue  (_RPY_SECTION.c_str(), _strKeyReversedFit.c_str(), pRpy->bReversedFit );
-    ini.SetDoubleValue(_RPY_SECTION.c_str(), _strKeySlope.c_str(),       pRpy->fSlope );    
-    ini.SetDoubleValue(_RPY_SECTION.c_str(), _strKeyIntercept.c_str(),   pRpy->fIntercept );
-    ini.SetValue(_RPY_SECTION.c_str(), _strKeyPoint1.c_str(), _formatCoordinate ( pRpy->stLine.pt1 ).c_str() );
-    ini.SetValue(_RPY_SECTION.c_str(), _strKeyPoint2.c_str(), _formatCoordinate ( pRpy->stLine.pt2 ).c_str() );
-    ini.SetBoolValue  (_RPY_SECTION.c_str(), _strKeyLinerityPass.c_str(), pRpy->bLinerityCheckPass );
-    ini.SetDoubleValue(_RPY_SECTION.c_str(), _strKeyLinerity.c_str(),   pRpy->fLinerity );
-    ini.SetBoolValue  (_RPY_SECTION.c_str(), _strKeyAngleCheckPass.c_str(), pRpy->bAngleCheckPass );
-    ini.SetDoubleValue(_RPY_SECTION.c_str(), _strKeyAngle.c_str(),   pRpy->fAngle );
+    ini.SetLongValue  (_RPY_SECTION.c_str(), _strKeyStatus.c_str(),      ToInt32(pstRpy->enStatus) );
+    ini.SetBoolValue  (_RPY_SECTION.c_str(), _strKeyReversedFit.c_str(), pstRpy->bReversedFit );
+    ini.SetDoubleValue(_RPY_SECTION.c_str(), _strKeySlope.c_str(),       pstRpy->fSlope );    
+    ini.SetDoubleValue(_RPY_SECTION.c_str(), _strKeyIntercept.c_str(),   pstRpy->fIntercept );
+    ini.SetValue(_RPY_SECTION.c_str(), _strKeyPoint1.c_str(), _formatCoordinate ( pstRpy->stLine.pt1 ).c_str() );
+    ini.SetValue(_RPY_SECTION.c_str(), _strKeyPoint2.c_str(), _formatCoordinate ( pstRpy->stLine.pt2 ).c_str() );
+    ini.SetBoolValue  (_RPY_SECTION.c_str(), _strKeyLinerityPass.c_str(), pstRpy->bLinerityCheckPass );
+    ini.SetDoubleValue(_RPY_SECTION.c_str(), _strKeyLinerity.c_str(),   pstRpy->fLinerity );
+    ini.SetBoolValue  (_RPY_SECTION.c_str(), _strKeyAngleCheckPass.c_str(), pstRpy->bAngleCheckPass );
+    ini.SetDoubleValue(_RPY_SECTION.c_str(), _strKeyAngle.c_str(),   pstRpy->fAngle );
     ini.SaveFile( cmdRpyFilePath.c_str() );
-    if ( ! pRpy->matResultImg.empty() )
-        cv::imwrite( _strLogCasePath + _RESULT_IMAGE_NAME, pRpy->matResultImg );
+    if ( ! pstRpy->matResultImg.empty() )
+        cv::imwrite( _strLogCasePath + _RESULT_IMAGE_NAME, pstRpy->matResultImg );
     _zip();
     return VisionStatus::OK;
 }
@@ -545,7 +545,7 @@ VisionStatus LogCaseCaliper::RunLogCase() {
     return "FitParallelLine";
 }
 
-VisionStatus LogCaseFitParallelLine::WriteCmd(PR_FIT_PARALLEL_LINE_CMD *pCmd)
+VisionStatus LogCaseFitParallelLine::WriteCmd(PR_FIT_PARALLEL_LINE_CMD *pstCmd)
 {
     if (!_bReplay)    {
         _strLogCasePath = _generateLogCaseName(GetFolderPrefix());
@@ -556,33 +556,33 @@ VisionStatus LogCaseFitParallelLine::WriteCmd(PR_FIT_PARALLEL_LINE_CMD *pCmd)
     CSimpleIni ini(false, false, false);
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile(cmdRpyFilePath.c_str());
-    ini.SetValue(_CMD_SECTION.c_str(), _strKeySrchWindow1.c_str(), _formatRect(pCmd->rectArrROI[0]).c_str());
-    ini.SetValue(_CMD_SECTION.c_str(), _strKeySrchWindow2.c_str(), _formatRect(pCmd->rectArrROI[1]).c_str());
-    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyErrorTol.c_str(), pCmd->fErrTol);
-    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyThreshold.c_str(), pCmd->nThreshold);
-    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyAttribute.c_str(), ToInt32 ( pCmd->enAttribute ) );
+    ini.SetValue(_CMD_SECTION.c_str(), _strKeySrchWindow1.c_str(), _formatRect(pstCmd->rectArrROI[0]).c_str());
+    ini.SetValue(_CMD_SECTION.c_str(), _strKeySrchWindow2.c_str(), _formatRect(pstCmd->rectArrROI[1]).c_str());
+    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyErrorTol.c_str(), pstCmd->fErrTol);
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyThreshold.c_str(), pstCmd->nThreshold);
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyAttribute.c_str(), ToInt32 ( pstCmd->enAttribute ) );
     ini.SaveFile(cmdRpyFilePath.c_str());
-    cv::imwrite(_strLogCasePath + _IMAGE_NAME, pCmd->matInputImg);
+    cv::imwrite(_strLogCasePath + _IMAGE_NAME, pstCmd->matInputImg);
     return VisionStatus::OK;
 }
 
-VisionStatus LogCaseFitParallelLine::WriteRpy(PR_FIT_PARALLEL_LINE_RPY *pRpy)
+VisionStatus LogCaseFitParallelLine::WriteRpy(PR_FIT_PARALLEL_LINE_RPY *pstRpy)
 {
     CSimpleIni ini(false, false, false);
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile(cmdRpyFilePath.c_str());
-    ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyStatus.c_str(), ToInt32(pRpy->enStatus) );
-    ini.SetBoolValue  (_RPY_SECTION.c_str(), _strKeyReversedFit.c_str(), pRpy->bReversedFit );
-    ini.SetDoubleValue(_RPY_SECTION.c_str(), _strKeySlope.c_str(), pRpy->fSlope);
-    ini.SetDoubleValue(_RPY_SECTION.c_str(), _strKeyIntercept1.c_str(), pRpy->fIntercept1);
-    ini.SetDoubleValue(_RPY_SECTION.c_str(), _strKeyIntercept2.c_str(), pRpy->fIntercept2);
-    ini.SetValue(_RPY_SECTION.c_str(), _strKeyLineOnePoint1.c_str(), _formatCoordinate(pRpy->stLine1.pt1).c_str());
-    ini.SetValue(_RPY_SECTION.c_str(), _strKeyLineOnePoint2.c_str(), _formatCoordinate(pRpy->stLine1.pt2).c_str());
-    ini.SetValue(_RPY_SECTION.c_str(), _strKeyLineTwoPoint1.c_str(), _formatCoordinate(pRpy->stLine2.pt1).c_str());
-    ini.SetValue(_RPY_SECTION.c_str(), _strKeyLineTwoPoint2.c_str(), _formatCoordinate(pRpy->stLine2.pt2).c_str());
+    ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyStatus.c_str(), ToInt32(pstRpy->enStatus) );
+    ini.SetBoolValue  (_RPY_SECTION.c_str(), _strKeyReversedFit.c_str(), pstRpy->bReversedFit );
+    ini.SetDoubleValue(_RPY_SECTION.c_str(), _strKeySlope.c_str(), pstRpy->fSlope);
+    ini.SetDoubleValue(_RPY_SECTION.c_str(), _strKeyIntercept1.c_str(), pstRpy->fIntercept1);
+    ini.SetDoubleValue(_RPY_SECTION.c_str(), _strKeyIntercept2.c_str(), pstRpy->fIntercept2);
+    ini.SetValue(_RPY_SECTION.c_str(), _strKeyLineOnePoint1.c_str(), _formatCoordinate(pstRpy->stLine1.pt1).c_str());
+    ini.SetValue(_RPY_SECTION.c_str(), _strKeyLineOnePoint2.c_str(), _formatCoordinate(pstRpy->stLine1.pt2).c_str());
+    ini.SetValue(_RPY_SECTION.c_str(), _strKeyLineTwoPoint1.c_str(), _formatCoordinate(pstRpy->stLine2.pt1).c_str());
+    ini.SetValue(_RPY_SECTION.c_str(), _strKeyLineTwoPoint2.c_str(), _formatCoordinate(pstRpy->stLine2.pt2).c_str());
     ini.SaveFile(cmdRpyFilePath.c_str());
-    if ( ! pRpy->matResultImg.empty() )
-        cv::imwrite(_strLogCasePath + _RESULT_IMAGE_NAME, pRpy->matResultImg);
+    if ( ! pstRpy->matResultImg.empty() )
+        cv::imwrite(_strLogCasePath + _RESULT_IMAGE_NAME, pstRpy->matResultImg);
     _zip();
     return VisionStatus::OK;
 }
@@ -616,7 +616,7 @@ VisionStatus LogCaseFitParallelLine::RunLogCase()
     return "FitRect";
 }
 
-VisionStatus LogCaseFitRect::WriteCmd(const PR_FIT_RECT_CMD *const pCmd)
+VisionStatus LogCaseFitRect::WriteCmd(const PR_FIT_RECT_CMD *const pstCmd)
 {
     if (!_bReplay)    {
         _strLogCasePath = _generateLogCaseName(GetFolderPrefix());
@@ -627,43 +627,43 @@ VisionStatus LogCaseFitRect::WriteCmd(const PR_FIT_RECT_CMD *const pCmd)
     CSimpleIni ini(false, false, false);
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile(cmdRpyFilePath.c_str());
-    ini.SetValue(_CMD_SECTION.c_str(), _strKeySrchWindow1.c_str(), _formatRect(pCmd->rectArrROI[0]).c_str());
-    ini.SetValue(_CMD_SECTION.c_str(), _strKeySrchWindow2.c_str(), _formatRect(pCmd->rectArrROI[1]).c_str());
-    ini.SetValue(_CMD_SECTION.c_str(), _strKeySrchWindow3.c_str(), _formatRect(pCmd->rectArrROI[0]).c_str());
-    ini.SetValue(_CMD_SECTION.c_str(), _strKeySrchWindow4.c_str(), _formatRect(pCmd->rectArrROI[1]).c_str());
-    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyErrorTol.c_str(), pCmd->fErrTol);
-    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyThreshold.c_str(), pCmd->nThreshold);
-    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyAttribute.c_str(), ToInt32 ( pCmd->enAttribute ) );
+    ini.SetValue(_CMD_SECTION.c_str(), _strKeySrchWindow1.c_str(), _formatRect(pstCmd->rectArrROI[0]).c_str());
+    ini.SetValue(_CMD_SECTION.c_str(), _strKeySrchWindow2.c_str(), _formatRect(pstCmd->rectArrROI[1]).c_str());
+    ini.SetValue(_CMD_SECTION.c_str(), _strKeySrchWindow3.c_str(), _formatRect(pstCmd->rectArrROI[0]).c_str());
+    ini.SetValue(_CMD_SECTION.c_str(), _strKeySrchWindow4.c_str(), _formatRect(pstCmd->rectArrROI[1]).c_str());
+    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyErrorTol.c_str(), pstCmd->fErrTol);
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyThreshold.c_str(), pstCmd->nThreshold);
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyAttribute.c_str(), ToInt32 ( pstCmd->enAttribute ) );
     ini.SaveFile(cmdRpyFilePath.c_str());
-    cv::imwrite(_strLogCasePath + _IMAGE_NAME, pCmd->matInputImg);
+    cv::imwrite(_strLogCasePath + _IMAGE_NAME, pstCmd->matInputImg);
     return VisionStatus::OK;
 }
 
-VisionStatus LogCaseFitRect::WriteRpy(const PR_FIT_RECT_RPY *const pRpy)
+VisionStatus LogCaseFitRect::WriteRpy(const PR_FIT_RECT_RPY *const pstRpy)
 {
     CSimpleIni ini(false, false, false);
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile(cmdRpyFilePath.c_str());
-    ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyStatus.c_str(),   ToInt32(pRpy->enStatus));
-    ini.SetBoolValue  (_RPY_SECTION.c_str(), _strKeyReversedFit1.c_str(), pRpy->bLineOneReversedFit );
-    ini.SetDoubleValue(_RPY_SECTION.c_str(), _strKeySlope1.c_str(), pRpy->fSlope1);
-    ini.SetBoolValue  (_RPY_SECTION.c_str(), _strKeyReversedFit2.c_str(), pRpy->bLineTwoReversedFit );
-    ini.SetDoubleValue(_RPY_SECTION.c_str(), _strKeySlope2.c_str(), pRpy->fSlope2);
-    ini.SetDoubleValue(_RPY_SECTION.c_str(), _strKeyIntercept1.c_str(), pRpy->fArrIntercept[0]);
-    ini.SetDoubleValue(_RPY_SECTION.c_str(), _strKeyIntercept2.c_str(), pRpy->fArrIntercept[1]);
-    ini.SetDoubleValue(_RPY_SECTION.c_str(), _strKeyIntercept3.c_str(), pRpy->fArrIntercept[2]);
-    ini.SetDoubleValue(_RPY_SECTION.c_str(), _strKeyIntercept4.c_str(), pRpy->fArrIntercept[3]);
-    ini.SetValue(_RPY_SECTION.c_str(), _strKeyLineOnePoint1.c_str(), _formatCoordinate(pRpy->arrLines[0].pt1).c_str());
-    ini.SetValue(_RPY_SECTION.c_str(), _strKeyLineOnePoint2.c_str(), _formatCoordinate(pRpy->arrLines[0].pt2).c_str());
-    ini.SetValue(_RPY_SECTION.c_str(), _strKeyLineTwoPoint1.c_str(), _formatCoordinate(pRpy->arrLines[1].pt1).c_str());
-    ini.SetValue(_RPY_SECTION.c_str(), _strKeyLineTwoPoint2.c_str(), _formatCoordinate(pRpy->arrLines[1].pt2).c_str());
-    ini.SetValue(_RPY_SECTION.c_str(), _strKeyLineThreePoint1.c_str(), _formatCoordinate(pRpy->arrLines[2].pt1).c_str());
-    ini.SetValue(_RPY_SECTION.c_str(), _strKeyLineThreePoint2.c_str(), _formatCoordinate(pRpy->arrLines[2].pt2).c_str());
-    ini.SetValue(_RPY_SECTION.c_str(), _strKeyLineFourPoint1.c_str(), _formatCoordinate(pRpy->arrLines[3].pt1).c_str());
-    ini.SetValue(_RPY_SECTION.c_str(), _strKeyLineFourPoint2.c_str(), _formatCoordinate(pRpy->arrLines[3].pt2).c_str());
+    ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyStatus.c_str(),   ToInt32(pstRpy->enStatus));
+    ini.SetBoolValue  (_RPY_SECTION.c_str(), _strKeyReversedFit1.c_str(), pstRpy->bLineOneReversedFit );
+    ini.SetDoubleValue(_RPY_SECTION.c_str(), _strKeySlope1.c_str(), pstRpy->fSlope1);
+    ini.SetBoolValue  (_RPY_SECTION.c_str(), _strKeyReversedFit2.c_str(), pstRpy->bLineTwoReversedFit );
+    ini.SetDoubleValue(_RPY_SECTION.c_str(), _strKeySlope2.c_str(), pstRpy->fSlope2);
+    ini.SetDoubleValue(_RPY_SECTION.c_str(), _strKeyIntercept1.c_str(), pstRpy->fArrIntercept[0]);
+    ini.SetDoubleValue(_RPY_SECTION.c_str(), _strKeyIntercept2.c_str(), pstRpy->fArrIntercept[1]);
+    ini.SetDoubleValue(_RPY_SECTION.c_str(), _strKeyIntercept3.c_str(), pstRpy->fArrIntercept[2]);
+    ini.SetDoubleValue(_RPY_SECTION.c_str(), _strKeyIntercept4.c_str(), pstRpy->fArrIntercept[3]);
+    ini.SetValue(_RPY_SECTION.c_str(), _strKeyLineOnePoint1.c_str(), _formatCoordinate(pstRpy->arrLines[0].pt1).c_str());
+    ini.SetValue(_RPY_SECTION.c_str(), _strKeyLineOnePoint2.c_str(), _formatCoordinate(pstRpy->arrLines[0].pt2).c_str());
+    ini.SetValue(_RPY_SECTION.c_str(), _strKeyLineTwoPoint1.c_str(), _formatCoordinate(pstRpy->arrLines[1].pt1).c_str());
+    ini.SetValue(_RPY_SECTION.c_str(), _strKeyLineTwoPoint2.c_str(), _formatCoordinate(pstRpy->arrLines[1].pt2).c_str());
+    ini.SetValue(_RPY_SECTION.c_str(), _strKeyLineThreePoint1.c_str(), _formatCoordinate(pstRpy->arrLines[2].pt1).c_str());
+    ini.SetValue(_RPY_SECTION.c_str(), _strKeyLineThreePoint2.c_str(), _formatCoordinate(pstRpy->arrLines[2].pt2).c_str());
+    ini.SetValue(_RPY_SECTION.c_str(), _strKeyLineFourPoint1.c_str(), _formatCoordinate(pstRpy->arrLines[3].pt1).c_str());
+    ini.SetValue(_RPY_SECTION.c_str(), _strKeyLineFourPoint2.c_str(), _formatCoordinate(pstRpy->arrLines[3].pt2).c_str());
     ini.SaveFile(cmdRpyFilePath.c_str());
-    if ( ! pRpy->matResultImg.empty() )
-        cv::imwrite(_strLogCasePath + _RESULT_IMAGE_NAME, pRpy->matResultImg);
+    if ( ! pstRpy->matResultImg.empty() )
+        cv::imwrite(_strLogCasePath + _RESULT_IMAGE_NAME, pstRpy->matResultImg);
     _zip();
     return VisionStatus::OK;
 }
@@ -698,7 +698,7 @@ VisionStatus LogCaseFitRect::RunLogCase()
     return "FindEdge";
 }
 
-VisionStatus LogCaseFindEdge::WriteCmd(const PR_FIND_EDGE_CMD *const pCmd) {
+VisionStatus LogCaseFindEdge::WriteCmd(const PR_FIND_EDGE_CMD *const pstCmd) {
     if (!_bReplay)    {
         _strLogCasePath = _generateLogCaseName(GetFolderPrefix());
         bfs::path dir(_strLogCasePath);
@@ -708,25 +708,25 @@ VisionStatus LogCaseFindEdge::WriteCmd(const PR_FIND_EDGE_CMD *const pCmd) {
     CSimpleIni ini(false, false, false);
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile(cmdRpyFilePath.c_str());
-    ini.SetValue(_CMD_SECTION.c_str(), _strKeyROI.c_str(), _formatRect(pCmd->rectROI).c_str());
-    ini.SetBoolValue(_CMD_SECTION.c_str(), _strKeyAutoThreshold.c_str(), pCmd->bAutoThreshold);
-    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyThreshold.c_str(), pCmd->nThreshold);
-    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyDirection.c_str(), ToInt32 ( pCmd->enDirection ) );
-    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyMinLength.c_str(), pCmd->fMinLength);
+    ini.SetValue(_CMD_SECTION.c_str(), _strKeyROI.c_str(), _formatRect(pstCmd->rectROI).c_str());
+    ini.SetBoolValue(_CMD_SECTION.c_str(), _strKeyAutoThreshold.c_str(), pstCmd->bAutoThreshold);
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyThreshold.c_str(), pstCmd->nThreshold);
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyDirection.c_str(), ToInt32 ( pstCmd->enDirection ) );
+    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyMinLength.c_str(), pstCmd->fMinLength);
     ini.SaveFile(cmdRpyFilePath.c_str());
-    cv::imwrite(_strLogCasePath + _IMAGE_NAME, pCmd->matInputImg);
+    cv::imwrite(_strLogCasePath + _IMAGE_NAME, pstCmd->matInputImg);
     return VisionStatus::OK;
 }
 
-VisionStatus LogCaseFindEdge::WriteRpy(const PR_FIND_EDGE_RPY *const pRpy) {
+VisionStatus LogCaseFindEdge::WriteRpy(const PR_FIND_EDGE_RPY *const pstRpy) {
     CSimpleIni ini(false, false, false);
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile(cmdRpyFilePath.c_str());
-    ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyStatus.c_str(),    ToInt32(pRpy->enStatus));
-    ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyEdgeCount.c_str(), ToInt32(pRpy->nEdgeCount));
+    ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyStatus.c_str(),    ToInt32(pstRpy->enStatus));
+    ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyEdgeCount.c_str(), ToInt32(pstRpy->nEdgeCount));
     ini.SaveFile(cmdRpyFilePath.c_str());
-    if ( ! pRpy->matResultImg.empty() )
-        cv::imwrite(_strLogCasePath + _RESULT_IMAGE_NAME, pRpy->matResultImg);
+    if ( ! pstRpy->matResultImg.empty() )
+        cv::imwrite(_strLogCasePath + _RESULT_IMAGE_NAME, pstRpy->matResultImg);
     _zip();
     return VisionStatus::OK;
 }
@@ -755,7 +755,7 @@ VisionStatus LogCaseFindEdge::RunLogCase() {
     return "SrchFiducial";
 }
 
-VisionStatus LogCaseSrchFiducial::WriteCmd(PR_SRCH_FIDUCIAL_MARK_CMD *pCmd)
+VisionStatus LogCaseSrchFiducial::WriteCmd(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd)
 {
     if (!_bReplay)    {
         _strLogCasePath = _generateLogCaseName(GetFolderPrefix());
@@ -766,26 +766,26 @@ VisionStatus LogCaseSrchFiducial::WriteCmd(PR_SRCH_FIDUCIAL_MARK_CMD *pCmd)
     CSimpleIni ini(false, false, false);
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile(cmdRpyFilePath.c_str());
-    ini.SetValue(_CMD_SECTION.c_str(), _strKeySrchWindow.c_str(), _formatRect(pCmd->rectSrchRange).c_str());
-    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyType.c_str(), ToInt32(pCmd->enType));
-    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeySize.c_str(), pCmd->fSize);
-    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyMargin.c_str(), pCmd->fMargin);
+    ini.SetValue(_CMD_SECTION.c_str(), _strKeySrchWindow.c_str(), _formatRect(pstCmd->rectSrchRange).c_str());
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyType.c_str(), ToInt32(pstCmd->enType));
+    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeySize.c_str(), pstCmd->fSize);
+    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyMargin.c_str(), pstCmd->fMargin);
     ini.SaveFile(cmdRpyFilePath.c_str());
-    cv::imwrite(_strLogCasePath + _IMAGE_NAME, pCmd->matInputImg);
+    cv::imwrite(_strLogCasePath + _IMAGE_NAME, pstCmd->matInputImg);
     return VisionStatus::OK;
 }
 
-VisionStatus LogCaseSrchFiducial::WriteRpy(PR_SRCH_FIDUCIAL_MARK_RPY *pRpy)
+VisionStatus LogCaseSrchFiducial::WriteRpy(PR_SRCH_FIDUCIAL_MARK_RPY *pstRpy)
 {
     CSimpleIni ini(false, false, false);
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile(cmdRpyFilePath.c_str());
-    ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyStatus.c_str(), ToInt32(pRpy->enStatus));
-    ini.SetValue(_RPY_SECTION.c_str(), _strKeyPos.c_str(), _formatCoordinate(pRpy->ptPos).c_str());
+    ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyStatus.c_str(), ToInt32(pstRpy->enStatus));
+    ini.SetValue(_RPY_SECTION.c_str(), _strKeyPos.c_str(), _formatCoordinate(pstRpy->ptPos).c_str());
 
     ini.SaveFile(cmdRpyFilePath.c_str());
-    if ( ! pRpy->matResultImg.empty() )
-        cv::imwrite(_strLogCasePath + _RESULT_IMAGE_NAME, pRpy->matResultImg);
+    if ( ! pstRpy->matResultImg.empty() )
+        cv::imwrite(_strLogCasePath + _RESULT_IMAGE_NAME, pstRpy->matResultImg);
     _zip();
     return VisionStatus::OK;
 }
@@ -818,7 +818,7 @@ VisionStatus LogCaseSrchFiducial::RunLogCase()
     return "Ocr";
 }
 
-VisionStatus LogCaseOcr::WriteCmd(PR_OCR_CMD *pCmd)
+VisionStatus LogCaseOcr::WriteCmd(PR_OCR_CMD *pstCmd)
 {
     if (!_bReplay)    {
         _strLogCasePath = _generateLogCaseName(GetFolderPrefix());
@@ -829,20 +829,20 @@ VisionStatus LogCaseOcr::WriteCmd(PR_OCR_CMD *pCmd)
     CSimpleIni ini(false, false, false);
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile(cmdRpyFilePath.c_str());
-    ini.SetValue(_CMD_SECTION.c_str(), _strKeySrchWindow.c_str(), _formatRect(pCmd->rectROI).c_str());
-    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyDirection.c_str(), ToInt32(pCmd->enDirection));
+    ini.SetValue(_CMD_SECTION.c_str(), _strKeySrchWindow.c_str(), _formatRect(pstCmd->rectROI).c_str());
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyDirection.c_str(), ToInt32(pstCmd->enDirection));
     ini.SaveFile(cmdRpyFilePath.c_str());
-    cv::imwrite(_strLogCasePath + _IMAGE_NAME, pCmd->matInputImg);
+    cv::imwrite(_strLogCasePath + _IMAGE_NAME, pstCmd->matInputImg);
     return VisionStatus::OK;
 }
 
-VisionStatus LogCaseOcr::WriteRpy(PR_OCR_RPY *pRpy)
+VisionStatus LogCaseOcr::WriteRpy(PR_OCR_RPY *pstRpy)
 {
     CSimpleIni ini(false, false, false);
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile(cmdRpyFilePath.c_str());
-    ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyStatus.c_str(), ToInt32(pRpy->enStatus));
-    ini.SetValue(_RPY_SECTION.c_str(), _strKeyResultStr.c_str(), pRpy->strResult.c_str());
+    ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyStatus.c_str(), ToInt32(pstRpy->enStatus));
+    ini.SetValue(_RPY_SECTION.c_str(), _strKeyResultStr.c_str(), pstRpy->strResult.c_str());
     ini.SaveFile(cmdRpyFilePath.c_str());
     _zip();
     return VisionStatus::OK;
@@ -873,7 +873,7 @@ VisionStatus LogCaseOcr::RunLogCase()
     return "RemoveCC";
 }
 
-VisionStatus LogCaseRemoveCC::WriteCmd(PR_REMOVE_CC_CMD *pCmd) {
+VisionStatus LogCaseRemoveCC::WriteCmd(PR_REMOVE_CC_CMD *pstCmd) {
     if (!_bReplay)    {
         _strLogCasePath = _generateLogCaseName(GetFolderPrefix());
         bfs::path dir(_strLogCasePath);
@@ -883,25 +883,25 @@ VisionStatus LogCaseRemoveCC::WriteCmd(PR_REMOVE_CC_CMD *pCmd) {
     CSimpleIni ini(false, false, false);
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile(cmdRpyFilePath.c_str());
-    ini.SetValue(_CMD_SECTION.c_str(),     _strKeyROI.c_str(), _formatRect(pCmd->rectROI).c_str());
-    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyConnectivity.c_str(), pCmd->nConnectivity);
-    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyCompareType.c_str(),  ToInt32(pCmd->enCompareType));
-    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyAreaThreshold.c_str(),  pCmd->fAreaThreshold);
+    ini.SetValue(_CMD_SECTION.c_str(),     _strKeyROI.c_str(), _formatRect(pstCmd->rectROI).c_str());
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyConnectivity.c_str(), pstCmd->nConnectivity);
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyCompareType.c_str(),  ToInt32(pstCmd->enCompareType));
+    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyAreaThreshold.c_str(),  pstCmd->fAreaThreshold);
     ini.SaveFile(cmdRpyFilePath.c_str());
-    cv::imwrite(_strLogCasePath + _IMAGE_NAME, pCmd->matInputImg);
+    cv::imwrite(_strLogCasePath + _IMAGE_NAME, pstCmd->matInputImg);
     return VisionStatus::OK;
 }
 
-VisionStatus LogCaseRemoveCC::WriteRpy(PR_REMOVE_CC_RPY *pRpy) {
+VisionStatus LogCaseRemoveCC::WriteRpy(PR_REMOVE_CC_RPY *pstRpy) {
     CSimpleIni ini(false, false, false);
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile(cmdRpyFilePath.c_str());
-    ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyStatus.c_str(),    ToInt32 ( pRpy->enStatus ) );
-    ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyTotalCC.c_str(),   pRpy->nTotalCC);
-    ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyRemovedCC.c_str(), pRpy->nRemovedCC);
+    ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyStatus.c_str(),    ToInt32 ( pstRpy->enStatus ) );
+    ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyTotalCC.c_str(),   pstRpy->nTotalCC);
+    ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyRemovedCC.c_str(), pstRpy->nRemovedCC);
     ini.SaveFile(cmdRpyFilePath.c_str());
-    if ( ! pRpy->matResultImg.empty() )
-        cv::imwrite ( _strLogCasePath + _RESULT_IMAGE_NAME, pRpy->matResultImg);
+    if ( ! pstRpy->matResultImg.empty() )
+        cv::imwrite ( _strLogCasePath + _RESULT_IMAGE_NAME, pstRpy->matResultImg);
     _zip();
     return VisionStatus::OK;
 }
@@ -929,7 +929,7 @@ VisionStatus LogCaseRemoveCC::RunLogCase() {
     return "DetectEdge";
 }
 
-VisionStatus LogCaseDetectEdge::WriteCmd(PR_DETECT_EDGE_CMD *pCmd) {
+VisionStatus LogCaseDetectEdge::WriteCmd(PR_DETECT_EDGE_CMD *pstCmd) {
     if (!_bReplay)    {
         _strLogCasePath = _generateLogCaseName(GetFolderPrefix());
         bfs::path dir(_strLogCasePath);
@@ -939,23 +939,23 @@ VisionStatus LogCaseDetectEdge::WriteCmd(PR_DETECT_EDGE_CMD *pCmd) {
     CSimpleIni ini(false, false, false);
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile(cmdRpyFilePath.c_str());
-    ini.SetValue(_CMD_SECTION.c_str(),     _strKeyROI.c_str(), _formatRect(pCmd->rectROI).c_str());
-    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyThreshold1.c_str(), pCmd->nThreshold1);
-    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyThreshold2.c_str(), pCmd->nThreshold2);
-    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyApertureSize.c_str(), pCmd->nApertureSize);
+    ini.SetValue(_CMD_SECTION.c_str(),     _strKeyROI.c_str(), _formatRect(pstCmd->rectROI).c_str());
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyThreshold1.c_str(), pstCmd->nThreshold1);
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyThreshold2.c_str(), pstCmd->nThreshold2);
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyApertureSize.c_str(), pstCmd->nApertureSize);
     ini.SaveFile(cmdRpyFilePath.c_str());
-    cv::imwrite(_strLogCasePath + _IMAGE_NAME, pCmd->matInputImg);
+    cv::imwrite(_strLogCasePath + _IMAGE_NAME, pstCmd->matInputImg);
     return VisionStatus::OK;
 }
 
-VisionStatus LogCaseDetectEdge::WriteRpy(PR_DETECT_EDGE_RPY *pRpy) {
+VisionStatus LogCaseDetectEdge::WriteRpy(PR_DETECT_EDGE_RPY *pstRpy) {
     CSimpleIni ini(false, false, false);
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile(cmdRpyFilePath.c_str());
-    ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyStatus.c_str(), ToInt32 ( pRpy->enStatus ) );
+    ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyStatus.c_str(), ToInt32 ( pstRpy->enStatus ) );
     ini.SaveFile(cmdRpyFilePath.c_str());
-    if ( ! pRpy->matResultImg.empty() )
-        cv::imwrite ( _strLogCasePath + _RESULT_IMAGE_NAME, pRpy->matResultImg );
+    if ( ! pstRpy->matResultImg.empty() )
+        cv::imwrite ( _strLogCasePath + _RESULT_IMAGE_NAME, pstRpy->matResultImg );
     _zip();
     return VisionStatus::OK;
 }
@@ -983,7 +983,7 @@ VisionStatus LogCaseDetectEdge::RunLogCase() {
     return "AutoThreshold";
 }
 
-VisionStatus LogCaseAutoThreshold::WriteCmd(PR_AUTO_THRESHOLD_CMD *pCmd) {
+VisionStatus LogCaseAutoThreshold::WriteCmd(PR_AUTO_THRESHOLD_CMD *pstCmd) {
     if (!_bReplay)    {
         _strLogCasePath = _generateLogCaseName(GetFolderPrefix());
         bfs::path dir(_strLogCasePath);
@@ -993,19 +993,19 @@ VisionStatus LogCaseAutoThreshold::WriteCmd(PR_AUTO_THRESHOLD_CMD *pCmd) {
     CSimpleIni ini(false, false, false);
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile(cmdRpyFilePath.c_str());
-    ini.SetValue(_CMD_SECTION.c_str(),     _strKeyROI.c_str(), _formatRect(pCmd->rectROI).c_str());
-    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyThresholdNum.c_str(), pCmd->nThresholdNum);
+    ini.SetValue(_CMD_SECTION.c_str(),     _strKeyROI.c_str(), _formatRect(pstCmd->rectROI).c_str());
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyThresholdNum.c_str(), pstCmd->nThresholdNum);
     ini.SaveFile(cmdRpyFilePath.c_str());
-    cv::imwrite(_strLogCasePath + _IMAGE_NAME, pCmd->matInputImg);
+    cv::imwrite(_strLogCasePath + _IMAGE_NAME, pstCmd->matInputImg);
     return VisionStatus::OK;
 }
 
-VisionStatus LogCaseAutoThreshold::WriteRpy(PR_AUTO_THRESHOLD_RPY *pRpy) {
+VisionStatus LogCaseAutoThreshold::WriteRpy(PR_AUTO_THRESHOLD_RPY *pstRpy) {
     CSimpleIni ini(false, false, false);
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile(cmdRpyFilePath.c_str());
-    ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyStatus.c_str(),    ToInt32 ( pRpy->enStatus ) );
-    ini.SetValue(_RPY_SECTION.c_str(), _strKeyThreshold.c_str(), _formatVector<Int16>(pRpy->vecThreshold).c_str() );
+    ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyStatus.c_str(),    ToInt32 ( pstRpy->enStatus ) );
+    ini.SetValue(_RPY_SECTION.c_str(), _strKeyThreshold.c_str(), _formatVector<Int16>(pstRpy->vecThreshold).c_str() );
     ini.SaveFile(cmdRpyFilePath.c_str());
     _zip();
     return VisionStatus::OK;
@@ -1032,7 +1032,7 @@ VisionStatus LogCaseAutoThreshold::RunLogCase() {
     return "FillHole";
 }
 
-VisionStatus LogCaseFillHole::WriteCmd(PR_FILL_HOLE_CMD *pCmd) {
+VisionStatus LogCaseFillHole::WriteCmd(PR_FILL_HOLE_CMD *pstCmd) {
     if (!_bReplay)    {
         _strLogCasePath = _generateLogCaseName(GetFolderPrefix());
         bfs::path dir(_strLogCasePath);
@@ -1042,26 +1042,26 @@ VisionStatus LogCaseFillHole::WriteCmd(PR_FILL_HOLE_CMD *pCmd) {
     CSimpleIni ini(false, false, false);
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile(cmdRpyFilePath.c_str());
-    ini.SetValue(_CMD_SECTION.c_str(),     _strKeyROI.c_str(), _formatRect(pCmd->rectROI).c_str());
-    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyAttribute.c_str(), ToInt32(pCmd->enAttribute));
-    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyMethod.c_str(), ToInt32(pCmd->enMethod));
-    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyMorphShape.c_str(), ToInt32(pCmd->enMorphShape));
-    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyMorphKernelX.c_str(), pCmd->szMorphKernel.width);
-    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyMorphKernelY.c_str(), pCmd->szMorphKernel.height);
-    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyMorphIteration.c_str(), pCmd->nMorphIteration);
+    ini.SetValue(_CMD_SECTION.c_str(),     _strKeyROI.c_str(), _formatRect(pstCmd->rectROI).c_str());
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyAttribute.c_str(), ToInt32(pstCmd->enAttribute));
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyMethod.c_str(), ToInt32(pstCmd->enMethod));
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyMorphShape.c_str(), ToInt32(pstCmd->enMorphShape));
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyMorphKernelX.c_str(), pstCmd->szMorphKernel.width);
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyMorphKernelY.c_str(), pstCmd->szMorphKernel.height);
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyMorphIteration.c_str(), pstCmd->nMorphIteration);
     ini.SaveFile(cmdRpyFilePath.c_str());
-    cv::imwrite(_strLogCasePath + _IMAGE_NAME, pCmd->matInputImg);
+    cv::imwrite(_strLogCasePath + _IMAGE_NAME, pstCmd->matInputImg);
     return VisionStatus::OK;
 }
 
-VisionStatus LogCaseFillHole::WriteRpy(PR_FILL_HOLE_RPY *pRpy) {
+VisionStatus LogCaseFillHole::WriteRpy(PR_FILL_HOLE_RPY *pstRpy) {
     CSimpleIni ini(false, false, false);
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile(cmdRpyFilePath.c_str());
-    ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyStatus.c_str(),    ToInt32 ( pRpy->enStatus ) );
+    ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyStatus.c_str(),    ToInt32 ( pstRpy->enStatus ) );
     ini.SaveFile(cmdRpyFilePath.c_str());
-    if ( ! pRpy->matResultImg.empty() )
-        cv::imwrite ( _strLogCasePath + _RESULT_IMAGE_NAME, pRpy->matResultImg );
+    if ( ! pstRpy->matResultImg.empty() )
+        cv::imwrite ( _strLogCasePath + _RESULT_IMAGE_NAME, pstRpy->matResultImg );
     _zip();
     return VisionStatus::OK;
 }
@@ -1092,7 +1092,7 @@ VisionStatus LogCaseFillHole::RunLogCase() {
     return "MatchTmpl";
 }
 
-VisionStatus LogCaseMatchTmpl::WriteCmd(PR_MATCH_TEMPLATE_CMD *pCmd)
+VisionStatus LogCaseMatchTmpl::WriteCmd(PR_MATCH_TEMPLATE_CMD *pstCmd)
 {
     if (!_bReplay)    {
         _strLogCasePath = _generateLogCaseName(GetFolderPrefix());
@@ -1103,23 +1103,23 @@ VisionStatus LogCaseMatchTmpl::WriteCmd(PR_MATCH_TEMPLATE_CMD *pCmd)
     CSimpleIni ini(false, false, false);
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile(cmdRpyFilePath.c_str());
-    ini.SetValue(_CMD_SECTION.c_str(),     _strKeySrchWindow.c_str(), _formatRect(pCmd->rectSrchWindow).c_str());
-    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyMotion.c_str(), ToInt32(pCmd->enMotion));
+    ini.SetValue(_CMD_SECTION.c_str(),     _strKeySrchWindow.c_str(), _formatRect(pstCmd->rectSrchWindow).c_str());
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyMotion.c_str(), ToInt32(pstCmd->enMotion));
     ini.SaveFile(cmdRpyFilePath.c_str());
-    cv::imwrite(_strLogCasePath + _IMAGE_NAME,     pCmd->matInputImg);
-    cv::imwrite(_strLogCasePath + _TMPL_FILE_NAME, pCmd->matTmpl);
+    cv::imwrite(_strLogCasePath + _IMAGE_NAME,     pstCmd->matInputImg);
+    cv::imwrite(_strLogCasePath + _TMPL_FILE_NAME, pstCmd->matTmpl);
     return VisionStatus::OK;
 }
 
-VisionStatus LogCaseMatchTmpl::WriteRpy(PR_MATCH_TEMPLATE_RPY *pRpy)
+VisionStatus LogCaseMatchTmpl::WriteRpy(PR_MATCH_TEMPLATE_RPY *pstRpy)
 {
     CSimpleIni ini(false, false, false);
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile(cmdRpyFilePath.c_str());
-    ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyStatus.c_str(),    ToInt32 ( pRpy->enStatus ) );
+    ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyStatus.c_str(),    ToInt32 ( pstRpy->enStatus ) );
     ini.SaveFile(cmdRpyFilePath.c_str());
-    if ( ! pRpy->matResultImg.empty() )
-        cv::imwrite ( _strLogCasePath + _RESULT_IMAGE_NAME, pRpy->matResultImg );
+    if ( ! pstRpy->matResultImg.empty() )
+        cv::imwrite ( _strLogCasePath + _RESULT_IMAGE_NAME, pstRpy->matResultImg );
     _zip();
     return VisionStatus::OK;
 }
@@ -1147,7 +1147,7 @@ VisionStatus LogCaseMatchTmpl::RunLogCase()
     return "PickColor";
 }
 
-VisionStatus LogCasePickColor::WriteCmd(PR_PICK_COLOR_CMD *pCmd) {
+VisionStatus LogCasePickColor::WriteCmd(PR_PICK_COLOR_CMD *pstCmd) {
     if (!_bReplay)    {
         _strLogCasePath = _generateLogCaseName(GetFolderPrefix());
         bfs::path dir(_strLogCasePath);
@@ -1157,24 +1157,24 @@ VisionStatus LogCasePickColor::WriteCmd(PR_PICK_COLOR_CMD *pCmd) {
     CSimpleIni ini(false, false, false);
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile(cmdRpyFilePath.c_str());
-    ini.SetValue(_CMD_SECTION.c_str(),     _strKeyROI.c_str(), _formatRect(pCmd->rectROI).c_str());
-    ini.SetValue(_CMD_SECTION.c_str(),     _strKeyPickPoint.c_str(), _formatCoordinate(pCmd->ptPick).c_str());
-    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyColorDiff.c_str(), pCmd->nColorDiff );
-    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyGrayDiff.c_str(),  pCmd->nGrayDiff );
+    ini.SetValue(_CMD_SECTION.c_str(),     _strKeyROI.c_str(), _formatRect(pstCmd->rectROI).c_str());
+    ini.SetValue(_CMD_SECTION.c_str(),     _strKeyPickPoint.c_str(), _formatCoordinate(pstCmd->ptPick).c_str());
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyColorDiff.c_str(), pstCmd->nColorDiff );
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyGrayDiff.c_str(),  pstCmd->nGrayDiff );
     ini.SaveFile(cmdRpyFilePath.c_str());
-    cv::imwrite(_strLogCasePath + _IMAGE_NAME,     pCmd->matInputImg);
+    cv::imwrite(_strLogCasePath + _IMAGE_NAME,     pstCmd->matInputImg);
     return VisionStatus::OK;
 }
 
-VisionStatus LogCasePickColor::WriteRpy(PR_PICK_COLOR_RPY *pRpy)
+VisionStatus LogCasePickColor::WriteRpy(PR_PICK_COLOR_RPY *pstRpy)
 {
     CSimpleIni ini(false, false, false);
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile(cmdRpyFilePath.c_str());
-    ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyStatus.c_str(),    ToInt32 ( pRpy->enStatus ) );
+    ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyStatus.c_str(),    ToInt32 ( pstRpy->enStatus ) );
     ini.SaveFile(cmdRpyFilePath.c_str());
-    if ( ! pRpy->matResultImg.empty() )
-        cv::imwrite ( _strLogCasePath + _RESULT_IMAGE_NAME, pRpy->matResultImg );
+    if ( ! pstRpy->matResultImg.empty() )
+        cv::imwrite ( _strLogCasePath + _RESULT_IMAGE_NAME, pstRpy->matResultImg );
     _zip();
     return VisionStatus::OK;
 }
@@ -1202,7 +1202,7 @@ VisionStatus LogCasePickColor::RunLogCase() {
     return "CalibrateCamera";
 }
 
-VisionStatus LogCaseCalibrateCamera::WriteCmd(const PR_CALIBRATE_CAMERA_CMD *const pCmd) {
+VisionStatus LogCaseCalibrateCamera::WriteCmd(const PR_CALIBRATE_CAMERA_CMD *const pstCmd) {
     if (!_bReplay)    {
         _strLogCasePath = _generateLogCaseName(GetFolderPrefix());
         bfs::path dir(_strLogCasePath);
@@ -1212,26 +1212,26 @@ VisionStatus LogCaseCalibrateCamera::WriteCmd(const PR_CALIBRATE_CAMERA_CMD *con
     CSimpleIni ini(false, false, false);
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile(cmdRpyFilePath.c_str());
-    ini.SetValue(_CMD_SECTION.c_str(), _strKeyBoardPattern.c_str(), _formatSize(pCmd->szBoardPattern).c_str());
-    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyObjectSize.c_str(), pCmd->fPatternDist );
+    ini.SetValue(_CMD_SECTION.c_str(), _strKeyBoardPattern.c_str(), _formatSize(pstCmd->szBoardPattern).c_str());
+    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyObjectSize.c_str(), pstCmd->fPatternDist );
     ini.SaveFile(cmdRpyFilePath.c_str());
-    cv::imwrite(_strLogCasePath + _IMAGE_NAME,     pCmd->matInputImg);
+    cv::imwrite(_strLogCasePath + _IMAGE_NAME,     pstCmd->matInputImg);
     return VisionStatus::OK;
 }
 
-VisionStatus LogCaseCalibrateCamera::WriteRpy(const PR_CALIBRATE_CAMERA_RPY * const pRpy) {
+VisionStatus LogCaseCalibrateCamera::WriteRpy(const PR_CALIBRATE_CAMERA_RPY * const pstRpy) {
     CSimpleIni ini(false, false, false);
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile(cmdRpyFilePath.c_str());    
-    ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyStatus.c_str(),    ToInt32 ( pRpy->enStatus ) );
-    if ( VisionStatus::OK == pRpy->enStatus ) {
-        ini.SetDoubleValue(_RPY_SECTION.c_str(), _strKeyResolutionX.c_str(), pRpy->dResolutionX);
-        ini.SetDoubleValue(_RPY_SECTION.c_str(), _strKeyResolutionY.c_str(), pRpy->dResolutionY);
+    ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyStatus.c_str(),    ToInt32 ( pstRpy->enStatus ) );
+    if ( VisionStatus::OK == pstRpy->enStatus ) {
+        ini.SetDoubleValue(_RPY_SECTION.c_str(), _strKeyResolutionX.c_str(), pstRpy->dResolutionX);
+        ini.SetDoubleValue(_RPY_SECTION.c_str(), _strKeyResolutionY.c_str(), pstRpy->dResolutionY);
     }
     ini.SaveFile(cmdRpyFilePath.c_str());
 
-    if ( ! pRpy->matCornerPointsImg.empty() )
-        cv::imwrite ( _strLogCasePath + _strCornerPointsImage, pRpy->matCornerPointsImg );
+    if ( ! pstRpy->matCornerPointsImg.empty() )
+        cv::imwrite ( _strLogCasePath + _strCornerPointsImage, pstRpy->matCornerPointsImg );
     _zip();
     return VisionStatus::OK;
 }
@@ -1257,7 +1257,7 @@ VisionStatus LogCaseCalibrateCamera::RunLogCase() {
     return "RestoreImg";
 }
 
-VisionStatus LogCaseRestoreImg::WriteCmd(const PR_RESTORE_IMG_CMD *const pCmd) {
+VisionStatus LogCaseRestoreImg::WriteCmd(const PR_RESTORE_IMG_CMD *const pstCmd) {
     if (!_bReplay)    {
         _strLogCasePath = _generateLogCaseName(GetFolderPrefix());
         bfs::path dir(_strLogCasePath);
@@ -1268,22 +1268,22 @@ VisionStatus LogCaseRestoreImg::WriteCmd(const PR_RESTORE_IMG_CMD *const pCmd) {
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
 
     cv::FileStorage fs ( _strLogCasePath + _strYmlFile, cv::FileStorage::WRITE );
-    cv::write(fs , _strKeyMapX, pCmd->vecMatRestoreImage[0] );
-    cv::write(fs , _strKeyMapY, pCmd->vecMatRestoreImage[1] );
+    cv::write(fs , _strKeyMapX, pstCmd->vecMatRestoreImage[0] );
+    cv::write(fs , _strKeyMapY, pstCmd->vecMatRestoreImage[1] );
     fs.release();
 
-    cv::imwrite(_strLogCasePath + _IMAGE_NAME,     pCmd->matInputImg);
+    cv::imwrite(_strLogCasePath + _IMAGE_NAME,     pstCmd->matInputImg);
     return VisionStatus::OK;
 }
 
-VisionStatus LogCaseRestoreImg::WriteRpy(PR_RESTORE_IMG_RPY *const pRpy) {
+VisionStatus LogCaseRestoreImg::WriteRpy(PR_RESTORE_IMG_RPY *const pstRpy) {
     CSimpleIni ini(false, false, false);
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile(cmdRpyFilePath.c_str());    
-    ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyStatus.c_str(),    ToInt32 ( pRpy->enStatus ) );
+    ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyStatus.c_str(),    ToInt32 ( pstRpy->enStatus ) );
     ini.SaveFile(cmdRpyFilePath.c_str());
-    if ( ! pRpy->matResultImg.empty() )
-        cv::imwrite ( _strLogCasePath + _RESULT_IMAGE_NAME, pRpy->matResultImg );
+    if ( ! pstRpy->matResultImg.empty() )
+        cv::imwrite ( _strLogCasePath + _RESULT_IMAGE_NAME, pstRpy->matResultImg );
     _zip();
     return VisionStatus::OK;
 }
@@ -1327,7 +1327,7 @@ VisionStatus LogCaseRestoreImg::RunLogCase() {
     return "AutoLocateLead";
 }
 
-VisionStatus LogCaseAutoLocateLead::WriteCmd(const PR_AUTO_LOCATE_LEAD_CMD *const pCmd) {
+VisionStatus LogCaseAutoLocateLead::WriteCmd(const PR_AUTO_LOCATE_LEAD_CMD *const pstCmd) {
     if ( !_bReplay ) {
         _strLogCasePath = _generateLogCaseName(GetFolderPrefix());
         bfs::path dir(_strLogCasePath);
@@ -1337,28 +1337,28 @@ VisionStatus LogCaseAutoLocateLead::WriteCmd(const PR_AUTO_LOCATE_LEAD_CMD *cons
     CSimpleIni ini(false, false, false);
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile(cmdRpyFilePath.c_str());
-    ini.SetValue(_CMD_SECTION.c_str(), _strKeySrchWindow.c_str(), _formatRect(pCmd->rectSrchWindow).c_str());
-    ini.SetValue(_CMD_SECTION.c_str(), _strKeyChipWindow.c_str(), _formatRect(pCmd->rectChipBody).c_str());
+    ini.SetValue(_CMD_SECTION.c_str(), _strKeySrchWindow.c_str(), _formatRect(pstCmd->rectSrchWindow).c_str());
+    ini.SetValue(_CMD_SECTION.c_str(), _strKeyChipWindow.c_str(), _formatRect(pstCmd->rectChipBody).c_str());
     ini.SaveFile(cmdRpyFilePath.c_str());
 
-    cv::imwrite(_strLogCasePath + _IMAGE_NAME,     pCmd->matInputImg);
+    cv::imwrite(_strLogCasePath + _IMAGE_NAME,     pstCmd->matInputImg);
     return VisionStatus::OK;
 }
 
-VisionStatus LogCaseAutoLocateLead::WriteRpy(PR_AUTO_LOCATE_LEAD_RPY *const pRpy) {
+VisionStatus LogCaseAutoLocateLead::WriteRpy(PR_AUTO_LOCATE_LEAD_RPY *const pstRpy) {
     CSimpleIni ini(false, false, false);
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile(cmdRpyFilePath.c_str());
-    ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyStatus.c_str(),    ToInt32 ( pRpy->enStatus ) );
-    for ( size_t i = 0; i < pRpy->vecLeadLocation.size(); ++ i ) {
+    ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyStatus.c_str(),    ToInt32 ( pstRpy->enStatus ) );
+    for ( size_t i = 0; i < pstRpy->vecLeadLocation.size(); ++ i ) {
         String strKey = _strLeadLocation + std::to_string(i);
-        auto rect = pRpy->vecLeadLocation[i];
+        auto rect = pstRpy->vecLeadLocation[i];
         ini.SetValue(_RPY_SECTION.c_str(), strKey.c_str(), _formatRect(rect).c_str());
     }
     ini.SaveFile(cmdRpyFilePath.c_str());
 
-    if ( ! pRpy->matResultImg.empty() )
-        cv::imwrite ( _strLogCasePath + _RESULT_IMAGE_NAME, pRpy->matResultImg );
+    if ( ! pstRpy->matResultImg.empty() )
+        cv::imwrite ( _strLogCasePath + _RESULT_IMAGE_NAME, pstRpy->matResultImg );
     _zip();
     return VisionStatus::OK;
 }
@@ -1384,7 +1384,7 @@ VisionStatus LogCaseAutoLocateLead::RunLogCase() {
     return "InspBridge";
 }
 
-VisionStatus LogCaseInspBridge::WriteCmd(const PR_INSP_BRIDGE_CMD *const pCmd) {
+VisionStatus LogCaseInspBridge::WriteCmd(const PR_INSP_BRIDGE_CMD *const pstCmd) {
     if ( !_bReplay ) {
         _strLogCasePath = _generateLogCaseName(GetFolderPrefix());
         bfs::path dir(_strLogCasePath);
@@ -1394,9 +1394,9 @@ VisionStatus LogCaseInspBridge::WriteCmd(const PR_INSP_BRIDGE_CMD *const pCmd) {
     CSimpleIni ini(false, false, false);
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile(cmdRpyFilePath.c_str());
-    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyInspItemCount.c_str(), ToInt32( pCmd->vecInspItems.size() ) );
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyInspItemCount.c_str(), ToInt32( pstCmd->vecInspItems.size() ) );
     int nInspItemIndex = 0;
-    for ( const auto &inspItem : pCmd->vecInspItems ) {
+    for ( const auto &inspItem : pstCmd->vecInspItems ) {
         String strKeyInnerWindow = _strKeyInnerWindow + "_" + std::to_string ( nInspItemIndex );
         String strKeyOuterWindow = _strKeyOuterWindow + "_" + std::to_string ( nInspItemIndex );
         String strKeyMode = _strKeyMode + "_" + std::to_string ( nInspItemIndex );
@@ -1422,17 +1422,17 @@ VisionStatus LogCaseInspBridge::WriteCmd(const PR_INSP_BRIDGE_CMD *const pCmd) {
     }
     ini.SaveFile(cmdRpyFilePath.c_str());
 
-    cv::imwrite ( _strLogCasePath + _IMAGE_NAME,     pCmd->matInputImg);
+    cv::imwrite ( _strLogCasePath + _IMAGE_NAME,     pstCmd->matInputImg);
     return VisionStatus::OK;
 }
 
-VisionStatus LogCaseInspBridge::WriteRpy(PR_INSP_BRIDGE_RPY *const pRpy) {
+VisionStatus LogCaseInspBridge::WriteRpy(PR_INSP_BRIDGE_RPY *const pstRpy) {
     CSimpleIni ini(false, false, false);
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile(cmdRpyFilePath.c_str());
-    ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyStatus.c_str(),    ToInt32 ( pRpy->enStatus ) );
+    ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyStatus.c_str(),    ToInt32 ( pstRpy->enStatus ) );
     int nInspResultIndex = 0;
-    for ( const auto &inspResult : pRpy->vecInspResults ) {
+    for ( const auto &inspResult : pstRpy->vecInspResults ) {
         String strKeyWithBridge = _strKeyWithBridge + "_" + std::to_string(nInspResultIndex);
         for ( size_t nBridgeWindowIndex = 0; nBridgeWindowIndex < inspResult.vecBridgeWindow.size(); ++ nBridgeWindowIndex ) {
             String strKeyBridgeWindow = _strKeyBridgeWindow + "_" + std::to_string(nInspResultIndex) + "_" + std::to_string(nBridgeWindowIndex);
@@ -1441,8 +1441,8 @@ VisionStatus LogCaseInspBridge::WriteRpy(PR_INSP_BRIDGE_RPY *const pRpy) {
         ++ nInspResultIndex;
     }
     ini.SaveFile(cmdRpyFilePath.c_str());
-    if ( ! pRpy->matResultImg.empty() )
-        cv::imwrite ( _strLogCasePath + _RESULT_IMAGE_NAME, pRpy->matResultImg );
+    if ( ! pstRpy->matResultImg.empty() )
+        cv::imwrite ( _strLogCasePath + _RESULT_IMAGE_NAME, pstRpy->matResultImg );
     _zip();
     return VisionStatus::OK;
 }
@@ -1493,7 +1493,7 @@ VisionStatus LogCaseInspBridge::RunLogCase() {
     return "InspChip";
 }
 
-VisionStatus LogCaseInspChip::WriteCmd(const PR_INSP_CHIP_CMD *const pCmd) {
+VisionStatus LogCaseInspChip::WriteCmd(const PR_INSP_CHIP_CMD *const pstCmd) {
     if ( !_bReplay ) {
         _strLogCasePath = _generateLogCaseName(GetFolderPrefix());
         bfs::path dir(_strLogCasePath);
@@ -1503,26 +1503,26 @@ VisionStatus LogCaseInspChip::WriteCmd(const PR_INSP_CHIP_CMD *const pCmd) {
     CSimpleIni ini(false, false, false);
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile(cmdRpyFilePath.c_str());
-    ini.SetValue ( _CMD_SECTION.c_str(), _strKeySrchWindow.c_str(), _formatRect ( pCmd->rectSrchWindow ).c_str() );
-    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyInspMode.c_str(), ToInt32( pCmd->enInspMode ) );
-    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyRecordId.c_str(), pCmd->nRecordId );
+    ini.SetValue ( _CMD_SECTION.c_str(), _strKeySrchWindow.c_str(), _formatRect ( pstCmd->rectSrchWindow ).c_str() );
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyInspMode.c_str(), ToInt32( pstCmd->enInspMode ) );
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyRecordId.c_str(), pstCmd->nRecordId );
     ini.SaveFile(cmdRpyFilePath.c_str());
 
-    cv::imwrite(_strLogCasePath + _IMAGE_NAME,     pCmd->matInputImg);
+    cv::imwrite(_strLogCasePath + _IMAGE_NAME,     pstCmd->matInputImg);
     return VisionStatus::OK;
 }
 
-VisionStatus LogCaseInspChip::WriteRpy(const PR_INSP_CHIP_RPY *const pRpy) {
+VisionStatus LogCaseInspChip::WriteRpy(const PR_INSP_CHIP_RPY *const pstRpy) {
     CSimpleIni ini(false, false, false);
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile(cmdRpyFilePath.c_str());
-    ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyStatus.c_str(),    ToInt32 ( pRpy->enStatus ) );
-    ini.SetValue ( _RPY_SECTION.c_str(), _strKeyCenter.c_str(), _formatCoordinate ( pRpy->rotatedRectResult.center ).c_str() );
-    ini.SetValue ( _RPY_SECTION.c_str(), _strKeySize.c_str()  , _formatCoordinate ( pRpy->rotatedRectResult.size ).  c_str() );
-    ini.SetDoubleValue(_RPY_SECTION.c_str(), _strKeyAngle.c_str(), pRpy->rotatedRectResult.angle );
+    ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyStatus.c_str(),    ToInt32 ( pstRpy->enStatus ) );
+    ini.SetValue ( _RPY_SECTION.c_str(), _strKeyCenter.c_str(), _formatCoordinate ( pstRpy->rotatedRectResult.center ).c_str() );
+    ini.SetValue ( _RPY_SECTION.c_str(), _strKeySize.c_str()  , _formatCoordinate ( pstRpy->rotatedRectResult.size ).  c_str() );
+    ini.SetDoubleValue(_RPY_SECTION.c_str(), _strKeyAngle.c_str(), pstRpy->rotatedRectResult.angle );
     ini.SaveFile(cmdRpyFilePath.c_str());
-    if ( ! pRpy->matResultImg.empty() )
-        cv::imwrite ( _strLogCasePath + _RESULT_IMAGE_NAME, pRpy->matResultImg );
+    if ( ! pstRpy->matResultImg.empty() )
+        cv::imwrite ( _strLogCasePath + _RESULT_IMAGE_NAME, pstRpy->matResultImg );
     _zip();
     return VisionStatus::OK;
 }
@@ -1549,7 +1549,7 @@ VisionStatus LogCaseInspChip::RunLogCase() {
     return "LrnContour";
 }
 
-VisionStatus LogCaseLrnContour::WriteCmd(const PR_LRN_CONTOUR_CMD *const pCmd) {
+VisionStatus LogCaseLrnContour::WriteCmd(const PR_LRN_CONTOUR_CMD *const pstCmd) {
     if ( !_bReplay ) {
         _strLogCasePath = _generateLogCaseName(GetFolderPrefix());
         bfs::path dir(_strLogCasePath);
@@ -1559,25 +1559,25 @@ VisionStatus LogCaseLrnContour::WriteCmd(const PR_LRN_CONTOUR_CMD *const pCmd) {
     CSimpleIni ini(false, false, false);
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile(cmdRpyFilePath.c_str());
-    ini.SetValue ( _CMD_SECTION.c_str(), _strKeyROI.c_str(), _formatRect ( pCmd->rectROI ).c_str() );
-    ini.SetBoolValue(_CMD_SECTION.c_str(), _strKeyAutoThreshold.c_str(), ToInt32( pCmd->bAutoThreshold ) );
-    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyThreshold.c_str(), pCmd->nThreshold );
+    ini.SetValue ( _CMD_SECTION.c_str(), _strKeyROI.c_str(), _formatRect ( pstCmd->rectROI ).c_str() );
+    ini.SetBoolValue(_CMD_SECTION.c_str(), _strKeyAutoThreshold.c_str(), ToInt32( pstCmd->bAutoThreshold ) );
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyThreshold.c_str(), pstCmd->nThreshold );
     ini.SaveFile(cmdRpyFilePath.c_str());
 
-    cv::imwrite ( _strLogCasePath + _IMAGE_NAME,     pCmd->matInputImg );
+    cv::imwrite ( _strLogCasePath + _IMAGE_NAME,     pstCmd->matInputImg );
     return VisionStatus::OK;
 }
 
-VisionStatus LogCaseLrnContour::WriteRpy(const PR_LRN_CONTOUR_RPY *const pRpy) {
+VisionStatus LogCaseLrnContour::WriteRpy(const PR_LRN_CONTOUR_RPY *const pstRpy) {
     CSimpleIni ini(false, false, false);
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile(cmdRpyFilePath.c_str());    
-    ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyStatus.c_str(),    ToInt32 ( pRpy->enStatus ) );
-    ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyThreshold.c_str(), pRpy->nThreshold );
-    ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyRecordId.c_str(), pRpy->nRecordId );
+    ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyStatus.c_str(),    ToInt32 ( pstRpy->enStatus ) );
+    ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyThreshold.c_str(), pstRpy->nThreshold );
+    ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyRecordId.c_str(), pstRpy->nRecordId );
     ini.SaveFile(cmdRpyFilePath.c_str());
-    if ( ! pRpy->matResultImg.empty() )
-        cv::imwrite ( _strLogCasePath + _RESULT_IMAGE_NAME, pRpy->matResultImg );
+    if ( ! pstRpy->matResultImg.empty() )
+        cv::imwrite ( _strLogCasePath + _RESULT_IMAGE_NAME, pstRpy->matResultImg );
     _zip();
     return VisionStatus::OK;
 }
@@ -1604,7 +1604,7 @@ VisionStatus LogCaseLrnContour::RunLogCase() {
     return "InspContour";
 }
 
-VisionStatus LogCaseInspContour::WriteCmd(const PR_INSP_CONTOUR_CMD *const pCmd) {
+VisionStatus LogCaseInspContour::WriteCmd(const PR_INSP_CONTOUR_CMD *const pstCmd) {
     if ( !_bReplay ) {
         _strLogCasePath = _generateLogCaseName(GetFolderPrefix());
         bfs::path dir(_strLogCasePath);
@@ -1614,30 +1614,30 @@ VisionStatus LogCaseInspContour::WriteCmd(const PR_INSP_CONTOUR_CMD *const pCmd)
     CSimpleIni ini(false, false, false);
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile(cmdRpyFilePath.c_str());
-    ini.SetValue ( _CMD_SECTION.c_str(), _strKeyROI.c_str(), _formatRect ( pCmd->rectROI ).c_str() );
-    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyRecordId.c_str(), pCmd->nRecordId );
-    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyDefectThreshold.c_str(), pCmd->nDefectThreshold );
-    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyMinDefectArea.c_str(), pCmd->fMinDefectArea );
-    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyInnerLengthTol.c_str(), pCmd->fDefectInnerLengthTol );
-    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyOuterLengthTol.c_str(), pCmd->fDefectOuterLengthTol );
-    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyInnerMaskDepth.c_str(), pCmd->fInnerMaskDepth );
-    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyOuterMaskDepth.c_str(), pCmd->fOuterMaskDepth );
+    ini.SetValue ( _CMD_SECTION.c_str(), _strKeyROI.c_str(), _formatRect ( pstCmd->rectROI ).c_str() );
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyRecordId.c_str(), pstCmd->nRecordId );
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyDefectThreshold.c_str(), pstCmd->nDefectThreshold );
+    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyMinDefectArea.c_str(), pstCmd->fMinDefectArea );
+    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyInnerLengthTol.c_str(), pstCmd->fDefectInnerLengthTol );
+    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyOuterLengthTol.c_str(), pstCmd->fDefectOuterLengthTol );
+    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyInnerMaskDepth.c_str(), pstCmd->fInnerMaskDepth );
+    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyOuterMaskDepth.c_str(), pstCmd->fOuterMaskDepth );
     ini.SaveFile(cmdRpyFilePath.c_str());
 
-    cv::imwrite ( _strLogCasePath + _IMAGE_NAME, pCmd->matInputImg );
-    if ( ! pCmd->matMask.empty() )
-        cv::imwrite ( _strLogCasePath + _MASK_NAME, pCmd->matMask );
+    cv::imwrite ( _strLogCasePath + _IMAGE_NAME, pstCmd->matInputImg );
+    if ( ! pstCmd->matMask.empty() )
+        cv::imwrite ( _strLogCasePath + _MASK_NAME, pstCmd->matMask );
     return VisionStatus::OK;
 }
 
-VisionStatus LogCaseInspContour::WriteRpy(const PR_INSP_CONTOUR_RPY *const pRpy) {
+VisionStatus LogCaseInspContour::WriteRpy(const PR_INSP_CONTOUR_RPY *const pstRpy) {
     CSimpleIni ini(false, false, false);
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile(cmdRpyFilePath.c_str());    
-    ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyStatus.c_str(),    ToInt32 ( pRpy->enStatus ) );
+    ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyStatus.c_str(),    ToInt32 ( pstRpy->enStatus ) );
     ini.SaveFile(cmdRpyFilePath.c_str());
-    if ( ! pRpy->matResultImg.empty() )
-        cv::imwrite ( _strLogCasePath + _RESULT_IMAGE_NAME, pRpy->matResultImg );
+    if ( ! pstRpy->matResultImg.empty() )
+        cv::imwrite ( _strLogCasePath + _RESULT_IMAGE_NAME, pstRpy->matResultImg );
     _zip();
     return VisionStatus::OK;
 }
@@ -1665,6 +1665,109 @@ VisionStatus LogCaseInspContour::RunLogCase() {
 
     VisionStatus enStatus = VisionStatus::OK;
     enStatus = VisionAlgorithm::inspContour ( &stCmd, &stRpy, true );
+    WriteRpy(&stRpy);
+    return enStatus;
+}
+
+/*static*/ String LogCaseInspHole::StaticGetFolderPrefix() {
+    return "InspHole";
+}
+
+VisionStatus LogCaseInspHole::WriteCmd(const PR_INSP_HOLE_CMD *const pstCmd) {
+    if ( !_bReplay ) {
+        _strLogCasePath = _generateLogCaseName(GetFolderPrefix());
+        bfs::path dir(_strLogCasePath);
+        bfs::create_directories(dir);
+    }
+
+    CSimpleIni ini(false, false, false);
+    auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
+    ini.LoadFile(cmdRpyFilePath.c_str());
+    ini.SetValue ( _CMD_SECTION.c_str(), _strKeyROI.c_str(), _formatRect ( pstCmd->rectROI ).c_str() );
+    //ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyRecordId.c_str(), pstCmd->nRecordId );
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeySegmentMethod.c_str(), ToInt32( pstCmd->enSegmentMethod ) );
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyInspMode.c_str(), ToInt32( pstCmd->enInspMode ) );
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyGrayRangeStart.c_str(),  pstCmd->stGrayScaleRange.nStart );
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyGrayRangeEnd.c_str(),    pstCmd->stGrayScaleRange.nEnd );
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyBlueRangeStart.c_str(),  pstCmd->stColorRange.nStartB );
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyBlueRangeEnd.c_str(),    pstCmd->stColorRange.nEndB );
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyGreenRangeStart.c_str(), pstCmd->stColorRange.nStartG );
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyGreenRangeEnd.c_str(),   pstCmd->stColorRange.nEndG );
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyRedRangeStart.c_str(),   pstCmd->stColorRange.nStartR );
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyRedRangeEnd.c_str(),     pstCmd->stColorRange.nEndR );
+
+    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyMaxRatio.c_str(), pstCmd->stRatioModeCriteria.fMaxRatio );
+    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyMinRatio.c_str(), pstCmd->stRatioModeCriteria.fMinRatio );
+    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyMaxArea.c_str(), pstCmd->stBlobModeCriteria.fMaxArea );
+    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyMinArea.c_str(), pstCmd->stBlobModeCriteria.fMinArea );
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyMaxBlobCount.c_str(),   pstCmd->stBlobModeCriteria.nMaxBlobCount );
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyMinBlobCount.c_str(),   pstCmd->stBlobModeCriteria.nMinBlobCount );
+    ini.SetBoolValue(_CMD_SECTION.c_str(), _strKeyAdvBlobCriteria.c_str(), pstCmd->stBlobModeCriteria.bEnableAdvancedCriteria );
+    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyMaxLWRatio.c_str(), pstCmd->stBlobModeCriteria.stAdvancedCriteria.fMaxLengthWidthRatio );
+    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyMinLWRatio.c_str(), pstCmd->stBlobModeCriteria.stAdvancedCriteria.fMinLengthWidthRatio );
+    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyMaxCircularity.c_str(), pstCmd->stBlobModeCriteria.stAdvancedCriteria.fMaxCircularity );
+    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyMinCircularity.c_str(), pstCmd->stBlobModeCriteria.stAdvancedCriteria.fMinCircularity );
+    ini.SaveFile(cmdRpyFilePath.c_str());
+
+    cv::imwrite ( _strLogCasePath + _IMAGE_NAME, pstCmd->matInputImg );
+    if ( ! pstCmd->matMask.empty() )
+        cv::imwrite ( _strLogCasePath + _MASK_NAME, pstCmd->matMask );
+    return VisionStatus::OK;
+}
+
+VisionStatus LogCaseInspHole::WriteRpy(const PR_INSP_HOLE_RPY *const pstRpy) {
+    CSimpleIni ini(false, false, false);
+    auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
+    ini.LoadFile(cmdRpyFilePath.c_str());    
+    ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyStatus.c_str(), ToInt32 ( pstRpy->enStatus ) );
+    ini.SetDoubleValue(_RPY_SECTION.c_str(), _strKeyRatio.c_str(), pstRpy->stRatioModeResult.fRatio );
+    ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyBlobCount.c_str(), ToInt32 ( pstRpy->stBlobModeResult.vecBlobs.size() ) );
+    ini.SaveFile(cmdRpyFilePath.c_str());
+    if ( ! pstRpy->matResultImg.empty() )
+        cv::imwrite ( _strLogCasePath + _RESULT_IMAGE_NAME, pstRpy->matResultImg );
+    _zip();
+    return VisionStatus::OK;
+}
+
+VisionStatus LogCaseInspHole::RunLogCase() {
+    PR_INSP_HOLE_CMD stCmd;
+    PR_INSP_HOLE_RPY stRpy;    
+
+    CSimpleIni ini(false, false, false);
+    auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
+    ini.LoadFile(cmdRpyFilePath.c_str());
+    stCmd.matInputImg = cv::imread(_strLogCasePath + _IMAGE_NAME, cv::IMREAD_COLOR);
+    String strMaskPath = _strLogCasePath + _MASK_NAME;
+    if ( FileUtils::Exists ( strMaskPath ) )
+        stCmd.matMask = cv::imread( strMaskPath, cv::IMREAD_GRAYSCALE );
+
+    stCmd.rectROI = _parseRect ( ini.GetValue ( _CMD_SECTION.c_str(), _strKeyROI.c_str(), _DEFAULT_RECT.c_str() ) );
+    //stCmd.nRecordId = ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyRecordId.c_str(), 0 );
+    stCmd.enSegmentMethod = static_cast<PR_IMG_SEGMENT_METHOD>( ini.GetLongValue(_CMD_SECTION.c_str(), _strKeySegmentMethod.c_str(), 0 ) );
+    stCmd.enInspMode = static_cast<PR_INSP_HOLE_MODE>( ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyInspMode.c_str(), 0 ) );
+    stCmd.stGrayScaleRange.nStart = ToInt16 ( ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyGrayRangeStart.c_str(), 0 ) );
+    stCmd.stGrayScaleRange.nEnd = ToInt16 ( ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyGrayRangeEnd.c_str(), 0 ) );
+    stCmd.stColorRange.nStartB = ToInt16 ( ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyBlueRangeStart.c_str(), 0 ) );
+    stCmd.stColorRange.nEndB = ToInt16 ( ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyBlueRangeEnd.c_str(), 0 ) );
+    stCmd.stColorRange.nStartG = ToInt16 ( ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyGreenRangeStart.c_str(), 0 ) );
+    stCmd.stColorRange.nEndG = ToInt16 ( ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyGreenRangeEnd.c_str(), 0 ) );
+    stCmd.stColorRange.nStartR = ToInt16 ( ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyRedRangeStart.c_str(), 0 ) );
+    stCmd.stColorRange.nEndR = ToInt16 ( ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyRedRangeEnd.c_str(), 0 ) );
+
+    stCmd.stRatioModeCriteria.fMaxRatio = ToFloat ( ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyMaxRatio.c_str(), 1. ) );
+    stCmd.stRatioModeCriteria.fMinRatio = ToFloat ( ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyMinRatio.c_str(), 0. ) );
+    stCmd.stBlobModeCriteria.fMaxArea = ToFloat ( ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyMaxArea.c_str(), 100000.) );
+    stCmd.stBlobModeCriteria.fMinArea = ToFloat ( ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyMinArea.c_str(), 200. ) );
+    stCmd.stBlobModeCriteria.nMaxBlobCount = ToInt16 ( ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyMaxBlobCount.c_str(), 10 ) );
+    stCmd.stBlobModeCriteria.nMinBlobCount = ToInt16 ( ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyMinBlobCount.c_str(), 0 ) );
+    stCmd.stBlobModeCriteria.bEnableAdvancedCriteria = ini.GetBoolValue(_CMD_SECTION.c_str(), _strKeyAdvBlobCriteria.c_str(), false );
+    stCmd.stBlobModeCriteria.stAdvancedCriteria.fMaxLengthWidthRatio = ToFloat ( ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyMaxLWRatio.c_str(), 1. ) );
+    stCmd.stBlobModeCriteria.stAdvancedCriteria.fMinLengthWidthRatio = ToFloat ( ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyMinLWRatio.c_str(), 0. ) );
+    stCmd.stBlobModeCriteria.stAdvancedCriteria.fMaxCircularity = ToFloat ( ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyMaxCircularity.c_str(), 1. ) );
+    stCmd.stBlobModeCriteria.stAdvancedCriteria.fMinCircularity = ToFloat ( ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyMinCircularity.c_str(), 0.1 ) );
+
+    VisionStatus enStatus = VisionStatus::OK;
+    enStatus = VisionAlgorithm::inspHole ( &stCmd, &stRpy, true );
     WriteRpy(&stRpy);
     return enStatus;
 }

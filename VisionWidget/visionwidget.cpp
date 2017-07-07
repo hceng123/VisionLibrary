@@ -591,3 +591,34 @@ void VisionWidget::on_btnInspContour_clicked() {
         ui.lineEditObjRotation->clear();
     }
 }
+
+void VisionWidget::on_btnInspHole_clicked() {
+    if ( _sourceImagePath.empty() ) {
+        QMessageBox::information(this, "Vision Widget", "Please select an image first!", "Quit");
+        return;
+    }
+
+    ui.visionView->setState ( VisionView::VISION_VIEW_STATE::TEST_VISION_LIBRARY );
+    ui.visionView->applyIntermediateResult();
+
+    PR_INSP_HOLE_CMD stCmd;
+    PR_INSP_HOLE_RPY stRpy;
+    stCmd.matInputImg = ui.visionView->getMat();
+    stCmd.rectROI = ui.visionView->getSelectedWindow();
+    stCmd.enSegmentMethod = static_cast<PR_IMG_SEGMENT_METHOD>(ui.comboBoxInspHoleImgSegmentMethod->currentIndex());
+    stCmd.stGrayScaleRange.nStart = ui.lineEditInspHoleImgSegmentStart->text().toInt();
+    stCmd.stGrayScaleRange.nEnd = ui.lineEditInspHoleImgSegmentEnd->text().toInt();
+    stCmd.enInspMode = static_cast<PR_INSP_HOLE_MODE>(ui.comboBoxHoleInspMode->currentIndex());
+    PR_InspHole ( &stCmd, &stRpy );
+    if ( VisionStatus::OK == stRpy.enStatus ) {
+        ui.visionView->setMat ( VisionView::DISPLAY_SOURCE::RESULT, stRpy.matResultImg );
+    }else {
+        PR_GET_ERROR_INFO_RPY stErrStrRpy;
+        PR_GetErrorInfo(stRpy.enStatus, &stErrStrRpy);
+        if ( stErrStrRpy.enErrorLevel == PR_STATUS_ERROR_LEVEL::INSP_STATUS )
+            ui.visionView->setMat ( VisionView::DISPLAY_SOURCE::RESULT, stRpy.matResultImg );
+        QMessageBox::critical(nullptr, "Learn chip", stErrStrRpy.achErrorStr, "Quit");
+        ui.lineEditObjCenter->clear();
+        ui.lineEditObjRotation->clear();
+    }
+}

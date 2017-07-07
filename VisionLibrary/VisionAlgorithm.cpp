@@ -50,6 +50,7 @@ if ( ! bReplay )    {   \
 /*static*/ const cv::Scalar VisionAlgorithm::_constRedScalar   = cv::Scalar(0, 0, 255);
 /*static*/ const cv::Scalar VisionAlgorithm::_constBlueScalar  = cv::Scalar(255, 0, 0);
 /*static*/ const cv::Scalar VisionAlgorithm::_constGreenScalar = cv::Scalar(0, 255, 0);
+/*static*/ const cv::Scalar VisionAlgorithm::_constYellowScalar(0, 255, 255);
 /*static*/ const String VisionAlgorithm::_strRecordLogPrefix   = "tmplDir.";
 /*static*/ const float VisionAlgorithm::_constExpSmoothRatio   = 0.3f;
 
@@ -57,9 +58,9 @@ VisionAlgorithm::VisionAlgorithm()
 {
 }
 
-/*static*/ unique_ptr<VisionAlgorithm> VisionAlgorithm::create()
+/*static*/ std::unique_ptr<VisionAlgorithm> VisionAlgorithm::create()
 {
-    return make_unique<VisionAlgorithm>();
+    return std::make_unique<VisionAlgorithm>();
 }
 
 /*static*/ VisionStatus VisionAlgorithm::lrnObj(const PR_LRN_OBJ_CMD *const pstCmd, PR_LRN_OBJ_RPY *const pstRpy, bool bReplay /*= false*/ )
@@ -411,9 +412,9 @@ std::vector<Int16> VisionAlgorithm::_autoMultiLevelThreshold(const cv::Mat &matI
         S.push_back(i * fPi + S[i]);
     }
 
-    std::vector<std::vector<float>> vecVecOmega(sbins + 1, vector<float>(sbins + 1, 0));
-    std::vector<std::vector<float>> vecVecMu(sbins + 1, vector<float>(sbins + 1, 0));
-    std::vector<std::vector<float>> vecVecEta(sbins + 1, vector<float>(sbins + 1, -1.f));
+    std::vector<std::vector<float>> vecVecOmega(sbins + 1, std::vector<float>(sbins + 1, 0));
+    std::vector<std::vector<float>> vecVecMu(sbins + 1, std::vector<float>(sbins + 1, 0));
+    std::vector<std::vector<float>> vecVecEta(sbins + 1, std::vector<float>(sbins + 1, -1.f));
     for (int i = 0; i <= sbins; ++ i)
     for (int j = i; j <= sbins; ++ j)
     {
@@ -635,7 +636,7 @@ VisionStatus VisionAlgorithm::autoThreshold(PR_AUTO_THRESHOLD_CMD *pstCmd, PR_AU
     assert ( pstCmd != nullptr && pstRpy != nullptr );
     char charrMsg[1000];
     if (pstCmd->matInputImg.empty()) {
-        WriteLog("Input image is empty");
+        WriteLog("Input image is empty.");
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return pstRpy->enStatus;
     }
@@ -644,14 +645,14 @@ VisionStatus VisionAlgorithm::autoThreshold(PR_AUTO_THRESHOLD_CMD *pstCmd, PR_AU
         pstCmd->rectROI.width <= 0 || pstCmd->rectROI.height <= 0 ||
         ( pstCmd->rectROI.x + pstCmd->rectROI.width ) > pstCmd->matInputImg.cols ||
         ( pstCmd->rectROI.y + pstCmd->rectROI.height ) > pstCmd->matInputImg.rows ) {
-        WriteLog("The auto threshold range is invalid");
+        WriteLog("The auto threshold range is invalid.");
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return VisionStatus::INVALID_PARAM;
     }
 
     if ( ! pstCmd->matMask.empty() ) {
         if ( pstCmd->matMask.rows != pstCmd->matInputImg.rows || pstCmd->matMask.cols != pstCmd->matInputImg.cols ) {
-            _snprintf(charrMsg, sizeof(charrMsg), "The mask size ( %d, %d ) not match with input image size ( %d, %d )",
+            _snprintf(charrMsg, sizeof(charrMsg), "The mask size ( %d, %d ) not match with input image size ( %d, %d ).",
                 pstCmd->matMask.cols, pstCmd->matMask.rows, pstCmd->matInputImg.cols, pstCmd->matInputImg.rows);
             WriteLog(charrMsg);
             pstRpy->enStatus = VisionStatus::INVALID_PARAM;
@@ -772,7 +773,7 @@ int VisionAlgorithm::_autoThreshold(const cv::Mat &mat, const cv::Mat &matMask/*
 
 /*static*/ VisionStatus VisionAlgorithm::_findDeviceElectrode ( const cv::Mat &matDeviceROI, VectorOfPoint &vecElectrodePos, VectorOfSize2f &vecElectrodeSize, VectorOfVectorOfPoint &vevVecContour ) {
     VectorOfVectorOfPoint vecContours;
-    vector<cv::Vec4i> hierarchy;
+    std::vector<cv::Vec4i> hierarchy;
     vecElectrodePos.clear();
     const float MAX_TWO_DIM_RATIO = 4.f;
 
@@ -1223,7 +1224,7 @@ int VisionAlgorithm::_findBlob(const cv::Mat &mat, const cv::Mat &matRevs, PR_IN
 		// Set up detector with params
 		cv::Ptr<cv::SimpleBlobDetector> detector = cv::SimpleBlobDetector::create(params);
 
-		vector<cv::Mat> vecInput;
+		std::vector<cv::Mat> vecInput;
 		if ( PR_DEFECT_ATTRIBUTE::BRIGHT == stDefectCriteria.enAttribute ) {
 			vecInput.push_back(mat);
 		}else if ( PR_DEFECT_ATTRIBUTE::DARK == stDefectCriteria.enAttribute ) {
@@ -1249,7 +1250,7 @@ int VisionAlgorithm::_findBlob(const cv::Mat &mat, const cv::Mat &matRevs, PR_IN
                 }
                 drawKeypoints( im_with_keypoints, vecKeyPoint, im_with_keypoints, cv::Scalar(0,0,255), cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS );	
             }
-        }			
+        }
 	}
 
 	cv::imshow("Find blob result", im_with_keypoints);
@@ -1408,14 +1409,14 @@ int VisionAlgorithm::_findLine(const cv::Mat &mat, PR_INSP_SURFACE_CMD *const pI
 	return static_cast<int>(VisionStatus::OK);
 }
 
-/*static*/ int VisionAlgorithm::_mergeLines(const vector<PR_Line2f> &vecLines, vector<PR_Line2f> &vecResultLines)
+/*static*/ int VisionAlgorithm::_mergeLines(const std::vector<PR_Line2f> &vecLines, std::vector<PR_Line2f> &vecResultLines)
 {
 	if ( vecLines.size() < 2 )  {
         vecResultLines = vecLines;
         return 0;
     }		
 
-	vector<int> vecMerged(vecLines.size(), false);
+	std::vector<int> vecMerged(vecLines.size(), false);
 	
 	for ( size_t i = 0; i < vecLines.size(); ++ i )	{
 		if ( vecMerged[i] )
@@ -1494,7 +1495,7 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
     auto strLocalPath = LogCase::unzip ( strFilePath );
 
     char chFolderToken = '\\';
-    if ( strLocalPath.find('/') != string::npos )
+    if ( strLocalPath.find('/') != std::string::npos )
         chFolderToken = '/';
 
     if ( strLocalPath[ strLocalPath.length() - 1 ] != chFolderToken )
@@ -1557,6 +1558,8 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
         pLogCase = std::make_unique<LogCaseLrnContour>( strLocalPath, true );
     else if (LogCaseInspContour::StaticGetFolderPrefix() == folderPrefix )
         pLogCase = std::make_unique<LogCaseInspContour>( strLocalPath, true );
+    else if (LogCaseInspHole::StaticGetFolderPrefix() == folderPrefix )
+        pLogCase = std::make_unique<LogCaseInspHole>( strLocalPath, true );
 
     if ( nullptr != pLogCase )
         enStatus = pLogCase->RunLogCase();
@@ -3967,7 +3970,7 @@ EXIT:
     cv::Mat matFilter;
     cv::GaussianBlur ( matROI, matFilter, cv::Size(3, 3), 1, 1 );
 
-    cv::Mat matMask = cv::Mat::ones(matROI.size(), CV_8UC1);
+    cv::Mat matMask = cv::Mat::ones ( matROI.size(), CV_8UC1 );
     cv::Rect rectIcBodyInROI(pstCmd->rectChipBody.x - pstCmd->rectSrchWindow.x, pstCmd->rectChipBody.y - pstCmd->rectSrchWindow.y,
         pstCmd->rectChipBody.width, pstCmd->rectChipBody.height );
     cv::Mat matMaskROI(matMask, rectIcBodyInROI);
@@ -5007,7 +5010,7 @@ EXIT:
         pstCmd->rectROI.width <= 0 || pstCmd->rectROI.height <= 0 ||
         ( pstCmd->rectROI.x + pstCmd->rectROI.width ) > pstCmd->matInputImg.cols ||
         ( pstCmd->rectROI.y + pstCmd->rectROI.height ) > pstCmd->matInputImg.rows ) {
-        _snprintf( charrMsg, sizeof( charrMsg ), "The input ROI rect (%d, %d, %d, %d) is invalid",
+        _snprintf( charrMsg, sizeof( charrMsg ), "The input ROI rect (%d, %d, %d, %d) is invalid.",
             pstCmd->rectROI.x, pstCmd->rectROI.y, pstCmd->rectROI.width, pstCmd->rectROI.height );
         WriteLog(charrMsg);
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
@@ -5196,6 +5199,217 @@ EXIT:
         showImage ( "Result Mask", matDisplay );
     }
     return matMask;
+}
+
+/*static*/ VisionStatus VisionAlgorithm::inspHole(const PR_INSP_HOLE_CMD *const pstCmd, PR_INSP_HOLE_RPY *const pstRpy, bool bReplay /*= false*/) {
+    assert(pstCmd != nullptr && pstRpy != nullptr);
+    char charrMsg[1000];
+    if ( pstCmd->matInputImg.empty() ) {
+        WriteLog("Input image is empty.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+   
+    if (pstCmd->rectROI.x < 0 || pstCmd->rectROI.y < 0 ||
+        pstCmd->rectROI.width <= 0 || pstCmd->rectROI.height <= 0 ||
+        ( pstCmd->rectROI.x + pstCmd->rectROI.width ) > pstCmd->matInputImg.cols ||
+        ( pstCmd->rectROI.y + pstCmd->rectROI.height ) > pstCmd->matInputImg.rows ) {
+        _snprintf( charrMsg, sizeof( charrMsg ), "The input ROI rect (%d, %d, %d, %d) is invalid.",
+            pstCmd->rectROI.x, pstCmd->rectROI.y, pstCmd->rectROI.width, pstCmd->rectROI.height );
+        WriteLog(charrMsg);
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return VisionStatus::INVALID_PARAM;
+    }
+
+    if ( ! pstCmd->matMask.empty() ) {
+        if ( pstCmd->matMask.rows != pstCmd->matInputImg.rows || pstCmd->matMask.cols != pstCmd->matInputImg.cols ) {
+            _snprintf(charrMsg, sizeof(charrMsg), "The mask size ( %d, %d ) not match with input image size ( %d, %d ).",
+                pstCmd->matMask.cols, pstCmd->matMask.rows, pstCmd->matInputImg.cols, pstCmd->matInputImg.rows);
+            WriteLog(charrMsg);
+            pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+            return pstRpy->enStatus;
+        }
+
+        if ( pstCmd->matMask.channels() != 1 )  {
+            WriteLog("The mask must be gray image!");
+            pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+            return pstRpy->enStatus;
+        }
+    }
+
+    MARK_FUNCTION_START_TIME;
+    SETUP_LOGCASE(LogCaseInspHole);
+
+    cv::Mat matROI(pstCmd->matInputImg, pstCmd->rectROI), matBlur, matSegmentResult;
+    cv::GaussianBlur ( matROI, matBlur, cv::Size(5, 5), 2, 2 );
+
+    if ( pstCmd->enSegmentMethod == PR_IMG_SEGMENT_METHOD::GRAY_SCALE_RANGE ) {
+        pstRpy->enStatus = _segmentImgByGrayScaleRange ( matBlur, pstCmd->stGrayScaleRange, matSegmentResult );        
+    }else if ( pstCmd->enSegmentMethod == PR_IMG_SEGMENT_METHOD::COLOR_RANGE ) {
+        pstRpy->enStatus = _setmentImgByColorRange ( matBlur, pstCmd->stColorRange, matSegmentResult );
+    }else {
+        WriteLog ( "Unsupported image segment method." );
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    if ( pstRpy->enStatus != VisionStatus::OK )
+        return pstRpy->enStatus;
+
+    cv::Mat matMaskROI;
+    if ( ! pstCmd->matMask.empty() )
+        matMaskROI = cv::Mat( pstCmd->matMask, pstCmd->rectROI );
+
+    //Prepared the result image, should be skiped if in auto mode.
+    cv::Mat matSegmentInWholeImg = cv::Mat::zeros ( pstCmd->matInputImg.size(), CV_8UC1);
+    cv::Mat matCopyROI(matSegmentInWholeImg, pstCmd->rectROI);
+    matSegmentResult.copyTo ( matCopyROI );
+    if ( pstCmd->matInputImg.channels() > 1)
+        pstRpy->matResultImg = pstCmd->matInputImg.clone();
+    else
+        cv::cvtColor ( pstCmd->matInputImg, pstRpy->matResultImg, CV_GRAY2BGR );
+    pstRpy->matResultImg.setTo ( _constYellowScalar, matSegmentInWholeImg );
+
+    pstRpy->stRatioModeResult.fRatio = 0.f;
+    if ( pstCmd->enInspMode == PR_INSP_HOLE_MODE::RATIO )
+        _inspHoleByRatioMode ( matSegmentResult, matMaskROI, pstCmd->stRatioModeCriteria, pstRpy );
+    else {
+        _inspHoleByBlobMode ( matSegmentResult, matMaskROI, pstCmd->stBlobModeCriteria, pstRpy );
+        
+        for ( auto &keypoint : pstRpy->stBlobModeResult.vecBlobs ) {
+            keypoint.pt.x += pstCmd->rectROI.x;
+            keypoint.pt.y += pstCmd->rectROI.y;
+        }
+        cv::drawKeypoints( pstRpy->matResultImg,  pstRpy->stBlobModeResult.vecBlobs, pstRpy->matResultImg, _constRedScalar, cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
+    }    
+    
+    FINISH_LOGCASE;
+    MARK_FUNCTION_END_TIME;
+    return pstRpy->enStatus;
+}
+
+/*static*/ VisionStatus VisionAlgorithm::_segmentImgByGrayScaleRange(const cv::Mat &matInput, const PR_INSP_HOLE_CMD::GRAY_SCALE_RANGE &stGrayScaleRange, cv::Mat &matResult) {
+    if (stGrayScaleRange.nStart < 0 ||
+        stGrayScaleRange.nStart >= stGrayScaleRange.nEnd ||
+        stGrayScaleRange.nEnd > PR_MAX_GRAY_LEVEL ) {
+        char charrMsg[1000];
+        _snprintf ( charrMsg, sizeof(charrMsg), "The gray scale range (%d, %d) is invalid.",
+            stGrayScaleRange.nStart, stGrayScaleRange.nEnd );
+        WriteLog ( charrMsg );
+        return VisionStatus::INVALID_PARAM;
+    }
+    cv::Mat matGray;
+    if ( matInput.channels() > 1 )
+        cv::cvtColor ( matInput, matGray, CV_BGR2GRAY );
+    else
+        matGray = matInput;
+    cv::Mat matRange1, matRange2;
+    matRange1 = matGray >= stGrayScaleRange.nStart;
+    matRange2 = matGray <= stGrayScaleRange.nEnd;
+    matResult = matRange1 & matRange2;
+    return VisionStatus::OK;
+}
+
+/*static*/ VisionStatus VisionAlgorithm::_setmentImgByColorRange(const cv::Mat &matInput, const PR_INSP_HOLE_CMD::COLOR_RANGE &stColorRange, cv::Mat &matResult) {
+    if (stColorRange.nStartB < 0 || stColorRange.nStartB >= stColorRange.nEndB || stColorRange.nEndB > PR_MAX_GRAY_LEVEL ||
+        stColorRange.nStartG < 0 || stColorRange.nStartG >= stColorRange.nEndG || stColorRange.nEndG > PR_MAX_GRAY_LEVEL ||
+        stColorRange.nStartR < 0 || stColorRange.nStartR >= stColorRange.nEndR || stColorRange.nEndR > PR_MAX_GRAY_LEVEL ) {
+        char charrMsg[1000];
+        _snprintf ( charrMsg, sizeof(charrMsg), "The color scale range (%d, %d, %d, %d, %d, %d) is invalid.",
+            stColorRange.nStartB, stColorRange.nEndB, stColorRange.nStartG, stColorRange.nEndG, stColorRange.nStartR, stColorRange.nEndR );
+        WriteLog ( charrMsg );
+        return VisionStatus::INVALID_PARAM;
+    }
+    if ( matInput.channels() < 3 ) {
+        WriteLog ( "Input image must be color for color range segment." );
+        return VisionStatus::INVALID_PARAM;
+    }
+    std::vector<cv::Mat> vecChannels;
+    cv::split( matInput, vecChannels );
+    cv::Mat matRange1, matRange2, matRange3, matRange4, matRange5, matRange6;
+    matRange1 = vecChannels[BGR_CHANNEL::BLUE] >= stColorRange.nStartB;
+    matRange2 = vecChannels[BGR_CHANNEL::BLUE] <= stColorRange.nEndB;
+    matRange3 = vecChannels[BGR_CHANNEL::GREEN] >= stColorRange.nStartG;
+    matRange4 = vecChannels[BGR_CHANNEL::GREEN] <= stColorRange.nEndG;
+    matRange5 = vecChannels[BGR_CHANNEL::RED] >= stColorRange.nStartR;
+    matRange6 = vecChannels[BGR_CHANNEL::RED] <= stColorRange.nEndR;
+    matResult = matRange1 & matRange2 & matRange3 & matRange4 & matRange5 & matRange6;
+    return VisionStatus::OK;
+}
+
+/*static*/ VisionStatus VisionAlgorithm::_inspHoleByRatioMode(const cv::Mat &matInput, const cv::Mat &matMask, const PR_INSP_HOLE_CMD::RATIO_MODE_CRITERIA &stCriteria, PR_INSP_HOLE_RPY *const pstRpy) {
+    cv::Mat matInputLocal = matInput.clone();
+    if ( ! matMask.empty() )
+        matInputLocal.setTo ( cv::Scalar(0), cv::Scalar(PR_MAX_GRAY_LEVEL) - matMask );
+    
+    auto fSelectedCount = ToFloat ( cv::countNonZero ( matInputLocal ) );
+    pstRpy->stRatioModeResult.fRatio = fSelectedCount / ( matInput.rows * matInput.cols );
+    if ( pstRpy->stRatioModeResult.fRatio < stCriteria.fMinRatio ) {
+        pstRpy->enStatus = VisionStatus::RATIO_UNDER_LIMIT;
+        return pstRpy->enStatus;
+    }else if ( pstRpy->stRatioModeResult.fRatio > stCriteria.fMaxRatio ) {
+        pstRpy->enStatus = VisionStatus::RATIO_OVER_LIMIT;
+        return pstRpy->enStatus;
+    }
+    pstRpy->enStatus = VisionStatus::OK;
+    return pstRpy->enStatus;
+}
+
+/*static*/ VisionStatus VisionAlgorithm::_inspHoleByBlobMode(const cv::Mat &matInput, const cv::Mat &matMask, const PR_INSP_HOLE_CMD::BLOB_MODE_CRITERIA &stCriteria, PR_INSP_HOLE_RPY *const pstRpy) {
+    cv::SimpleBlobDetector::Params params;
+
+    // Change thresholds
+    params.blobColor = 0;
+
+    params.minThreshold = 100;
+    params.maxThreshold = PR_MAX_GRAY_LEVEL;
+
+    // Filter by Area.
+    params.filterByArea = true;
+    params.minArea = stCriteria.fMinArea;
+    params.maxArea = stCriteria.fMaxArea;
+
+    params.filterByColor = false;
+    params.filterByConvexity = false;
+
+    if ( stCriteria.bEnableAdvancedCriteria ) {
+        // Filter by Circularity
+        params.filterByCircularity = true;
+        params.minCircularity = stCriteria.stAdvancedCriteria.fMinCircularity;
+        params.maxCircularity = stCriteria.stAdvancedCriteria.fMaxCircularity;
+
+        // Filter by Inertia
+        params.filterByInertia = true;
+        params.maxInertiaRatio = stCriteria.stAdvancedCriteria.fMaxLengthWidthRatio;
+        params.minInertiaRatio = stCriteria.stAdvancedCriteria.fMinLengthWidthRatio;
+    }else {
+        params.filterByCircularity = false;
+        params.filterByInertia = false;
+    }
+
+    // Set up detector with params
+    cv::Ptr<cv::SimpleBlobDetector> detector = cv::SimpleBlobDetector::create ( params );
+
+    std::vector<cv::Mat> vecInputMat;
+    vecInputMat.push_back ( matInput );
+
+    VectorOfVectorKeyPoint keyPoints;
+    detector->detect ( vecInputMat, keyPoints, matMask );
+    pstRpy->stBlobModeResult.vecBlobs = keyPoints[0];
+    if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE ) {
+        cv::Mat matDisplay;
+        cv::cvtColor ( matInput, matDisplay, CV_GRAY2BGR );
+        cv::drawKeypoints( matDisplay, keyPoints[0], matDisplay, _constRedScalar, cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
+        showImage("Find blob result", matDisplay );
+    }
+
+    if ( ToInt16 ( keyPoints[0].size() ) < stCriteria.nMinBlobCount || ToInt16 ( keyPoints[0].size() ) > stCriteria.nMaxBlobCount ) {
+        pstRpy->enStatus = VisionStatus::BLOB_COUNT_OUT_OF_RANGE;
+        return pstRpy->enStatus;
+    }
+    pstRpy->enStatus = VisionStatus::OK;
+    return pstRpy->enStatus;
+    
 }
 
 }
