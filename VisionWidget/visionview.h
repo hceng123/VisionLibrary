@@ -59,7 +59,7 @@ public:
         SET_CIRCLE_CTR,
         SET_CIRCLE_INNER_RADIUS,
         SET_CIRCLE_OUTTER_RADIUS,
-        SET_RECT_SRCH_WINDOW,
+        SET_MULTIPLE_WINDOW,
         SET_LINE,
         PICK_COLOR,
     };

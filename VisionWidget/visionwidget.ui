@@ -73,7 +73,7 @@
      </rect>
     </property>
     <property name="currentIndex">
-     <number>3</number>
+     <number>6</number>
     </property>
     <widget class="QWidget" name="tabPreProcess">
      <attribute name="title">
@@ -1122,7 +1122,7 @@
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>120</y>
+        <y>110</y>
         <width>590</width>
         <height>51</height>
        </rect>
@@ -1174,7 +1174,7 @@
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>190</y>
+        <y>160</y>
         <width>590</width>
         <height>91</height>
        </rect>
@@ -1269,7 +1269,7 @@
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>290</y>
+        <y>250</y>
         <width>590</width>
         <height>81</height>
        </rect>
@@ -1433,7 +1433,7 @@
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>390</y>
+        <y>340</y>
         <width>590</width>
         <height>71</height>
        </rect>
@@ -1472,7 +1472,7 @@
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>480</y>
+        <y>410</y>
         <width>590</width>
         <height>81</height>
        </rect>
@@ -1894,6 +1894,37 @@
        </property>
        <property name="text">
         <string>Tmpl Match Min Score</string>
+       </property>
+      </widget>
+     </widget>
+    </widget>
+    <widget class="QWidget" name="tabMiscellaneous">
+     <attribute name="title">
+      <string>Miscellaneous</string>
+     </attribute>
+     <widget class="QGroupBox" name="groupBoxAutoLocateLead">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>20</y>
+        <width>590</width>
+        <height>51</height>
+       </rect>
+      </property>
+      <property name="title">
+       <string>Auto Locate Lead</string>
+      </property>
+      <widget class="QPushButton" name="btnAutoLocateLead">
+       <property name="geometry">
+        <rect>
+         <x>480</x>
+         <y>20</y>
+         <width>100</width>
+         <height>23</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Auto Locate Lead</string>
        </property>
       </widget>
      </widget>

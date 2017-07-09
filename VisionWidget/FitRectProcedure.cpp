@@ -26,7 +26,7 @@ int FitRectProcedure::run(const std::string &imagePath)
 	pMessageBox->show();
 	pMessageBox->raise();
 	pMessageBox->activateWindow();
-    _pVisionView->setTestVisionState(VisionView::TEST_VISION_STATE::SET_RECT_SRCH_WINDOW);
+    _pVisionView->setTestVisionState(VisionView::TEST_VISION_STATE::SET_MULTIPLE_WINDOW);
     _pVisionView->setCurrentSrchWindowIndex(0);
 	int iReturn = pMessageBox->exec();
     if ( iReturn != QDialog::Accepted ) {
@@ -41,7 +41,7 @@ int FitRectProcedure::run(const std::string &imagePath)
 	pMessageBox->show();
 	pMessageBox->raise();
 	pMessageBox->activateWindow();
-    _pVisionView->setTestVisionState(VisionView::TEST_VISION_STATE::SET_RECT_SRCH_WINDOW);
+    _pVisionView->setTestVisionState(VisionView::TEST_VISION_STATE::SET_MULTIPLE_WINDOW);
     _pVisionView->setCurrentSrchWindowIndex(1);
 
 	iReturn = pMessageBox->exec();
@@ -57,7 +57,7 @@ int FitRectProcedure::run(const std::string &imagePath)
 	pMessageBox->show();
 	pMessageBox->raise();
 	pMessageBox->activateWindow();
-    _pVisionView->setTestVisionState(VisionView::TEST_VISION_STATE::SET_RECT_SRCH_WINDOW);
+    _pVisionView->setTestVisionState(VisionView::TEST_VISION_STATE::SET_MULTIPLE_WINDOW);
     _pVisionView->setCurrentSrchWindowIndex(2);
 
 	iReturn = pMessageBox->exec();
@@ -73,7 +73,7 @@ int FitRectProcedure::run(const std::string &imagePath)
 	pMessageBox->show();
 	pMessageBox->raise();
 	pMessageBox->activateWindow();
-    _pVisionView->setTestVisionState(VisionView::TEST_VISION_STATE::SET_RECT_SRCH_WINDOW);
+    _pVisionView->setTestVisionState(VisionView::TEST_VISION_STATE::SET_MULTIPLE_WINDOW);
     _pVisionView->setCurrentSrchWindowIndex(3);
 
 	iReturn = pMessageBox->exec();

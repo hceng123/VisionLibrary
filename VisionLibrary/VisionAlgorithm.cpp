@@ -3962,7 +3962,7 @@ EXIT:
 
     cv::Mat matGray;
     if ( pstCmd->matInputImg.channels() > 1 )
-        cv::cvtColor ( pstCmd->matInputImg, matGray, CV_BGR2GRAY);
+        cv::cvtColor ( pstCmd->matInputImg, matGray, CV_BGR2GRAY );
     else
         matGray = pstCmd->matInputImg;
 
@@ -3981,7 +3981,7 @@ EXIT:
     cv::Mat matThreshold;
     cv::threshold ( matFilter, matThreshold, nThreshold, PR_MAX_GRAY_LEVEL, cv::THRESH_BINARY );
     if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE )
-        showImage("autoLocateLead threshold image", matThreshold );
+        showImage("AutoLocateLead threshold image", matThreshold );
 
     PR_FILL_HOLE_CMD stFillHoleCmd;
     PR_FILL_HOLE_RPY stFillHoleRpy;
@@ -4038,7 +4038,10 @@ EXIT:
     double dMinAcceptRectArea = 0.4 * dAverageRectArea;
     double dMaxAcceptRectArea = 1.5 * dAverageRectArea;
 
-    cv::cvtColor ( matROI, pstRpy->matResultImg, CV_GRAY2BGR );
+    if ( pstCmd->matInputImg.channels() > 1 )
+        pstRpy->matResultImg = pstCmd->matInputImg.clone();
+    else
+        cv::cvtColor ( pstCmd->matInputImg, pstRpy->matResultImg, CV_GRAY2BGR );
 
     for ( const auto &contour : contours ) {
         cv::Rect rect = cv::boundingRect(contour);
@@ -4048,32 +4051,40 @@ EXIT:
             dMinAcceptRectArea < rectArea && rectArea < dMaxAcceptRectArea ) {
             if ( ( rect.br().x < rectIcBodyInROI.x ) && 
                ( ( rect.y < rectIcBodyInROI.y ) || ( rect.br().y > rectIcBodyInROI.br().y ) ) ) {
-                cv::rectangle ( pstRpy->matResultImg, rect, _constRedScalar);
+                rect.x += pstCmd->rectSrchWindow.x;
+                rect.y += pstCmd->rectSrchWindow.y;
+                cv::rectangle ( pstRpy->matResultImg, rect, _constRedScalar, 2);
                 continue;
             }
 
             if ( ( rect.x > rectIcBodyInROI.br().x ) && 
                ( ( rect.y < rectIcBodyInROI.y ) || ( rect.br().y > rectIcBodyInROI.br().y ) ) ) {
-                cv::rectangle ( pstRpy->matResultImg, rect, _constRedScalar);
+                rect.x += pstCmd->rectSrchWindow.x;
+                rect.y += pstCmd->rectSrchWindow.y;
+                cv::rectangle ( pstRpy->matResultImg, rect, _constRedScalar, 2);
                 continue;
             }
 
             if ( ( rect.br().y < rectIcBodyInROI.y ) && 
                ( ( rect.x < rectIcBodyInROI.x ) || ( rect.br().x > rectIcBodyInROI.br().x ) ) ) {
-                cv::rectangle ( pstRpy->matResultImg, rect, _constRedScalar);
+                rect.x += pstCmd->rectSrchWindow.x;
+                rect.y += pstCmd->rectSrchWindow.y;
+                cv::rectangle ( pstRpy->matResultImg, rect, _constRedScalar, 2);
                 continue;
             }
 
             if ( ( rect.y > rectIcBodyInROI.br().y ) && 
                ( ( rect.x < rectIcBodyInROI.x ) || ( rect.br().x > rectIcBodyInROI.br().x ) ) ) {
-                cv::rectangle ( pstRpy->matResultImg, rect, _constRedScalar);
+                rect.x += pstCmd->rectSrchWindow.x;
+                rect.y += pstCmd->rectSrchWindow.y;
+                cv::rectangle ( pstRpy->matResultImg, rect, _constRedScalar, 2);
                 continue;
-            }
-            cv::rectangle ( pstRpy->matResultImg, rect, _constGreenScalar );
+            }   
 
             rect.x += pstCmd->rectSrchWindow.x;
             rect.y += pstCmd->rectSrchWindow.y;
             pstRpy->vecLeadLocation.push_back ( rect );
+            cv::rectangle ( pstRpy->matResultImg, rect, _constGreenScalar, 2 );
         }
     }
     pstRpy->enStatus = VisionStatus::OK;
