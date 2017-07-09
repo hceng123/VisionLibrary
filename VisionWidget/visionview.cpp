@@ -138,13 +138,13 @@ void VisionView::mouseMoveEvent(QMouseEvent *event)
         _ptLeftClickEndPos.x = point.x();
         _ptLeftClickEndPos.y = point.y();
 
-        if ( VISION_VIEW_STATE::LEARNING == _enState )  {
+        if ( VISION_VIEW_STATE::LEARNING == _enState ) {
             _rectLrnWindow.x = _ptLeftClickStartPos.x;
             _rectLrnWindow.y = _ptLeftClickStartPos.y;
             _rectLrnWindow.width = _ptLeftClickEndPos.x - _ptLeftClickStartPos.x;
             _rectLrnWindow.height = _ptLeftClickEndPos.y - _ptLeftClickStartPos.y;
             _drawDisplay();
-        }else if ( VISION_VIEW_STATE::ADD_MASK == _enState )    {
+        }else if ( VISION_VIEW_STATE::ADD_MASK == _enState ) {
             cv::Mat matMaskZoomResult;
             _zoomMat(_matMask, matMaskZoomResult, _fZoomFactor, false);
             _cutImageForDisplay(matMaskZoomResult, _matMaskForDisplay);
@@ -177,10 +177,10 @@ void VisionView::mouseMoveEvent(QMouseEvent *event)
                 _rectSelectedWindow.y = _ptLeftClickStartPos.y;
                 _rectSelectedWindow.width = _ptLeftClickEndPos.x - _ptLeftClickStartPos.x;
                 _rectSelectedWindow.height = _ptLeftClickEndPos.y - _ptLeftClickStartPos.y;
-                 _rectSelectedWindow.x -= _szDisplayCenterOffset.width;
-                 _rectSelectedWindow.y -= _szDisplayCenterOffset.height;
+                _rectSelectedWindow.x -= _szDisplayCenterOffset.width;
+                _rectSelectedWindow.y -= _szDisplayCenterOffset.height;
 
-                _drawDisplay();
+                _drawDisplay ();
             }
             else if ( TEST_VISION_STATE::SET_CIRCLE_INNER_RADIUS == _enTestVisionState )
                 _fInnerRangeRadius = distanceOf2Point (cv::Point( point.x(), point.y()), _ptCircleCtr);
@@ -188,9 +188,11 @@ void VisionView::mouseMoveEvent(QMouseEvent *event)
                 float fRadius = distanceOf2Point (cv::Point( point.x(), point.y()), _ptCircleCtr);
                 if ( fRadius > _fInnerRangeRadius )
                     _fOutterRangeRadius = fRadius;
-            }else if ( TEST_VISION_STATE::SET_RECT_SRCH_WINDOW == _enTestVisionState )  {
+            }else if ( TEST_VISION_STATE::SET_MULTIPLE_WINDOW == _enTestVisionState )  {
                 assert ( _nCurrentSrchWindowIndex >= 0 );
                 cv::Rect rect ( _ptLeftClickStartPos.x, _ptLeftClickStartPos.y, _ptLeftClickEndPos.x - _ptLeftClickStartPos.x, _ptLeftClickEndPos.y - _ptLeftClickStartPos.y);
+                rect.x -= _szDisplayCenterOffset.width;
+                rect.y -= _szDisplayCenterOffset.height;
                 if ( ToInt(_vecRectSrchWindow.size()) <= _nCurrentSrchWindowIndex )
                     _vecRectSrchWindow.push_back ( rect );
                 else
@@ -258,7 +260,7 @@ void VisionView::_drawSelectedWindow(cv::Mat &mat)
 {
     if ( _rectSelectedWindow.width > 0 && _rectSelectedWindow.height > 0 )  {
         cv::Rect rectLocal ( _rectSelectedWindow.x + _szDisplayCenterOffset.width, _rectSelectedWindow.y + _szDisplayCenterOffset.height, _rectSelectedWindow.width, _rectSelectedWindow.height );
-        cv::rectangle ( mat, rectLocal, _colorLrnWindow, 2 );
+        cv::rectangle ( mat, rectLocal, _colorLrnWindow, 1 );
     }
 
     cv::Scalar scalarMask(0, 0, 255);
@@ -304,10 +306,12 @@ void VisionView::_drawTestVisionLibrary(cv::Mat &mat)
             cv::circle ( mat, _ptCircleCtr, _fInnerRangeRadius, cv::Scalar ( 0, 255, 0 ), 1 );
         if ( _fOutterRangeRadius > _fInnerRangeRadius )
             cv::circle ( mat, _ptCircleCtr, _fOutterRangeRadius, cv::Scalar ( 0, 255, 0 ), 1 );
-    }else if ( TEST_VISION_STATE::SET_RECT_SRCH_WINDOW == _enTestVisionState )
+    }else if ( TEST_VISION_STATE::SET_MULTIPLE_WINDOW == _enTestVisionState )
     {
-        for ( const auto &rect : _vecRectSrchWindow )
-            cv::rectangle ( mat, rect, _colorLrnWindow, 1 );
+        for ( const auto &rect : _vecRectSrchWindow ) {
+            cv::Rect rectLocal ( rect.x + _szDisplayCenterOffset.width, rect.y + _szDisplayCenterOffset.height, rect.width, rect.height );
+            cv::rectangle ( mat, rectLocal, _colorLrnWindow, 1 );
+        }
     }else if ( TEST_VISION_STATE::SET_LINE == _enTestVisionState )  {
         cv::line ( mat, _lineOfIntensityCheck.pt1, _lineOfIntensityCheck.pt2, _colorLrnWindow, 1 );
     }
@@ -400,10 +404,12 @@ void VisionView::addMask()
 void VisionView::clearSelectedWindow()
 {
     _enState = VISION_VIEW_STATE::TEST_VISION_LIBRARY;
+    _enTestVisionState = TEST_VISION_STATE::IDLE;
     unsetCursor();
 
     _rectSelectedWindow.width  = -1;
     _rectSelectedWindow.height = -1;
+    _vecRectSrchWindow.clear();
     _drawDisplay();
 }
 
@@ -784,10 +790,9 @@ VectorOfRect VisionView::getVecSrchWindow() const
     auto displayHeight = this->size().height();
     VectorOfRect vecResult;
     cv::Mat mat = _matArray[ToInt32(_enDisplaySource)];
-    for ( auto rect : _vecRectSrchWindow )
-    {
-        rect.x = (rect.x - (displayWidth  - mat.cols * _fZoomFactor) / 2) / _fZoomFactor;
-        rect.y = (rect.y - (displayHeight - mat.rows * _fZoomFactor) / 2) / _fZoomFactor;
+    for ( auto rect : _vecRectSrchWindow ) {
+        rect.x = (rect.x + (mat.cols * _fZoomFactor - displayWidth  ) / 2) / _fZoomFactor;
+        rect.y = (rect.y + (mat.rows * _fZoomFactor - displayHeight ) / 2) / _fZoomFactor;
         rect.width  /= _fZoomFactor;
         rect.height /= _fZoomFactor;
         vecResult.push_back ( rect );
@@ -807,8 +812,6 @@ cv::Rect VisionView::getSelectedWindow() const
         return rect;
     }
 
-    //rect.x += _szDisplayCenterOffset.width;
-    //rect.y += _szDisplayCenterOffset.height;
     rect.x = (rect.x + (mat.cols * _fZoomFactor - displayWidth  ) / 2) / _fZoomFactor;
     rect.y = (rect.y + (mat.rows * _fZoomFactor - displayHeight ) / 2) / _fZoomFactor;
     rect.width  /= _fZoomFactor;

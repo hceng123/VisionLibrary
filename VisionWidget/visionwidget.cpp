@@ -7,6 +7,7 @@
 #include "VisionAPI.h"
 #include <QFileDialog>
 #include <QMessageBox>
+#include "messageboxdialog.h"
 
 using namespace AOI::Vision;
 
@@ -618,6 +619,77 @@ void VisionWidget::on_btnInspHole_clicked() {
         if ( stErrStrRpy.enErrorLevel == PR_STATUS_ERROR_LEVEL::INSP_STATUS )
             ui.visionView->setMat ( VisionView::DISPLAY_SOURCE::RESULT, stRpy.matResultImg );
         QMessageBox::critical(nullptr, "Learn chip", stErrStrRpy.achErrorStr, "Quit");
+        ui.lineEditObjCenter->clear();
+        ui.lineEditObjRotation->clear();
+    }
+}
+
+void VisionWidget::on_btnAutoLocateLead_clicked() {
+    if ( _sourceImagePath.empty() ) {
+        QMessageBox::information(this, "Vision Widget", "Please select an image first!", "Quit");
+        return;
+    }
+
+    ui.visionView->setState ( VisionView::VISION_VIEW_STATE::TEST_VISION_LIBRARY );
+    ui.visionView->applyIntermediateResult();
+
+    std::unique_ptr<MessageBoxDialog> pMessageBox = std::make_unique<MessageBoxDialog>();
+    pMessageBox->setGeometry(700, 500, pMessageBox->size().width(), pMessageBox->size().height());
+    pMessageBox->setWindowTitle("Auto Locate Lead");
+	pMessageBox->SetMessageText1("Please input the chip window");
+    pMessageBox->SetMessageText2("Press and drag the left mouse buttont to input");
+	pMessageBox->setWindowFlags(Qt::WindowStaysOnTopHint);
+	pMessageBox->show();
+	pMessageBox->raise();
+	pMessageBox->activateWindow();
+    ui.visionView->setTestVisionState(VisionView::TEST_VISION_STATE::SET_MULTIPLE_WINDOW);
+    ui.visionView->setCurrentSrchWindowIndex(0);
+	int iReturn = pMessageBox->exec();
+    if ( iReturn != QDialog::Accepted ) {
+        ui.visionView->setTestVisionState(VisionView::TEST_VISION_STATE::IDLE);
+        return;
+    }
+
+    pMessageBox->SetMessageText1("Please input the lead search window");
+    pMessageBox->SetMessageText2("Press and drag the left mouse buttont to input");
+	pMessageBox->setWindowFlags(Qt::WindowStaysOnTopHint);
+	pMessageBox->show();
+	pMessageBox->raise();
+	pMessageBox->activateWindow();
+    ui.visionView->setTestVisionState(VisionView::TEST_VISION_STATE::SET_MULTIPLE_WINDOW);
+    ui.visionView->setCurrentSrchWindowIndex(1);
+
+	iReturn = pMessageBox->exec();
+    if ( iReturn != QDialog::Accepted ) {
+        ui.visionView->setTestVisionState(VisionView::TEST_VISION_STATE::IDLE);
+        return;
+    }
+   
+    auto _vecSrchWindow = ui.visionView->getVecSrchWindow();
+    if ( _vecSrchWindow.size() <= 1 )   {
+        pMessageBox->SetMessageText1("The input is invalid");
+        pMessageBox->SetMessageText2("");
+        pMessageBox->exec();
+        ui.visionView->setTestVisionState(VisionView::TEST_VISION_STATE::IDLE);
+        return;
+    }
+
+    PR_AUTO_LOCATE_LEAD_CMD stCmd;
+    PR_AUTO_LOCATE_LEAD_RPY stRpy;
+    stCmd.enLeadAttribute = PR_OBJECT_ATTRIBUTE::BRIGHT;
+    stCmd.matInputImg = ui.visionView->getMat();
+    stCmd.rectChipBody = _vecSrchWindow[0];
+    stCmd.rectSrchWindow = _vecSrchWindow[1];
+    
+    PR_AutoLocateLead ( &stCmd, &stRpy );
+    if ( VisionStatus::OK == stRpy.enStatus ) {
+        ui.visionView->setMat ( VisionView::DISPLAY_SOURCE::RESULT, stRpy.matResultImg );
+    }else {
+        PR_GET_ERROR_INFO_RPY stErrStrRpy;
+        PR_GetErrorInfo(stRpy.enStatus, &stErrStrRpy);
+        if ( stErrStrRpy.enErrorLevel == PR_STATUS_ERROR_LEVEL::INSP_STATUS )
+            ui.visionView->setMat ( VisionView::DISPLAY_SOURCE::RESULT, stRpy.matResultImg );
+        QMessageBox::critical(nullptr, "Auto Locate Lead", stErrStrRpy.achErrorStr, "Quit");
         ui.lineEditObjCenter->clear();
         ui.lineEditObjRotation->clear();
     }
