@@ -766,7 +766,7 @@ VisionStatus LogCaseSrchFiducial::WriteCmd(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd)
     CSimpleIni ini(false, false, false);
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile(cmdRpyFilePath.c_str());
-    ini.SetValue(_CMD_SECTION.c_str(), _strKeySrchWindow.c_str(), _formatRect(pstCmd->rectSrchRange).c_str());
+    ini.SetValue(_CMD_SECTION.c_str(), _strKeySrchWindow.c_str(), _formatRect(pstCmd->rectSrchWindow).c_str());
     ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyType.c_str(), ToInt32(pstCmd->enType));
     ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeySize.c_str(), pstCmd->fSize);
     ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyMargin.c_str(), pstCmd->fMargin);
@@ -799,7 +799,7 @@ VisionStatus LogCaseSrchFiducial::RunLogCase()
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile(cmdRpyFilePath.c_str());
     stCmd.matInputImg = cv::imread(_strLogCasePath + _IMAGE_NAME);
-    stCmd.rectSrchRange = _parseRect(ini.GetValue(_CMD_SECTION.c_str(), _strKeySrchWindow.c_str(), _DEFAULT_RECT.c_str()));
+    stCmd.rectSrchWindow = _parseRect(ini.GetValue(_CMD_SECTION.c_str(), _strKeySrchWindow.c_str(), _DEFAULT_RECT.c_str()));
     stCmd.enType = (PR_FIDUCIAL_MARK_TYPE)ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyType.c_str(), 0);
     stCmd.fSize = (float)ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeySize.c_str(), 0);
     stCmd.fMargin = (float)ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyMargin.c_str(), 0);

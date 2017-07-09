@@ -154,15 +154,9 @@ PR_FUNCTION_EXIT
 
 VisionAPI VisionStatus  PR_FitParallelLine(PR_FIT_PARALLEL_LINE_CMD *pstCmd, PR_FIT_PARALLEL_LINE_RPY *pstRpy)
 {
-    try
-    {
-        VisionAlgorithmPtr pVA = VisionAlgorithm::create();
-        return pVA->fitParallelLine ( pstCmd, pstRpy );
-    }catch(std::exception &e)
-    {
-        WriteLog(e.what());
-        return VisionStatus::OPENCV_EXCEPTION;
-    }
+PR_FUNCTION_ENTRY
+        return VisionAlgorithm::fitParallelLine ( pstCmd, pstRpy );
+PR_FUNCTION_EXIT
 }
 
 VisionAPI VisionStatus  PR_FitRect(PR_FIT_RECT_CMD *pstCmd, PR_FIT_RECT_RPY *pstRpy)

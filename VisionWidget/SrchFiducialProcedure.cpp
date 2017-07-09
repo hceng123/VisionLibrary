@@ -54,7 +54,7 @@ int SrchFiducialProcedure::srchFiducial(const std::string &imagePath)
 {
     PR_SRCH_FIDUCIAL_MARK_CMD stCmd;
 	stCmd.matInputImg = _pVisionView->getMat();
-    stCmd.rectSrchRange = _rectSrchWindow;
+    stCmd.rectSrchWindow = _rectSrchWindow;
 	stCmd.enType = static_cast<PR_FIDUCIAL_MARK_TYPE>(_nFiducialType);
 	stCmd.fSize = _fFiducialSize;	
 	stCmd.fMargin = _fFiducialMargin;

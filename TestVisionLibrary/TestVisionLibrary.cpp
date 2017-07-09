@@ -239,7 +239,7 @@ void TestSearchFiducialMark_2()
     stCmd.fSize = 54;
     stCmd.fMargin = 8;
     stCmd.matInputImg = mat;
-    stCmd.rectSrchRange = cv::Rect(1459,155, 500, 500 );
+    stCmd.rectSrchWindow = cv::Rect(1459,155, 500, 500 );
 
     PR_SRCH_FIDUCIAL_MARK_RPY stRpy;
     VisionStatus enStatus = PR_SrchFiducialMark(&stCmd, &stRpy);
@@ -259,7 +259,7 @@ void TestSearchFiducialMark_3()
     stCmd.fSize = 64;
     stCmd.fMargin = 8;
     stCmd.matInputImg = mat;
-    stCmd.rectSrchRange = cv::Rect(0, 40, 250, 250 );
+    stCmd.rectSrchWindow = cv::Rect(0, 40, 250, 250 );
 
     PR_SRCH_FIDUCIAL_MARK_RPY stRpy;
     VisionStatus enStatus = PR_SrchFiducialMark(&stCmd, &stRpy);

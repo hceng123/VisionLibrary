@@ -211,7 +211,7 @@ struct PR_INSP_DEVICE_RPY {
 
 struct PR_SRCH_FIDUCIAL_MARK_CMD {
     cv::Mat                 matInputImg;
-    cv::Rect                rectSrchRange;
+    cv::Rect                rectSrchWindow;
     PR_FIDUCIAL_MARK_TYPE   enType;
     float                   fSize;
     float                   fMargin;
