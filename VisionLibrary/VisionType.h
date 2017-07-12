@@ -166,6 +166,12 @@ enum class PR_INSP_HOLE_MODE {
     SIM,
 };
 
+enum class PR_FIND_LEAD_END_METHOD {
+    AVERAGE,
+    INDIVIDUAL,
+    FIXED,
+};
+
 }
 }
 

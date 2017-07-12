@@ -764,6 +764,39 @@ struct PR_INSP_HOLE_RPY {
 * End of Inspect Hole Section *
 ******************************************/
 
+/******************************************
+* Inspect Lead Section *
+******************************************/
+struct PR_INSP_LEAD_CMD {
+    struct LEAD_INPUT_INFO {
+        cv::RotatedRect     rectExpectedWindow;
+        cv::RotatedRect     rectSrchWindow;
+    };
+    using VECTOR_LEAD_INPUT_INFO = std::vector<LEAD_INPUT_INFO>;
+    cv::Mat                 matInputImg;
+    cv::RotatedRect         rectChipWindow;
+    VECTOR_LEAD_INPUT_INFO  vecLeads;        
+    float                   fLeadStartWidthRatio;
+    Int16                   nLeadStartConsecutiveLenth;
+    float                   fLeadEndWidthRatio;
+    Int16                   nLeadEndConsecutiveLenth;
+    PR_FIND_LEAD_END_METHOD enFindLeadEndMethod;
+};
+
+struct PR_INSP_LEAD_RPY {  
+    struct LEAD_RESULT {
+        float               fLength;
+        float               fWidth;
+    };
+    using VECTOR_LEAD_RESULT = std::vector<LEAD_RESULT>;
+    VisionStatus            enStatus;
+    VECTOR_LEAD_RESULT      vecLeadResult;
+};
+
+/******************************************
+* End of Inspect Lead Section *
+******************************************/
+
 }
 }
 #endif
