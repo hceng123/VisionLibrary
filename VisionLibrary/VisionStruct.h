@@ -775,16 +775,17 @@ struct PR_INSP_LEAD_CMD {
     using VECTOR_LEAD_INPUT_INFO = std::vector<LEAD_INPUT_INFO>;
     cv::Mat                 matInputImg;
     cv::RotatedRect         rectChipWindow;
-    VECTOR_LEAD_INPUT_INFO  vecLeads;        
+    VECTOR_LEAD_INPUT_INFO  vecLeads;
     float                   fLeadStartWidthRatio;
-    Int16                   nLeadStartConsecutiveLenth;
+    Int16                   nLeadStartConsecutiveLength;
     float                   fLeadEndWidthRatio;
-    Int16                   nLeadEndConsecutiveLenth;
+    Int16                   nLeadEndConsecutiveLength;
     PR_FIND_LEAD_END_METHOD enFindLeadEndMethod;
 };
 
 struct PR_INSP_LEAD_RPY {  
     struct LEAD_RESULT {
+        bool                bFound;
         float               fLength;
         float               fWidth;
     };

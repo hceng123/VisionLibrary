@@ -66,6 +66,7 @@ public:
     static VisionStatus lrnContour(const PR_LRN_CONTOUR_CMD *const pstCmd, PR_LRN_CONTOUR_RPY *const pstRpy, bool bReplay = false );
     static VisionStatus inspContour(const PR_INSP_CONTOUR_CMD *const pstCmd, PR_INSP_CONTOUR_RPY *const pstRpy, bool bReplay = false );
     static VisionStatus inspHole(const PR_INSP_HOLE_CMD *const pstCmd, PR_INSP_HOLE_RPY *const pstRpy, bool bReplay = false);
+    static VisionStatus inspLead(const PR_INSP_LEAD_CMD *const pstCmd, PR_INSP_LEAD_RPY *const pstRpy, bool bReplay = false);
 protected:
 	int _findBlob(const cv::Mat &mat, const cv::Mat &matRevs, PR_INSP_SURFACE_CMD *const pInspCmd, PR_INSP_SURFACE_RPY *pInspRpy );
 	int _findLine(const cv::Mat &mat, PR_INSP_SURFACE_CMD *const pInspCmd, PR_INSP_SURFACE_RPY *pInspRpy );
@@ -183,6 +184,10 @@ protected:
     static VisionStatus _setmentImgByColorRange(const cv::Mat &matInput, const PR_INSP_HOLE_CMD::COLOR_RANGE &stColorRange, cv::Mat &matResult);
     static VisionStatus _inspHoleByRatioMode(const cv::Mat &matInput, const cv::Mat &matMask, const PR_INSP_HOLE_CMD::RATIO_MODE_CRITERIA &stCriteria, PR_INSP_HOLE_RPY *const pstRpy);
     static VisionStatus _inspHoleByBlobMode(const cv::Mat &matInput, const cv::Mat &matMask, const PR_INSP_HOLE_CMD::BLOB_MODE_CRITERIA &stCriteria, PR_INSP_HOLE_RPY *const pstRpy);
+    static VisionStatus _inspSingleLead(const cv::Mat &matInput,
+                                        const PR_INSP_LEAD_CMD::LEAD_INPUT_INFO &stLeadInput,
+                                        const PR_INSP_LEAD_CMD *pstCmd,
+                                        PR_INSP_LEAD_RPY::LEAD_RESULT &stLeadResult);
 protected:
     static const int       _constMinHessian        = 300;
     static const int       _constOctave            = 4;

@@ -92,6 +92,7 @@ VisionAPI VisionStatus PR_InspChip(const PR_INSP_CHIP_CMD *const pstCmd, PR_INSP
 VisionAPI VisionStatus PR_LrnContour(const PR_LRN_CONTOUR_CMD *const pstCmd, PR_LRN_CONTOUR_RPY *const pstRpy);
 VisionAPI VisionStatus PR_InspContour(const PR_INSP_CONTOUR_CMD *const pstCmd, PR_INSP_CONTOUR_RPY *const pstRpy);
 VisionAPI VisionStatus PR_InspHole(const PR_INSP_HOLE_CMD *const pstCmd, PR_INSP_HOLE_RPY *const pstRpy);
+VisionAPI VisionStatus PR_InspLead(const PR_INSP_LEAD_CMD *const pstCmd, PR_INSP_LEAD_RPY *const pstRpy);
 }
 }
 

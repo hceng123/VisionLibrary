@@ -5406,8 +5406,61 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
         return pstRpy->enStatus;
     }
     pstRpy->enStatus = VisionStatus::OK;
+    return pstRpy->enStatus;    
+}
+
+/*static*/ VisionStatus VisionAlgorithm::inspLead(const PR_INSP_LEAD_CMD *const pstCmd, PR_INSP_LEAD_RPY *const pstRpy, bool bReplay /*= false*/) {
+    assert(pstCmd != nullptr && pstRpy != nullptr);
+    if ( pstCmd->matInputImg.empty() ) {
+        WriteLog("Input image is empty.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    MARK_FUNCTION_START_TIME;
+
+    //pstRpy->enStatus = _extractRotatedROI
+    for ( const auto &stLeadInfo : pstCmd->vecLeads ) {
+        //VisionStatus enStatus = _extractRotatedROI ( matInput, stLeadInput.rectSrchWindow,  )
+    }
+
+    MARK_FUNCTION_END_TIME;
+    pstRpy->enStatus = VisionStatus::OK;
     return pstRpy->enStatus;
-    
+}
+
+/*static*/ VisionStatus VisionAlgorithm::_inspSingleLead(const cv::Mat &matInput,
+                                                         const PR_INSP_LEAD_CMD::LEAD_INPUT_INFO &stLeadInput,
+                                                         const PR_INSP_LEAD_CMD *pstCmd,
+                                                         PR_INSP_LEAD_RPY::LEAD_RESULT &stLeadResult) {
+    cv::Mat matROI;
+    VisionStatus enStatus = _extractRotatedROI ( matInput, stLeadInput.rectSrchWindow, matROI );
+    PR_DIRECTION enSrchDirection;
+    if ( stLeadInput.rectSrchWindow.angle <= 0.1 ) {
+        if ( stLeadInput.rectSrchWindow.center.x < pstCmd->rectChipWindow.center.x )
+            enSrchDirection = PR_DIRECTION::LEFT;
+        else if ( stLeadInput.rectSrchWindow.center.x > pstCmd->rectChipWindow.center.x )
+            enSrchDirection = PR_DIRECTION::RIGHT;
+        else if ( stLeadInput.rectSrchWindow.center.y > pstCmd->rectChipWindow.center.y )
+            enSrchDirection = PR_DIRECTION::UP;
+        else
+            enSrchDirection = PR_DIRECTION::DOWN;
+    }else
+        enSrchDirection = PR_DIRECTION::RIGHT;
+    cv::Mat matGray, matThreshold;
+    if ( matROI.channels() > 1 )
+        matGray = matROI.clone();
+    else
+        cv::cvtColor ( matROI, matGray, CV_BGR2GRAY );
+    auto nThreshold = _autoThreshold ( matGray );
+    cv::threshold ( matGray, matThreshold, nThreshold, PR_MAX_GRAY_LEVEL, cv::ThresholdTypes::THRESH_BINARY );
+    cv::Mat matOneRow, matOneCol;
+    if ( PR_DIRECTION::LEFT == enSrchDirection || PR_DIRECTION::RIGHT == enSrchDirection ) {
+        cv::reduce ( matThreshold, matOneRow, 0, cv::ReduceTypes::REDUCE_SUM );
+    }else {
+        cv::reduce ( matThreshold, matOneCol, 1, cv::ReduceTypes::REDUCE_SUM );
+    }
+    return enStatus;    
 }
 
 }

@@ -467,7 +467,7 @@ void VisionView::_zoomRect(cv::Rect &rect, float fZoomFactor)
         matZoomResult.copyTo ( matDst );
     }else if  ( matResultImg.rows <= matZoomResult.rows && matResultImg.cols <= matZoomResult.cols )  {
         cv::Rect rectROISrc ( ( matZoomResult.cols - matResultImg.cols ) / 2, ( matZoomResult.rows - matResultImg.rows ) / 2, matResultImg.cols, matResultImg.rows );
-        cv::Mat matSrc( matZoomResult, rectROISrc);
+        cv::Mat matSrc( matZoomResult, rectROISrc );
         matSrc.copyTo ( matResultImg );
     }
     matOutput = matResultImg;

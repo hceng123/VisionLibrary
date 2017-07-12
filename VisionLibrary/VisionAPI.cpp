@@ -337,5 +337,12 @@ PR_FUNCTION_ENTRY
 PR_FUNCTION_EXIT
 }
 
+VisionAPI VisionStatus PR_InspLead(const PR_INSP_LEAD_CMD *const pstCmd, PR_INSP_LEAD_RPY *const pstRpy)
+{
+PR_FUNCTION_ENTRY
+    return VisionAlgorithm::inspLead ( pstCmd, pstRpy );
+PR_FUNCTION_EXIT
+}
+
 }
 }
