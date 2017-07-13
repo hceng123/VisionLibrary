@@ -773,6 +773,7 @@ struct PR_INSP_LEAD_CMD {
         cv::RotatedRect     rectSrchWindow;
     };
     using VECTOR_LEAD_INPUT_INFO = std::vector<LEAD_INPUT_INFO>;
+    PR_INSP_LEAD_CMD() : fLeadStartWidthRatio ( 0.5f ), nLeadStartConsecutiveLength(2), fLeadEndWidthRatio (0.5f), nLeadEndConsecutiveLength(2), enFindLeadEndMethod(PR_FIND_LEAD_END_METHOD::AVERAGE) {}
     cv::Mat                 matInputImg;
     cv::RotatedRect         rectChipWindow;
     VECTOR_LEAD_INPUT_INFO  vecLeads;

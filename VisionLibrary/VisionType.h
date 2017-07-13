@@ -8,7 +8,7 @@ namespace Vision
 
 #define MAX_NUM_OF_DEFECT_CRITERIA				(5)
 #define MAX_NUM_OF_DEFECT_RESULT				(20)
-const float PARALLEL_LINE_SLOPE_DIFF_LMT =		0.1;
+const float PARALLEL_LINE_SLOPE_DIFF_LMT =		0.1f;
 const float PARALLEL_LINE_MERGE_DIST_LMT =      10;
 const int PR_ELECTRODE_COUNT =                  2;
 const int PR_MAX_GRAY_LEVEL =                   255;
