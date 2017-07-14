@@ -9,56 +9,67 @@ namespace AOI
 namespace Vision
 {
 
+static void PrintMatchTmplRpy(const PR_MATCH_TEMPLATE_RPY &stRpy) {
+    std::cout << "Match template status " << ToInt32(stRpy.enStatus) << std::endl;
+    std::cout << "Match template result " << stRpy.ptObjPos.x << ", " << stRpy.ptObjPos.y << std::endl;
+    std::cout << "Match template angle " << stRpy.fRotation << std::endl;
+}
+
 void TestTmplMatch()
 {
     std::cout << std::endl << "------------------------------------------";
-    std::cout << std::endl << "TEMPLATE MATCH REGRESSION TEST #1 STARTING";
+    std::cout << std::endl << "MATCH TEMPLATE REGRESSION TEST #1 STARTING";
     std::cout << std::endl << "------------------------------------------";
     std::cout << std::endl;
 
-    cv::Mat mat = cv::imread("./data/F6-313-1-Gray.bmp", cv::IMREAD_GRAYSCALE);
-    if ( mat.empty() )  {
-        std::cout << "Read input image fail" << std::endl;
-        return;
-    }
+    PR_MATCH_TEMPLATE_CMD stCmd;
+    PR_MATCH_TEMPLATE_RPY stRpy;
+    stCmd.matInputImg = cv::imread("./data/FindAngle_1.png", cv::IMREAD_GRAYSCALE);
+    stCmd.rectSrchWindow = cv::Rect(0, 0, stCmd.matInputImg.cols, stCmd.matInputImg.rows );
+    cv::Mat matTmplFull = cv::imread("./data/Template.png", cv::IMREAD_GRAYSCALE);
+    stCmd.matTmpl = cv::Mat ( matTmplFull, cv::Rect (80, 80, 100, 100 ) );
+    stCmd.enMotion = PR_OBJECT_MOTION::EUCLIDEAN;
+    
+    PR_MatchTmpl(&stCmd, &stRpy);
+    PrintMatchTmplRpy ( stRpy );
+}
 
-    PR_SRCH_FIDUCIAL_MARK_CMD stCmd;
-    stCmd.enType = PR_FIDUCIAL_MARK_TYPE::SQUARE;
-    stCmd.fSize = 54;
-    stCmd.fMargin = 8;
-    stCmd.matInputImg = mat;
-    stCmd.rectSrchWindow = cv::Rect(1459, 155, 500, 500 );
-
-    PR_SRCH_FIDUCIAL_MARK_RPY stRpy;
-    VisionStatus enStatus = PR_SrchFiducialMark(&stCmd, &stRpy);
-    std::cout << "Search fiducial status " << ToInt32(stRpy.enStatus) << std::endl; 
+static void PrintFiducialMarkResult(const PR_SRCH_FIDUCIAL_MARK_RPY &stRpy) {
+    std::cout << "Search fiducial status " << ToInt32(stRpy.enStatus) << std::endl;
     std::cout << "Search fiducial result " << stRpy.ptPos.x << ", " << stRpy.ptPos.y << std::endl;
 }
 
-void TestTmplMatch_Circle()
+void TestSrchFiducialMark()
 {
-    std::cout << std::endl << "------------------------------------------";
-    std::cout << std::endl << "TEMPLATE MATCH REGRESSION TEST #2 STARTING";
-    std::cout << std::endl << "------------------------------------------";
+    std::cout << std::endl << "------------------------------------------------";
+    std::cout << std::endl << "SEARCH FIDUCIAL MARK REGRESSION TEST #1 STARTING";
+    std::cout << std::endl << "------------------------------------------------";
     std::cout << std::endl;
 
-    cv::Mat mat = cv::imread("./data/CircleFiducialMark.png", cv::IMREAD_GRAYSCALE);
-    if ( mat.empty() )  {
-        std::cout << "Read input image fail" << std::endl;
-        return;
-    }
-
     PR_SRCH_FIDUCIAL_MARK_CMD stCmd;
+    PR_SRCH_FIDUCIAL_MARK_RPY stRpy;
+    stCmd.enType = PR_FIDUCIAL_MARK_TYPE::SQUARE;
+    stCmd.fSize = 54;
+    stCmd.fMargin = 8;
+    stCmd.matInputImg = cv::imread("./data/F6-313-1-Gray.bmp", cv::IMREAD_GRAYSCALE);
+    stCmd.rectSrchWindow = cv::Rect(1459, 155, 500, 500 );
+    
+    PR_SrchFiducialMark(&stCmd, &stRpy);
+    PrintFiducialMarkResult ( stRpy );
+
+    std::cout << std::endl << "------------------------------------------------";
+    std::cout << std::endl << "SEARCH FIDUCIAL MARK REGRESSION TEST #2 STARTING";
+    std::cout << std::endl << "------------------------------------------------";
+    std::cout << std::endl;
+
     stCmd.enType = PR_FIDUCIAL_MARK_TYPE::CIRCLE;
     stCmd.fSize = 64;
     stCmd.fMargin = 8;
-    stCmd.matInputImg = mat;
+    stCmd.matInputImg = cv::imread("./data/CircleFiducialMark.png", cv::IMREAD_GRAYSCALE);
     stCmd.rectSrchWindow = cv::Rect(0, 40, 250, 250 );
 
-    PR_SRCH_FIDUCIAL_MARK_RPY stRpy;
-    VisionStatus enStatus = PR_SrchFiducialMark(&stCmd, &stRpy);
-    std::cout << "Search fiducial status " << ToInt32(stRpy.enStatus) << std::endl;
-    std::cout << "Search fiducial result " << stRpy.ptPos.x << ", " << stRpy.ptPos.y << std::endl;
+    PR_SrchFiducialMark(&stCmd, &stRpy);
+    PrintFiducialMarkResult ( stRpy );    
 }
 
 }

@@ -11,7 +11,7 @@ void TestInspDevice();
 void TestInspDeviceAutoThreshold();
 void TestRunLogcase();
 void TestTmplMatch();
-void TestTmplMatch_Circle();
+void TestSrchFiducialMark();
 void TestFitLine();
 void TestFitParellelLine();
 void TestFitRect();

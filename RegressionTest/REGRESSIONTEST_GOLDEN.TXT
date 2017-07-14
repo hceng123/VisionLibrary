@@ -20,14 +20,21 @@ Run logcase result 0
 Run logcase result 0
 
 ------------------------------------------
-TEMPLATE MATCH REGRESSION TEST #1 STARTING
+MATCH TEMPLATE REGRESSION TEST #1 STARTING
 ------------------------------------------
+Match template status 0
+Match template result 58.3325, 326.75
+Match template angle -8.7274
+
+------------------------------------------------
+SEARCH FIDUCIAL MARK REGRESSION TEST #1 STARTING
+------------------------------------------------
 Search fiducial status 0
 Search fiducial result 1676.99, 375.282
 
-------------------------------------------
-TEMPLATE MATCH REGRESSION TEST #2 STARTING
-------------------------------------------
+------------------------------------------------
+SEARCH FIDUCIAL MARK REGRESSION TEST #2 STARTING
+------------------------------------------------
 Search fiducial status 0
 Search fiducial result 128.381, 193.948
 
