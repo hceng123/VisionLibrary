@@ -23,7 +23,7 @@ int _tmain(int argc, _TCHAR* argv[])
     * Test Template Matching *
     **************************/
     TestTmplMatch();
-    TestTmplMatch_Circle();
+    TestSrchFiducialMark();
 
     /********************
     * Test Fitting Line *

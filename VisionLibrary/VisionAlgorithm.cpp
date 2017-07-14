@@ -53,6 +53,7 @@ if ( ! bReplay )    {   \
 /*static*/ const cv::Scalar VisionAlgorithm::_constYellowScalar(0, 255, 255);
 /*static*/ const String VisionAlgorithm::_strRecordLogPrefix   = "tmplDir.";
 /*static*/ const float VisionAlgorithm::_constExpSmoothRatio   = 0.3f;
+/*static*/ bool VisionAlgorithm::_bAutoMode = false;
 
 VisionAlgorithm::VisionAlgorithm()
 {
@@ -61,6 +62,10 @@ VisionAlgorithm::VisionAlgorithm()
 /*static*/ std::unique_ptr<VisionAlgorithm> VisionAlgorithm::create()
 {
     return std::make_unique<VisionAlgorithm>();
+}
+
+/*static*/ bool VisionAlgorithm::isAutoMode() {
+    return _bAutoMode;
 }
 
 /*static*/ VisionStatus VisionAlgorithm::lrnObj(const PR_LRN_OBJ_CMD *const pstCmd, PR_LRN_OBJ_RPY *const pstRpy, bool bReplay /*= false*/ )
@@ -1061,8 +1066,7 @@ VisionStatus VisionAlgorithm::inspDevice(PR_INSP_DEVICE_CMD *pstInspDeviceCmd, P
     return VisionStatus::OK;
 }
 
-/*static*/ VisionStatus VisionAlgorithm::matchTemplate(PR_MATCH_TEMPLATE_CMD *const pstCmd, PR_MATCH_TEMPLATE_RPY *pstRpy, bool bReplay)
-{
+/*static*/ VisionStatus VisionAlgorithm::matchTemplate(PR_MATCH_TEMPLATE_CMD *const pstCmd, PR_MATCH_TEMPLATE_RPY *pstRpy, bool bReplay /*= false*/) {
     assert(pstCmd != nullptr && pstRpy != nullptr);
 
     if ( pstCmd->matInputImg.empty() ) {
@@ -1111,23 +1115,32 @@ VisionStatus VisionAlgorithm::inspDevice(PR_INSP_DEVICE_CMD *pstInspDeviceCmd, P
     pstRpy->ptObjPos.x += pstCmd->rectSrchWindow.x;
     pstRpy->ptObjPos.y += pstCmd->rectSrchWindow.y;
     pstRpy->fMatchScore = fCorrelation * ConstToPercentage;
-    if ( pstCmd->matInputImg.channels() > 1 )
-        pstRpy->matResultImg = pstCmd->matInputImg.clone();
-    else
-        cv::cvtColor ( pstCmd->matInputImg, pstRpy->matResultImg, CV_GRAY2BGR);
 
-    cv::Mat matWarp = cv::getRotationMatrix2D( cv::Point(0, 0), pstRpy->fRotation, 1. );
-    float fCrossSize = 10.f;
-    cv::Point2f crossLineOnePtOne(-fCrossSize, 0), crossLineOnePtTwo(fCrossSize, 0), crossLineTwoPtOne(0, -fCrossSize), crossLineTwoPtTwo(0, fCrossSize);
-    crossLineOnePtOne = pstRpy->ptObjPos + CalcUtils::warpPoint<double>( matWarp, crossLineOnePtOne );
-    crossLineOnePtTwo = pstRpy->ptObjPos + CalcUtils::warpPoint<double>( matWarp, crossLineOnePtTwo );
-    crossLineTwoPtOne = pstRpy->ptObjPos + CalcUtils::warpPoint<double>( matWarp, crossLineTwoPtOne );
-    crossLineTwoPtTwo = pstRpy->ptObjPos + CalcUtils::warpPoint<double>( matWarp, crossLineTwoPtTwo );
+    if ( ! isAutoMode () ) {
+        if ( pstCmd->matInputImg.channels () > 1 )
+            pstRpy->matResultImg = pstCmd->matInputImg.clone ();
+        else
+            cv::cvtColor ( pstCmd->matInputImg, pstRpy->matResultImg, CV_GRAY2BGR );
 
-    cv::circle ( pstRpy->matResultImg, pstRpy->ptObjPos, 2, cv::Scalar(0, 0, 255), 1 );
-    cv::line ( pstRpy->matResultImg, crossLineOnePtOne, crossLineOnePtTwo, cv::Scalar(0, 0, 255), 1 );
-    cv::line ( pstRpy->matResultImg, crossLineTwoPtOne, crossLineTwoPtTwo, cv::Scalar(0, 0, 255), 1 );
+        cv::Mat matWarp = cv::getRotationMatrix2D ( cv::Point ( 0, 0 ), -pstRpy->fRotation, 1. );
+        float fCrossSize = 10.f;
+        cv::Point2f crossLineOnePtOne ( -fCrossSize, 0 ), crossLineOnePtTwo ( fCrossSize, 0 ), crossLineTwoPtOne ( 0, -fCrossSize ), crossLineTwoPtTwo ( 0, fCrossSize );
+        crossLineOnePtOne = pstRpy->ptObjPos + CalcUtils::warpPoint<double> ( matWarp, crossLineOnePtOne );
+        crossLineOnePtTwo = pstRpy->ptObjPos + CalcUtils::warpPoint<double> ( matWarp, crossLineOnePtTwo );
+        crossLineTwoPtOne = pstRpy->ptObjPos + CalcUtils::warpPoint<double> ( matWarp, crossLineTwoPtOne );
+        crossLineTwoPtTwo = pstRpy->ptObjPos + CalcUtils::warpPoint<double> ( matWarp, crossLineTwoPtTwo );
 
+        cv::line ( pstRpy->matResultImg, crossLineOnePtOne, crossLineOnePtTwo, _constBlueScalar, 2 );
+        cv::line ( pstRpy->matResultImg, crossLineTwoPtOne, crossLineTwoPtTwo, _constBlueScalar, 2 );
+
+        matWarp = cv::getRotationMatrix2D ( pstRpy->ptObjPos, -pstRpy->fRotation, 1. );
+        auto vecPoint2f = CalcUtils::warpRect<double> ( matWarp, cv::Rect2f ( pstRpy->ptObjPos.x - ToFloat ( pstCmd->matTmpl.cols / 2 ),
+            pstRpy->ptObjPos.y - ToFloat ( pstCmd->matTmpl.rows / 2 ), ToFloat ( pstCmd->matTmpl.cols ), ToFloat ( pstCmd->matTmpl.rows ) ) );
+        VectorOfVectorOfPoint vecVecPoint(1);
+        for ( const auto &point : vecPoint2f )
+            vecVecPoint[0].push_back ( point );
+        cv::polylines ( pstRpy->matResultImg, vecVecPoint, true, _constBlueScalar );
+    }
     FINISH_LOGCASE;
     MARK_FUNCTION_END_TIME;
     return pstRpy->enStatus;
@@ -1580,7 +1593,7 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
         number_of_iterations, termination_eps) ) );
     ptResult.x = matWarp.at<float>(0, 2);
     ptResult.y = matWarp.at<float>(1, 2);
-    fRotation = ToFloat ( CalcUtils::radian2Degree ( asin ( matWarp.at<float>( 0, 1 ) ) ) );
+    fRotation = ToFloat ( CalcUtils::radian2Degree ( asin ( matWarp.at<float>( 1, 0 ) ) ) );
 
     return VisionStatus::OK;
 }
