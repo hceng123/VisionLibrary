@@ -603,9 +603,7 @@ VisionStatus LogCaseFitParallelLine::RunLogCase()
     stCmd.enAttribute = static_cast<PR_OBJECT_ATTRIBUTE>(ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyAttribute.c_str(), 0 ) );
 
     PR_FIT_PARALLEL_LINE_RPY stRpy;
-
-    VisionAlgorithmPtr pVA = VisionAlgorithm::create();
-    enStatus = pVA->fitParallelLine(&stCmd, &stRpy, true);
+    enStatus = VisionAlgorithm::fitParallelLine(&stCmd, &stRpy, true);
 
     WriteRpy(&stRpy);
     return enStatus;
@@ -686,9 +684,7 @@ VisionStatus LogCaseFitRect::RunLogCase()
     stCmd.enAttribute = static_cast<PR_OBJECT_ATTRIBUTE>(ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyAttribute.c_str(), 0 ) );
 
     PR_FIT_RECT_RPY stRpy;
-
-    VisionAlgorithmPtr pVA = VisionAlgorithm::create();
-    enStatus = pVA->fitRect(&stCmd, &stRpy, true);
+    enStatus = VisionAlgorithm::fitRect(&stCmd, &stRpy, true);
 
     WriteRpy(&stRpy);
     return enStatus;
@@ -790,8 +786,7 @@ VisionStatus LogCaseSrchFiducial::WriteRpy(PR_SRCH_FIDUCIAL_MARK_RPY *pstRpy)
     return VisionStatus::OK;
 }
 
-VisionStatus LogCaseSrchFiducial::RunLogCase()
-{
+VisionStatus LogCaseSrchFiducial::RunLogCase() {
     PR_SRCH_FIDUCIAL_MARK_CMD stCmd;
     VisionStatus enStatus;
 
@@ -806,20 +801,17 @@ VisionStatus LogCaseSrchFiducial::RunLogCase()
 
     PR_SRCH_FIDUCIAL_MARK_RPY stRpy;
 
-    VisionAlgorithmPtr pVA = VisionAlgorithm::create();
-    enStatus = pVA->srchFiducialMark(&stCmd, &stRpy, true);
+    enStatus = VisionAlgorithm::srchFiducialMark(&stCmd, &stRpy, true);
 
     WriteRpy(&stRpy);
     return enStatus;
 }
 
-/*static*/ String LogCaseOcr::StaticGetFolderPrefix()
-{
+/*static*/ String LogCaseOcr::StaticGetFolderPrefix() {
     return "Ocr";
 }
 
-VisionStatus LogCaseOcr::WriteCmd(PR_OCR_CMD *pstCmd)
-{
+VisionStatus LogCaseOcr::WriteCmd(PR_OCR_CMD *pstCmd) {
     if (!_bReplay)    {
         _strLogCasePath = _generateLogCaseName(GetFolderPrefix());
         bfs::path dir(_strLogCasePath);
@@ -836,8 +828,7 @@ VisionStatus LogCaseOcr::WriteCmd(PR_OCR_CMD *pstCmd)
     return VisionStatus::OK;
 }
 
-VisionStatus LogCaseOcr::WriteRpy(PR_OCR_RPY *pstRpy)
-{
+VisionStatus LogCaseOcr::WriteRpy(PR_OCR_RPY *pstRpy) {
     CSimpleIni ini(false, false, false);
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile(cmdRpyFilePath.c_str());
@@ -848,8 +839,7 @@ VisionStatus LogCaseOcr::WriteRpy(PR_OCR_RPY *pstRpy)
     return VisionStatus::OK;
 }
 
-VisionStatus LogCaseOcr::RunLogCase()
-{
+VisionStatus LogCaseOcr::RunLogCase() {
     PR_OCR_CMD stCmd;
     VisionStatus enStatus;
 
@@ -861,9 +851,7 @@ VisionStatus LogCaseOcr::RunLogCase()
     stCmd.enDirection = (PR_DIRECTION)ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyDirection.c_str(), 0);
 
     PR_OCR_RPY stRpy;
-
-    VisionAlgorithmPtr pVA = VisionAlgorithm::create();
-    enStatus = pVA->ocr(&stCmd, &stRpy, true);
+    enStatus = VisionAlgorithm::ocr(&stCmd, &stRpy, true);
 
     WriteRpy(&stRpy);
     return enStatus;
