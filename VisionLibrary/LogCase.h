@@ -607,6 +607,39 @@ private:
     const String _strKeyBlobCount       = "BlobCount";
 };
 
+class LogCaseInspLead : public LogCase
+{
+public:
+    explicit LogCaseInspLead(const String &strPath, bool bReplay = false) : LogCase(strPath, bReplay) {}
+    VisionStatus WriteCmd(const PR_INSP_LEAD_CMD *const pstCmd);
+    VisionStatus WriteRpy(const PR_INSP_LEAD_RPY *const pstRpy);
+    virtual VisionStatus RunLogCase() override;
+    virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
+    static String StaticGetFolderPrefix();
+private:
+    const String _strKeyChipCenter          = "RoiCenter";
+    const String _strKeyChipSize            = "RoiSize";
+    const String _strKeyChipAngle           = "RoiAngle";
+    const String _strKeyLeadCount           = "LeadCount";
+    const String _strKeyLeadSrchWinCtr      = "LeadSrchWinCenter";
+    const String _strKeyLeadSrchWinSize     = "LeadSrchWinSize";
+    const String _strKeyLeadSrchWinAngle    = "LeadSrchWinAngle";
+    const String _strKeyLeadExpWinCtr       = "LeadExpWinCenter";
+    const String _strKeyLeadExpWinSize      = "LeadExpWinSize";
+    const String _strKeyLeadExpWinAngle     = "LeadExpWinAngle";
+    const String _strKeyLeadStartWidthRatio = "LeadStartWidthRatio";
+    const String _strKeyLeadStartConLen     = "LeadStartConsecutiveLength";
+    const String _strKeyLeadEndWidthRatio   = "LeadEndWidthRatio";
+    const String _strKeyLeadEndConLen       = "LeadEndConsecutiveLength";
+    const String _strKeyFindLeadEndMethod   = "FindLeadEndMethod";
+
+    const String _strKeyStatus              = "Status";
+    const String _strFound                  = "Found";
+    const String _strKeyLeadWinCtr          = "LeadWinCenter";
+    const String _strKeyLeadWinSize         = "LeadWinSize";
+    const String _strKeyLeadWinAngle        = "LeadWinAngle";
+};
+
 }
 }
 #endif

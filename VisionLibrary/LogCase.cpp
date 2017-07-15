@@ -1760,5 +1760,117 @@ VisionStatus LogCaseInspHole::RunLogCase() {
     return enStatus;
 }
 
+/*static*/ String LogCaseInspLead::StaticGetFolderPrefix() {
+    return "InspLead";
+}
+
+VisionStatus LogCaseInspLead::WriteCmd(const PR_INSP_LEAD_CMD *const pstCmd) {
+    if ( !_bReplay ) {
+        _strLogCasePath = _generateLogCaseName(GetFolderPrefix());
+        bfs::path dir(_strLogCasePath);
+        bfs::create_directories(dir);
+    }
+
+    CSimpleIni ini(false, false, false);
+    auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
+    ini.LoadFile(cmdRpyFilePath.c_str());
+    ini.SetValue(_CMD_SECTION.c_str(), _strKeyChipCenter.c_str(), _formatCoordinate ( pstCmd->rectChipWindow.center).c_str() );
+    ini.SetValue(_CMD_SECTION.c_str(), _strKeyChipSize.c_str(), _formatSize ( pstCmd->rectChipWindow.size).c_str() );
+    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyChipAngle.c_str(), pstCmd->rectChipWindow.angle );
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyLeadCount.c_str(), ToInt32 ( pstCmd->vecLeads.size() ) );
+    for ( size_t i = 0; i < pstCmd->vecLeads.size(); ++ i ) {
+        auto stLeadInput = pstCmd->vecLeads[i];
+        String strIndex = String("_") + std::to_string(i);
+        String strKeyLeadSrchWinCtr    = _strKeyLeadSrchWinCtr   + strIndex;
+        String strKeyLeadSrchWinSize   = _strKeyLeadSrchWinSize  + strIndex;
+        String strKeyLeadSrchWinAngle  = _strKeyLeadSrchWinAngle + strIndex;
+        String strKeyLeadExpWinCtr     = _strKeyLeadExpWinCtr    + strIndex;
+        String strKeyLeadExpWinSize    = _strKeyLeadExpWinSize   + strIndex;
+        String strKeyLeadExpWinAngle   = _strKeyLeadExpWinAngle  + strIndex;
+
+        ini.SetValue(_CMD_SECTION.c_str(), strKeyLeadSrchWinCtr.c_str(), _formatCoordinate ( stLeadInput.rectSrchWindow.center).c_str() );
+        ini.SetValue(_CMD_SECTION.c_str(), strKeyLeadSrchWinSize.c_str(), _formatSize ( stLeadInput.rectSrchWindow.size).c_str() );
+        ini.SetDoubleValue(_CMD_SECTION.c_str(), strKeyLeadSrchWinAngle.c_str(), stLeadInput.rectSrchWindow.angle );
+        ini.SetValue(_CMD_SECTION.c_str(), strKeyLeadExpWinCtr.c_str(), _formatCoordinate ( stLeadInput.rectExpectedWindow.center).c_str() );
+        ini.SetValue(_CMD_SECTION.c_str(), strKeyLeadExpWinSize.c_str(), _formatSize ( stLeadInput.rectExpectedWindow.size).c_str() );
+        ini.SetDoubleValue(_CMD_SECTION.c_str(), strKeyLeadExpWinAngle.c_str(), stLeadInput.rectExpectedWindow.angle );
+    }
+
+    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyLeadStartWidthRatio.c_str(), pstCmd->fLeadStartWidthRatio);
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyLeadStartConLen.c_str(),   pstCmd->nLeadStartConsecutiveLength );
+    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyLeadEndWidthRatio.c_str(), pstCmd->fLeadEndWidthRatio);
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyLeadEndConLen.c_str(),   pstCmd->nLeadEndConsecutiveLength );
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyFindLeadEndMethod.c_str(),   ToInt32( pstCmd->enFindLeadEndMethod ) );
+    ini.SaveFile(cmdRpyFilePath.c_str());
+
+    cv::imwrite ( _strLogCasePath + _IMAGE_NAME, pstCmd->matInputImg );
+    return VisionStatus::OK;
+}
+
+VisionStatus LogCaseInspLead::WriteRpy(const PR_INSP_LEAD_RPY *const pstRpy) {
+    CSimpleIni ini(false, false, false);
+    auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
+    ini.LoadFile(cmdRpyFilePath.c_str());    
+    ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyStatus.c_str(), ToInt32 ( pstRpy->enStatus ) );
+    for ( int i = 0; i < pstRpy->vecLeadResult.size(); ++ i ) {
+        auto stLeadResult = pstRpy->vecLeadResult[i];
+        String strIndex = String("_") + std::to_string(i);
+        String strFound = _strFound + strIndex;
+        String strKeyLeadWinCtr    = _strKeyLeadWinCtr   + strIndex;
+        String strKeyLeadWinSize   = _strKeyLeadWinSize  + strIndex;
+        String strKeyLeadWinAngle  = _strKeyLeadWinAngle + strIndex;
+        ini.SetBoolValue(_RPY_SECTION.c_str(), strFound.c_str(), stLeadResult.bFound );
+        ini.SetValue(_RPY_SECTION.c_str(), strKeyLeadWinCtr.c_str(), _formatCoordinate ( stLeadResult.rectLead.center).c_str() );
+        ini.SetValue(_RPY_SECTION.c_str(), strKeyLeadWinSize.c_str(), _formatSize ( stLeadResult.rectLead.size).c_str() );
+        ini.SetDoubleValue(_RPY_SECTION.c_str(), strKeyLeadWinAngle.c_str(), stLeadResult.rectLead.angle );
+    }
+    ini.SaveFile(cmdRpyFilePath.c_str());
+    if ( ! pstRpy->matResultImg.empty() )
+        cv::imwrite ( _strLogCasePath + _RESULT_IMAGE_NAME, pstRpy->matResultImg );
+    _zip();
+    return VisionStatus::OK;
+}
+
+VisionStatus LogCaseInspLead::RunLogCase() {
+    PR_INSP_LEAD_CMD stCmd;
+    PR_INSP_LEAD_RPY stRpy;    
+
+    CSimpleIni ini(false, false, false);
+    auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
+    ini.LoadFile(cmdRpyFilePath.c_str());
+    stCmd.matInputImg = cv::imread(_strLogCasePath + _IMAGE_NAME, cv::IMREAD_COLOR);
+
+    stCmd.rectChipWindow.center = _parseCoordinate ( ini.GetValue(_CMD_SECTION.c_str(), _strKeyChipCenter.c_str(), _DEFAULT_COORD.c_str() ) );
+    stCmd.rectChipWindow.size = _parseSize ( ini.GetValue(_CMD_SECTION.c_str(), _strKeyChipSize.c_str(), _DEFAULT_SIZE.c_str() ) );
+    stCmd.rectChipWindow.angle = ToFloat ( ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyChipAngle.c_str(), 0. ) );
+    int nLeadCount = ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyLeadCount.c_str(), 0);
+    for ( int i = 0; i < nLeadCount; ++ i ) {
+        String strIndex = String("_") + std::to_string(i);
+        String strKeyLeadSrchWinCtr    = _strKeyLeadSrchWinCtr   + strIndex;
+        String strKeyLeadSrchWinSize   = _strKeyLeadSrchWinSize  + strIndex;
+        String strKeyLeadSrchWinAngle  = _strKeyLeadSrchWinAngle + strIndex;
+        String strKeyLeadExpWinCtr     = _strKeyLeadExpWinCtr    + strIndex;
+        String strKeyLeadExpWinSize    = _strKeyLeadExpWinSize   + strIndex;
+        String strKeyLeadExpWinAngle   = _strKeyLeadExpWinAngle  + strIndex;
+        PR_INSP_LEAD_CMD::LEAD_INPUT_INFO stLeadInput;
+        stLeadInput.rectSrchWindow.center = _parseCoordinate ( ini.GetValue(_CMD_SECTION.c_str(), strKeyLeadSrchWinCtr.c_str(), _DEFAULT_COORD.c_str() ) );
+        stLeadInput.rectSrchWindow.size = _parseSize( ini.GetValue(_CMD_SECTION.c_str(), strKeyLeadSrchWinSize.c_str(), _DEFAULT_SIZE.c_str() ) );
+        stLeadInput.rectSrchWindow.angle = ToFloat ( ini.GetDoubleValue(_CMD_SECTION.c_str(), strKeyLeadSrchWinAngle.c_str(), 0. ) );
+        stLeadInput.rectExpectedWindow.center = _parseCoordinate ( ini.GetValue(_CMD_SECTION.c_str(), strKeyLeadExpWinCtr.c_str(), _DEFAULT_COORD.c_str() ) );
+        stLeadInput.rectExpectedWindow.size = _parseSize( ini.GetValue(_CMD_SECTION.c_str(), strKeyLeadExpWinSize.c_str(), _DEFAULT_SIZE.c_str() ) );
+        stLeadInput.rectExpectedWindow.angle = ToFloat ( ini.GetDoubleValue(_CMD_SECTION.c_str(), strKeyLeadExpWinAngle.c_str(), 0.) );
+    }
+    stCmd.fLeadStartWidthRatio = ToFloat ( ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyLeadStartWidthRatio.c_str(), 0.5 ) );
+    stCmd.nLeadStartConsecutiveLength = ToInt16 ( ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyLeadStartConLen.c_str(), 2 ) );
+    stCmd.fLeadEndWidthRatio = ToFloat ( ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyLeadEndWidthRatio.c_str(), 0.5 ) );
+    stCmd.nLeadEndConsecutiveLength = ToInt16 ( ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyLeadEndConLen.c_str(), 2 ) );
+    stCmd.enFindLeadEndMethod = static_cast<PR_FIND_LEAD_END_METHOD> ( ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyFindLeadEndMethod.c_str(), 0 ) );
+
+    VisionStatus enStatus = VisionStatus::OK;
+    enStatus = VisionAlgorithm::inspLead ( &stCmd, &stRpy, true );
+    WriteRpy(&stRpy);
+    return enStatus;
+}
+
 }
 }

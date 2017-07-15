@@ -1573,6 +1573,8 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
         pLogCase = std::make_unique<LogCaseInspContour>( strLocalPath, true );
     else if (LogCaseInspHole::StaticGetFolderPrefix() == folderPrefix )
         pLogCase = std::make_unique<LogCaseInspHole>( strLocalPath, true );
+    else if (LogCaseInspLead::StaticGetFolderPrefix() == folderPrefix )
+        pLogCase = std::make_unique<LogCaseInspLead>( strLocalPath, true );
 
     if ( nullptr != pLogCase )
         enStatus = pLogCase->RunLogCase();
@@ -5430,13 +5432,43 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     }
 
     MARK_FUNCTION_START_TIME;
+    SETUP_LOGCASE(LogCaseInspLead);
 
-    //pstRpy->enStatus = _extractRotatedROI
+    pstRpy->enStatus = VisionStatus::OK;
     for ( const auto &stLeadInfo : pstCmd->vecLeads ) {
         PR_INSP_LEAD_RPY::LEAD_RESULT stLeadResult;
-        VisionStatus enStatus = _inspSingleLead ( pstCmd->matInputImg, stLeadInfo, pstCmd, stLeadResult  );
+        VisionStatus enStatus = _inspSingleLead ( pstCmd->matInputImg, stLeadInfo, pstCmd, stLeadResult );
+        pstRpy->vecLeadResult.push_back ( stLeadResult );
+        if ( VisionStatus::OK == pstRpy->enStatus )
+            pstRpy->enStatus = enStatus;        
     }
 
+    if ( ! isAutoMode() ) {
+        if ( pstCmd->matInputImg.channels() > 1 )
+            pstRpy->matResultImg = pstCmd->matInputImg.clone();
+        else
+            cv::cvtColor ( pstCmd->matInputImg, pstRpy->matResultImg, CV_GRAY2BGR );
+        for ( int i = 0; i < pstCmd->vecLeads.size(); ++ i ) {
+            auto vecPoint2f = CalcUtils::getCornerOfRotatedRect ( pstCmd->vecLeads[i].rectSrchWindow );
+            VectorOfVectorOfPoint vecVecSrchWindowPoint ( 1 );
+            for( const auto &point : vecPoint2f )
+                vecVecSrchWindowPoint[0].push_back ( point );
+
+            if( pstRpy->vecLeadResult[i].bFound ) {
+                cv::polylines ( pstRpy->matResultImg, vecVecSrchWindowPoint, true, _constGreenScalar );
+
+                auto vecPoint2f = CalcUtils::getCornerOfRotatedRect ( pstRpy->vecLeadResult[i].rectLead );
+                VectorOfVectorOfPoint vecVecLeadPoint ( 1 );
+                for( const auto &point : vecPoint2f )
+                    vecVecLeadPoint[0].push_back ( point );
+                cv::polylines ( pstRpy->matResultImg, vecVecLeadPoint, true, _constBlueScalar );
+            }else {
+                cv::polylines ( pstRpy->matResultImg, vecVecSrchWindowPoint, true, _constRedScalar );
+            }
+        }
+    }
+
+    FINISH_LOGCASE;
     MARK_FUNCTION_END_TIME;
     pstRpy->enStatus = VisionStatus::OK;
     return pstRpy->enStatus;
@@ -5450,11 +5482,11 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     VisionStatus enStatus = _extractRotatedROI ( matInput, stLeadInput.rectSrchWindow, matROI );
     PR_DIRECTION enSrchDirection;
     if ( stLeadInput.rectSrchWindow.angle <= 0.1 ) {
-        if ( stLeadInput.rectSrchWindow.center.x < pstCmd->rectChipWindow.center.x )
+        if ( stLeadInput.rectSrchWindow.center.x < pstCmd->rectChipWindow.center.x && stLeadInput.rectSrchWindow.center.y > ( pstCmd->rectChipWindow.center.y - pstCmd->rectChipWindow.size.height / 2 ) )
             enSrchDirection = PR_DIRECTION::LEFT;
-        else if ( stLeadInput.rectSrchWindow.center.x > pstCmd->rectChipWindow.center.x )
+        else if ( stLeadInput.rectSrchWindow.center.x > pstCmd->rectChipWindow.center.x && stLeadInput.rectSrchWindow.center.y > ( pstCmd->rectChipWindow.center.y - pstCmd->rectChipWindow.size.height / 2 ) )
             enSrchDirection = PR_DIRECTION::RIGHT;
-        else if ( stLeadInput.rectSrchWindow.center.y > pstCmd->rectChipWindow.center.y )
+        else if ( stLeadInput.rectSrchWindow.center.y < pstCmd->rectChipWindow.center.y && stLeadInput.rectSrchWindow.center.x > ( pstCmd->rectChipWindow.center.x - pstCmd->rectChipWindow.size.width / 2 ) )
             enSrchDirection = PR_DIRECTION::UP;
         else
             enSrchDirection = PR_DIRECTION::DOWN;
@@ -5462,29 +5494,31 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
         enSrchDirection = PR_DIRECTION::RIGHT;
     cv::Mat matGray, matThreshold;
     if ( matROI.channels() > 1 )
-        matGray = matROI.clone();
-    else
         cv::cvtColor ( matROI, matGray, CV_BGR2GRAY );
+    else
+        matGray = matROI.clone();
     auto nThreshold = _autoThreshold ( matGray );
     cv::threshold ( matGray, matThreshold, nThreshold, PR_MAX_GRAY_LEVEL, cv::ThresholdTypes::THRESH_BINARY );
+    if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE )
+        showImage("Lead Threshold", matThreshold );
     matThreshold /= PR_MAX_GRAY_LEVEL;
     cv::Mat matOneRow, matOneCol;
     int nSrchWindowWidth = 0;
     if ( PR_DIRECTION::LEFT == enSrchDirection || PR_DIRECTION::RIGHT == enSrchDirection ) {
-        cv::reduce ( matThreshold, matOneRow, 0, cv::ReduceTypes::REDUCE_SUM );
+        cv::reduce ( matThreshold, matOneRow, 0, cv::ReduceTypes::REDUCE_SUM, CV_32SC1 );
         nSrchWindowWidth = ToInt32 ( stLeadInput.rectSrchWindow.size.height );
     }else {
-        cv::reduce ( matThreshold, matOneCol, 1, cv::ReduceTypes::REDUCE_SUM );
+        cv::reduce ( matThreshold, matOneCol, 1, cv::ReduceTypes::REDUCE_SUM, CV_32SC1 );
         cv::transpose ( matOneCol, matOneRow );
         nSrchWindowWidth = ToInt32 ( stLeadInput.rectSrchWindow.size.width );
     }
 
-    uchar nStartWidthThreshold = static_cast<uchar> ( nSrchWindowWidth * pstCmd->fLeadStartWidthRatio );
-    uchar nEndWidthThreshold = static_cast<uchar> ( nSrchWindowWidth * pstCmd->fLeadEndWidthRatio ) ;
+    auto nStartWidthThreshold = ToInt32 ( nSrchWindowWidth * pstCmd->fLeadStartWidthRatio );
+    auto nEndWidthThreshold   = ToInt32 ( nSrchWindowWidth * pstCmd->fLeadEndWidthRatio ) ;
     int nConsecutiveLength = 0;
     int nLeadStart = 0, nLeadEnd = 0;
     for ( int i = 0; i < matOneRow.cols; ++ i ) {
-        if ( matOneRow.at<uchar>(i) > nStartWidthThreshold ) {
+        if ( matOneRow.at<Int32>(0, i) > nStartWidthThreshold ) {
             ++ nConsecutiveLength;
         }else
             nConsecutiveLength = 0;
@@ -5496,7 +5530,7 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
 
     nConsecutiveLength = 0;
     for ( int i = matOneRow.cols - 1; i >= 0; -- i ) {
-        if ( matOneRow.at<uchar>(i) > nStartWidthThreshold ) {
+        if ( matOneRow.at<Int32>(0, i) > nStartWidthThreshold ) {
             ++ nConsecutiveLength;
         }else
             nConsecutiveLength = 0;
@@ -5508,26 +5542,14 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     if ( nLeadStart == 0 || nLeadEnd == 0 || nLeadStart >= nLeadEnd ) {
         stLeadResult.bFound = false;
         return VisionStatus::NOT_FIND_LEAD;
-    }
-    stLeadResult.fLength = ToFloat ( nLeadEnd - nLeadStart );
+    }   
+
     const int GUASSIAN_DIFF_WIDTH = 2;
     const float GUASSIAN_KERNEL_SSQ = 1.f;
     cv::Mat matGuassinKernel = CalcUtils::generateGuassinDiffKernel ( GUASSIAN_DIFF_WIDTH, GUASSIAN_KERNEL_SSQ );
     if ( PR_DIRECTION::LEFT == enSrchDirection || PR_DIRECTION::RIGHT == enSrchDirection ) {
         cv::Mat matAverage;
-        cv::reduce ( matInput, matAverage, 1, cv::ReduceTypes::REDUCE_AVG );
-
-        cv::Mat matGuassianDiffResult;
-        CalcUtils::filter2D_Conv ( matAverage, matGuassianDiffResult, CV_32F, matGuassinKernel );
-        double minValue = 0., maxValue = 0.;
-        cv::Point ptMin, ptMax;
-        cv::minMaxLoc ( matGuassianDiffResult, &minValue, &maxValue, &ptMin, &ptMax );
-        int nLeadTop = ptMin.y;
-        int nLeadBottom = ptMax.y;
-        stLeadResult.fWidth = ToFloat ( nLeadBottom - nLeadTop );
-    }else {
-        cv::Mat matAverage;
-        cv::reduce ( matInput, matAverage, 0, cv::ReduceTypes::REDUCE_AVG );
+        cv::reduce ( matGray, matAverage, 1, cv::ReduceTypes::REDUCE_AVG );
 
         cv::Mat matGuassianDiffResult;
         cv::transpose ( matGuassinKernel, matGuassinKernel );
@@ -5535,10 +5557,36 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
         double minValue = 0., maxValue = 0.;
         cv::Point ptMin, ptMax;
         cv::minMaxLoc ( matGuassianDiffResult, &minValue, &maxValue, &ptMin, &ptMax );
+        int nLeadTop = ptMin.y;
+        int nLeadBottom = ptMax.y;
+        stLeadResult.rectLead.size.height = ToFloat ( nLeadBottom - nLeadTop );
+        stLeadResult.rectLead.center.y = stLeadInput.rectSrchWindow.center.y - matROI.rows / 2 + ( nLeadBottom + nLeadTop ) / 2;
+    }else {
+        cv::Mat matAverage;
+        cv::reduce ( matGray, matAverage, 0, cv::ReduceTypes::REDUCE_AVG );
+
+        cv::Mat matGuassianDiffResult;        
+        CalcUtils::filter2D_Conv ( matAverage, matGuassianDiffResult, CV_32F, matGuassinKernel );
+        double minValue = 0., maxValue = 0.;
+        cv::Point ptMin, ptMax;
+        cv::minMaxLoc ( matGuassianDiffResult, &minValue, &maxValue, &ptMin, &ptMax );
         int nLeadLeft = ptMin.x;
         int nLeadRight = ptMax.y;
-        stLeadResult.fWidth = ToFloat ( nLeadRight - nLeadLeft );
-    }    
+        stLeadResult.rectLead.size.height = ToFloat ( nLeadRight - nLeadLeft );
+        stLeadResult.rectLead.center.x = stLeadInput.rectSrchWindow.center.x - matROI.cols / 2 + ( nLeadRight + nLeadLeft ) / 2;
+    }
+    stLeadResult.rectLead.size.width = ToFloat ( nLeadEnd - nLeadStart );
+    if ( stLeadResult.rectLead.size.height <= 0 ) {
+        stLeadResult.bFound = false;
+        return VisionStatus::NOT_FIND_LEAD;
+    }
+    stLeadResult.bFound = true;    
+    stLeadResult.rectLead.angle = stLeadInput.rectSrchWindow.angle;
+    if ( PR_DIRECTION::LEFT == enSrchDirection || PR_DIRECTION::RIGHT == enSrchDirection )
+        stLeadResult.rectLead.center.x = stLeadInput.rectSrchWindow.center.x - matROI.cols / 2 + ( nLeadEnd + nLeadStart ) / 2;
+    else
+        stLeadResult.rectLead.center.y = stLeadInput.rectSrchWindow.center.y - matROI.rows / 2 + ( nLeadEnd + nLeadStart ) / 2;
+    
     return enStatus;
 }
 

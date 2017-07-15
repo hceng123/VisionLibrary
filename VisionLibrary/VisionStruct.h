@@ -769,8 +769,8 @@ struct PR_INSP_HOLE_RPY {
 ******************************************/
 struct PR_INSP_LEAD_CMD {
     struct LEAD_INPUT_INFO {
-        cv::RotatedRect     rectExpectedWindow;
         cv::RotatedRect     rectSrchWindow;
+        cv::RotatedRect     rectExpectedWindow;
     };
     using VECTOR_LEAD_INPUT_INFO = std::vector<LEAD_INPUT_INFO>;
     PR_INSP_LEAD_CMD() : fLeadStartWidthRatio ( 0.5f ), nLeadStartConsecutiveLength(2), fLeadEndWidthRatio (0.5f), nLeadEndConsecutiveLength(2), enFindLeadEndMethod(PR_FIND_LEAD_END_METHOD::AVERAGE) {}
@@ -787,12 +787,12 @@ struct PR_INSP_LEAD_CMD {
 struct PR_INSP_LEAD_RPY {  
     struct LEAD_RESULT {
         bool                bFound;
-        float               fLength;
-        float               fWidth;
+        cv::RotatedRect     rectLead;
     };
     using VECTOR_LEAD_RESULT = std::vector<LEAD_RESULT>;
     VisionStatus            enStatus;
     VECTOR_LEAD_RESULT      vecLeadResult;
+    cv::Mat                 matResultImg;
 };
 
 /******************************************
