@@ -146,6 +146,7 @@
     <ClInclude Include="Fitting.h" />
     <ClInclude Include="Log.h" />
     <ClInclude Include="LogCase.h" />
+    <ClInclude Include="MatchTmpl.h" />
     <ClInclude Include="Record.h" />
     <ClInclude Include="RecordManager.h" />
     <ClInclude Include="SimpleIni.h" />
@@ -169,6 +170,7 @@
     <ClCompile Include="Fitting.cpp" />
     <ClCompile Include="Log.cpp" />
     <ClCompile Include="LogCase.cpp" />
+    <ClCompile Include="MatchTmpl.cpp" />
     <ClCompile Include="Record.cpp" />
     <ClCompile Include="RecordManager.cpp" />
     <ClCompile Include="TimeLog.cpp" />

@@ -1066,7 +1066,7 @@ VisionStatus VisionAlgorithm::inspDevice(PR_INSP_DEVICE_CMD *pstInspDeviceCmd, P
     return VisionStatus::OK;
 }
 
-/*static*/ VisionStatus VisionAlgorithm::matchTemplate(PR_MATCH_TEMPLATE_CMD *const pstCmd, PR_MATCH_TEMPLATE_RPY *pstRpy, bool bReplay /*= false*/) {
+/*static*/ VisionStatus VisionAlgorithm::matchTemplate(const PR_MATCH_TEMPLATE_CMD *const pstCmd, PR_MATCH_TEMPLATE_RPY * const pstRpy, bool bReplay /*= false*/) {
     assert(pstCmd != nullptr && pstRpy != nullptr);
 
     if ( pstCmd->matInputImg.empty() ) {
