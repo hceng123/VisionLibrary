@@ -130,6 +130,9 @@ RecordPtr RecordManager::_createRecordPtr(Int32 recordType) {
     case PR_RECORD_TYPE::CONTOUR:
         return std::make_shared<ContourRecord> ( enRecordType );
         break;
+    case PR_RECORD_TYPE::TEMPLATE:
+        return std::make_shared<TmplRecord> ( enRecordType );
+        break;
     default:
         return nullptr;
     }

@@ -73,7 +73,7 @@
      </rect>
     </property>
     <property name="currentIndex">
-     <number>0</number>
+     <number>2</number>
     </property>
     <widget class="QWidget" name="tabPreProcess">
      <attribute name="title">
@@ -836,7 +836,7 @@
         <x>10</x>
         <y>100</y>
         <width>591</width>
-        <height>131</height>
+        <height>181</height>
        </rect>
       </property>
       <property name="title">
@@ -846,7 +846,7 @@
        <property name="geometry">
         <rect>
          <x>500</x>
-         <y>30</y>
+         <y>80</y>
          <width>75</width>
          <height>23</height>
         </rect>
@@ -859,7 +859,7 @@
        <property name="geometry">
         <rect>
          <x>20</x>
-         <y>20</y>
+         <y>80</y>
          <width>111</width>
          <height>31</height>
         </rect>
@@ -872,7 +872,7 @@
        <property name="geometry">
         <rect>
          <x>150</x>
-         <y>20</y>
+         <y>60</y>
          <width>100</width>
          <height>100</height>
         </rect>
@@ -888,7 +888,7 @@
        <property name="geometry">
         <rect>
          <x>320</x>
-         <y>60</y>
+         <y>120</y>
          <width>121</width>
          <height>20</height>
         </rect>
@@ -898,7 +898,7 @@
        <property name="geometry">
         <rect>
          <x>270</x>
-         <y>60</y>
+         <y>120</y>
          <width>41</width>
          <height>20</height>
         </rect>
@@ -914,7 +914,7 @@
        <property name="geometry">
         <rect>
          <x>320</x>
-         <y>90</y>
+         <y>150</y>
          <width>121</width>
          <height>20</height>
         </rect>
@@ -924,7 +924,7 @@
        <property name="geometry">
         <rect>
          <x>270</x>
-         <y>90</y>
+         <y>150</y>
          <width>41</width>
          <height>20</height>
         </rect>
@@ -933,11 +933,11 @@
         <string>Rotation</string>
        </property>
       </widget>
-      <widget class="QComboBox" name="cbMotion">
+      <widget class="QComboBox" name="cbMatchTmplMotion">
        <property name="geometry">
         <rect>
          <x>320</x>
-         <y>20</y>
+         <y>80</y>
          <width>91</width>
          <height>22</height>
         </rect>
@@ -960,8 +960,8 @@
        <property name="geometry">
         <rect>
          <x>270</x>
-         <y>20</y>
-         <width>51</width>
+         <y>80</y>
+         <width>41</width>
          <height>16</height>
         </rect>
        </property>
@@ -973,13 +973,62 @@
        <property name="geometry">
         <rect>
          <x>20</x>
-         <y>60</y>
+         <y>120</y>
          <width>111</width>
          <height>31</height>
         </rect>
        </property>
        <property name="text">
         <string>Capture Template</string>
+       </property>
+      </widget>
+      <widget class="QPushButton" name="btnLrnTemplate">
+       <property name="geometry">
+        <rect>
+         <x>20</x>
+         <y>20</y>
+         <width>111</width>
+         <height>31</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Learn Template</string>
+       </property>
+      </widget>
+      <widget class="QComboBox" name="cbMatchTmplAlgorithm">
+       <property name="geometry">
+        <rect>
+         <x>320</x>
+         <y>30</y>
+         <width>91</width>
+         <height>22</height>
+        </rect>
+       </property>
+       <property name="currentIndex">
+        <number>0</number>
+       </property>
+       <item>
+        <property name="text">
+         <string>Squre Diff</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>Hierarchical Edge</string>
+        </property>
+       </item>
+      </widget>
+      <widget class="QLabel" name="labelMatchTemplateAlgorithm">
+       <property name="geometry">
+        <rect>
+         <x>270</x>
+         <y>30</y>
+         <width>51</width>
+         <height>16</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Algorithm</string>
        </property>
       </widget>
      </widget>

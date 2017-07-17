@@ -1080,8 +1080,7 @@ VisionStatus LogCaseFillHole::RunLogCase() {
     return "MatchTmpl";
 }
 
-VisionStatus LogCaseMatchTmpl::WriteCmd(PR_MATCH_TEMPLATE_CMD *pstCmd)
-{
+VisionStatus LogCaseMatchTmpl::WriteCmd(const PR_MATCH_TEMPLATE_CMD *const pstCmd) {
     if (!_bReplay)    {
         _strLogCasePath = _generateLogCaseName(GetFolderPrefix());
         bfs::path dir(_strLogCasePath);
@@ -1099,8 +1098,7 @@ VisionStatus LogCaseMatchTmpl::WriteCmd(PR_MATCH_TEMPLATE_CMD *pstCmd)
     return VisionStatus::OK;
 }
 
-VisionStatus LogCaseMatchTmpl::WriteRpy(PR_MATCH_TEMPLATE_RPY *pstRpy)
-{
+VisionStatus LogCaseMatchTmpl::WriteRpy(const PR_MATCH_TEMPLATE_RPY *const pstRpy) {
     CSimpleIni ini(false, false, false);
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile(cmdRpyFilePath.c_str());
@@ -1112,8 +1110,7 @@ VisionStatus LogCaseMatchTmpl::WriteRpy(PR_MATCH_TEMPLATE_RPY *pstRpy)
     return VisionStatus::OK;
 }
 
-VisionStatus LogCaseMatchTmpl::RunLogCase()
-{
+VisionStatus LogCaseMatchTmpl::RunLogCase() {
     PR_MATCH_TEMPLATE_CMD stCmd;
     VisionStatus enStatus;
 
@@ -1812,7 +1809,7 @@ VisionStatus LogCaseInspLead::WriteRpy(const PR_INSP_LEAD_RPY *const pstRpy) {
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile(cmdRpyFilePath.c_str());    
     ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyStatus.c_str(), ToInt32 ( pstRpy->enStatus ) );
-    for ( int i = 0; i < pstRpy->vecLeadResult.size(); ++ i ) {
+    for ( size_t i = 0; i < pstRpy->vecLeadResult.size(); ++ i ) {
         auto stLeadResult = pstRpy->vecLeadResult[i];
         String strIndex = String("_") + std::to_string(i);
         String strFound = _strFound + strIndex;

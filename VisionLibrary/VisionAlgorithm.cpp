@@ -1066,17 +1066,57 @@ VisionStatus VisionAlgorithm::inspDevice(PR_INSP_DEVICE_CMD *pstInspDeviceCmd, P
     return VisionStatus::OK;
 }
 
+/*static*/ VisionStatus VisionAlgorithm::lrnTemplate(const PR_LRN_TEMPLATE_CMD *const pstCmd, PR_LRN_TEMPLATE_RPY *const pstRpy, bool bReplay /*= false*/) {
+    assert(pstCmd != nullptr && pstRpy != nullptr);
+
+    if ( pstCmd->matInputImg.empty() ) {
+        WriteLog("Input image is empty.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    if (pstCmd->rectROI.x < 0 || pstCmd->rectROI.y < 0 ||
+        pstCmd->rectROI.width <= 0 || pstCmd->rectROI.height <= 0 ||
+        ( pstCmd->rectROI.x + pstCmd->rectROI.width ) > pstCmd->matInputImg.cols ||
+        ( pstCmd->rectROI.y + pstCmd->rectROI.height ) > pstCmd->matInputImg.rows ) {
+        char charrMsg[1000];
+        _snprintf( charrMsg, sizeof( charrMsg ), "The input ROI rect (%d, %d, %d, %d) is invalid",
+            pstCmd->rectROI.x, pstCmd->rectROI.y, pstCmd->rectROI.width, pstCmd->rectROI.height );
+        WriteLog(charrMsg);
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return VisionStatus::INVALID_PARAM;
+    }
+    cv::Mat matROI( pstCmd->matInputImg, pstCmd->rectROI );    
+    if ( matROI.channels() > 1 )
+        cv::cvtColor ( matROI, pstRpy->matTmpl, CV_BGR2GRAY );
+    else
+        pstRpy->matTmpl = matROI.clone();
+    cv::Mat matEdgeMask;
+    if ( PR_MATCH_TMPL_ALGORITHM::HIERARCHICAL_EDGE == pstCmd->enAlgorithm ) {
+        cv::Mat matCanny;
+        cv::Canny ( pstRpy->matTmpl, matCanny, 50, 200, 3);
+        cv::dilate ( matCanny, matEdgeMask, cv::getStructuringElement ( cv::MORPH_ELLIPSE, cv::Size ( 3, 3 ) ) );
+    }
+    TmplRecordPtr ptrRecord = std::make_shared<TmplRecord>( PR_RECORD_TYPE::TEMPLATE );
+    ptrRecord->setAlgorithm ( pstCmd->enAlgorithm );
+    ptrRecord->setTmpl ( pstRpy->matTmpl );
+    ptrRecord->setEdgeMask ( matEdgeMask );
+    return RecordManager::getInstance()->add( ptrRecord, pstRpy->nRecordId );
+    pstRpy->enStatus = VisionStatus::OK;
+    return pstRpy->enStatus;
+}
+
 /*static*/ VisionStatus VisionAlgorithm::matchTemplate(const PR_MATCH_TEMPLATE_CMD *const pstCmd, PR_MATCH_TEMPLATE_RPY * const pstRpy, bool bReplay /*= false*/) {
     assert(pstCmd != nullptr && pstRpy != nullptr);
 
     if ( pstCmd->matInputImg.empty() ) {
-        WriteLog("Input image is empty");
+        WriteLog("Input image is empty.");
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return pstRpy->enStatus;
     }
     
     if ( pstCmd->matTmpl.empty() ) {
-        WriteLog("Template image is empty");
+        WriteLog("Template image is empty.");
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return pstRpy->enStatus;
     }
@@ -1085,13 +1125,13 @@ VisionStatus VisionAlgorithm::inspDevice(PR_INSP_DEVICE_CMD *pstInspDeviceCmd, P
         pstCmd->rectSrchWindow.width <= 0 || pstCmd->rectSrchWindow.height <= 0 ||
         ( pstCmd->rectSrchWindow.x + pstCmd->rectSrchWindow.width ) > pstCmd->matInputImg.cols ||
         ( pstCmd->rectSrchWindow.y + pstCmd->rectSrchWindow.height ) > pstCmd->matInputImg.rows ) {
-        WriteLog("The search window is invalid");
+        WriteLog("The search window is invalid.");
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return pstRpy->enStatus;
     }
 
     if ( pstCmd->matTmpl.rows > pstCmd->rectSrchWindow.height || pstCmd->matTmpl.cols > pstCmd->rectSrchWindow.width ) {
-        WriteLog("The template is bigger than search window");
+        WriteLog("The template is bigger than search window.");
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return pstRpy->enStatus;
     }
@@ -4914,7 +4954,6 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
 
 /*static*/ VisionStatus VisionAlgorithm::lrnContour(const PR_LRN_CONTOUR_CMD *const pstCmd, PR_LRN_CONTOUR_RPY *const pstRpy, bool bReplay /*= false*/ ) {
     assert(pstCmd != nullptr && pstRpy != nullptr);
-    char charrMsg[1000];
     if ( pstCmd->matInputImg.empty() ) {
         WriteLog("Input image is empty.");
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
@@ -4925,6 +4964,7 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
         pstCmd->rectROI.width <= 0 || pstCmd->rectROI.height <= 0 ||
         ( pstCmd->rectROI.x + pstCmd->rectROI.width ) > pstCmd->matInputImg.cols ||
         ( pstCmd->rectROI.y + pstCmd->rectROI.height ) > pstCmd->matInputImg.rows ) {
+        char charrMsg[1000];
         _snprintf( charrMsg, sizeof( charrMsg ), "The input ROI rect (%d, %d, %d, %d) is invalid",
             pstCmd->rectROI.x, pstCmd->rectROI.y, pstCmd->rectROI.width, pstCmd->rectROI.height );
         WriteLog(charrMsg);
@@ -5448,7 +5488,7 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
             pstRpy->matResultImg = pstCmd->matInputImg.clone();
         else
             cv::cvtColor ( pstCmd->matInputImg, pstRpy->matResultImg, CV_GRAY2BGR );
-        for ( int i = 0; i < pstCmd->vecLeads.size(); ++ i ) {
+        for ( size_t i = 0; i < pstCmd->vecLeads.size(); ++ i ) {
             auto vecPoint2f = CalcUtils::getCornerOfRotatedRect ( pstCmd->vecLeads[i].rectSrchWindow );
             VectorOfVectorOfPoint vecVecSrchWindowPoint ( 1 );
             for( const auto &point : vecPoint2f )

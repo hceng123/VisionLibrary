@@ -70,6 +70,21 @@ struct PR_SRCH_OBJ_RPY {
     cv::Mat                 matResultImg;
 };
 
+/******************************************
+* Match Template Section *
+******************************************/
+struct PR_LRN_TEMPLATE_CMD {
+    cv::Mat                 matInputImg;
+    cv::Rect                rectROI;
+    PR_MATCH_TMPL_ALGORITHM enAlgorithm;
+};
+
+struct PR_LRN_TEMPLATE_RPY {
+    VisionStatus            enStatus;
+    Int32                   nRecordId;
+    cv::Mat                 matTmpl;
+};
+
 struct PR_MATCH_TEMPLATE_CMD {
     cv::Mat                 matInputImg;
     cv::Mat                 matTmpl;
@@ -84,6 +99,9 @@ struct PR_MATCH_TEMPLATE_RPY {
     float                   fMatchScore;
     cv::Mat                 matResultImg;
 };
+/******************************************
+* End of Match Template Section *
+******************************************/
 
 struct PR_DefectCriteria {
     PR_DEFECT_ATTRIBUTE     enAttribute;

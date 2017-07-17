@@ -311,6 +311,35 @@ void VisionWidget::drawTmplImage()
     ui.labelTmplView->setPixmap(QPixmap::fromImage(image));
 }
 
+void VisionWidget::on_btnLrnTemplate_clicked() {
+    if ( _sourceImagePath.empty() ) {
+        QMessageBox::information(this, "Vision Widget", "Please select an image first!", "Quit");
+        return;
+    }
+
+    ui.visionView->setState ( VisionView::VISION_VIEW_STATE::TEST_VISION_LIBRARY );
+    ui.visionView->applyIntermediateResult();
+
+    PR_LRN_TEMPLATE_CMD stCmd;
+    PR_LRN_TEMPLATE_RPY stRpy;
+    stCmd.matInputImg = ui.visionView->getMat();
+    stCmd.rectROI = ui.visionView->getSelectedWindow();
+    stCmd.enAlgorithm = PR_MATCH_TMPL_ALGORITHM::SQUARE_DIFF;
+    if ( ui.cbMatchTmplAlgorithm->currentIndex() == 1 )
+        stCmd.enAlgorithm = PR_MATCH_TMPL_ALGORITHM::HIERARCHICAL_EDGE;
+    
+    if ( VisionStatus::OK == PR_LrnTmpl ( &stCmd, &stRpy) ) {
+        _matTmpl = stRpy.matTmpl;
+        drawTmplImage ();
+    }else {
+        PR_GET_ERROR_INFO_RPY stErrStrRpy;
+        PR_GetErrorInfo( stRpy.enStatus, &stErrStrRpy);
+        QMessageBox::critical(nullptr, "Match Template", stErrStrRpy.achErrorStr, "Quit");
+        ui.lineEditObjCenter->clear();
+        ui.lineEditObjRotation->clear();
+    }    
+}
+
 void VisionWidget::on_selectTemplateBtn_clicked()
 {
     QFileDialog dialog(this);
@@ -400,7 +429,7 @@ void VisionWidget::on_matchTmplBtn_clicked()
     stCmd.matInputImg = ui.visionView->getMat();
     stCmd.matTmpl = _matTmpl;
     stCmd.rectSrchWindow = ui.visionView->getSelectedWindow();
-    stCmd.enMotion = static_cast<PR_OBJECT_MOTION>( ui.cbMotion->currentIndex() );
+    stCmd.enMotion = static_cast<PR_OBJECT_MOTION>( ui.cbMatchTmplMotion->currentIndex() );
 
     PR_MATCH_TEMPLATE_RPY stRpy;
     VisionStatus enStatus = PR_MatchTmpl( &stCmd, &stRpy );

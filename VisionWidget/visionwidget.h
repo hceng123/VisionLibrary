@@ -29,6 +29,7 @@ private slots:
     void on_fitRectBtn_clicked();
     void on_ocrBtn_clicked();
     void on_srchFiducialBtn_clicked();
+    void on_btnLrnTemplate_clicked();
     void on_selectTemplateBtn_clicked();
     void on_matchTmplBtn_clicked();
     void on_captureTemplateBtn_clicked();

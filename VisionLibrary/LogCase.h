@@ -399,8 +399,8 @@ class LogCaseMatchTmpl : public LogCase
 {
 public:
     explicit LogCaseMatchTmpl(const String &strPath, bool bReplay = false) : LogCase(strPath, bReplay) {}
-    VisionStatus WriteCmd(PR_MATCH_TEMPLATE_CMD *pstCmd);
-    VisionStatus WriteRpy(PR_MATCH_TEMPLATE_RPY *pstRpy);
+    VisionStatus WriteCmd(const PR_MATCH_TEMPLATE_CMD *const pstCmd);
+    VisionStatus WriteRpy(const PR_MATCH_TEMPLATE_RPY *const pstRpy);
     virtual VisionStatus RunLogCase() override;
     virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
     static String StaticGetFolderPrefix();

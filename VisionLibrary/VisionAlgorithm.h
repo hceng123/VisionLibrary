@@ -36,6 +36,7 @@ public:
     static VisionStatus srchObj(const PR_SRCH_OBJ_CMD *const pstCmd, PR_SRCH_OBJ_RPY *const pstRpy, bool bReplay = false);
     VisionStatus lrnDevice(PR_LRN_DEVICE_CMD *pstLrnDeviceCmd, PR_LRN_DEVICE_RPY *pstLrnDeivceRpy);
     VisionStatus inspDevice(PR_INSP_DEVICE_CMD *pstInspDeviceCmd, PR_INSP_DEVICE_RPY *pstInspDeivceRpy);
+    static VisionStatus lrnTemplate(const PR_LRN_TEMPLATE_CMD *const pstCmd, PR_LRN_TEMPLATE_RPY *const pstRpy, bool bReplay = false);
     static VisionStatus matchTemplate(const PR_MATCH_TEMPLATE_CMD *const pstCmd, PR_MATCH_TEMPLATE_RPY * const pstRpy, bool bReplay = false);
 	VisionStatus inspSurface(PR_INSP_SURFACE_CMD *const pInspCmd, PR_INSP_SURFACE_RPY *pInspRpy);
     static void showImage(String windowName, const cv::Mat &mat);
@@ -175,11 +176,11 @@ protected:
     static VisionStatus _writeContourRecord(PR_LRN_CONTOUR_RPY *const pstRpy, const cv::Mat &matTmpl, const cv::Mat &matContour, const VectorOfVectorOfPoint &vecContours);
     static VectorOfPoint _findNearestContour(const cv::Point2f &ptInput, const VectorOfVectorOfPoint &vecContours);
     static void _getContourToContourDistance(const VectorOfPoint &contourInput,
-        const VectorOfPoint &contourTarget,
-        float &fInnerFarthestDist,
-        float &fInnerNearestDist,
-        float &fOuterFarthestDist,
-        float &fOuterNearestDist);
+                                             const VectorOfPoint &contourTarget,
+                                             float               &fInnerFarthestDist,
+                                             float               &fInnerNearestDist,
+                                             float               &fOuterFarthestDist,
+                                             float               &fOuterNearestDist);
     static cv::Mat _generateContourMask ( const cv::Size &size, const VectorOfVectorOfPoint &vecContours, float fInnerDepth, float fOuterDepth );
     static VisionStatus _segmentImgByGrayScaleRange(const cv::Mat &matInput, const PR_INSP_HOLE_CMD::GRAY_SCALE_RANGE &stGrayScaleRange, cv::Mat &matResult);
     static VisionStatus _setmentImgByColorRange(const cv::Mat &matInput, const PR_INSP_HOLE_CMD::COLOR_RANGE &stColorRange, cv::Mat &matResult);

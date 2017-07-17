@@ -110,6 +110,28 @@ protected:
 };
 using ContourRecordPtr = std::shared_ptr<ContourRecord>;
 
+class TmplRecord : public Record
+{
+public:
+    TmplRecord(PR_RECORD_TYPE enType) : Record(enType)   {}
+    virtual VisionStatus load(cv::FileStorage &fileStorage, const String& strFilePath = "") override;
+    virtual VisionStatus save(const String& strFilePath) override;
+    void setAlgorithm(PR_MATCH_TMPL_ALGORITHM enAlgorithm);
+    PR_MATCH_TMPL_ALGORITHM getAlgorithm() const;
+    void setTmpl(const cv::Mat &matTmpl);
+    cv::Mat getTmpl() const;
+    void setEdgeMask(const cv::Mat &matTmpl);
+    cv::Mat getEdgeMask() const;
+protected:
+    PR_MATCH_TMPL_ALGORITHM _enAlgorithm;
+    cv::Mat                 _matTmpl;
+    cv::Mat                 _matEdgeMask;
+    String                  _strKeyAlgorithm    = "Algorithm";
+    String                  _strTmplFileName    = "Tmpl.png";
+    String                  _strEdgeMaskName    = "EdgeMask.png";
+};
+using TmplRecordPtr = std::shared_ptr<TmplRecord>;
+
 }
 }
 
