@@ -276,7 +276,8 @@ VisionStatus TmplRecord::save(const String& strFilePath) {
     write ( fs, _strKeyType, ToInt32 ( PR_RECORD_TYPE::TEMPLATE ) );
     write ( fs, _strKeyAlgorithm, ToInt32 ( _enAlgorithm ) );
     cv::imwrite ( strFilePath + "/" + _strTmplFileName, _matTmpl );
-    cv::imwrite ( strFilePath + "/" + _strEdgeMaskName, _matEdgeMask );
+    if ( PR_MATCH_TMPL_ALGORITHM::HIERARCHICAL_EDGE == _enAlgorithm )
+        cv::imwrite ( strFilePath + "/" + _strEdgeMaskName, _matEdgeMask );
     
     fs.release();
     return VisionStatus::OK;

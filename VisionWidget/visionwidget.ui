@@ -73,7 +73,7 @@
      </rect>
     </property>
     <property name="currentIndex">
-     <number>2</number>
+     <number>0</number>
     </property>
     <widget class="QWidget" name="tabPreProcess">
      <attribute name="title">
@@ -836,7 +836,7 @@
         <x>10</x>
         <y>100</y>
         <width>591</width>
-        <height>181</height>
+        <height>131</height>
        </rect>
       </property>
       <property name="title">
@@ -845,34 +845,21 @@
       <widget class="QPushButton" name="matchTmplBtn">
        <property name="geometry">
         <rect>
-         <x>500</x>
-         <y>80</y>
-         <width>75</width>
+         <x>480</x>
+         <y>70</y>
+         <width>101</width>
          <height>23</height>
         </rect>
        </property>
        <property name="text">
-        <string>Search</string>
-       </property>
-      </widget>
-      <widget class="QPushButton" name="selectTemplateBtn">
-       <property name="geometry">
-        <rect>
-         <x>20</x>
-         <y>80</y>
-         <width>111</width>
-         <height>31</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string>Select Template</string>
+        <string>Search Template</string>
        </property>
       </widget>
       <widget class="QLabel" name="labelTmplView">
        <property name="geometry">
         <rect>
-         <x>150</x>
-         <y>60</y>
+         <x>180</x>
+         <y>20</y>
          <width>100</width>
          <height>100</height>
         </rect>
@@ -887,9 +874,9 @@
        </property>
        <property name="geometry">
         <rect>
-         <x>320</x>
-         <y>120</y>
-         <width>121</width>
+         <x>350</x>
+         <y>100</y>
+         <width>101</width>
          <height>20</height>
         </rect>
        </property>
@@ -897,8 +884,8 @@
       <widget class="QLabel" name="labelCenter">
        <property name="geometry">
         <rect>
-         <x>270</x>
-         <y>120</y>
+         <x>300</x>
+         <y>100</y>
          <width>41</width>
          <height>20</height>
         </rect>
@@ -913,9 +900,9 @@
        </property>
        <property name="geometry">
         <rect>
-         <x>320</x>
-         <y>150</y>
-         <width>121</width>
+         <x>350</x>
+         <y>70</y>
+         <width>101</width>
          <height>20</height>
         </rect>
        </property>
@@ -923,8 +910,8 @@
       <widget class="QLabel" name="labelRotation">
        <property name="geometry">
         <rect>
-         <x>270</x>
-         <y>150</y>
+         <x>300</x>
+         <y>70</y>
          <width>41</width>
          <height>20</height>
         </rect>
@@ -936,7 +923,7 @@
       <widget class="QComboBox" name="cbMatchTmplMotion">
        <property name="geometry">
         <rect>
-         <x>320</x>
+         <x>70</x>
          <y>80</y>
          <width>91</width>
          <height>22</height>
@@ -959,7 +946,7 @@
       <widget class="QLabel" name="labelMotion">
        <property name="geometry">
         <rect>
-         <x>270</x>
+         <x>20</x>
          <y>80</y>
          <width>41</width>
          <height>16</height>
@@ -969,26 +956,13 @@
         <string>Motion</string>
        </property>
       </widget>
-      <widget class="QPushButton" name="captureTemplateBtn">
-       <property name="geometry">
-        <rect>
-         <x>20</x>
-         <y>120</y>
-         <width>111</width>
-         <height>31</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string>Capture Template</string>
-       </property>
-      </widget>
       <widget class="QPushButton" name="btnLrnTemplate">
        <property name="geometry">
         <rect>
-         <x>20</x>
+         <x>480</x>
          <y>20</y>
-         <width>111</width>
-         <height>31</height>
+         <width>101</width>
+         <height>23</height>
         </rect>
        </property>
        <property name="text">
@@ -998,7 +972,7 @@
       <widget class="QComboBox" name="cbMatchTmplAlgorithm">
        <property name="geometry">
         <rect>
-         <x>320</x>
+         <x>70</x>
          <y>30</y>
          <width>91</width>
          <height>22</height>
@@ -1021,7 +995,7 @@
       <widget class="QLabel" name="labelMatchTemplateAlgorithm">
        <property name="geometry">
         <rect>
-         <x>270</x>
+         <x>20</x>
          <y>30</y>
          <width>51</width>
          <height>16</height>

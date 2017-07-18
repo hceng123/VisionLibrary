@@ -26,6 +26,13 @@ Match template status 0
 Match template result 58.3325, 326.75
 Match template angle -8.7274
 
+------------------------------------------
+MATCH TEMPLATE REGRESSION TEST #2 STARTING
+------------------------------------------
+Match template status 0
+Match template result 1154.5, 728
+Match template angle 0
+
 ------------------------------------------------
 SEARCH FIDUCIAL MARK REGRESSION TEST #1 STARTING
 ------------------------------------------------

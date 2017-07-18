@@ -1086,6 +1086,10 @@ VisionStatus VisionAlgorithm::inspDevice(PR_INSP_DEVICE_CMD *pstInspDeviceCmd, P
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return VisionStatus::INVALID_PARAM;
     }
+
+    MARK_FUNCTION_START_TIME;
+    SETUP_LOGCASE(LogCaseLrnTmpl);
+
     cv::Mat matROI( pstCmd->matInputImg, pstCmd->rectROI );    
     if ( matROI.channels() > 1 )
         cv::cvtColor ( matROI, pstRpy->matTmpl, CV_BGR2GRAY );
@@ -1103,6 +1107,9 @@ VisionStatus VisionAlgorithm::inspDevice(PR_INSP_DEVICE_CMD *pstInspDeviceCmd, P
     ptrRecord->setEdgeMask ( matEdgeMask );
     RecordManager::getInstance()->add( ptrRecord, pstRpy->nRecordId );
     pstRpy->enStatus = VisionStatus::OK;
+
+    FINISH_LOGCASE;
+    MARK_FUNCTION_END_TIME;
     return pstRpy->enStatus;
 }
 
@@ -1616,6 +1623,8 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
         pLogCase = std::make_unique<LogCaseAutoThreshold>( strLocalPath, true );
     else if (LogCaseFillHole::StaticGetFolderPrefix() == folderPrefix )
         pLogCase = std::make_unique<LogCaseFillHole>( strLocalPath, true );
+    else if (LogCaseLrnTmpl::StaticGetFolderPrefix() == folderPrefix )
+        pLogCase = std::make_unique<LogCaseLrnTmpl>( strLocalPath, true );
     else if (LogCaseMatchTmpl::StaticGetFolderPrefix() == folderPrefix )
         pLogCase = std::make_unique<LogCaseMatchTmpl>( strLocalPath, true );
     else if (LogCasePickColor::StaticGetFolderPrefix() == folderPrefix )

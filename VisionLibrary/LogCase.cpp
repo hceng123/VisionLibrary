@@ -1076,6 +1076,57 @@ VisionStatus LogCaseFillHole::RunLogCase() {
     return enStatus;
 }
 
+/*static*/ String LogCaseLrnTmpl::StaticGetFolderPrefix() {
+    return "LrnTmpl";
+}
+
+VisionStatus LogCaseLrnTmpl::WriteCmd(const PR_LRN_TEMPLATE_CMD *const pstCmd) {
+    if (!_bReplay)    {
+        _strLogCasePath = _generateLogCaseName(GetFolderPrefix());
+        bfs::path dir(_strLogCasePath);
+        bfs::create_directories(dir);
+    }
+
+    CSimpleIni ini(false, false, false);
+    auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
+    ini.LoadFile(cmdRpyFilePath.c_str());
+    ini.SetValue(_CMD_SECTION.c_str(),     _strKeyROI.c_str(), _formatRect(pstCmd->rectROI).c_str());
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyAlgorithm.c_str(), ToInt32(pstCmd->enAlgorithm));
+    ini.SaveFile(cmdRpyFilePath.c_str());
+    cv::imwrite ( _strLogCasePath + _IMAGE_NAME, pstCmd->matInputImg );
+    return VisionStatus::OK;
+}
+
+VisionStatus LogCaseLrnTmpl::WriteRpy(const PR_LRN_TEMPLATE_RPY *const pstRpy) {
+    CSimpleIni ini(false, false, false);
+    auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
+    ini.LoadFile(cmdRpyFilePath.c_str());
+    ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyStatus.c_str(),    ToInt32 ( pstRpy->enStatus ) );
+    ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyRecordId.c_str(), pstRpy->nRecordId );
+    ini.SaveFile(cmdRpyFilePath.c_str());
+    if ( ! pstRpy->matTmpl.empty() )
+        cv::imwrite ( _strLogCasePath + _strTmplFileName, pstRpy->matTmpl );
+    _zip();
+    return VisionStatus::OK;
+}
+
+VisionStatus LogCaseLrnTmpl::RunLogCase() {
+    PR_LRN_TEMPLATE_CMD stCmd;
+    VisionStatus enStatus;
+
+    CSimpleIni ini(false, false, false);
+    auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
+    ini.LoadFile(cmdRpyFilePath.c_str());
+    stCmd.matInputImg = cv::imread(_strLogCasePath + _IMAGE_NAME,     cv::IMREAD_GRAYSCALE);
+    stCmd.rectROI = _parseRect(ini.GetValue(_CMD_SECTION.c_str(), _strKeyROI.c_str(), _DEFAULT_RECT.c_str()));
+    stCmd.enAlgorithm = static_cast<PR_MATCH_TMPL_ALGORITHM> ( ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyAlgorithm.c_str(), 0 ) );
+
+    PR_LRN_TEMPLATE_RPY stRpy;
+    enStatus = VisionAlgorithm::lrnTemplate( &stCmd, &stRpy, true );
+    WriteRpy(&stRpy);
+    return enStatus;
+}
+
 /*static*/ String LogCaseMatchTmpl::StaticGetFolderPrefix() {
     return "MatchTmpl";
 }

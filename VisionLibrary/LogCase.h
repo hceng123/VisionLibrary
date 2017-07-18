@@ -395,6 +395,24 @@ private:
     const String _strKeyStatus          = "Status";
 };
 
+class LogCaseLrnTmpl : public LogCase
+{
+public:
+    explicit LogCaseLrnTmpl(const String &strPath, bool bReplay = false) : LogCase(strPath, bReplay) {}
+    VisionStatus WriteCmd(const PR_LRN_TEMPLATE_CMD *const pstCmd);
+    VisionStatus WriteRpy(const PR_LRN_TEMPLATE_RPY *const pstRpy);
+    virtual VisionStatus RunLogCase() override;
+    virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
+    static String StaticGetFolderPrefix();
+private:
+    const String _strKeyROI             = "ROI";
+    const String _strKeyAlgorithm       = "Algorithm";
+
+    const String _strKeyStatus          = "Status";
+    const String _strKeyRecordId        = "RecordId";
+    const String _strTmplFileName       = "Tmpl.png";
+};
+
 class LogCaseMatchTmpl : public LogCase
 {
 public:
