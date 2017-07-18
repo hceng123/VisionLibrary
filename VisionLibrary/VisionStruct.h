@@ -86,8 +86,10 @@ struct PR_LRN_TEMPLATE_RPY {
 };
 
 struct PR_MATCH_TEMPLATE_CMD {
+    PR_MATCH_TEMPLATE_CMD() : nRecordId(-1) {}
     cv::Mat                 matInputImg;
-    cv::Mat                 matTmpl;
+    PR_MATCH_TMPL_ALGORITHM enAlgorithm;
+    Int32                   nRecordId;
     cv::Rect                rectSrchWindow;
     PR_OBJECT_MOTION        enMotion;
 };

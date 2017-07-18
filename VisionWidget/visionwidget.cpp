@@ -298,11 +298,11 @@ void VisionWidget::on_srchFiducialBtn_clicked()
     }
 }
 
-void VisionWidget::drawTmplImage()
+void VisionWidget::drawTmplImage(const cv::Mat &matTmpl)
 {
     cv::Mat matDisplay;
     cv::Size size( ui.labelTmplView->size().height(), ui.labelTmplView->size().width() );
-    cv::resize ( _matTmpl, matDisplay, size );
+    cv::resize ( matTmpl, matDisplay, size );
     if ( matDisplay.channels() > 1 )
         cvtColor ( matDisplay, matDisplay, CV_BGR2RGB );
     else
@@ -329,8 +329,8 @@ void VisionWidget::on_btnLrnTemplate_clicked() {
         stCmd.enAlgorithm = PR_MATCH_TMPL_ALGORITHM::HIERARCHICAL_EDGE;
     
     if ( VisionStatus::OK == PR_LrnTmpl ( &stCmd, &stRpy) ) {
-        _matTmpl = stRpy.matTmpl;
-        drawTmplImage ();
+        _nTmplRecordId = stRpy.nRecordId;        
+        drawTmplImage ( stRpy.matTmpl );
     }else {
         PR_GET_ERROR_INFO_RPY stErrStrRpy;
         PR_GetErrorInfo( stRpy.enStatus, &stErrStrRpy);
@@ -340,28 +340,7 @@ void VisionWidget::on_btnLrnTemplate_clicked() {
     }    
 }
 
-void VisionWidget::on_selectTemplateBtn_clicked()
-{
-    QFileDialog dialog(this);
-    dialog.setFileMode(QFileDialog::AnyFile);
-    dialog.setAcceptMode(QFileDialog::AcceptOpen);
-    dialog.setNameFilter(tr("Image Files (*.png *.jpg *.bmp)"));
-    dialog.setViewMode(QFileDialog::Detail);
-    QStringList fileNames;
-    if (dialog.exec())  {
-        fileNames = dialog.selectedFiles();
-    }else
-        return;
-
-    std::string strFilePath = fileNames[0].toStdString();
-    _matTmpl = cv::imread ( strFilePath , cv::IMREAD_GRAYSCALE );
-    if ( _matTmpl.empty() )
-        return;
-
-    drawTmplImage();
-}
-
-void VisionWidget::on_captureTemplateBtn_clicked()
+void VisionWidget::on_matchTmplBtn_clicked()
 {
     if ( _sourceImagePath.empty() ) {
         QMessageBox::information(this, "Vision Widget", "Please select an image first!", "Quit");
@@ -371,15 +350,32 @@ void VisionWidget::on_captureTemplateBtn_clicked()
     ui.visionView->setState ( VisionView::VISION_VIEW_STATE::TEST_VISION_LIBRARY );
     ui.visionView->applyIntermediateResult();
 
-    cv::Mat mat = ui.visionView->getMat();
-    cv::Rect rectSelected = ui.visionView->getSelectedWindow();
-    if ( rectSelected.width >= mat.cols || rectSelected.height >= mat.rows )    {
-        QMessageBox::information(this, "Vision Widget", "Please select an area first!", "Quit");
-        return;
+    PR_MATCH_TEMPLATE_CMD stCmd;
+    stCmd.matInputImg = ui.visionView->getMat();
+    stCmd.nRecordId = _nTmplRecordId;
+    stCmd.rectSrchWindow = ui.visionView->getSelectedWindow();
+    stCmd.enMotion = static_cast<PR_OBJECT_MOTION>( ui.cbMatchTmplMotion->currentIndex() );
+    stCmd.enAlgorithm = PR_MATCH_TMPL_ALGORITHM::SQUARE_DIFF;
+    if ( ui.cbMatchTmplAlgorithm->currentIndex() == 1 )
+        stCmd.enAlgorithm = PR_MATCH_TMPL_ALGORITHM::HIERARCHICAL_EDGE;
+
+    PR_MATCH_TEMPLATE_RPY stRpy;
+    VisionStatus enStatus = PR_MatchTmpl( &stCmd, &stRpy );
+    if ( VisionStatus::OK == enStatus )
+    {
+        ui.visionView->setMat ( VisionView::DISPLAY_SOURCE::RESULT, stRpy.matResultImg );
+        char chArrCenter[100];
+        _snprintf( chArrCenter, sizeof ( chArrCenter ), "%.3f, %.3f", stRpy.ptObjPos.x, stRpy.ptObjPos.y);
+        ui.lineEditObjCenter->setText( chArrCenter );
+        std::string strRotation = std::to_string ( stRpy.fRotation );
+        ui.lineEditObjRotation->setText(strRotation.c_str());
+    }else {
+        PR_GET_ERROR_INFO_RPY stErrStrRpy;
+        PR_GetErrorInfo(enStatus, &stErrStrRpy);
+        QMessageBox::critical(nullptr, "Match Template", stErrStrRpy.achErrorStr, "Quit");
+        ui.lineEditObjCenter->clear();
+        ui.lineEditObjRotation->clear();
     }
-    cv::Mat matROI(mat, rectSelected);
-    _matTmpl = matROI.clone();
-    drawTmplImage();
 }
 
 void VisionWidget::on_btnCalcCoverage_clicked()
@@ -413,41 +409,6 @@ void VisionWidget::on_btnCalcCoverage_clicked()
 
     ui.lineEditWhiteRatio->setText ( std::to_string ( fWhiteRatio ).c_str() );
     ui.lineEditBlackRatio->setText ( std::to_string ( fBlackRatio ).c_str() );
-}
-
-void VisionWidget::on_matchTmplBtn_clicked()
-{
-    if ( _sourceImagePath.empty() ) {
-        QMessageBox::information(this, "Vision Widget", "Please select an image first!", "Quit");
-        return;
-    }
-
-    ui.visionView->setState ( VisionView::VISION_VIEW_STATE::TEST_VISION_LIBRARY );
-    ui.visionView->applyIntermediateResult();
-
-    PR_MATCH_TEMPLATE_CMD stCmd;
-    stCmd.matInputImg = ui.visionView->getMat();
-    stCmd.matTmpl = _matTmpl;
-    stCmd.rectSrchWindow = ui.visionView->getSelectedWindow();
-    stCmd.enMotion = static_cast<PR_OBJECT_MOTION>( ui.cbMatchTmplMotion->currentIndex() );
-
-    PR_MATCH_TEMPLATE_RPY stRpy;
-    VisionStatus enStatus = PR_MatchTmpl( &stCmd, &stRpy );
-    if ( VisionStatus::OK == enStatus )
-    {
-        ui.visionView->setMat ( VisionView::DISPLAY_SOURCE::RESULT, stRpy.matResultImg );
-        char chArrCenter[100];
-        _snprintf( chArrCenter, sizeof ( chArrCenter ), "%.3f, %.3f", stRpy.ptObjPos.x, stRpy.ptObjPos.y);
-        ui.lineEditObjCenter->setText( chArrCenter );
-        std::string strRotation = std::to_string ( stRpy.fRotation );
-        ui.lineEditObjRotation->setText(strRotation.c_str());
-    }else {
-        PR_GET_ERROR_INFO_RPY stErrStrRpy;
-        PR_GetErrorInfo(enStatus, &stErrStrRpy);
-        QMessageBox::critical(nullptr, "Match Template", stErrStrRpy.achErrorStr, "Quit");
-        ui.lineEditObjCenter->clear();
-        ui.lineEditObjRotation->clear();
-    }
 }
 
 void VisionWidget::on_btnCalibrateCamera_clicked() {

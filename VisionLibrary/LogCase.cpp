@@ -1092,9 +1092,10 @@ VisionStatus LogCaseMatchTmpl::WriteCmd(const PR_MATCH_TEMPLATE_CMD *const pstCm
     ini.LoadFile(cmdRpyFilePath.c_str());
     ini.SetValue(_CMD_SECTION.c_str(),     _strKeySrchWindow.c_str(), _formatRect(pstCmd->rectSrchWindow).c_str());
     ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyMotion.c_str(), ToInt32(pstCmd->enMotion));
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyRecordId.c_str(), pstCmd->nRecordId);
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyAlgorithm.c_str(), ToInt32(pstCmd->enAlgorithm));
     ini.SaveFile(cmdRpyFilePath.c_str());
-    cv::imwrite(_strLogCasePath + _IMAGE_NAME,     pstCmd->matInputImg);
-    cv::imwrite(_strLogCasePath + _TMPL_FILE_NAME, pstCmd->matTmpl);
+    cv::imwrite ( _strLogCasePath + _IMAGE_NAME, pstCmd->matInputImg );
     return VisionStatus::OK;
 }
 
@@ -1118,9 +1119,10 @@ VisionStatus LogCaseMatchTmpl::RunLogCase() {
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile(cmdRpyFilePath.c_str());
     stCmd.matInputImg = cv::imread(_strLogCasePath + _IMAGE_NAME,     cv::IMREAD_GRAYSCALE);
-    stCmd.matTmpl  = cv::imread(_strLogCasePath + _TMPL_FILE_NAME, cv::IMREAD_GRAYSCALE);
     stCmd.rectSrchWindow = _parseRect(ini.GetValue(_CMD_SECTION.c_str(), _strKeySrchWindow.c_str(), _DEFAULT_RECT.c_str()));
     stCmd.enMotion = static_cast<PR_OBJECT_MOTION>(ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyMotion.c_str(), 0 ) );
+    stCmd.nRecordId = ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyRecordId.c_str(), 0 );
+    stCmd.enAlgorithm = static_cast<PR_MATCH_TMPL_ALGORITHM> ( ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyAlgorithm.c_str(), 0 ) );
 
     PR_MATCH_TEMPLATE_RPY stRpy;
     enStatus = VisionAlgorithm::matchTemplate( &stCmd, &stRpy, true );

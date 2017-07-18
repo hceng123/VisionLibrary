@@ -405,9 +405,10 @@ public:
     virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
     static String StaticGetFolderPrefix();
 private:
-    const String _TMPL_FILE_NAME        = "Template.png";
+    const String _strKeyRecordId        = "RecordId";
     const String _strKeySrchWindow      = "SrchWindow";
     const String _strKeyMotion          = "Motion";
+    const String _strKeyAlgorithm       = "Algorithm";
 
     const String _strKeyStatus          = "Status";
 };

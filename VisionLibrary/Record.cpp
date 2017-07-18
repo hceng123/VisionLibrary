@@ -8,7 +8,7 @@ namespace Vision
 {
 
 /******************************************
-* Template Record *
+* Object Record *
 ******************************************/
 VisionStatus ObjRecord::load(cv::FileStorage &fs, const String& strFilePath)
 {

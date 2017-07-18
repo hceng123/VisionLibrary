@@ -2,7 +2,6 @@
 #include "opencv2/features2d.hpp"
 #include "opencv2/xfeatures2d.hpp"
 #include "opencv2/calib3d.hpp"
-#include "opencv2/video.hpp"
 #include "opencv2/highgui.hpp"
 #include "TimeLog.h"
 #include "logcase.h"
@@ -13,6 +12,7 @@
 #include "Log.h"
 #include "FileUtils.h"
 #include "Fitting.h"
+#include "MatchTmpl.h"
 #include <iostream>
 #include <limits>
 #include <algorithm>
@@ -1101,7 +1101,7 @@ VisionStatus VisionAlgorithm::inspDevice(PR_INSP_DEVICE_CMD *pstInspDeviceCmd, P
     ptrRecord->setAlgorithm ( pstCmd->enAlgorithm );
     ptrRecord->setTmpl ( pstRpy->matTmpl );
     ptrRecord->setEdgeMask ( matEdgeMask );
-    return RecordManager::getInstance()->add( ptrRecord, pstRpy->nRecordId );
+    RecordManager::getInstance()->add( ptrRecord, pstRpy->nRecordId );
     pstRpy->enStatus = VisionStatus::OK;
     return pstRpy->enStatus;
 }
@@ -1113,25 +1113,47 @@ VisionStatus VisionAlgorithm::inspDevice(PR_INSP_DEVICE_CMD *pstInspDeviceCmd, P
         WriteLog("Input image is empty.");
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return pstRpy->enStatus;
-    }
-    
-    if ( pstCmd->matTmpl.empty() ) {
-        WriteLog("Template image is empty.");
-        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
-        return pstRpy->enStatus;
-    }
+    }    
 
     if (pstCmd->rectSrchWindow.x < 0 || pstCmd->rectSrchWindow.y < 0 ||
         pstCmd->rectSrchWindow.width <= 0 || pstCmd->rectSrchWindow.height <= 0 ||
         ( pstCmd->rectSrchWindow.x + pstCmd->rectSrchWindow.width ) > pstCmd->matInputImg.cols ||
         ( pstCmd->rectSrchWindow.y + pstCmd->rectSrchWindow.height ) > pstCmd->matInputImg.rows ) {
-        WriteLog("The search window is invalid.");
+        char charrMsg[1000];
+        _snprintf( charrMsg, sizeof( charrMsg ), "The search window (%d, %d, %d, %d) is invalid.",
+            pstCmd->rectSrchWindow.x, pstCmd->rectSrchWindow.y, pstCmd->rectSrchWindow.width, pstCmd->rectSrchWindow.height );
+        WriteLog(charrMsg);
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return VisionStatus::INVALID_PARAM;
+    }
+
+    if ( pstCmd->nRecordId <= 0 ) {
+        char charrMsg[100];
+         _snprintf( charrMsg, sizeof( charrMsg ), "The input record id %d is invalid.", pstCmd->nRecordId );
+        WriteLog(charrMsg);
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return VisionStatus::INVALID_PARAM;
+    }
+    
+    TmplRecordPtr ptrRecord = std::static_pointer_cast<TmplRecord> ( RecordManager::getInstance()->get ( pstCmd->nRecordId ) );
+    if ( nullptr == ptrRecord ) {
+        char charrMsg[100];
+        _snprintf ( charrMsg, sizeof (charrMsg), "Failed to get record ID %d in system.", pstCmd->nRecordId );
+        WriteLog ( charrMsg );
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return pstRpy->enStatus;
     }
 
-    if ( pstCmd->matTmpl.rows > pstCmd->rectSrchWindow.height || pstCmd->matTmpl.cols > pstCmd->rectSrchWindow.width ) {
+    if ( ptrRecord->getTmpl().rows > pstCmd->rectSrchWindow.height || ptrRecord->getTmpl().cols > pstCmd->rectSrchWindow.width ) {
         WriteLog("The template is bigger than search window.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    if ( ptrRecord->getAlgorithm() != pstCmd->enAlgorithm ) {
+        char charrMsg[100];
+        _snprintf ( charrMsg, sizeof (charrMsg), "The input algorithm %d is not match with record algorithm %d in system.", ToInt32 ( pstCmd->enAlgorithm ), ToInt32 ( ptrRecord->getAlgorithm() ) );
+        WriteLog ( charrMsg );
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return pstRpy->enStatus;
     }
@@ -1143,22 +1165,23 @@ VisionStatus VisionAlgorithm::inspDevice(PR_INSP_DEVICE_CMD *pstInspDeviceCmd, P
     if ( matSrchROI.channels() > 1 )
         cv::cvtColor ( matSrchROI, matSrchROI, cv::COLOR_BGR2GRAY );
 
-    cv::Mat matTmplGray;
-    if ( pstCmd->matTmpl.channels() > 1 )
-        cv::cvtColor ( pstCmd->matTmpl, matTmplGray, cv::COLOR_BGR2GRAY );
-    else
-        matTmplGray = pstCmd->matTmpl.clone();
-
-    float fCorrelation;
-    pstRpy->enStatus = _matchTemplate ( matSrchROI, matTmplGray, pstCmd->enMotion, pstRpy->ptObjPos, pstRpy->fRotation, fCorrelation );
-
-    pstRpy->ptObjPos.x += pstCmd->rectSrchWindow.x;
-    pstRpy->ptObjPos.y += pstCmd->rectSrchWindow.y;
-    pstRpy->fMatchScore = fCorrelation * ConstToPercentage;
+    if ( PR_MATCH_TMPL_ALGORITHM::SQUARE_DIFF == pstCmd->enAlgorithm ) {
+        float fCorrelation;
+        pstRpy->enStatus = MatchTmpl::matchTemplate ( matSrchROI, ptrRecord->getTmpl(), pstCmd->enMotion, pstRpy->ptObjPos, pstRpy->fRotation, fCorrelation );
+        pstRpy->ptObjPos.x += pstCmd->rectSrchWindow.x;
+        pstRpy->ptObjPos.y += pstCmd->rectSrchWindow.y;
+        pstRpy->fMatchScore = fCorrelation * ConstToPercentage;
+    }else if ( PR_MATCH_TMPL_ALGORITHM::HIERARCHICAL_EDGE == pstCmd->enAlgorithm ) {
+        cv::Point ptResult = MatchTmpl::matchByRecursionEdge ( matSrchROI, ptrRecord->getTmpl(), ptrRecord->getEdgeMask() );
+        pstRpy->ptObjPos.x = ptResult.x + ptrRecord->getTmpl().cols / 2.f  + 0.5f + pstCmd->rectSrchWindow.x;
+        pstRpy->ptObjPos.y = ptResult.y + ptrRecord->getTmpl().rows / 2.f  + 0.5f + pstCmd->rectSrchWindow.y;
+        pstRpy->fRotation = 0.f;
+        pstRpy->enStatus = VisionStatus::OK;
+    }
 
     if ( ! isAutoMode () ) {
         if ( pstCmd->matInputImg.channels () > 1 )
-            pstRpy->matResultImg = pstCmd->matInputImg.clone ();
+            pstRpy->matResultImg = pstCmd->matInputImg.clone();
         else
             cv::cvtColor ( pstCmd->matInputImg, pstRpy->matResultImg, CV_GRAY2BGR );
 
@@ -1174,12 +1197,12 @@ VisionStatus VisionAlgorithm::inspDevice(PR_INSP_DEVICE_CMD *pstInspDeviceCmd, P
         cv::line ( pstRpy->matResultImg, crossLineTwoPtOne, crossLineTwoPtTwo, _constBlueScalar, 2 );
 
         matWarp = cv::getRotationMatrix2D ( pstRpy->ptObjPos, -pstRpy->fRotation, 1. );
-        auto vecPoint2f = CalcUtils::warpRect<double> ( matWarp, cv::Rect2f ( pstRpy->ptObjPos.x - ToFloat ( pstCmd->matTmpl.cols / 2 ),
-            pstRpy->ptObjPos.y - ToFloat ( pstCmd->matTmpl.rows / 2 ), ToFloat ( pstCmd->matTmpl.cols ), ToFloat ( pstCmd->matTmpl.rows ) ) );
+        auto vecPoint2f = CalcUtils::warpRect<double> ( matWarp, cv::Rect2f ( pstRpy->ptObjPos.x - ToFloat ( ptrRecord->getTmpl().cols / 2 ),
+            pstRpy->ptObjPos.y - ToFloat ( ptrRecord->getTmpl().rows / 2 ), ToFloat ( ptrRecord->getTmpl().cols ), ToFloat ( ptrRecord->getTmpl().rows ) ) );
         VectorOfVectorOfPoint vecVecPoint(1);
         for ( const auto &point : vecPoint2f )
             vecVecPoint[0].push_back ( point );
-        cv::polylines ( pstRpy->matResultImg, vecVecPoint, true, _constBlueScalar );
+        cv::polylines ( pstRpy->matResultImg, vecVecPoint, true, _constBlueScalar, 2 );
     }
     FINISH_LOGCASE;
     MARK_FUNCTION_END_TIME;
@@ -1623,66 +1646,6 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
     return enStatus;
 }
 
-/*static*/ VisionStatus VisionAlgorithm::_refineSrchTemplate(const cv::Mat &mat, const cv::Mat &matTmpl, PR_OBJECT_MOTION enMotion, cv::Point2f &ptResult, float &fRotation, float &fCorrelation)
-{
-    cv::Mat matWarp = cv::Mat::eye(2, 3, CV_32FC1);
-    matWarp.at<float>(0,2) = ptResult.x;
-    matWarp.at<float>(1,2) = ptResult.y;
-    int number_of_iterations = 200;
-    double termination_eps = 0.001;
-
-    fCorrelation = ToFloat ( cv::findTransformECC ( matTmpl, mat, matWarp, ToInt32(enMotion), cv::TermCriteria ( cv::TermCriteria::COUNT + cv::TermCriteria::EPS,
-        number_of_iterations, termination_eps) ) );
-    ptResult.x = matWarp.at<float>(0, 2);
-    ptResult.y = matWarp.at<float>(1, 2);
-    fRotation = ToFloat ( CalcUtils::radian2Degree ( asin ( matWarp.at<float>( 1, 0 ) ) ) );
-
-    return VisionStatus::OK;
-}
-
-/*static*/ VisionStatus VisionAlgorithm::_matchTemplate(const cv::Mat &mat, const cv::Mat &matTmpl, PR_OBJECT_MOTION enMotion, cv::Point2f &ptResult, float &fRotation, float &fCorrelation)
-{
-    cv::Mat img_display, matResultImg;
-    const int match_method = CV_TM_SQDIFF;
-    fRotation = 0.f;
-
-    mat.copyTo(img_display);
-
-    /// Create the result matrix
-    int result_cols = mat.cols - matTmpl.cols + 1;
-    int result_rows = mat.rows - matTmpl.rows + 1;
-
-    matResultImg.create(result_rows, result_cols, CV_32FC1);
-
-    /// Do the Matching and Normalize
-    cv::matchTemplate(mat, matTmpl, matResultImg, match_method);
-    cv::normalize ( matResultImg, matResultImg, 0, 1, cv::NORM_MINMAX, -1, cv::Mat() );
-
-    /// Localizing the best match with minMaxLoc
-    double minVal; double maxVal;
-    cv::Point minLoc, maxLoc, matchLoc;
-
-    cv::minMaxLoc(matResultImg, &minVal, &maxVal, &minLoc, &maxLoc, cv::Mat());
-
-    /// For SQDIFF and SQDIFF_NORMED, the best matches are lower values. For all the other methods, the higher the better
-    if (match_method == CV_TM_SQDIFF || match_method == CV_TM_SQDIFF_NORMED)
-        matchLoc = minLoc;
-    else
-        matchLoc = maxLoc;
-
-    ptResult.x = (float)matchLoc.x;
-    ptResult.y = (float)matchLoc.y;
-    try {
-        _refineSrchTemplate ( mat, matTmpl, enMotion, ptResult, fRotation, fCorrelation );
-    }catch (std::exception) {
-        return VisionStatus::OPENCV_EXCEPTION;
-    }
-
-    ptResult.x += (float)( matTmpl.cols / 2 + 0.5 );
-    ptResult.y += (float)( matTmpl.rows / 2 + 0.5 );
-    return VisionStatus::OK;
-}
-
 /*static*/ VisionStatus VisionAlgorithm::srchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd, PR_SRCH_FIDUCIAL_MARK_RPY *pstRpy, bool bReplay /*= false*/) {
     assert(pstCmd != nullptr && pstRpy != nullptr);    
     cv::Point2f ptResult;
@@ -1730,7 +1693,7 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
         cv::cvtColor(matSrchROI, matSrchROI, cv::COLOR_BGR2GRAY);
 
     float fRotation = 0.f, fCorrelation = 0.f;
-    pstRpy->enStatus = _matchTemplate ( matSrchROI, matTmpl, PR_OBJECT_MOTION::TRANSLATION, ptResult, fRotation, fCorrelation );
+    pstRpy->enStatus = MatchTmpl::matchTemplate ( matSrchROI, matTmpl, PR_OBJECT_MOTION::TRANSLATION, ptResult, fRotation, fCorrelation );
 
     pstRpy->ptPos.x = ptResult.x + pstCmd->rectSrchWindow.x;
     pstRpy->ptPos.y = ptResult.y + pstCmd->rectSrchWindow.y;
@@ -3600,7 +3563,7 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
         cv::Mat matSrchROI ( mat, rectSrchROI );
         cv::Point2f ptResult;
         float fRotation, fCorrelation = 0.f;
-        enStatus = _matchTemplate ( matSrchROI, matTmpl, PR_OBJECT_MOTION::TRANSLATION, ptResult, fRotation, fCorrelation );
+        enStatus = MatchTmpl::matchTemplate ( matSrchROI, matTmpl, PR_OBJECT_MOTION::TRANSLATION, ptResult, fRotation, fCorrelation );
         if ( VisionStatus::OK != enStatus )
             fCorrelation = 0;
         
@@ -5068,7 +5031,9 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     }
 
     if ( pstCmd->nRecordId <= 0 ) {
-        WriteLog("The input record id is invalid.");
+        char charrMsg[100];
+         _snprintf( charrMsg, sizeof( charrMsg ), "The input record id %d is invalid.", pstCmd->nRecordId );
+        WriteLog(charrMsg);
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return VisionStatus::INVALID_PARAM;
     }
@@ -5100,7 +5065,7 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     cv::Mat matTmpl = ptrRecord->getTmpl();
     if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE )
         showImage ( "Template image", matTmpl );
-    pstRpy->enStatus = _matchTemplate ( matBlur, matTmpl, PR_OBJECT_MOTION::TRANSLATION, ptResult, fRotation, fCorrelation );
+    pstRpy->enStatus = MatchTmpl::matchTemplate ( matBlur, matTmpl, PR_OBJECT_MOTION::TRANSLATION, ptResult, fRotation, fCorrelation );
     if ( pstRpy->enStatus != VisionStatus::OK ) {
         WriteLog ( "Template match fail." );
         return pstRpy->enStatus;
@@ -5625,8 +5590,7 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     if ( PR_DIRECTION::LEFT == enSrchDirection || PR_DIRECTION::RIGHT == enSrchDirection )
         stLeadResult.rectLead.center.x = stLeadInput.rectSrchWindow.center.x - matROI.cols / 2 + ( nLeadEnd + nLeadStart ) / 2;
     else
-        stLeadResult.rectLead.center.y = stLeadInput.rectSrchWindow.center.y - matROI.rows / 2 + ( nLeadEnd + nLeadStart ) / 2;
-    
+        stLeadResult.rectLead.center.y = stLeadInput.rectSrchWindow.center.y - matROI.rows / 2 + ( nLeadEnd + nLeadStart ) / 2;    
     return enStatus;
 }
 

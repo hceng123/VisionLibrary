@@ -1,5 +1,5 @@
-#ifndef _AOI_VISION_ALGORITHM_H
-#define _AOI_VISION_ALGORITHM_H
+#ifndef _AOI_VISION_ALGORITHM_H_
+#define _AOI_VISION_ALGORITHM_H_
 
 #include "BaseType.h"
 #include "opencv2/core.hpp"
@@ -84,8 +84,6 @@ protected:
     static VisionStatus _findDeviceEdge(const cv::Mat &matDeviceROI, const cv::Size2f &size, cv::Rect &rectDeviceResult);
     static VisionStatus _writeLrnObjRecord(PR_LRN_OBJ_RPY *const pstRpy);
     VisionStatus _writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRpy);
-    static VisionStatus _matchTemplate     (const cv::Mat &mat, const cv::Mat &matTmpl, PR_OBJECT_MOTION enMotion, cv::Point2f &ptResult, float &fRotation, float &fCorrelation);
-    static VisionStatus _refineSrchTemplate(const cv::Mat &mat, const cv::Mat &matTmpl, PR_OBJECT_MOTION enMotion, cv::Point2f &ptResult, float &fRotation, float &fCorrelation);
     static VectorOfPoint _findPointInRegionOverThreshold(const cv::Mat &mat, const cv::Rect &rect, int nThreshold);
     static ListOfPoint _findPointsInRegionByThreshold(const cv::Mat &mat, const cv::Rect &rect, int nThreshold, PR_OBJECT_ATTRIBUTE enAttribute = PR_OBJECT_ATTRIBUTE::BRIGHT);
     static ListOfPoint _findPointsInRegion(const cv::Mat &mat, const cv::Rect &rect);
@@ -210,4 +208,4 @@ private:
 
 }
 }
-#endif
+#endif /*_AOI_VISION_ALGORITHM_H_*/

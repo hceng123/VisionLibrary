@@ -1,4 +1,6 @@
 #include "MatchTmpl.h"
+#include "opencv2/video.hpp"
+#include "CalcUtils.h"
 
 namespace AOI
 {
@@ -125,6 +127,64 @@ MatchTmpl::~MatchTmpl ()
         ptResult.y += (minLoc.y + nStartY);
         return ptResult;
     }
+}
+
+/*static*/ VisionStatus MatchTmpl::refineSrchTemplate(const cv::Mat &mat, const cv::Mat &matTmpl, PR_OBJECT_MOTION enMotion, cv::Point2f &ptResult, float &fRotation, float &fCorrelation)
+{
+    cv::Mat matWarp = cv::Mat::eye(2, 3, CV_32FC1);
+    matWarp.at<float>(0,2) = ptResult.x;
+    matWarp.at<float>(1,2) = ptResult.y;
+    int number_of_iterations = 200;
+    double termination_eps = 0.001;
+
+    fCorrelation = ToFloat ( cv::findTransformECC ( matTmpl, mat, matWarp, ToInt32(enMotion), cv::TermCriteria ( cv::TermCriteria::COUNT + cv::TermCriteria::EPS,
+        number_of_iterations, termination_eps) ) );
+    ptResult.x = matWarp.at<float>(0, 2);
+    ptResult.y = matWarp.at<float>(1, 2);
+    fRotation = ToFloat ( CalcUtils::radian2Degree ( asin ( matWarp.at<float>( 1, 0 ) ) ) );
+
+    return VisionStatus::OK;
+}
+
+/*static*/ VisionStatus MatchTmpl::matchTemplate(const cv::Mat &mat, const cv::Mat &matTmpl, PR_OBJECT_MOTION enMotion, cv::Point2f &ptResult, float &fRotation, float &fCorrelation)
+{
+    cv::Mat matResultImg;
+    const int match_method = CV_TM_SQDIFF;
+    fRotation = 0.f;
+
+    /// Create the result matrix
+    int result_cols = mat.cols - matTmpl.cols + 1;
+    int result_rows = mat.rows - matTmpl.rows + 1;
+
+    matResultImg.create(result_rows, result_cols, CV_32FC1);
+
+    /// Do the Matching and Normalize
+    cv::matchTemplate(mat, matTmpl, matResultImg, match_method);
+    cv::normalize ( matResultImg, matResultImg, 0, 1, cv::NORM_MINMAX, -1, cv::Mat() );
+
+    /// Localizing the best match with minMaxLoc
+    double minVal; double maxVal;
+    cv::Point minLoc, maxLoc, matchLoc;
+
+    cv::minMaxLoc(matResultImg, &minVal, &maxVal, &minLoc, &maxLoc, cv::Mat());
+
+    /// For SQDIFF and SQDIFF_NORMED, the best matches are lower values. For all the other methods, the higher the better
+    if (match_method == CV_TM_SQDIFF || match_method == CV_TM_SQDIFF_NORMED)
+        matchLoc = minLoc;
+    else
+        matchLoc = maxLoc;
+
+    ptResult.x = (float)matchLoc.x;
+    ptResult.y = (float)matchLoc.y;
+    try {
+        refineSrchTemplate ( mat, matTmpl, enMotion, ptResult, fRotation, fCorrelation );
+    }catch (std::exception) {
+        return VisionStatus::OPENCV_EXCEPTION;
+    }
+
+    ptResult.x += (float)( matTmpl.cols / 2 + 0.5 );
+    ptResult.y += (float)( matTmpl.rows / 2 + 0.5 );
+    return VisionStatus::OK;
 }
 
 }
