@@ -11,7 +11,6 @@ MatchTmpl::MatchTmpl ()
 {
 }
 
-
 MatchTmpl::~MatchTmpl ()
 {
 }

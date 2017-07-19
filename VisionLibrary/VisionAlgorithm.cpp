@@ -5454,7 +5454,7 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
         VisionStatus enStatus = _inspSingleLead ( pstCmd->matInputImg, stLeadInfo, pstCmd, stLeadResult );
         pstRpy->vecLeadResult.push_back ( stLeadResult );
         if ( VisionStatus::OK == pstRpy->enStatus )
-            pstRpy->enStatus = enStatus;        
+            pstRpy->enStatus = enStatus;
     }
 
     if ( ! isAutoMode() ) {
@@ -5484,7 +5484,6 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
 
     FINISH_LOGCASE;
     MARK_FUNCTION_END_TIME;
-    pstRpy->enStatus = VisionStatus::OK;
     return pstRpy->enStatus;
 }
 
@@ -5556,7 +5555,13 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     if ( nLeadStart == 0 || nLeadEnd == 0 || nLeadStart >= nLeadEnd ) {
         stLeadResult.bFound = false;
         return VisionStatus::NOT_FIND_LEAD;
-    }   
+    }
+
+    if ( abs( nLeadEnd - nLeadStart ) < 0.1 * matOneRow.cols ) {
+        WriteLog("Found lead length is too short and has been rejected.");
+        stLeadResult.bFound = false;
+        return VisionStatus::NOT_FIND_LEAD;
+    }
 
     const int GUASSIAN_DIFF_WIDTH = 2;
     const float GUASSIAN_KERNEL_SSQ = 1.f;

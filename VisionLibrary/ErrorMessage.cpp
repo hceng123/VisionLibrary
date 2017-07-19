@@ -152,6 +152,10 @@ VisionStatus GetErrorInfo(VisionStatus enStatus, PR_GET_ERROR_INFO_RPY *pstRpy)
         _snprintf(pstRpy->achErrorStr, PR_MAX_ERR_STR_LEN, "The blob count is out of range.");
         pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::INSP_STATUS;
         break;
+    case VisionStatus::NOT_FIND_LEAD:
+        _snprintf(pstRpy->achErrorStr, PR_MAX_ERR_STR_LEN, "Lead is missing.");
+        pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::INSP_STATUS;
+        break;
     default:
         _snprintf(pstRpy->achErrorStr, PR_MAX_ERR_STR_LEN, "Undefined error code!");
         pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::FATAL_ERROR;

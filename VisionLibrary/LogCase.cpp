@@ -1909,6 +1909,7 @@ VisionStatus LogCaseInspLead::RunLogCase() {
         stLeadInput.rectExpectedWindow.center = _parseCoordinate ( ini.GetValue(_CMD_SECTION.c_str(), strKeyLeadExpWinCtr.c_str(), _DEFAULT_COORD.c_str() ) );
         stLeadInput.rectExpectedWindow.size = _parseSize( ini.GetValue(_CMD_SECTION.c_str(), strKeyLeadExpWinSize.c_str(), _DEFAULT_SIZE.c_str() ) );
         stLeadInput.rectExpectedWindow.angle = ToFloat ( ini.GetDoubleValue(_CMD_SECTION.c_str(), strKeyLeadExpWinAngle.c_str(), 0.) );
+        stCmd.vecLeads.push_back ( stLeadInput );
     }
     stCmd.fLeadStartWidthRatio = ToFloat ( ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyLeadStartWidthRatio.c_str(), 0.5 ) );
     stCmd.nLeadStartConsecutiveLength = ToInt16 ( ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyLeadStartConLen.c_str(), 2 ) );

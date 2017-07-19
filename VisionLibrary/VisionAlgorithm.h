@@ -151,7 +151,7 @@ protected:
                                           float                     squareSize,
                                           const VectorOfPoint       &vecFailedRowCol,
                                           std::vector<cv::Point3f>  &corners,
-                                          CalibPattern patternType = CHESSBOARD );
+                                          CalibPattern               patternType = CHESSBOARD );
     static cv::Point2f _findFirstChessBoardCorner(const cv::Mat &matInputImg, float fBlockSize);
     static VisionStatus _inspBridgeItem(const cv::Mat &matGray, cv::Mat &matResultImg, const PR_INSP_BRIDGE_CMD::INSP_ITEM &inspItem, PR_INSP_BRIDGE_RPY::ITEM_RESULT &inspResult);
     static VisionStatus _lrnChipHeadMode(const cv::Mat &matThreshold, const cv::Rect &rectROI, PR_LRN_CHIP_RPY *const pstRpy);
@@ -184,10 +184,10 @@ protected:
     static VisionStatus _setmentImgByColorRange(const cv::Mat &matInput, const PR_INSP_HOLE_CMD::COLOR_RANGE &stColorRange, cv::Mat &matResult);
     static VisionStatus _inspHoleByRatioMode(const cv::Mat &matInput, const cv::Mat &matMask, const PR_INSP_HOLE_CMD::RATIO_MODE_CRITERIA &stCriteria, PR_INSP_HOLE_RPY *const pstRpy);
     static VisionStatus _inspHoleByBlobMode(const cv::Mat &matInput, const cv::Mat &matMask, const PR_INSP_HOLE_CMD::BLOB_MODE_CRITERIA &stCriteria, PR_INSP_HOLE_RPY *const pstRpy);
-    static VisionStatus _inspSingleLead(const cv::Mat &matInput,
+    static VisionStatus _inspSingleLead(const cv::Mat                           &matInput,
                                         const PR_INSP_LEAD_CMD::LEAD_INPUT_INFO &stLeadInput,
-                                        const PR_INSP_LEAD_CMD *pstCmd,
-                                        PR_INSP_LEAD_RPY::LEAD_RESULT &stLeadResult);
+                                        const PR_INSP_LEAD_CMD                  *pstCmd,
+                                        PR_INSP_LEAD_RPY::LEAD_RESULT           &stLeadResult);
 protected:
     static const int       _constMinHessian        = 300;
     static const int       _constOctave            = 4;
