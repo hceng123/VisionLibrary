@@ -21,7 +21,6 @@ VisionAPI VisionStatus PR_RunLogCase(const std::string &strPath);
 VisionAPI void         PR_DumpTimeLog(const std::string &strPath);
 VisionAPI VisionStatus PR_FreeRecord(Int32 nRecordId);
 VisionAPI VisionStatus PR_FreeAllRecord();
-
 VisionAPI VisionStatus PR_LrnObj(const PR_LRN_OBJ_CMD *const pstCmd, PR_LRN_OBJ_RPY *const pstRpy);
 VisionAPI VisionStatus PR_SrchObj(const PR_SRCH_OBJ_CMD *const pstCmd, PR_SRCH_OBJ_RPY *const pstRpy);
 VisionAPI VisionStatus PR_InspSurface(PR_INSP_SURFACE_CMD *const pInspCmd, PR_INSP_SURFACE_RPY *pInspRpy);
@@ -42,7 +41,7 @@ Example:
 @param pstRpy pointer of reply.
 */
 VisionAPI VisionStatus PR_Caliper(const PR_CALIPER_CMD *const pstCmd, PR_CALIPER_RPY *const pstRpy);
-VisionAPI VisionStatus PR_FitParallelLine(PR_FIT_PARALLEL_LINE_CMD *pstCmd, PR_FIT_PARALLEL_LINE_RPY *pstRpy);
+VisionAPI VisionStatus PR_FitParallelLine(const PR_FIT_PARALLEL_LINE_CMD *const pstCmd, PR_FIT_PARALLEL_LINE_RPY *const pstRpy);
 VisionAPI VisionStatus PR_FitRect(PR_FIT_RECT_CMD *pstCmd, PR_FIT_RECT_RPY *pstRpy);
 
 /** @brief Use hough tranform to find all the lines in the specification.
@@ -82,7 +81,7 @@ VisionAPI VisionStatus PR_InspCircle(PR_INSP_CIRCLE_CMD *pstCmd, PR_INSP_CIRCLE_
 VisionAPI VisionStatus PR_FillHole(PR_FILL_HOLE_CMD *const pstCmd, PR_FILL_HOLE_RPY *pstRpy);
 VisionAPI VisionStatus PR_LrnTmpl ( const PR_LRN_TEMPLATE_CMD *const pstCmd, PR_LRN_TEMPLATE_RPY *const pstRpy);
 VisionAPI VisionStatus PR_MatchTmpl(const PR_MATCH_TEMPLATE_CMD *const pstCmd, PR_MATCH_TEMPLATE_RPY * const pstRpy);
-VisionAPI VisionStatus PR_PickColor(PR_PICK_COLOR_CMD *const pstCmd, PR_PICK_COLOR_RPY *pstRpy);
+VisionAPI VisionStatus PR_PickColor(const PR_PICK_COLOR_CMD *const pstCmd, PR_PICK_COLOR_RPY *const pstRpy);
 VisionAPI VisionStatus PR_CalibrateCamera(const PR_CALIBRATE_CAMERA_CMD *const pstCmd, PR_CALIBRATE_CAMERA_RPY *const pstRpy);
 VisionAPI VisionStatus PR_RestoreImage(const PR_RESTORE_IMG_CMD *const pstCmd, PR_RESTORE_IMG_RPY *const pstRpy);
 VisionAPI VisionStatus PR_CalcUndistortRectifyMap(const PR_CALC_UNDISTORT_RECTIFY_MAP_CMD *const pstCmd, PR_CALC_UNDISTORT_RECTIFY_MAP_RPY *const pstRpy);

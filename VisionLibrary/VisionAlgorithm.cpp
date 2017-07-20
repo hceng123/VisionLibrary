@@ -2445,7 +2445,7 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     return pstRpy->enStatus;
 }
 
-/*static*/ VisionStatus VisionAlgorithm::fitParallelLine(PR_FIT_PARALLEL_LINE_CMD *pstCmd, PR_FIT_PARALLEL_LINE_RPY *pstRpy, bool bReplay /*= false*/) {
+/*static*/ VisionStatus VisionAlgorithm::fitParallelLine(const PR_FIT_PARALLEL_LINE_CMD *const pstCmd, PR_FIT_PARALLEL_LINE_RPY *const pstRpy, bool bReplay /*= false*/) {
     assert ( pstCmd != nullptr && pstRpy != nullptr );
 
     if (pstCmd->matInputImg.empty()) {
@@ -3443,11 +3443,10 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
 
     FINISH_LOGCASE;
     MARK_FUNCTION_END_TIME;
-
     return pstRpy->enStatus;
 }
 
-/*static*/ VisionStatus VisionAlgorithm::pickColor(PR_PICK_COLOR_CMD *pstCmd, PR_PICK_COLOR_RPY *pstRpy, bool bReplay)
+/*static*/ VisionStatus VisionAlgorithm::pickColor(const PR_PICK_COLOR_CMD *const pstCmd, PR_PICK_COLOR_RPY *const pstRpy, bool bReplay /*= false*/ )
 {
     assert(pstCmd != nullptr && pstRpy != nullptr);
 

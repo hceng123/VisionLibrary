@@ -35,10 +35,10 @@ MatchTmpl::~MatchTmpl ()
         cv::Mat matResult = cv::Mat::zeros ( nEndY - nStartY + 1, nEndX - nStartX + 1, CV_32FC1 );
         int nRow = 0, nCol = 0;
 
-        std::vector<size_t> vecMaskOfTmplIndex;
-        size_t nTotalIndex = matMaskOfTmpl.rows * matMaskOfTmpl.cols;
+        std::vector<int> vecMaskOfTmplIndex;
+        int nTotalIndex = matMaskOfTmpl.rows * matMaskOfTmpl.cols;
         vecMaskOfTmplIndex.reserve( nTotalIndex / 5 );
-        for ( size_t index = 0; index < nTotalIndex; index += 3 ) {
+        for ( int index = 0; index < nTotalIndex; index += 3 ) {
             if ( matMaskOfTmpl.at<uchar>( index ) > 0 )
                 vecMaskOfTmplIndex.push_back ( index );
         }
@@ -73,9 +73,9 @@ MatchTmpl::~MatchTmpl ()
         
         std::vector<uchar> vecMaskOfTmpl = matMaskOfTmpl.reshape(1, 1);
         std::vector<uchar> vecTmpl = matTmpl.reshape(1, 1);
-        std::vector<size_t> vecMaskOfTmplIndex;
+        std::vector<int> vecMaskOfTmplIndex;
         vecMaskOfTmplIndex.reserve( vecMaskOfTmpl.size() / 5 );
-        for ( size_t index = 0; index < vecMaskOfTmpl.size(); index += 1 )
+        for ( int index = 0; index < vecMaskOfTmpl.size(); index += 1 )
             if ( vecMaskOfTmpl[index] > 0 )
                 vecMaskOfTmplIndex.push_back ( index );
 
@@ -157,9 +157,9 @@ MatchTmpl::~MatchTmpl ()
 
     matResultImg.create(result_rows, result_cols, CV_32FC1);
 
-    /// Do the Matching and Normalize
+    // Do the Matching and Normalize
     cv::matchTemplate(mat, matTmpl, matResultImg, match_method);
-    cv::normalize ( matResultImg, matResultImg, 0, 1, cv::NORM_MINMAX, -1, cv::Mat() );
+    //cv::normalize ( matResultImg, matResultImg, 0, 1, cv::NORM_MINMAX, -1, cv::Mat() );
 
     /// Localizing the best match with minMaxLoc
     double minVal; double maxVal;

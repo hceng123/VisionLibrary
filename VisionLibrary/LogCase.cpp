@@ -34,7 +34,7 @@ namespace
 
 LogCase::LogCase(const String &strPath, bool bReplay) :_strLogCasePath(strPath), _bReplay(bReplay) {
     if (bReplay)
-        _strLogCasePath = strPath;   
+        _strLogCasePath = strPath;
 }
 
 String LogCase::_formatCoordinate(const cv::Point2f &pt)
@@ -540,13 +540,11 @@ VisionStatus LogCaseCaliper::RunLogCase() {
     return enStatus;
 }
 
-/*static*/ String LogCaseFitParallelLine::StaticGetFolderPrefix()
-{
+/*static*/ String LogCaseFitParallelLine::StaticGetFolderPrefix() {
     return "FitParallelLine";
 }
 
-VisionStatus LogCaseFitParallelLine::WriteCmd(PR_FIT_PARALLEL_LINE_CMD *pstCmd)
-{
+VisionStatus LogCaseFitParallelLine::WriteCmd(const PR_FIT_PARALLEL_LINE_CMD *const pstCmd) {
     if (!_bReplay)    {
         _strLogCasePath = _generateLogCaseName(GetFolderPrefix());
         bfs::path dir(_strLogCasePath);
@@ -566,8 +564,7 @@ VisionStatus LogCaseFitParallelLine::WriteCmd(PR_FIT_PARALLEL_LINE_CMD *pstCmd)
     return VisionStatus::OK;
 }
 
-VisionStatus LogCaseFitParallelLine::WriteRpy(PR_FIT_PARALLEL_LINE_RPY *pstRpy)
-{
+VisionStatus LogCaseFitParallelLine::WriteRpy(const PR_FIT_PARALLEL_LINE_RPY *const pstRpy) {
     CSimpleIni ini(false, false, false);
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile(cmdRpyFilePath.c_str());
@@ -609,13 +606,11 @@ VisionStatus LogCaseFitParallelLine::RunLogCase()
     return enStatus;
 }
 
-/*static*/ String LogCaseFitRect::StaticGetFolderPrefix()
-{
+/*static*/ String LogCaseFitRect::StaticGetFolderPrefix() {
     return "FitRect";
 }
 
-VisionStatus LogCaseFitRect::WriteCmd(const PR_FIT_RECT_CMD *const pstCmd)
-{
+VisionStatus LogCaseFitRect::WriteCmd(const PR_FIT_RECT_CMD *const pstCmd) {
     if (!_bReplay)    {
         _strLogCasePath = _generateLogCaseName(GetFolderPrefix());
         bfs::path dir(_strLogCasePath);
@@ -637,8 +632,7 @@ VisionStatus LogCaseFitRect::WriteCmd(const PR_FIT_RECT_CMD *const pstCmd)
     return VisionStatus::OK;
 }
 
-VisionStatus LogCaseFitRect::WriteRpy(const PR_FIT_RECT_RPY *const pstRpy)
-{
+VisionStatus LogCaseFitRect::WriteRpy(const PR_FIT_RECT_RPY *const pstRpy) {
     CSimpleIni ini(false, false, false);
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile(cmdRpyFilePath.c_str());
@@ -666,8 +660,7 @@ VisionStatus LogCaseFitRect::WriteRpy(const PR_FIT_RECT_RPY *const pstRpy)
     return VisionStatus::OK;
 }
 
-VisionStatus LogCaseFitRect::RunLogCase()
-{
+VisionStatus LogCaseFitRect::RunLogCase() {
     PR_FIT_RECT_CMD stCmd;
     VisionStatus enStatus;
 
@@ -1185,7 +1178,7 @@ VisionStatus LogCaseMatchTmpl::RunLogCase() {
     return "PickColor";
 }
 
-VisionStatus LogCasePickColor::WriteCmd(PR_PICK_COLOR_CMD *pstCmd) {
+VisionStatus LogCasePickColor::WriteCmd(const PR_PICK_COLOR_CMD *const pstCmd) {
     if (!_bReplay)    {
         _strLogCasePath = _generateLogCaseName(GetFolderPrefix());
         bfs::path dir(_strLogCasePath);
@@ -1204,7 +1197,7 @@ VisionStatus LogCasePickColor::WriteCmd(PR_PICK_COLOR_CMD *pstCmd) {
     return VisionStatus::OK;
 }
 
-VisionStatus LogCasePickColor::WriteRpy(PR_PICK_COLOR_RPY *pstRpy)
+VisionStatus LogCasePickColor::WriteRpy(const PR_PICK_COLOR_RPY *const pstRpy)
 {
     CSimpleIni ini(false, false, false);
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;

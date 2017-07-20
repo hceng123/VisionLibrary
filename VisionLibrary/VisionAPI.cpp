@@ -146,7 +146,7 @@ PR_FUNCTION_ENTRY
 PR_FUNCTION_EXIT
 }
 
-VisionAPI VisionStatus  PR_FitParallelLine(PR_FIT_PARALLEL_LINE_CMD *pstCmd, PR_FIT_PARALLEL_LINE_RPY *pstRpy)
+VisionAPI VisionStatus  PR_FitParallelLine(const PR_FIT_PARALLEL_LINE_CMD *const pstCmd, PR_FIT_PARALLEL_LINE_RPY *const pstRpy)
 {
 PR_FUNCTION_ENTRY
         return VisionAlgorithm::fitParallelLine ( pstCmd, pstRpy );
@@ -261,7 +261,7 @@ PR_FUNCTION_ENTRY
 PR_FUNCTION_EXIT
 }
 
-VisionAPI VisionStatus PR_PickColor(PR_PICK_COLOR_CMD *const pstCmd, PR_PICK_COLOR_RPY *pstRpy)
+VisionAPI VisionStatus PR_PickColor(const PR_PICK_COLOR_CMD *const pstCmd, PR_PICK_COLOR_RPY *const pstRpy)
 {
 PR_FUNCTION_ENTRY
     return VisionAlgorithm::pickColor( pstCmd, pstRpy );

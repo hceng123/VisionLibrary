@@ -203,8 +203,8 @@ class LogCaseFitParallelLine : public LogCase
 {
 public:
     explicit LogCaseFitParallelLine(const String &strPath, bool bReplay = false) : LogCase(strPath, bReplay) {}
-    VisionStatus WriteCmd(PR_FIT_PARALLEL_LINE_CMD *pstCmd);
-    VisionStatus WriteRpy(PR_FIT_PARALLEL_LINE_RPY *pstRpy);
+    VisionStatus WriteCmd(const PR_FIT_PARALLEL_LINE_CMD *const pstCmd);
+    VisionStatus WriteRpy(const PR_FIT_PARALLEL_LINE_RPY *const pstRpy);
     virtual VisionStatus RunLogCase() override;
     virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
     static String StaticGetFolderPrefix();
@@ -435,8 +435,8 @@ class LogCasePickColor : public LogCase
 {
 public:
     explicit LogCasePickColor(const String &strPath, bool bReplay = false) : LogCase(strPath, bReplay) {}
-    VisionStatus WriteCmd(PR_PICK_COLOR_CMD *pstCmd);
-    VisionStatus WriteRpy(PR_PICK_COLOR_RPY *pstRpy);
+    VisionStatus WriteCmd(const PR_PICK_COLOR_CMD *const pstCmd);
+    VisionStatus WriteRpy(const PR_PICK_COLOR_RPY *const pstRpy);
     virtual VisionStatus RunLogCase() override;
     virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
     static String StaticGetFolderPrefix();
