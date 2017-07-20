@@ -28,6 +28,13 @@ public:
 		return static_cast<__int64> ( ( std::chrono::duration<double, std::milli>( tpNow - _tpStart ) ).count() );
 	}
 
+    __int64 Span() {
+        high_resolution_clock::time_point tpNow = high_resolution_clock::now();
+		auto span = static_cast<__int64> ( std::chrono::duration<double, std::milli>( tpNow - _tpStart).count() );
+        _tpStart = tpNow;
+        return span;
+    }
+
 	__int64 static AbsNow()
 	{
 		return duration_cast<milliseconds>( high_resolution_clock::now().time_since_epoch() ).count();
@@ -38,6 +45,13 @@ public:
 		high_resolution_clock::time_point tpNow = high_resolution_clock::now();
 		return static_cast<__int64> ( ( std::chrono::duration<double, std::micro>( tpNow - _tpStart ) ).count() );
 	}
+
+    __int64 SpanInMicro () {
+        high_resolution_clock::time_point tpNow = high_resolution_clock::now();
+		auto span = static_cast<__int64> ( std::chrono::duration<double, std::micro>( tpNow - _tpStart).count() );
+        _tpStart = tpNow;
+        return span;
+    }
 
 	__int64 static AbsNowInMicro()
 	{

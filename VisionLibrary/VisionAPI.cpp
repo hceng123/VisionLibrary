@@ -127,15 +127,9 @@ VisionAPI VisionStatus PR_RunLogCase(const std::string &strPath)
 
 VisionAPI VisionStatus PR_SrchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd, PR_SRCH_FIDUCIAL_MARK_RPY *pstRpy)
 {
-    try
-    {
-        VisionAlgorithmPtr pVA = VisionAlgorithm::create();
-        return pVA->srchFiducialMark ( pstCmd, pstRpy );
-    }catch(std::exception &e)
-    {
-        WriteLog(e.what());
-        return VisionStatus::OPENCV_EXCEPTION;
-    }
+PR_FUNCTION_ENTRY
+        return VisionAlgorithm::srchFiducialMark ( pstCmd, pstRpy );
+PR_FUNCTION_EXIT
 }
 
 VisionAPI VisionStatus  PR_FitLine(const PR_FIT_LINE_CMD *const pstCmd, PR_FIT_LINE_RPY *const pstRpy)
@@ -152,7 +146,7 @@ PR_FUNCTION_ENTRY
 PR_FUNCTION_EXIT
 }
 
-VisionAPI VisionStatus  PR_FitParallelLine(PR_FIT_PARALLEL_LINE_CMD *pstCmd, PR_FIT_PARALLEL_LINE_RPY *pstRpy)
+VisionAPI VisionStatus  PR_FitParallelLine(const PR_FIT_PARALLEL_LINE_CMD *const pstCmd, PR_FIT_PARALLEL_LINE_RPY *const pstRpy)
 {
 PR_FUNCTION_ENTRY
         return VisionAlgorithm::fitParallelLine ( pstCmd, pstRpy );
@@ -253,14 +247,21 @@ PR_FUNCTION_ENTRY
 PR_FUNCTION_EXIT
 }
 
-VisionAPI VisionStatus PR_MatchTmpl(PR_MATCH_TEMPLATE_CMD *const pstCmd, PR_MATCH_TEMPLATE_RPY *pstRpy)
+VisionAPI VisionStatus PR_LrnTmpl ( const PR_LRN_TEMPLATE_CMD *const pstCmd, PR_LRN_TEMPLATE_RPY *const pstRpy)
+{
+PR_FUNCTION_ENTRY
+    return VisionAlgorithm::lrnTemplate( pstCmd, pstRpy );
+PR_FUNCTION_EXIT
+}
+
+VisionAPI VisionStatus PR_MatchTmpl(const PR_MATCH_TEMPLATE_CMD *const pstCmd, PR_MATCH_TEMPLATE_RPY * const pstRpy)
 {
 PR_FUNCTION_ENTRY
     return VisionAlgorithm::matchTemplate( pstCmd, pstRpy );
 PR_FUNCTION_EXIT
 }
 
-VisionAPI VisionStatus PR_PickColor(PR_PICK_COLOR_CMD *const pstCmd, PR_PICK_COLOR_RPY *pstRpy)
+VisionAPI VisionStatus PR_PickColor(const PR_PICK_COLOR_CMD *const pstCmd, PR_PICK_COLOR_RPY *const pstRpy)
 {
 PR_FUNCTION_ENTRY
     return VisionAlgorithm::pickColor( pstCmd, pstRpy );
@@ -334,6 +335,13 @@ VisionAPI VisionStatus PR_InspHole(const PR_INSP_HOLE_CMD *const pstCmd, PR_INSP
 {
 PR_FUNCTION_ENTRY
     return VisionAlgorithm::inspHole ( pstCmd, pstRpy );
+PR_FUNCTION_EXIT
+}
+
+VisionAPI VisionStatus PR_InspLead(const PR_INSP_LEAD_CMD *const pstCmd, PR_INSP_LEAD_RPY *const pstRpy)
+{
+PR_FUNCTION_ENTRY
+    return VisionAlgorithm::inspLead ( pstCmd, pstRpy );
 PR_FUNCTION_EXIT
 }
 

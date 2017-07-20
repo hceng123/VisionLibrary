@@ -65,6 +65,9 @@ enum class VisionStatus
     RATIO_UNDER_LIMIT,
     RATIO_OVER_LIMIT,
     BLOB_COUNT_OUT_OF_RANGE,
+
+    //Inspect lead staus
+    NOT_FIND_LEAD,
 };
 
 }

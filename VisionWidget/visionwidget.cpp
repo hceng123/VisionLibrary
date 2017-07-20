@@ -11,6 +11,15 @@
 
 using namespace AOI::Vision;
 
+inline cv::RotatedRect rectToRotatedRect(const cv::Rect &rect) {
+    cv::RotatedRect rotatedRect;
+    rotatedRect.angle = 0;
+    rotatedRect.center.x = rect.x + rect.width / 2;
+    rotatedRect.center.y = rect.y + rect.height / 2;
+    rotatedRect.size = rect.size();
+    return rotatedRect;
+}
+
 VisionWidget::VisionWidget(QWidget *parent)
     : QMainWindow(parent)
 {
@@ -298,11 +307,11 @@ void VisionWidget::on_srchFiducialBtn_clicked()
     }
 }
 
-void VisionWidget::drawTmplImage()
+void VisionWidget::drawTmplImage(const cv::Mat &matTmpl)
 {
     cv::Mat matDisplay;
     cv::Size size( ui.labelTmplView->size().height(), ui.labelTmplView->size().width() );
-    cv::resize ( _matTmpl, matDisplay, size );
+    cv::resize ( matTmpl, matDisplay, size );
     if ( matDisplay.channels() > 1 )
         cvtColor ( matDisplay, matDisplay, CV_BGR2RGB );
     else
@@ -311,28 +320,36 @@ void VisionWidget::drawTmplImage()
     ui.labelTmplView->setPixmap(QPixmap::fromImage(image));
 }
 
-void VisionWidget::on_selectTemplateBtn_clicked()
-{
-    QFileDialog dialog(this);
-    dialog.setFileMode(QFileDialog::AnyFile);
-    dialog.setAcceptMode(QFileDialog::AcceptOpen);
-    dialog.setNameFilter(tr("Image Files (*.png *.jpg *.bmp)"));
-    dialog.setViewMode(QFileDialog::Detail);
-    QStringList fileNames;
-    if (dialog.exec())  {
-        fileNames = dialog.selectedFiles();
-    }else
+void VisionWidget::on_btnLrnTemplate_clicked() {
+    if ( _sourceImagePath.empty() ) {
+        QMessageBox::information(this, "Vision Widget", "Please select an image first!", "Quit");
         return;
+    }
 
-    std::string strFilePath = fileNames[0].toStdString();
-    _matTmpl = cv::imread ( strFilePath , cv::IMREAD_GRAYSCALE );
-    if ( _matTmpl.empty() )
-        return;
+    ui.visionView->setState ( VisionView::VISION_VIEW_STATE::TEST_VISION_LIBRARY );
+    ui.visionView->applyIntermediateResult();
 
-    drawTmplImage();
+    PR_LRN_TEMPLATE_CMD stCmd;
+    PR_LRN_TEMPLATE_RPY stRpy;
+    stCmd.matInputImg = ui.visionView->getMat();
+    stCmd.rectROI = ui.visionView->getSelectedWindow();
+    stCmd.enAlgorithm = PR_MATCH_TMPL_ALGORITHM::SQUARE_DIFF;
+    if ( ui.cbMatchTmplAlgorithm->currentIndex() == 1 )
+        stCmd.enAlgorithm = PR_MATCH_TMPL_ALGORITHM::HIERARCHICAL_EDGE;
+    
+    if ( VisionStatus::OK == PR_LrnTmpl ( &stCmd, &stRpy) ) {
+        _nTmplRecordId = stRpy.nRecordId;        
+        drawTmplImage ( stRpy.matTmpl );
+    }else {
+        PR_GET_ERROR_INFO_RPY stErrStrRpy;
+        PR_GetErrorInfo( stRpy.enStatus, &stErrStrRpy);
+        QMessageBox::critical(nullptr, "Match Template", stErrStrRpy.achErrorStr, "Quit");
+        ui.lineEditObjCenter->clear();
+        ui.lineEditObjRotation->clear();
+    }    
 }
 
-void VisionWidget::on_captureTemplateBtn_clicked()
+void VisionWidget::on_matchTmplBtn_clicked()
 {
     if ( _sourceImagePath.empty() ) {
         QMessageBox::information(this, "Vision Widget", "Please select an image first!", "Quit");
@@ -342,15 +359,32 @@ void VisionWidget::on_captureTemplateBtn_clicked()
     ui.visionView->setState ( VisionView::VISION_VIEW_STATE::TEST_VISION_LIBRARY );
     ui.visionView->applyIntermediateResult();
 
-    cv::Mat mat = ui.visionView->getMat();
-    cv::Rect rectSelected = ui.visionView->getSelectedWindow();
-    if ( rectSelected.width >= mat.cols || rectSelected.height >= mat.rows )    {
-        QMessageBox::information(this, "Vision Widget", "Please select an area first!", "Quit");
-        return;
+    PR_MATCH_TEMPLATE_CMD stCmd;
+    stCmd.matInputImg = ui.visionView->getMat();
+    stCmd.nRecordId = _nTmplRecordId;
+    stCmd.rectSrchWindow = ui.visionView->getSelectedWindow();
+    stCmd.enMotion = static_cast<PR_OBJECT_MOTION>( ui.cbMatchTmplMotion->currentIndex() );
+    stCmd.enAlgorithm = PR_MATCH_TMPL_ALGORITHM::SQUARE_DIFF;
+    if ( ui.cbMatchTmplAlgorithm->currentIndex() == 1 )
+        stCmd.enAlgorithm = PR_MATCH_TMPL_ALGORITHM::HIERARCHICAL_EDGE;
+
+    PR_MATCH_TEMPLATE_RPY stRpy;
+    VisionStatus enStatus = PR_MatchTmpl( &stCmd, &stRpy );
+    if ( VisionStatus::OK == enStatus )
+    {
+        ui.visionView->setMat ( VisionView::DISPLAY_SOURCE::RESULT, stRpy.matResultImg );
+        char chArrCenter[100];
+        _snprintf( chArrCenter, sizeof ( chArrCenter ), "%.3f, %.3f", stRpy.ptObjPos.x, stRpy.ptObjPos.y);
+        ui.lineEditObjCenter->setText( chArrCenter );
+        std::string strRotation = std::to_string ( stRpy.fRotation );
+        ui.lineEditObjRotation->setText(strRotation.c_str());
+    }else {
+        PR_GET_ERROR_INFO_RPY stErrStrRpy;
+        PR_GetErrorInfo(enStatus, &stErrStrRpy);
+        QMessageBox::critical(nullptr, "Match Template", stErrStrRpy.achErrorStr, "Quit");
+        ui.lineEditObjCenter->clear();
+        ui.lineEditObjRotation->clear();
     }
-    cv::Mat matROI(mat, rectSelected);
-    _matTmpl = matROI.clone();
-    drawTmplImage();
 }
 
 void VisionWidget::on_btnCalcCoverage_clicked()
@@ -384,41 +418,6 @@ void VisionWidget::on_btnCalcCoverage_clicked()
 
     ui.lineEditWhiteRatio->setText ( std::to_string ( fWhiteRatio ).c_str() );
     ui.lineEditBlackRatio->setText ( std::to_string ( fBlackRatio ).c_str() );
-}
-
-void VisionWidget::on_matchTmplBtn_clicked()
-{
-    if ( _sourceImagePath.empty() ) {
-        QMessageBox::information(this, "Vision Widget", "Please select an image first!", "Quit");
-        return;
-    }
-
-    ui.visionView->setState ( VisionView::VISION_VIEW_STATE::TEST_VISION_LIBRARY );
-    ui.visionView->applyIntermediateResult();
-
-    PR_MATCH_TEMPLATE_CMD stCmd;
-    stCmd.matInputImg = ui.visionView->getMat();
-    stCmd.matTmpl = _matTmpl;
-    stCmd.rectSrchWindow = ui.visionView->getSelectedWindow();
-    stCmd.enMotion = static_cast<PR_OBJECT_MOTION>( ui.cbMotion->currentIndex() );
-
-    PR_MATCH_TEMPLATE_RPY stRpy;
-    VisionStatus enStatus = PR_MatchTmpl( &stCmd, &stRpy );
-    if ( VisionStatus::OK == enStatus )
-    {
-        ui.visionView->setMat ( VisionView::DISPLAY_SOURCE::RESULT, stRpy.matResultImg );
-        char chArrCenter[100];
-        _snprintf( chArrCenter, sizeof ( chArrCenter ), "%.3f, %.3f", stRpy.ptObjPos.x, stRpy.ptObjPos.y);
-        ui.lineEditObjCenter->setText( chArrCenter );
-        std::string strRotation = std::to_string ( stRpy.fRotation );
-        ui.lineEditObjRotation->setText(strRotation.c_str());
-    }else {
-        PR_GET_ERROR_INFO_RPY stErrStrRpy;
-        PR_GetErrorInfo(enStatus, &stErrStrRpy);
-        QMessageBox::critical(nullptr, "Match Template", stErrStrRpy.achErrorStr, "Quit");
-        ui.lineEditObjCenter->clear();
-        ui.lineEditObjRotation->clear();
-    }
 }
 
 void VisionWidget::on_btnCalibrateCamera_clicked() {
@@ -690,6 +689,78 @@ void VisionWidget::on_btnAutoLocateLead_clicked() {
         if ( stErrStrRpy.enErrorLevel == PR_STATUS_ERROR_LEVEL::INSP_STATUS )
             ui.visionView->setMat ( VisionView::DISPLAY_SOURCE::RESULT, stRpy.matResultImg );
         QMessageBox::critical(nullptr, "Auto Locate Lead", stErrStrRpy.achErrorStr, "Quit");
+        ui.lineEditObjCenter->clear();
+        ui.lineEditObjRotation->clear();
+    }
+}
+
+void VisionWidget::on_btnInspLead_clicked() {
+    if ( _sourceImagePath.empty() ) {
+        QMessageBox::information(this, "Vision Widget", "Please select an image first!", "Quit");
+        return;
+    }
+
+    ui.visionView->setState ( VisionView::VISION_VIEW_STATE::TEST_VISION_LIBRARY );
+    ui.visionView->applyIntermediateResult();
+
+    std::unique_ptr<MessageBoxDialog> pMessageBox = std::make_unique<MessageBoxDialog>();
+    pMessageBox->setGeometry(700, 500, pMessageBox->size().width(), pMessageBox->size().height());
+    pMessageBox->setWindowTitle("Inspect Lead");
+	pMessageBox->SetMessageText1("Please input the chip window");
+    pMessageBox->SetMessageText2("Press and drag the left mouse buttont to input");
+	pMessageBox->setWindowFlags(Qt::WindowStaysOnTopHint);
+	pMessageBox->show();
+	pMessageBox->raise();
+	pMessageBox->activateWindow();
+    ui.visionView->setTestVisionState(VisionView::TEST_VISION_STATE::SET_MULTIPLE_WINDOW);
+    ui.visionView->setCurrentSrchWindowIndex(0);
+	int iReturn = pMessageBox->exec();
+    if ( iReturn != QDialog::Accepted ) {
+        ui.visionView->setTestVisionState(VisionView::TEST_VISION_STATE::IDLE);
+        return;
+    }
+
+    pMessageBox->SetMessageText1("Please input the lead search window");
+    pMessageBox->SetMessageText2("Press and drag the left mouse buttont to input");
+	pMessageBox->setWindowFlags(Qt::WindowStaysOnTopHint);
+	pMessageBox->show();
+	pMessageBox->raise();
+	pMessageBox->activateWindow();
+    ui.visionView->setTestVisionState(VisionView::TEST_VISION_STATE::SET_MULTIPLE_WINDOW);
+    ui.visionView->setCurrentSrchWindowIndex(1);
+
+	iReturn = pMessageBox->exec();
+    if ( iReturn != QDialog::Accepted ) {
+        ui.visionView->setTestVisionState(VisionView::TEST_VISION_STATE::IDLE);
+        return;
+    }
+   
+    auto _vecSrchWindow = ui.visionView->getVecSrchWindow();
+    if ( _vecSrchWindow.size() <= 1 )   {
+        pMessageBox->SetMessageText1("The input is invalid");
+        pMessageBox->SetMessageText2("");
+        pMessageBox->exec();
+        ui.visionView->setTestVisionState(VisionView::TEST_VISION_STATE::IDLE);
+        return;
+    }
+
+    PR_INSP_LEAD_CMD stCmd;
+    PR_INSP_LEAD_RPY stRpy;
+    stCmd.matInputImg = ui.visionView->getMat();
+    stCmd.rectChipWindow = rectToRotatedRect ( _vecSrchWindow[0] );
+    PR_INSP_LEAD_CMD::LEAD_INPUT_INFO stLeadInput;
+    stLeadInput.rectSrchWindow = rectToRotatedRect ( _vecSrchWindow[1] );
+    stCmd.vecLeads.push_back ( stLeadInput );
+    
+    PR_InspLead ( &stCmd, &stRpy );
+    if ( VisionStatus::OK == stRpy.enStatus ) {
+        ui.visionView->setMat ( VisionView::DISPLAY_SOURCE::RESULT, stRpy.matResultImg );
+    }else {
+        PR_GET_ERROR_INFO_RPY stErrStrRpy;
+        PR_GetErrorInfo(stRpy.enStatus, &stErrStrRpy);
+        if ( stErrStrRpy.enErrorLevel == PR_STATUS_ERROR_LEVEL::INSP_STATUS )
+            ui.visionView->setMat ( VisionView::DISPLAY_SOURCE::RESULT, stRpy.matResultImg );
+        QMessageBox::critical(nullptr, "Inspect Lead", stErrStrRpy.achErrorStr, "Quit");
         ui.lineEditObjCenter->clear();
         ui.lineEditObjRotation->clear();
     }

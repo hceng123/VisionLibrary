@@ -29,9 +29,8 @@ private slots:
     void on_fitRectBtn_clicked();
     void on_ocrBtn_clicked();
     void on_srchFiducialBtn_clicked();
-    void on_selectTemplateBtn_clicked();
+    void on_btnLrnTemplate_clicked();
     void on_matchTmplBtn_clicked();
-    void on_captureTemplateBtn_clicked();
     void on_btnCalcCoverage_clicked();
     void on_btnCalibrateCamera_clicked();
     void on_btnLrnChip_clicked();
@@ -41,9 +40,10 @@ private slots:
     void on_btnInspContour_clicked();
     void on_btnInspHole_clicked();
     void on_btnAutoLocateLead_clicked();
+    void on_btnInspLead_clicked();
 protected:
     bool checkDisplayImage();
-    void drawTmplImage();
+    void drawTmplImage(const cv::Mat &matTmpl);
 private:
     Ui::VisionWidgetClass               ui;
     std::string                         _sourceImagePath;
@@ -56,10 +56,10 @@ private:
     std::unique_ptr<FillHoleWidget>     _ptrFillHoleWidget;
     std::unique_ptr<EdgeDetectWidget>   _ptrEdgeDetectWidget;
     std::unique_ptr<ColorWidget>        _ptrColorWidget;
-    cv::Mat                             _matTmpl;
 
     AOI::Int32                          _nChipRecordId = -1;
     AOI::Int32                          _nContourRecordId = -1;
+    AOI::Int32                          _nTmplRecordId = -1;
 };
 
 #endif // VISIONWIDGET_H

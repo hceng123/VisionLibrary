@@ -70,9 +70,27 @@ struct PR_SRCH_OBJ_RPY {
     cv::Mat                 matResultImg;
 };
 
-struct PR_MATCH_TEMPLATE_CMD {
+/******************************************
+* Match Template Section *
+******************************************/
+struct PR_LRN_TEMPLATE_CMD {
+    PR_LRN_TEMPLATE_CMD() : enAlgorithm (PR_MATCH_TMPL_ALGORITHM::SQUARE_DIFF) {}
     cv::Mat                 matInputImg;
+    cv::Rect                rectROI;
+    PR_MATCH_TMPL_ALGORITHM enAlgorithm;
+};
+
+struct PR_LRN_TEMPLATE_RPY {
+    VisionStatus            enStatus;
+    Int32                   nRecordId;
     cv::Mat                 matTmpl;
+};
+
+struct PR_MATCH_TEMPLATE_CMD {
+    PR_MATCH_TEMPLATE_CMD() : enAlgorithm (PR_MATCH_TMPL_ALGORITHM::SQUARE_DIFF), nRecordId(-1) {}
+    cv::Mat                 matInputImg;
+    PR_MATCH_TMPL_ALGORITHM enAlgorithm;
+    Int32                   nRecordId;
     cv::Rect                rectSrchWindow;
     PR_OBJECT_MOTION        enMotion;
 };
@@ -84,6 +102,9 @@ struct PR_MATCH_TEMPLATE_RPY {
     float                   fMatchScore;
     cv::Mat                 matResultImg;
 };
+/******************************************
+* End of Match Template Section *
+******************************************/
 
 struct PR_DefectCriteria {
     PR_DEFECT_ATTRIBUTE     enAttribute;
@@ -762,6 +783,41 @@ struct PR_INSP_HOLE_RPY {
 };
 /******************************************
 * End of Inspect Hole Section *
+******************************************/
+
+/******************************************
+* Inspect Lead Section *
+******************************************/
+struct PR_INSP_LEAD_CMD {
+    struct LEAD_INPUT_INFO {
+        cv::RotatedRect     rectSrchWindow;
+        cv::RotatedRect     rectExpectedWindow;
+    };
+    using VECTOR_LEAD_INPUT_INFO = std::vector<LEAD_INPUT_INFO>;
+    PR_INSP_LEAD_CMD() : fLeadStartWidthRatio ( 0.5f ), nLeadStartConsecutiveLength(2), fLeadEndWidthRatio (0.5f), nLeadEndConsecutiveLength(2), enFindLeadEndMethod(PR_FIND_LEAD_END_METHOD::AVERAGE) {}
+    cv::Mat                 matInputImg;
+    cv::RotatedRect         rectChipWindow;
+    VECTOR_LEAD_INPUT_INFO  vecLeads;
+    float                   fLeadStartWidthRatio;
+    Int16                   nLeadStartConsecutiveLength;
+    float                   fLeadEndWidthRatio;
+    Int16                   nLeadEndConsecutiveLength;
+    PR_FIND_LEAD_END_METHOD enFindLeadEndMethod;
+};
+
+struct PR_INSP_LEAD_RPY {  
+    struct LEAD_RESULT {
+        bool                bFound;
+        cv::RotatedRect     rectLead;
+    };
+    using VECTOR_LEAD_RESULT = std::vector<LEAD_RESULT>;
+    VisionStatus            enStatus;
+    VECTOR_LEAD_RESULT      vecLeadResult;
+    cv::Mat                 matResultImg;
+};
+
+/******************************************
+* End of Inspect Lead Section *
 ******************************************/
 
 }

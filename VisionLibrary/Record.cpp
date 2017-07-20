@@ -8,7 +8,7 @@ namespace Vision
 {
 
 /******************************************
-* Template Record *
+* Object Record *
 ******************************************/
 VisionStatus ObjRecord::load(cv::FileStorage &fs, const String& strFilePath)
 {
@@ -241,6 +241,70 @@ String ContourRecord::getTmplFileName() const {
 
 String ContourRecord::getContourFileName() const {
     return _strContourFileName;
+}
+
+/******************************************
+* Template Record *
+******************************************/
+VisionStatus TmplRecord::load(cv::FileStorage &fs, const String& strFilePath)
+{
+    cv::FileNode fileNode;
+
+    fileNode = fs[_strKeyAlgorithm];
+    Int32 nAlgorithm = 0;
+    cv::read(fileNode, nAlgorithm, 0 );
+    _enAlgorithm = static_cast<PR_MATCH_TMPL_ALGORITHM> ( nAlgorithm );
+
+    _matTmpl = cv::imread ( strFilePath + "/" + _strTmplFileName, cv::IMREAD_GRAYSCALE );
+    if ( _matTmpl.empty() )
+        return VisionStatus::INVALID_RECORD_FILE;
+
+    if ( PR_MATCH_TMPL_ALGORITHM::HIERARCHICAL_EDGE == _enAlgorithm ) {
+        _matEdgeMask = cv::imread ( strFilePath + "/" + _strEdgeMaskName, cv::IMREAD_GRAYSCALE );
+        if (_matEdgeMask.empty ())
+            return VisionStatus::INVALID_RECORD_FILE;
+    }
+    return VisionStatus::OK;
+}
+
+VisionStatus TmplRecord::save(const String& strFilePath) {
+    String strParamFilePath = strFilePath + "/" + Config::GetInstance()->getRecordParamFile();
+    cv::FileStorage fs(strParamFilePath, cv::FileStorage::WRITE);
+    if ( ! fs.isOpened() )
+        return VisionStatus::OPEN_FILE_FAIL;
+
+    write ( fs, _strKeyType, ToInt32 ( PR_RECORD_TYPE::TEMPLATE ) );
+    write ( fs, _strKeyAlgorithm, ToInt32 ( _enAlgorithm ) );
+    cv::imwrite ( strFilePath + "/" + _strTmplFileName, _matTmpl );
+    if ( PR_MATCH_TMPL_ALGORITHM::HIERARCHICAL_EDGE == _enAlgorithm )
+        cv::imwrite ( strFilePath + "/" + _strEdgeMaskName, _matEdgeMask );
+    
+    fs.release();
+    return VisionStatus::OK;
+}
+
+void TmplRecord::setAlgorithm(PR_MATCH_TMPL_ALGORITHM enAlgorithm) {
+    _enAlgorithm = enAlgorithm;
+}
+
+PR_MATCH_TMPL_ALGORITHM TmplRecord::getAlgorithm() const {
+    return _enAlgorithm;
+}
+
+void TmplRecord::setTmpl( const cv::Mat &matTmpl ) {
+    _matTmpl = matTmpl;
+}
+
+cv::Mat TmplRecord::getTmpl() const {
+    return _matTmpl;
+}
+
+void TmplRecord::setEdgeMask(const cv::Mat &matEdgeMask) {
+    _matEdgeMask = matEdgeMask;
+}
+
+cv::Mat TmplRecord::getEdgeMask() const {
+    return _matEdgeMask;
 }
 
 }

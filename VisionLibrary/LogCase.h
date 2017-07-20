@@ -203,8 +203,8 @@ class LogCaseFitParallelLine : public LogCase
 {
 public:
     explicit LogCaseFitParallelLine(const String &strPath, bool bReplay = false) : LogCase(strPath, bReplay) {}
-    VisionStatus WriteCmd(PR_FIT_PARALLEL_LINE_CMD *pstCmd);
-    VisionStatus WriteRpy(PR_FIT_PARALLEL_LINE_RPY *pstRpy);
+    VisionStatus WriteCmd(const PR_FIT_PARALLEL_LINE_CMD *const pstCmd);
+    VisionStatus WriteRpy(const PR_FIT_PARALLEL_LINE_RPY *const pstRpy);
     virtual VisionStatus RunLogCase() override;
     virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
     static String StaticGetFolderPrefix();
@@ -395,19 +395,38 @@ private:
     const String _strKeyStatus          = "Status";
 };
 
-class LogCaseMatchTmpl : public LogCase
+class LogCaseLrnTmpl : public LogCase
 {
 public:
-    explicit LogCaseMatchTmpl(const String &strPath, bool bReplay = false) : LogCase(strPath, bReplay) {}
-    VisionStatus WriteCmd(PR_MATCH_TEMPLATE_CMD *pstCmd);
-    VisionStatus WriteRpy(PR_MATCH_TEMPLATE_RPY *pstRpy);
+    explicit LogCaseLrnTmpl(const String &strPath, bool bReplay = false) : LogCase(strPath, bReplay) {}
+    VisionStatus WriteCmd(const PR_LRN_TEMPLATE_CMD *const pstCmd);
+    VisionStatus WriteRpy(const PR_LRN_TEMPLATE_RPY *const pstRpy);
     virtual VisionStatus RunLogCase() override;
     virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
     static String StaticGetFolderPrefix();
 private:
-    const String _TMPL_FILE_NAME        = "Template.png";
+    const String _strKeyROI             = "ROI";
+    const String _strKeyAlgorithm       = "Algorithm";
+
+    const String _strKeyStatus          = "Status";
+    const String _strKeyRecordId        = "RecordId";
+    const String _strTmplFileName       = "Tmpl.png";
+};
+
+class LogCaseMatchTmpl : public LogCase
+{
+public:
+    explicit LogCaseMatchTmpl(const String &strPath, bool bReplay = false) : LogCase(strPath, bReplay) {}
+    VisionStatus WriteCmd(const PR_MATCH_TEMPLATE_CMD *const pstCmd);
+    VisionStatus WriteRpy(const PR_MATCH_TEMPLATE_RPY *const pstRpy);
+    virtual VisionStatus RunLogCase() override;
+    virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
+    static String StaticGetFolderPrefix();
+private:
+    const String _strKeyRecordId        = "RecordId";
     const String _strKeySrchWindow      = "SrchWindow";
     const String _strKeyMotion          = "Motion";
+    const String _strKeyAlgorithm       = "Algorithm";
 
     const String _strKeyStatus          = "Status";
 };
@@ -416,8 +435,8 @@ class LogCasePickColor : public LogCase
 {
 public:
     explicit LogCasePickColor(const String &strPath, bool bReplay = false) : LogCase(strPath, bReplay) {}
-    VisionStatus WriteCmd(PR_PICK_COLOR_CMD *pstCmd);
-    VisionStatus WriteRpy(PR_PICK_COLOR_RPY *pstRpy);
+    VisionStatus WriteCmd(const PR_PICK_COLOR_CMD *const pstCmd);
+    VisionStatus WriteRpy(const PR_PICK_COLOR_RPY *const pstRpy);
     virtual VisionStatus RunLogCase() override;
     virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
     static String StaticGetFolderPrefix();
@@ -605,6 +624,39 @@ private:
     const String _strKeyStatus          = "Status";
     const String _strKeyRatio           = "Ratio";
     const String _strKeyBlobCount       = "BlobCount";
+};
+
+class LogCaseInspLead : public LogCase
+{
+public:
+    explicit LogCaseInspLead(const String &strPath, bool bReplay = false) : LogCase(strPath, bReplay) {}
+    VisionStatus WriteCmd(const PR_INSP_LEAD_CMD *const pstCmd);
+    VisionStatus WriteRpy(const PR_INSP_LEAD_RPY *const pstRpy);
+    virtual VisionStatus RunLogCase() override;
+    virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
+    static String StaticGetFolderPrefix();
+private:
+    const String _strKeyChipCenter          = "RoiCenter";
+    const String _strKeyChipSize            = "RoiSize";
+    const String _strKeyChipAngle           = "RoiAngle";
+    const String _strKeyLeadCount           = "LeadCount";
+    const String _strKeyLeadSrchWinCtr      = "LeadSrchWinCenter";
+    const String _strKeyLeadSrchWinSize     = "LeadSrchWinSize";
+    const String _strKeyLeadSrchWinAngle    = "LeadSrchWinAngle";
+    const String _strKeyLeadExpWinCtr       = "LeadExpWinCenter";
+    const String _strKeyLeadExpWinSize      = "LeadExpWinSize";
+    const String _strKeyLeadExpWinAngle     = "LeadExpWinAngle";
+    const String _strKeyLeadStartWidthRatio = "LeadStartWidthRatio";
+    const String _strKeyLeadStartConLen     = "LeadStartConsecutiveLength";
+    const String _strKeyLeadEndWidthRatio   = "LeadEndWidthRatio";
+    const String _strKeyLeadEndConLen       = "LeadEndConsecutiveLength";
+    const String _strKeyFindLeadEndMethod   = "FindLeadEndMethod";
+
+    const String _strKeyStatus              = "Status";
+    const String _strFound                  = "Found";
+    const String _strKeyLeadWinCtr          = "LeadWinCenter";
+    const String _strKeyLeadWinSize         = "LeadWinSize";
+    const String _strKeyLeadWinAngle        = "LeadWinAngle";
 };
 
 }

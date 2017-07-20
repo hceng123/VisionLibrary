@@ -14,6 +14,7 @@ void TestCalibCamera_1();
 void TestCalibCamera_2();
 void TestInspChipHead();
 void TestTemplate();
+void TestInspLead();
 
 template<class T>
 void printfMat(const cv::Mat &mat)

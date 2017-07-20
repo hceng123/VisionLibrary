@@ -6,19 +6,19 @@ namespace AOI
 namespace Vision
 {
 
-#define MAX_NUM_OF_DEFECT_CRITERIA				(5)
-#define MAX_NUM_OF_DEFECT_RESULT				(20)
-#define PARALLEL_LINE_SLOPE_DIFF_LMT			(0.1)
-#define PARALLEL_LINE_MERGE_DIST_LMT			(10)
-#define PR_ELECTRODE_COUNT                      (2)
+const int MAX_NUM_OF_DEFECT_CRITERIA =          5;
+const int MAX_NUM_OF_DEFECT_RESULT =            20;
+const float PARALLEL_LINE_SLOPE_DIFF_LMT =		0.1f;
+const float PARALLEL_LINE_MERGE_DIST_LMT =      10;
+const int PR_ELECTRODE_COUNT =                  2;
 const int PR_MAX_GRAY_LEVEL =                   255;
-#define PR_MIN_GRAY_LEVEL                       (0)
-#define PR_RECT_EDGE_COUNT                      (4)
-#define PR_MAX_ERR_STR_LEN						(100)
-#define PR_AUTO_THRESHOLD_MAX_NUM               (4)
-#define PR_FIT_LINE_MAX_POINT_COUNT             (10000)
-#define PR_FIT_CIRCLE_MAX_POINT                 (10000)
-static const double PR_MM_TO_UM              =  1000.;
+const int PR_MIN_GRAY_LEVEL =                   0;
+const int PR_RECT_EDGE_COUNT =                  4;
+const int PR_MAX_ERR_STR_LEN =                  100;
+const int PR_AUTO_THRESHOLD_MAX_NUM =           4;
+const int PR_FIT_LINE_MAX_POINT_COUNT =         10000;
+const int PR_FIT_CIRCLE_MAX_POINT =             10000;
+const double PR_MM_TO_UM =                      1000.;
 
 enum class PR_SRCH_OBJ_ALGORITHM {
 	SIFT,
@@ -55,6 +55,7 @@ enum class PR_RECORD_TYPE {
     DEVICE,
     CHIP,
     CONTOUR,
+    TEMPLATE,
     LEAD,
 };
 
@@ -122,6 +123,11 @@ enum class PR_FILL_HOLE_METHOD {
     MORPHOLOGY,
 };
 
+enum class PR_MATCH_TMPL_ALGORITHM {
+    SQUARE_DIFF,
+    HIERARCHICAL_EDGE       = 10,
+};
+
 enum class PR_OBJECT_MOTION {
     TRANSLATION,    //Only move in XY
     EUCLIDEAN,      //Move and rotation in XY
@@ -164,6 +170,12 @@ enum class PR_INSP_HOLE_MODE {
     RATIO,
     BLOB,
     SIM,
+};
+
+enum class PR_FIND_LEAD_END_METHOD {
+    AVERAGE,
+    INDIVIDUAL,
+    FIXED,
 };
 
 }
