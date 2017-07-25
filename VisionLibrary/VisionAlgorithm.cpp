@@ -2886,8 +2886,7 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
         if ( vecSelectedPoints.size() >= numOfPtToFinish )
            return Fitting::fitCircle ( vecSelectedPoints );
         
-        if ( vecSelectedPoints.size() > nMaxConsentNum )
-        {
+        if ( vecSelectedPoints.size() > nMaxConsentNum ) {
             fitResult = Fitting::fitCircle ( vecSelectedPoints );
             nMaxConsentNum = vecSelectedPoints.size();
         }
@@ -2979,8 +2978,7 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     return rotatedRect;
 }
 
-/*static*/ VisionStatus VisionAlgorithm::ocr(PR_OCR_CMD *pstCmd, PR_OCR_RPY *pstRpy, bool bReplay)
-{    
+/*static*/ VisionStatus VisionAlgorithm::ocr(PR_OCR_CMD *pstCmd, PR_OCR_RPY *pstRpy, bool bReplay /*= false*/) {    
     assert ( pstCmd != nullptr && pstRpy != nullptr );
 
     if (pstCmd->matInputImg.empty()) {
@@ -3069,8 +3067,7 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     return pstRpy->enStatus;
 }
 
-/*static*/ VisionStatus VisionAlgorithm::filter(PR_FILTER_CMD *pstCmd, PR_FILTER_RPY *pstRpy)
-{
+/*static*/ VisionStatus VisionAlgorithm::filter(PR_FILTER_CMD *pstCmd, PR_FILTER_RPY *pstRpy) {
     assert ( pstCmd != nullptr && pstRpy != nullptr );
     char charrMsg [ 1000 ];
 
@@ -3134,7 +3131,7 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     return pstRpy->enStatus;
 }
 
-/*static*/ VisionStatus VisionAlgorithm::removeCC(PR_REMOVE_CC_CMD *pstCmd, PR_REMOVE_CC_RPY *pstRpy, bool bReplay) {
+/*static*/ VisionStatus VisionAlgorithm::removeCC(PR_REMOVE_CC_CMD *pstCmd, PR_REMOVE_CC_RPY *pstRpy, bool bReplay /*= false*/) {
     assert ( pstCmd != nullptr && pstRpy != nullptr );
     char chArrMsg [ 1000 ];
 
@@ -3212,8 +3209,7 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     return pstRpy->enStatus;
 }
 
-/*static*/ VisionStatus VisionAlgorithm::detectEdge(PR_DETECT_EDGE_CMD *pstCmd, PR_DETECT_EDGE_RPY *pstRpy, bool bReplay)
-{
+/*static*/ VisionStatus VisionAlgorithm::detectEdge(PR_DETECT_EDGE_CMD *pstCmd, PR_DETECT_EDGE_RPY *pstRpy, bool bReplay /*= false*/ ) {
     assert ( pstCmd != nullptr && pstRpy != nullptr );
 
     if ( pstCmd->matInputImg.empty() ) {
@@ -3256,8 +3252,7 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     return pstRpy->enStatus;
 }
 
-/*static*/ VisionStatus VisionAlgorithm::inspCircle(const PR_INSP_CIRCLE_CMD *const pstCmd, PR_INSP_CIRCLE_RPY *const pstRpy, bool bReplay)
-{
+/*static*/ VisionStatus VisionAlgorithm::inspCircle(const PR_INSP_CIRCLE_CMD *const pstCmd, PR_INSP_CIRCLE_RPY *const pstRpy, bool bReplay /*= false*/ ) {
     assert(pstCmd != nullptr && pstRpy != nullptr);
     char chArrMsg[1000];
 
@@ -3270,7 +3265,7 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     if (pstCmd->rectROI.x < 0 || pstCmd->rectROI.y < 0 ||
         pstCmd->rectROI.width <= 0 || pstCmd->rectROI.height <= 0 ||
         ( pstCmd->rectROI.x + pstCmd->rectROI.width ) > pstCmd->matInputImg.cols ||
-        ( pstCmd->rectROI.y + pstCmd->rectROI.height ) > pstCmd->matInputImg.rows )    {
+        ( pstCmd->rectROI.y + pstCmd->rectROI.height ) > pstCmd->matInputImg.rows ) {
         WriteLog("The input ROI is invalid");
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return VisionStatus::INVALID_PARAM;
@@ -3306,13 +3301,13 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     if ( PR_DEBUG_MODE::SHOW_IMAGE == Config::GetInstance()->getDebugMode())
         showImage("Before mask out ROI image", matGray );
 
-    if ( ! pstCmd->matMask.empty() )    {
+    if ( ! pstCmd->matMask.empty() ) {
         cv::Mat matROIMask(pstCmd->matMask, pstCmd->rectROI);
         matROIMask = cv::Scalar(255) - matROIMask;
         matGray.setTo(cv::Scalar(0), matROIMask);
     }
 
-    if ( PR_DEBUG_MODE::SHOW_IMAGE == Config::GetInstance()->getDebugMode())
+    if ( PR_DEBUG_MODE::SHOW_IMAGE == Config::GetInstance()->getDebugMode() )
         showImage("mask out ROI image", matGray );
 
     VectorOfPoint vecPoints;
@@ -3351,8 +3346,7 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     return pstRpy->enStatus;
 }
 
-/*static*/ VisionStatus VisionAlgorithm::_fillHoleByContour(const cv::Mat &matInputImg, cv::Mat &matOutput, PR_OBJECT_ATTRIBUTE enAttribute)
-{
+/*static*/ VisionStatus VisionAlgorithm::_fillHoleByContour(const cv::Mat &matInputImg, cv::Mat &matOutput, PR_OBJECT_ATTRIBUTE enAttribute) {
     if ( matInputImg.channels() > 1 )
         cv::cvtColor ( matInputImg, matOutput, CV_BGR2GRAY );
     else
@@ -3399,7 +3393,7 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     return VisionStatus::OK;
 }
 
-/*static*/ VisionStatus VisionAlgorithm::fillHole(PR_FILL_HOLE_CMD *pstCmd, PR_FILL_HOLE_RPY *pstRpy, bool bReplay)
+/*static*/ VisionStatus VisionAlgorithm::fillHole(PR_FILL_HOLE_CMD *pstCmd, PR_FILL_HOLE_RPY *pstRpy, bool bReplay /*= false*/)
 {
     assert(pstCmd != nullptr && pstRpy != nullptr);
 
@@ -3412,7 +3406,7 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     if (pstCmd->rectROI.x < 0 || pstCmd->rectROI.y < 0 ||
         pstCmd->rectROI.width <= 0 || pstCmd->rectROI.height <= 0 ||
         ( pstCmd->rectROI.x + pstCmd->rectROI.width ) > pstCmd->matInputImg.cols ||
-        ( pstCmd->rectROI.y + pstCmd->rectROI.height ) > pstCmd->matInputImg.rows )    {
+        ( pstCmd->rectROI.y + pstCmd->rectROI.height ) > pstCmd->matInputImg.rows ) {
         WriteLog("The input ROI is invalid.");
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return VisionStatus::INVALID_PARAM;

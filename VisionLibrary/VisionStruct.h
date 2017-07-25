@@ -487,12 +487,16 @@ struct PR_REMOVE_CC_RPY {
     cv::Mat                 matResultImg;
 };
 
+// Hysteresis: The final step. Canny does use two thresholds (upper and lower):
+// If a pixel gradient is higher than the upper threshold, the pixel is accepted as an edge
+// If a pixel gradient value is below the lower threshold, then it is rejected.
+// If the pixel gradient is between the two thresholds, then it will be accepted only if it is connected to a pixel that is above the upper threshold.
 struct PR_DETECT_EDGE_CMD {
     cv::Mat                 matInputImg;
     cv::Rect                rectROI;
-    Int16                   nThreshold1;
-    Int16                   nThreshold2;
-    Int16                   nApertureSize;
+    Int16                   nThreshold1;        // first threshold for the hysteresis procedure.
+    Int16                   nThreshold2;        // second threshold for the hysteresis procedure.
+    Int16                   nApertureSize;      // aperture size for the Sobel operator.
 };
 
 struct PR_DETECT_EDGE_RPY {
@@ -503,7 +507,7 @@ struct PR_DETECT_EDGE_RPY {
 struct PR_INSP_CIRCLE_CMD {
     cv::Mat                 matInputImg;
     cv::Mat                 matMask;
-    cv::Rect                rectROI;                
+    cv::Rect                rectROI;
 };
 
 struct PR_INSP_CIRCLE_RPY {
