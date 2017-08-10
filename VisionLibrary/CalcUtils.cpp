@@ -220,5 +220,13 @@ float CalcUtils::calcPointToContourDist(const cv::Point &ptInput, const VectorOf
     return fDistance;
 }
 
+/*static*/ cv::Point2f CalcUtils::getContourCtr(const VectorOfPoint &contour) {
+    cv::Moments moment = cv::moments ( contour );
+    cv::Point2f ptCenter;
+    ptCenter.x = static_cast<float>(moment.m10 / moment.m00);
+    ptCenter.y = static_cast<float>(moment.m01 / moment.m00);
+    return ptCenter;
+}
+
 }
 }

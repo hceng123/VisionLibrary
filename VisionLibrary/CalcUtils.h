@@ -141,6 +141,7 @@ public:
                    cv::InputArray kernel, cv::Point anchor = cv::Point(-1,-1),
                    double delta = 0, int borderType = cv::BORDER_DEFAULT );
     static float calcPointToContourDist(const cv::Point &ptInput, const VectorOfPoint &contour, cv::Point &ptResult );
+    static cv::Point2f getContourCtr(const VectorOfPoint &contour);
 };
 
 }

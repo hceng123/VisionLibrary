@@ -4014,27 +4014,41 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
         FINISH_LOGCASE;
         return pstRpy->enStatus;
     }
-    matThreshold = stRemoveCcRpy.matResultImg;
+    matThreshold = stRemoveCcRpy.matResultImg.clone();
     if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE )
         showImage("autoLocateLead removeCC image", matThreshold );
 
-    VectorOfVectorOfPoint contours, vecDrawContours;
+    VectorOfVectorOfPoint contours, effectiveContours, vecDrawContours;
     cv::findContours ( matThreshold, contours, cv::RETR_LIST, cv::CHAIN_APPROX_SIMPLE );
     if ( contours.size() <= 0 ) {
         pstRpy->enStatus = VisionStatus::FAILED_TO_FIND_LEAD;
         FINISH_LOGCASE;
         return pstRpy->enStatus;
     }
+
+    if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE ) {
+        cv::Mat matDisplay;
+        cv::cvtColor ( stRemoveCcRpy.matResultImg, matDisplay, CV_GRAY2BGR );
+        for (int index = 0; index < ToInt32( contours.size() ); ++ index )
+            cv::drawContours ( matDisplay, contours, index, _constGreenScalar );
+        showImage("Find contour result", matDisplay );
+    }
+        
     double dTotalContourArea = 0.;
     double dTotalRectArea = 0.;
-    for ( const auto &contour : contours )  {
+    for ( const auto &contour : contours ) {
+        cv::Point2f ptCenter = CalcUtils::getContourCtr( contour );
+        if ( rectIcBodyInROI.contains( ptCenter ) )
+            continue;
+
         auto area = cv::contourArea ( contour );
         dTotalContourArea += area;
         cv::Rect rect = cv::boundingRect(contour);
         dTotalRectArea += rect.width * rect.height;
+        effectiveContours.push_back ( contour );
     }
-    double dAverageContourArea = dTotalContourArea / contours.size();
-    double dAverageRectArea = dTotalRectArea / contours.size();
+    double dAverageContourArea = dTotalContourArea / effectiveContours.size();
+    double dAverageRectArea = dTotalRectArea / effectiveContours.size();
     double dMinAcceptContourArea = 0.4 * dAverageContourArea;
     double dMaxAcceptContourArea = 1.5 * dAverageContourArea;
     double dMinAcceptRectArea = 0.4 * dAverageRectArea;
@@ -4045,7 +4059,8 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     else
         cv::cvtColor ( pstCmd->matInputImg, pstRpy->matResultImg, CV_GRAY2BGR );
 
-    for ( const auto &contour : contours ) {
+    pstRpy->vecLeadLocation.clear();
+    for ( const auto &contour : effectiveContours ) {
         cv::Rect rect = cv::boundingRect(contour);
         auto contourArea = cv::contourArea ( contour );
         auto rectArea = rect.width * rect.height;
@@ -4090,6 +4105,9 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
         }
     }
     pstRpy->enStatus = VisionStatus::OK;
+    if ( pstRpy->vecLeadLocation.empty() )
+        pstRpy->enStatus = VisionStatus::FAILED_TO_FIND_LEAD;
+
     FINISH_LOGCASE;
     return pstRpy->enStatus;
 }
@@ -5095,11 +5113,7 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     for ( auto contour : vecContours ) {
         auto area = cv::contourArea ( contour );
         if ( area > pstCmd->fMinDefectArea ) {
-            cv::Moments moment = cv::moments( contour );
-            cv::Point2f ptCenter;
-            ptCenter.x = static_cast< float >(moment.m10 / moment.m00);
-            ptCenter.y = static_cast< float >(moment.m01 / moment.m00);
-
+            cv::Point2f ptCenter = CalcUtils::getContourCtr( contour );
             auto contourTarget = _findNearestContour ( ptCenter, ptrRecord->getContour() );
 
             float fInnerFarthestDist, fInnerNearestDist, fOuterFarthestDist, fOuterNearestDist;

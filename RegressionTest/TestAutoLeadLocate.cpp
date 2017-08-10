@@ -59,6 +59,17 @@ void TestAutoLocateLead()
     PR_AutoLocateLead (&stCmd, &stRpy);
     PrintRpy(stRpy);
 
+    std::cout << std::endl << "---------------------------------------------";
+    std::cout << std::endl << "AUTO LOCATE LEAD REGRESSION TEST #4 STARTING";
+    std::cout << std::endl << "---------------------------------------------";
+    std::cout << std::endl;
+    
+    stCmd.matInputImg = cv::imread("./data/ChipWithLead.png", cv::IMREAD_COLOR );
+    stCmd.rectSrchWindow = cv::Rect(12, 15, 457, 454);
+    stCmd.rectChipBody =   cv::Rect(102, 100, 365, 366);
+    PR_AutoLocateLead (&stCmd, &stRpy);
+    PrintRpy(stRpy);
+
 }
 
 }
