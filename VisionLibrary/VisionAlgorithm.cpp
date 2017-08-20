@@ -77,12 +77,12 @@ VisionAlgorithm::VisionAlgorithm()
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return pstRpy->enStatus;
     }
-
-    char charrMsg[1000];
+    
     if (pstCmd->rectLrn.x < 0 || pstCmd->rectLrn.y < 0 ||
         pstCmd->rectLrn.width <= 0 || pstCmd->rectLrn.height <= 0 ||
         ( pstCmd->rectLrn.x + pstCmd->rectLrn.width ) > pstCmd->matInputImg.cols ||
         ( pstCmd->rectLrn.y + pstCmd->rectLrn.height ) > pstCmd->matInputImg.rows ) {
+        char charrMsg[1000];
         _snprintf( charrMsg, sizeof( charrMsg ), "The learn rect (%d, %d, %d, %d) is invalid.",
             pstCmd->rectLrn.x, pstCmd->rectLrn.y, pstCmd->rectLrn.width, pstCmd->rectLrn.height );
         WriteLog(charrMsg);
@@ -5613,6 +5613,81 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     else
         stLeadResult.rectLead.center.y = stLeadInput.rectSrchWindow.center.y - matROI.rows / 2 + ( nLeadEnd + nLeadStart ) / 2;    
     return enStatus;
+}
+
+/*static*/ VisionStatus VisionAlgorithm::gridAvgGrayScale(const PR_GRID_AVG_GRAY_SCALE_CMD *const pstCmd, PR_GRID_AVG_GRAY_SCALE_RPY *const pstRpy)
+{
+    assert(pstCmd != nullptr && pstRpy != nullptr);
+
+    if ( pstCmd->vecInputImgs.empty() ) {
+        WriteLog("There is no input image.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    for ( const auto &matInput : pstCmd->vecInputImgs ) {
+        if ( matInput.empty () ) {
+            WriteLog ( "Input image is empty." );
+            pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+            return pstRpy->enStatus;
+        }
+    }
+    cv::Mat matAverage, matGray, matFloat;
+    if ( pstCmd->vecInputImgs[0].channels() > 1 )
+        cv::cvtColor ( pstCmd->vecInputImgs[0], matGray, CV_BGR2GRAY );
+    else
+        matGray = pstCmd->vecInputImgs[0].clone();
+    matGray.convertTo(matAverage, CV_32FC1);
+
+    if ( pstCmd->vecInputImgs.size() > 1 ) {
+        for ( int i = 1; i < pstCmd->vecInputImgs.size(); ++ i ) {
+            if ( pstCmd->vecInputImgs[i].size() != matAverage.size() ) {
+                char charrMsg[1000];
+                _snprintf ( charrMsg, sizeof ( charrMsg ), "The input image [%d] size is not consistent.", i );
+                WriteLog ( charrMsg );
+                pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+                return pstRpy->enStatus;
+            }
+
+            if ( pstCmd->vecInputImgs[i].channels() > 1 )
+                cv::cvtColor ( pstCmd->vecInputImgs[i], matGray, CV_BGR2GRAY );
+            else
+                matGray = pstCmd->vecInputImgs[i].clone();
+            matGray.convertTo ( matFloat, CV_32FC1 );
+            matAverage += matFloat;
+        }
+    }
+
+    matAverage /= pstCmd->vecInputImgs.size();
+
+    int ROWS = matAverage.rows;
+    int COLS = matAverage.cols;
+    int nIntervalX = matAverage.cols / pstCmd->nGridCol;
+    int nIntervalY = matAverage.rows / pstCmd->nGridRow;
+
+    pstRpy->vecVecGrayScale.clear();
+    for ( int j = 0; j < pstCmd->nGridRow; ++ j ) {
+        std::vector<float> vecFloat;
+        for ( int i = 0; i < pstCmd->nGridCol; ++ i ) {
+            cv::Rect rectROI ( i * nIntervalX, j * nIntervalY, nIntervalX, nIntervalY );
+            cv::Mat matROI ( matAverage, rectROI );
+            float fAverage = cv::sum ( matROI )[0] / rectROI.area();
+            vecFloat.push_back ( fAverage );
+        }
+        pstRpy->vecVecGrayScale.push_back ( vecFloat );
+    }
+
+    int nGridLineSize = 3;
+    cv::Scalar scalarCyan(255, 255, 0);
+    cv::cvtColor ( matAverage, pstRpy->matResultImg, CV_GRAY2BGR );
+    for ( int i = 1; i < pstCmd->nGridCol; ++ i )
+        cv::line ( pstRpy->matResultImg, cv::Point(i * nIntervalX, 0), cv::Point(i * nIntervalX, ROWS), scalarCyan, nGridLineSize );
+    for ( int i = 1; i < pstCmd->nGridRow; ++ i )
+        cv::line ( pstRpy->matResultImg, cv::Point(0, i * nIntervalY), cv::Point(COLS, i * nIntervalY), scalarCyan, nGridLineSize );
+
+    MARK_FUNCTION_START_TIME;
+    pstRpy->enStatus = VisionStatus::OK;
+    return pstRpy->enStatus;
 }
 
 }

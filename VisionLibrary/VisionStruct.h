@@ -824,6 +824,19 @@ struct PR_INSP_LEAD_RPY {
 * End of Inspect Lead Section *
 ******************************************/
 
+struct PR_GRID_AVG_GRAY_SCALE_CMD {
+    std::vector<cv::Mat>    vecInputImgs;
+    Int16                   nGridRow;
+    Int16                   nGridCol;
+};
+
+struct PR_GRID_AVG_GRAY_SCALE_RPY {
+    using VectorOfVectorOfFloat = std::vector<std::vector<float>>;
+    VisionStatus            enStatus;
+    VectorOfVectorOfFloat   vecVecGrayScale;
+    cv::Mat                 matResultImg;
+};
+
 }
 }
 #endif
