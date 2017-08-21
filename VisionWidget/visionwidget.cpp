@@ -765,3 +765,34 @@ void VisionWidget::on_btnInspLead_clicked() {
         ui.lineEditObjRotation->clear();
     }
 }
+
+void VisionWidget::on_btnGridAvgGrayScale_clicked() {
+    if ( _sourceImagePath.empty() ) {
+        QMessageBox::information(this, "Vision Widget", "Please select an image first!", "Quit");
+        return;
+    }
+
+    ui.visionView->setState ( VisionView::VISION_VIEW_STATE::TEST_VISION_LIBRARY );
+    ui.visionView->applyIntermediateResult();
+
+    PR_GRID_AVG_GRAY_SCALE_CMD stCmd;
+    PR_GRID_AVG_GRAY_SCALE_RPY stRpy;
+    stCmd.vecInputImgs.push_back ( ui.visionView->getMat() );
+    stCmd.vecInputImgs.push_back ( ui.visionView->getMat() );
+    stCmd.vecInputImgs.push_back ( ui.visionView->getMat() );
+    stCmd.vecInputImgs.push_back ( ui.visionView->getMat() );
+
+    stCmd.nGridRow = ui.lineEditGridRows->text().toInt();
+    stCmd.nGridCol = ui.lineEditGridCols->text().toInt();
+
+    PR_GridAvgGrayScale ( &stCmd, &stRpy );
+    if ( VisionStatus::OK == stRpy.enStatus ) {
+        ui.visionView->setMat ( VisionView::DISPLAY_SOURCE::RESULT, stRpy.matResultImg );
+    }else {
+        PR_GET_ERROR_INFO_RPY stErrStrRpy;
+        PR_GetErrorInfo(stRpy.enStatus, &stErrStrRpy);
+        if ( stErrStrRpy.enErrorLevel == PR_STATUS_ERROR_LEVEL::INSP_STATUS )
+            ui.visionView->setMat ( VisionView::DISPLAY_SOURCE::RESULT, stRpy.matResultImg );
+        QMessageBox::critical(nullptr, "Inspect Lead", stErrStrRpy.achErrorStr, "Quit");
+    }
+}

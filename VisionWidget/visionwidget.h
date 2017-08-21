@@ -41,6 +41,7 @@ private slots:
     void on_btnInspHole_clicked();
     void on_btnAutoLocateLead_clicked();
     void on_btnInspLead_clicked();
+    void on_btnGridAvgGrayScale_clicked();
 protected:
     bool checkDisplayImage();
     void drawTmplImage(const cv::Mat &matTmpl);
