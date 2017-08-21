@@ -825,6 +825,7 @@ struct PR_INSP_LEAD_RPY {
 ******************************************/
 
 struct PR_GRID_AVG_GRAY_SCALE_CMD {
+    PR_GRID_AVG_GRAY_SCALE_CMD() : nGridRow(5), nGridCol(5) {}
     std::vector<cv::Mat>    vecInputImgs;
     Int16                   nGridRow;
     Int16                   nGridCol;

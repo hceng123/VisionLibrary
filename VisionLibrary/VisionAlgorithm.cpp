@@ -5658,28 +5658,41 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
         }
     }
 
-    matAverage /= pstCmd->vecInputImgs.size();
+    matAverage /= ToFloat(pstCmd->vecInputImgs.size());
 
     int ROWS = matAverage.rows;
     int COLS = matAverage.cols;
     int nIntervalX = matAverage.cols / pstCmd->nGridCol;
     int nIntervalY = matAverage.rows / pstCmd->nGridRow;
 
+    matAverage.convertTo(pstRpy->matResultImg, CV_8UC1);
+    cv::cvtColor ( pstRpy->matResultImg, pstRpy->matResultImg, CV_GRAY2BGR );
+
+    int fontFace = cv::FONT_HERSHEY_SIMPLEX;
+    double fontScale = 1;
+    int thickness = 3;
     pstRpy->vecVecGrayScale.clear();
     for ( int j = 0; j < pstCmd->nGridRow; ++ j ) {
         std::vector<float> vecFloat;
         for ( int i = 0; i < pstCmd->nGridCol; ++ i ) {
             cv::Rect rectROI ( i * nIntervalX, j * nIntervalY, nIntervalX, nIntervalY );
             cv::Mat matROI ( matAverage, rectROI );
-            float fAverage = cv::sum ( matROI )[0] / rectROI.area();
+            float fAverage = ToFloat ( cv::sum ( matROI )[0] / rectROI.area() );
             vecFloat.push_back ( fAverage );
+
+            char strAverage[100];
+            _snprintf(strAverage, sizeof(strAverage), "%.2f", fAverage);
+            int baseline = 0;
+            cv::Size textSize = cv::getTextSize(strAverage, fontFace, fontScale, thickness, &baseline);
+            //The height use '+' because text origin start from left-bottom.
+            cv::Point ptTextOrg( rectROI.x + (rectROI.width - textSize.width)/2, rectROI.y + ( rectROI.height + textSize.height ) / 2 );
+            cv::putText ( pstRpy->matResultImg, strAverage, ptTextOrg, fontFace, fontScale, _constBlueScalar, thickness );
         }
         pstRpy->vecVecGrayScale.push_back ( vecFloat );
     }
 
     int nGridLineSize = 3;
-    cv::Scalar scalarCyan(255, 255, 0);
-    cv::cvtColor ( matAverage, pstRpy->matResultImg, CV_GRAY2BGR );
+    cv::Scalar scalarCyan(255, 255, 0);    
     for ( int i = 1; i < pstCmd->nGridCol; ++ i )
         cv::line ( pstRpy->matResultImg, cv::Point(i * nIntervalX, 0), cv::Point(i * nIntervalX, ROWS), scalarCyan, nGridLineSize );
     for ( int i = 1; i < pstCmd->nGridRow; ++ i )
