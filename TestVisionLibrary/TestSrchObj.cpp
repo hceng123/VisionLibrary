@@ -47,25 +47,45 @@ void TestLrnObj_1() {
 }
 
 void TestSrchObj() {
-    PR_SRCH_OBJ_CMD stCmd;
-    PR_SRCH_OBJ_RPY stRpy;
+    
+}
 
-    stCmd.enAlgorithm = PR_SRCH_OBJ_ALGORITHM::SIFT;
-    stCmd.nRecordId = 1;
-    stCmd.matInputImg = cv::imread("./data/OCV/ProcessedTwoAndThree.png", cv::IMREAD_GRAYSCALE );
-    if ( stCmd.matInputImg.empty() ) {
+void TestSrchDie() {
+    PR_LRN_OBJ_CMD stLrnCmd;
+    PR_LRN_OBJ_RPY stLrnRpy;
+    stLrnCmd.enAlgorithm = PR_SRCH_OBJ_ALGORITHM::SURF;
+    stLrnCmd.matInputImg = cv::imread("./data/die/Template.png", cv::IMREAD_GRAYSCALE );
+    stLrnCmd.rectLrn = cv::Rect(0, 0, stLrnCmd.matInputImg.cols, stLrnCmd.matInputImg.rows );
+    PR_LrnObj ( &stLrnCmd, &stLrnRpy );
+    if ( stLrnRpy.enStatus != VisionStatus::OK )
+        return;
+    cv::imwrite("./data/die/LrnObjResult.png", stLrnRpy.matResultImg );
+
+    PR_SRCH_OBJ_CMD stSrchCmd;
+    PR_SRCH_OBJ_RPY stSrchRpy;
+
+    stSrchCmd.enAlgorithm = PR_SRCH_OBJ_ALGORITHM::SURF;
+    stSrchCmd.nRecordId = stLrnRpy.nRecordId;
+    stSrchCmd.matInputImg = cv::imread("./data/die/Srch.png", cv::IMREAD_GRAYSCALE );
+    if ( stSrchCmd.matInputImg.empty() ) {
         std::cout << "Failed to read image!" << std::endl;
         return;
     }
     //stCmd.matInputImg -= 100;
     //stCmd.matInputImg *= 3;
-    cv::imshow("Input image", stCmd.matInputImg );
-    cv::waitKey(0);
+    //cv::imshow("Input image", stCmd.matInputImg );
+    //cv::waitKey(0);
 
     //stCmd.rectLrn = cv::Rect(0, 0, 68, 94 );
-    stCmd.rectSrchWindow = cv::Rect(0, 0, stCmd.matInputImg.cols, stCmd.matInputImg.rows );
-    stCmd.ptExpectedPos = cv::Point(104, 58);
+    stSrchCmd.rectSrchWindow = cv::Rect(0, 0, stSrchCmd.matInputImg.cols, stSrchCmd.matInputImg.rows );
+    stSrchCmd.ptExpectedPos = cv::Point(stSrchCmd.matInputImg.cols / 2, stSrchCmd.matInputImg.rows / 2 );
     //PR_Init();
-    PR_SrchObj ( &stCmd, &stRpy );
-    std::cout << "Srch Obj status " << ToInt32( stRpy.enStatus ) << std::endl;
+    PR_SrchObj ( &stSrchCmd, &stSrchRpy );
+    std::cout << "Srch Obj status " << ToInt32( stSrchRpy.enStatus ) << std::endl;
+    std::cout << "Srch Obj position " << stSrchRpy.ptObjPos << std::endl;
+    std::cout << "Srch Obj angle " << stSrchRpy.fRotation << std::endl;
+
+    cv::imwrite("./data/die/SrchObjResult.png", stSrchRpy.matResultImg );
+
+    PR_DumpTimeLog("./Vision/Time.log");
 }

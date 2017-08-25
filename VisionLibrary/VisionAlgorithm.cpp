@@ -99,7 +99,9 @@ VisionAlgorithm::VisionAlgorithm()
     else
         detector = SURF::create (_constMinHessian, _constOctave, _constOctaveLayer );
     cv::Mat matROI( pstCmd->matInputImg, pstCmd->rectLrn );
-    detector->detectAndCompute ( matROI, pstCmd->matMask, pstRpy->vecKeyPoint, pstRpy->matDescritor );
+    cv::Mat matBlur;
+    cv::blur ( matROI, matBlur, cv::Size(3, 3));
+    detector->detectAndCompute ( matBlur, pstCmd->matMask, pstRpy->vecKeyPoint, pstRpy->matDescritor );
 
     if ( pstRpy->vecKeyPoint.size() < _constLeastFeatures ) {
         WriteLog("detectAndCompute can not find feature.");
@@ -157,6 +159,8 @@ VisionAlgorithm::VisionAlgorithm()
     SETUP_LOGCASE(LogCaseSrchObj);
 
     cv::Mat matSrchROI ( pstCmd->matInputImg, pstCmd->rectSrchWindow );
+    cv::Mat matBlur;
+    cv::blur ( matSrchROI, matBlur, cv::Size(3, 3));
     
     cv::Ptr<cv::Feature2D> detector;
     if (PR_SRCH_OBJ_ALGORITHM::SIFT == pstCmd->enAlgorithm)
@@ -168,7 +172,7 @@ VisionAlgorithm::VisionAlgorithm()
     cv::Mat matDescriptorScene;
     cv::Mat mask;
     
-    detector->detectAndCompute ( matSrchROI, mask, vecKeypointScene, matDescriptorScene );
+    detector->detectAndCompute ( matBlur, mask, vecKeypointScene, matDescriptorScene );
     TimeLog::GetInstance()->addTimeLog("detectAndCompute");
 
     if ( vecKeypointScene.size() < _constLeastFeatures ) {
@@ -268,7 +272,7 @@ VisionAlgorithm::VisionAlgorithm()
     cv::drawKeypoints( pstRpy->matResultImg, vecKeypointScene, pstRpy->matResultImg, _constRedScalar, cv::DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS );
 
     pstRpy->ptObjPos = CalcUtils::warpPoint<double>( pstRpy->matHomography, ptLrnObjCenter );
-    pstRpy->szOffset.width = pstRpy->ptObjPos.x - pstCmd->ptExpectedPos.x;
+    pstRpy->szOffset.width =  pstRpy->ptObjPos.x - pstCmd->ptExpectedPos.x;
     pstRpy->szOffset.height = pstRpy->ptObjPos.y - pstCmd->ptExpectedPos.y;
 	float fRotationValue = (float)(pstRpy->matHomography.at<double>(1, 0) - pstRpy->matHomography.at<double>(0, 1)) / 2.0f;
 	pstRpy->fRotation = (float) CalcUtils::radian2Degree ( asin ( fRotationValue ) );

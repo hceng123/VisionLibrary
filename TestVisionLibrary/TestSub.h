@@ -10,6 +10,7 @@ void TestInspBridge_1();
 void TestLrnObj();
 void TestLrnObj_1();
 void TestSrchObj();
+void TestSrchDie();
 void TestCalibCamera_1();
 void TestCalibCamera_2();
 void TestInspChipHead();

@@ -21,7 +21,7 @@ TimeLog *TimeLog::GetInstance() {
 
 void TimeLog::addTimeLog(const std::string &strMsg) {
     String strLog = strMsg;
-    strLog += "\t" + std::to_string( _stopWatch.Now() );
+    strLog += "\t" + std::to_string( _stopWatch.Span() );
     strLog += "\t" + _stopWatch.GetLocalTimeStr();
 
     auto nIndex = ( _anIndex ++ ) % _SIZE;

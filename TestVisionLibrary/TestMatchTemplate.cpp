@@ -15,7 +15,7 @@ void TestTemplate() {
     PR_MATCH_TEMPLATE_RPY stRpy;
     stCmd.matInputImg = matInputImg;
     stCmd.rectSrchWindow = rect;
-    stCmd.matTmpl = cv::Mat ( matInputImg, rect1 );
+    //stCmd.matTmpl = cv::Mat ( matInputImg, rect1 );
     stCmd.enMotion = PR_OBJECT_MOTION::TRANSLATION;
     PR_MatchTmpl ( &stCmd, &stRpy );
     float fScore = stRpy.fMatchScore;
