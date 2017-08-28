@@ -13,6 +13,7 @@
 #include "FileUtils.h"
 #include "Fitting.h"
 #include "MatchTmpl.h"
+#include "Unwrap.h"
 #include <iostream>
 #include <limits>
 #include <algorithm>
@@ -5715,6 +5716,7 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
         return pstRpy->enStatus;
     }
 
+    Unwrap::calib3DBase ( pstCmd->vecInputImgs, pstCmd->bGuassianFilter, pstCmd->bReverseSeq);
     pstRpy->enStatus = VisionStatus::OK;
     return pstRpy->enStatus;
 }

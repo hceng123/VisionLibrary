@@ -254,8 +254,7 @@ VectorOfPoint Unwrap::getIntegralTree(const VectorOfPoint &vecResult1, const Vec
     return vecResult;
 }
 
-/*static*/ void Unwrap::calib3DBase(const std::vector<cv::Mat> &vecInputImgs, bool bGuassianFilter, bool bReverseSeq )
-{
+/*static*/ void Unwrap::calib3DBase(const std::vector<cv::Mat> &vecInputImgs, bool bGuassianFilter, bool bReverseSeq ) {
     std::vector<cv::Mat> vecConvertedImgs;
     for ( auto &mat : vecInputImgs ) {
         cv::Mat matConvert;
@@ -288,11 +287,12 @@ VectorOfPoint Unwrap::getIntegralTree(const VectorOfPoint &vecResult1, const Vec
 
     cv::Mat matAlphaReshape = matAlpha.reshape ( 1, 1 );
     cv::Mat matBetaReshape  = matBeta.reshape ( 1, matBeta.rows * matBeta.cols );
-    cv::Mat matXX = matAlphaReshape;
-    matXX.push_back ( cv::Mat::ones(1, matAlpha.rows * matAlpha.cols, CV_32FC1) );
+    cv::Mat matXX = matAlphaReshape.clone();
+    cv::Mat matOne = cv::Mat::ones(1, matAlpha.rows * matAlpha.cols, CV_32FC1);
+    matXX.push_back ( matOne );
     cv::transpose ( matXX, matXX );
     cv::Mat matK;
-    cv::solve ( matXX, matBetaReshape, matK );
+    cv::solve ( matXX, matBetaReshape, matK, cv::DECOMP_SVD );
 
     int ROWS = vecInputImgs[0].rows;
     int COLS = vecInputImgs[0].cols;
@@ -300,6 +300,7 @@ VectorOfPoint Unwrap::getIntegralTree(const VectorOfPoint &vecResult1, const Vec
     CalcUtils::meshgrid<float> ( 1, 1, COLS, 1, 1, ROWS, matX, matY );
 
     cv::Mat matPPz = calculatePPz ( matX, matY, matBeta );
+    cv::Mat matZP1 = calculateSurface ( matAlpha, matPPz );
 }
 
 inline static cv::Mat setBySign(cv::Mat &matInput, DATA_TYPE value ) {
@@ -320,7 +321,8 @@ inline static cv::Mat setBySign(cv::Mat &matInput, DATA_TYPE value ) {
 
     cv::Mat matPhaseT;
     cv::transpose ( matPhase, matPhaseT );
-    cv::Mat matDp = CalcUtils::diff ( matPhaseT, 1, 2 );
+    cv::Mat matTmpPhase = cv::Mat ( matPhaseT, cv::Rect ( 0, 0, matPhaseT.cols, 1 ) );
+    cv::Mat matDp = CalcUtils::diff ( matTmpPhase, 1, 2 );
     std::vector<std::vector<float>> vecVecArray = CalcUtils::matToVector<float>( matDp );
 
     cv::Mat matAbsUnderPI;
@@ -376,6 +378,26 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
     cv::Mat matPPz;
     cv::solve ( matXX, matZReshape, matPPz );
     return matPPz;
+}
+
+/*static*/ cv::Mat Unwrap::calculateSurface(const cv::Mat &matZ, const cv::Mat &matPPz)
+{
+    int ROWS = matZ.rows;
+    int COLS = matZ.cols;
+    cv::Mat matU, matV;
+    CalcUtils::meshgrid<float> ( 0, 1.f / ( COLS - 1 ), 1.f, 0, 1.f / ( ROWS - 1 ), ROWS, matU, matV );
+    matU = matU.reshape ( 1, 1 );
+    matV = matV.reshape ( 1, 1 );
+    cv::Mat matP1 = calcBezierCoeff ( matU );
+    cv::Mat matP2 = calcBezierCoeff ( matV );
+    cv::Mat matXX;
+    for ( int i = 0; i < BEZIER_RANK; ++ i )
+    for ( int j = 0; j < BEZIER_RANK; ++ j ) {
+        matXX.push_back ( matP1.row(i) * matP2.row(j) );
+    }
+    cv::Mat matZP = matXX * matPPz;
+    matZP = matZP.reshape ( 1, ROWS );
+    return matZP;
 }
 
 }

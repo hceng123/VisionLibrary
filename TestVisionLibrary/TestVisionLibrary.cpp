@@ -616,7 +616,9 @@ int _tmain(int argc, _TCHAR* argv[])
 
     //TestInspLead();
 
-    TestSrchDie();
+    //TestSrchDie();
+
+    TestCalib3dBase();
 
     std::cout << "Press any key to exist." << std::endl;
     getchar();

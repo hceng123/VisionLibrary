@@ -841,6 +841,7 @@ struct PR_GRID_AVG_GRAY_SCALE_RPY {
 struct PR_CALIB_3D_BASE_CMD {
     std::vector<cv::Mat>    vecInputImgs;
     bool                    bGuassianFilter;
+    bool                    bReverseSeq;        //Change the image sequence.
 };
 
 struct PR_CALIB_3D_BASE_RPY {
