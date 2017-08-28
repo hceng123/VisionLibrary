@@ -5619,8 +5619,7 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     return enStatus;
 }
 
-/*static*/ VisionStatus VisionAlgorithm::gridAvgGrayScale(const PR_GRID_AVG_GRAY_SCALE_CMD *const pstCmd, PR_GRID_AVG_GRAY_SCALE_RPY *const pstRpy)
-{
+/*static*/ VisionStatus VisionAlgorithm::gridAvgGrayScale(const PR_GRID_AVG_GRAY_SCALE_CMD *const pstCmd, PR_GRID_AVG_GRAY_SCALE_RPY *const pstRpy) {
     assert(pstCmd != nullptr && pstRpy != nullptr);
 
     if ( pstCmd->vecInputImgs.empty() ) {
@@ -5703,6 +5702,19 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
         cv::line ( pstRpy->matResultImg, cv::Point(0, i * nIntervalY), cv::Point(COLS, i * nIntervalY), scalarCyan, nGridLineSize );
 
     MARK_FUNCTION_START_TIME;
+    pstRpy->enStatus = VisionStatus::OK;
+    return pstRpy->enStatus;
+}
+
+/*static*/ VisionStatus VisionAlgorithm::calib3DBase(const PR_CALIB_3D_BASE_CMD *const pstCmd, PR_CALIB_3D_BASE_RPY *const pstRpy, bool bReplay/* = false*/) {
+    assert(pstCmd != nullptr && pstRpy != nullptr);
+
+    if ( pstCmd->vecInputImgs.size() != 8 ) {
+        WriteLog("The input image count is not 8.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
     pstRpy->enStatus = VisionStatus::OK;
     return pstRpy->enStatus;
 }

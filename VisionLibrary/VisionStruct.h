@@ -838,6 +838,17 @@ struct PR_GRID_AVG_GRAY_SCALE_RPY {
     cv::Mat                 matResultImg;
 };
 
+struct PR_CALIB_3D_BASE_CMD {
+    std::vector<cv::Mat>    vecInputImgs;
+    bool                    bGuassianFilter;
+};
+
+struct PR_CALIB_3D_BASE_RPY {
+    VisionStatus            enStatus;
+    float                   K;
+    std::vector<float>      vecPPz;
+};
+
 }
 }
 #endif

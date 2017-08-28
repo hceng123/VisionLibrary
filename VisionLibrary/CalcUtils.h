@@ -126,6 +126,45 @@ public:
         return vecVecArray;
     }
 
+    template<typename _Tp>
+    static inline cv::Mat cumsum ( const cv::Mat &matInput, int nDimension ) {
+        cv::Mat matResult = matInput.clone ();
+        if( nDimension == 1 )
+            cv::transpose ( matResult, matResult );
+        for( int row = 0; row < matResult.rows; ++row )
+        for( int col = 0; col < matResult.cols; ++col ) {
+            if( col != 0 )
+                matResult.at<_Tp> ( row, col ) += matResult.at<_Tp> ( row, col - 1 );
+        }
+        if( nDimension == 1 )
+            cv::transpose ( matResult, matResult );
+        return matResult;
+    }
+
+    template<typename _tp>
+    static void meshgrid ( float xStart, float xInterval, float xEnd, float yStart, float yInterval, float yEnd, cv::Mat &matX, cv::Mat &matY )
+    {
+        std::vector<_tp> vectorX, vectorY;
+        _tp xValue = xStart;
+        while( xValue <= xEnd )    {
+            vectorX.push_back ( xValue );
+            xValue += xInterval;
+        }
+
+        _tp yValue = yStart;
+        while( yValue <= yEnd )    {
+            vectorY.push_back ( yValue );
+            yValue += yInterval;
+        }
+        cv::Mat matCol ( vectorX );
+        matCol = matCol.reshape ( 1, 1 );
+
+        cv::Mat matRow ( vectorY );
+        matRow = matRow.reshape ( 1, vectorY.size () );
+        matX = cv::repeat ( matCol, vectorY.size (), 1 );
+        matY = cv::repeat ( matRow, 1, vectorX.size () );
+    }
+
     static double radian2Degree( double dRadian );
     static double degree2Radian( double dDegree );
     static float ptDisToLine(const cv::Point2f &ptInput, bool bReversedFit, float fSlope, float fIntercept );
@@ -142,6 +181,7 @@ public:
                    double delta = 0, int borderType = cv::BORDER_DEFAULT );
     static float calcPointToContourDist(const cv::Point &ptInput, const VectorOfPoint &contour, cv::Point &ptResult );
     static cv::Point2f getContourCtr(const VectorOfPoint &contour);
+    static cv::Mat diff ( const cv::Mat &matInput, int nRecersiveTime, int nDimension );
 };
 
 }
