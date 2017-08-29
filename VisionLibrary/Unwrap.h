@@ -29,10 +29,11 @@ private:
     static cv::Mat calculateSurface(const cv::Mat &matZ, const cv::Mat &matPPz);
     static cv::Mat _findUnstablePoint(const std::vector<cv::Mat> &vecInputImgs);
 
-    static const int GUASSIAN_FILTER_SIZE =  5;
+    static const int GUASSIAN_FILTER_SIZE =     11;
+    static const int BEZIER_RANK =              5;
+
     static const float GUASSIAN_FILTER_SIGMA;
-    static const float ONE_HALF_CYLE;
-    static const int BEZIER_RANK = 5;
+    static const float ONE_HALF_CYLE;    
     static const float UNSTABLE_DIFF;
 };
 

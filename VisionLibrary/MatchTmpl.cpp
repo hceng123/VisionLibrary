@@ -75,7 +75,7 @@ MatchTmpl::~MatchTmpl ()
         std::vector<uchar> vecTmpl = matTmpl.reshape(1, 1);
         std::vector<int> vecMaskOfTmplIndex;
         vecMaskOfTmplIndex.reserve( vecMaskOfTmpl.size() / 5 );
-        for ( int index = 0; index < vecMaskOfTmpl.size(); index += 1 )
+        for ( int index = 0; index < ToInt32 ( vecMaskOfTmpl.size() ); index += 1 )
             if ( vecMaskOfTmpl[index] > 0 )
                 vecMaskOfTmplIndex.push_back ( index );
 

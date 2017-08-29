@@ -282,7 +282,14 @@ VectorOfPoint Unwrap::getIntegralTree(const VectorOfPoint &vecResult1, const Vec
 
     cv::Mat matAlpha, matBeta;
     cv::phase ( -mat00, mat01, matAlpha );
+    //The opencv cv::phase function return result is 0~2*PI, but matlab is -PI~PI, so here need to do a conversion.
+    cv::Mat matOverPi;
+    cv::compare ( matAlpha, cv::Scalar::all ( CV_PI ), matOverPi, cv::CmpTypes::CMP_GT );
+    cv::subtract ( matAlpha, cv::Scalar::all ( 2.f * CV_PI ), matAlpha, matOverPi );
+
     cv::phase ( -mat10, mat11, matBeta );
+    cv::compare ( matBeta, cv::Scalar::all ( CV_PI ), matOverPi, cv::CmpTypes::CMP_GT );
+    cv::subtract ( matBeta, cv::Scalar::all ( 2.f * CV_PI ), matBeta, matOverPi );
 
     matAlpha = phaseUnwrapSurface ( matAlpha );
     matBeta  = phaseUnwrapSurface ( matBeta );
@@ -324,8 +331,7 @@ inline static cv::Mat setBySign(cv::Mat &matInput, DATA_TYPE value ) {
     return matResult;
 }
 
-/*static*/ cv::Mat Unwrap::phaseUnwrapSurface(const cv::Mat &matPhase) {
-    
+/*static*/ cv::Mat Unwrap::phaseUnwrapSurface(const cv::Mat &matPhase) {    
     const float OneCycle = 2.f * ONE_HALF_CYLE;
 
     cv::Mat matPhaseT;
@@ -458,7 +464,14 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
 
     cv::Mat matAlpha, matBeta;
     cv::phase ( -mat00, mat01, matAlpha );
+    //The opencv cv::phase function return result is 0~2*PI, but matlab is -PI~PI, so here need to do a conversion.
+    cv::Mat matOverPi;
+    cv::compare ( matAlpha, cv::Scalar::all ( CV_PI ), matOverPi, cv::CmpTypes::CMP_GT );
+    cv::subtract ( matAlpha, cv::Scalar::all ( 2.f * CV_PI ), matAlpha, matOverPi );
+
     cv::phase ( -mat10, mat11, matBeta );
+    cv::compare ( matBeta, cv::Scalar::all ( CV_PI ), matOverPi, cv::CmpTypes::CMP_GT );
+    cv::subtract ( matBeta, cv::Scalar::all ( 2.f * CV_PI ), matBeta, matOverPi );
     
     cv::Mat matPosPole, matNegPole, matResidue;
     matResidue = getResidualPoint ( matAlpha, matPosPole, matNegPole );
