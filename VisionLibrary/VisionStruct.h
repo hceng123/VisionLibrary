@@ -846,8 +846,19 @@ struct PR_CALIB_3D_BASE_CMD {
 
 struct PR_CALIB_3D_BASE_RPY {
     VisionStatus            enStatus;
-    float                   K;
-    std::vector<float>      vecPPz;
+    cv::Mat                 matK;
+    cv::Mat                 matPPz;
+};
+
+struct PR_CALC_3D_HEIGHT_CMD {
+    std::vector<cv::Mat>    vecInputImgs;
+    cv::Mat                 matK;
+    cv::Mat                 matPPz;
+};
+
+struct PR_CALC_3D_HEIGHT_RPY {
+    VisionStatus            enStatus;
+    cv::Mat                 matHeight;
 };
 
 }

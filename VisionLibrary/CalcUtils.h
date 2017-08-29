@@ -160,9 +160,9 @@ public:
         matCol = matCol.reshape ( 1, 1 );
 
         cv::Mat matRow ( vectorY );
-        matRow = matRow.reshape ( 1, vectorY.size () );
-        matX = cv::repeat ( matCol, vectorY.size (), 1 );
-        matY = cv::repeat ( matRow, 1, vectorX.size () );
+        matRow = matRow.reshape ( 1, ToInt32 ( vectorY.size() ) );
+        matX = cv::repeat ( matCol, ToInt32 ( vectorY.size() ), 1 );
+        matY = cv::repeat ( matRow, 1, ToInt32 ( vectorX.size () ) );
     }
 
     static double radian2Degree( double dRadian );

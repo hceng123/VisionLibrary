@@ -22,4 +22,13 @@ void TestCalib3dBase() {
     stCmd.bReverseSeq = true;
     PR_Calib3DBase ( &stCmd, &stRpy );
     std::cout << "PR_Calib3DBase status " << ToInt32( stRpy.enStatus ) << std::endl;
+
+    std::string strResultMatPath = "./data/CalibPP.yml";
+    cv::FileStorage fs(strResultMatPath, cv::FileStorage::WRITE);
+    if ( ! fs.isOpened() )
+        return;
+
+    write ( fs, "K", stRpy.matK );
+    write ( fs, "PPz", stRpy.matPPz );
+    fs.release();
 }
