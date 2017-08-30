@@ -47,8 +47,8 @@ void TestCalc3DHeight() {
     }
     stCmd.bEnableGaussianFilter = true;
     stCmd.bReverseSeq = true;
-    stCmd.fMinIntensityDiff = 4;
-    stCmd.fMinAvgIntensity = 2;
+    stCmd.fMinIntensityDiff = 3;
+    stCmd.fMinAvgIntensity = 3;
 
     std::string strResultMatPath = "./data/CalibPP.yml";
     cv::FileStorage fs ( strResultMatPath, cv::FileStorage::READ );

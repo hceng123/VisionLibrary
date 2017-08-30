@@ -618,7 +618,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
     //TestSrchDie();
 
-    TestCalib3dBase();
+    //TestCalib3dBase();
     TestCalc3DHeight();
 
     PR_DumpTimeLog("./Vision/Time.log");

@@ -141,22 +141,20 @@ inline std::vector<size_t> sort_indexes(const std::vector<T> &v) {
     std::vector<size_t> vecIndex = sort_indexes<int> ( vecDistance );
     std::vector<ListOfPoint::const_iterator> vecIter;
     
-    for (size_t j = 0; j < nLonePoneCount; ++ j )
-    {
+    for (size_t j = 0; j < nLonePoneCount; ++ j ) {
         size_t index = 0;
-        for ( auto iter = listPoint.cbegin(); iter != listPoint.cend(); ++ iter )
-        {
+        for ( auto iter = listPoint.cbegin(); iter != listPoint.cend(); ++ iter ) {
             if (index == vecIndex[j]) {
                 vecIter.push_back(iter);
                 vecResult.push_back(*iter);
-                ++index;
+                ++ index;
             }
-            ++index;
+            ++ index;
         }
     }
-    for ( const auto &iter : vecIter )  {
+
+    for ( const auto &iter : vecIter )
         listPoint.erase ( iter );
-    }
     return vecResult;
 }
 
@@ -524,10 +522,14 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
     matH.setTo ( NAN, matAvgUnderTolIndex );
     matH.setTo ( NAN, matDiffUnderTolIndex );
 
+#ifdef _DEBUG
+    auto vecVecH = CalcUtils::matToVector<DATA_TYPE>( matH );
+#endif
+
     cv::medianBlur ( matH, matH, 5 );
 
 #ifdef _DEBUG
-    auto vecVecH = CalcUtils::matToVector<DATA_TYPE>( matH );
+    vecVecH = CalcUtils::matToVector<DATA_TYPE>( matH );
 #endif
 
     cv::Mat matHReshape = matH.reshape ( 1, 1 );
