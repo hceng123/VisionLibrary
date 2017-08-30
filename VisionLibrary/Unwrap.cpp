@@ -497,9 +497,16 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
 
     matAlpha = phaseUnwrapSurfaceTrk ( matAlpha, matBranchCut );
     cv::Mat matUnstablePos = _findUnstablePoint ( vecInputImgs );
+#ifdef _DEBUG
+    int nUnstableCount = cv::countNonZero(matUnstablePos);
+#endif
     matAlpha.setTo ( NAN, matUnstablePos );
     matAlpha = matAlpha * matK.at<DATA_TYPE>(0, 0) + matK.at<DATA_TYPE>(1, 0);
     cv::Mat matZP1 = calculateSurface ( matAlpha, matPPz );
+#ifdef _DEBUG
+    auto vecAlpha = CalcUtils::matToVector<float>(matAlpha);
+    auto vecZP1 = CalcUtils::matToVector<float>(matZP1);
+#endif
 }
 
 /*static*/ cv::Mat Unwrap::phaseUnwrapSurfaceTrk ( const cv::Mat &matPhase, const cv::Mat &matBranchCut) {

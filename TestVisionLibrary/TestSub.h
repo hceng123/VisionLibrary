@@ -17,6 +17,7 @@ void TestInspChipHead();
 void TestTemplate();
 void TestInspLead();
 void TestCalib3dBase();
+void TestCalc3DHeight();
 
 template<class T>
 void printfMat(const cv::Mat &mat)

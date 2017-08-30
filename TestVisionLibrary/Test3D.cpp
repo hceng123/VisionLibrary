@@ -32,3 +32,31 @@ void TestCalib3dBase() {
     write ( fs, "PPz", stRpy.matPPz );
     fs.release();
 }
+
+void TestCalc3DHeight() {
+    const int IMAGE_COUNT = 8;
+    std::string strFolder = "./data/0715190516_10ms_80_Step/";
+    PR_CALC_3D_HEIGHT_CMD stCmd;
+    PR_CALC_3D_HEIGHT_RPY stRpy;
+    for ( int i = 1; i <= IMAGE_COUNT; ++ i ) {
+        char chArrFileName[100];
+        _snprintf( chArrFileName, sizeof (chArrFileName), "%02d.bmp", i );
+        std::string strImageFile = strFolder + chArrFileName;
+        cv::Mat mat = cv::imread ( strImageFile, cv::IMREAD_GRAYSCALE );
+        stCmd.vecInputImgs.push_back ( mat );
+    }
+    stCmd.bGuassianFilter = true;
+    stCmd.bReverseSeq = true;
+
+    std::string strResultMatPath = "./data/CalibPP.yml";
+    cv::FileStorage fs ( strResultMatPath, cv::FileStorage::READ );
+    cv::FileNode fileNode = fs["K"];
+    cv::read ( fileNode, stCmd.matK, cv::Mat() );
+
+    fileNode = fs["PPz"];
+    cv::read ( fileNode, stCmd.matPPz, cv::Mat() );
+    fs.release();
+
+    PR_Calc3DHeight ( &stCmd, &stRpy );
+    std::cout << "PR_Calc3DHeight status " << ToInt32( stRpy.enStatus ) << std::endl;
+}

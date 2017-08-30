@@ -5746,6 +5746,26 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
         }
     }
 
+    if ( pstCmd->matK.empty() ) {
+        WriteLog("The matK is empty.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    if ( pstCmd->matPPz.empty() ) {
+        WriteLog("The matPPz is empty.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    Unwrap::calc3DHeight ( 
+        pstCmd->vecInputImgs,
+        pstCmd->bGuassianFilter,
+        pstCmd->bReverseSeq,
+        pstCmd->matK,
+        pstCmd->matPPz,
+        pstRpy->matHeight );
+
     pstRpy->enStatus = VisionStatus::OK;
     return pstRpy->enStatus;
 }

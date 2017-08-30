@@ -852,6 +852,8 @@ struct PR_CALIB_3D_BASE_RPY {
 
 struct PR_CALC_3D_HEIGHT_CMD {
     std::vector<cv::Mat>    vecInputImgs;
+    bool                    bGuassianFilter;
+    bool                    bReverseSeq;        //Change the image sequence.
     cv::Mat                 matK;
     cv::Mat                 matPPz;
 };
