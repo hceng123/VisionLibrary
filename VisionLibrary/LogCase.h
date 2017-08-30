@@ -40,6 +40,8 @@ protected:
     const String _IMAGE_NAME        = "image.png";
     const String _MASK_NAME         = "mask.png";
     const String _RESULT_IMAGE_NAME = "result.png";
+    const String _IMAGE_FILE_PREFIX = "image_";
+    const String _IMAGE_FILE_EXT    = ".png";
     const String _DEFAULT_COORD     = "0, 0";
     const String _DEFAULT_RECT      = "0, 0, 0, 0";
     const String _DEFAULT_SIZE      = "0, 0";
@@ -657,6 +659,48 @@ private:
     const String _strKeyLeadWinCtr          = "LeadWinCenter";
     const String _strKeyLeadWinSize         = "LeadWinSize";
     const String _strKeyLeadWinAngle        = "LeadWinAngle";
+};
+
+class LogCaseCalib3DBase : public LogCase
+{
+public:
+    explicit LogCaseCalib3DBase(const String &strPath, bool bReplay = false) : LogCase(strPath, bReplay) {}
+    VisionStatus WriteCmd(const PR_CALIB_3D_BASE_CMD *const pstCmd);
+    VisionStatus WriteRpy(const PR_CALIB_3D_BASE_RPY *const pstRpy);
+    virtual VisionStatus RunLogCase() override;
+    virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
+    static String StaticGetFolderPrefix();
+private:
+    const String _strResultYmlFileName      = "Result.yml";
+
+    const String _strKeyEnableGF            = "EnableGaussianFilter";
+    const String _strKeyReverseSeq          = "ReverseSeq";
+
+    const String _strKeyStatus              = "Status";
+    const String _strKeyK                   = "K";
+    const String _strKeyPPz                 = "PPz";
+};
+
+class LogCaseCalc3DHeight : public LogCase
+{
+public:
+    explicit LogCaseCalc3DHeight(const String &strPath, bool bReplay = false) : LogCase(strPath, bReplay) {}
+    VisionStatus WriteCmd(const PR_CALC_3D_HEIGHT_CMD *const pstCmd);
+    VisionStatus WriteRpy(const PR_CALC_3D_HEIGHT_RPY *const pstRpy);
+    virtual VisionStatus RunLogCase() override;
+    virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
+    static String StaticGetFolderPrefix();
+private:
+    const String _strInputYmlFileName       = "Input.yml";
+
+    const String _strKeyEnableGF            = "EnableGaussianFilter";
+    const String _strKeyReverseSeq          = "ReverseSeq";
+    const String _strKeyMinIntensityDiff    = "MinIntensityDiff";
+    const String _strKeyMinAvgIntensity     = "MinAvgIntensity";
+    const String _strKeyK                   = "K";
+    const String _strKeyPPz                 = "PPz";
+
+    const String _strKeyStatus              = "Status";
 };
 
 }

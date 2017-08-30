@@ -26,6 +26,7 @@ using VectorOfRect = std::vector<cv::Rect>;
 using ListOfPoint = std::list<cv::Point>;
 using VectorOfListOfPoint = std::vector<ListOfPoint>;
 using VectorOfSize2f = std::vector<cv::Size2f>;
+using VectorOfMat = std::vector<cv::Mat>;
 
 #define ToInt32(param)      (static_cast<AOI::Int32>(param))
 #define ToInt16(param)      (static_cast<AOI::Int16>(param))
@@ -826,7 +827,7 @@ struct PR_INSP_LEAD_RPY {
 
 struct PR_GRID_AVG_GRAY_SCALE_CMD {
     PR_GRID_AVG_GRAY_SCALE_CMD() : nGridRow(5), nGridCol(5) {}
-    std::vector<cv::Mat>    vecInputImgs;
+    VectorOfMat             vecInputImgs;
     Int16                   nGridRow;
     Int16                   nGridCol;
 };
@@ -839,8 +840,9 @@ struct PR_GRID_AVG_GRAY_SCALE_RPY {
 };
 
 struct PR_CALIB_3D_BASE_CMD {
-    std::vector<cv::Mat>    vecInputImgs;
-    bool                    bGuassianFilter;
+    PR_CALIB_3D_BASE_CMD() : bEnableGaussianFilter(true), bReverseSeq(true) {}
+    VectorOfMat             vecInputImgs;
+    bool                    bEnableGaussianFilter;
     bool                    bReverseSeq;        //Change the image sequence.
 };
 
@@ -851,9 +853,12 @@ struct PR_CALIB_3D_BASE_RPY {
 };
 
 struct PR_CALC_3D_HEIGHT_CMD {
-    std::vector<cv::Mat>    vecInputImgs;
-    bool                    bGuassianFilter;
+    PR_CALC_3D_HEIGHT_CMD() : bEnableGaussianFilter(true), bReverseSeq(true), fMinIntensityDiff(3.f), fMinAvgIntensity(3.f) {}
+    VectorOfMat             vecInputImgs;
+    bool                    bEnableGaussianFilter;
     bool                    bReverseSeq;        //Change the image sequence.
+    float                   fMinIntensityDiff;  //In a group of 4 images, if a pixel's max and min intensity less than this value, this pixel will be discarded.
+    float                   fMinAvgIntensity;   //In a group of 4 images, if a pixel's average intensity less than this value, this pixel will be discarded.
     cv::Mat                 matK;
     cv::Mat                 matPPz;
 };

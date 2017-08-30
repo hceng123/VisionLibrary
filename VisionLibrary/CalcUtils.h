@@ -142,8 +142,7 @@ public:
     }
 
     template<typename _tp>
-    static void meshgrid ( float xStart, float xInterval, float xEnd, float yStart, float yInterval, float yEnd, cv::Mat &matX, cv::Mat &matY )
-    {
+    static void meshgrid ( float xStart, float xInterval, float xEnd, float yStart, float yInterval, float yEnd, cv::Mat &matX, cv::Mat &matY ) {
         std::vector<_tp> vectorX, vectorY;
         _tp xValue = xStart;
         while( xValue <= xEnd )    {
@@ -163,6 +162,15 @@ public:
         matRow = matRow.reshape ( 1, ToInt32 ( vectorY.size() ) );
         matX = cv::repeat ( matCol, ToInt32 ( vectorY.size() ), 1 );
         matY = cv::repeat ( matRow, 1, ToInt32 ( vectorX.size () ) );
+    }
+
+    template<typename T>
+    static inline cv::Mat floor ( const cv::Mat &matInput ) {
+        cv::Mat matResult = matInput.clone ();
+        for( int row = 0; row < matInput.rows; ++row )
+        for( int col = 0; col < matInput.cols; ++col )
+            matResult.at<T> ( row, col ) = std::floor ( matResult.at<T> ( row, col ) );
+        return matResult;
     }
 
     static double radian2Degree( double dRadian );

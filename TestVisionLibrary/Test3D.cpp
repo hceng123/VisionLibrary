@@ -18,7 +18,7 @@ void TestCalib3dBase() {
         cv::Mat mat = cv::imread ( strImageFile, cv::IMREAD_GRAYSCALE );
         stCmd.vecInputImgs.push_back ( mat );
     }
-    stCmd.bGuassianFilter = true;
+    stCmd.bEnableGaussianFilter = true;
     stCmd.bReverseSeq = true;
     PR_Calib3DBase ( &stCmd, &stRpy );
     std::cout << "PR_Calib3DBase status " << ToInt32( stRpy.enStatus ) << std::endl;
@@ -45,8 +45,10 @@ void TestCalc3DHeight() {
         cv::Mat mat = cv::imread ( strImageFile, cv::IMREAD_GRAYSCALE );
         stCmd.vecInputImgs.push_back ( mat );
     }
-    stCmd.bGuassianFilter = true;
+    stCmd.bEnableGaussianFilter = true;
     stCmd.bReverseSeq = true;
+    stCmd.fMinIntensityDiff = 4;
+    stCmd.fMinAvgIntensity = 2;
 
     std::string strResultMatPath = "./data/CalibPP.yml";
     cv::FileStorage fs ( strResultMatPath, cv::FileStorage::READ );
@@ -59,4 +61,17 @@ void TestCalc3DHeight() {
 
     PR_Calc3DHeight ( &stCmd, &stRpy );
     std::cout << "PR_Calc3DHeight status " << ToInt32( stRpy.enStatus ) << std::endl;
+
+    double dMinValue = 0, dMaxValue = 0;
+    cv::Mat matMask = stRpy.matHeight == stRpy.matHeight;
+    cv::minMaxIdx (stRpy.matHeight, &dMinValue, &dMaxValue, 0, 0, matMask );
+    //cv::compare ( matNewPhase, )
+    
+    auto matNewPhase = stRpy.matHeight - dMinValue;
+    auto vecMatNewPhase = matToVector<float> ( matNewPhase );
+
+    float dRatio = 255.f/( dMaxValue - dMinValue );
+    matNewPhase = matNewPhase * dRatio;
+    vecMatNewPhase = matToVector<float> ( matNewPhase );
+    cv::imwrite("data/HeightToGray.png", matNewPhase );
 }

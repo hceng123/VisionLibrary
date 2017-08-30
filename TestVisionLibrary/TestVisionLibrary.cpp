@@ -569,7 +569,7 @@ void TestCaliper_3() {
 
 int _tmain(int argc, _TCHAR* argv[])
 {
-    PR_SetDebugMode ( PR_DEBUG_MODE::LOG_FAIL_CASE );
+    PR_SetDebugMode ( PR_DEBUG_MODE::LOG_ALL_CASE );
     //TestTemplate();
     //TestInspDevice();
     //TestRunLogcase();
@@ -618,9 +618,10 @@ int _tmain(int argc, _TCHAR* argv[])
 
     //TestSrchDie();
 
-    //TestCalib3dBase();
+    TestCalib3dBase();
     TestCalc3DHeight();
 
+    PR_DumpTimeLog("./Vision/Time.log");
     std::cout << "Press any key to exist." << std::endl;
     getchar();
 

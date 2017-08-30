@@ -1652,6 +1652,10 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
         pLogCase = std::make_unique<LogCaseInspHole>( strLocalPath, true );
     else if (LogCaseInspLead::StaticGetFolderPrefix() == folderPrefix )
         pLogCase = std::make_unique<LogCaseInspLead>( strLocalPath, true );
+    else if (LogCaseCalib3DBase::StaticGetFolderPrefix() == folderPrefix )
+        pLogCase = std::make_unique<LogCaseCalib3DBase>( strLocalPath, true );
+    if (LogCaseCalc3DHeight::StaticGetFolderPrefix() == folderPrefix )
+        pLogCase = std::make_unique<LogCaseCalc3DHeight>( strLocalPath, true );
 
     if ( nullptr != pLogCase )
         enStatus = pLogCase->RunLogCase();
@@ -5723,8 +5727,13 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
             return pstRpy->enStatus;
         }
     }
+    MARK_FUNCTION_START_TIME;
+    SETUP_LOGCASE(LogCaseCalib3DBase);
 
-    Unwrap::calib3DBase ( pstCmd->vecInputImgs, pstCmd->bGuassianFilter, pstCmd->bReverseSeq, pstRpy->matK, pstRpy->matPPz );
+    Unwrap::calib3DBase ( pstCmd->vecInputImgs, pstCmd->bEnableGaussianFilter, pstCmd->bReverseSeq, pstRpy->matK, pstRpy->matPPz );
+
+    FINISH_LOGCASE;
+    MARK_FUNCTION_END_TIME;
     pstRpy->enStatus = VisionStatus::OK;
     return pstRpy->enStatus;
 }
@@ -5758,14 +5767,13 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
         return pstRpy->enStatus;
     }
 
-    Unwrap::calc3DHeight ( 
-        pstCmd->vecInputImgs,
-        pstCmd->bGuassianFilter,
-        pstCmd->bReverseSeq,
-        pstCmd->matK,
-        pstCmd->matPPz,
-        pstRpy->matHeight );
+    MARK_FUNCTION_START_TIME;
+    SETUP_LOGCASE(LogCaseCalc3DHeight);
 
+    Unwrap::calc3DHeight ( pstCmd, pstRpy );
+
+    FINISH_LOGCASE;
+    MARK_FUNCTION_END_TIME;
     pstRpy->enStatus = VisionStatus::OK;
     return pstRpy->enStatus;
 }
