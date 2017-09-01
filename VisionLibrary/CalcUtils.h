@@ -144,6 +144,8 @@ public:
     template<typename _tp>
     static void meshgrid ( float xStart, float xInterval, float xEnd, float yStart, float yInterval, float yEnd, cv::Mat &matX, cv::Mat &matY ) {
         std::vector<_tp> vectorX, vectorY;
+        vectorX.reserve ( ToInt32 ( ( xEnd - xStart ) / xInterval ) );
+        vectorY.reserve ( ToInt32 ( ( yEnd - yStart ) / yInterval ) );
         _tp xValue = xStart;
         while( xValue <= xEnd )    {
             vectorX.push_back ( xValue );

@@ -28,8 +28,8 @@ void TestCalib3dBase() {
     if ( ! fs.isOpened() )
         return;
 
-    write ( fs, "K", stRpy.matK );
-    write ( fs, "PPz", stRpy.matPPz );
+    write ( fs, "K", stRpy.matThickToThinStripeK );
+    write ( fs, "PPz", stRpy.matBaseSurfaceParam );
     fs.release();
 }
 
@@ -53,10 +53,10 @@ void TestCalc3DHeight() {
     std::string strResultMatPath = "./data/CalibPP.yml";
     cv::FileStorage fs ( strResultMatPath, cv::FileStorage::READ );
     cv::FileNode fileNode = fs["K"];
-    cv::read ( fileNode, stCmd.matK, cv::Mat() );
+    cv::read ( fileNode, stCmd.matThickToThinStripeK, cv::Mat() );
 
     fileNode = fs["PPz"];
-    cv::read ( fileNode, stCmd.matPPz, cv::Mat() );
+    cv::read ( fileNode, stCmd.matBaseSurfaceParam, cv::Mat() );
     fs.release();
 
     PR_Calc3DHeight ( &stCmd, &stRpy );
@@ -74,4 +74,49 @@ void TestCalc3DHeight() {
     matNewPhase = matNewPhase * dRatio;
     vecMatNewPhase = matToVector<float> ( matNewPhase );
     cv::imwrite("./data/HeightToGray.png", matNewPhase );
+}
+
+void TestCalib3DHeight() {
+    const int IMAGE_COUNT = 8;
+    std::string strFolder = "./data/0715190516_10ms_80_Step/";
+    PR_CALIB_3D_HEIGHT_CMD stCmd;
+    PR_CALIB_3D_HEIGHT_RPY stRpy;
+    for ( int i = 1; i <= IMAGE_COUNT; ++ i ) {
+        char chArrFileName[100];
+        _snprintf( chArrFileName, sizeof (chArrFileName), "%02d.bmp", i );
+        std::string strImageFile = strFolder + chArrFileName;
+        cv::Mat mat = cv::imread ( strImageFile, cv::IMREAD_GRAYSCALE );
+        stCmd.vecInputImgs.push_back ( mat );
+    }
+    stCmd.bEnableGaussianFilter = true;
+    stCmd.bReverseSeq = true;
+    stCmd.fMinIntensityDiff = 3;
+    stCmd.fMinAvgIntensity = 3;
+    stCmd.nBlockStepCount = 3;
+    stCmd.fBlockStepHeight = 1.f;
+
+    std::string strResultMatPath = "./data/CalibPP.yml";
+    cv::FileStorage fs ( strResultMatPath, cv::FileStorage::READ );
+    cv::FileNode fileNode = fs["K"];
+    cv::read ( fileNode, stCmd.matThickToThinStripeK, cv::Mat() );
+
+    fileNode = fs["PPz"];
+    cv::read ( fileNode, stCmd.matBaseSurfaceParam, cv::Mat() );
+    fs.release();
+
+    PR_Calib3DHeight ( &stCmd, &stRpy );
+    std::cout << "PR_Calc3DHeight status " << ToInt32( stRpy.enStatus ) << std::endl;
+
+    //double dMinValue = 0, dMaxValue = 0;
+    //cv::Mat matMask = stRpy.matHeight == stRpy.matHeight;
+    //cv::minMaxIdx (stRpy.matHeight, &dMinValue, &dMaxValue, 0, 0, matMask );
+    ////cv::compare ( matNewPhase, )
+    //
+    //auto matNewPhase = stRpy.matHeight - dMinValue;
+    //auto vecMatNewPhase = matToVector<float> ( matNewPhase );
+
+    //float dRatio = 255.f/( dMaxValue - dMinValue );
+    //matNewPhase = matNewPhase * dRatio;
+    //vecMatNewPhase = matToVector<float> ( matNewPhase );
+    //cv::imwrite("./data/HeightToGray.png", matNewPhase );
 }

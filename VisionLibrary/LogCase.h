@@ -677,8 +677,8 @@ private:
     const String _strKeyReverseSeq          = "ReverseSeq";
 
     const String _strKeyStatus              = "Status";
-    const String _strKeyK                   = "K";
-    const String _strKeyPPz                 = "PPz";
+    const String _strKeyThickToThinStripeK  = "ThickToThinStripeK";
+    const String _strKeyBaseSurfaceParam    = "BaseSurfaceParam";
 };
 
 class LogCaseCalc3DHeight : public LogCase
@@ -697,8 +697,8 @@ private:
     const String _strKeyReverseSeq          = "ReverseSeq";
     const String _strKeyMinIntensityDiff    = "MinIntensityDiff";
     const String _strKeyMinAvgIntensity     = "MinAvgIntensity";
-    const String _strKeyK                   = "K";
-    const String _strKeyPPz                 = "PPz";
+    const String _strKeyThickToThinStripeK  = "ThickToThinStripeK";
+    const String _strKeyBaseSurfaceParam    = "BaseSurfaceParam";
 
     const String _strKeyStatus              = "Status";
 };

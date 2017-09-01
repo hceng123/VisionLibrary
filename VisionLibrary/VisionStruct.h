@@ -848,34 +848,44 @@ struct PR_CALIB_3D_BASE_CMD {
 
 struct PR_CALIB_3D_BASE_RPY {
     VisionStatus            enStatus;
-    cv::Mat                 matK;
-    cv::Mat                 matPPz;
+    cv::Mat                 matThickToThinStripeK;  //The factor between thick stripe and thin stripe.
+    cv::Mat                 matBaseSurfaceParam;    //The bezier parameters to form the base surface.
 };
 
 struct PR_CALIB_3D_HEIGHT_CMD {
     PR_CALIB_3D_HEIGHT_CMD() : bEnableGaussianFilter(true), bReverseSeq(true), fMinIntensityDiff(3.f), fMinAvgIntensity(3.f) {}
     VectorOfMat             vecInputImgs;
     bool                    bEnableGaussianFilter;
-    bool                    bReverseSeq;        //Change the image sequence.
-    float                   fMinIntensityDiff;  //In a group of 4 images, if a pixel's max and min intensity less than this value, this pixel will be discarded.
-    float                   fMinAvgIntensity;   //In a group of 4 images, if a pixel's average intensity less than this value, this pixel will be discarded.
-    cv::Mat                 matK;
-    cv::Mat                 matPPz;
+    bool                    bReverseSeq;            //Change the image sequence.
+    float                   fMinIntensityDiff;      //In a group of 4 images, if a pixel's max and min intensity less than this value, this pixel will be discarded.
+    float                   fMinAvgIntensity;       //In a group of 4 images, if a pixel's average intensity less than this value, this pixel will be discarded.
+    cv::Mat                 matThickToThinStripeK;  //The factor between thick stripe and thin stripe.
+    cv::Mat                 matBaseSurfaceParam;
+    bool                    bReverseHeight;         //The calibration base surface is align with the top of the block, in this case, the height value is negative.
+    Int16                   nBlockStepCount;        //How many steps on the calibration block.
+    float                   fBlockStepHeight;       //The height of each step, unit mm. So the total block height is nBlockStepCount x fBlockStepHeight.
+};
+
+struct PR_CALIB_3D_HEIGHT_RPY {
+    VisionStatus            enStatus;
+    cv::Mat                 matPhaseToHeightK;      //The factor to convert phase to height.
 };
 
 struct PR_CALC_3D_HEIGHT_CMD {
     PR_CALC_3D_HEIGHT_CMD() : bEnableGaussianFilter(true), bReverseSeq(true), fMinIntensityDiff(3.f), fMinAvgIntensity(3.f) {}
     VectorOfMat             vecInputImgs;
     bool                    bEnableGaussianFilter;
-    bool                    bReverseSeq;        //Change the image sequence.
-    float                   fMinIntensityDiff;  //In a group of 4 images, if a pixel's max and min intensity less than this value, this pixel will be discarded.
-    float                   fMinAvgIntensity;   //In a group of 4 images, if a pixel's average intensity less than this value, this pixel will be discarded.
-    cv::Mat                 matK;
-    cv::Mat                 matPPz;
+    bool                    bReverseSeq;            //Change the image sequence.
+    float                   fMinIntensityDiff;      //In a group of 4 images, if a pixel's max and min intensity less than this value, this pixel will be discarded.
+    float                   fMinAvgIntensity;       //In a group of 4 images, if a pixel's average intensity less than this value, this pixel will be discarded.
+    cv::Mat                 matThickToThinStripeK;  //The factor between thick stripe and thin stripe.
+    cv::Mat                 matBaseSurfaceParam;
+    cv::Mat                 matPhaseToHeightK;      //The factor to convert phase to height.
 };
 
 struct PR_CALC_3D_HEIGHT_RPY {
     VisionStatus            enStatus;
+    cv::Mat                 matPhase;
     cv::Mat                 matHeight;
 };
 

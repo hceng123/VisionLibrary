@@ -391,7 +391,7 @@ namespace
 * Note:      Mu is name of greek symbol μ.
 *            Omega and Eta are also greek symbol.
 *******************************************************************************/
-std::vector<Int16> VisionAlgorithm::_autoMultiLevelThreshold(const cv::Mat &matInputImg, const cv::Mat &matMask, int N)
+std::vector<Int16> VisionAlgorithm::autoMultiLevelThreshold(const cv::Mat &matInputImg, const cv::Mat &matMask, int N)
 {
     assert(N >= 1 && N <= 4);
 
@@ -683,7 +683,7 @@ VisionStatus VisionAlgorithm::autoThreshold(PR_AUTO_THRESHOLD_CMD *pstCmd, PR_AU
     cv::Mat matMaskROI;
     if ( ! pstCmd->matMask.empty() )
         matMaskROI = cv::Mat( pstCmd->matMask, pstCmd->rectROI).clone();
-    pstRpy->vecThreshold = _autoMultiLevelThreshold ( matROI, matMaskROI, pstCmd->nThresholdNum);
+    pstRpy->vecThreshold = autoMultiLevelThreshold ( matROI, matMaskROI, pstCmd->nThresholdNum );
 
     pstRpy->enStatus = VisionStatus::OK;
     
@@ -693,7 +693,7 @@ VisionStatus VisionAlgorithm::autoThreshold(PR_AUTO_THRESHOLD_CMD *pstCmd, PR_AU
 }
 
 int VisionAlgorithm::_autoThreshold(const cv::Mat &mat, const cv::Mat &matMask/* = cv::Mat()*/ ) {
-    auto vecThreshold = _autoMultiLevelThreshold ( mat, matMask, 1 );
+    auto vecThreshold = autoMultiLevelThreshold ( mat, matMask, 1 );
     return vecThreshold[0];
 }
 
@@ -5730,9 +5730,43 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     MARK_FUNCTION_START_TIME;
     SETUP_LOGCASE(LogCaseCalib3DBase);
 
-    Unwrap::calib3DBase ( pstCmd->vecInputImgs, pstCmd->bEnableGaussianFilter, pstCmd->bReverseSeq, pstRpy->matK, pstRpy->matPPz );
+    Unwrap::calib3DBase ( pstCmd->vecInputImgs, pstCmd->bEnableGaussianFilter, pstCmd->bReverseSeq, pstRpy->matThickToThinStripeK, pstRpy->matBaseSurfaceParam );
 
     FINISH_LOGCASE;
+    MARK_FUNCTION_END_TIME;
+    pstRpy->enStatus = VisionStatus::OK;
+    return pstRpy->enStatus;
+}
+
+/*static*/ VisionStatus VisionAlgorithm::calib3DHeight(const PR_CALIB_3D_HEIGHT_CMD *const pstCmd, PR_CALIB_3D_HEIGHT_RPY *const pstRpy, bool bReplay/* = false*/) {
+    assert(pstCmd != nullptr && pstRpy != nullptr);
+
+    if ( pstCmd->vecInputImgs.size() != 8 ) {
+        WriteLog("The input image count is not 8.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    for ( const auto &mat : pstCmd->vecInputImgs ) {
+        if ( mat.empty() ) {
+            WriteLog("The input image is empty.");
+            pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+            return pstRpy->enStatus;
+        }
+    }
+
+    if ( pstCmd->nBlockStepCount <= 0 || pstCmd->nBlockStepCount > 4 ) {
+        char charrMsg[1000];
+        _snprintf( charrMsg, sizeof( charrMsg ), "The BlockStepCount %d is not in range [1, 4].", pstCmd->nBlockStepCount );
+        WriteLog(charrMsg);
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    MARK_FUNCTION_START_TIME;
+
+    Unwrap::calib3DHeight ( pstCmd, pstRpy );
+
     MARK_FUNCTION_END_TIME;
     pstRpy->enStatus = VisionStatus::OK;
     return pstRpy->enStatus;
@@ -5755,14 +5789,14 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
         }
     }
 
-    if ( pstCmd->matK.empty() ) {
-        WriteLog("The matK is empty.");
+    if ( pstCmd->matThickToThinStripeK.empty() ) {
+        WriteLog("The matThickToThinStripeK is empty.");
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return pstRpy->enStatus;
     }
 
-    if ( pstCmd->matPPz.empty() ) {
-        WriteLog("The matPPz is empty.");
+    if ( pstCmd->matBaseSurfaceParam.empty() ) {
+        WriteLog("The matBaseSurfaceParam is empty.");
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return pstRpy->enStatus;
     }

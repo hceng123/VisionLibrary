@@ -1953,8 +1953,8 @@ VisionStatus LogCaseCalib3DBase::WriteRpy(const PR_CALIB_3D_BASE_RPY *const pstR
     if ( ! fs.isOpened() )
         return VisionStatus::OPEN_FILE_FAIL;
 
-    write ( fs, _strKeyK, pstRpy->matK );
-    write ( fs, _strKeyPPz, pstRpy->matPPz );
+    write ( fs, _strKeyThickToThinStripeK, pstRpy->matThickToThinStripeK );
+    write ( fs, _strKeyBaseSurfaceParam,   pstRpy->matBaseSurfaceParam );
     fs.release();
 
     _zip();
@@ -2013,8 +2013,8 @@ VisionStatus LogCaseCalc3DHeight::WriteCmd(const PR_CALC_3D_HEIGHT_CMD *const ps
     if ( ! fs.isOpened() )
         return VisionStatus::OPEN_FILE_FAIL;
 
-    write ( fs, _strKeyK, pstCmd->matK );
-    write ( fs, _strKeyPPz, pstCmd->matPPz );
+    cv::write ( fs, _strKeyThickToThinStripeK, pstCmd->matThickToThinStripeK );
+    cv::write ( fs, _strKeyBaseSurfaceParam,   pstCmd->matBaseSurfaceParam );
     fs.release();
 
     int index = 0;
@@ -2049,11 +2049,11 @@ VisionStatus LogCaseCalc3DHeight::RunLogCase() {
     stCmd.fMinAvgIntensity = ToFloat ( ini.GetDoubleValue ( _CMD_SECTION.c_str(), _strKeyMinAvgIntensity.c_str(), 3. ) );
 
     cv::FileStorage fs ( _strLogCasePath + _strInputYmlFileName, cv::FileStorage::READ );
-    cv::FileNode fileNode = fs[_strKeyK];
-    cv::read ( fileNode, stCmd.matK, cv::Mat() );
+    cv::FileNode fileNode = fs[_strKeyThickToThinStripeK];
+    cv::read ( fileNode, stCmd.matThickToThinStripeK, cv::Mat() );
 
-    fileNode = fs[_strKeyPPz];
-    cv::read ( fileNode, stCmd.matPPz, cv::Mat() );
+    fileNode = fs[_strKeyBaseSurfaceParam];
+    cv::read ( fileNode, stCmd.matBaseSurfaceParam, cv::Mat() );
     fs.release();
 
     int index = 0;
