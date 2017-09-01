@@ -258,7 +258,7 @@ inline std::vector<size_t> sort_indexes(const std::vector<T> &v) {
 /*static*/ void Unwrap::calib3DBase(const std::vector<cv::Mat> &vecInputImgs, bool bEnableGaussianFilter, bool bReverseSeq, cv::Mat &matK, cv::Mat &matPPz ) {
     std::vector<cv::Mat> vecConvertedImgs;
     for ( auto &mat : vecInputImgs ) {
-        cv::Mat matConvert = mat;;
+        cv::Mat matConvert = mat;
         if ( mat.channels() > 1 )
             cv::cvtColor ( mat, matConvert, CV_BGR2GRAY );
         matConvert.convertTo ( matConvert, CV_32FC1 );
@@ -305,7 +305,7 @@ inline std::vector<size_t> sort_indexes(const std::vector<T> &v) {
 #ifdef _DEBUG
     auto vecAlpha = CalcUtils::matToVector<DATA_TYPE>(matAlpha);
     auto vecBeta  = CalcUtils::matToVector<DATA_TYPE>(matBeta);
-    auto vecMatK = CalcUtils::matToVector<DATA_TYPE>(matK);
+    auto vecMatK  = CalcUtils::matToVector<DATA_TYPE>(matK);
 #endif
     int ROWS = vecInputImgs[0].rows;
     int COLS = vecInputImgs[0].cols;
@@ -313,7 +313,7 @@ inline std::vector<size_t> sort_indexes(const std::vector<T> &v) {
     CalcUtils::meshgrid<float> ( 1.f, 1.f, ToFloat ( COLS ), 1.f, 1.f, ToFloat ( ROWS ), matX, matY );
 
     matPPz = _calculatePPz ( matX, matY, matBeta );
-    cv::Mat matZP1 = _calculateSurface ( matAlpha, matPPz );
+    cv::Mat matZP1 = _calculateBaseSurface ( matAlpha.rows, matAlpha.cols, matPPz );
 #ifdef _DEBUG
     auto vecPPz = CalcUtils::matToVector<DATA_TYPE>(matPPz);
     auto vecZP1 = CalcUtils::matToVector<DATA_TYPE>(matZP1);
@@ -341,7 +341,7 @@ inline std::vector<size_t> sort_indexes(const std::vector<T> &v) {
     cv::Mat matDp = CalcUtils::diff ( matTmpPhase, 1, 2 );
 
 #ifdef _DEBUG 
-    auto vecDp = CalcUtils::matToVector<DATA_TYPE>( matDp );
+    auto vecVecDp = CalcUtils::matToVector<DATA_TYPE>( matDp );
 #endif
 
     cv::Mat matAbsUnderPI;
@@ -369,8 +369,8 @@ inline std::vector<size_t> sort_indexes(const std::vector<T> &v) {
      matDp.setTo ( 0, matAbsUnderPI );
      matDp = _setBySign ( matDp, OneCycle);
 
-     cv::Mat matTmp1 ( matPhaseResult,cv::Rect(1, 0, matPhaseResult.cols - 1, matPhaseResult.rows ) );
-     matTmp1 += CalcUtils::cumsum<DATA_TYPE> ( matDp, 2 );
+     cv::Mat matTmpl ( matPhaseResult,cv::Rect(1, 0, matPhaseResult.cols - 1, matPhaseResult.rows ) );
+     matTmpl += CalcUtils::cumsum<DATA_TYPE> ( matDp, 2 );
 #ifdef _DEBUG 
      vecPhaseResult = CalcUtils::matToVector<DATA_TYPE>( matPhaseResult );
 #endif
@@ -378,14 +378,15 @@ inline std::vector<size_t> sort_indexes(const std::vector<T> &v) {
 }
 
 static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
-    cv::Mat matP;
     cv::Mat matUSubBy1Pow1 = 1.f - matU;
-    cv::Mat matUPow2 = matU.mul ( matU );
-    cv::Mat matUPow3 = matUPow2.mul ( matU );
-    cv::Mat matUPow4 = matUPow3.mul ( matU );
     cv::Mat matUSubBy1Pow2 = matUSubBy1Pow1.mul ( matUSubBy1Pow1 );
     cv::Mat matUSubBy1Pow3 = matUSubBy1Pow2.mul ( matUSubBy1Pow1 );
     cv::Mat matUSubBy1Pow4 = matUSubBy1Pow3.mul ( matUSubBy1Pow1 );
+    cv::Mat matUPow2 = matU.    mul ( matU );
+    cv::Mat matUPow3 = matUPow2.mul ( matU );
+    cv::Mat matUPow4 = matUPow3.mul ( matU );
+    
+    cv::Mat matP;
     matP = matUSubBy1Pow4;
     matP.push_back ( cv::Mat ( 4 * matUSubBy1Pow3.mul ( matU ) ) );
     matP.push_back ( cv::Mat ( 6 * matUSubBy1Pow2.mul ( matUPow2 ) ) );
@@ -394,8 +395,7 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
     return matP;
 }
 
-/*static*/ cv::Mat Unwrap::_calculatePPz(const cv::Mat &matX, const cv::Mat &matY, const cv::Mat &matZ)
-{
+/*static*/ cv::Mat Unwrap::_calculatePPz(const cv::Mat &matX, const cv::Mat &matY, const cv::Mat &matZ) {
     int ROWS = matX.rows;
     int COLS = matX.cols;
     cv::Mat matU, matV;
@@ -418,12 +418,9 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
     return matPPz;
 }
 
-/*static*/ cv::Mat Unwrap::_calculateSurface(const cv::Mat &matZ, const cv::Mat &matPPz)
-{
-    int ROWS = matZ.rows;
-    int COLS = matZ.cols;
+/*static*/ cv::Mat Unwrap::_calculateBaseSurface(int rows, int cols, const cv::Mat &matPPz) {
     cv::Mat matU, matV;
-    CalcUtils::meshgrid<float> ( 0, 1.f / ( COLS - 1 ), 1.f, 0, 1.f / ( ROWS - 1 ), 1.f, matU, matV );
+    CalcUtils::meshgrid<float> ( 0, 1.f / ( cols - 1 ), 1.f, 0, 1.f / ( rows - 1 ), 1.f, matU, matV );
     matU = matU.reshape ( 1, 1 );
     matV = matV.reshape ( 1, 1 );
     cv::Mat matP1 = calcBezierCoeff ( matU );
@@ -435,21 +432,21 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
     }
     cv::transpose ( matXX, matXX );
     cv::Mat matZP = matXX * matPPz;
-    matZP = matZP.reshape ( 1, ROWS );
+    matZP = matZP.reshape ( 1, rows );
     return matZP;
 }
 
 /*static*/ void Unwrap::calc3DHeight( const PR_CALC_3D_HEIGHT_CMD *const pstCmd, PR_CALC_3D_HEIGHT_RPY *const pstRpy) {
     std::vector<cv::Mat> vecConvertedImgs;
     for ( auto &mat : pstCmd->vecInputImgs ) {
-        cv::Mat matConvert = mat;;
+        cv::Mat matConvert = mat;
         if ( mat.channels() > 1 )
             cv::cvtColor ( mat, matConvert, CV_BGR2GRAY );
         matConvert.convertTo ( matConvert, CV_32FC1 );
         vecConvertedImgs.push_back ( matConvert );
     }
 
-    if ( pstCmd->bEnableGaussianFilter ) {   
+    if ( pstCmd->bEnableGaussianFilter ) {
         //Filtering can reduce residues at the expense of a loss of spatial resolution.
         for ( auto &mat : vecConvertedImgs )        
             cv::GaussianBlur ( mat, mat, cv::Size(GUASSIAN_FILTER_SIZE, GUASSIAN_FILTER_SIZE), GUASSIAN_FILTER_SIGMA, GUASSIAN_FILTER_SIGMA, cv::BorderTypes::BORDER_REPLICATE );
@@ -494,9 +491,8 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
 
     VectorOfPoint vecTree = _getIntegralTree ( vecPoint1, vecPoint2, vecPoint3 );
     cv::Mat matBranchCut = cv::Mat::zeros ( matResidue.rows, matResidue.cols, CV_8UC1 );
-    for ( const auto &point : vecTree ) {
+    for ( const auto &point : vecTree )
         matBranchCut.at<uchar>(point) = 255;
-    }
 
     matAlpha = _phaseUnwrapSurfaceTrk ( matAlpha, matBranchCut );
     cv::Mat matDiffUnderTolIndex, matAvgUnderTolIndex;
@@ -505,16 +501,15 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
     int nUnstableCount = cv::countNonZero( matDiffUnderTolIndex );
 #endif
     matAlpha.setTo ( NAN, matDiffUnderTolIndex );
-    matAlpha = matAlpha * pstCmd->matK.at<DATA_TYPE>(0, 0) + pstCmd->matK.at<DATA_TYPE>(1, 0);
-    cv::Mat matZP1 = _calculateSurface ( matAlpha, pstCmd->matPPz );
+    matAlpha = matAlpha * pstCmd->matK.at<DATA_TYPE>(0, 0) + pstCmd->matK.at<DATA_TYPE>(1, 0);    
     matBeta = _phaseUnwrapSurfaceByRefer ( matBeta, matAlpha );
 
+    cv::Mat matZP1 = _calculateBaseSurface ( matAlpha.rows, matAlpha.cols, pstCmd->matPPz );
 #ifdef _DEBUG
     auto vecAlpha = CalcUtils::matToVector<DATA_TYPE>(matAlpha);
-    auto vecZP1 = CalcUtils::matToVector<DATA_TYPE>(matZP1);
-    auto vecBeta = CalcUtils::matToVector<DATA_TYPE>(matBeta);
-#endif
-
+    auto vecZP1   = CalcUtils::matToVector<DATA_TYPE>(matZP1);
+    auto vecBeta  = CalcUtils::matToVector<DATA_TYPE>(matBeta);
+#endif    
     matAlpha -= matZP1;
     matBeta  -= matZP1;
 
@@ -543,7 +538,7 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
     pstRpy->matHeight = matH;
 }
 
-/*static*/ cv::Mat Unwrap::_phaseUnwrapSurfaceTrk ( const cv::Mat &matPhase, const cv::Mat &matBranchCut) {
+/*static*/ cv::Mat Unwrap::_phaseUnwrapSurfaceTrk ( const cv::Mat &matPhase, const cv::Mat &matBranchCut ) {
     cv::Mat matPhaseResult;
     const float OneCycle = 2.f * ONE_HALF_CYCLE;
     cv::Mat matUnwrapped = matBranchCut.clone();
@@ -583,10 +578,6 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
 
     matPhaseResult.setTo ( cv::Scalar::all(NAN), matBranchCut );
 
-#ifdef _DEBUG
-    //displayOneRowData<double> ( matPhaseT, 0 );
-#endif
-
     matDp = CalcUtils::diff ( matPhaseResult, 1, 2 );
     cv::compare ( cv::abs ( matDp ), cv::Scalar::all ( ONE_HALF_CYCLE ), matAbsUnderPI, cv::CmpTypes::CMP_LT );
     matDp.setTo ( 0, matAbsUnderPI );
@@ -599,15 +590,11 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
     
     cv::Mat matNan = cv::Mat ( matPhaseResult != matPhaseResult );  //Find out points been blocked by branch cut.
 
-#ifdef _DEBUG
-    cv::imwrite("./data/NanMap_0.png", matNan * 255);
-#endif
-
     cv::Mat matIsRowNeedUnwrap;
     cv::reduce ( matNan, matIsRowNeedUnwrap, 1, CV_REDUCE_MAX );
     std::vector<cv::Point> vecRowsNeedToUnwrap;
     cv::findNonZero ( matIsRowNeedUnwrap, vecRowsNeedToUnwrap );
-    for ( const auto &point : vecRowsNeedToUnwrap )    {
+    for ( const auto &point : vecRowsNeedToUnwrap ) {
         int row = point.y;
         cv::Mat matOneRowIndex ( matNan, cv::Range ( row, row + 1 ) );
         if ( cv::sum ( matOneRowIndex )[0] <= 1 )
@@ -634,10 +621,6 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
     }
 
     matNan = cv::Mat ( matPhaseResult != matPhaseResult );
-
-#ifdef _DEBUG
-    cv::imwrite("./data/NanMap_1.png", matNan * 255);
-#endif
 
     cv::Mat matIsColNeedUnwrap;
     cv::reduce ( matNan, matIsColNeedUnwrap, 0, CV_REDUCE_MAX );
@@ -681,10 +664,6 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
     cv::imwrite("./data/NanMap_3.png", matNan * 255);
 #endif
 
-#ifdef _DEBUG
-    //displayOneRowData<double> ( matPhaseResult, 100 );
-#endif
-    //cv::cum
     return matPhaseResult;
 }
 

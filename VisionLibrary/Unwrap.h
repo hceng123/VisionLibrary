@@ -26,7 +26,7 @@ private:
     static cv::Mat _phaseUnwrapSurfaceTrk ( const cv::Mat &matPhase, const cv::Mat &matBranchCut);
     static cv::Mat _phaseUnwrapSurfaceByRefer(const cv::Mat &matPhase, const cv::Mat &matRef );
     static cv::Mat _calculatePPz(const cv::Mat &matX, const cv::Mat &matY, const cv::Mat &matZ);
-    static cv::Mat _calculateSurface(const cv::Mat &matZ, const cv::Mat &matPPz);
+    static cv::Mat _calculateBaseSurface(int rows, int cols, const cv::Mat &matPPz);
     static cv::Mat _setBySign(cv::Mat &matInput, DATA_TYPE value );
     static void _findUnstablePoint(const std::vector<cv::Mat> &vecInputImgs, float fDiffTol, float fAvgTol, cv::Mat &matDiffUnderTolIndex, cv::Mat &matAvgUnderTolIndex);
 

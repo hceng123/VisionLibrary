@@ -852,6 +852,17 @@ struct PR_CALIB_3D_BASE_RPY {
     cv::Mat                 matPPz;
 };
 
+struct PR_CALIB_3D_HEIGHT_CMD {
+    PR_CALIB_3D_HEIGHT_CMD() : bEnableGaussianFilter(true), bReverseSeq(true), fMinIntensityDiff(3.f), fMinAvgIntensity(3.f) {}
+    VectorOfMat             vecInputImgs;
+    bool                    bEnableGaussianFilter;
+    bool                    bReverseSeq;        //Change the image sequence.
+    float                   fMinIntensityDiff;  //In a group of 4 images, if a pixel's max and min intensity less than this value, this pixel will be discarded.
+    float                   fMinAvgIntensity;   //In a group of 4 images, if a pixel's average intensity less than this value, this pixel will be discarded.
+    cv::Mat                 matK;
+    cv::Mat                 matPPz;
+};
+
 struct PR_CALC_3D_HEIGHT_CMD {
     PR_CALC_3D_HEIGHT_CMD() : bEnableGaussianFilter(true), bReverseSeq(true), fMinIntensityDiff(3.f), fMinAvgIntensity(3.f) {}
     VectorOfMat             vecInputImgs;

@@ -73,5 +73,5 @@ void TestCalc3DHeight() {
     float dRatio = 255.f/( dMaxValue - dMinValue );
     matNewPhase = matNewPhase * dRatio;
     vecMatNewPhase = matToVector<float> ( matNewPhase );
-    cv::imwrite("data/HeightToGray.png", matNewPhase );
+    cv::imwrite("./data/HeightToGray.png", matNewPhase );
 }
