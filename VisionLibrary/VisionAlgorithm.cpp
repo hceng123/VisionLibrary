@@ -48,10 +48,10 @@ if ( ! bReplay )    {   \
 }
 
 /*static*/ OcrTesseractPtr VisionAlgorithm::_ptrOcrTesseract;
-/*static*/ const cv::Scalar VisionAlgorithm::_constRedScalar   = cv::Scalar(0, 0, 255);
-/*static*/ const cv::Scalar VisionAlgorithm::_constBlueScalar  = cv::Scalar(255, 0, 0);
-/*static*/ const cv::Scalar VisionAlgorithm::_constGreenScalar = cv::Scalar(0, 255, 0);
-/*static*/ const cv::Scalar VisionAlgorithm::_constYellowScalar(0, 255, 255);
+/*static*/ const cv::Scalar VisionAlgorithm::_constRedScalar    (0,   0,   255 );
+/*static*/ const cv::Scalar VisionAlgorithm::_constBlueScalar   (255, 0,   0   );
+/*static*/ const cv::Scalar VisionAlgorithm::_constGreenScalar  (0,   255, 0   );
+/*static*/ const cv::Scalar VisionAlgorithm::_constYellowScalar (0,   255, 255 );
 /*static*/ const String VisionAlgorithm::_strRecordLogPrefix   = "tmplDir.";
 /*static*/ const float VisionAlgorithm::_constExpSmoothRatio   = 0.3f;
 /*static*/ bool VisionAlgorithm::_bAutoMode = false;
@@ -5667,14 +5667,13 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     }
 
     matAverage /= ToFloat(pstCmd->vecInputImgs.size());
+    matAverage.convertTo(pstRpy->matResultImg, CV_8UC1);
+    cv::cvtColor ( pstRpy->matResultImg, pstRpy->matResultImg, CV_GRAY2BGR );
 
     int ROWS = matAverage.rows;
     int COLS = matAverage.cols;
     int nIntervalX = matAverage.cols / pstCmd->nGridCol;
-    int nIntervalY = matAverage.rows / pstCmd->nGridRow;
-
-    matAverage.convertTo(pstRpy->matResultImg, CV_8UC1);
-    cv::cvtColor ( pstRpy->matResultImg, pstRpy->matResultImg, CV_GRAY2BGR );
+    int nIntervalY = matAverage.rows / pstCmd->nGridRow;    
 
     int fontFace = cv::FONT_HERSHEY_SIMPLEX;
     double fontScale = 1;
@@ -5755,9 +5754,30 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
         }
     }
 
+    if ( pstCmd->matThickToThinStripeK.empty() ) {
+        WriteLog("matThickToThinStripeK is empty.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    if ( pstCmd->matBaseSurfaceParam.empty() ) {
+        WriteLog("matBaseSurfaceParam is empty.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
     if ( pstCmd->nBlockStepCount <= 0 || pstCmd->nBlockStepCount > 4 ) {
         char charrMsg[1000];
         _snprintf( charrMsg, sizeof( charrMsg ), "The BlockStepCount %d is not in range [1, 4].", pstCmd->nBlockStepCount );
+        WriteLog(charrMsg);
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    if ( pstCmd->nResultImgGridRow <= 0 || pstCmd->nResultImgGridRow > 100 ||
+         pstCmd->nResultImgGridCol <= 0 || pstCmd->nResultImgGridCol > 100 ) {
+        char charrMsg[1000];
+        _snprintf( charrMsg, sizeof( charrMsg ), "The Result image grid row %d or column %d is not in range [1, 100].", pstCmd->nResultImgGridRow, pstCmd->nResultImgGridCol );
         WriteLog(charrMsg);
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return pstRpy->enStatus;

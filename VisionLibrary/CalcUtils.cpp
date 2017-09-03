@@ -235,7 +235,7 @@ float CalcUtils::calcPointToContourDist(const cv::Point &ptInput, const VectorOf
     if ( nRecersiveTime > 1 )
         return diff ( diff ( matInput, nRecersiveTime - 1, nDimension ), 1, nDimension );
 
-    cv::Mat matKernel;    
+    cv::Mat matKernel;
     if ( DIFF_ON_COL == nDimension )
         matKernel = (cv::Mat_<float>(1, 2) << -1, 1);
     else if ( DIFF_ON_ROW == nDimension )
@@ -248,6 +248,13 @@ float CalcUtils::calcPointToContourDist(const cv::Point &ptInput, const VectorOf
     else if (  DIFF_ON_ROW == nDimension )
         return cv::Mat ( matResult, cv::Rect(0, 1, matResult.cols, matResult.rows - 1 ) ).clone();
     return cv::Mat();
+}
+
+/*static*/ int CalcUtils::countOfNan(const cv::Mat &matInput) {
+    cv::Mat matNan;
+    cv::compare ( matInput, matInput, matNan, cv::CmpTypes::CMP_EQ );
+    auto nCount = cv::countNonZero (  matNan );
+    return ToInt32 ( matInput.total() ) - nCount;
 }
 
 }

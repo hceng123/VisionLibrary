@@ -569,7 +569,10 @@ void TestCaliper_3() {
 
 int _tmain(int argc, _TCHAR* argv[])
 {
-    PR_SetDebugMode ( PR_DEBUG_MODE::LOG_ALL_CASE );
+    cv::Mat matNan (3, 3, CV_32FC1, NAN );
+    cv::Mat matCmpResult = cv::Mat ( matNan != matNan );
+    int nCount = cv::countNonZero ( matCmpResult );
+    //PR_SetDebugMode ( PR_DEBUG_MODE::LOG_ALL_CASE );
     //TestTemplate();
     //TestInspDevice();
     //TestRunLogcase();
@@ -618,9 +621,9 @@ int _tmain(int argc, _TCHAR* argv[])
 
     //TestSrchDie();
 
-    //TestCalib3dBase();
-    //TestCalc3DHeight();
-    TestCalib3DHeight();
+    TestCalib3dBase();
+    //TestCalib3DHeight();
+    TestCalc3DHeight();    
 
     PR_DumpTimeLog("./Vision/Time.log");
     std::cout << "Press any key to exist." << std::endl;

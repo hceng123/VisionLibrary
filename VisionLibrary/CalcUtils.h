@@ -108,19 +108,15 @@ public:
 
     template<typename _Tp>
     static inline std::vector<std::vector<_Tp>> matToVector(const cv::Mat &matInputImg) {
-        std::vector<std::vector<_Tp>> vecVecArray;
+        std::vector<std::vector<_Tp>> vecVecArray ( matInputImg.rows, std::vector<_Tp>(matInputImg.cols, 0 ) );
         if ( matInputImg.isContinuous () ) {
-            for ( int row = 0; row < matInputImg.rows; ++row ) {
-                std::vector<_Tp> vecRow;
+            for ( int row = 0; row < matInputImg.rows; ++ row ) {
                 int nRowStart = row * matInputImg.cols;
-                vecRow.assign ( (_Tp *)matInputImg.datastart + nRowStart, (_Tp *)matInputImg.datastart + nRowStart + matInputImg.cols );
-                vecVecArray.push_back ( vecRow );
+                vecVecArray[row].assign ( (_Tp *)matInputImg.datastart + nRowStart, (_Tp *)matInputImg.datastart + nRowStart + matInputImg.cols );
             }
         }else {
-            for ( int row = 0; row < matInputImg.rows; ++row ) {
-                std::vector<_Tp> vecRow;
-                vecRow.assign ( (_Tp*)matInputImg.ptr<uchar> ( row ), (_Tp*)matInputImg.ptr<uchar> ( row ) +matInputImg.cols );
-                vecVecArray.push_back ( vecRow );
+            for ( int row = 0; row < matInputImg.rows; ++ row ) {
+                vecVecArray[row].assign ( (_Tp*)matInputImg.ptr<uchar> ( row ), (_Tp*)matInputImg.ptr<uchar> ( row ) + matInputImg.cols );
             }
         }
         return vecVecArray;
@@ -175,6 +171,12 @@ public:
         return matResult;
     }
 
+    static inline cv::Mat getNanMask(const cv::Mat &matInput) {
+        cv::Mat matResult = cv::Mat ( matInput == matInput );
+        matResult = 255 - matResult;
+        return matResult;
+    }
+
     static double radian2Degree( double dRadian );
     static double degree2Radian( double dDegree );
     static float ptDisToLine(const cv::Point2f &ptInput, bool bReversedFit, float fSlope, float fIntercept );
@@ -192,6 +194,7 @@ public:
     static float calcPointToContourDist(const cv::Point &ptInput, const VectorOfPoint &contour, cv::Point &ptResult );
     static cv::Point2f getContourCtr(const VectorOfPoint &contour);
     static cv::Mat diff ( const cv::Mat &matInput, int nRecersiveTime, int nDimension );
+    static int countOfNan(const cv::Mat &matInput);
 };
 
 }

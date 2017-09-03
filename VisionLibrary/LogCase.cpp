@@ -1989,6 +1989,90 @@ VisionStatus LogCaseCalib3DBase::RunLogCase() {
     return enStatus;
 }
 
+/*static*/ String LogCaseCalib3DHeight::StaticGetFolderPrefix() {
+    return "Calib3DHeight";
+}
+
+VisionStatus LogCaseCalib3DHeight::WriteCmd(const PR_CALIB_3D_HEIGHT_CMD *const pstCmd) {
+    if ( !_bReplay ) {
+        _strLogCasePath = _generateLogCaseName(GetFolderPrefix());
+        bfs::path dir(_strLogCasePath);
+        bfs::create_directories(dir);
+    }
+
+    CSimpleIni ini(false, false, false);
+    auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
+    ini.LoadFile(cmdRpyFilePath.c_str());
+    ini.SetBoolValue(_CMD_SECTION.c_str(), _strKeyEnableGF.c_str(), pstCmd->bEnableGaussianFilter );
+    ini.SetBoolValue(_CMD_SECTION.c_str(), _strKeyReverseSeq.c_str(), pstCmd->bReverseSeq );
+    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyMinIntensityDiff.c_str(), pstCmd->fMinIntensityDiff );
+    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyMinAvgIntensity.c_str(), pstCmd->fMinAvgIntensity );
+    ini.SaveFile(cmdRpyFilePath.c_str());
+
+    cv::FileStorage fs( _strLogCasePath + _strInputYmlFileName, cv::FileStorage::WRITE);
+    if ( ! fs.isOpened() )
+        return VisionStatus::OPEN_FILE_FAIL;
+
+    cv::write ( fs, _strKeyThickToThinStripeK, pstCmd->matThickToThinStripeK );
+    cv::write ( fs, _strKeyBaseSurfaceParam,   pstCmd->matBaseSurfaceParam );
+    fs.release();
+
+    int index = 0;
+    for ( const auto &matImg : pstCmd->vecInputImgs ) {
+        String strFileName = _strLogCasePath + _IMAGE_FILE_PREFIX + std::to_string(index) + _IMAGE_FILE_EXT;
+        cv::imwrite ( strFileName , matImg );
+        ++ index;
+    }
+    return VisionStatus::OK;
+}
+
+VisionStatus LogCaseCalib3DHeight::WriteRpy(const PR_CALIB_3D_HEIGHT_RPY *const pstRpy) {
+    CSimpleIni ini(false, false, false);
+    auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
+    ini.LoadFile(cmdRpyFilePath.c_str());    
+    ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyStatus.c_str(), ToInt32 ( pstRpy->enStatus ) );    
+    _zip();
+    return VisionStatus::OK;
+}
+
+VisionStatus LogCaseCalib3DHeight::RunLogCase() {
+    PR_CALIB_3D_HEIGHT_CMD stCmd;
+    PR_CALIB_3D_HEIGHT_RPY stRpy;
+
+    CSimpleIni ini(false, false, false);
+    auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
+    ini.LoadFile(cmdRpyFilePath.c_str());
+
+    stCmd.bEnableGaussianFilter = ini.GetBoolValue ( _CMD_SECTION.c_str(), _strKeyEnableGF.c_str(), false );
+    stCmd.bReverseSeq = ini.GetBoolValue ( _CMD_SECTION.c_str(), _strKeyReverseSeq.c_str(), false );
+    stCmd.fMinIntensityDiff = ToFloat ( ini.GetDoubleValue ( _CMD_SECTION.c_str(), _strKeyMinIntensityDiff.c_str(), 3. ) );
+    stCmd.fMinAvgIntensity = ToFloat ( ini.GetDoubleValue ( _CMD_SECTION.c_str(), _strKeyMinAvgIntensity.c_str(), 3. ) );
+
+    cv::FileStorage fs ( _strLogCasePath + _strInputYmlFileName, cv::FileStorage::READ );
+    cv::FileNode fileNode = fs[_strKeyThickToThinStripeK];
+    cv::read ( fileNode, stCmd.matThickToThinStripeK, cv::Mat() );
+
+    fileNode = fs[_strKeyBaseSurfaceParam];
+    cv::read ( fileNode, stCmd.matBaseSurfaceParam, cv::Mat() );
+    fs.release();
+
+    int index = 0;
+    while ( true ) {
+        String strFileName = _strLogCasePath + _IMAGE_FILE_PREFIX + std::to_string(index) + _IMAGE_FILE_EXT;
+        auto matImg = cv::imread ( strFileName, cv::IMREAD_GRAYSCALE );
+        if ( ! matImg.empty() )
+            stCmd.vecInputImgs.push_back ( matImg );
+        else
+            break;
+        ++ index;
+    }
+
+    VisionStatus enStatus = VisionStatus::OK;
+    enStatus = VisionAlgorithm::calib3DHeight ( &stCmd, &stRpy, true );
+    WriteRpy(&stRpy);
+    return enStatus;
+}
+
 /*static*/ String LogCaseCalc3DHeight::StaticGetFolderPrefix() {
     return "Calc3DHeight";
 }

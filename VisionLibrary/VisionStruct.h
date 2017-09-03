@@ -27,6 +27,7 @@ using ListOfPoint = std::list<cv::Point>;
 using VectorOfListOfPoint = std::vector<ListOfPoint>;
 using VectorOfSize2f = std::vector<cv::Size2f>;
 using VectorOfMat = std::vector<cv::Mat>;
+using VectorOfVectorOfFloat = std::vector<std::vector<float>>;
 
 #define ToInt32(param)      (static_cast<AOI::Int32>(param))
 #define ToInt16(param)      (static_cast<AOI::Int16>(param))
@@ -832,8 +833,7 @@ struct PR_GRID_AVG_GRAY_SCALE_CMD {
     Int16                   nGridCol;
 };
 
-struct PR_GRID_AVG_GRAY_SCALE_RPY {
-    using VectorOfVectorOfFloat = std::vector<std::vector<float>>;
+struct PR_GRID_AVG_GRAY_SCALE_RPY {    
     VisionStatus            enStatus;
     VectorOfVectorOfFloat   vecVecGrayScale;
     cv::Mat                 matResultImg;
@@ -853,7 +853,7 @@ struct PR_CALIB_3D_BASE_RPY {
 };
 
 struct PR_CALIB_3D_HEIGHT_CMD {
-    PR_CALIB_3D_HEIGHT_CMD() : bEnableGaussianFilter(true), bReverseSeq(true), fMinIntensityDiff(3.f), fMinAvgIntensity(3.f) {}
+    PR_CALIB_3D_HEIGHT_CMD() : bEnableGaussianFilter(true), bReverseSeq(true), fMinIntensityDiff(3.f), fMinAvgIntensity(3.f), nResultImgGridRow(8), nResultImgGridCol(0) {}
     VectorOfMat             vecInputImgs;
     bool                    bEnableGaussianFilter;
     bool                    bReverseSeq;            //Change the image sequence.
@@ -861,14 +861,17 @@ struct PR_CALIB_3D_HEIGHT_CMD {
     float                   fMinAvgIntensity;       //In a group of 4 images, if a pixel's average intensity less than this value, this pixel will be discarded.
     cv::Mat                 matThickToThinStripeK;  //The factor between thick stripe and thin stripe.
     cv::Mat                 matBaseSurfaceParam;
-    bool                    bReverseHeight;         //The calibration base surface is align with the top of the block, in this case, the height value is negative.
     Int16                   nBlockStepCount;        //How many steps on the calibration block.
     float                   fBlockStepHeight;       //The height of each step, unit mm. So the total block height is nBlockStepCount x fBlockStepHeight.
+    Int32                   nResultImgGridRow;
+    Int32                   nResultImgGridCol;
 };
 
 struct PR_CALIB_3D_HEIGHT_RPY {
     VisionStatus            enStatus;
     cv::Mat                 matPhaseToHeightK;      //The factor to convert phase to height.
+    VectorOfVectorOfFloat   vecVecStepPhase;        //The result phase of 4 corners and the center, for application to draw the curves.
+    cv::Mat                 matResultImg;
 };
 
 struct PR_CALC_3D_HEIGHT_CMD {

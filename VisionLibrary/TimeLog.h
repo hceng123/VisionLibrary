@@ -1,7 +1,6 @@
 #ifndef _TIME_LOG_H_
 #define _TIME_LOG_H_
 
-
 #include <string>
 #include <vector>
 #include <mutex>
