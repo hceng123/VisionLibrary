@@ -205,14 +205,14 @@ float CalcUtils::calcPointToContourDist(const cv::Point &ptInput, const VectorOf
     float angle = acos ( cosOfAngle );
     float fDistance;
     if ( angle <= CV_PI / 2 ) {
-        fDistance = A * sin ( angle );
-        float D = A * cos ( angle );
+        fDistance = A * std::sin ( angle );
+        float D = A * std::cos ( angle );
         float DCRatio = D / C;
         ptResult.x = ToInt32 ( ptNearestPoint1.x * (1.f - DCRatio) + ptNearestPoint2.x * DCRatio + 0.5f );
         ptResult.y = ToInt32 ( ptNearestPoint1.y * (1.f - DCRatio) + ptNearestPoint2.y * DCRatio + 0.5f );
     }else {
-        fDistance = A * ToFloat ( sin ( CV_PI - angle ) );
-        float D = A * ToFloat ( cos ( CV_PI - angle ) );
+        fDistance = A * ToFloat ( std::sin ( CV_PI - angle ) );
+        float D = A * ToFloat ( std::cos ( CV_PI - angle ) );
         float DCRatio = D / C;
         ptResult.x = ToInt32 ( ptNearestPoint1.x + D / C * ( ptNearestPoint1.x - ptNearestPoint2.x) );
         ptResult.y = ToInt32 ( ptNearestPoint1.y + D / C * ( ptNearestPoint1.y - ptNearestPoint2.y) );

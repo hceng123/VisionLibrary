@@ -821,7 +821,6 @@ struct PR_INSP_LEAD_RPY {
     VECTOR_LEAD_RESULT      vecLeadResult;
     cv::Mat                 matResultImg;
 };
-
 /******************************************
 * End of Inspect Lead Section *
 ******************************************/
@@ -853,7 +852,7 @@ struct PR_CALIB_3D_BASE_RPY {
 };
 
 struct PR_CALIB_3D_HEIGHT_CMD {
-    PR_CALIB_3D_HEIGHT_CMD() : bEnableGaussianFilter(true), bReverseSeq(true), fMinIntensityDiff(3.f), fMinAvgIntensity(3.f), nResultImgGridRow(8), nResultImgGridCol(0) {}
+    PR_CALIB_3D_HEIGHT_CMD() : bEnableGaussianFilter(true), bReverseSeq(true), fMinIntensityDiff(3.f), fMinAvgIntensity(3.f), nResultImgGridRow(8), nResultImgGridCol(8) {}
     VectorOfMat             vecInputImgs;
     bool                    bEnableGaussianFilter;
     bool                    bReverseSeq;            //Change the image sequence.
@@ -871,6 +870,7 @@ struct PR_CALIB_3D_HEIGHT_RPY {
     VisionStatus            enStatus;
     cv::Mat                 matPhaseToHeightK;      //The factor to convert phase to height.
     VectorOfVectorOfFloat   vecVecStepPhase;        //The result phase of 4 corners and the center, for application to draw the curves.
+    VectorOfMat             vecMatStepSurface;      //The regression surface of the steps. Its size should be fBlockStepHeight + 1.
     cv::Mat                 matResultImg;
 };
 
@@ -890,6 +890,20 @@ struct PR_CALC_3D_HEIGHT_RPY {
     VisionStatus            enStatus;
     cv::Mat                 matPhase;
     cv::Mat                 matHeight;
+};
+
+//Calculate the optics modulation transfer function.
+struct PR_CALC_MTF_CMD {
+    VectorOfMat             vecInputImgs;
+    float                   fMagnitudeOfDLP;        //The setted magnitude of DLP. The captured image magnitude divide the setted maganitude is the MTF result.
+};
+
+struct PR_CALC_MTF_RPY {
+    VisionStatus            enStatus;
+    VectorOfVectorOfFloat   vevVecAbsMtfH;             //The absolute modulation transfer function in horizontal direction.
+    VectorOfVectorOfFloat   vevVecRelMtfH;             //The relative modulation transfer function in horizontal direction.
+    VectorOfVectorOfFloat   vevVecAbsMtfV;             //The absolute modulation transfer function in vertical direction.
+    VectorOfVectorOfFloat   vevVecRelMtfV;             //The relative modulation transfer function in vertical direction.
 };
 
 }

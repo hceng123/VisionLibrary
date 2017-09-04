@@ -158,7 +158,7 @@ void TestCalc3DHeight() {
     cv::read ( fileNode, stCmd.matThickToThinStripeK, cv::Mat() );
 
     fileNode = fs["PPz"];
-    cv::read ( fileNode, stCmd.matBaseSurfaceParam, cv::Mat() ); 
+    cv::read ( fileNode, stCmd.matBaseSurfaceParam, cv::Mat() );
 
     fileNode = fs["PhaseToHeightK"];
     cv::read ( fileNode, stCmd.matPhaseToHeightK, cv::Mat() );
@@ -173,4 +173,22 @@ void TestCalc3DHeight() {
         cv::Mat matPhaseResultImg = drawHeightGrid ( stRpy.matPhase, 9, 9 );
         cv::imwrite("./data/PhaseGridImg.png", matPhaseResultImg );
     }
+}
+
+void TestCalcMTF() {
+    const int IMAGE_COUNT = 8;
+    std::string strFolder = "./data/0715184554_10ms_80_Plane1/";
+    PR_CALC_MTF_CMD stCmd;
+    PR_CALC_MTF_RPY stRpy;
+    for ( int i = 1; i <= IMAGE_COUNT; ++ i ) {
+        char chArrFileName[100];
+        _snprintf( chArrFileName, sizeof (chArrFileName), "%02d.bmp", i );
+        std::string strImageFile = strFolder + chArrFileName;
+        cv::Mat mat = cv::imread ( strImageFile, cv::IMREAD_GRAYSCALE );
+        stCmd.vecInputImgs.push_back ( mat );
+    }
+    stCmd.fMagnitudeOfDLP = 161;
+
+    PR_CalcMTF ( &stCmd, &stRpy );
+    std::cout << "PR_CalcMTF status " << ToInt32( stRpy.enStatus ) << std::endl;
 }

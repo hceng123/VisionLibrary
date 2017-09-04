@@ -162,6 +162,19 @@ public:
         matY = cv::repeat ( matRow, 1, ToInt32 ( vectorX.size () ) );
     }
 
+    template<typename _tp>
+    static cv::Mat intervals ( float start, float interval, float end ) {
+        std::vector<_tp> vecValue;
+        vecValue.reserve ( ToInt32 ( ( end - start ) / interval ) );
+        _tp value = start;
+        while( value <= end )    {
+            vecValue.push_back ( value );
+            value += interval;
+        }
+        cv::Mat matResult ( vecValue );
+        return matResult;
+    }
+
     template<typename T>
     static inline cv::Mat floor ( const cv::Mat &matInput ) {
         cv::Mat matResult = matInput.clone ();
@@ -174,6 +187,24 @@ public:
     static inline cv::Mat getNanMask(const cv::Mat &matInput) {
         cv::Mat matResult = cv::Mat ( matInput == matInput );
         matResult = 255 - matResult;
+        return matResult;
+    }
+
+    template<typename T>
+    static cv::Mat sin(const cv::Mat &matInput) {
+        cv::Mat matResult ( matInput.rows, matInput.cols, matInput.type () );
+        for( int row = 0; row < matInput.rows; ++ row )
+        for( int col = 0; col < matInput.cols; ++ col )
+            matResult.at<T> ( row, col ) = std::sin ( matInput.at<T> ( row, col ) );
+        return matResult;
+    }
+
+    template<typename T>
+    static cv::Mat cos(const cv::Mat &matInput) {
+        cv::Mat matResult ( matInput.rows, matInput.cols, matInput.type () );
+        for( int row = 0; row < matInput.rows; ++ row )
+        for( int col = 0; col < matInput.cols; ++ col )
+            matResult.at<T> ( row, col ) = std::cos ( matInput.at<T> ( row, col ) );
         return matResult;
     }
 

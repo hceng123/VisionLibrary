@@ -852,12 +852,26 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
         cv::Mat matYY ( vecPhaseTmp );
         matK;
         cv::solve ( matXX, matYY, matK, cv::DecompTypes::DECOMP_QR );
-        matZp = matX * matK.at<DATA_TYPE>(0, 0) + matY *  matK.at<DATA_TYPE>(1, 0) +  matK.at<DATA_TYPE>(2, 0);
-
+        matZp = matX * matK.at<DATA_TYPE>(0, 0) + matY * matK.at<DATA_TYPE>(1, 0) +  matK.at<DATA_TYPE>(2, 0);
+        pstRpy->vecMatStepSurface.push_back ( matZp );
         std::vector<DATA_TYPE> vecValue;
         for ( const auto &point : vecPointToFectch )
             vecValue.push_back ( matZp.at<DATA_TYPE> ( point ) );
         matHz.push_back ( cv::Mat ( vecValue ).reshape ( 1, 1 ) );
+    }
+
+    {//Temparory code scope.
+        cv::Mat matXX;
+        if( bReverseHeight )
+            matXX = CalcUtils::intervals<DATA_TYPE> ( pstCmd->nBlockStepCount, -1, 0 );
+        else
+            matXX = CalcUtils::intervals<DATA_TYPE> ( 0, 1, pstCmd->nBlockStepCount );
+        cv::transpose ( matXX, matXX );
+        for( int i = 0; i < ToInt32 ( vecPointToFectch.size () ); ++i ) {
+            cv::Mat  matYY ( matHz, cv::Rect ( i, 0, 1, matHz.rows ) );
+            cv::Mat matK;
+            cv::solve ( matXX, matYY, matK, cv::DecompTypes::DECOMP_SVD );
+        }
     }
 
     vecXt = std::vector<DATA_TYPE> ( { ToFloat ( COLS / 2 ), 1.f, ToFloat ( COLS ), 1.f, ToFloat ( COLS ) } );
@@ -937,6 +951,84 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
         cv::line ( matResultImg, cv::Point(0, i * nIntervalY), cv::Point(COLS, i * nIntervalY), scalarCyan, nGridLineSize );
 
     return matResultImg;
+}
+
+/*static*/ void Unwrap::calcMTF(const PR_CALC_MTF_CMD *const pstCmd, PR_CALC_MTF_RPY *const pstRpy) {
+    std::vector<cv::Mat> vecConvertedImgs;
+    for ( auto &mat : pstCmd->vecInputImgs ) {
+        cv::Mat matConvert = mat;
+        if ( mat.channels() > 1 )
+            cv::cvtColor ( mat, matConvert, CV_BGR2GRAY );
+        matConvert.convertTo ( matConvert, CV_32FC1 );
+        vecConvertedImgs.push_back ( matConvert );
+    }
+
+    pstRpy->vevVecAbsMtfH.clear();
+    pstRpy->vevVecRelMtfH.clear();
+    pstRpy->vevVecAbsMtfV.clear();
+    pstRpy->vevVecRelMtfV.clear();
+    int TOTAL_GROUP = ToInt32 ( pstCmd->vecInputImgs.size() ) / PR_GROUP_TEXTURE_IMG_COUNT;
+    for ( int nGroup = 0; nGroup < TOTAL_GROUP; ++ nGroup ) {
+        cv::Mat mat00 = vecConvertedImgs[nGroup + 0] - vecConvertedImgs[nGroup + 2];
+        cv::Mat mat01 = vecConvertedImgs[nGroup + 3] - vecConvertedImgs[nGroup + 1];
+
+        cv::Mat matPhase;
+        cv::phase ( mat00, mat01, matPhase );
+        //The opencv cv::phase function return result is 0~2*PI, but matlab is -PI~PI, so here need to do a conversion.
+        cv::Mat matOverPi;
+        cv::compare ( matPhase, cv::Scalar::all ( CV_PI ), matOverPi, cv::CmpTypes::CMP_GT );
+        cv::subtract ( matPhase, cv::Scalar::all ( 2.f * CV_PI ), matPhase, matOverPi );
+
+        matPhase = _phaseUnwrapSurface ( matPhase );
+        cv::Mat matSin = CalcUtils::sin<DATA_TYPE> ( matPhase );
+        cv::Mat matCos = CalcUtils::cos<DATA_TYPE> ( matPhase );
+        std::vector<float> vecMtfAbsH ( matPhase.rows, 1.f );
+        std::vector<float> vecMtfRelH ( matPhase.rows, 1.f );
+        for ( int row = 0; row < matPhase.rows; ++ row ) {
+            cv::Rect rectROI(0, row, matPhase.cols, 1 );
+            cv::Mat matYY ( mat00, rectROI );
+            cv::Mat matYYT;
+            cv::transpose ( matYY, matYYT );
+            cv::Mat matXX;
+            matXX.push_back ( cv::Mat( matSin, rectROI).clone() );
+            matXX.push_back ( cv::Mat( matCos, rectROI).clone() );
+            matXX.push_back ( cv::Mat( cv::Mat::ones( 1, matPhase.cols, matPhase.type() ) ) );
+            cv::transpose ( matXX, matXX );
+            cv::Mat matK;
+            cv::solve ( matXX, matYYT, matK, cv::DecompTypes::DECOMP_SVD );
+            vecMtfAbsH[row] = std::sqrt ( matK.at<DATA_TYPE>(0, 0) * matK.at<DATA_TYPE>(0, 0) + matK.at<DATA_TYPE>(1, 0) * matK.at<DATA_TYPE>(1, 0) ) / pstCmd->fMagnitudeOfDLP;
+            if ( nGroup > 0 )
+                vecMtfRelH[row] = vecMtfAbsH[row] / pstRpy->vevVecAbsMtfH[0][row];
+        }
+        pstRpy->vevVecAbsMtfH.push_back ( vecMtfAbsH );
+        pstRpy->vevVecRelMtfH.push_back ( vecMtfRelH );
+
+        cv::transpose ( matPhase, matPhase );
+        cv::transpose ( mat00, mat00 );
+        cv::transpose ( matSin, matSin );
+        cv::transpose ( matCos, matCos );
+
+        std::vector<float> vecMtfAbsV ( matPhase.rows, 1.f );
+        std::vector<float> vecMtfRelV ( matPhase.rows, 1.f );
+        for ( int row = 0; row < matPhase.rows; ++ row ) {
+            cv::Rect rectROI(0, row, matPhase.cols, 1 );
+            cv::Mat matYY ( mat00, rectROI );
+            cv::Mat matYYT;
+            cv::transpose ( matYY, matYYT );
+            cv::Mat matXX;
+            matXX.push_back ( cv::Mat( matSin, rectROI).clone() );
+            matXX.push_back ( cv::Mat( matCos, rectROI).clone() );
+            matXX.push_back ( cv::Mat( cv::Mat::ones( 1, matPhase.cols, matPhase.type() ) ) );
+            cv::transpose ( matXX, matXX );
+            cv::Mat matK;
+            cv::solve ( matXX, matYYT, matK, cv::DecompTypes::DECOMP_SVD );
+            vecMtfAbsV[row] = std::sqrt ( matK.at<DATA_TYPE>(0, 0) * matK.at<DATA_TYPE>(0, 0) + matK.at<DATA_TYPE>(1, 0) * matK.at<DATA_TYPE>(1, 0) ) / pstCmd->fMagnitudeOfDLP;
+            if ( nGroup > 0 )
+                vecMtfRelV[row] = vecMtfAbsV[row] / pstRpy->vevVecAbsMtfV[0][row];
+        }
+        pstRpy->vevVecAbsMtfV.push_back ( vecMtfAbsV );
+        pstRpy->vevVecRelMtfV.push_back ( vecMtfRelV );
+    }
 }
 
 }

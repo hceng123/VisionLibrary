@@ -570,8 +570,9 @@ void TestCaliper_3() {
 int _tmain(int argc, _TCHAR* argv[])
 {
     cv::Mat matNan (3, 3, CV_32FC1, NAN );
-    cv::Mat matCmpResult = cv::Mat ( matNan != matNan );
+    cv::Mat matCmpResult = cv::Mat ( matNan == matNan );
     int nCount = cv::countNonZero ( matCmpResult );
+    std::cout << "find NAN cout " << matCmpResult.total() - nCount << std::endl;
     //PR_SetDebugMode ( PR_DEBUG_MODE::LOG_ALL_CASE );
     //TestTemplate();
     //TestInspDevice();
@@ -621,9 +622,11 @@ int _tmain(int argc, _TCHAR* argv[])
 
     //TestSrchDie();
 
-    TestCalib3dBase();
+    //TestCalib3dBase();
     //TestCalib3DHeight();
-    TestCalc3DHeight();    
+    //TestCalc3DHeight();
+
+    TestCalcMTF();
 
     PR_DumpTimeLog("./Vision/Time.log");
     std::cout << "Press any key to exist." << std::endl;
