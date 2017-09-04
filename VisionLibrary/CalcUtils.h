@@ -167,12 +167,19 @@ public:
         std::vector<_tp> vecValue;
         vecValue.reserve ( ToInt32 ( ( end - start ) / interval ) );
         _tp value = start;
-        while( value <= end )    {
-            vecValue.push_back ( value );
-            value += interval;
+        if ( interval > 0 ) {
+            while ( value <= end ) {
+                vecValue.push_back ( value );
+                value += interval;
+            }
+        }else {
+            while ( value >= end ) {
+                vecValue.push_back ( value );
+                value += interval;
+            }
         }
-        cv::Mat matResult ( vecValue );
-        return matResult;
+        //cv::Mat matResult ( vecValue ); //This have problem, because matResult share the memory with vecValue, after leave this function, the memory already released.
+        return cv::Mat(vecValue).clone();
     }
 
     template<typename T>

@@ -813,7 +813,7 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
     cv::Mat matZp = matX * matK.at<DATA_TYPE>(0, 0) + matY * matK.at<DATA_TYPE>(1, 0) +  matK.at<DATA_TYPE>(2, 0);
     matPhase = matPhase - matZp;
 
-    cv::Mat matST = cv::getStructuringElement( cv::MORPH_RECT, cv::Size(ERODE_WIN_SIZE, ERODE_WIN_SIZE) );
+    cv::Mat matST = cv::getStructuringElement ( cv::MORPH_RECT, cv::Size ( ERODE_WIN_SIZE, ERODE_WIN_SIZE ) );
 
     cv::Mat matBP = cv::Mat::zeros ( ROWS, COLS, CV_8UC1);
     int nNum = 0;
@@ -860,18 +860,30 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
         matHz.push_back ( cv::Mat ( vecValue ).reshape ( 1, 1 ) );
     }
 
+#ifdef _DEBUG
+    auto vevVecHz = CalcUtils::matToVector<DATA_TYPE>( matHz );
+#endif
+
     {//Temparory code scope.
         cv::Mat matXX;
         if( bReverseHeight )
             matXX = CalcUtils::intervals<DATA_TYPE> ( pstCmd->nBlockStepCount, -1, 0 );
         else
             matXX = CalcUtils::intervals<DATA_TYPE> ( 0, 1, pstCmd->nBlockStepCount );
-        cv::transpose ( matXX, matXX );
-        for( int i = 0; i < ToInt32 ( vecPointToFectch.size () ); ++i ) {
-            cv::Mat  matYY ( matHz, cv::Rect ( i, 0, 1, matHz.rows ) );
+
+        pstRpy->vecStepPhaseSlope.clear();
+        cv::Mat matAllDiff;
+        for( int i = 0; i < ToInt32 ( vecPointToFectch.size () ); ++ i ) {
+            cv::Mat matYY = cv::Mat ( matHz, cv::Rect ( i, 0, 1, matHz.rows ) ).clone();
             cv::Mat matK;
             cv::solve ( matXX, matYY, matK, cv::DecompTypes::DECOMP_SVD );
+            pstRpy->vecStepPhaseSlope.push_back ( matK.at<DATA_TYPE> ( 0, 0 ) );
+            cv::Mat matDiff = matYY - matXX * matK;
+            cv::transpose(matDiff, matDiff);
+            matAllDiff.push_back ( matDiff );
         }
+        cv::transpose ( matAllDiff, matAllDiff );
+        pstRpy->vevVecStepPhaseDiff = CalcUtils::matToVector<DATA_TYPE>(matAllDiff);
     }
 
     vecXt = std::vector<DATA_TYPE> ( { ToFloat ( COLS / 2 ), 1.f, ToFloat ( COLS ), 1.f, ToFloat ( COLS ) } );

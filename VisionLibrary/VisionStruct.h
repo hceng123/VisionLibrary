@@ -27,7 +27,8 @@ using ListOfPoint = std::list<cv::Point>;
 using VectorOfListOfPoint = std::vector<ListOfPoint>;
 using VectorOfSize2f = std::vector<cv::Size2f>;
 using VectorOfMat = std::vector<cv::Mat>;
-using VectorOfVectorOfFloat = std::vector<std::vector<float>>;
+using VectorOfFloat = std::vector<float>;
+using VectorOfVectorOfFloat = std::vector<VectorOfFloat>;
 
 #define ToInt32(param)      (static_cast<AOI::Int32>(param))
 #define ToInt16(param)      (static_cast<AOI::Int16>(param))
@@ -871,6 +872,8 @@ struct PR_CALIB_3D_HEIGHT_RPY {
     cv::Mat                 matPhaseToHeightK;      //The factor to convert phase to height.
     VectorOfVectorOfFloat   vecVecStepPhase;        //The result phase of 4 corners and the center, for application to draw the curves.
     VectorOfMat             vecMatStepSurface;      //The regression surface of the steps. Its size should be fBlockStepHeight + 1.
+    VectorOfFloat           vecStepPhaseSlope;      //5 slopes of the phase-step fitting lines.
+    VectorOfVectorOfFloat   vevVecStepPhaseDiff;    //The actual phase and the fitting line difference.
     cv::Mat                 matResultImg;
 };
 
