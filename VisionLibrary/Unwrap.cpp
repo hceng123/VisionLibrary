@@ -981,8 +981,8 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
     pstRpy->vevVecRelMtfV.clear();
     int TOTAL_GROUP = ToInt32 ( pstCmd->vecInputImgs.size() ) / PR_GROUP_TEXTURE_IMG_COUNT;
     for ( int nGroup = 0; nGroup < TOTAL_GROUP; ++ nGroup ) {
-        cv::Mat mat00 = vecConvertedImgs[nGroup + 0] - vecConvertedImgs[nGroup + 2];
-        cv::Mat mat01 = vecConvertedImgs[nGroup + 3] - vecConvertedImgs[nGroup + 1];
+        cv::Mat mat00 = vecConvertedImgs[nGroup * PR_GROUP_TEXTURE_IMG_COUNT + 0] - vecConvertedImgs[nGroup * PR_GROUP_TEXTURE_IMG_COUNT + 2];
+        cv::Mat mat01 = vecConvertedImgs[nGroup * PR_GROUP_TEXTURE_IMG_COUNT + 3] - vecConvertedImgs[nGroup * PR_GROUP_TEXTURE_IMG_COUNT + 1];
 
         cv::Mat matPhase;
         cv::phase ( mat00, mat01, matPhase );

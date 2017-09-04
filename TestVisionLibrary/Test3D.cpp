@@ -176,8 +176,8 @@ void TestCalc3DHeight() {
 }
 
 void TestCalcMTF() {
-    const int IMAGE_COUNT = 8;
-    std::string strFolder = "./data/0715184554_10ms_80_Plane1/";
+    const int IMAGE_COUNT = 12;
+    std::string strFolder = "./data/0831213010_25_Plane/";
     PR_CALC_MTF_CMD stCmd;
     PR_CALC_MTF_RPY stRpy;
     for ( int i = 1; i <= IMAGE_COUNT; ++ i ) {
