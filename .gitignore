@@ -33,3 +33,4 @@ VisionWidget/TestImage
 TestVisionLibrary/Vision
 TestVisionLibrary/data
 RegressionTest/Vision
+*.yml

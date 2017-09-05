@@ -622,11 +622,11 @@ int _tmain(int argc, _TCHAR* argv[])
 
     //TestSrchDie();
 
-    //TestCalib3dBase();
+    TestCalib3dBase();
     //TestCalib3DHeight();
-    //TestCalc3DHeight();
+    TestCalc3DHeight();
 
-    TestCalcMTF();
+    //TestCalcMTF();
 
     PR_DumpTimeLog("./Vision/Time.log");
     std::cout << "Press any key to exist." << std::endl;

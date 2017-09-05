@@ -10,6 +10,20 @@ namespace Vision
 
 using DATA_TYPE = float;
 
+//This is to get the same result as matlab, so easy to bench mark the result with matlab.
+//The color sequence get from https://www.mathworks.com/help/matlab/graphics_transition/why-are-plot-lines-different-colors.html
+static const cv::Scalar MATLAB_COLOR_ORDER[] = {
+    cv::Scalar(0.7410 * PR_MAX_GRAY_LEVEL, 0.4470 * PR_MAX_GRAY_LEVEL, 0.0000 * PR_MAX_GRAY_LEVEL),
+    cv::Scalar(0.0980 * PR_MAX_GRAY_LEVEL, 0.3250 * PR_MAX_GRAY_LEVEL, 0.8500 * PR_MAX_GRAY_LEVEL),
+    cv::Scalar(0.1250 * PR_MAX_GRAY_LEVEL, 0.6940 * PR_MAX_GRAY_LEVEL, 0.9290 * PR_MAX_GRAY_LEVEL),
+    cv::Scalar(0.5560 * PR_MAX_GRAY_LEVEL, 0.1840 * PR_MAX_GRAY_LEVEL, 0.4940 * PR_MAX_GRAY_LEVEL),
+    cv::Scalar(0.1880 * PR_MAX_GRAY_LEVEL, 0.6740 * PR_MAX_GRAY_LEVEL, 0.4660 * PR_MAX_GRAY_LEVEL),
+    cv::Scalar(0.9330 * PR_MAX_GRAY_LEVEL, 0.7450 * PR_MAX_GRAY_LEVEL, 0.3010 * PR_MAX_GRAY_LEVEL),
+    cv::Scalar(0.1840 * PR_MAX_GRAY_LEVEL, 0.0780 * PR_MAX_GRAY_LEVEL, 0.6350 * PR_MAX_GRAY_LEVEL),
+};
+const static int MATLAB_COLOR_COUNT = 7;
+static_assert ( sizeof ( MATLAB_COLOR_ORDER ) / sizeof ( cv::Scalar ) == MATLAB_COLOR_COUNT, "The size of MATLAB_COLOR_COUNT is not correct" );
+
 class Unwrap
 {
 public:

@@ -843,7 +843,7 @@ struct PR_CALIB_3D_BASE_CMD {
     PR_CALIB_3D_BASE_CMD() : bEnableGaussianFilter(true), bReverseSeq(true) {}
     VectorOfMat             vecInputImgs;
     bool                    bEnableGaussianFilter;
-    bool                    bReverseSeq;        //Change the image sequence.
+    bool                    bReverseSeq;            //Change the image sequence.
 };
 
 struct PR_CALIB_3D_BASE_RPY {
@@ -873,7 +873,8 @@ struct PR_CALIB_3D_HEIGHT_RPY {
     VectorOfVectorOfFloat   vecVecStepPhase;        //The result phase of 4 corners and the center, for application to draw the curves.
     VectorOfMat             vecMatStepSurface;      //The regression surface of the steps. Its size should be fBlockStepHeight + 1.
     VectorOfFloat           vecStepPhaseSlope;      //5 slopes of the phase-step fitting lines.
-    VectorOfVectorOfFloat   vevVecStepPhaseDiff;    //The actual phase and the fitting line difference.
+    VectorOfVectorOfFloat   vecVecStepPhaseDiff;    //The actual phase and the fitting line difference.
+    cv::Mat                 matDivideStepResultImg; //Use auto threshold to divide each step of the phase image. This result image can show to user confirm if the auto threshold is working correctly.
     cv::Mat                 matResultImg;
 };
 

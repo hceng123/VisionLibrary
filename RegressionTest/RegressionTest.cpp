@@ -100,6 +100,7 @@ int _tmain(int argc, _TCHAR* argv[])
     ******************************/
     TestInspContour();
 
+    Test3D();
 	return 0;
 }
 

@@ -2007,6 +2007,9 @@ VisionStatus LogCaseCalib3DHeight::WriteCmd(const PR_CALIB_3D_HEIGHT_CMD *const 
     ini.SetBoolValue(_CMD_SECTION.c_str(), _strKeyReverseSeq.c_str(), pstCmd->bReverseSeq );
     ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyMinIntensityDiff.c_str(), pstCmd->fMinIntensityDiff );
     ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyMinAvgIntensity.c_str(), pstCmd->fMinAvgIntensity );
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyResultImgGridRow.c_str(), pstCmd->nResultImgGridRow );
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyResultImgGridCol.c_str(), pstCmd->nResultImgGridCol );
+    const String _strKeyResultImgGridCol    = "ResultImgGridCol";
     ini.SaveFile(cmdRpyFilePath.c_str());
 
     cv::FileStorage fs( _strLogCasePath + _strInputYmlFileName, cv::FileStorage::WRITE);
@@ -2047,6 +2050,8 @@ VisionStatus LogCaseCalib3DHeight::RunLogCase() {
     stCmd.bReverseSeq = ini.GetBoolValue ( _CMD_SECTION.c_str(), _strKeyReverseSeq.c_str(), false );
     stCmd.fMinIntensityDiff = ToFloat ( ini.GetDoubleValue ( _CMD_SECTION.c_str(), _strKeyMinIntensityDiff.c_str(), 3. ) );
     stCmd.fMinAvgIntensity = ToFloat ( ini.GetDoubleValue ( _CMD_SECTION.c_str(), _strKeyMinAvgIntensity.c_str(), 3. ) );
+    stCmd.nResultImgGridRow = ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyResultImgGridRow.c_str(), 8 );
+    stCmd.nResultImgGridCol = ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyResultImgGridCol.c_str(), 8 );
 
     cv::FileStorage fs ( _strLogCasePath + _strInputYmlFileName, cv::FileStorage::READ );
     cv::FileNode fileNode = fs[_strKeyThickToThinStripeK];

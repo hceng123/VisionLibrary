@@ -57,7 +57,7 @@ cv::Mat drawHeightGrid(const cv::Mat &matHeight, int nGridRow, int nGridCol) {
 
 void TestCalib3dBase() {
     const int IMAGE_COUNT = 8;
-    std::string strFolder = "./data/0715184554_10ms_80_Plane1/";
+    std::string strFolder = "./data/0831223425_45_Plane_Sch/";
     PR_CALIB_3D_BASE_CMD stCmd;
     PR_CALIB_3D_BASE_RPY stRpy;
     for ( int i = 1; i <= IMAGE_COUNT; ++ i ) {
@@ -112,6 +112,10 @@ void TestCalib3DHeight() {
 
     PR_Calib3DHeight ( &stCmd, &stRpy );
     std::cout << "PR_Calc3DHeight status " << ToInt32( stRpy.enStatus ) << std::endl;
+    if ( VisionStatus::OK != stRpy.enStatus )
+        return;
+
+    cv::imwrite ( "./data/DivideStepResultImg.png", stRpy.matDivideStepResultImg );
 
     cv::FileStorage fs1(strResultMatPath, cv::FileStorage::APPEND);
     if ( ! fs1.isOpened() )

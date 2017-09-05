@@ -764,6 +764,7 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
     
     cv::Mat matNormalizedPhase = ( matPhase - dMinValue ) / ( dMaxValue - dMinValue );
     cv::Mat matGrayScalePhase = matNormalizedPhase * PR_MAX_GRAY_LEVEL;
+    cv::cvtColor ( matGrayScalePhase, pstRpy->matDivideStepResultImg, CV_GRAY2BGR );
     auto vecThreshold = VisionAlgorithm::autoMultiLevelThreshold ( matGrayScalePhase, matMask, pstCmd->nBlockStepCount );
     std::vector<float> vecNormaledThreshold;
     vecNormaledThreshold.push_back(0.f);
@@ -815,8 +816,6 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
 
     cv::Mat matST = cv::getStructuringElement ( cv::MORPH_RECT, cv::Size ( ERODE_WIN_SIZE, ERODE_WIN_SIZE ) );
 
-    cv::Mat matBP = cv::Mat::zeros ( ROWS, COLS, CV_8UC1);
-    int nNum = 0;
     cv::Mat matHz;
     VectorOfPoint vecPointToFectch;
     vecPointToFectch.emplace_back ( COLS / 2, ROWS / 2 );
@@ -825,13 +824,12 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
     vecPointToFectch.emplace_back ( 0, ROWS / 2 );
     vecPointToFectch.emplace_back ( COLS - 1, ROWS - 1 );
     for ( int index = 0; index < vecNormaledThreshold.size() - 1; ++ index ) {
-        ++ nNum;
-        cv::Mat matBW = cv::Mat::zeros( ROWS, COLS, CV_8UC1);
+        cv::Mat matBW = cv::Mat::zeros( ROWS, COLS, CV_8UC1 );
         cv::inRange ( matNormalizedPhase, vecNormaledThreshold[index], vecNormaledThreshold[index + 1], matBW );
         cv::Mat matFirstRow ( matBW, cv::Rect (0, 0, COLS, 1 ) ); matFirstRow.setTo ( 0 );
         cv::Mat matFirstCol ( matBW, cv::Rect (0, 0, 1, ROWS ) ); matFirstCol.setTo ( 0 );
         cv::erode( matBW, matBW, matST );
-        matBP.setTo ( nNum, matBW );
+        pstRpy->matDivideStepResultImg.setTo ( MATLAB_COLOR_ORDER[index], matBW );
 
         VectorOfPoint vecPtLocations;
         cv::findNonZero ( matBW, vecPtLocations );
@@ -852,7 +850,7 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
         cv::Mat matYY ( vecPhaseTmp );
         matK;
         cv::solve ( matXX, matYY, matK, cv::DecompTypes::DECOMP_QR );
-        matZp = matX * matK.at<DATA_TYPE>(0, 0) + matY * matK.at<DATA_TYPE>(1, 0) +  matK.at<DATA_TYPE>(2, 0);
+        matZp = matX * matK.at<DATA_TYPE>(0, 0) + matY * matK.at<DATA_TYPE>(1, 0) + matK.at<DATA_TYPE>(2, 0);
         pstRpy->vecMatStepSurface.push_back ( matZp );
         std::vector<DATA_TYPE> vecValue;
         for ( const auto &point : vecPointToFectch )
@@ -883,7 +881,7 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
             matAllDiff.push_back ( matDiff );
         }
         cv::transpose ( matAllDiff, matAllDiff );
-        pstRpy->vevVecStepPhaseDiff = CalcUtils::matToVector<DATA_TYPE>(matAllDiff);
+        pstRpy->vecVecStepPhaseDiff = CalcUtils::matToVector<DATA_TYPE>(matAllDiff);
     }
 
     vecXt = std::vector<DATA_TYPE> ( { ToFloat ( COLS / 2 ), 1.f, ToFloat ( COLS ), 1.f, ToFloat ( COLS ) } );
