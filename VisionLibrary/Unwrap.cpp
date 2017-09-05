@@ -764,7 +764,8 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
     
     cv::Mat matNormalizedPhase = ( matPhase - dMinValue ) / ( dMaxValue - dMinValue );
     cv::Mat matGrayScalePhase = matNormalizedPhase * PR_MAX_GRAY_LEVEL;
-    cv::cvtColor ( matGrayScalePhase, pstRpy->matDivideStepResultImg, CV_GRAY2BGR );
+    matGrayScalePhase.convertTo( pstRpy->matDivideStepResultImg, CV_8U );
+    cv::cvtColor ( pstRpy->matDivideStepResultImg, pstRpy->matDivideStepResultImg, CV_GRAY2BGR );
     auto vecThreshold = VisionAlgorithm::autoMultiLevelThreshold ( matGrayScalePhase, matMask, pstCmd->nBlockStepCount );
     std::vector<float> vecNormaledThreshold;
     vecNormaledThreshold.push_back(0.f);
@@ -828,6 +829,8 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
         cv::inRange ( matNormalizedPhase, vecNormaledThreshold[index], vecNormaledThreshold[index + 1], matBW );
         cv::Mat matFirstRow ( matBW, cv::Rect (0, 0, COLS, 1 ) ); matFirstRow.setTo ( 0 );
         cv::Mat matFirstCol ( matBW, cv::Rect (0, 0, 1, ROWS ) ); matFirstCol.setTo ( 0 );
+        cv::Mat matLastRow  ( matBW, cv::Rect (0, ROWS - 1, COLS, 1 ) ); matLastRow.setTo ( 0 );
+        cv::Mat matLastCol  ( matBW, cv::Rect (COLS - 1, 0, 1, ROWS ) ); matLastCol.setTo ( 0 );
         cv::erode( matBW, matBW, matST );
         pstRpy->matDivideStepResultImg.setTo ( MATLAB_COLOR_ORDER[index], matBW );
 
