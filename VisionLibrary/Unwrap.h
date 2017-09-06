@@ -45,7 +45,7 @@ private:
     static cv::Mat _calculateBaseSurface(int rows, int cols, const cv::Mat &matBaseSurfaceParam);
     static cv::Mat _setBySign(cv::Mat &matInput, DATA_TYPE value );
     static void _findUnstablePoint(const std::vector<cv::Mat> &vecInputImgs, float fDiffTol, float fAvgTol, cv::Mat &matDiffUnderTolIndex, cv::Mat &matAvgUnderTolIndex);
-    static cv::Mat _drawHeightGrid(const cv::Mat &matHeight, int nGridRow, int nGridCol);
+    static cv::Mat _drawHeightGrid(const cv::Mat &matHeight, int nGridRow, int nGridCol, const cv::Size &szMeasureWinSize);
     static const int GUASSIAN_FILTER_SIZE =     11;
     static const int BEZIER_RANK =              5;
     static const int ERODE_WIN_SIZE =           41;

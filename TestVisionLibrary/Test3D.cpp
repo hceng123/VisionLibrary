@@ -84,7 +84,7 @@ void TestCalib3dBase() {
 
 void TestCalib3DHeight() {
     const int IMAGE_COUNT = 8;
-    std::string strFolder = "./data/0831223559_85_Step_Sch/";
+    std::string strFolder = "./data/0715190516_10ms_80_Step/";
     PR_CALIB_3D_HEIGHT_CMD stCmd;
     PR_CALIB_3D_HEIGHT_RPY stRpy;
     for ( int i = 1; i <= IMAGE_COUNT; ++ i ) {
@@ -98,7 +98,7 @@ void TestCalib3DHeight() {
     stCmd.bReverseSeq = true;
     stCmd.fMinIntensityDiff = 3;
     stCmd.fMinAvgIntensity = 3;
-    stCmd.nBlockStepCount = 4;
+    stCmd.nBlockStepCount = 3;
     stCmd.fBlockStepHeight = 1.f;
 
     std::string strResultMatPath = "./data/CalibPP.yml";

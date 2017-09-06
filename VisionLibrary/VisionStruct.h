@@ -853,7 +853,14 @@ struct PR_CALIB_3D_BASE_RPY {
 };
 
 struct PR_CALIB_3D_HEIGHT_CMD {
-    PR_CALIB_3D_HEIGHT_CMD() : bEnableGaussianFilter(true), bReverseSeq(true), fMinIntensityDiff(3.f), fMinAvgIntensity(3.f), nResultImgGridRow(8), nResultImgGridCol(8) {}
+    PR_CALIB_3D_HEIGHT_CMD() :
+        bEnableGaussianFilter(true),
+        bReverseSeq(true),
+        fMinIntensityDiff(3.f),
+        fMinAvgIntensity(3.f),
+        nResultImgGridRow(8),
+        nResultImgGridCol(8),
+        szMeasureWinSize ( cv::Size(20, 20) ) {}
     VectorOfMat             vecInputImgs;
     bool                    bEnableGaussianFilter;
     bool                    bReverseSeq;            //Change the image sequence.
@@ -865,6 +872,7 @@ struct PR_CALIB_3D_HEIGHT_CMD {
     float                   fBlockStepHeight;       //The height of each step, unit mm. So the total block height is nBlockStepCount x fBlockStepHeight.
     Int32                   nResultImgGridRow;
     Int32                   nResultImgGridCol;
+    cv::Size                szMeasureWinSize;       //The window size in the center of grid to measure the height.
 };
 
 struct PR_CALIB_3D_HEIGHT_RPY {

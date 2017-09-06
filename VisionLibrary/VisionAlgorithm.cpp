@@ -5783,6 +5783,15 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
         return pstRpy->enStatus;
     }
 
+    if ( pstCmd->szMeasureWinSize.width  <= 0 || pstCmd->szMeasureWinSize.width  > pstCmd->vecInputImgs[0].cols ||
+         pstCmd->szMeasureWinSize.height <= 0 || pstCmd->szMeasureWinSize.height > pstCmd->vecInputImgs[0].rows ) {
+        char charrMsg[1000];
+        _snprintf( charrMsg, sizeof( charrMsg ), "The measure window size (%d, %d) is invalid.", pstCmd->szMeasureWinSize.width, pstCmd->szMeasureWinSize.height );
+        WriteLog(charrMsg);
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
     MARK_FUNCTION_START_TIME;
 
     Unwrap::calib3DHeight ( pstCmd, pstRpy );

@@ -563,9 +563,8 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
         CalcUtils::meshgrid<DATA_TYPE> ( 1.f, 1.f, ToFloat ( matH.cols ), 1.f, 1.f, ToFloat ( matH.rows ), matX, matY );
         cv::Mat matRatio = pstCmd->matPhaseToHeightK.at<DATA_TYPE>(0, 0) * matX + pstCmd->matPhaseToHeightK.at<DATA_TYPE>(1, 0) * matY + pstCmd->matPhaseToHeightK.at<DATA_TYPE>(2, 0);
         cv::divide ( matH, matRatio, pstRpy->matHeight );
-    }else {
+    }else
         pstRpy->matHeight = matH;
-    }
 }
 
 /*static*/ cv::Mat Unwrap::_phaseUnwrapSurfaceTrk ( const cv::Mat &matPhase, const cv::Mat &matBranchCut ) {
@@ -913,11 +912,11 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
     CalcUtils::meshgrid<DATA_TYPE> ( 1.f, 1.f, ToFloat ( matPhase.cols ), 1.f, 1.f, ToFloat ( matPhase.rows ), matX, matY );
     cv::Mat matRatio = pstRpy->matPhaseToHeightK.at<DATA_TYPE> ( 0, 0 ) * matX + pstRpy->matPhaseToHeightK.at<DATA_TYPE> ( 1, 0 ) * matY + pstRpy->matPhaseToHeightK.at<DATA_TYPE> ( 2, 0 );
     cv::divide ( matPhase, matRatio, matHeight );
-    pstRpy->matResultImg = _drawHeightGrid ( matHeight, pstCmd->nResultImgGridRow, pstCmd->nResultImgGridCol );
+    pstRpy->matResultImg = _drawHeightGrid ( matHeight, pstCmd->nResultImgGridRow, pstCmd->nResultImgGridCol, pstCmd->szMeasureWinSize );
     pstRpy->vecVecStepPhase = CalcUtils::matToVector<DATA_TYPE>(matHz);
 }
 
-/*static*/ cv::Mat Unwrap::_drawHeightGrid(const cv::Mat &matHeight, int nGridRow, int nGridCol) {
+/*static*/ cv::Mat Unwrap::_drawHeightGrid(const cv::Mat &matHeight, int nGridRow, int nGridCol, const cv::Size &szMeasureWinSize) {
     double dMinValue = 0, dMaxValue = 0;
     cv::Mat matMask = ( matHeight == matHeight );
     cv::minMaxIdx ( matHeight, &dMinValue, &dMaxValue, 0, 0, matMask );
@@ -938,22 +937,25 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
 
     int fontFace = cv::FONT_HERSHEY_SIMPLEX;
     double fontScale = 1;
-    int thickness = 3;
-    for ( int j = 0; j < nGridRow; ++ j ) {
-        for ( int i = 0; i < nGridCol; ++ i ) {
-            cv::Rect rectROI ( i * nIntervalX, j * nIntervalY, nIntervalX, nIntervalY );
-            cv::Mat matROI ( matHeight, rectROI );
-            cv::Mat matMask = matROI == matROI;
-            float fAverage = ToFloat ( cv::mean ( matROI, matMask )[0] );
+    int thickness = 2;
+    for ( int j = 0; j < nGridRow; ++ j )
+    for ( int i = 0; i < nGridCol; ++ i ) {
+        cv::Rect rectROI ( i * nIntervalX + nIntervalX / 2 - szMeasureWinSize.width / 2,
+                           j * nIntervalY + nIntervalY / 2 - szMeasureWinSize.height / 2,
+                           szMeasureWinSize.width, szMeasureWinSize.height );
+        cv::rectangle ( matResultImg, rectROI, cv::Scalar ( 0, 255, 0 ), 2 );
 
-            char strAverage[100];
-            _snprintf(strAverage, sizeof(strAverage), "%.4f", fAverage);
-            int baseline = 0;
-            cv::Size textSize = cv::getTextSize(strAverage, fontFace, fontScale, thickness, &baseline);
-            //The height use '+' because text origin start from left-bottom.
-            cv::Point ptTextOrg( rectROI.x + (rectROI.width - textSize.width)/2, rectROI.y + ( rectROI.height + textSize.height ) / 2 );
-            cv::putText ( matResultImg, strAverage, ptTextOrg, fontFace, fontScale, cv::Scalar(255, 0, 0), thickness );
-        }
+        cv::Mat matROI ( matHeight, rectROI );
+        cv::Mat matMask = (matROI == matROI);
+        float fAverage = ToFloat ( cv::mean ( matROI, matMask )[0] );
+
+        char strAverage[100];
+        _snprintf ( strAverage, sizeof(strAverage), "%.4f", fAverage );
+        int baseline = 0;
+        cv::Size textSize = cv::getTextSize ( strAverage, fontFace, fontScale, thickness, &baseline );
+        //The height use '+' because text origin start from left-bottom.
+        cv::Point ptTextOrg ( rectROI.x + (rectROI.width - textSize.width) / 2, rectROI.y + (rectROI.height + textSize.height) / 2 );
+        cv::putText ( matResultImg, strAverage, ptTextOrg, fontFace, fontScale, cv::Scalar ( 255, 0, 0 ), thickness );
     }
 
     int nGridLineSize = 3;
