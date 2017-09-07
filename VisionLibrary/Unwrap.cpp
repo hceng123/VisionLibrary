@@ -812,8 +812,8 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
     VectorOfPoint vecPointToFectch;
     vecPointToFectch.emplace_back ( COLS / 2, ROWS / 2 );
     vecPointToFectch.emplace_back ( 0, 0 );
-    vecPointToFectch.emplace_back ( COLS/ 2, 0 );
-    vecPointToFectch.emplace_back ( 0, ROWS / 2 );
+    vecPointToFectch.emplace_back ( COLS - 1, 0 );
+    vecPointToFectch.emplace_back ( 0, ROWS - 1 );
     vecPointToFectch.emplace_back ( COLS - 1, ROWS - 1 );
     for ( int index = 0; index < vecNormaledThreshold.size() - 1; ++ index ) {
         cv::Mat matBW = cv::Mat::zeros( ROWS, COLS, CV_8UC1 );
@@ -842,8 +842,10 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
         matXX.push_back ( cv::Mat ( cv::Mat::ones ( 1, ToInt32 ( vecPtLocations.size() ), CV_32FC1 ) ) );
         cv::transpose ( matXX, matXX );
         cv::Mat matYY ( vecPhaseTmp );
-        matK;
         cv::solve ( matXX, matYY, matK, cv::DecompTypes::DECOMP_QR );
+#ifdef _DEBUG
+        auto vevVecK = CalcUtils::matToVector<DATA_TYPE>(matK);
+#endif
         matZp = matX * matK.at<DATA_TYPE>(0, 0) + matY * matK.at<DATA_TYPE>(1, 0) + matK.at<DATA_TYPE>(2, 0);
         pstRpy->vecMatStepSurface.push_back ( matZp );
         std::vector<DATA_TYPE> vecValue;
@@ -935,7 +937,7 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
         cv::Rect rectROI ( i * nIntervalX + nIntervalX / 2 - szMeasureWinSize.width / 2,
                            j * nIntervalY + nIntervalY / 2 - szMeasureWinSize.height / 2,
                            szMeasureWinSize.width, szMeasureWinSize.height );
-        cv::rectangle ( matResultImg, rectROI, cv::Scalar ( 0, 255, 0 ), 2 );
+        cv::rectangle ( matResultImg, rectROI, cv::Scalar ( 0, 255, 0 ), 3 );
 
         cv::Mat matROI ( matHeight, rectROI );
         cv::Mat matMask = (matROI == matROI);
@@ -1049,11 +1051,14 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
         vecConvertedImgs.push_back ( matConvert );
     }
 
-    const int nGaussianFilterSize = 9;
     //Filtering can reduce residues at the expense of a loss of spatial resolution.
     for( auto &mat : vecConvertedImgs )
         cv::GaussianBlur ( mat, mat, cv::Size ( pstCmd->nGaussianFilterSize, pstCmd->nGaussianFilterSize ), pstCmd->fGaussianFilterSigma, pstCmd->fGaussianFilterSigma, cv::BorderTypes::BORDER_REPLICATE );
 
+    //if ( pstCmd->bReverseSeq ) {
+    //    std::swap ( vecConvertedImgs[1], vecConvertedImgs[3] );
+    //    std::swap ( vecConvertedImgs[5], vecConvertedImgs[7] );
+    //}
     cv::Mat mat00 = vecConvertedImgs[2] - vecConvertedImgs[0];
     cv::Mat mat01 = vecConvertedImgs[3] - vecConvertedImgs[1];
 
@@ -1071,6 +1076,11 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
     cv::compare ( matBeta, cv::Scalar::all ( CV_PI ), matOverPi, cv::CmpTypes::CMP_GT );
     cv::subtract ( matBeta, cv::Scalar::all ( 2.f * CV_PI ), matBeta, matOverPi );
 
+#ifdef _DEBUG
+    auto vecVecAlpha = CalcUtils::matToVector<DATA_TYPE> ( matAlpha );
+    auto vecVecBeta  = CalcUtils::matToVector<DATA_TYPE> ( matBeta );
+#endif
+
     const auto ROWS = matAlpha.rows;
     const auto COLS = matAlpha.cols;
     const auto MIDDLE_GRAY_SCALE = 127;
@@ -1083,12 +1093,19 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
     cv::Mat matX, matY, matU, matV;
     CalcUtils::meshgrid<DATA_TYPE>(1.f, 1.f, ToFloat ( szDlpPatternSize.width ), 1.f, 1.f, ToFloat ( szDlpPatternSize.height ), matX, matY );
     cv::Mat matDlpPattern0 = ( pstCmd->fMagnitudeOfDLP / 2 ) * CalcUtils::cos<DATA_TYPE>( ( matY + matX ) * ( 2 * CV_PI ) / pstCmd->fDlpPixelCycle ) + MIDDLE_GRAY_SCALE; 
-
+    pstRpy->matCaptureRegionImg = matDlpPattern0;
+#ifdef _DEBUG
+    cv::imwrite("./data/CaptureRegionImg.png", pstRpy->matCaptureRegionImg );
+#endif
     cv::Mat matXX1 = ( matAlpha - matBeta ) / 4 / CV_PI * pstCmd->fDlpPixelCycle;   //Convert the unwrapped phase to DLP pattern phase.
     cv::Mat matYY1 = ( matAlpha + matBeta ) / 4 / CV_PI * pstCmd->fDlpPixelCycle;
+#ifdef _DEBUG
+    auto vecVecXX1 = CalcUtils::matToVector<DATA_TYPE> ( matXX1 );
+    auto vecVecYY1 = CalcUtils::matToVector<DATA_TYPE> ( matYY1 );
+#endif
     CalcUtils::meshgrid<DATA_TYPE>(0.f, 1.f / (COLS - 1), 1.f, 0.f, 1.f / (ROWS - 1), 1.f, matU, matV );
-    matU = matU.reshape ( 1, ToInt32 ( matU.total() ) );
-    matV = matV.reshape ( 1, ToInt32 ( matV.total() ) );
+    matU = matU.reshape ( 1, 1 );
+    matV = matV.reshape ( 1, 1 );
 
     cv::Mat matP1 = calcBezierCoeff ( matU );
     cv::Mat matP2 = calcBezierCoeff ( matV );
@@ -1097,6 +1114,7 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
     for ( int j = 0; j < BEZIER_RANK; ++ j ) {
         matXX.push_back ( cv::Mat (  matP1.row(i).mul ( matP2.row(j) ) ) );
     }
+    cv::transpose ( matXX, matXX );
 
     matXX1 = matXX1.reshape ( 1, ToInt32 ( matXX1.total() ) );
     matYY1 = matYY1.reshape ( 1, ToInt32 ( matYY1.total() ) );
@@ -1108,12 +1126,19 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
     float fPPyMean = ToFloat ( cv::mean ( matPPy )[0] );
     cv::Mat matPPx1 = matPPx - floor ( ( fPPxMean - szDlpPatternSize.width  / 2 ) / pstCmd->fDlpPixelCycle  ) * pstCmd->fDlpPixelCycle;
     cv::Mat matPPy1 = matPPy - floor ( ( fPPyMean - szDlpPatternSize.height / 2 ) / pstCmd->fDlpPixelCycle  ) * pstCmd->fDlpPixelCycle;
-
+#ifdef _DEBUG
+    auto vecVecPPx1 = CalcUtils::matToVector<DATA_TYPE> ( matPPx1 );
+    auto vecVecPPy1 = CalcUtils::matToVector<DATA_TYPE> ( matPPy1 );
+#endif
     cv::Mat matXXt1 = matXX * matPPx1;
     cv::Mat matYYt1 = matXX * matPPy1;
 
     matXXt1 = matXXt1.reshape ( 1, ROWS );
     matYYt1 = matYYt1.reshape ( 1, COLS );
+#ifdef _DEBUG
+    auto vecVecXXt1 = CalcUtils::matToVector<DATA_TYPE> ( matXXt1 );
+    auto vecVecYYt1 = CalcUtils::matToVector<DATA_TYPE> ( matYYt1 );
+#endif
 }
 
 }

@@ -5899,6 +5899,7 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
         return pstRpy->enStatus;
     }
 
+    Unwrap::calcPD ( pstCmd, pstRpy );
     pstRpy->enStatus = VisionStatus::OK;
     return pstRpy->enStatus;
 }

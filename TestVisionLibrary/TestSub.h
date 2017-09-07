@@ -20,6 +20,7 @@ void TestCalib3dBase();
 void TestCalc3DHeight();
 void TestCalib3DHeight();
 void TestCalcMTF();
+void TestCalcPD();
 
 template<class T>
 void printfMat(const cv::Mat &mat)

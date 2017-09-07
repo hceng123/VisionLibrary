@@ -57,7 +57,7 @@ cv::Mat drawHeightGrid(const cv::Mat &matHeight, int nGridRow, int nGridCol) {
 
 void TestCalib3dBase() {
     const int IMAGE_COUNT = 8;
-    std::string strFolder = "./data/0831223425_45_Plane_Sch/";
+    std::string strFolder = "./data/Top_is_0mm/01/0907224700panel/";
     PR_CALIB_3D_BASE_CMD stCmd;
     PR_CALIB_3D_BASE_RPY stRpy;
     for ( int i = 1; i <= IMAGE_COUNT; ++ i ) {
@@ -84,7 +84,7 @@ void TestCalib3dBase() {
 
 void TestCalib3DHeight() {
     const int IMAGE_COUNT = 8;
-    std::string strFolder = "./data/0715190516_10ms_80_Step/";
+    std::string strFolder = "./data/Top_is_0mm/01/0907224546step/";
     PR_CALIB_3D_HEIGHT_CMD stCmd;
     PR_CALIB_3D_HEIGHT_RPY stRpy;
     for ( int i = 1; i <= IMAGE_COUNT; ++ i ) {
@@ -100,6 +100,8 @@ void TestCalib3DHeight() {
     stCmd.fMinAvgIntensity = 3;
     stCmd.nBlockStepCount = 3;
     stCmd.fBlockStepHeight = 1.f;
+    stCmd.nResultImgGridRow = 10;
+    stCmd.nResultImgGridCol = 10;
 
     std::string strResultMatPath = "./data/CalibPP.yml";
     cv::FileStorage fs ( strResultMatPath, cv::FileStorage::READ );
@@ -183,4 +185,25 @@ void TestCalcMTF() {
 
     PR_CalcMTF ( &stCmd, &stRpy );
     std::cout << "PR_CalcMTF status " << ToInt32( stRpy.enStatus ) << std::endl;
+}
+
+void TestCalcPD() {
+    const int IMAGE_COUNT = 12;
+    std::string strFolder = "./data/0715184554_10ms_80_Plane1/";
+    PR_CALC_PD_CMD stCmd;
+    PR_CALC_PD_RPY stRpy;
+    for ( int i = 1; i <= IMAGE_COUNT; ++ i ) {
+        char chArrFileName[100];
+        _snprintf( chArrFileName, sizeof (chArrFileName), "%02d.bmp", i );
+        std::string strImageFile = strFolder + chArrFileName;
+        cv::Mat mat = cv::imread ( strImageFile, cv::IMREAD_GRAYSCALE );
+        stCmd.vecInputImgs.push_back ( mat );
+    }
+    stCmd.fMagnitudeOfDLP = 161;
+
+    PR_CalcPD ( &stCmd, &stRpy );
+    std::cout << "PR_CalcPD status " << ToInt32( stRpy.enStatus ) << std::endl;
+    if ( VisionStatus::OK == stRpy.enStatus ) {
+        cv::imwrite("./data/CaptureRegionImg.png", stRpy.matCaptureRegionImg );
+    }
 }

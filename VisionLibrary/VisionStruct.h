@@ -860,7 +860,7 @@ struct PR_CALIB_3D_HEIGHT_CMD {
         fMinAvgIntensity(3.f),
         nResultImgGridRow(8),
         nResultImgGridCol(8),
-        szMeasureWinSize (20, 20) {}
+        szMeasureWinSize (40, 40) {}
     VectorOfMat             vecInputImgs;
     bool                    bEnableGaussianFilter;
     bool                    bReverseSeq;            //Change the image sequence.
@@ -921,12 +921,14 @@ struct PR_CALC_MTF_RPY {
 //Calculate the pattern distortion(PD). Use the texture stripe in two directions to find out the system distortion.
 struct PR_CALC_PD_CMD {
     PR_CALC_PD_CMD() :
+        bReverseSeq(true),
         fMagnitudeOfDLP(161.f),
         szDlpPatternSize(912, 1140),
         fDlpPixelCycle(30),
-        nGaussianFilterSize(4),
+        nGaussianFilterSize(9),
         fGaussianFilterSigma(3.16f) {}
     VectorOfMat             vecInputImgs;
+    bool                    bReverseSeq;            //Change the image sequence.
     float                   fMagnitudeOfDLP;
     cv::Size                szDlpPatternSize;
     float                   fDlpPixelCycle;
