@@ -860,7 +860,7 @@ struct PR_CALIB_3D_HEIGHT_CMD {
         fMinAvgIntensity(3.f),
         nResultImgGridRow(8),
         nResultImgGridCol(8),
-        szMeasureWinSize ( cv::Size(20, 20) ) {}
+        szMeasureWinSize (20, 20) {}
     VectorOfMat             vecInputImgs;
     bool                    bEnableGaussianFilter;
     bool                    bReverseSeq;            //Change the image sequence.
@@ -916,6 +916,27 @@ struct PR_CALC_MTF_RPY {
     VectorOfVectorOfFloat   vevVecRelMtfH;             //The relative modulation transfer function in horizontal direction.
     VectorOfVectorOfFloat   vevVecAbsMtfV;             //The absolute modulation transfer function in vertical direction.
     VectorOfVectorOfFloat   vevVecRelMtfV;             //The relative modulation transfer function in vertical direction.
+};
+
+//Calculate the pattern distortion(PD). Use the texture stripe in two directions to find out the system distortion.
+struct PR_CALC_PD_CMD {
+    PR_CALC_PD_CMD() :
+        fMagnitudeOfDLP(161.f),
+        szDlpPatternSize(912, 1140),
+        fDlpPixelCycle(30),
+        nGaussianFilterSize(4),
+        fGaussianFilterSigma(3.16f) {}
+    VectorOfMat             vecInputImgs;
+    float                   fMagnitudeOfDLP;
+    cv::Size                szDlpPatternSize;
+    float                   fDlpPixelCycle;
+    Int32                   nGaussianFilterSize;
+    float                   fGaussianFilterSigma;
+};
+
+struct PR_CALC_PD_RPY {
+    VisionStatus            enStatus;
+    cv::Mat                 matCaptureRegionImg;    //The camera capture region in the DLP incident area.
 };
 
 }

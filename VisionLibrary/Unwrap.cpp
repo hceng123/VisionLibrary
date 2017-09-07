@@ -19,7 +19,7 @@ Unwrap::~Unwrap ()
 {
 }
 
-/*static*/ const float Unwrap::GUASSIAN_FILTER_SIGMA =      ToFloat ( pow ( 20, 0.5 ) );
+/*static*/ const float Unwrap::GAUSSIAN_FILTER_SIGMA =      ToFloat ( pow ( 20, 0.5 ) );
 /*static*/ const float Unwrap::ONE_HALF_CYCLE =             ToFloat ( CV_PI );
 /*static*/ const float Unwrap::UNSTABLE_DIFF =              3.f;
 /*static*/ const float Unwrap::REMOVE_HEIGHT_NOSIE_RATIO =  0.995f;
@@ -75,12 +75,6 @@ Unwrap::~Unwrap ()
     cv::compare ( matSum, cv::Scalar::all( 0.9999 * CV_PI * 2.f), matPosIndex, cv::CmpTypes::CMP_GT );
     cv::compare ( matSum, cv::Scalar::all(-0.9999 * CV_PI * 2.f), matNegIndex, cv::CmpTypes::CMP_LT );
 
-    //printf("matPosIndex result\n");
-    //printIntMat<uchar>(matPosIndex);
-
-    //printf("matNegIndex result\n");
-    //printIntMat<uchar>(matNegIndex);
-
     int nSizeOfResultMat = ( matInput.rows - 1 ) * ( matInput.cols - 1 );
     cv::Mat matResult = cv::Mat::zeros ( nSizeOfResultMat, 1, CV_8SC1 );
     matResult.setTo( cv::Scalar::all(1), matPosIndex );
@@ -89,8 +83,6 @@ Unwrap::~Unwrap ()
 
     matPosPole = matPosIndex.clone().reshape(1, matInput.rows - 1 );
     matNegPole = matNegIndex.clone().reshape(1, matInput.rows - 1 );
-    //printf("Mat result\n");
-    //printIntMat<char>(matResult);
     return matResult;
 }
 
@@ -257,8 +249,8 @@ inline std::vector<size_t> sort_indexes(const std::vector<T> &v) {
 
     if ( bEnableGaussianFilter ) {
         //Filtering can reduce residues at the expense of a loss of spatial resolution.
-        for ( auto &mat : vecConvertedImgs )        
-            cv::GaussianBlur ( mat, mat, cv::Size(GUASSIAN_FILTER_SIZE, GUASSIAN_FILTER_SIZE), GUASSIAN_FILTER_SIGMA, GUASSIAN_FILTER_SIGMA, cv::BorderTypes::BORDER_REPLICATE );
+        for ( auto &mat : vecConvertedImgs )
+            cv::GaussianBlur ( mat, mat, cv::Size(GUASSIAN_FILTER_SIZE, GUASSIAN_FILTER_SIZE), GAUSSIAN_FILTER_SIGMA, GAUSSIAN_FILTER_SIGMA, cv::BorderTypes::BORDER_REPLICATE );
     }
 
     if ( bReverseSeq ) {
@@ -442,7 +434,7 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
     if ( pstCmd->bEnableGaussianFilter ) {
         //Filtering can reduce residues at the expense of a loss of spatial resolution.
         for ( auto &mat : vecConvertedImgs )        
-            cv::GaussianBlur ( mat, mat, cv::Size(GUASSIAN_FILTER_SIZE, GUASSIAN_FILTER_SIZE), GUASSIAN_FILTER_SIGMA, GUASSIAN_FILTER_SIGMA, cv::BorderTypes::BORDER_REPLICATE );
+            cv::GaussianBlur ( mat, mat, cv::Size(GUASSIAN_FILTER_SIZE, GUASSIAN_FILTER_SIZE), GAUSSIAN_FILTER_SIGMA, GAUSSIAN_FILTER_SIGMA, cv::BorderTypes::BORDER_REPLICATE );
     }
 
     if ( pstCmd->bReverseSeq ) {
@@ -1044,6 +1036,84 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
         pstRpy->vevVecAbsMtfV.push_back ( vecMtfAbsV );
         pstRpy->vevVecRelMtfV.push_back ( vecMtfRelV );
     }
+}
+
+/*static*/ void Unwrap::calcPD(const PR_CALC_PD_CMD *const pstCmd, PR_CALC_PD_RPY *const pstRpy) {
+    std::vector<cv::Mat> vecConvertedImgs;
+    //Discard the first 4 thick texture light.
+    for ( size_t index = 4; index < 12; ++ index ) {
+        cv::Mat matConvert = pstCmd->vecInputImgs[index];
+        if ( pstCmd->vecInputImgs[index].channels() > 1 )
+            cv::cvtColor ( pstCmd->vecInputImgs[index], matConvert, CV_BGR2GRAY );
+        matConvert.convertTo ( matConvert, CV_32FC1 );
+        vecConvertedImgs.push_back ( matConvert );
+    }
+
+    const int nGaussianFilterSize = 9;
+    //Filtering can reduce residues at the expense of a loss of spatial resolution.
+    for( auto &mat : vecConvertedImgs )
+        cv::GaussianBlur ( mat, mat, cv::Size ( pstCmd->nGaussianFilterSize, pstCmd->nGaussianFilterSize ), pstCmd->fGaussianFilterSigma, pstCmd->fGaussianFilterSigma, cv::BorderTypes::BORDER_REPLICATE );
+
+    cv::Mat mat00 = vecConvertedImgs[2] - vecConvertedImgs[0];
+    cv::Mat mat01 = vecConvertedImgs[3] - vecConvertedImgs[1];
+
+    cv::Mat mat10 = vecConvertedImgs[6] - vecConvertedImgs[4];
+    cv::Mat mat11 = vecConvertedImgs[7] - vecConvertedImgs[5];
+
+    cv::Mat matAlpha, matBeta;
+    cv::phase ( -mat00, mat01, matAlpha );
+    //The opencv cv::phase function return result is 0~2*PI, but matlab is -PI~PI, so here need to do a conversion.
+    cv::Mat matOverPi;
+    cv::compare ( matAlpha, cv::Scalar::all ( CV_PI ), matOverPi, cv::CmpTypes::CMP_GT );
+    cv::subtract ( matAlpha, cv::Scalar::all ( 2.f * CV_PI ), matAlpha, matOverPi );
+
+    cv::phase ( -mat10, mat11, matBeta );
+    cv::compare ( matBeta, cv::Scalar::all ( CV_PI ), matOverPi, cv::CmpTypes::CMP_GT );
+    cv::subtract ( matBeta, cv::Scalar::all ( 2.f * CV_PI ), matBeta, matOverPi );
+
+    const auto ROWS = matAlpha.rows;
+    const auto COLS = matAlpha.cols;
+    const auto MIDDLE_GRAY_SCALE = 127;
+
+    matAlpha = _phaseUnwrapSurface ( matAlpha );
+    matBeta  = _phaseUnwrapSurface ( matBeta );
+
+    cv::Size szDlpPatternSize ( pstCmd->szDlpPatternSize );
+    szDlpPatternSize.width *= 2;    //The width is double sized when do projection.
+    cv::Mat matX, matY, matU, matV;
+    CalcUtils::meshgrid<DATA_TYPE>(1.f, 1.f, ToFloat ( szDlpPatternSize.width ), 1.f, 1.f, ToFloat ( szDlpPatternSize.height ), matX, matY );
+    cv::Mat matDlpPattern0 = ( pstCmd->fMagnitudeOfDLP / 2 ) * CalcUtils::cos<DATA_TYPE>( ( matY + matX ) * ( 2 * CV_PI ) / pstCmd->fDlpPixelCycle ) + MIDDLE_GRAY_SCALE; 
+
+    cv::Mat matXX1 = ( matAlpha - matBeta ) / 4 / CV_PI * pstCmd->fDlpPixelCycle;   //Convert the unwrapped phase to DLP pattern phase.
+    cv::Mat matYY1 = ( matAlpha + matBeta ) / 4 / CV_PI * pstCmd->fDlpPixelCycle;
+    CalcUtils::meshgrid<DATA_TYPE>(0.f, 1.f / (COLS - 1), 1.f, 0.f, 1.f / (ROWS - 1), 1.f, matU, matV );
+    matU = matU.reshape ( 1, ToInt32 ( matU.total() ) );
+    matV = matV.reshape ( 1, ToInt32 ( matV.total() ) );
+
+    cv::Mat matP1 = calcBezierCoeff ( matU );
+    cv::Mat matP2 = calcBezierCoeff ( matV );
+    cv::Mat matXX;
+    for ( int i = 0; i < BEZIER_RANK; ++ i )
+    for ( int j = 0; j < BEZIER_RANK; ++ j ) {
+        matXX.push_back ( cv::Mat (  matP1.row(i).mul ( matP2.row(j) ) ) );
+    }
+
+    matXX1 = matXX1.reshape ( 1, ToInt32 ( matXX1.total() ) );
+    matYY1 = matYY1.reshape ( 1, ToInt32 ( matYY1.total() ) );
+    cv::Mat matPPx, matPPy;
+    cv::solve ( matXX, matXX1, matPPx, cv::DecompTypes::DECOMP_SVD );
+    cv::solve ( matXX, matYY1, matPPy, cv::DecompTypes::DECOMP_SVD );
+
+    float fPPxMean = ToFloat ( cv::mean ( matPPx )[0] );
+    float fPPyMean = ToFloat ( cv::mean ( matPPy )[0] );
+    cv::Mat matPPx1 = matPPx - floor ( ( fPPxMean - szDlpPatternSize.width  / 2 ) / pstCmd->fDlpPixelCycle  ) * pstCmd->fDlpPixelCycle;
+    cv::Mat matPPy1 = matPPy - floor ( ( fPPyMean - szDlpPatternSize.height / 2 ) / pstCmd->fDlpPixelCycle  ) * pstCmd->fDlpPixelCycle;
+
+    cv::Mat matXXt1 = matXX * matPPx1;
+    cv::Mat matYYt1 = matXX * matPPy1;
+
+    matXXt1 = matXXt1.reshape ( 1, ROWS );
+    matYYt1 = matYYt1.reshape ( 1, COLS );
 }
 
 }

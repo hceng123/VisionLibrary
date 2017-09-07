@@ -33,6 +33,7 @@ public:
     static void calib3DHeight(const PR_CALIB_3D_HEIGHT_CMD *const pstCmd, PR_CALIB_3D_HEIGHT_RPY *const pstRpy);
     static void calc3DHeight(const PR_CALC_3D_HEIGHT_CMD *const pstCmd, PR_CALC_3D_HEIGHT_RPY *const pstRpy);
     static void calcMTF(const PR_CALC_MTF_CMD *const pstCmd, PR_CALC_MTF_RPY *const pstRpy);
+    static void calcPD(const PR_CALC_PD_CMD *const pstCmd, PR_CALC_PD_RPY *const pstRpy);
 private:
     static cv::Mat _getResidualPoint(const cv::Mat &matInput, cv::Mat &matPosPole, cv::Mat &matNegPole);
     static VectorOfPoint _selectLonePole(ListOfPoint &listPoint, int width, int height, size_t nLonePoneCount );
@@ -50,7 +51,7 @@ private:
     static const int BEZIER_RANK =              5;
     static const int ERODE_WIN_SIZE =           41;
 
-    static const float GUASSIAN_FILTER_SIGMA;
+    static const float GAUSSIAN_FILTER_SIGMA;
     static const float ONE_HALF_CYCLE;
     static const float UNSTABLE_DIFF;
     static const float REMOVE_HEIGHT_NOSIE_RATIO;

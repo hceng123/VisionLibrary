@@ -5874,5 +5874,34 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     return pstRpy->enStatus;
 }
 
+/*static*/ VisionStatus VisionAlgorithm::calcPD(const PR_CALC_PD_CMD *const pstCmd, PR_CALC_PD_RPY *const pstRpy, bool bReplay /*= false*/) {
+    assert(pstCmd != nullptr && pstRpy != nullptr);
+
+    if ( pstCmd->vecInputImgs.empty() || pstCmd->vecInputImgs.size() % PR_GROUP_TEXTURE_IMG_COUNT != 0 ) {
+        WriteLog("The input image count is multiple of 4.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    for ( const auto &mat : pstCmd->vecInputImgs ) {
+        if ( mat.empty() ) {
+            WriteLog("The input image is empty.");
+            pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+            return pstRpy->enStatus;
+        }
+    }
+
+    if ( pstCmd->fMagnitudeOfDLP <= 0 || pstCmd->fMagnitudeOfDLP > PR_MAX_GRAY_LEVEL ) {
+        char charrMsg[1000];
+        _snprintf( charrMsg, sizeof( charrMsg ), "The MagnitudeOfDLP %f is not in range [1, 255].", pstCmd->fMagnitudeOfDLP );
+        WriteLog(charrMsg);
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    pstRpy->enStatus = VisionStatus::OK;
+    return pstRpy->enStatus;
+}
+
 }
 }
