@@ -55,9 +55,10 @@ cv::Mat drawHeightGrid(const cv::Mat &matHeight, int nGridRow, int nGridCol) {
     return matResultImg;
 }
 
+static std::string gstrCalibResultFile("./data/capture/CalibPP.yml");
 void TestCalib3dBase() {
     const int IMAGE_COUNT = 8;
-    std::string strFolder = "./data/Top_is_0mm/01/0907224700panel/";
+    std::string strFolder = "./data/capture/0909213305_Plane/";
     PR_CALIB_3D_BASE_CMD stCmd;
     PR_CALIB_3D_BASE_RPY stRpy;
     for ( int i = 1; i <= IMAGE_COUNT; ++ i ) {
@@ -72,7 +73,7 @@ void TestCalib3dBase() {
     PR_Calib3DBase ( &stCmd, &stRpy );
     std::cout << "PR_Calib3DBase status " << ToInt32( stRpy.enStatus ) << std::endl;
 
-    std::string strResultMatPath = "./data/CalibPP.yml";
+    std::string strResultMatPath = gstrCalibResultFile;
     cv::FileStorage fs(strResultMatPath, cv::FileStorage::WRITE);
     if ( ! fs.isOpened() )
         return;
@@ -84,7 +85,7 @@ void TestCalib3dBase() {
 
 void TestCalib3DHeight() {
     const int IMAGE_COUNT = 8;
-    std::string strFolder = "./data/Top_is_0mm/01/0907224546step/";
+    std::string strFolder = "./data/capture/0909220722_Step/";
     PR_CALIB_3D_HEIGHT_CMD stCmd;
     PR_CALIB_3D_HEIGHT_RPY stRpy;
     for ( int i = 1; i <= IMAGE_COUNT; ++ i ) {
@@ -96,6 +97,7 @@ void TestCalib3DHeight() {
     }
     stCmd.bEnableGaussianFilter = true;
     stCmd.bReverseSeq = true;
+    stCmd.bReverseHeight = true;
     stCmd.fMinIntensityDiff = 3;
     stCmd.fMinAvgIntensity = 3;
     stCmd.nBlockStepCount = 3;
@@ -103,7 +105,7 @@ void TestCalib3DHeight() {
     stCmd.nResultImgGridRow = 10;
     stCmd.nResultImgGridCol = 10;
 
-    std::string strResultMatPath = "./data/CalibPP.yml";
+    std::string strResultMatPath = gstrCalibResultFile;
     cv::FileStorage fs ( strResultMatPath, cv::FileStorage::READ );
     cv::FileNode fileNode = fs["K"];
     cv::read ( fileNode, stCmd.matThickToThinStripeK, cv::Mat() );
@@ -117,8 +119,8 @@ void TestCalib3DHeight() {
     if ( VisionStatus::OK != stRpy.enStatus )
         return;
 
-    cv::imwrite ( "./data/DivideStepResultImg.png", stRpy.matDivideStepResultImg );
-    cv::imwrite ( "./data/Calib3DHeightResultImg.png", stRpy.matResultImg );
+    cv::imwrite ( "./data/capture/DivideStepResultImg.png", stRpy.matDivideStepResultImg );
+    cv::imwrite ( "./data/capture/Calib3DHeightResultImg.png", stRpy.matResultImg );
 
     cv::FileStorage fs1(strResultMatPath, cv::FileStorage::APPEND);
     if ( ! fs1.isOpened() )
@@ -131,7 +133,7 @@ void TestCalib3DHeight() {
 
 void TestCalc3DHeight() {
     const int IMAGE_COUNT = 8;
-    std::string strFolder = "./data/0901210205/";
+    std::string strFolder = "./data/0908201715stepng/";
     PR_CALC_3D_HEIGHT_CMD stCmd;
     PR_CALC_3D_HEIGHT_RPY stRpy;
     for ( int i = 1; i <= IMAGE_COUNT; ++ i ) {

@@ -856,6 +856,7 @@ struct PR_CALIB_3D_HEIGHT_CMD {
     PR_CALIB_3D_HEIGHT_CMD() :
         bEnableGaussianFilter(true),
         bReverseSeq(true),
+        bReverseHeight(false),
         fMinIntensityDiff(3.f),
         fMinAvgIntensity(3.f),
         nResultImgGridRow(8),
@@ -864,6 +865,7 @@ struct PR_CALIB_3D_HEIGHT_CMD {
     VectorOfMat             vecInputImgs;
     bool                    bEnableGaussianFilter;
     bool                    bReverseSeq;            //Change the image sequence.
+    bool                    bReverseHeight;         //The calibration base is align to the top of calibration block.
     float                   fMinIntensityDiff;      //In a group of 4 images, if a pixel's max and min intensity less than this value, this pixel will be discarded.
     float                   fMinAvgIntensity;       //In a group of 4 images, if a pixel's average intensity less than this value, this pixel will be discarded.
     cv::Mat                 matThickToThinStripeK;  //The factor between thick stripe and thin stripe.
