@@ -215,24 +215,93 @@ public:
         return matResult;
     }
 
-    static double radian2Degree( double dRadian );
-    static double degree2Radian( double dDegree );
-    static float ptDisToLine(const cv::Point2f &ptInput, bool bReversedFit, float fSlope, float fIntercept );
-    static PR_Line2f calcEndPointOfLine( const VectorOfPoint &vecPoint, bool bReversedFit, float fSlope, float fIntercept );
-    static PR_Line2f calcEndPointOfLine( const ListOfPoint &listPoint, bool bReversedFit, float fSlope, float fIntercept );
-    static cv::Point2f lineIntersect(float fSlope1, float fIntercept1, float fSlope2, float fIntercept2);
-    static float lineSlope(const PR_Line2f &line);
-    static void lineSlopeIntercept(const PR_Line2f &line, float &fSlope, float &fIntercept);
-    static VectorOfPoint getCornerOfRotatedRect(const cv::RotatedRect &rotatedRect);
-    static float guassianValue(float ssq, float x );
+    // To heapify a subtree rooted with node i which is
+    // an index in arr[]. n is size of heap
+    template<typename T>
+    static void heapifyMinToRoot ( std::vector<T> &vecInput, const int n, const int i, std::vector<int> &vecIndex )
+    {
+        int smallestIndex = i;  // Initialize largest as root
+        int l = 2 * i + 1;  // left = 2*i + 1
+        int r = 2 * i + 2;  // right = 2*i + 2
+
+        // If left child is larger than root
+        if (l < n && vecInput[l] < vecInput[smallestIndex])
+            smallestIndex = l;
+
+        // If right child is larger than largest so far
+        if (r < n && vecInput[r] < vecInput[smallestIndex])
+            smallestIndex = r;
+
+        // If largest is not root
+        if (smallestIndex != i)
+        {
+            std::swap ( vecInput[i], vecInput[smallestIndex] );
+            std::swap ( vecIndex[i], vecIndex[smallestIndex] );
+
+            // Recursively heapify the affected sub-tree
+            heapifyMinToRoot ( vecInput, n, smallestIndex, vecIndex );
+        }
+    }
+
+    template<typename T>
+    static std::vector<T> SelectLargestKItems ( const cv::Mat &matInput, const size_t K, std::vector<int> &vecIndex )
+    {
+        if ( K > matInput.total () )  {
+            return matInput;
+        }
+
+        std::vector<T> vecResult;
+        vecResult.reserve ( K );
+        int index = 0;
+        while (vecResult.size () < K) {
+            if (matInput.at<T> ( index ) == matInput.at<T> ( index )) {
+                vecIndex.push_back ( index );
+                vecResult.push_back ( matInput.at<T> ( index ) );
+            }
+            ++ index;
+        }
+
+        for ( int K1 = K / 2 - 1; K1 >= 0; -- K1 )
+            heapifyMinToRoot ( vecResult, K, K1, vecIndex );
+
+        for (size_t i = index; i < matInput.total (); ++i) {
+            if (matInput.at<T> ( i ) == matInput.at<T> ( i ) && matInput.at<T> ( i ) > vecResult[0]) {
+                vecResult[0] = matInput.at<T> ( i );
+                vecIndex[0] = i;
+
+                for (int K1 = K / 2 - 1; K1 >= 0; --K1)
+                    heapifyMinToRoot ( vecResult, K, K1, vecIndex );
+            }
+        }
+
+        for (int k = K - 1; k >= 0; --k)
+        {
+            std::swap ( vecResult[k], vecResult[0] );
+            std::swap ( vecIndex[k], vecIndex[0] );
+
+            heapifyMinToRoot<T> ( vecResult, k, 0, vecIndex );
+        }
+        return vecResult;
+    }
+
+    static double radian2Degree ( double dRadian );
+    static double degree2Radian ( double dDegree );
+    static float ptDisToLine ( const cv::Point2f &ptInput, bool bReversedFit, float fSlope, float fIntercept );
+    static PR_Line2f calcEndPointOfLine ( const VectorOfPoint &vecPoint, bool bReversedFit, float fSlope, float fIntercept );
+    static PR_Line2f calcEndPointOfLine ( const ListOfPoint &listPoint, bool bReversedFit, float fSlope, float fIntercept );
+    static cv::Point2f lineIntersect ( float fSlope1, float fIntercept1, float fSlope2, float fIntercept2 );
+    static float lineSlope ( const PR_Line2f &line );
+    static void lineSlopeIntercept ( const PR_Line2f &line, float &fSlope, float &fIntercept );
+    static VectorOfPoint getCornerOfRotatedRect ( const cv::RotatedRect &rotatedRect );
+    static float guassianValue ( float ssq, float x );
     static cv::Mat generateGuassinDiffKernel ( int nOneSideWidth, float ssq );
-    static void filter2D_Conv(cv::InputArray src, cv::OutputArray dst, int ddepth,
-                   cv::InputArray kernel, cv::Point anchor = cv::Point(-1,-1),
-                   double delta = 0, int borderType = cv::BORDER_DEFAULT );
-    static float calcPointToContourDist(const cv::Point &ptInput, const VectorOfPoint &contour, cv::Point &ptResult );
-    static cv::Point2f getContourCtr(const VectorOfPoint &contour);
+    static void filter2D_Conv ( cv::InputArray src, cv::OutputArray dst, int ddepth,
+        cv::InputArray kernel, cv::Point anchor = cv::Point ( -1, -1 ),
+        double delta = 0, int borderType = cv::BORDER_DEFAULT );
+    static float calcPointToContourDist ( const cv::Point &ptInput, const VectorOfPoint &contour, cv::Point &ptResult );
+    static cv::Point2f getContourCtr ( const VectorOfPoint &contour );
     static cv::Mat diff ( const cv::Mat &matInput, int nRecersiveTime, int nDimension );
-    static int countOfNan(const cv::Mat &matInput);
+    static int countOfNan ( const cv::Mat &matInput );
 };
 
 }
