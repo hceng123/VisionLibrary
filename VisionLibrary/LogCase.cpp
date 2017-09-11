@@ -1953,8 +1953,9 @@ VisionStatus LogCaseCalib3DBase::WriteRpy(const PR_CALIB_3D_BASE_RPY *const pstR
     if ( ! fs.isOpened() )
         return VisionStatus::OPEN_FILE_FAIL;
 
-    write ( fs, _strKeyThickToThinStripeK, pstRpy->matThickToThinStripeK );
-    write ( fs, _strKeyBaseSurfaceParam,   pstRpy->matBaseSurfaceParam );
+    cv::write ( fs, _strKeyThickToThinStripeK, pstRpy->matThickToThinStripeK );
+    cv::write ( fs, _strKeyBaseSurfaceParam,   pstRpy->matBaseSurfaceParam );
+    cv::write ( fs, _strKeyBaseStartAvgPhase,  pstRpy->fBaseStartAvgPhase );
     fs.release();
 
     _zip();
@@ -2018,6 +2019,7 @@ VisionStatus LogCaseCalib3DHeight::WriteCmd(const PR_CALIB_3D_HEIGHT_CMD *const 
 
     cv::write ( fs, _strKeyThickToThinStripeK, pstCmd->matThickToThinStripeK );
     cv::write ( fs, _strKeyBaseSurfaceParam,   pstCmd->matBaseSurfaceParam );
+    cv::write ( fs, _strKeyBaseStartAvgPhase,  pstCmd->fBaseStartAvgPhase );
     fs.release();
 
     int index = 0;
@@ -2059,6 +2061,10 @@ VisionStatus LogCaseCalib3DHeight::RunLogCase() {
 
     fileNode = fs[_strKeyBaseSurfaceParam];
     cv::read ( fileNode, stCmd.matBaseSurfaceParam, cv::Mat() );
+
+    fileNode = fs[_strKeyBaseStartAvgPhase];
+    cv::read ( fileNode, stCmd.fBaseStartAvgPhase, 0.f );
+
     fs.release();
 
     int index = 0;
@@ -2104,6 +2110,7 @@ VisionStatus LogCaseCalc3DHeight::WriteCmd(const PR_CALC_3D_HEIGHT_CMD *const ps
 
     cv::write ( fs, _strKeyThickToThinStripeK, pstCmd->matThickToThinStripeK );
     cv::write ( fs, _strKeyBaseSurfaceParam,   pstCmd->matBaseSurfaceParam );
+    cv::write ( fs, _strKeyBaseStartAvgPhase,  pstCmd->fBaseStartAvgPhase );
     fs.release();
 
     int index = 0;
@@ -2143,6 +2150,10 @@ VisionStatus LogCaseCalc3DHeight::RunLogCase() {
 
     fileNode = fs[_strKeyBaseSurfaceParam];
     cv::read ( fileNode, stCmd.matBaseSurfaceParam, cv::Mat() );
+
+    fileNode = fs[_strKeyBaseStartAvgPhase];
+    cv::read ( fileNode, stCmd.fBaseStartAvgPhase, 0.f );
+
     fs.release();
 
     int index = 0;

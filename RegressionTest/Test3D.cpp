@@ -35,13 +35,15 @@ void TestCalib3dBase() {
 
     std::cout << "BaseSurfaceParam: " << std::endl;
     printfMat<float>(stRpy.matBaseSurfaceParam);
+    std::cout << "BaseStartAvgPhase: " << stRpy.fBaseStartAvgPhase << std::endl;
 
     std::string strResultMatPath = "./data/CalibPP.yml";
     cv::FileStorage fs(strResultMatPath, cv::FileStorage::WRITE);
     if ( ! fs.isOpened() )
         return;
-    write ( fs, "K", stRpy.matThickToThinStripeK );
-    write ( fs, "PPz", stRpy.matBaseSurfaceParam );
+    cv::write ( fs, "K", stRpy.matThickToThinStripeK );
+    cv::write ( fs, "PPz", stRpy.matBaseSurfaceParam );
+    cv::write ( fs, "BaseStartAvgPhase", stRpy.fBaseStartAvgPhase );
     fs.release();
 }
 
@@ -68,6 +70,7 @@ void TestCalib3DHeight() {
     stCmd.fMinAvgIntensity = 3;
     stCmd.nBlockStepCount = 3;
     stCmd.fBlockStepHeight = 1.f;
+    stCmd.bReverseHeight = true;
 
     std::string strResultMatPath = "./data/CalibPP.yml";
     cv::FileStorage fs ( strResultMatPath, cv::FileStorage::READ );
@@ -75,6 +78,10 @@ void TestCalib3DHeight() {
     cv::read ( fileNode, stCmd.matThickToThinStripeK, cv::Mat() );
     fileNode = fs["PPz"];
     cv::read ( fileNode, stCmd.matBaseSurfaceParam, cv::Mat() );
+    fileNode = fs["PhaseToHeightK"];
+    cv::read ( fileNode, stCmd.fBaseStartAvgPhase, 0.f );
+    fileNode = fs["BaseStartAvgPhase"];
+    cv::read ( fileNode, stCmd.fBaseStartAvgPhase, 0.f );
     fs.release();
 
     PR_Calib3DHeight ( &stCmd, &stRpy );

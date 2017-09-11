@@ -23,6 +23,7 @@ Unwrap::~Unwrap ()
 /*static*/ const float Unwrap::ONE_HALF_CYCLE =             ToFloat ( CV_PI );
 /*static*/ const float Unwrap::UNSTABLE_DIFF =              3.f;
 /*static*/ const float Unwrap::REMOVE_HEIGHT_NOSIE_RATIO =  0.995f;
+/*static*/ const float Unwrap::LOW_BASE_PHASE =             - ToFloat( CV_PI );
 
 /*static*/ cv::Mat Unwrap::_getResidualPoint(const cv::Mat &matInput, cv::Mat &matPosPole, cv::Mat &matNegPole) {
     const float OneCycle = 2.f * ONE_HALF_CYCLE;
@@ -237,9 +238,9 @@ inline std::vector<size_t> sort_indexes(const std::vector<T> &v) {
     return vecResult;
 }
 
-/*static*/ void Unwrap::calib3DBase(const std::vector<cv::Mat> &vecInputImgs, bool bEnableGaussianFilter, bool bReverseSeq, cv::Mat &matThickToThinStripeK, cv::Mat &matBaseSurfaceParam ) {
+/*static*/ void Unwrap::calib3DBase( const PR_CALIB_3D_BASE_CMD *const pstCmd, PR_CALIB_3D_BASE_RPY *const pstRpy ) {
     std::vector<cv::Mat> vecConvertedImgs;
-    for ( auto &mat : vecInputImgs ) {
+    for ( auto &mat : pstCmd->vecInputImgs ) {
         cv::Mat matConvert = mat;
         if ( mat.channels() > 1 )
             cv::cvtColor ( mat, matConvert, CV_BGR2GRAY );
@@ -247,13 +248,13 @@ inline std::vector<size_t> sort_indexes(const std::vector<T> &v) {
         vecConvertedImgs.push_back ( matConvert );
     }
 
-    if ( bEnableGaussianFilter ) {
+    if ( pstCmd->bEnableGaussianFilter ) {
         //Filtering can reduce residues at the expense of a loss of spatial resolution.
         for ( auto &mat : vecConvertedImgs )
             cv::GaussianBlur ( mat, mat, cv::Size(GUASSIAN_FILTER_SIZE, GUASSIAN_FILTER_SIZE), GAUSSIAN_FILTER_SIGMA, GAUSSIAN_FILTER_SIGMA, cv::BorderTypes::BORDER_REPLICATE );
     }
 
-    if ( bReverseSeq ) {
+    if ( pstCmd->bReverseSeq ) {
         std::swap ( vecConvertedImgs[1], vecConvertedImgs[3] );
         std::swap ( vecConvertedImgs[5], vecConvertedImgs[7] );
     }
@@ -277,27 +278,30 @@ inline std::vector<size_t> sort_indexes(const std::vector<T> &v) {
     matAlpha = _phaseUnwrapSurface ( matAlpha );
     matBeta  = _phaseUnwrapSurface ( matBeta );
 
+    cv::Mat matSnoop(matAlpha, cv::Rect(0, 0, PHASE_SNOOP_WIN_SIZE, PHASE_SNOOP_WIN_SIZE ) );
+    pstRpy->fBaseStartAvgPhase = ToFloat ( cv::mean ( matSnoop )[0] );
+
     cv::Mat matAlphaReshape = matAlpha.reshape ( 1, 1 );
     cv::Mat matYY = matBeta.reshape ( 1, matBeta.rows * matBeta.cols );
     cv::Mat matXX = matAlphaReshape.clone();
     cv::Mat matOne = cv::Mat::ones(1, matAlpha.rows * matAlpha.cols, CV_32FC1);
     matXX.push_back ( matOne );
     cv::transpose ( matXX, matXX );
-    cv::solve ( matXX, matYY, matThickToThinStripeK, cv::DecompTypes::DECOMP_QR );
+    cv::solve ( matXX, matYY, pstRpy->matThickToThinStripeK, cv::DecompTypes::DECOMP_QR );
 #ifdef _DEBUG
     auto vecVecAlpha = CalcUtils::matToVector<DATA_TYPE>(matAlpha);
     auto vecVecBeta  = CalcUtils::matToVector<DATA_TYPE>(matBeta);
-    auto vecVecMatK  = CalcUtils::matToVector<DATA_TYPE>(matThickToThinStripeK);
+    auto vecVecMatK  = CalcUtils::matToVector<DATA_TYPE>(pstRpy->matThickToThinStripeK);
 #endif
-    int ROWS = vecInputImgs[0].rows;
-    int COLS = vecInputImgs[0].cols;
+    int ROWS = pstCmd->vecInputImgs[0].rows;
+    int COLS = pstCmd->vecInputImgs[0].cols;
     cv::Mat matX, matY;
     CalcUtils::meshgrid<float> ( 1.f, 1.f, ToFloat ( COLS ), 1.f, 1.f, ToFloat ( ROWS ), matX, matY );
 
-    matBaseSurfaceParam = _calculatePPz ( matX, matY, matBeta );
-    cv::Mat matZP1 = _calculateBaseSurface ( matAlpha.rows, matAlpha.cols, matBaseSurfaceParam );
+    pstRpy->matBaseSurfaceParam = _calculatePPz ( matX, matY, matBeta );
+    cv::Mat matZP1 = _calculateBaseSurface ( matAlpha.rows, matAlpha.cols, pstRpy->matBaseSurfaceParam );
 #ifdef _DEBUG
-    auto vecPPz = CalcUtils::matToVector<DATA_TYPE>(matBaseSurfaceParam);
+    auto vecPPz = CalcUtils::matToVector<DATA_TYPE>(pstRpy->matBaseSurfaceParam);
     auto vecZP1 = CalcUtils::matToVector<DATA_TYPE>(matZP1);
 #endif
 }
@@ -477,6 +481,15 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
         matBranchCut.at<uchar>(point) = 255;
 
     matAlpha = _phaseUnwrapSurfaceTrk ( matAlpha, matBranchCut );
+
+    cv::Mat matSnoop(matAlpha, cv::Rect(0, 0, PHASE_SNOOP_WIN_SIZE, PHASE_SNOOP_WIN_SIZE ) );
+    auto fStartAvgPhase = ToFloat ( cv::mean ( matSnoop )[0] );
+    if ( ( fStartAvgPhase - pstCmd->fBaseStartAvgPhase ) > ( LOW_BASE_PHASE + ToFloat ( CV_PI ) * 2.f ) )
+        matAlpha = matAlpha - ToFloat ( CV_PI ) * 2.f;
+    else if ( ( fStartAvgPhase - pstCmd->fBaseStartAvgPhase ) < LOW_BASE_PHASE )
+        matAlpha = matAlpha + ToFloat ( CV_PI ) * 2.f;
+
+
 #ifdef _DEBUG
     auto vevVecBranchCut = CalcUtils::matToVector<uchar>(matBranchCut);
     auto vecVecAlpha = CalcUtils::matToVector<DATA_TYPE>(matAlpha);
@@ -737,6 +750,7 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
     stCalcCmd.fMinAvgIntensity = pstCmd->fMinAvgIntensity;
     stCalcCmd.matThickToThinStripeK = pstCmd->matThickToThinStripeK;
     stCalcCmd.matBaseSurfaceParam = pstCmd->matBaseSurfaceParam;
+    stCalcCmd.fBaseStartAvgPhase = pstCmd->fBaseStartAvgPhase;
     calc3DHeight ( &stCalcCmd, &stCalcRpy );
     cv::Mat matPhase = stCalcRpy.matPhase;
     cv::Mat matTmpPhase = matPhase.clone();

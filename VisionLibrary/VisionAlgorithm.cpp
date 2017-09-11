@@ -5729,7 +5729,7 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     MARK_FUNCTION_START_TIME;
     SETUP_LOGCASE(LogCaseCalib3DBase);
 
-    Unwrap::calib3DBase ( pstCmd->vecInputImgs, pstCmd->bEnableGaussianFilter, pstCmd->bReverseSeq, pstRpy->matThickToThinStripeK, pstRpy->matBaseSurfaceParam );
+    Unwrap::calib3DBase ( pstCmd, pstRpy );
 
     FINISH_LOGCASE;
     MARK_FUNCTION_END_TIME;

@@ -679,6 +679,7 @@ private:
     const String _strKeyStatus              = "Status";
     const String _strKeyThickToThinStripeK  = "ThickToThinStripeK";
     const String _strKeyBaseSurfaceParam    = "BaseSurfaceParam";
+    const String _strKeyBaseStartAvgPhase   = "BaseStartAvgPhase";
 };
 
 class LogCaseCalib3DHeight : public LogCase
@@ -699,6 +700,7 @@ private:
     const String _strKeyMinAvgIntensity     = "MinAvgIntensity";
     const String _strKeyThickToThinStripeK  = "ThickToThinStripeK";
     const String _strKeyBaseSurfaceParam    = "BaseSurfaceParam";
+    const String _strKeyBaseStartAvgPhase   = "BaseStartAvgPhase";
     const String _strKeyReverseHeight       = "ReverseHeight";
     const String _strKeyBlockStepCount      = "BlockStepCount";
     const String _strKeyBlockStepHeight     = "BlockStepHeight";
@@ -726,6 +728,7 @@ private:
     const String _strKeyMinAvgIntensity     = "MinAvgIntensity";
     const String _strKeyThickToThinStripeK  = "ThickToThinStripeK";
     const String _strKeyBaseSurfaceParam    = "BaseSurfaceParam";
+    const String _strKeyBaseStartAvgPhase   = "BaseStartAvgPhase";
 
     const String _strKeyStatus              = "Status";
 };

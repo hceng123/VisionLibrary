@@ -55,10 +55,13 @@ cv::Mat drawHeightGrid(const cv::Mat &matHeight, int nGridRow, int nGridCol) {
     return matResultImg;
 }
 
-static std::string gstrCalibResultFile("./data/capture/CalibPP.yml");
+//static std::string gstrCalibResultFile("./data/capture/CalibPP.yml");
+static std::string gstrWorkingFolder("./data/0715/");
+static std::string gstrCalibResultFile = gstrWorkingFolder + "CalibPP.yml";
 void TestCalib3dBase() {
     const int IMAGE_COUNT = 8;
-    std::string strFolder = "./data/capture/0909213305_Plane/";
+    //std::string strFolder = "./data/capture/0909213305_Plane/";
+    std::string strFolder = gstrWorkingFolder + "0715184554_10ms_80_Plane1/";
     PR_CALIB_3D_BASE_CMD stCmd;
     PR_CALIB_3D_BASE_RPY stRpy;
     for ( int i = 1; i <= IMAGE_COUNT; ++ i ) {
@@ -80,12 +83,14 @@ void TestCalib3dBase() {
 
     write ( fs, "K", stRpy.matThickToThinStripeK );
     write ( fs, "PPz", stRpy.matBaseSurfaceParam );
+    write ( fs, "BaseStartAvgPhase", stRpy.fBaseStartAvgPhase );
     fs.release();
 }
 
 void TestCalib3DHeight() {
     const int IMAGE_COUNT = 8;
-    std::string strFolder = "./data/capture/0909220722_Step/";
+    //std::string strFolder = "./data/capture/0909220722_Step/";
+    std::string strFolder = gstrWorkingFolder + "0715190516_10ms_80_Step/";
     PR_CALIB_3D_HEIGHT_CMD stCmd;
     PR_CALIB_3D_HEIGHT_RPY stRpy;
     for ( int i = 1; i <= IMAGE_COUNT; ++ i ) {
@@ -112,6 +117,9 @@ void TestCalib3DHeight() {
 
     fileNode = fs["PPz"];
     cv::read ( fileNode, stCmd.matBaseSurfaceParam, cv::Mat() );
+
+    fileNode = fs["BaseStartAvgPhase"];
+    cv::read ( fileNode, stCmd.fBaseStartAvgPhase, 0.f );
     fs.release();
 
     PR_Calib3DHeight ( &stCmd, &stRpy );
@@ -119,8 +127,8 @@ void TestCalib3DHeight() {
     if ( VisionStatus::OK != stRpy.enStatus )
         return;
 
-    cv::imwrite ( "./data/capture/DivideStepResultImg.png", stRpy.matDivideStepResultImg );
-    cv::imwrite ( "./data/capture/Calib3DHeightResultImg.png", stRpy.matResultImg );
+    cv::imwrite ( gstrWorkingFolder + "DivideStepResultImg.png", stRpy.matDivideStepResultImg );
+    cv::imwrite ( gstrWorkingFolder + "Calib3DHeightResultImg.png", stRpy.matResultImg );
 
     cv::FileStorage fs1(strResultMatPath, cv::FileStorage::APPEND);
     if ( ! fs1.isOpened() )
@@ -155,6 +163,9 @@ void TestCalc3DHeight() {
 
     fileNode = fs["PPz"];
     cv::read ( fileNode, stCmd.matBaseSurfaceParam, cv::Mat() );
+
+    fileNode = fs["BaseStartAvgPhase"];
+    cv::read ( fileNode, stCmd.fBaseStartAvgPhase, 0.f );
 
     fileNode = fs["PhaseToHeightK"];
     cv::read ( fileNode, stCmd.matPhaseToHeightK, cv::Mat() );

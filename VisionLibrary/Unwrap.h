@@ -29,7 +29,7 @@ class Unwrap
 public:
     Unwrap ();
     ~Unwrap ();
-    static void calib3DBase(const std::vector<cv::Mat> &vecInputImgs, bool bEnableGaussianFilter, bool bReverseSeq, cv::Mat &matThickToThinStripeK, cv::Mat &matBaseSurfaceParam );
+    static void calib3DBase(const PR_CALIB_3D_BASE_CMD *const pstCmd, PR_CALIB_3D_BASE_RPY *const pstRpy);
     static void calib3DHeight(const PR_CALIB_3D_HEIGHT_CMD *const pstCmd, PR_CALIB_3D_HEIGHT_RPY *const pstRpy);
     static void calc3DHeight(const PR_CALC_3D_HEIGHT_CMD *const pstCmd, PR_CALC_3D_HEIGHT_RPY *const pstRpy);
     static void calcMTF(const PR_CALC_MTF_CMD *const pstCmd, PR_CALC_MTF_RPY *const pstRpy);
@@ -51,11 +51,13 @@ private:
     static const int GUASSIAN_FILTER_SIZE =     11;
     static const int BEZIER_RANK =              5;
     static const int ERODE_WIN_SIZE =           41;
+    static const int PHASE_SNOOP_WIN_SIZE =     10;
 
     static const float GAUSSIAN_FILTER_SIGMA;
     static const float ONE_HALF_CYCLE;
     static const float UNSTABLE_DIFF;
     static const float REMOVE_HEIGHT_NOSIE_RATIO;
+    static const float LOW_BASE_PHASE;
 };
 
 }

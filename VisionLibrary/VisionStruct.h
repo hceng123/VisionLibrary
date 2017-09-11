@@ -850,6 +850,7 @@ struct PR_CALIB_3D_BASE_RPY {
     VisionStatus            enStatus;
     cv::Mat                 matThickToThinStripeK;  //The factor between thick stripe and thin stripe.
     cv::Mat                 matBaseSurfaceParam;    //The bezier parameters to form the base surface.
+    float                   fBaseStartAvgPhase;     //The average phase of the top-left corner of the thick stripe. It is used to constrain the object's phase within -pi~pi of base phase.
 };
 
 struct PR_CALIB_3D_HEIGHT_CMD {
@@ -857,6 +858,7 @@ struct PR_CALIB_3D_HEIGHT_CMD {
         bEnableGaussianFilter(true),
         bReverseSeq(true),
         bReverseHeight(false),
+        fBaseStartAvgPhase(0),
         fMinIntensityDiff(3.f),
         fMinAvgIntensity(3.f),
         nResultImgGridRow(8),
@@ -870,6 +872,7 @@ struct PR_CALIB_3D_HEIGHT_CMD {
     float                   fMinAvgIntensity;       //In a group of 4 images, if a pixel's average intensity less than this value, this pixel will be discarded.
     cv::Mat                 matThickToThinStripeK;  //The factor between thick stripe and thin stripe.
     cv::Mat                 matBaseSurfaceParam;
+    float                   fBaseStartAvgPhase;     //The average phase of the top-left corner of the thick stripe. It is used to constrain the object's phase within -pi~pi of base phase.
     Int16                   nBlockStepCount;        //How many steps on the calibration block.
     float                   fBlockStepHeight;       //The height of each step, unit mm. So the total block height is nBlockStepCount x fBlockStepHeight.
     Int32                   nResultImgGridRow;
@@ -897,6 +900,7 @@ struct PR_CALC_3D_HEIGHT_CMD {
     float                   fMinAvgIntensity;       //In a group of 4 images, if a pixel's average intensity less than this value, this pixel will be discarded.
     cv::Mat                 matThickToThinStripeK;  //The factor between thick stripe and thin stripe.
     cv::Mat                 matBaseSurfaceParam;
+    float                   fBaseStartAvgPhase;     //The average phase of the top-left corner of the thick stripe. It is used to constrain the object's phase within -pi~pi of base phase.
     cv::Mat                 matPhaseToHeightK;      //The factor to convert phase to height.
 };
 
