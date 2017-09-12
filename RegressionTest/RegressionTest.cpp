@@ -3,11 +3,17 @@
 
 #include "stdafx.h"
 #include "TestFunction.h"
+#include "../VisionLibrary/VisionAPI.h"
 
 using namespace AOI::Vision;
 
 int _tmain(int argc, _TCHAR* argv[])
 {
+    /*****************************************
+    * Test Vision Library Internal Functions *
+    *****************************************/
+    _PR_InternalTest();
+
     /*************************
     * Test Device Inspection *
     **************************/

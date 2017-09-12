@@ -122,13 +122,14 @@ public:
         return vecVecArray;
     }
 
+    //if nDimension == 1, returns the cumulative sum of each col, otherwise return the cumulative sum of each row.
     template<typename _Tp>
     static inline cv::Mat cumsum ( const cv::Mat &matInput, int nDimension ) {
         cv::Mat matResult = matInput.clone ();
         if( nDimension == 1 )
             cv::transpose ( matResult, matResult );
-        for( int row = 0; row < matResult.rows; ++row )
-        for( int col = 0; col < matResult.cols; ++col ) {
+        for( int row = 0; row < matResult.rows; ++ row )
+        for( int col = 0; col < matResult.cols; ++ col ) {
             if( col != 0 )
                 matResult.at<_Tp> ( row, col ) += matResult.at<_Tp> ( row, col - 1 );
         }
@@ -138,34 +139,24 @@ public:
     }
 
     template<typename _tp>
-    static void meshgrid ( float xStart, float xInterval, float xEnd, float yStart, float yInterval, float yEnd, cv::Mat &matX, cv::Mat &matY ) {
-        std::vector<_tp> vectorX, vectorY;
-        vectorX.reserve ( ToInt32 ( ( xEnd - xStart ) / xInterval ) );
-        vectorY.reserve ( ToInt32 ( ( yEnd - yStart ) / yInterval ) );
-        _tp xValue = xStart;
-        while( xValue <= xEnd )    {
-            vectorX.push_back ( xValue );
-            xValue += xInterval;
-        }
-
-        _tp yValue = yStart;
-        while( yValue <= yEnd )    {
-            vectorY.push_back ( yValue );
-            yValue += yInterval;
-        }
-        cv::Mat matCol ( vectorX );
+    static void meshgrid ( _tp xStart, _tp xInterval, _tp xEnd, _tp yStart, _tp yInterval, _tp yEnd, cv::Mat &matX, cv::Mat &matY ) {
+        cv::Mat matCol = intervals<_tp>(xStart, xInterval, xEnd);
         matCol = matCol.reshape ( 1, 1 );
 
-        cv::Mat matRow ( vectorY );
-        matRow = matRow.reshape ( 1, ToInt32 ( vectorY.size() ) );
-        matX = cv::repeat ( matCol, ToInt32 ( vectorY.size() ), 1 );
-        matY = cv::repeat ( matRow, 1, ToInt32 ( vectorX.size () ) );
+        cv::Mat matRow = intervals<_tp>(yStart, yInterval, yEnd);
+        matX = cv::repeat ( matCol, matRow.rows, 1 );
+        matY = cv::repeat ( matRow, 1, matCol.cols );
     }
 
     template<typename _tp>
-    static cv::Mat intervals ( float start, float interval, float end ) {
+    static cv::Mat intervals ( _tp start, _tp interval, _tp end ) {
         std::vector<_tp> vecValue;
-        vecValue.reserve ( ToInt32 ( ( end - start ) / interval ) );
+        int nSize = ToInt32 ( ( end - start ) / interval );
+        if ( nSize <= 0 ) {
+            static String msg = String ( __FUNCTION__ ) + " input paramters are invalid.";
+            throw std::exception( msg.c_str() );
+        }
+        vecValue.reserve ( nSize );
         _tp value = start;
         if ( interval > 0 ) {
             while ( value <= end ) {
@@ -218,8 +209,7 @@ public:
     // To heapify a subtree rooted with node i which is
     // an index in arr[]. n is size of heap
     template<typename T>
-    static void heapifyMinToRoot ( std::vector<T> &vecInput, const int n, const int i, std::vector<int> &vecIndex )
-    {
+    static void heapifyMinToRoot ( std::vector<T> &vecInput, const int n, const int i, std::vector<int> &vecIndex ) {
         int smallestIndex = i;  // Initialize largest as root
         int l = 2 * i + 1;  // left = 2*i + 1
         int r = 2 * i + 2;  // right = 2*i + 2
@@ -244,8 +234,7 @@ public:
     }
 
     template<typename T>
-    static std::vector<T> SelectLargestKItems ( const cv::Mat &matInput, const size_t K, std::vector<int> &vecIndex )
-    {
+    static std::vector<T> SelectLargestKItems ( const cv::Mat &matInput, const size_t K, std::vector<int> &vecIndex ) {
         if ( K > matInput.total () )  {
             return matInput;
         }

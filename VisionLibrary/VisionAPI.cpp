@@ -40,6 +40,15 @@ VisionAPI VisionStatus PR_Init()
     return RecordManager::getInstance()->load();
 }
 
+VisionAPI void _PR_InternalTest()
+{
+    try {
+        InternalTest();
+    }catch (std::exception &e) {
+        std::cout << e.what() << std::endl;
+    }
+}
+
 VisionAPI VisionStatus PR_LrnObj(const PR_LRN_OBJ_CMD *const pstCmd, PR_LRN_OBJ_RPY *const pstRpy)
 {
 PR_FUNCTION_ENTRY

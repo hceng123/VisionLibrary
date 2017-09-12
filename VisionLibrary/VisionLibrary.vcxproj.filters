@@ -134,5 +134,8 @@
     <ClCompile Include="Unwrap.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="InternalTest.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

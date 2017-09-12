@@ -171,6 +171,7 @@
     <ClCompile Include="Exception.cpp" />
     <ClCompile Include="FileUtils.cpp" />
     <ClCompile Include="Fitting.cpp" />
+    <ClCompile Include="InternalTest.cpp" />
     <ClCompile Include="Log.cpp" />
     <ClCompile Include="LogCase.cpp" />
     <ClCompile Include="MatchTmpl.cpp" />
