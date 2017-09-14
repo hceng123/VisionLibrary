@@ -75,7 +75,7 @@ MatchTmpl::~MatchTmpl ()
         std::vector<uchar> vecTmpl = matTmpl.reshape(1, 1);
         std::vector<int> vecMaskOfTmplIndex;
         vecMaskOfTmplIndex.reserve( vecMaskOfTmpl.size() / 5 );
-        for ( int index = 0; index < vecMaskOfTmpl.size(); index += 1 )
+        for ( int index = 0; index < ToInt32 ( vecMaskOfTmpl.size() ); index += 1 )
             if ( vecMaskOfTmpl[index] > 0 )
                 vecMaskOfTmplIndex.push_back ( index );
 
@@ -165,7 +165,7 @@ MatchTmpl::~MatchTmpl ()
     double minVal; double maxVal;
     cv::Point minLoc, maxLoc, matchLoc;
 
-    cv::minMaxLoc(matResultImg, &minVal, &maxVal, &minLoc, &maxLoc, cv::Mat());
+    cv::minMaxLoc ( matResultImg, &minVal, &maxVal, &minLoc, &maxLoc, cv::Mat() );
 
     /// For SQDIFF and SQDIFF_NORMED, the best matches are lower values. For all the other methods, the higher the better
     if (match_method == CV_TM_SQDIFF || match_method == CV_TM_SQDIFF_NORMED)

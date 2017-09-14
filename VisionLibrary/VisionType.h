@@ -19,6 +19,7 @@ const int PR_AUTO_THRESHOLD_MAX_NUM =           4;
 const int PR_FIT_LINE_MAX_POINT_COUNT =         10000;
 const int PR_FIT_CIRCLE_MAX_POINT =             10000;
 const double PR_MM_TO_UM =                      1000.;
+const int PR_GROUP_TEXTURE_IMG_COUNT =          4;
 
 enum class PR_SRCH_OBJ_ALGORITHM {
 	SIFT,

@@ -84,6 +84,9 @@
     <ClInclude Include="MatchTmpl.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Unwrap.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="VisionAPI.cpp">
@@ -126,6 +129,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="MatchTmpl.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Unwrap.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="InternalTest.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

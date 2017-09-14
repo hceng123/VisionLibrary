@@ -569,7 +569,15 @@ void TestCaliper_3() {
 
 int _tmain(int argc, _TCHAR* argv[])
 {
-    PR_SetDebugMode ( PR_DEBUG_MODE::LOG_FAIL_CASE );
+    cv::Mat matNan (3, 3, CV_32FC1, NAN );
+    cv::Mat matCmpResult = cv::Mat ( matNan == matNan );
+    int nCount = cv::countNonZero ( matCmpResult );
+    std::cout << "find NAN cout " << matCmpResult.total() - nCount << std::endl;
+
+    PR_VERSION_INFO stVersionInfo;
+    PR_GetVersion(&stVersionInfo);
+    std::cout << "VisionLibrary Version: " << stVersionInfo.chArrVersion << std::endl;
+    //PR_SetDebugMode ( PR_DEBUG_MODE::LOG_ALL_CASE );
     //TestTemplate();
     //TestInspDevice();
     //TestRunLogcase();
@@ -616,8 +624,18 @@ int _tmain(int argc, _TCHAR* argv[])
 
     //TestInspLead();
 
-    TestSrchDie();
+    //TestSrchDie();
 
+    //TestCalib3dBase();
+    //TestCalib3DHeight();
+    TestCalc3DHeight();
+
+    //TestCalcMTF();
+
+    //PR_RunLogCase("D:/xsg/Logcase/Calib3DBase_2017_09_10_21_13_02_836.logcase");
+    //TestCalcPD();
+
+    PR_DumpTimeLog("./Vision/Time.log");
     std::cout << "Press any key to exist." << std::endl;
     getchar();
 

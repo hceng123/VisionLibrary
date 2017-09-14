@@ -18,7 +18,7 @@ class RecordManager
 public:
     static RecordManager*   getInstance();
     ~RecordManager();
-    VisionStatus            add(RecordPtr pRecord, Int32 &recordID);    
+    VisionStatus            add(RecordPtr pRecord, Int32 &recordID);
     RecordPtr               get(Int32 nRecordId);
     VisionStatus            free(Int32 nRecordId);
     VisionStatus            freeAllRecord();

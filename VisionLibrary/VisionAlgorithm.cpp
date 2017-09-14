@@ -13,6 +13,7 @@
 #include "FileUtils.h"
 #include "Fitting.h"
 #include "MatchTmpl.h"
+#include "Unwrap.h"
 #include <iostream>
 #include <limits>
 #include <algorithm>
@@ -47,10 +48,10 @@ if ( ! bReplay )    {   \
 }
 
 /*static*/ OcrTesseractPtr VisionAlgorithm::_ptrOcrTesseract;
-/*static*/ const cv::Scalar VisionAlgorithm::_constRedScalar   = cv::Scalar(0, 0, 255);
-/*static*/ const cv::Scalar VisionAlgorithm::_constBlueScalar  = cv::Scalar(255, 0, 0);
-/*static*/ const cv::Scalar VisionAlgorithm::_constGreenScalar = cv::Scalar(0, 255, 0);
-/*static*/ const cv::Scalar VisionAlgorithm::_constYellowScalar(0, 255, 255);
+/*static*/ const cv::Scalar VisionAlgorithm::_constRedScalar    (0,   0,   255 );
+/*static*/ const cv::Scalar VisionAlgorithm::_constBlueScalar   (255, 0,   0   );
+/*static*/ const cv::Scalar VisionAlgorithm::_constGreenScalar  (0,   255, 0   );
+/*static*/ const cv::Scalar VisionAlgorithm::_constYellowScalar (0,   255, 255 );
 /*static*/ const String VisionAlgorithm::_strRecordLogPrefix   = "tmplDir.";
 /*static*/ const float VisionAlgorithm::_constExpSmoothRatio   = 0.3f;
 /*static*/ bool VisionAlgorithm::_bAutoMode = false;
@@ -390,7 +391,7 @@ namespace
 * Note:      Mu is name of greek symbol μ.
 *            Omega and Eta are also greek symbol.
 *******************************************************************************/
-std::vector<Int16> VisionAlgorithm::_autoMultiLevelThreshold(const cv::Mat &matInputImg, const cv::Mat &matMask, int N)
+std::vector<Int16> VisionAlgorithm::autoMultiLevelThreshold(const cv::Mat &matInputImg, const cv::Mat &matMask, int N)
 {
     assert(N >= 1 && N <= 4);
 
@@ -682,7 +683,7 @@ VisionStatus VisionAlgorithm::autoThreshold(PR_AUTO_THRESHOLD_CMD *pstCmd, PR_AU
     cv::Mat matMaskROI;
     if ( ! pstCmd->matMask.empty() )
         matMaskROI = cv::Mat( pstCmd->matMask, pstCmd->rectROI).clone();
-    pstRpy->vecThreshold = _autoMultiLevelThreshold ( matROI, matMaskROI, pstCmd->nThresholdNum);
+    pstRpy->vecThreshold = autoMultiLevelThreshold ( matROI, matMaskROI, pstCmd->nThresholdNum );
 
     pstRpy->enStatus = VisionStatus::OK;
     
@@ -692,7 +693,7 @@ VisionStatus VisionAlgorithm::autoThreshold(PR_AUTO_THRESHOLD_CMD *pstCmd, PR_AU
 }
 
 int VisionAlgorithm::_autoThreshold(const cv::Mat &mat, const cv::Mat &matMask/* = cv::Mat()*/ ) {
-    auto vecThreshold = _autoMultiLevelThreshold ( mat, matMask, 1 );
+    auto vecThreshold = autoMultiLevelThreshold ( mat, matMask, 1 );
     return vecThreshold[0];
 }
 
@@ -1651,6 +1652,10 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
         pLogCase = std::make_unique<LogCaseInspHole>( strLocalPath, true );
     else if (LogCaseInspLead::StaticGetFolderPrefix() == folderPrefix )
         pLogCase = std::make_unique<LogCaseInspLead>( strLocalPath, true );
+    else if (LogCaseCalib3DBase::StaticGetFolderPrefix() == folderPrefix )
+        pLogCase = std::make_unique<LogCaseCalib3DBase>( strLocalPath, true );
+    if (LogCaseCalc3DHeight::StaticGetFolderPrefix() == folderPrefix )
+        pLogCase = std::make_unique<LogCaseCalc3DHeight>( strLocalPath, true );
 
     if ( nullptr != pLogCase )
         enStatus = pLogCase->RunLogCase();
@@ -5619,8 +5624,7 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     return enStatus;
 }
 
-/*static*/ VisionStatus VisionAlgorithm::gridAvgGrayScale(const PR_GRID_AVG_GRAY_SCALE_CMD *const pstCmd, PR_GRID_AVG_GRAY_SCALE_RPY *const pstRpy)
-{
+/*static*/ VisionStatus VisionAlgorithm::gridAvgGrayScale(const PR_GRID_AVG_GRAY_SCALE_CMD *const pstCmd, PR_GRID_AVG_GRAY_SCALE_RPY *const pstRpy) {
     assert(pstCmd != nullptr && pstRpy != nullptr);
 
     if ( pstCmd->vecInputImgs.empty() ) {
@@ -5663,14 +5667,13 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     }
 
     matAverage /= ToFloat(pstCmd->vecInputImgs.size());
+    matAverage.convertTo(pstRpy->matResultImg, CV_8UC1);
+    cv::cvtColor ( pstRpy->matResultImg, pstRpy->matResultImg, CV_GRAY2BGR );
 
     int ROWS = matAverage.rows;
     int COLS = matAverage.cols;
     int nIntervalX = matAverage.cols / pstCmd->nGridCol;
-    int nIntervalY = matAverage.rows / pstCmd->nGridRow;
-
-    matAverage.convertTo(pstRpy->matResultImg, CV_8UC1);
-    cv::cvtColor ( pstRpy->matResultImg, pstRpy->matResultImg, CV_GRAY2BGR );
+    int nIntervalY = matAverage.rows / pstCmd->nGridRow;    
 
     int fontFace = cv::FONT_HERSHEY_SIMPLEX;
     double fontScale = 1;
@@ -5703,6 +5706,200 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
         cv::line ( pstRpy->matResultImg, cv::Point(0, i * nIntervalY), cv::Point(COLS, i * nIntervalY), scalarCyan, nGridLineSize );
 
     MARK_FUNCTION_START_TIME;
+    pstRpy->enStatus = VisionStatus::OK;
+    return pstRpy->enStatus;
+}
+
+/*static*/ VisionStatus VisionAlgorithm::calib3DBase(const PR_CALIB_3D_BASE_CMD *const pstCmd, PR_CALIB_3D_BASE_RPY *const pstRpy, bool bReplay/* = false*/) {
+    assert(pstCmd != nullptr && pstRpy != nullptr);
+
+    if ( pstCmd->vecInputImgs.size() != 8 ) {
+        WriteLog("The input image count is not 8.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    for ( const auto &mat : pstCmd->vecInputImgs ) {
+        if ( mat.empty() ) {
+            WriteLog("The input image is empty.");
+            pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+            return pstRpy->enStatus;
+        }
+    }
+    MARK_FUNCTION_START_TIME;
+    SETUP_LOGCASE(LogCaseCalib3DBase);
+
+    Unwrap::calib3DBase ( pstCmd, pstRpy );
+
+    FINISH_LOGCASE;
+    MARK_FUNCTION_END_TIME;
+    pstRpy->enStatus = VisionStatus::OK;
+    return pstRpy->enStatus;
+}
+
+/*static*/ VisionStatus VisionAlgorithm::calib3DHeight(const PR_CALIB_3D_HEIGHT_CMD *const pstCmd, PR_CALIB_3D_HEIGHT_RPY *const pstRpy, bool bReplay/* = false*/) {
+    assert(pstCmd != nullptr && pstRpy != nullptr);
+
+    if ( pstCmd->vecInputImgs.size() != 8 ) {
+        WriteLog("The input image count is not 8.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    for ( const auto &mat : pstCmd->vecInputImgs ) {
+        if ( mat.empty() ) {
+            WriteLog("The input image is empty.");
+            pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+            return pstRpy->enStatus;
+        }
+    }
+
+    if ( pstCmd->matThickToThinStripeK.empty() ) {
+        WriteLog("matThickToThinStripeK is empty.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    if ( pstCmd->matBaseSurfaceParam.empty() ) {
+        WriteLog("matBaseSurfaceParam is empty.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    if ( pstCmd->nBlockStepCount <= 0 || pstCmd->nBlockStepCount > 4 ) {
+        char charrMsg[1000];
+        _snprintf( charrMsg, sizeof( charrMsg ), "The BlockStepCount %d is not in range [1, 4].", pstCmd->nBlockStepCount );
+        WriteLog(charrMsg);
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    if ( pstCmd->nResultImgGridRow <= 0 || pstCmd->nResultImgGridRow > 100 ||
+         pstCmd->nResultImgGridCol <= 0 || pstCmd->nResultImgGridCol > 100 ) {
+        char charrMsg[1000];
+        _snprintf( charrMsg, sizeof( charrMsg ), "The Result image grid row %d or column %d is not in range [1, 100].", pstCmd->nResultImgGridRow, pstCmd->nResultImgGridCol );
+        WriteLog(charrMsg);
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    if ( pstCmd->szMeasureWinSize.width  <= 0 || pstCmd->szMeasureWinSize.width  > pstCmd->vecInputImgs[0].cols ||
+         pstCmd->szMeasureWinSize.height <= 0 || pstCmd->szMeasureWinSize.height > pstCmd->vecInputImgs[0].rows ) {
+        char charrMsg[1000];
+        _snprintf( charrMsg, sizeof( charrMsg ), "The measure window size (%d, %d) is invalid.", pstCmd->szMeasureWinSize.width, pstCmd->szMeasureWinSize.height );
+        WriteLog(charrMsg);
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    MARK_FUNCTION_START_TIME;
+
+    Unwrap::calib3DHeight ( pstCmd, pstRpy );
+
+    MARK_FUNCTION_END_TIME;
+    pstRpy->enStatus = VisionStatus::OK;
+    return pstRpy->enStatus;
+}
+
+/*static*/ VisionStatus VisionAlgorithm::calc3DHeight(const PR_CALC_3D_HEIGHT_CMD *const pstCmd, PR_CALC_3D_HEIGHT_RPY *const pstRpy, bool bReplay /*= false*/) {
+    assert(pstCmd != nullptr && pstRpy != nullptr);
+
+    if ( pstCmd->vecInputImgs.size() != 8 ) {
+        WriteLog("The input image count is not 8.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    for ( const auto &mat : pstCmd->vecInputImgs ) {
+        if ( mat.empty() ) {
+            WriteLog("The input image is empty.");
+            pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+            return pstRpy->enStatus;
+        }
+    }
+
+    if ( pstCmd->matThickToThinStripeK.empty() ) {
+        WriteLog("The matThickToThinStripeK is empty.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    if ( pstCmd->matBaseSurfaceParam.empty() ) {
+        WriteLog("The matBaseSurfaceParam is empty.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    MARK_FUNCTION_START_TIME;
+    SETUP_LOGCASE(LogCaseCalc3DHeight);
+
+    Unwrap::calc3DHeight ( pstCmd, pstRpy );
+
+    FINISH_LOGCASE;
+    MARK_FUNCTION_END_TIME;
+    pstRpy->enStatus = VisionStatus::OK;
+    return pstRpy->enStatus;
+}
+
+/*static*/ VisionStatus VisionAlgorithm::calcMTF(const PR_CALC_MTF_CMD *const pstCmd, PR_CALC_MTF_RPY *const pstRpy, bool bReplay /*= false*/) {
+    assert(pstCmd != nullptr && pstRpy != nullptr);
+
+    if ( pstCmd->vecInputImgs.empty() || pstCmd->vecInputImgs.size() % PR_GROUP_TEXTURE_IMG_COUNT != 0 ) {
+        WriteLog("The input image count is multiple of 4.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    for ( const auto &mat : pstCmd->vecInputImgs ) {
+        if ( mat.empty() ) {
+            WriteLog("The input image is empty.");
+            pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+            return pstRpy->enStatus;
+        }
+    }
+
+    if ( pstCmd->fMagnitudeOfDLP <= 0 || pstCmd->fMagnitudeOfDLP > PR_MAX_GRAY_LEVEL ) {
+        char charrMsg[1000];
+        _snprintf( charrMsg, sizeof( charrMsg ), "The MagnitudeOfDLP %f is not in range [1, 255].", pstCmd->fMagnitudeOfDLP );
+        WriteLog(charrMsg);
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    MARK_FUNCTION_START_TIME;
+    Unwrap::calcMTF ( pstCmd, pstRpy );
+    MARK_FUNCTION_END_TIME;
+
+    pstRpy->enStatus = VisionStatus::OK;
+    return pstRpy->enStatus;
+}
+
+/*static*/ VisionStatus VisionAlgorithm::calcPD(const PR_CALC_PD_CMD *const pstCmd, PR_CALC_PD_RPY *const pstRpy, bool bReplay /*= false*/) {
+    assert(pstCmd != nullptr && pstRpy != nullptr);
+
+    if ( pstCmd->vecInputImgs.empty() || pstCmd->vecInputImgs.size() % PR_GROUP_TEXTURE_IMG_COUNT != 0 ) {
+        WriteLog("The input image count is multiple of 4.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    for ( const auto &mat : pstCmd->vecInputImgs ) {
+        if ( mat.empty() ) {
+            WriteLog("The input image is empty.");
+            pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+            return pstRpy->enStatus;
+        }
+    }
+
+    if ( pstCmd->fMagnitudeOfDLP <= 0 || pstCmd->fMagnitudeOfDLP > PR_MAX_GRAY_LEVEL ) {
+        char charrMsg[1000];
+        _snprintf( charrMsg, sizeof( charrMsg ), "The MagnitudeOfDLP %f is not in range [1, 255].", pstCmd->fMagnitudeOfDLP );
+        WriteLog(charrMsg);
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    Unwrap::calcPD ( pstCmd, pstRpy );
     pstRpy->enStatus = VisionStatus::OK;
     return pstRpy->enStatus;
 }

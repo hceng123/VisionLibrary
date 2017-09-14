@@ -16,4 +16,17 @@ void printfMat ( const cv::Mat &mat)
     }
 }
 
+template<class T>
+void printfVectorOfVector(const std::vector<std::vector<T>> &vevVecInput)
+{
+	for (const auto &vecInput : vevVecInput )
+	{
+		for (const auto value : vecInput )
+		{
+			printf("%.2f ", value);
+		}
+		printf("\n");
+	}
+}
+
 #endif /*_VISION_REGRESSION_TEST_UTILITY_FUNCTION_H_*/

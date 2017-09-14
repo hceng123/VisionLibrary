@@ -26,6 +26,9 @@ using VectorOfRect = std::vector<cv::Rect>;
 using ListOfPoint = std::list<cv::Point>;
 using VectorOfListOfPoint = std::vector<ListOfPoint>;
 using VectorOfSize2f = std::vector<cv::Size2f>;
+using VectorOfMat = std::vector<cv::Mat>;
+using VectorOfFloat = std::vector<float>;
+using VectorOfVectorOfFloat = std::vector<VectorOfFloat>;
 
 #define ToInt32(param)      (static_cast<AOI::Int32>(param))
 #define ToInt16(param)      (static_cast<AOI::Int16>(param))
@@ -819,25 +822,135 @@ struct PR_INSP_LEAD_RPY {
     VECTOR_LEAD_RESULT      vecLeadResult;
     cv::Mat                 matResultImg;
 };
-
 /******************************************
 * End of Inspect Lead Section *
 ******************************************/
 
 struct PR_GRID_AVG_GRAY_SCALE_CMD {
     PR_GRID_AVG_GRAY_SCALE_CMD() : nGridRow(5), nGridCol(5) {}
-    std::vector<cv::Mat>    vecInputImgs;
+    VectorOfMat             vecInputImgs;
     Int16                   nGridRow;
     Int16                   nGridCol;
 };
 
-struct PR_GRID_AVG_GRAY_SCALE_RPY {
-    using VectorOfVectorOfFloat = std::vector<std::vector<float>>;
+struct PR_GRID_AVG_GRAY_SCALE_RPY {    
     VisionStatus            enStatus;
     VectorOfVectorOfFloat   vecVecGrayScale;
     cv::Mat                 matResultImg;
 };
 
+struct PR_CALIB_3D_BASE_CMD {
+    PR_CALIB_3D_BASE_CMD() : bEnableGaussianFilter(true), bReverseSeq(true) {}
+    VectorOfMat             vecInputImgs;
+    bool                    bEnableGaussianFilter;
+    bool                    bReverseSeq;            //Change the image sequence.
+};
+
+struct PR_CALIB_3D_BASE_RPY {
+    VisionStatus            enStatus;
+    cv::Mat                 matThickToThinStripeK;  //The factor between thick stripe and thin stripe.
+    cv::Mat                 matBaseSurfaceParam;    //The bezier parameters to form the base surface.
+    float                   fBaseStartAvgPhase;     //The average phase of the top-left corner of the thick stripe. It is used to constrain the object's phase within -pi~pi of base phase.
+};
+
+struct PR_CALIB_3D_HEIGHT_CMD {
+    PR_CALIB_3D_HEIGHT_CMD() :
+        bEnableGaussianFilter(true),
+        bReverseSeq(true),
+        bReverseHeight(false),
+        fBaseStartAvgPhase(0),
+        fMinIntensityDiff(3.f),
+        fMinAvgIntensity(3.f),
+        nResultImgGridRow(8),
+        nResultImgGridCol(8),
+        szMeasureWinSize (40, 40) {}
+    VectorOfMat             vecInputImgs;
+    bool                    bEnableGaussianFilter;
+    bool                    bReverseSeq;            //Change the image sequence.
+    bool                    bReverseHeight;         //The calibration base is align to the top of calibration block.
+    float                   fMinIntensityDiff;      //In a group of 4 images, if a pixel's max and min intensity less than this value, this pixel will be discarded.
+    float                   fMinAvgIntensity;       //In a group of 4 images, if a pixel's average intensity less than this value, this pixel will be discarded.
+    cv::Mat                 matThickToThinStripeK;  //The factor between thick stripe and thin stripe.
+    cv::Mat                 matBaseSurfaceParam;
+    float                   fBaseStartAvgPhase;     //The average phase of the top-left corner of the thick stripe. It is used to constrain the object's phase within -pi~pi of base phase.
+    Int16                   nBlockStepCount;        //How many steps on the calibration block.
+    float                   fBlockStepHeight;       //The height of each step, unit mm. So the total block height is nBlockStepCount x fBlockStepHeight.
+    Int32                   nResultImgGridRow;
+    Int32                   nResultImgGridCol;
+    cv::Size                szMeasureWinSize;       //The window size in the center of grid to measure the height.
+};
+
+struct PR_CALIB_3D_HEIGHT_RPY {
+    VisionStatus            enStatus;
+    cv::Mat                 matPhaseToHeightK;      //The factor to convert phase to height.
+    VectorOfVectorOfFloat   vecVecStepPhase;        //The result phase of 4 corners and the center, for application to draw the curves.
+    VectorOfMat             vecMatStepSurface;      //The regression surface of the steps. Its size should be nBlockStepCount + 1.
+    VectorOfFloat           vecStepPhaseSlope;      //5 slopes of the phase-step fitting lines.
+    VectorOfVectorOfFloat   vecVecStepPhaseDiff;    //The actual phase and the fitting line difference.
+    cv::Mat                 matDivideStepResultImg; //Use auto threshold to divide each step of the phase image. This result image can show to user confirm if the auto threshold is working correctly.
+    cv::Mat                 matResultImg;
+};
+
+struct PR_CALC_3D_HEIGHT_CMD {
+    PR_CALC_3D_HEIGHT_CMD() : bEnableGaussianFilter(true), bReverseSeq(true), fMinIntensityDiff(3.f), fMinAvgIntensity(3.f) {}
+    VectorOfMat             vecInputImgs;
+    bool                    bEnableGaussianFilter;
+    bool                    bReverseSeq;            //Change the image sequence.
+    float                   fMinIntensityDiff;      //In a group of 4 images, if a pixel's max and min intensity less than this value, this pixel will be discarded.
+    float                   fMinAvgIntensity;       //In a group of 4 images, if a pixel's average intensity less than this value, this pixel will be discarded.
+    cv::Mat                 matThickToThinStripeK;  //The factor between thick stripe and thin stripe.
+    cv::Mat                 matBaseSurfaceParam;
+    float                   fBaseStartAvgPhase;     //The average phase of the top-left corner of the thick stripe. It is used to constrain the object's phase within -pi~pi of base phase.
+    cv::Mat                 matPhaseToHeightK;      //The factor to convert phase to height.
+};
+
+struct PR_CALC_3D_HEIGHT_RPY {
+    VisionStatus            enStatus;
+    cv::Mat                 matPhase;
+    cv::Mat                 matHeight;
+};
+
+//Calculate the optics modulation transfer function.
+struct PR_CALC_MTF_CMD {
+    VectorOfMat             vecInputImgs;
+    float                   fMagnitudeOfDLP;        //The setted magnitude of DLP. The captured image magnitude divide the setted maganitude is the MTF result.
+};
+
+struct PR_CALC_MTF_RPY {
+    VisionStatus            enStatus;
+    VectorOfVectorOfFloat   vevVecAbsMtfH;          //The absolute modulation transfer function in horizontal direction.
+    VectorOfVectorOfFloat   vevVecRelMtfH;          //The relative modulation transfer function in horizontal direction.
+    VectorOfVectorOfFloat   vevVecAbsMtfV;          //The absolute modulation transfer function in vertical direction.
+    VectorOfVectorOfFloat   vevVecRelMtfV;          //The relative modulation transfer function in vertical direction.
+};
+
+//Calculate the pattern distortion(PD). Use the texture stripe in two directions to find out the system distortion.
+struct PR_CALC_PD_CMD {
+    PR_CALC_PD_CMD() :
+        bReverseSeq(true),
+        fMagnitudeOfDLP(161.f),
+        szDlpPatternSize(912, 1140),
+        fDlpPixelCycle(30),
+        nGaussianFilterSize(9),
+        fGaussianFilterSigma(3.16f) {}
+    VectorOfMat             vecInputImgs;
+    bool                    bReverseSeq;            //Change the image sequence.
+    float                   fMagnitudeOfDLP;
+    cv::Size                szDlpPatternSize;
+    float                   fDlpPixelCycle;
+    Int32                   nGaussianFilterSize;
+    float                   fGaussianFilterSigma;
+};
+
+struct PR_CALC_PD_RPY {
+    VisionStatus            enStatus;
+    cv::Mat                 matCaptureRegionImg;    //The camera capture region in the DLP incident area.
+    VectorOfFloat           vecDistortionLeft;
+    VectorOfFloat           vecDistortionRight;
+    VectorOfFloat           vecDistortionTop;
+    VectorOfFloat           vecDistortionBottom;
+};
+
 }
 }
-#endif
+#endif /*_AOI_STRUCT_H_*/

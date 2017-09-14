@@ -98,6 +98,8 @@
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>opencv_calib3d300d.lib;opencv_core300d.lib;opencv_features2d300d.lib;opencv_flann300d.lib;opencv_highgui300d.lib;opencv_imgproc300d.lib;opencv_ml300d.lib;opencv_objdetect300d.lib;opencv_photo300d.lib;opencv_stitching300d.lib;opencv_superres300d.lib;opencv_ts300d.lib;opencv_video300d.lib;opencv_videostab300d.lib;opencv_imgcodecs300d.lib;opencv_xfeatures2d300d.lib;opencv_text300d.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <StackReserveSize>
+      </StackReserveSize>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -152,6 +154,7 @@
     <ClInclude Include="SimpleIni.h" />
     <ClInclude Include="SubFunctions.h" />
     <ClInclude Include="TimeLog.h" />
+    <ClInclude Include="Unwrap.h" />
     <ClInclude Include="Version.h" />
     <ClInclude Include="VisionHeader.h" />
     <ClInclude Include="VisionType.h" />
@@ -168,12 +171,14 @@
     <ClCompile Include="Exception.cpp" />
     <ClCompile Include="FileUtils.cpp" />
     <ClCompile Include="Fitting.cpp" />
+    <ClCompile Include="InternalTest.cpp" />
     <ClCompile Include="Log.cpp" />
     <ClCompile Include="LogCase.cpp" />
     <ClCompile Include="MatchTmpl.cpp" />
     <ClCompile Include="Record.cpp" />
     <ClCompile Include="RecordManager.cpp" />
     <ClCompile Include="TimeLog.cpp" />
+    <ClCompile Include="Unwrap.cpp" />
     <ClCompile Include="VisionAlgorithm.cpp" />
     <ClCompile Include="VisionAPI.cpp" />
   </ItemGroup>
