@@ -6,6 +6,7 @@
 #include "opencv2/text.hpp"
 #include "VisionHeader.h"
 #include "StopWatch.h"
+#include "LogCase.h"
 #include <list>
 #include <memory>
 
@@ -77,6 +78,7 @@ public:
     static VisionStatus calcPD(const PR_CALC_PD_CMD *const pstCmd, PR_CALC_PD_RPY *const pstRpy, bool bReplay = false);
     static std::vector<Int16> autoMultiLevelThreshold(const cv::Mat &matInputImg, const cv::Mat &matMask, int N);
 protected:
+    static LogCasePtr _createLogCaseInstance(const String &strFolderPrefix, const String &strLocalPath);
 	int _findBlob(const cv::Mat &mat, const cv::Mat &matRevs, PR_INSP_SURFACE_CMD *const pInspCmd, PR_INSP_SURFACE_RPY *pInspRpy );
 	int _findLine(const cv::Mat &mat, PR_INSP_SURFACE_CMD *const pInspCmd, PR_INSP_SURFACE_RPY *pInspRpy );
 	static int _mergeLines(const std::vector<PR_Line2f> &vecLines, std::vector<PR_Line2f> &vecResultLines);

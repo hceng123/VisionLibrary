@@ -204,7 +204,7 @@ inline std::vector<size_t> sort_indexes(const std::vector<T> &v) {
 
 /*static*/ VectorOfPoint Unwrap::_getIntegralTree(const VectorOfPoint &vecResult1, const VectorOfPoint &vecResult2, const VectorOfPoint &vecResult3, int rows, int cols ) {
     VectorOfPoint vecResult;
-    for ( int i = 0; i < vecResult1.size(); ++ i ) {
+    for ( size_t i = 0; i < vecResult1.size(); ++ i ) {
         const auto point1 = vecResult1[i];
         const auto point2 = vecResult2[i];
 
@@ -227,10 +227,10 @@ inline std::vector<size_t> sort_indexes(const std::vector<T> &v) {
             std::reverse ( vecTrkXTwo.begin(), vecTrkXTwo.end() );
         std::vector<int> vecTrkYTwo ( vecTrkXTwo.size(), maxY );
         
-        for ( int k = 0; k < vecTrkXOne.size(); ++ k )
+        for ( size_t k = 0; k < vecTrkXOne.size(); ++ k )
             vecResult.emplace_back ( vecTrkXOne[k], vecTrkYOne[k] );
 
-        for ( int k = 0; k < vecTrkXTwo.size(); ++ k )
+        for ( size_t k = 0; k < vecTrkXTwo.size(); ++ k )
             vecResult.emplace_back ( vecTrkXTwo[k], vecTrkYTwo[k] );
     }
 
@@ -603,11 +603,13 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
     cv::Mat dyPhase = CalcUtils::diff ( matPhase, 1, 1 );
     cv::Mat dxPhase = CalcUtils::diff ( matPhase, 1, 2 );
 
+    //1. Unwrap from left to right, but to accelerate the operation, transpose the matrix first,
+    //and do it from top to bottom, it is the same effect as from left to right on original phase.
     cv::Mat matPhaseT;
     cv::transpose ( matPhase, matPhaseT );
 
     cv::Mat matTmpPhase = cv::Mat ( matPhaseT, cv::Rect ( 0, 0, matPhaseT.cols, 1 ) );
-    cv::Mat matDp = CalcUtils::diff ( matTmpPhase , 1, 2 );
+    cv::Mat matDp = CalcUtils::diff ( matTmpPhase, 1, 2 );
 
 #ifdef _DEBUG
     auto vecVecArray = CalcUtils::matToVector<DATA_TYPE>( dxPhase );
@@ -622,13 +624,11 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
     matDp = _setBySign ( matDp, OneCycle);
     matDp = cv::repeat ( matDp, matPhase.cols, 1);
 
-#ifdef _DEBUG
-    auto vecMatDp_2 = CalcUtils::matToVector<DATA_TYPE> ( matDp );
-#endif
-
     cv::Mat matTmp ( matPhaseT, cv::Rect(1, 0, matPhaseT.cols - 1, matPhaseT.rows ) );
-    matTmp += CalcUtils::cumsum<DATA_TYPE> ( matDp, 2 );
+    auto matCumSum = CalcUtils::cumsum<DATA_TYPE> ( matDp, 2 );
+    matTmp += matCumSum;
 
+    //2. Unwrap from top to bottom. Because last step do a transpose, this step need to transpose back.
     cv::transpose ( matPhaseT, matPhaseResult );
 
     matPhaseResult.setTo ( cv::Scalar::all(NAN), matBranchCut );
@@ -639,7 +639,12 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
     matDp = _setBySign ( matDp, OneCycle );
 
     cv::Mat matTmp1 ( matPhaseResult,cv::Rect(1, 0, matPhaseResult.cols - 1, matPhaseResult.rows ) );
-    matTmp1 += CalcUtils::cumsum<DATA_TYPE> ( matDp, 2 );
+    matCumSum = CalcUtils::cumsum<DATA_TYPE> ( matDp, 2 );
+    matTmp1 += matCumSum;
+
+#ifdef _DEBUG
+    auto vecVecCumSum = CalcUtils::matToVector<DATA_TYPE> ( matCumSum );
+#endif
 
     matPhaseResult.setTo ( cv::Scalar(0), matBranchCut );
     
@@ -681,7 +686,7 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
     cv::reduce ( matNan, matIsColNeedUnwrap, 0, CV_REDUCE_MAX );
     std::vector<cv::Point> vecColsNeedToUnwrap;
     cv::findNonZero ( matIsColNeedUnwrap, vecColsNeedToUnwrap );
-    for ( const auto &point : vecColsNeedToUnwrap )    {
+    for ( const auto &point : vecColsNeedToUnwrap ) {
         int col = point.x;
         cv::Mat matOneColIndex ( matNan, cv::Range::all(), cv::Range ( col, col + 1 ) );
         if ( cv::sum ( matOneColIndex )[0] <= 1 || col <= 0 )
@@ -857,7 +862,7 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
         vecPointToFectch.emplace_back ( COLS - 1, 0 );
         vecPointToFectch.emplace_back ( 0, ROWS - 1 );
         vecPointToFectch.emplace_back ( COLS - 1, ROWS - 1 );
-        for (int index = 0; index < vecNormaledThreshold.size () - 1; ++index) {
+        for (size_t index = 0; index < vecNormaledThreshold.size () - 1; ++ index) {
             cv::Mat matBW = cv::Mat::zeros ( ROWS, COLS, CV_8UC1 );
             cv::inRange ( matNormalizedPhase, vecNormaledThreshold[index], vecNormaledThreshold[index + 1], matBW );
             cv::Mat matFirstRow ( matBW, cv::Rect ( 0, 0, COLS, 1 ) ); matFirstRow.setTo ( 0 );

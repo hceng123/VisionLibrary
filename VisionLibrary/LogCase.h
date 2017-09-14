@@ -3,6 +3,7 @@
 
 #include "BaseType.h"
 #include "VisionHeader.h"
+#include <memory>
 
 namespace AOI
 {
@@ -48,6 +49,7 @@ protected:
     const String _EXTENSION         = ".logcase";
     bool         _bReplay;
 };
+using LogCasePtr = std::unique_ptr<LogCase>;
 
 class LogCaseLrnObj : public LogCase
 {
@@ -431,6 +433,9 @@ private:
     const String _strKeyAlgorithm       = "Algorithm";
 
     const String _strKeyStatus          = "Status";
+    const String _strKeyObjPos          = "ObjPos";
+    const String _strKeyRotation        = "Rotation";
+    const String _strKeyMatchScore      = "MatchScore";
 };
 
 class LogCasePickColor : public LogCase

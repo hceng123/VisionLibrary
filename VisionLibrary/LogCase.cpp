@@ -1147,7 +1147,10 @@ VisionStatus LogCaseMatchTmpl::WriteRpy(const PR_MATCH_TEMPLATE_RPY *const pstRp
     CSimpleIni ini(false, false, false);
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile(cmdRpyFilePath.c_str());
-    ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyStatus.c_str(),    ToInt32 ( pstRpy->enStatus ) );
+    ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyStatus.c_str(), ToInt32 ( pstRpy->enStatus ) );
+    ini.SetValue(_RPY_SECTION.c_str(), _strKeyObjPos.c_str(), _formatCoordinate ( pstRpy->ptObjPos ).c_str() );
+    ini.SetDoubleValue(_RPY_SECTION.c_str(), _strKeyRotation.c_str(), pstRpy->fRotation );
+    ini.SetDoubleValue(_RPY_SECTION.c_str(), _strKeyMatchScore.c_str(), pstRpy->fMatchScore );
     ini.SaveFile(cmdRpyFilePath.c_str());
     if ( ! pstRpy->matResultImg.empty() )
         cv::imwrite ( _strLogCasePath + _RESULT_IMAGE_NAME, pstRpy->matResultImg );

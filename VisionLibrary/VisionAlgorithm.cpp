@@ -4,7 +4,6 @@
 #include "opencv2/calib3d.hpp"
 #include "opencv2/highgui.hpp"
 #include "TimeLog.h"
-#include "logcase.h"
 #include "boost/filesystem.hpp"
 #include "RecordManager.h"
 #include "Config.h"
@@ -1571,6 +1570,101 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
     cv::destroyWindow ( strWindowName );
 }
 
+/*static*/ LogCasePtr VisionAlgorithm::_createLogCaseInstance(const String &strFolderPrefix, const String &strLocalPath) {
+    if ( LogCaseLrnObj::StaticGetFolderPrefix() == strFolderPrefix ) 
+        return std::make_unique<LogCaseLrnObj>( strLocalPath, true );
+
+    if (LogCaseSrchObj::StaticGetFolderPrefix() == strFolderPrefix)
+        return std::make_unique <LogCaseSrchObj>( strLocalPath, true );
+
+    if (LogCaseFitCircle::StaticGetFolderPrefix() == strFolderPrefix)
+        return std::make_unique <LogCaseFitCircle>( strLocalPath, true );
+
+    if (LogCaseFitLine::StaticGetFolderPrefix() == strFolderPrefix)
+        return std::make_unique<LogCaseFitLine>( strLocalPath, true );
+
+    if (LogCaseCaliper::StaticGetFolderPrefix() == strFolderPrefix)
+        return std::make_unique<LogCaseCaliper>( strLocalPath, true );
+
+    if (LogCaseFitParallelLine::StaticGetFolderPrefix() == strFolderPrefix)
+        return std::make_unique<LogCaseFitParallelLine>( strLocalPath, true );
+
+    if (LogCaseFitRect::StaticGetFolderPrefix() == strFolderPrefix)
+        return std::make_unique<LogCaseFitRect>( strLocalPath, true );
+
+    if (LogCaseFindEdge::StaticGetFolderPrefix() == strFolderPrefix)
+        return std::make_unique<LogCaseFindEdge>( strLocalPath, true );
+
+    if (LogCaseSrchFiducial::StaticGetFolderPrefix() == strFolderPrefix)
+        return std::make_unique<LogCaseSrchFiducial>( strLocalPath, true );
+
+    if (LogCaseOcr::StaticGetFolderPrefix() == strFolderPrefix)
+        return std::make_unique<LogCaseOcr>( strLocalPath, true );
+
+    if (LogCaseRemoveCC::StaticGetFolderPrefix() == strFolderPrefix )
+        return std::make_unique<LogCaseRemoveCC>( strLocalPath, true );
+
+    if (LogCaseDetectEdge::StaticGetFolderPrefix() == strFolderPrefix )
+        return std::make_unique<LogCaseDetectEdge>( strLocalPath, true );
+
+    if (LogCaseInspCircle::StaticGetFolderPrefix() == strFolderPrefix )
+        return std::make_unique<LogCaseInspCircle>( strLocalPath, true );
+
+    if (LogCaseAutoThreshold::StaticGetFolderPrefix() == strFolderPrefix )
+        return std::make_unique<LogCaseAutoThreshold>( strLocalPath, true );
+
+    if (LogCaseFillHole::StaticGetFolderPrefix() == strFolderPrefix )
+        return std::make_unique<LogCaseFillHole>( strLocalPath, true );
+
+    if (LogCaseLrnTmpl::StaticGetFolderPrefix() == strFolderPrefix )
+        return std::make_unique<LogCaseLrnTmpl>( strLocalPath, true );
+
+    if (LogCaseMatchTmpl::StaticGetFolderPrefix() == strFolderPrefix )
+        return std::make_unique<LogCaseMatchTmpl>( strLocalPath, true );
+
+    if (LogCasePickColor::StaticGetFolderPrefix() == strFolderPrefix )
+        return std::make_unique<LogCasePickColor>( strLocalPath, true );
+
+    if (LogCaseCalibrateCamera::StaticGetFolderPrefix() == strFolderPrefix )
+        return std::make_unique<LogCaseCalibrateCamera>( strLocalPath, true );
+
+    if (LogCaseRestoreImg::StaticGetFolderPrefix() == strFolderPrefix )
+        return std::make_unique<LogCaseRestoreImg>( strLocalPath, true );
+
+    if (LogCaseAutoLocateLead::StaticGetFolderPrefix() == strFolderPrefix )
+        return std::make_unique<LogCaseAutoLocateLead>( strLocalPath, true );
+
+    if (LogCaseInspBridge::StaticGetFolderPrefix() == strFolderPrefix )
+        return std::make_unique<LogCaseInspBridge>( strLocalPath, true );
+
+    if (LogCaseInspChip::StaticGetFolderPrefix() == strFolderPrefix )
+        return std::make_unique<LogCaseInspChip>( strLocalPath, true );
+
+    if (LogCaseLrnContour::StaticGetFolderPrefix() == strFolderPrefix )
+        return std::make_unique<LogCaseLrnContour>( strLocalPath, true );
+
+    if (LogCaseInspContour::StaticGetFolderPrefix() == strFolderPrefix )
+        return std::make_unique<LogCaseInspContour>( strLocalPath, true );
+
+    if (LogCaseInspHole::StaticGetFolderPrefix() == strFolderPrefix )
+        return std::make_unique<LogCaseInspHole>( strLocalPath, true );
+
+    if (LogCaseInspLead::StaticGetFolderPrefix() == strFolderPrefix )
+        return std::make_unique<LogCaseInspLead>( strLocalPath, true );
+
+    if (LogCaseCalib3DBase::StaticGetFolderPrefix() == strFolderPrefix )
+        return std::make_unique<LogCaseCalib3DBase>( strLocalPath, true );
+
+    if (LogCaseCalib3DHeight::StaticGetFolderPrefix() == strFolderPrefix )
+        return std::make_unique<LogCaseCalib3DHeight>( strLocalPath, true );
+
+    if (LogCaseCalc3DHeight::StaticGetFolderPrefix() == strFolderPrefix )
+        return std::make_unique<LogCaseCalc3DHeight>( strLocalPath, true );
+    
+    static String msg = strFolderPrefix + " is not handled in " + __FUNCTION__;
+    throw std::exception ( msg.c_str() );
+}
+
 /*static*/ VisionStatus VisionAlgorithm::runLogCase(const String &strFilePath)
 {
     if ( strFilePath.length() < 2 )
@@ -1595,70 +1689,13 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
 
     auto folderName = strLocalPath.substr ( pos + 1 );
     pos = folderName.find('_');
-    auto folderPrefix = folderName.substr(0, pos);
+    auto strFolderPrefix = folderName.substr(0, pos);
 
-    std::unique_ptr<LogCase> pLogCase = nullptr;
-    if ( LogCaseLrnObj::StaticGetFolderPrefix() == folderPrefix )
-        pLogCase = std::make_unique <LogCaseLrnObj>( strLocalPath, true );
-    else if (LogCaseSrchObj::StaticGetFolderPrefix() == folderPrefix)
-        pLogCase = std::make_unique <LogCaseSrchObj>( strLocalPath, true );
-    else if (LogCaseFitCircle::StaticGetFolderPrefix() == folderPrefix)
-        pLogCase = std::make_unique <LogCaseFitCircle>( strLocalPath, true );
-    else if (LogCaseFitLine::StaticGetFolderPrefix() == folderPrefix)
-        pLogCase = std::make_unique<LogCaseFitLine>( strLocalPath, true );
-    else if (LogCaseCaliper::StaticGetFolderPrefix() == folderPrefix)
-        pLogCase = std::make_unique<LogCaseCaliper>( strLocalPath, true );
-    else if (LogCaseFitParallelLine::StaticGetFolderPrefix() == folderPrefix)
-        pLogCase = std::make_unique<LogCaseFitParallelLine>( strLocalPath, true );
-    else if (LogCaseFitRect::StaticGetFolderPrefix() == folderPrefix)
-        pLogCase = std::make_unique<LogCaseFitRect>( strLocalPath, true );
-    else if (LogCaseFindEdge::StaticGetFolderPrefix() == folderPrefix)
-        pLogCase = std::make_unique<LogCaseFindEdge>( strLocalPath, true );
-    else if (LogCaseSrchFiducial::StaticGetFolderPrefix() == folderPrefix)
-        pLogCase = std::make_unique<LogCaseSrchFiducial>( strLocalPath, true );
-    else if (LogCaseOcr::StaticGetFolderPrefix() == folderPrefix)
-        pLogCase = std::make_unique<LogCaseOcr>( strLocalPath, true );
-    else if (LogCaseRemoveCC::StaticGetFolderPrefix() == folderPrefix )
-        pLogCase = std::make_unique<LogCaseRemoveCC>( strLocalPath, true );
-    else if (LogCaseDetectEdge::StaticGetFolderPrefix() == folderPrefix )
-        pLogCase = std::make_unique<LogCaseDetectEdge>( strLocalPath, true );
-    else if (LogCaseInspCircle::StaticGetFolderPrefix() == folderPrefix )
-        pLogCase = std::make_unique<LogCaseInspCircle>( strLocalPath, true );
-    else if (LogCaseAutoThreshold::StaticGetFolderPrefix() == folderPrefix )
-        pLogCase = std::make_unique<LogCaseAutoThreshold>( strLocalPath, true );
-    else if (LogCaseFillHole::StaticGetFolderPrefix() == folderPrefix )
-        pLogCase = std::make_unique<LogCaseFillHole>( strLocalPath, true );
-    else if (LogCaseLrnTmpl::StaticGetFolderPrefix() == folderPrefix )
-        pLogCase = std::make_unique<LogCaseLrnTmpl>( strLocalPath, true );
-    else if (LogCaseMatchTmpl::StaticGetFolderPrefix() == folderPrefix )
-        pLogCase = std::make_unique<LogCaseMatchTmpl>( strLocalPath, true );
-    else if (LogCasePickColor::StaticGetFolderPrefix() == folderPrefix )
-        pLogCase = std::make_unique<LogCasePickColor>( strLocalPath, true );
-    else if (LogCaseCalibrateCamera::StaticGetFolderPrefix() == folderPrefix )
-        pLogCase = std::make_unique<LogCaseCalibrateCamera>( strLocalPath, true );
-    else if (LogCaseRestoreImg::StaticGetFolderPrefix() == folderPrefix )
-        pLogCase = std::make_unique<LogCaseRestoreImg>( strLocalPath, true );
-    else if (LogCaseAutoLocateLead::StaticGetFolderPrefix() == folderPrefix )
-        pLogCase = std::make_unique<LogCaseAutoLocateLead>( strLocalPath, true );
-    else if (LogCaseInspBridge::StaticGetFolderPrefix() == folderPrefix )
-        pLogCase = std::make_unique<LogCaseInspBridge>( strLocalPath, true );
-    else if (LogCaseInspChip::StaticGetFolderPrefix() == folderPrefix )
-        pLogCase = std::make_unique<LogCaseInspChip>( strLocalPath, true );
-    else if (LogCaseLrnContour::StaticGetFolderPrefix() == folderPrefix )
-        pLogCase = std::make_unique<LogCaseLrnContour>( strLocalPath, true );
-    else if (LogCaseInspContour::StaticGetFolderPrefix() == folderPrefix )
-        pLogCase = std::make_unique<LogCaseInspContour>( strLocalPath, true );
-    else if (LogCaseInspHole::StaticGetFolderPrefix() == folderPrefix )
-        pLogCase = std::make_unique<LogCaseInspHole>( strLocalPath, true );
-    else if (LogCaseInspLead::StaticGetFolderPrefix() == folderPrefix )
-        pLogCase = std::make_unique<LogCaseInspLead>( strLocalPath, true );
-    else if (LogCaseCalib3DBase::StaticGetFolderPrefix() == folderPrefix )
-        pLogCase = std::make_unique<LogCaseCalib3DBase>( strLocalPath, true );
-    if (LogCaseCalc3DHeight::StaticGetFolderPrefix() == folderPrefix )
-        pLogCase = std::make_unique<LogCaseCalc3DHeight>( strLocalPath, true );
+    auto ptrLogCase = _createLogCaseInstance ( strFolderPrefix, strLocalPath );
+    assert ( ptrLogCase->GetFolderPrefix() == strFolderPrefix );
 
-    if ( nullptr != pLogCase )
-        enStatus = pLogCase->RunLogCase();
+    if ( nullptr != ptrLogCase )
+        enStatus = ptrLogCase->RunLogCase();
     else
         enStatus = VisionStatus::INVALID_LOGCASE;
     return enStatus;
@@ -5648,7 +5685,7 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     matGray.convertTo(matAverage, CV_32FC1);
 
     if ( pstCmd->vecInputImgs.size() > 1 ) {
-        for ( int i = 1; i < pstCmd->vecInputImgs.size(); ++ i ) {
+        for ( size_t i = 1; i < pstCmd->vecInputImgs.size(); ++ i ) {
             if ( pstCmd->vecInputImgs[i].size() != matAverage.size() ) {
                 char charrMsg[1000];
                 _snprintf ( charrMsg, sizeof ( charrMsg ), "The input image [%d] size is not consistent.", i );
