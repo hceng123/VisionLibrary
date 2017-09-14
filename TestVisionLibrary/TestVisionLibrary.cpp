@@ -573,6 +573,10 @@ int _tmain(int argc, _TCHAR* argv[])
     cv::Mat matCmpResult = cv::Mat ( matNan == matNan );
     int nCount = cv::countNonZero ( matCmpResult );
     std::cout << "find NAN cout " << matCmpResult.total() - nCount << std::endl;
+
+    PR_VERSION_INFO stVersionInfo;
+    PR_GetVersion(&stVersionInfo);
+    std::cout << "VisionLibrary Version: " << stVersionInfo.chArrVersion << std::endl;
     //PR_SetDebugMode ( PR_DEBUG_MODE::LOG_ALL_CASE );
     //TestTemplate();
     //TestInspDevice();
@@ -622,9 +626,9 @@ int _tmain(int argc, _TCHAR* argv[])
 
     //TestSrchDie();
 
-    TestCalib3dBase();
-    TestCalib3DHeight();
-    //TestCalc3DHeight();
+    //TestCalib3dBase();
+    //TestCalib3DHeight();
+    TestCalc3DHeight();
 
     //TestCalcMTF();
 

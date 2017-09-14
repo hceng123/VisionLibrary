@@ -918,10 +918,10 @@ struct PR_CALC_MTF_CMD {
 
 struct PR_CALC_MTF_RPY {
     VisionStatus            enStatus;
-    VectorOfVectorOfFloat   vevVecAbsMtfH;             //The absolute modulation transfer function in horizontal direction.
-    VectorOfVectorOfFloat   vevVecRelMtfH;             //The relative modulation transfer function in horizontal direction.
-    VectorOfVectorOfFloat   vevVecAbsMtfV;             //The absolute modulation transfer function in vertical direction.
-    VectorOfVectorOfFloat   vevVecRelMtfV;             //The relative modulation transfer function in vertical direction.
+    VectorOfVectorOfFloat   vevVecAbsMtfH;          //The absolute modulation transfer function in horizontal direction.
+    VectorOfVectorOfFloat   vevVecRelMtfH;          //The relative modulation transfer function in horizontal direction.
+    VectorOfVectorOfFloat   vevVecAbsMtfV;          //The absolute modulation transfer function in vertical direction.
+    VectorOfVectorOfFloat   vevVecRelMtfV;          //The relative modulation transfer function in vertical direction.
 };
 
 //Calculate the pattern distortion(PD). Use the texture stripe in two directions to find out the system distortion.
@@ -945,8 +945,12 @@ struct PR_CALC_PD_CMD {
 struct PR_CALC_PD_RPY {
     VisionStatus            enStatus;
     cv::Mat                 matCaptureRegionImg;    //The camera capture region in the DLP incident area.
+    VectorOfFloat           vecDistortionLeft;
+    VectorOfFloat           vecDistortionRight;
+    VectorOfFloat           vecDistortionTop;
+    VectorOfFloat           vecDistortionBottom;
 };
 
 }
 }
-#endif
+#endif /*_AOI_STRUCT_H_*/

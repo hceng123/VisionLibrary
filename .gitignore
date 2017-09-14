@@ -34,3 +34,4 @@ TestVisionLibrary/Vision
 TestVisionLibrary/data
 RegressionTest/Vision
 *.yml
+*.log

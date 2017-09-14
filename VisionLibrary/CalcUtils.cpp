@@ -228,7 +228,7 @@ float CalcUtils::calcPointToContourDist(const cv::Point &ptInput, const VectorOf
     return ptCenter;
 }
 
-/*static*/ cv::Mat CalcUtils::diff ( const cv::Mat &matInput, int nRecersiveTime, int nDimension )   {    
+/*static*/ cv::Mat CalcUtils::diff ( const cv::Mat &matInput, int nRecersiveTime, int nDimension ) {
     const int DIFF_ON_ROW = 1;
     const int DIFF_ON_COL = 2;
     assert ( DIFF_ON_COL == nDimension || DIFF_ON_ROW == nDimension );

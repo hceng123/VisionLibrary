@@ -201,7 +201,7 @@ inline std::vector<size_t> sort_indexes(const std::vector<T> &v) {
     }
 }
 
-/*static*/ VectorOfPoint Unwrap::_getIntegralTree(const VectorOfPoint &vecResult1, const VectorOfPoint &vecResult2, const VectorOfPoint &vecResult3 ) {
+/*static*/ VectorOfPoint Unwrap::_getIntegralTree(const VectorOfPoint &vecResult1, const VectorOfPoint &vecResult2, const VectorOfPoint &vecResult3, int rows, int cols ) {
     VectorOfPoint vecResult;
     for ( int i = 0; i < vecResult1.size(); ++ i ) {
         const auto point1 = vecResult1[i];
@@ -233,8 +233,26 @@ inline std::vector<size_t> sort_indexes(const std::vector<T> &v) {
             vecResult.emplace_back ( vecTrkXTwo[k], vecTrkYTwo[k] );
     }
 
-    if ( ! vecResult3.empty() )
-        throw std::exception("Unwrap::_getIntegralTree not finish yet.");
+    if ( ! vecResult3.empty() ) {
+        for ( const auto &point : vecResult3 ) {
+            std::vector<int> vecDist({ point.x, cols - point.x, point.y, rows - point.y});
+            auto iterMin = std::min_element ( vecDist.begin(), vecDist.end() );
+            int nIndex = ToInt32 ( std::distance ( vecDist.begin(), iterMin ) );
+            if ( 0 == nIndex ) {
+                for ( int i = 0; i <= point.x; ++ i )
+                    vecResult.emplace_back ( i, point.y );
+            }else if ( 1 == nIndex ) {
+                for ( int i = point.x; i < cols; ++ i )
+                    vecResult.emplace_back ( i, point.y );
+            }else if ( 2 == nIndex ) {
+                for ( int i = 0; i <= point.y; ++ i )
+                    vecResult.emplace_back ( point.x, i );
+            }else if ( 3 == nIndex ) {
+                for ( int i = point.y; i < rows; ++ i )
+                    vecResult.emplace_back ( point.x, i );
+            }
+        }
+    }
     return vecResult;
 }
 
@@ -475,7 +493,7 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
     VectorOfPoint vecPoint1, vecPoint2, vecPoint3;
     _selectPolePair ( vecPosPole, vecNegPole, ROWS - 1, COLS - 1, vecPoint1, vecPoint2, vecPoint3 );
 
-    VectorOfPoint vecTree = _getIntegralTree ( vecPoint1, vecPoint2, vecPoint3 );
+    VectorOfPoint vecTree = _getIntegralTree ( vecPoint1, vecPoint2, vecPoint3, ROWS, COLS );
     cv::Mat matBranchCut = cv::Mat::zeros ( ROWS, COLS, CV_8UC1 );
     for ( const auto &point : vecTree )
         matBranchCut.at<uchar>(point) = 255;
@@ -488,7 +506,6 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
         matAlpha = matAlpha - ToFloat ( CV_PI ) * 2.f;
     else if ( ( fStartAvgPhase - pstCmd->fBaseStartAvgPhase ) < LOW_BASE_PHASE )
         matAlpha = matAlpha + ToFloat ( CV_PI ) * 2.f;
-
 
 #ifdef _DEBUG
     auto vevVecBranchCut = CalcUtils::matToVector<uchar>(matBranchCut);
@@ -598,7 +615,7 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
     auto vecMatDp_2 = CalcUtils::matToVector<DATA_TYPE> ( matDp );
 #endif
 
-    cv::Mat matTmp ( matPhaseT,cv::Rect(1, 0, matPhaseT.cols - 1, matPhaseT.rows ) );
+    cv::Mat matTmp ( matPhaseT, cv::Rect(1, 0, matPhaseT.cols - 1, matPhaseT.rows ) );
     matTmp += CalcUtils::cumsum<DATA_TYPE> ( matDp, 2 );
 
     cv::transpose ( matPhaseT, matPhaseResult );
@@ -608,7 +625,7 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
     matDp = CalcUtils::diff ( matPhaseResult, 1, 2 );
     cv::compare ( cv::abs ( matDp ), cv::Scalar::all ( ONE_HALF_CYCLE ), matAbsUnderPI, cv::CmpTypes::CMP_LT );
     matDp.setTo ( 0, matAbsUnderPI );
-    matDp = _setBySign ( matDp, OneCycle);
+    matDp = _setBySign ( matDp, OneCycle );
 
     cv::Mat matTmp1 ( matPhaseResult,cv::Rect(1, 0, matPhaseResult.cols - 1, matPhaseResult.rows ) );
     matTmp1 += CalcUtils::cumsum<DATA_TYPE> ( matDp, 2 );
@@ -624,7 +641,7 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
     for ( const auto &point : vecRowsNeedToUnwrap ) {
         int row = point.y;
         cv::Mat matOneRowIndex ( matNan, cv::Range ( row, row + 1 ) );
-        if ( cv::sum ( matOneRowIndex )[0] <= 1 )
+        if ( cv::sum ( matOneRowIndex )[0] <= 1 || row <= 0 )
             continue;
         cv::Mat matPhaseLastRow ( matPhaseResult, cv::Range ( row - 1, row ) );
         cv::Mat matPhaseDiff(dyPhase, cv::Range ( row - 1, row ) );
@@ -656,7 +673,7 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
     for ( const auto &point : vecColsNeedToUnwrap )    {
         int col = point.x;
         cv::Mat matOneColIndex ( matNan, cv::Range::all(), cv::Range ( col, col + 1 ) );
-        if ( cv::sum ( matOneColIndex )[0] <= 1 )
+        if ( cv::sum ( matOneColIndex )[0] <= 1 || col <= 0 )
             continue;
         cv::Mat matPhaseLastCol ( matPhaseResult, cv::Range::all(), cv::Range ( col - 1, col ) );
         cv::Mat matPhaseDiff ( dxPhase, cv::Range::all(), cv::Range ( col - 1, col ) );
@@ -848,7 +865,7 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
             matXX.push_back ( cv::Mat ( cv::Mat::ones ( 1, ToInt32 ( vecPtLocations.size () ), CV_32FC1 ) ) );
             cv::transpose ( matXX, matXX );
             cv::Mat matYY ( vecPhaseTmp );
-            cv::solve ( matXX, matYY, matK, cv::DecompTypes::DECOMP_QR );
+            cv::solve ( matXX, matYY, matK, cv::DecompTypes::DECOMP_SVD );
 #ifdef _DEBUG
             auto vevVecK = CalcUtils::matToVector<DATA_TYPE> ( matK );
 #endif
@@ -869,12 +886,12 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
             else
                 matXX = CalcUtils::intervals<DATA_TYPE> ( 0, 1, pstCmd->nBlockStepCount );
 
-            pstRpy->vecStepPhaseSlope.clear ();
+            pstRpy->vecStepPhaseSlope.clear();
             cv::Mat matAllDiff;
             for (int i = 0; i < ToInt32 ( vecPointToFectch.size () ); ++i) {
                 cv::Mat matYY = cv::Mat ( matHz, cv::Rect ( i, 0, 1, matHz.rows ) );
                 cv::Mat matK;
-                cv::solve ( matXX, matYY, matK, cv::DecompTypes::DECOMP_SVD );                
+                cv::solve ( matXX, matYY, matK, cv::DecompTypes::DECOMP_SVD );           
                 pstRpy->vecStepPhaseSlope.push_back ( matK.at<DATA_TYPE> ( 0, 0 ) );
                 cv::Mat matDiff = matYY - matXX * matK;
                 matYY = matXX * matK;   //Update the values in matHz. This step is important.
@@ -1136,8 +1153,8 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
 
     const int SMALL_WIN_SIZE = 10;
     for ( int i = 0; i < matPPx1.rows; ++ i ) {
-        cv::Point ptCtr ( ToInt32 ( matPPx1.at<DATA_TYPE>(i, 0) ), ToInt32 ( matPPy1.at<DATA_TYPE>(i, 0) ) );
-        cv::Rect rect( ptCtr.x - SMALL_WIN_SIZE / 2, ptCtr.y - SMALL_WIN_SIZE / 2, SMALL_WIN_SIZE, SMALL_WIN_SIZE );
+        cv::Point ptCtr ( ToInt32 ( matPPx1.at<DATA_TYPE>(i) ), ToInt32 ( matPPy1.at<DATA_TYPE>(i) ) );
+        cv::Rect rect ( ptCtr.x - SMALL_WIN_SIZE / 2, ptCtr.y - SMALL_WIN_SIZE / 2, SMALL_WIN_SIZE, SMALL_WIN_SIZE );
         cv::rectangle ( pstRpy->matCaptureRegionImg, rect, cv::Scalar(0, 255, 0 ), CV_FILLED, CV_AA );
     }
 
@@ -1145,7 +1162,7 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
     cv::Mat matYYt1 = matXX * matPPy1;
 
     matXXt1 = matXXt1.reshape ( 1, ROWS );
-    matYYt1 = matYYt1.reshape ( 1, COLS );
+    matYYt1 = matYYt1.reshape ( 1, ROWS );
 #ifdef _DEBUG
     auto vecVecXXt1 = CalcUtils::matToVector<DATA_TYPE> ( matXXt1 );
     auto vecVecYYt1 = CalcUtils::matToVector<DATA_TYPE> ( matYYt1 );
@@ -1155,6 +1172,34 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
     for ( int col = 0; col < COLS; col += nInterval ) {
         cv::Point ptCtr ( ToInt32 ( matXXt1.at<DATA_TYPE>(row, col) ), ToInt32 ( matYYt1.at<DATA_TYPE>(row, col) ) );
         cv::circle ( pstRpy->matCaptureRegionImg, ptCtr, 5, cv::Scalar(255, 0, 0 ), CV_FILLED, CV_AA );
+    }
+
+    cv::Mat matError;
+    {
+        cv::Mat matXt(matXXt1, cv::Rect(0, 0, 1, ROWS ) );
+        cv::Mat matYt(matYYt1, cv::Rect(0, 0, 1, ROWS ) );
+        matError = ( matYt - matYt.at<DATA_TYPE>(0) - ( matYt.at<DATA_TYPE>(ROWS - 1) - matYt.at<DATA_TYPE>(0))/(matXt.at<DATA_TYPE>(ROWS - 1) - matXt.at<DATA_TYPE>(0))*( matXt - matXt.at<DATA_TYPE>(0)))*( ROWS - 1 )/ ( matXt.at<DATA_TYPE>(ROWS - 1) - matXt.at<DATA_TYPE>(0) );
+        matError = matError.reshape(1, 1);
+        pstRpy->vecDistortionLeft = CalcUtils::matToVector<DATA_TYPE>(matError)[0];
+    }
+    {
+        cv::Mat matXt(matXXt1, cv::Rect(COLS - 1, 0, 1, ROWS ) );
+        cv::Mat matYt(matYYt1, cv::Rect(COLS - 1, 0, 1, ROWS ) );
+        matError = ( matYt - matYt.at<DATA_TYPE>(0) - ( matYt.at<DATA_TYPE>(ROWS - 1) - matYt.at<DATA_TYPE>(0))/(matXt.at<DATA_TYPE>(ROWS - 1) - matXt.at<DATA_TYPE>(0))*( matXt - matXt.at<DATA_TYPE>(1)))*( ROWS - 1 )/ ( matXt.at<DATA_TYPE>(ROWS - 1) - matXt.at<DATA_TYPE>(0) );
+        matError = matError.reshape(1, 1);
+        pstRpy->vecDistortionRight = CalcUtils::matToVector<DATA_TYPE>(matError)[0];
+    }
+    {
+        cv::Mat matYt(matXXt1, cv::Rect(0, 0, COLS, 1 ) );
+        cv::Mat matXt(matYYt1, cv::Rect(0, 0, COLS, 1 ) );
+        matError = ( matYt - matYt.at<DATA_TYPE>(0) - ( matYt.at<DATA_TYPE>(COLS - 1) - matYt.at<DATA_TYPE>(0))/(matXt.at<DATA_TYPE>(COLS - 1) - matXt.at<DATA_TYPE>(0))*( matXt - matXt.at<DATA_TYPE>(0)))*( COLS - 1 )/ ( matXt.at<DATA_TYPE>(COLS - 1) - matXt.at<DATA_TYPE>(0) );
+        pstRpy->vecDistortionTop = CalcUtils::matToVector<DATA_TYPE>(matError)[0];
+    }
+    {
+        cv::Mat matYt(matXXt1, cv::Rect(0, ROWS - 1, COLS, 1 ) );
+        cv::Mat matXt(matYYt1, cv::Rect(0, ROWS - 1, COLS, 1 ) );
+        matError = ( matYt - matYt.at<DATA_TYPE>(0) - ( matYt.at<DATA_TYPE>(COLS - 1) - matYt.at<DATA_TYPE>(0))/(matXt.at<DATA_TYPE>(COLS - 1) - matXt.at<DATA_TYPE>(0))*( matXt - matXt.at<DATA_TYPE>(0)))*( COLS - 1 )/ ( matXt.at<DATA_TYPE>(COLS - 1) - matXt.at<DATA_TYPE>(0) );
+        pstRpy->vecDistortionBottom = CalcUtils::matToVector<DATA_TYPE>(matError)[0];
     }
 }
 

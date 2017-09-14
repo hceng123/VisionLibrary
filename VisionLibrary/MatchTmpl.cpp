@@ -165,7 +165,7 @@ MatchTmpl::~MatchTmpl ()
     double minVal; double maxVal;
     cv::Point minLoc, maxLoc, matchLoc;
 
-    cv::minMaxLoc(matResultImg, &minVal, &maxVal, &minLoc, &maxLoc, cv::Mat());
+    cv::minMaxLoc ( matResultImg, &minVal, &maxVal, &minLoc, &maxLoc, cv::Mat() );
 
     /// For SQDIFF and SQDIFF_NORMED, the best matches are lower values. For all the other methods, the higher the better
     if (match_method == CV_TM_SQDIFF || match_method == CV_TM_SQDIFF_NORMED)
