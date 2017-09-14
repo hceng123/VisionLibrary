@@ -73,6 +73,7 @@ void TestCalib3dBase() {
     }
     stCmd.bEnableGaussianFilter = true;
     stCmd.bReverseSeq = true;
+    stCmd.fRemoveHarmonicWaveK = 1e-5;
     PR_Calib3DBase ( &stCmd, &stRpy );
     std::cout << "PR_Calib3DBase status " << ToInt32( stRpy.enStatus ) << std::endl;
 

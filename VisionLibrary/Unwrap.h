@@ -52,6 +52,7 @@ private:
     static const int BEZIER_RANK =              5;
     static const int ERODE_WIN_SIZE =           41;
     static const int PHASE_SNOOP_WIN_SIZE =     10;
+    static const int CALIB_HEIGHT_MIN_SIZE =    200;
 
     static const float GAUSSIAN_FILTER_SIGMA;
     static const float ONE_HALF_CYCLE;

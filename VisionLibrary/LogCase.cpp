@@ -1932,6 +1932,7 @@ VisionStatus LogCaseCalib3DBase::WriteCmd(const PR_CALIB_3D_BASE_CMD *const pstC
     ini.LoadFile(cmdRpyFilePath.c_str());
     ini.SetBoolValue(_CMD_SECTION.c_str(), _strKeyEnableGF.c_str(), pstCmd->bEnableGaussianFilter );
     ini.SetBoolValue(_CMD_SECTION.c_str(), _strKeyReverseSeq.c_str(), pstCmd->bReverseSeq );
+    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyRemoveHarmonicWaveK.c_str(), pstCmd->fRemoveHarmonicWaveK );
     ini.SaveFile(cmdRpyFilePath.c_str());
 
     int index = 0;
@@ -1972,6 +1973,7 @@ VisionStatus LogCaseCalib3DBase::RunLogCase() {
 
     stCmd.bEnableGaussianFilter = ini.GetBoolValue ( _CMD_SECTION.c_str(), _strKeyEnableGF.c_str(), false );
     stCmd.bReverseSeq = ini.GetBoolValue ( _CMD_SECTION.c_str(), _strKeyReverseSeq.c_str(), false );
+    stCmd.fRemoveHarmonicWaveK = ToFloat ( ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyRemoveHarmonicWaveK.c_str(), 0.f ) );
 
     int index = 0;
     while ( true ) {
@@ -2006,6 +2008,8 @@ VisionStatus LogCaseCalib3DHeight::WriteCmd(const PR_CALIB_3D_HEIGHT_CMD *const 
     ini.LoadFile(cmdRpyFilePath.c_str());
     ini.SetBoolValue(_CMD_SECTION.c_str(), _strKeyEnableGF.c_str(), pstCmd->bEnableGaussianFilter );
     ini.SetBoolValue(_CMD_SECTION.c_str(), _strKeyReverseSeq.c_str(), pstCmd->bReverseSeq );
+    ini.SetBoolValue(_CMD_SECTION.c_str(), _strKeyReverseHeight.c_str(), pstCmd->bReverseHeight );
+    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyRemoveHarmonicWaveK.c_str(), pstCmd->fRemoveHarmonicWaveK );
     ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyMinIntensityDiff.c_str(), pstCmd->fMinIntensityDiff );
     ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyMinAvgIntensity.c_str(), pstCmd->fMinAvgIntensity );
     ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyResultImgGridRow.c_str(), pstCmd->nResultImgGridRow );
@@ -2050,6 +2054,8 @@ VisionStatus LogCaseCalib3DHeight::RunLogCase() {
 
     stCmd.bEnableGaussianFilter = ini.GetBoolValue ( _CMD_SECTION.c_str(), _strKeyEnableGF.c_str(), false );
     stCmd.bReverseSeq = ini.GetBoolValue ( _CMD_SECTION.c_str(), _strKeyReverseSeq.c_str(), false );
+    stCmd.bReverseHeight = ini.GetBoolValue(_CMD_SECTION.c_str(), _strKeyReverseHeight.c_str(), false );
+    stCmd.fRemoveHarmonicWaveK = ToFloat ( ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyRemoveHarmonicWaveK.c_str(), 0.f ) );
     stCmd.fMinIntensityDiff = ToFloat ( ini.GetDoubleValue ( _CMD_SECTION.c_str(), _strKeyMinIntensityDiff.c_str(), 3. ) );
     stCmd.fMinAvgIntensity = ToFloat ( ini.GetDoubleValue ( _CMD_SECTION.c_str(), _strKeyMinAvgIntensity.c_str(), 3. ) );
     stCmd.nResultImgGridRow = ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyResultImgGridRow.c_str(), 8 );
@@ -2100,6 +2106,7 @@ VisionStatus LogCaseCalc3DHeight::WriteCmd(const PR_CALC_3D_HEIGHT_CMD *const ps
     ini.LoadFile(cmdRpyFilePath.c_str());
     ini.SetBoolValue(_CMD_SECTION.c_str(), _strKeyEnableGF.c_str(), pstCmd->bEnableGaussianFilter );
     ini.SetBoolValue(_CMD_SECTION.c_str(), _strKeyReverseSeq.c_str(), pstCmd->bReverseSeq );
+    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyRemoveHarmonicWaveK.c_str(), pstCmd->fRemoveHarmonicWaveK );
     ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyMinIntensityDiff.c_str(), pstCmd->fMinIntensityDiff );
     ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyMinAvgIntensity.c_str(), pstCmd->fMinAvgIntensity );
     ini.SaveFile(cmdRpyFilePath.c_str());
@@ -2141,6 +2148,7 @@ VisionStatus LogCaseCalc3DHeight::RunLogCase() {
 
     stCmd.bEnableGaussianFilter = ini.GetBoolValue ( _CMD_SECTION.c_str(), _strKeyEnableGF.c_str(), false );
     stCmd.bReverseSeq = ini.GetBoolValue ( _CMD_SECTION.c_str(), _strKeyReverseSeq.c_str(), false );
+    stCmd.fRemoveHarmonicWaveK = ToFloat ( ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyRemoveHarmonicWaveK.c_str(), 0.f ) );
     stCmd.fMinIntensityDiff = ToFloat ( ini.GetDoubleValue ( _CMD_SECTION.c_str(), _strKeyMinIntensityDiff.c_str(), 3. ) );
     stCmd.fMinAvgIntensity = ToFloat ( ini.GetDoubleValue ( _CMD_SECTION.c_str(), _strKeyMinAvgIntensity.c_str(), 3. ) );
 

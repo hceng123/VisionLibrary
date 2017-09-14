@@ -4,6 +4,7 @@
 #include "CalcUtils.h"
 #include "VisionAlgorithm.h"
 #include "TimeLog.h"
+#include "Log.h"
 #include <numeric>
 
 namespace AOI
@@ -296,6 +297,9 @@ inline std::vector<size_t> sort_indexes(const std::vector<T> &v) {
     matAlpha = _phaseUnwrapSurface ( matAlpha );
     matBeta  = _phaseUnwrapSurface ( matBeta );
 
+    if ( fabs ( pstCmd->fRemoveHarmonicWaveK ) > 1e-5 )
+        matAlpha = matAlpha + CalcUtils::sin<DATA_TYPE>(4.f * matAlpha) * pstCmd->fRemoveHarmonicWaveK;
+
     cv::Mat matSnoop(matAlpha, cv::Rect(0, 0, PHASE_SNOOP_WIN_SIZE, PHASE_SNOOP_WIN_SIZE ) );
     pstRpy->fBaseStartAvgPhase = ToFloat ( cv::mean ( matSnoop )[0] );
 
@@ -322,6 +326,8 @@ inline std::vector<size_t> sort_indexes(const std::vector<T> &v) {
     auto vecPPz = CalcUtils::matToVector<DATA_TYPE>(pstRpy->matBaseSurfaceParam);
     auto vecZP1 = CalcUtils::matToVector<DATA_TYPE>(matZP1);
 #endif
+
+    pstRpy->enStatus = VisionStatus::OK;
 }
 
 /*static*/ inline cv::Mat Unwrap::_setBySign(cv::Mat &matInput, DATA_TYPE value ) {
@@ -507,6 +513,9 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
     else if ( ( fStartAvgPhase - pstCmd->fBaseStartAvgPhase ) < LOW_BASE_PHASE )
         matAlpha = matAlpha + ToFloat ( CV_PI ) * 2.f;
 
+    if ( fabs ( pstCmd->fRemoveHarmonicWaveK ) > 1e-5 )
+        matAlpha = matAlpha + CalcUtils::sin<DATA_TYPE>(4.f * matAlpha) * pstCmd->fRemoveHarmonicWaveK;
+
 #ifdef _DEBUG
     auto vevVecBranchCut = CalcUtils::matToVector<uchar>(matBranchCut);
     auto vecVecAlpha = CalcUtils::matToVector<DATA_TYPE>(matAlpha);
@@ -582,6 +591,8 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
         cv::divide ( matH, matRatio, pstRpy->matHeight );
     }else
         pstRpy->matHeight = matH;
+
+    pstRpy->enStatus = VisionStatus::OK;
 }
 
 /*static*/ cv::Mat Unwrap::_phaseUnwrapSurfaceTrk ( const cv::Mat &matPhase, const cv::Mat &matBranchCut ) {
@@ -763,6 +774,7 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
     stCalcCmd.vecInputImgs = std::move ( pstCmd->vecInputImgs );
     stCalcCmd.bEnableGaussianFilter = pstCmd->bEnableGaussianFilter;
     stCalcCmd.bReverseSeq = pstCmd->bReverseSeq;
+    stCalcCmd.fRemoveHarmonicWaveK = pstCmd->fRemoveHarmonicWaveK;
     stCalcCmd.fMinIntensityDiff = pstCmd->fMinIntensityDiff;
     stCalcCmd.fMinAvgIntensity = pstCmd->fMinAvgIntensity;
     stCalcCmd.matThickToThinStripeK = pstCmd->matThickToThinStripeK;
@@ -800,6 +812,13 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
 #ifdef _DEBUG
         auto vevVecNormalizedPhase = CalcUtils::matToVector<DATA_TYPE> ( matNormalizedPhase );
 #endif
+        auto rectBounding = cv::boundingRect ( matInRange );
+        if ( rectBounding.width < CALIB_HEIGHT_MIN_SIZE || rectBounding.height < CALIB_HEIGHT_MIN_SIZE ) {
+            WriteLog("The base surface size is too small in calibrate 3D height.");
+            pstRpy->enStatus = VisionStatus::CALIB_3D_HEIGHT_SURFACE_TOO_SMALL;
+            return;
+        }
+
         VectorOfPoint vecPtLocations;
         cv::findNonZero ( matInRange, vecPtLocations );
         std::sort ( vecPtLocations.begin (), vecPtLocations.end (), [&matNormalizedPhase]( const cv::Point &pt1, const cv::Point &pt2 ) {
@@ -929,7 +948,8 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
         cv::Mat matRatio = pstRpy->matPhaseToHeightK.at<DATA_TYPE> ( 0, 0 ) * matX + pstRpy->matPhaseToHeightK.at<DATA_TYPE> ( 1, 0 ) * matY + pstRpy->matPhaseToHeightK.at<DATA_TYPE> ( 2, 0 );
         cv::divide ( matPhase, matRatio, matTmpPhase );
     }
-    pstRpy->matResultImg = _drawHeightGrid ( matTmpPhase, pstCmd->nResultImgGridRow, pstCmd->nResultImgGridCol, pstCmd->szMeasureWinSize ); 
+    pstRpy->matResultImg = _drawHeightGrid ( matTmpPhase, pstCmd->nResultImgGridRow, pstCmd->nResultImgGridCol, pstCmd->szMeasureWinSize );
+    pstRpy->enStatus = VisionStatus::OK;
 }
 
 /*static*/ cv::Mat Unwrap::_drawHeightGrid(const cv::Mat &matHeight, int nGridRow, int nGridCol, const cv::Size &szMeasureWinSize) {
@@ -1060,6 +1080,7 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
         pstRpy->vevVecAbsMtfV.push_back ( vecMtfAbsV );
         pstRpy->vevVecRelMtfV.push_back ( vecMtfRelV );
     }
+    pstRpy->enStatus = VisionStatus::OK;
 }
 
 /*static*/ void Unwrap::calcPD(const PR_CALC_PD_CMD *const pstCmd, PR_CALC_PD_RPY *const pstRpy) {
@@ -1201,6 +1222,7 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
         matError = ( matYt - matYt.at<DATA_TYPE>(0) - ( matYt.at<DATA_TYPE>(COLS - 1) - matYt.at<DATA_TYPE>(0))/(matXt.at<DATA_TYPE>(COLS - 1) - matXt.at<DATA_TYPE>(0))*( matXt - matXt.at<DATA_TYPE>(0)))*( COLS - 1 )/ ( matXt.at<DATA_TYPE>(COLS - 1) - matXt.at<DATA_TYPE>(0) );
         pstRpy->vecDistortionBottom = CalcUtils::matToVector<DATA_TYPE>(matError)[0];
     }
+    pstRpy->enStatus = VisionStatus::OK;
 }
 
 }
