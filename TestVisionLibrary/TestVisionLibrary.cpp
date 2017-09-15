@@ -626,9 +626,9 @@ int _tmain(int argc, _TCHAR* argv[])
 
     //TestSrchDie();
 
-    //TestCalib3dBase();
+    TestCalib3dBase();
     TestCalib3DHeight();
-    //TestCalc3DHeight();
+    TestCalc3DHeight();
 
     //TestCalcMTF();
 

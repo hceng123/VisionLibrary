@@ -4,6 +4,8 @@
 #include <iostream>
 #include "TestSub.h"
 
+void TestCalc3DHeightDiff(const cv::Mat &matHeight);
+
 using namespace AOI::Vision;
 
 cv::Mat drawHeightGrid(const cv::Mat &matHeight, int nGridRow, int nGridCol) {
@@ -56,12 +58,11 @@ cv::Mat drawHeightGrid(const cv::Mat &matHeight, int nGridRow, int nGridCol) {
 }
 
 //static std::string gstrCalibResultFile("./data/capture/CalibPP.yml");
-static std::string gstrWorkingFolder("./data/0913_1/");
+static std::string gstrWorkingFolder("./data/capture/");
 static std::string gstrCalibResultFile = gstrWorkingFolder + "CalibPP.yml";
 void TestCalib3dBase() {
     const int IMAGE_COUNT = 8;
-    //std::string strFolder = "./data/capture/0909213305_Plane/";
-    std::string strFolder = gstrWorkingFolder + "0913151200_Plane/";
+    std::string strFolder = gstrWorkingFolder + "0909213305_Plane/";
     PR_CALIB_3D_BASE_CMD stCmd;
     PR_CALIB_3D_BASE_RPY stRpy;
     for ( int i = 1; i <= IMAGE_COUNT; ++ i ) {
@@ -73,7 +74,7 @@ void TestCalib3dBase() {
     }
     stCmd.bEnableGaussianFilter = true;
     stCmd.bReverseSeq = true;
-    stCmd.fRemoveHarmonicWaveK = 1e-5;
+    stCmd.fRemoveHarmonicWaveK = 0.f;
     PR_Calib3DBase ( &stCmd, &stRpy );
     std::cout << "PR_Calib3DBase status " << ToInt32( stRpy.enStatus ) << std::endl;
 
@@ -90,8 +91,7 @@ void TestCalib3dBase() {
 
 void TestCalib3DHeight() {
     const int IMAGE_COUNT = 8;
-    //std::string strFolder = "./data/capture/0909220722_Step/";
-    std::string strFolder = gstrWorkingFolder + "0913151507_Step/";
+    std::string strFolder = gstrWorkingFolder + "0909220722_Step/";
     PR_CALIB_3D_HEIGHT_CMD stCmd;
     PR_CALIB_3D_HEIGHT_RPY stRpy;
     for ( int i = 1; i <= IMAGE_COUNT; ++ i ) {
@@ -103,10 +103,10 @@ void TestCalib3DHeight() {
     }
     stCmd.bEnableGaussianFilter = true;
     stCmd.bReverseSeq = true;
-    stCmd.bReverseHeight = false;
+    stCmd.bReverseHeight = true;
     stCmd.fMinIntensityDiff = 3;
     stCmd.fMinAvgIntensity = 3;
-    stCmd.nBlockStepCount = 4;
+    stCmd.nBlockStepCount = 3;
     stCmd.fBlockStepHeight = 1.f;
     stCmd.nResultImgGridRow = 10;
     stCmd.nResultImgGridCol = 10;
@@ -142,7 +142,8 @@ void TestCalib3DHeight() {
 
 void TestCalc3DHeight() {
     const int IMAGE_COUNT = 8;
-    std::string strFolder = "./data/0913212217_Unwrap_Not_Finish/";
+    std::string strFolder = gstrWorkingFolder + "0909220722_Step/";
+    //std::string strFolder = "./data/0913212217_Unwrap_Not_Finish/";
     PR_CALC_3D_HEIGHT_CMD stCmd;
     PR_CALC_3D_HEIGHT_RPY stRpy;
     for ( int i = 1; i <= IMAGE_COUNT; ++ i ) {
@@ -157,7 +158,7 @@ void TestCalc3DHeight() {
     stCmd.fMinIntensityDiff = 3;
     stCmd.fMinAvgIntensity = 3;
 
-    std::string strResultMatPath = "./data/CalibPP.yml";
+    std::string strResultMatPath = gstrCalibResultFile;
     cv::FileStorage fs ( strResultMatPath, cv::FileStorage::READ );
     cv::FileNode fileNode = fs["K"];
     cv::read ( fileNode, stCmd.matThickToThinStripeK, cv::Mat() );
@@ -177,9 +178,27 @@ void TestCalc3DHeight() {
     std::cout << "PR_Calc3DHeight status " << ToInt32( stRpy.enStatus ) << std::endl;
     if ( VisionStatus::OK == stRpy.enStatus ) {
         cv::Mat matHeightResultImg = drawHeightGrid ( stRpy.matHeight, 9, 9 );
-        cv::imwrite("./data/HeightGridImg.png", matHeightResultImg );
+        cv::imwrite( gstrWorkingFolder + "PR_Calc3DHeight_HeightGridImg.png", matHeightResultImg );
         cv::Mat matPhaseResultImg = drawHeightGrid ( stRpy.matPhase, 9, 9 );
-        cv::imwrite("./data/PhaseGridImg.png", matPhaseResultImg );
+        cv::imwrite( gstrWorkingFolder + "PR_Calc3DHeight_PhaseGridImg.png", matPhaseResultImg );
+
+        TestCalc3DHeightDiff ( stRpy.matHeight );
+    }
+}
+
+void TestCalc3DHeightDiff(const cv::Mat &matHeight) {
+    PR_CALC_3D_HEIGHT_DIFF_CMD stCmd;
+    PR_CALC_3D_HEIGHT_DIFF_RPY stRpy;
+    stCmd.matHeight = matHeight;
+    //stCmd.vecRectBases.push_back ( cv::Rect (761, 1783, 161, 113 ) );
+    //stCmd.vecRectBases.push_back ( cv::Rect (539, 1370, 71, 32 ) );
+    //stCmd.rectROI = cv::Rect(675, 1637, 103, 78 );
+    stCmd.vecRectBases.push_back ( cv::Rect (550, 787, 95, 184 ) );
+    stCmd.rectROI = cv::Rect ( 709, 852, 71, 69 );
+    PR_Calc3DHeightDiff ( &stCmd, &stRpy );
+    std::cout << "PR_Calc3DHeightDiff status " << ToInt32( stRpy.enStatus ) << std::endl;
+    if ( VisionStatus::OK == stRpy.enStatus ) {
+        std::cout << "Height Diff Result " << stRpy.fHeightDiff << std::endl;
     }
 }
 
