@@ -390,9 +390,8 @@ namespace
 * Note:      Mu is name of greek symbol μ.
 *            Omega and Eta are also greek symbol.
 *******************************************************************************/
-std::vector<Int16> VisionAlgorithm::autoMultiLevelThreshold(const cv::Mat &matInputImg, const cv::Mat &matMask, int N)
-{
-    assert(N >= 1 && N <= 4);
+std::vector<Int16> VisionAlgorithm::autoMultiLevelThreshold(const cv::Mat &matInputImg, const cv::Mat &matMask, int N) {
+    assert(N >= 1 && N <= PR_MAX_AUTO_THRESHOLD_COUNT);
 
     const int sbins = 128;
     const float MIN_P = 0.001f;
@@ -636,6 +635,97 @@ std::vector<Int16> VisionAlgorithm::autoMultiLevelThreshold(const cv::Mat &matIn
         vecThreshold.push_back(nResultT2 * PR_MAX_GRAY_LEVEL / sbins);
         vecThreshold.push_back(nResultT3 * PR_MAX_GRAY_LEVEL / sbins);
         vecThreshold.push_back(nResultT4 * PR_MAX_GRAY_LEVEL / sbins);
+    }else if ( 5 == N ) {
+        float fMaxSigma = 0;
+        int nResultT1 = 0, nResultT2 = 0, nResultT3 = 0, nResultT4 = 0, nResultT5 = 0;
+        for (int T1 = START;  T1 < sbins - 4; ++ T1)
+        for (int T2 = T1 + 1; T2 < sbins - 3; ++ T2)
+        for (int T3 = T2 + 1; T3 < sbins - 2; ++ T3)
+        for (int T4 = T3 + 1; T4 < sbins - 1; ++ T4)
+        for (int T5 = T4 + 1; T5 < sbins;     ++ T5)
+        {
+            float fSigma = 0.f;
+
+            if (vecVecEta[START][T1] >= 0.f)
+                fSigma += vecVecEta[START][T1];
+            else
+            {
+                if (vecVecOmega[START][T1] > MIN_P)
+                    vecVecEta[START][T1] = vecVecMu[START][T1] * vecVecMu[START][T1] / vecVecOmega[START][T1];
+                else
+                    vecVecEta[START][T1] = 0.f;
+                fSigma += vecVecEta[START][T1];
+            }
+
+            if (vecVecEta[T1][T2] >= 0.f)
+                fSigma += vecVecEta[T1][T2];
+            else
+            {
+                if (vecVecOmega[T1][T2] > MIN_P)
+                    vecVecEta[T1][T2] = vecVecMu[T1][T2] * vecVecMu[T1][T2] / vecVecOmega[T1][T2];
+                else
+                    vecVecEta[T1][T2] = 0.f;
+                fSigma += vecVecEta[T1][T2];
+            }
+
+            if (vecVecEta[T2][T3] >= 0.f)
+                fSigma += vecVecEta[T2][T3];
+            else
+            {
+                if (vecVecOmega[T2][T3] > MIN_P)
+                    vecVecEta[T2][T3] = vecVecMu[T2][T3] * vecVecMu[T2][T3] / vecVecOmega[T2][T3];
+                else
+                    vecVecEta[T2][T3] = 0.f;
+                fSigma += vecVecEta[T2][T3];
+            }
+
+            if (vecVecEta[T3][T4] >= 0.f)
+                fSigma += vecVecEta[T3][T4];
+            else
+            {
+                if (vecVecOmega[T3][T4] > MIN_P)
+                    vecVecEta[T3][T4] = vecVecMu[T3][T4] * vecVecMu[T3][T4] / vecVecOmega[T3][T4];
+                else
+                    vecVecEta[T3][T4] = 0.f;
+                fSigma += vecVecEta[T3][T4];
+            }
+
+            if (vecVecEta[T4][T5] >= 0.f)
+                fSigma += vecVecEta[T4][T5];
+            else
+            {
+                if (vecVecOmega[T4][T5] > MIN_P)
+                    vecVecEta[T4][T5] = vecVecMu[T4][T5] * vecVecMu[T4][T5] / vecVecOmega[T4][T5];
+                else
+                    vecVecEta[T4][T5] = 0.f;
+                fSigma += vecVecEta[T4][T5];
+            }
+
+            if (vecVecEta[T5][sbins] >= 0.f)
+                fSigma += vecVecEta[T5][sbins];
+            else
+            {
+                if (vecVecOmega[T5][sbins] > MIN_P)
+                    vecVecEta[T5][sbins] = vecVecMu[T5][sbins] * vecVecMu[T5][sbins] / vecVecOmega[T5][sbins];
+                else
+                    vecVecEta[T5][sbins] = 0.f;
+                fSigma += vecVecEta[T5][sbins];
+            }
+
+            if (fMaxSigma < fSigma)    {
+                nResultT1 = T1;
+                nResultT2 = T2;
+                nResultT3 = T3;
+                nResultT4 = T4;
+                nResultT5 = T5;
+                fMaxSigma = fSigma;
+            }
+        }
+        vecThreshold.push_back(nResultT1 * PR_MAX_GRAY_LEVEL / sbins);
+        vecThreshold.push_back(nResultT2 * PR_MAX_GRAY_LEVEL / sbins);
+        vecThreshold.push_back(nResultT3 * PR_MAX_GRAY_LEVEL / sbins);
+        vecThreshold.push_back(nResultT4 * PR_MAX_GRAY_LEVEL / sbins);
+        vecThreshold.push_back(nResultT5 * PR_MAX_GRAY_LEVEL / sbins);
     }
 
     return vecThreshold;
@@ -5826,9 +5916,9 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
         return pstRpy->enStatus;
     }
 
-    if ( pstCmd->nBlockStepCount <= 0 || pstCmd->nBlockStepCount > 4 ) {
+    if ( pstCmd->nBlockStepCount <= 0 || pstCmd->nBlockStepCount > PR_MAX_AUTO_THRESHOLD_COUNT ) {
         char chArrMsg[1000];
-        _snprintf( chArrMsg, sizeof( chArrMsg ), "The BlockStepCount %d is not in range [1, 4].", pstCmd->nBlockStepCount );
+        _snprintf( chArrMsg, sizeof( chArrMsg ), "The BlockStepCount %d is not in range [1, 5].", pstCmd->nBlockStepCount );
         WriteLog(chArrMsg);
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return pstRpy->enStatus;

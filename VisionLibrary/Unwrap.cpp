@@ -23,11 +23,11 @@ Unwrap::~Unwrap ()
 {
 }
 
-/*static*/ const float Unwrap::GAUSSIAN_FILTER_SIGMA =      ToFloat ( pow ( 20, 0.5 ) );
-/*static*/ const float Unwrap::ONE_HALF_CYCLE =             ToFloat ( CV_PI );
-/*static*/ const float Unwrap::UNSTABLE_DIFF =              3.f;
-/*static*/ const float Unwrap::REMOVE_HEIGHT_NOSIE_RATIO =  0.995f;
-/*static*/ const float Unwrap::LOW_BASE_PHASE =             - ToFloat( CV_PI );
+/*static*/ const float Unwrap::GAUSSIAN_FILTER_SIGMA        = ToFloat ( pow ( 20, 0.5 ) );
+/*static*/ const float Unwrap::ONE_HALF_CYCLE               = ToFloat ( CV_PI );
+/*static*/ const float Unwrap::CALIB_HEIGHT_STEP_USEFUL_PT  =  0.8f;
+/*static*/ const float Unwrap::REMOVE_HEIGHT_NOSIE_RATIO    =  0.995f;
+/*static*/ const float Unwrap::LOW_BASE_PHASE               = - ToFloat( CV_PI );
 
 /*static*/ cv::Mat Unwrap::_getResidualPoint(const cv::Mat &matInput, cv::Mat &matPosPole, cv::Mat &matNegPole) {
     MARK_FUNCTION_START_TIME;
@@ -869,7 +869,7 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
     int COLS = matPhase.cols;
     cv::Mat matST = cv::getStructuringElement ( cv::MORPH_RECT, cv::Size ( ERODE_WIN_SIZE, ERODE_WIN_SIZE ) );
 
-    int NN = 2;
+    const int NN = 2;
     for ( int n = 1; n <= NN; ++ n ) {
         double dMinValue = 0, dMaxValue = 0;
         cv::Mat matMask = ( matTmpPhase == matTmpPhase ); //Find out value is not NAN.
@@ -951,22 +951,40 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
 
             VectorOfPoint vecPtLocations;
             cv::findNonZero ( matBW, vecPtLocations );
-            std::vector<DATA_TYPE> vecXt, vecYt, vecPhaseTmp;
-            vecXt.reserve ( vecPtLocations.size () );
-            vecYt.reserve ( vecPtLocations.size () );
-            vecPhaseTmp.reserve ( vecPtLocations.size () );
-            for (const auto &point : vecPtLocations) {
-                vecXt.push_back ( matX.at<DATA_TYPE> ( point ) );
-                vecYt.push_back ( matY.at<DATA_TYPE> ( point ) );
-                vecPhaseTmp.push_back ( matPhase.at<DATA_TYPE> ( point ) );
+            for ( int i = 0; i < 2; ++ i) {
+                std::vector<DATA_TYPE> vecXt, vecYt, vecPhaseTmp;
+                vecXt.reserve ( vecPtLocations.size () );
+                vecYt.reserve ( vecPtLocations.size () );
+                vecPhaseTmp.reserve ( vecPtLocations.size () );
+                for (const auto &point : vecPtLocations) {
+                    vecXt.push_back ( matX.at<DATA_TYPE> ( point ) );
+                    vecYt.push_back ( matY.at<DATA_TYPE> ( point ) );
+                    vecPhaseTmp.push_back ( matPhase.at<DATA_TYPE> ( point ) );
+                }
+                cv::Mat matXX;
+                matXX.push_back ( cv::Mat ( vecXt ).reshape ( 1, 1 ) );
+                matXX.push_back ( cv::Mat ( vecYt ).reshape ( 1, 1 ) );
+                matXX.push_back ( cv::Mat ( cv::Mat::ones ( 1, ToInt32 ( vecPtLocations.size () ), CV_32FC1 ) ) );
+                cv::transpose ( matXX, matXX );
+                cv::Mat matYY ( vecPhaseTmp );
+                cv::solve ( matXX, matYY, matK, cv::DecompTypes::DECOMP_SVD );
+                if ( i == 0 ) {
+                    cv::Mat matErr = cv::abs ( matYY - matXX * matK );
+                    cv::Mat matErrSort;
+                    cv::sortIdx ( matErr, matErrSort, cv::SortFlags::SORT_ASCENDING + cv::SortFlags::SORT_EVERY_COLUMN );
+#ifdef _DEBUG
+                    cv::Mat matErrSortTranspose;
+                    cv::transpose ( matErrSort, matErrSortTranspose );
+                    auto vevVecSortIndex = CalcUtils::matToVector<int>(matErrSortTranspose);
+#endif
+                    VectorOfPoint vecTmpPoints;
+                    int nKeepPoints = ToInt32 ( std::floor ( matErrSort.rows * CALIB_HEIGHT_STEP_USEFUL_PT ) );
+                    vecTmpPoints.reserve ( nKeepPoints );
+                    for (int j = 0; j < nKeepPoints; ++ j)
+                        vecTmpPoints.push_back ( vecPtLocations[ matErrSort.at<int>(j)] );
+                    std::swap ( vecTmpPoints, vecPtLocations );
+                }
             }
-            cv::Mat matXX;
-            matXX.push_back ( cv::Mat ( vecXt ).reshape ( 1, 1 ) );
-            matXX.push_back ( cv::Mat ( vecYt ).reshape ( 1, 1 ) );
-            matXX.push_back ( cv::Mat ( cv::Mat::ones ( 1, ToInt32 ( vecPtLocations.size () ), CV_32FC1 ) ) );
-            cv::transpose ( matXX, matXX );
-            cv::Mat matYY ( vecPhaseTmp );
-            cv::solve ( matXX, matYY, matK, cv::DecompTypes::DECOMP_SVD );
 #ifdef _DEBUG
             auto vevVecK = CalcUtils::matToVector<DATA_TYPE> ( matK );
 #endif
@@ -981,49 +999,99 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
         pstRpy->vecVecStepPhase = CalcUtils::matToVector<DATA_TYPE> ( matHz );
 
         {//Temparory code scope.
-            cv::Mat matXX;
+            cv::Mat matXp, matXpT, matXt0T, matYt0T, matHzT;
             if (pstCmd->bReverseHeight)
-                matXX = CalcUtils::intervals<DATA_TYPE> ( pstCmd->nBlockStepCount, -1, 0 );
+                matXp = CalcUtils::intervals<DATA_TYPE> ( pstCmd->nBlockStepCount, -1, 0 );
             else
-                matXX = CalcUtils::intervals<DATA_TYPE> ( 0, 1, pstCmd->nBlockStepCount );
+                matXp = CalcUtils::intervals<DATA_TYPE> ( 0, 1, pstCmd->nBlockStepCount );
+            matXp = cv::repeat ( matXp, 1, 5 );
+            cv::transpose ( matXp, matXpT );
+            matXpT = matXpT.reshape ( 1, 1 );
 
-            pstRpy->vecStepPhaseSlope.clear();
-            cv::Mat matAllDiff;
-            for (int i = 0; i < ToInt32 ( vecPointToFectch.size () ); ++i) {
-                cv::Mat matYY = cv::Mat ( matHz, cv::Rect ( i, 0, 1, matHz.rows ) );
-                cv::Mat matK;
-                cv::solve ( matXX, matYY, matK, cv::DecompTypes::DECOMP_SVD );           
-                pstRpy->vecStepPhaseSlope.push_back ( matK.at<DATA_TYPE> ( 0, 0 ) );
-                cv::Mat matDiff = matYY - matXX * matK;
-                matYY = matXX * matK;   //Update the values in matHz. This step is important.
-                cv::transpose ( matDiff, matDiff );
-                matAllDiff.push_back ( matDiff );
+            vecXt = std::vector<DATA_TYPE> ( { ToFloat ( COLS / 2 ), 1.f, ToFloat ( COLS ), 1.f, ToFloat ( COLS ) } );
+            cv::Mat matXt0 = cv::Mat ( vecXt ).reshape ( 1, 1 );
+            matXt0 = cv::repeat ( matXt0, pstCmd->nBlockStepCount + 1, 1 );
+            cv::transpose ( matXt0, matXt0T );
+            matXt0T = matXt0T.reshape ( 1, 1 );
+
+            vecYt = std::vector<DATA_TYPE> ( { ToFloat ( ROWS / 2 ), 1.f, 1.f, ToFloat ( ROWS ), ToFloat ( ROWS ) } );
+            cv::Mat matYt0 = cv::Mat ( vecYt ).reshape ( 1, 1 );
+            matYt0 = cv::repeat ( matYt0, pstCmd->nBlockStepCount + 1, 1 );
+            cv::transpose ( matYt0, matYt0T );
+            matYt0T = matYt0T.reshape ( 1, 1 );
+
+            cv::transpose ( matHz, matHzT );
+            matHzT = matHzT.reshape ( 1, ToInt32 ( matHzT.total() ) );
+
+            std::vector<int> vecIndex( vecPointToFectch.size () * ( pstCmd->nBlockStepCount + 1 ) );
+            std::iota ( vecIndex.begin(), vecIndex.end(), 0 );
+            //Data fitting using multiple level data.
+            //Z4 = k(1) * X * 4 + K(2) * Y * 4 + K(3) * 4
+            //....
+            //Z3 = k(1) * X * 3 + K(2) * Y * 3 + K(3) * 3
+            //....
+            //Z2 = k(1) * X * 2 + K(2) * Y * 2 + K(3) * 2
+            //....
+            //Z1 = k(1) * X * 1 + K(2) * Y * 1 + K(3) * 1
+            //....
+            for ( int i = 0; i < 2; ++ i ) {
+                cv::Mat matXXt ( 1, ToInt32 ( vecIndex.size() ), CV_32FC1 );
+                cv::Mat matXt( 1, ToInt32 ( vecIndex.size() ), CV_32FC1 );
+                cv::Mat matYt( 1, ToInt32 ( vecIndex.size() ), CV_32FC1 );
+                cv::Mat matYY ( ToInt32 ( vecIndex.size() ), 1, CV_32FC1 );
+                for ( int j = 0; j < vecIndex.size(); ++ j ) {
+                    matXXt.at<DATA_TYPE>(j) = matXpT.at<DATA_TYPE> ( vecIndex[j] );
+                    matXt.at<DATA_TYPE>(j)  = matXt0T.at<DATA_TYPE>( vecIndex[j] );
+                    matYt.at<DATA_TYPE>(j)  = matYt0T.at<DATA_TYPE>( vecIndex[j] );
+                    matYY.at<DATA_TYPE>(j)  = matHzT.at<DATA_TYPE> ( vecIndex[j] );
+                }
+                matXX = cv::Mat ( matXXt.mul ( matXt ) );
+                matXX.push_back ( cv::Mat ( matXXt.mul ( matYt ) ) );
+                matXX.push_back ( matXXt );
+                cv::transpose ( matXX, matXX );
+
+                assert ( matXX.rows == matYY.rows );
+                cv::solve ( matXX, matYY, matK, cv::DecompTypes::DECOMP_SVD );
+#ifdef _DEBUG
+                auto vecVecXX = CalcUtils::matToVector<DATA_TYPE> ( matXX );
+                auto vecVecYY = CalcUtils::matToVector<DATA_TYPE> ( matYY );
+                auto vecVecK  = CalcUtils::matToVector<DATA_TYPE> ( matK );
+#endif
+                if ( i == 0 ) {
+                    cv::Mat matErr = cv::abs ( matYY - matXX * matK );
+                    cv::Mat matErrSort;
+                    cv::sortIdx ( matErr, matErrSort, cv::SortFlags::SORT_ASCENDING + cv::SortFlags::SORT_EVERY_COLUMN );
+                    std::vector<int> vecTmpIndex;
+                    int nKeepPoints = ToInt32 ( std::floor ( matErrSort.rows * CALIB_HEIGHT_STEP_USEFUL_PT ) );
+                    vecTmpIndex.reserve ( nKeepPoints );
+                    for (int j = 0; j < nKeepPoints; ++ j )
+                        vecTmpIndex.push_back ( matErrSort.at<int>(j) );
+                    std::swap ( vecTmpIndex, vecIndex );
+                }
             }
-            cv::transpose ( matAllDiff, matAllDiff );
-            pstRpy->vecVecStepPhaseDiff = CalcUtils::matToVector<DATA_TYPE> ( matAllDiff );
+            if ( NN == n ) {
+                //Matlab code: Hz - (xp.*xt0*K(1) + xp.*yt0*K(2) + xp*K(3)
+                cv::Mat matFitResultData = matXp.mul ( matXt0 ) * matK.at<DATA_TYPE> ( 0 ) + matXp.mul ( matYt0 ) * matK.at<DATA_TYPE> ( 1 ) + matXp * matK.at<DATA_TYPE> ( 2 );
+                cv::Mat matAllDiff = matHz - matFitResultData;
+                pstRpy->vecVecStepPhaseDiff = CalcUtils::matToVector<DATA_TYPE> ( matAllDiff );
+
+                pstRpy->vecStepPhaseSlope.clear ();
+                for (int i = 0; i < ToInt32 ( vecPointToFectch.size () ); ++ i ) {
+                    cv::Mat matXX = cv::Mat ( matXp, cv::Rect ( i, 0, 1, matHz.rows ) );
+                    cv::Mat matYY = cv::Mat ( matHz, cv::Rect ( i, 0, 1, matHz.rows ) );
+                    cv::Mat matK;
+
+                    assert ( matXX.rows == matYY.rows );
+                    cv::solve ( matXX, matYY, matK, cv::DecompTypes::DECOMP_SVD );
+                    pstRpy->vecStepPhaseSlope.push_back ( matK.at<DATA_TYPE> ( 0, 0 ) );
+                }
+            }
         }
 
-        vecXt = std::vector<DATA_TYPE> ( { ToFloat ( COLS / 2 ), 1.f, ToFloat ( COLS ), 1.f, ToFloat ( COLS ) } );
-        matXX = cv::Mat ( vecXt ).reshape ( 1, 1 );
-        vecYt = std::vector<DATA_TYPE> ( { ToFloat ( ROWS / 2 ), 1.f, 1.f, ToFloat ( ROWS ), ToFloat ( ROWS ) } );
-        matXX.push_back ( cv::Mat ( vecYt ).reshape ( 1, 1 ) );
-        matXX.push_back ( cv::Mat ( cv::Mat::ones ( 1, matXX.cols, CV_32FC1 ) ) );
-        cv::transpose ( matXX, matXX );
         if (pstCmd->bReverseHeight)
-            matYY = cv::Mat ( matHz, cv::Rect ( 0, 0, matHz.cols, 1 ) ).clone ();
+            pstRpy->matPhaseToHeightK = - matK;
         else
-            matYY = cv::Mat ( matHz, cv::Rect ( 0, matHz.rows - 1, matHz.cols, 1 ) ).clone ();
-        cv::transpose ( matYY, matYY );
-        cv::solve ( matXX, matYY, matK, cv::DecompTypes::DECOMP_QR );
-#ifdef _DEBUG
-        auto vevVecXX = CalcUtils::matToVector<DATA_TYPE> ( matXX );
-        auto vecVecYY = CalcUtils::matToVector<DATA_TYPE> ( matYY );
-        vevVecK = CalcUtils::matToVector<DATA_TYPE> ( matK );
-#endif
-        if (pstCmd->bReverseHeight)
-            pstRpy->matPhaseToHeightK = - matK / (pstCmd->fBlockStepHeight * pstCmd->nBlockStepCount);
-        else
-            pstRpy->matPhaseToHeightK =   matK / (pstCmd->fBlockStepHeight * pstCmd->nBlockStepCount);
+            pstRpy->matPhaseToHeightK =   matK;
 
         cv::Mat matHeight;
         CalcUtils::meshgrid<DATA_TYPE> ( 1.f, 1.f, ToFloat(COLS), 1.f, 1.f, ToFloat(ROWS), matX, matY );
@@ -1058,7 +1126,7 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
     int thickness = 2;
     for ( int j = 0; j < nGridRow; ++ j )
     for ( int i = 0; i < nGridCol; ++ i ) {
-        cv::Rect rectROI ( i * nIntervalX + nIntervalX / 2 - szMeasureWinSize.width / 2,
+        cv::Rect rectROI ( i * nIntervalX + nIntervalX / 2 - szMeasureWinSize.width  / 2,
                            j * nIntervalY + nIntervalY / 2 - szMeasureWinSize.height / 2,
                            szMeasureWinSize.width, szMeasureWinSize.height );
         cv::rectangle ( matResultImg, rectROI, cv::Scalar ( 0, 255, 0 ), 3 );

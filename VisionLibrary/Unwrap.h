@@ -57,7 +57,7 @@ private:
 
     static const float GAUSSIAN_FILTER_SIGMA;
     static const float ONE_HALF_CYCLE;
-    static const float UNSTABLE_DIFF;
+    static const float CALIB_HEIGHT_STEP_USEFUL_PT;
     static const float REMOVE_HEIGHT_NOSIE_RATIO;
     static const float LOW_BASE_PHASE;
 };
