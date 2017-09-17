@@ -29,4 +29,15 @@ void printfVectorOfVector(const std::vector<std::vector<T>> &vevVecInput)
 	}
 }
 
+namespace AOI
+{
+namespace Vision
+{
+
+VectorOfFloat split ( const std::string &s, char delim );
+VectorOfVectorOfFloat parseData(const std::string &strContent);
+VectorOfVectorOfFloat readDataFromFile(const std::string &strFilePath);
+
+}
+}
 #endif /*_VISION_REGRESSION_TEST_UTILITY_FUNCTION_H_*/

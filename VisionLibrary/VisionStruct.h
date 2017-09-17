@@ -90,11 +90,16 @@ struct PR_LRN_TEMPLATE_RPY {
 };
 
 struct PR_MATCH_TEMPLATE_CMD {
-    PR_MATCH_TEMPLATE_CMD() : enAlgorithm (PR_MATCH_TMPL_ALGORITHM::SQUARE_DIFF), nRecordId(-1) {}
+    PR_MATCH_TEMPLATE_CMD() :
+        enAlgorithm (PR_MATCH_TMPL_ALGORITHM::SQUARE_DIFF),
+        nRecordId(-1),
+        bSubPixelRefine(false),
+        enMotion (PR_OBJECT_MOTION::TRANSLATION) {}
     cv::Mat                 matInputImg;
     PR_MATCH_TMPL_ALGORITHM enAlgorithm;
     Int32                   nRecordId;
     cv::Rect                rectSrchWindow;
+    bool                    bSubPixelRefine;
     PR_OBJECT_MOTION        enMotion;
 };
 
@@ -894,6 +899,25 @@ struct PR_CALIB_3D_HEIGHT_RPY {
     VectorOfVectorOfFloat   vecVecStepPhaseDiff;    //The actual phase and the fitting line difference.
     cv::Mat                 matDivideStepResultImg; //Use auto threshold to divide each step of the phase image. This result image can show to user confirm if the auto threshold is working correctly.
     cv::Mat                 matResultImg;
+};
+
+//Combine negative and positive calibration result to a single matPhaseToHeightK.
+struct PR_COMB_3D_CALIB_CMD {
+    PR_COMB_3D_CALIB_CMD() :
+        fBlockStepHeight(1.f),
+        nImageRows(2048),
+        nImageCols(2040) {}
+    VectorOfVectorOfFloat   vecVecStepPhasePos; //The phase of 4 corners and the center of the positive calibration. The step on top of base plane.
+    VectorOfVectorOfFloat   vecVecStepPhaseNeg; //The phase of 4 corners and the center of the negative calibration. The step below the base plane.
+    int                     nImageRows;         //The rows of camera image.
+    int                     nImageCols;         //The cols of camera image.
+    float                   fBlockStepHeight;   //The height of each step, unit mm. So the total block height is nBlockStepCount x fBlockStepHeight.
+};
+
+struct PR_COMB_3D_CALIB_RPY {
+    VisionStatus            enStatus;
+    cv::Mat                 matPhaseToHeightK;  //The factor to convert phase to height.
+    VectorOfVectorOfFloat   vecVecStepPhaseDiff;
 };
 
 struct PR_CALC_3D_HEIGHT_CMD {

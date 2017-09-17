@@ -2,11 +2,56 @@
 #include "../VisionLibrary/VisionAPI.h"
 #include "opencv2/highgui.hpp"
 #include <iostream>
+#include <sstream>
+#include <algorithm>
+#include <string>
 #include "TestSub.h"
 
 void TestCalc3DHeightDiff(const cv::Mat &matHeight);
 
 using namespace AOI::Vision;
+
+VectorOfFloat split ( const std::string &s, char delim ) {
+    std::vector<float> elems;
+    std::stringstream ss ( s );
+    std::string strItem;
+    while( std::getline ( ss, strItem, delim ) ) {
+        elems.push_back ( ToFloat ( std::atof ( strItem.c_str() ) ) );
+    }
+    return elems;
+}
+
+VectorOfVectorOfFloat parseData(const std::string &strContent) {
+    std::stringstream ss ( strContent );
+    std::string strLine;
+    VectorOfVectorOfFloat vevVecResult;
+    while( std::getline ( ss, strLine ) ) {
+        vevVecResult.push_back ( split ( strLine, ',' ) );
+    }
+    return vevVecResult;
+}
+
+VectorOfVectorOfFloat readDataFromFile(const std::string &strFilePath) {
+    /* Open input file */
+    FILE *fp;
+    fopen_s ( &fp, strFilePath.c_str(), "r" );
+    if(fp == NULL) {
+        return VectorOfVectorOfFloat();
+    }
+    /* Get file size */
+    fseek(fp, 0, SEEK_END);
+    size_t size = ftell(fp);
+    rewind(fp);
+
+    /* Allocate buffer and read */
+    char *buff = new char[size + 1];
+    size_t bytes = fread(buff, 1, size, fp);
+    buff[bytes] = '\0';
+    std::string strContent(buff);
+    delete []buff;
+    fclose ( fp );
+    return parseData ( strContent );
+}
 
 cv::Mat drawHeightGrid(const cv::Mat &matHeight, int nGridRow, int nGridCol) {
     double dMinValue = 0, dMaxValue = 0;
@@ -183,6 +228,21 @@ void TestCalc3DHeight() {
         cv::imwrite( gstrWorkingFolder + "PR_Calc3DHeight_PhaseGridImg.png", matPhaseResultImg );
 
         TestCalc3DHeightDiff ( stRpy.matHeight );
+    }
+}
+
+void TestComb3DCalib() {
+    PR_COMB_3D_CALIB_CMD stCmd;
+    PR_COMB_3D_CALIB_RPY stRpy;
+    stCmd.vecVecStepPhaseNeg = readDataFromFile("./data/StepPhaseData/StepPhaseNeg.csv");
+    stCmd.vecVecStepPhasePos = readDataFromFile("./data/StepPhaseData/StepPhasePos.csv");
+    PR_Comb3DCalib ( &stCmd, &stRpy );
+    std::cout << "PR_Comb3DCalib status " << ToInt32( stRpy.enStatus ) << std::endl;
+    if ( VisionStatus::OK == stRpy.enStatus ) {
+        std::cout << "Result PhaseToHeightK " << std::endl;
+        printfMat<float>(stRpy.matPhaseToHeightK);
+        std::cout << "Step Phase Difference: " << std::endl;
+        printfVectorOfVector<float>(stRpy.vecVecStepPhaseDiff );
     }
 }
 

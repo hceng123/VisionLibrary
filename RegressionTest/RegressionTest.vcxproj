@@ -201,6 +201,7 @@ FC /L $(ProjectDir)$(ProjectName)_golden.txt $(ProjectDir)$(ProjectName)_result.
     <ClCompile Include="TestInspBridge.cpp" />
     <ClCompile Include="TestLogCase.cpp" />
     <ClCompile Include="TestSrchTmpl.cpp" />
+    <ClCompile Include="UtilityFunc.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\VisionLibrary\VisionLibrary.vcxproj">

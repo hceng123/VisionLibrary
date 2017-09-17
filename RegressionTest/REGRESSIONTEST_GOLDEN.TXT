@@ -136,7 +136,14 @@ Match template angle -8.7274
 MATCH TEMPLATE REGRESSION TEST #2 STARTING
 ------------------------------------------
 Match template status 0
-Match template result 1154.5, 728
+Match template result 1154.5, 727.5
+Match template angle 0
+
+------------------------------------------
+MATCH TEMPLATE REGRESSION TEST #3 STARTING
+------------------------------------------
+Match template status 0
+Match template result 1154.5, 727.5
 Match template angle 0
 
 ------------------------------------------------
@@ -812,3 +819,24 @@ StepPhaseDiff:
 -0.00 -0.02 0.00 0.00 0.02 
 -0.01 -0.03 -0.01 -0.01 0.00 
 -0.00 -0.01 0.00 -0.00 0.01 
+
+---------------------------------------------
+COMBINE 3D HEIGHT CALIBRATION #1 STARTING
+---------------------------------------------
+PR_Comb3DCalib status 0
+Result PhaseToHeightK: 
+0.0 
+0.0 
+2.1 
+Step Phase Difference: 
+0.39 0.45 0.28 0.51 0.34 
+0.21 0.21 0.17 0.25 0.21 
+0.09 0.09 0.11 0.07 0.09 
+0.03 0.03 0.04 0.01 0.02 
+-0.00 0.01 -0.01 0.01 -0.01 
+0.00 -0.01 0.00 0.01 0.01 
+0.10 0.06 0.10 0.10 0.15 
+0.11 0.11 0.09 0.13 0.12 
+0.15 0.20 0.09 0.20 0.09 
+0.17 0.21 0.12 0.21 0.12 
+0.19 0.18 0.17 0.22 0.21 

@@ -19,6 +19,7 @@ void TestInspLead();
 void TestCalib3dBase();
 void TestCalc3DHeight();
 void TestCalib3DHeight();
+void TestComb3DCalib();
 void TestCalcMTF();
 void TestCalcPD();
 
@@ -30,6 +31,19 @@ void printfMat(const cv::Mat &mat)
 		for (short col = 0; col < mat.cols; ++col)
 		{
 			printf("%f ", mat.at<T>(row, col));
+		}
+		printf("\n");
+	}
+}
+
+template<class T>
+void printfVectorOfVector(const std::vector<std::vector<T>> &vevVecInput)
+{
+	for (const auto &vecInput : vevVecInput )
+	{
+		for (const auto value : vecInput )
+		{
+			printf("%.2f ", value);
 		}
 		printf("\n");
 	}

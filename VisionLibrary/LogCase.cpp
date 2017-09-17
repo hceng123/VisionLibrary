@@ -8,6 +8,7 @@
 #include "SimpleIni.h"
 #include "VisionAlgorithm.h"
 #include "FileUtils.h"
+#include "CalcUtils.h"
 #include "JoinSplit.h"
 
 namespace bfs = boost::filesystem;
@@ -2015,9 +2016,10 @@ VisionStatus LogCaseCalib3DHeight::WriteCmd(const PR_CALIB_3D_HEIGHT_CMD *const 
     ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyRemoveHarmonicWaveK.c_str(), pstCmd->fRemoveHarmonicWaveK );
     ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyMinIntensityDiff.c_str(), pstCmd->fMinIntensityDiff );
     ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyMinAvgIntensity.c_str(), pstCmd->fMinAvgIntensity );
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyBlockStepCount.c_str(), pstCmd->nBlockStepCount);
+    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyBlockStepHeight.c_str(), pstCmd->fBlockStepHeight);
     ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyResultImgGridRow.c_str(), pstCmd->nResultImgGridRow );
     ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyResultImgGridCol.c_str(), pstCmd->nResultImgGridCol );
-    const String _strKeyResultImgGridCol    = "ResultImgGridCol";
     ini.SaveFile(cmdRpyFilePath.c_str());
 
     cv::FileStorage fs( _strLogCasePath + _strInputYmlFileName, cv::FileStorage::WRITE);
@@ -2089,6 +2091,84 @@ VisionStatus LogCaseCalib3DHeight::RunLogCase() {
 
     VisionStatus enStatus = VisionStatus::OK;
     enStatus = VisionAlgorithm::calib3DHeight ( &stCmd, &stRpy, true );
+    WriteRpy(&stRpy);
+    return enStatus;
+}
+
+/*static*/ String LogCaseComb3DCalib::StaticGetFolderPrefix() {
+    return "Comb3DCalib";
+}
+
+VisionStatus LogCaseComb3DCalib::WriteCmd(const PR_COMB_3D_CALIB_CMD *const pstCmd) {
+    if ( !_bReplay ) {
+        _strLogCasePath = _generateLogCaseName(GetFolderPrefix());
+        bfs::path dir(_strLogCasePath);
+        bfs::create_directories(dir);
+    }
+
+    CSimpleIni ini(false, false, false);
+    auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
+    ini.LoadFile(cmdRpyFilePath.c_str());
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyImageRows.c_str(), pstCmd->nImageRows );
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyImageCols.c_str(), pstCmd->nImageCols );
+    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyBlockStepHeight.c_str(), pstCmd->fBlockStepHeight);
+    ini.SaveFile(cmdRpyFilePath.c_str());
+
+    cv::FileStorage fs( _strLogCasePath + _strInputYmlFileName, cv::FileStorage::WRITE);
+    if ( ! fs.isOpened() )
+        return VisionStatus::OPEN_FILE_FAIL;
+
+    cv::write ( fs, _strKeyStepPhasePos, CalcUtils::vectorToMat<float>(pstCmd->vecVecStepPhasePos ) );
+    cv::write ( fs, _strKeyStepPhaseNeg, CalcUtils::vectorToMat<float>(pstCmd->vecVecStepPhaseNeg ) );
+    fs.release();
+    return VisionStatus::OK;
+}
+
+VisionStatus LogCaseComb3DCalib::WriteRpy(const PR_COMB_3D_CALIB_RPY *const pstRpy) {
+    CSimpleIni ini(false, false, false);
+    auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
+    ini.LoadFile(cmdRpyFilePath.c_str());    
+    ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyStatus.c_str(), ToInt32 ( pstRpy->enStatus ) );
+
+    cv::FileStorage fs( _strLogCasePath + _strResultYmlFileName, cv::FileStorage::WRITE);
+    if ( ! fs.isOpened() )
+        return VisionStatus::OPEN_FILE_FAIL;
+
+    cv::write ( fs, _strKeyPhaseToHeightK, pstRpy->matPhaseToHeightK );
+    cv::write ( fs, _strKeyStepPhaseDiff,  CalcUtils::vectorToMat<float>(pstRpy->vecVecStepPhaseDiff ) );
+    fs.release();
+
+    _zip();
+    return VisionStatus::OK;
+}
+
+VisionStatus LogCaseComb3DCalib::RunLogCase() {
+    PR_COMB_3D_CALIB_CMD stCmd;
+    PR_COMB_3D_CALIB_RPY stRpy;
+
+    CSimpleIni ini(false, false, false);
+    auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
+    ini.LoadFile(cmdRpyFilePath.c_str());
+
+    stCmd.fBlockStepHeight = ToFloat ( ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyBlockStepHeight.c_str(), 1.f) );
+    stCmd.nImageRows = ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyImageRows.c_str(), 8 );
+    stCmd.nImageCols = ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyImageCols.c_str(), 8 );
+
+    cv::FileStorage fs ( _strLogCasePath + _strInputYmlFileName, cv::FileStorage::READ );
+    cv::FileNode fileNode = fs[_strKeyStepPhasePos];
+    cv::Mat matStepPhasePos;
+    cv::read ( fileNode, matStepPhasePos, cv::Mat() );
+    stCmd.vecVecStepPhasePos = CalcUtils::matToVector<float>(matStepPhasePos);
+
+    fileNode = fs[_strKeyStepPhaseNeg];
+    cv::Mat matStepPhaseNeg;
+    cv::read ( fileNode, matStepPhaseNeg, cv::Mat() );
+    stCmd.vecVecStepPhaseNeg = CalcUtils::matToVector<float>(matStepPhaseNeg);
+
+    fs.release();
+
+    VisionStatus enStatus = VisionStatus::OK;
+    enStatus = VisionAlgorithm::comb3DCalib ( &stCmd, &stRpy, true );
     WriteRpy(&stRpy);
     return enStatus;
 }

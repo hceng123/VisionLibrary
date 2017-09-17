@@ -64,10 +64,6 @@ Unwrap::~Unwrap ()
     cv::subtract ( matD, OneCycle, matD, matPosIndex );
     cv::add      ( matD, OneCycle, matD, matNegIndex );
 
-#ifdef _DEBUG
-    //auto vevVecD = CalcUtils::matToVector<DATA_TYPE> ( matD );
-#endif
-
     cv::Mat matSum;
     cv::reduce ( matD, matSum, 1, CV_REDUCE_SUM );
 
@@ -1039,7 +1035,7 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
                 cv::Mat matXt( 1, ToInt32 ( vecIndex.size() ), CV_32FC1 );
                 cv::Mat matYt( 1, ToInt32 ( vecIndex.size() ), CV_32FC1 );
                 cv::Mat matYY ( ToInt32 ( vecIndex.size() ), 1, CV_32FC1 );
-                for ( int j = 0; j < vecIndex.size(); ++ j ) {
+                for ( int j = 0; j < ToInt32 ( vecIndex.size() ); ++ j ) {
                     matXXt.at<DATA_TYPE>(j) = matXpT.at<DATA_TYPE> ( vecIndex[j] );
                     matXt.at<DATA_TYPE>(j)  = matXt0T.at<DATA_TYPE>( vecIndex[j] );
                     matYt.at<DATA_TYPE>(j)  = matYt0T.at<DATA_TYPE>( vecIndex[j] );
@@ -1456,6 +1452,113 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
         matError = ( matYt - matYt.at<DATA_TYPE>(0) - ( matYt.at<DATA_TYPE>(COLS - 1) - matYt.at<DATA_TYPE>(0))/(matXt.at<DATA_TYPE>(COLS - 1) - matXt.at<DATA_TYPE>(0))*( matXt - matXt.at<DATA_TYPE>(0)))*( COLS - 1 )/ ( matXt.at<DATA_TYPE>(COLS - 1) - matXt.at<DATA_TYPE>(0) );
         pstRpy->vecDistortionBottom = CalcUtils::matToVector<DATA_TYPE>(matError)[0];
     }
+    pstRpy->enStatus = VisionStatus::OK;
+}
+
+/*static*/ void Unwrap::comb3DCalib(const PR_COMB_3D_CALIB_CMD *const pstCmd, PR_COMB_3D_CALIB_RPY *const pstRpy) {
+    cv::Mat matHz1 = CalcUtils::vectorToMat<DATA_TYPE> ( pstCmd->vecVecStepPhaseNeg );
+    if ( cv::mean ( matHz1 )[0] > 0. ) {
+        WriteLog("The mean negative phase is not negative.");        
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return;
+    }
+
+    cv::Mat matHz2 = CalcUtils::vectorToMat<DATA_TYPE> ( pstCmd->vecVecStepPhasePos );
+    if ( cv::mean ( matHz2 )[0] < 0. ) {
+        WriteLog("The mean positive phase is not positive.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return;
+    }
+    cv::Mat matHz = matHz1;
+    matHz.push_back ( matHz2 );
+
+    cv::Mat matXpT, matXt0T, matYt0T, matHzT;
+    cv::Mat matXp1 = CalcUtils::intervals<DATA_TYPE> ( 1.f - ToFloat ( pstCmd->vecVecStepPhaseNeg.size() ), 1.f, 0.f );
+    cv::Mat matXp2 = CalcUtils::intervals<DATA_TYPE> ( 0.f, 1.f, ToFloat ( pstCmd->vecVecStepPhasePos.size() - 1 ) );
+    cv::Mat matXp = matXp1;
+    matXp.push_back ( matXp2 );
+    matXp = cv::repeat ( matXp, 1, 5 );
+
+    cv::transpose ( matXp, matXpT );
+    matXpT = matXpT.reshape ( 1, 1 );
+
+#ifdef _DEBUG
+    auto vecVecXp = CalcUtils::matToVector<DATA_TYPE> ( matXp );
+    auto vecVecXpT = CalcUtils::matToVector<DATA_TYPE> ( matXpT );
+#endif
+
+    int ROWS = pstCmd->nImageRows;
+    int COLS = pstCmd->nImageCols;
+
+    int nTotalStep = matXp.rows;
+    auto vecXt = std::vector<DATA_TYPE> ( { ToFloat ( COLS / 2 ), 1.f, ToFloat ( COLS ), 1.f, ToFloat ( COLS ) } );
+    cv::Mat matXt0 = cv::Mat ( vecXt ).reshape ( 1, 1 );
+    matXt0 = cv::repeat ( matXt0, nTotalStep, 1 );
+    cv::transpose ( matXt0, matXt0T );
+    matXt0T = matXt0T.reshape ( 1, 1 );
+
+    auto vecYt = std::vector<DATA_TYPE> ( { ToFloat ( ROWS / 2 ), 1.f, 1.f, ToFloat ( ROWS ), ToFloat ( ROWS ) } );
+    cv::Mat matYt0 = cv::Mat ( vecYt ).reshape ( 1, 1 );
+    matYt0 = cv::repeat ( matYt0, nTotalStep, 1 );
+    cv::transpose ( matYt0, matYt0T );
+    matYt0T = matYt0T.reshape ( 1, 1 );    
+
+    cv::transpose ( matHz, matHzT );
+    matHzT = matHzT.reshape ( 1, ToInt32 ( matHzT.total () ) );
+
+    std::vector<int> vecIndex ( matHz.total() );
+    std::iota ( vecIndex.begin (), vecIndex.end (), 0 );
+    cv::Mat matK;
+    //Data fitting using multiple level data.
+    //Z4 = k(1) * X * 4 + K(2) * Y * 4 + K(3) * 4
+    //....
+    //Z3 = k(1) * X * 3 + K(2) * Y * 3 + K(3) * 3
+    //....
+    //Z2 = k(1) * X * 2 + K(2) * Y * 2 + K(3) * 2
+    //....
+    //Z1 = k(1) * X * 1 + K(2) * Y * 1 + K(3) * 1
+    //....
+    for (int i = 0; i < 1; ++ i) {
+        cv::Mat matXXt ( 1, ToInt32 ( vecIndex.size () ), CV_32FC1 );
+        cv::Mat matXt ( 1, ToInt32 ( vecIndex.size () ), CV_32FC1 );
+        cv::Mat matYt ( 1, ToInt32 ( vecIndex.size () ), CV_32FC1 );
+        cv::Mat matYY ( ToInt32 ( vecIndex.size () ), 1, CV_32FC1 );
+        for (int j = 0; j < ToInt32 ( vecIndex.size() ); ++ j ) {
+            matXXt.at<DATA_TYPE> ( j ) = matXpT.at<DATA_TYPE> ( vecIndex[j] );
+            matXt.at<DATA_TYPE> ( j ) = matXt0T.at<DATA_TYPE> ( vecIndex[j] );
+            matYt.at<DATA_TYPE> ( j ) = matYt0T.at<DATA_TYPE> ( vecIndex[j] );
+            matYY.at<DATA_TYPE> ( j ) = matHzT.at<DATA_TYPE> ( vecIndex[j] );
+        }
+        cv::Mat matXX = cv::Mat ( matXXt.mul ( matXt ) );
+        matXX.push_back ( cv::Mat ( matXXt.mul ( matYt ) ) );
+        matXX.push_back ( matXXt );
+        cv::transpose ( matXX, matXX );        
+
+        assert ( matXX.rows == matYY.rows );
+        cv::solve ( matXX, matYY, matK, cv::DecompTypes::DECOMP_SVD );
+#ifdef _DEBUG
+        auto vecVecXX = CalcUtils::matToVector<DATA_TYPE> ( matXX );
+        auto vecVecYY = CalcUtils::matToVector<DATA_TYPE> ( matYY );
+        auto vecVecK = CalcUtils::matToVector<DATA_TYPE> ( matK );
+#endif
+
+        if (i == 0) {
+            cv::Mat matErr = cv::abs ( matYY - matXX * matK );
+            cv::Mat matErrSort;
+            cv::sortIdx ( matErr, matErrSort, cv::SortFlags::SORT_ASCENDING + cv::SortFlags::SORT_EVERY_COLUMN );
+            std::vector<int> vecTmpIndex;
+            int nKeepPoints = ToInt32 ( std::floor ( matErrSort.rows * CALIB_HEIGHT_STEP_USEFUL_PT ) );
+            vecTmpIndex.reserve ( nKeepPoints );
+            for (int j = 0; j < nKeepPoints; ++j)
+                vecTmpIndex.push_back ( matErrSort.at<int> ( j ) );
+            std::swap ( vecTmpIndex, vecIndex );
+        }
+    }
+    //Matlab code: Hz - (xp.*xt0*K(1) + xp.*yt0*K(2) + xp*K(3)
+    cv::Mat matFitResultData = matXp.mul ( matXt0 ) * matK.at<DATA_TYPE> ( 0 ) + matXp.mul ( matYt0 ) * matK.at<DATA_TYPE> ( 1 ) + matXp * matK.at<DATA_TYPE> ( 2 );
+    cv::Mat matAllDiff = matHz - matFitResultData;
+    pstRpy->vecVecStepPhaseDiff = CalcUtils::matToVector<DATA_TYPE> ( matAllDiff );
+    pstRpy->matPhaseToHeightK = matK;
     pstRpy->enStatus = VisionStatus::OK;
 }
 

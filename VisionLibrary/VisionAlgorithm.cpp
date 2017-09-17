@@ -1268,14 +1268,14 @@ VisionStatus VisionAlgorithm::inspDevice(PR_INSP_DEVICE_CMD *pstInspDeviceCmd, P
 
     if ( PR_MATCH_TMPL_ALGORITHM::SQUARE_DIFF == pstCmd->enAlgorithm ) {
         float fCorrelation;
-        pstRpy->enStatus = MatchTmpl::matchTemplate ( matSrchROI, ptrRecord->getTmpl(), pstCmd->enMotion, pstRpy->ptObjPos, pstRpy->fRotation, fCorrelation );
+        pstRpy->enStatus = MatchTmpl::matchTemplate ( matSrchROI, ptrRecord->getTmpl(), pstCmd->bSubPixelRefine, pstCmd->enMotion, pstRpy->ptObjPos, pstRpy->fRotation, fCorrelation );
         pstRpy->ptObjPos.x += pstCmd->rectSrchWindow.x;
         pstRpy->ptObjPos.y += pstCmd->rectSrchWindow.y;
         pstRpy->fMatchScore = fCorrelation * ConstToPercentage;
     }else if ( PR_MATCH_TMPL_ALGORITHM::HIERARCHICAL_EDGE == pstCmd->enAlgorithm ) {
         cv::Point ptResult = MatchTmpl::matchByRecursionEdge ( matSrchROI, ptrRecord->getTmpl(), ptrRecord->getEdgeMask() );
-        pstRpy->ptObjPos.x = ptResult.x + ptrRecord->getTmpl().cols / 2.f  + 0.5f + pstCmd->rectSrchWindow.x;
-        pstRpy->ptObjPos.y = ptResult.y + ptrRecord->getTmpl().rows / 2.f  + 0.5f + pstCmd->rectSrchWindow.y;
+        pstRpy->ptObjPos.x = ptResult.x + ptrRecord->getTmpl().cols / 2 + 0.5f + pstCmd->rectSrchWindow.x;
+        pstRpy->ptObjPos.y = ptResult.y + ptrRecord->getTmpl().rows / 2 + 0.5f + pstCmd->rectSrchWindow.y;
         pstRpy->fRotation = 0.f;
         pstRpy->enStatus = VisionStatus::OK;
     }
@@ -1748,6 +1748,9 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
     if (LogCaseCalib3DHeight::StaticGetFolderPrefix() == strFolderPrefix )
         return std::make_unique<LogCaseCalib3DHeight>( strLocalPath, true );
 
+    if ( LogCaseComb3DCalib::StaticGetFolderPrefix() == strFolderPrefix )
+        return std::make_unique<LogCaseComb3DCalib>( strLocalPath, true );
+
     if (LogCaseCalc3DHeight::StaticGetFolderPrefix() == strFolderPrefix )
         return std::make_unique<LogCaseCalc3DHeight>( strLocalPath, true );
     
@@ -1840,7 +1843,7 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
         cv::cvtColor(matSrchROI, matSrchROI, cv::COLOR_BGR2GRAY);
 
     float fRotation = 0.f, fCorrelation = 0.f;
-    pstRpy->enStatus = MatchTmpl::matchTemplate ( matSrchROI, matTmpl, PR_OBJECT_MOTION::TRANSLATION, ptResult, fRotation, fCorrelation );
+    pstRpy->enStatus = MatchTmpl::matchTemplate ( matSrchROI, matTmpl, true, PR_OBJECT_MOTION::TRANSLATION, ptResult, fRotation, fCorrelation );
 
     pstRpy->ptPos.x = ptResult.x + pstCmd->rectSrchWindow.x;
     pstRpy->ptPos.y = ptResult.y + pstCmd->rectSrchWindow.y;
@@ -3724,7 +3727,7 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
         cv::Mat matSrchROI ( mat, rectSrchROI );
         cv::Point2f ptResult;
         float fRotation, fCorrelation = 0.f;
-        enStatus = MatchTmpl::matchTemplate ( matSrchROI, matTmpl, PR_OBJECT_MOTION::TRANSLATION, ptResult, fRotation, fCorrelation );
+        enStatus = MatchTmpl::matchTemplate ( matSrchROI, matTmpl, true, PR_OBJECT_MOTION::TRANSLATION, ptResult, fRotation, fCorrelation );
         if ( VisionStatus::OK != enStatus )
             fCorrelation = 0;
         
@@ -5244,7 +5247,7 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     cv::Mat matTmpl = ptrRecord->getTmpl();
     if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE )
         showImage ( "Template image", matTmpl );
-    pstRpy->enStatus = MatchTmpl::matchTemplate ( matBlur, matTmpl, PR_OBJECT_MOTION::TRANSLATION, ptResult, fRotation, fCorrelation );
+    pstRpy->enStatus = MatchTmpl::matchTemplate ( matBlur, matTmpl, true, PR_OBJECT_MOTION::TRANSLATION, ptResult, fRotation, fCorrelation );
     if ( pstRpy->enStatus != VisionStatus::OK ) {
         WriteLog ( "Template match fail." );
         return pstRpy->enStatus;
@@ -5949,6 +5952,31 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
 
     FINISH_LOGCASE;
     MARK_FUNCTION_END_TIME;
+    return pstRpy->enStatus;
+}
+
+/*static*/ VisionStatus VisionAlgorithm::comb3DCalib(const PR_COMB_3D_CALIB_CMD *const pstCmd, PR_COMB_3D_CALIB_RPY *const pstRpy, bool bReplay /*= false*/) {
+    assert(pstCmd != nullptr && pstRpy != nullptr);
+    if ( pstCmd->vecVecStepPhasePos.empty() ) {
+        WriteLog("The input positive step phase is empty.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    if ( pstCmd->vecVecStepPhaseNeg.empty() ) {
+        WriteLog("The input negative step phase is empty.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+    MARK_FUNCTION_START_TIME;
+    SETUP_LOGCASE(LogCaseComb3DCalib);
+
+    Unwrap::comb3DCalib ( pstCmd, pstRpy );
+
+    pstRpy->enStatus = VisionStatus::OK;
+    FINISH_LOGCASE;
+    MARK_FUNCTION_END_TIME;
+    
     return pstRpy->enStatus;
 }
 
