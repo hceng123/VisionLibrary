@@ -578,7 +578,7 @@ int _tmain(int argc, _TCHAR* argv[])
     PR_GetVersion(&stVersionInfo);
     std::cout << "VisionLibrary Version: " << stVersionInfo.chArrVersion << std::endl;
 
-    PR_SetDebugMode ( PR_DEBUG_MODE::LOG_ALL_CASE );
+    PR_SetDebugMode ( PR_DEBUG_MODE::DISABLED );
     //TestTemplate();
     //TestInspDevice();
     //TestRunLogcase();
@@ -629,8 +629,8 @@ int _tmain(int argc, _TCHAR* argv[])
 
     //TestCalib3dBase();
     //TestCalib3DHeight();
-    TestComb3DCalib();
-    //TestCalc3DHeight();
+    //TestComb3DCalib();
+    TestCalc3DHeight();
 
     //TestCalcMTF();
 

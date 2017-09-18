@@ -37,35 +37,66 @@ Unwrap::~Unwrap ()
     cv::Mat matKernelX = (cv::Mat_<DATA_TYPE>(1, 2) << -1, 1);
     cv::Mat matDx, matDy, matD1, matD2, matD3, matD4;
     cv::filter2D(matInput, matDx, -1, matKernelX, cv::Point(-1, -1), 0.0, cv::BORDER_CONSTANT);
-    matDx = cv::Mat(matDx, cv::Rect(1, 0, matDx.cols - 1, matDx.rows)).clone();
+    matDx = cv::Mat(matDx, cv::Rect(1, 0, matDx.cols - 1, matDx.rows));
 
     cv::filter2D(matInput, matDy, -1, matKernelY, cv::Point(-1, -1), 0.0, cv::BORDER_CONSTANT);
-    matDy = cv::Mat(matDy, cv::Rect(0, 1, matDy.cols, matDy.rows - 1)).clone();
+    matDy = cv::Mat(matDy, cv::Rect(0, 1, matDy.cols, matDy.rows - 1));
+
+    TimeLog::GetInstance()->addTimeLog("2 cv::filter2D take: ", stopWatch.Span() );
 
     matD1 =  cv::Mat(matDx, cv::Rect(0, 0, matDx.cols,     matDx.rows - 1)).clone();
     matD2 =  cv::Mat(matDy, cv::Rect(1, 0, matDy.cols - 1, matDy.rows    )).clone();
     matD3 = -cv::Mat(matDx, cv::Rect(0, 1, matDx.cols,     matDx.rows - 1)).clone();
     matD4 = -cv::Mat(matDy, cv::Rect(0, 0, matDy.cols - 1, matDy.rows    )).clone();
 
+    TimeLog::GetInstance()->addTimeLog("Clone takes take: ", stopWatch.Span() );
+
+    //cv::Mat matD(4, matD1.total(), matD1.type() );
+    //cv::Mat matROIOfD1(matD, cv::Rect(0, 0, matD.cols, 1) );
+    //matD1.reshape(1, 1).copyTo(matROIOfD1);
+    //cv::Mat matROIOfD2(matD, cv::Rect(0, 1, matD.cols, 1) );
+    //matD2.reshape(1, 1).copyTo(matROIOfD2);
+    //cv::Mat matROIOfD3(matD, cv::Rect(0, 2, matD.cols, 1) );
+    //matD3.reshape(1, 1).copyTo(matROIOfD3);
+    //cv::Mat matROIOfD4(matD, cv::Rect(0, 3, matD.cols, 1) );
+    //matD4.reshape(1, 1).copyTo(matROIOfD4);
+    cv::Mat matArry[] = { matD1.reshape(1, 1), matD2.reshape(1, 1) , matD3.reshape(1, 1), matD4.reshape(1, 1) };
     cv::Mat matD;
-    matD.push_back ( matD1.reshape(1, 1) );
-    matD.push_back ( matD2.reshape(1, 1) );
-    matD.push_back ( matD3.reshape(1, 1) );
-    matD.push_back ( matD4.reshape(1, 1) );
-    cv::transpose ( matD, matD );
+    cv::vconcat ( matArry, 4, matD );
+    //matD.reserve(4);
+    //matD.push_back ( matD1.reshape(1, 1) );
+    //matD.push_back ( matD2.reshape(1, 1) );
+    //matD.push_back ( matD3.reshape(1, 1) );
+    //matD.push_back ( matD4.reshape(1, 1) );
 
-    cv::Mat matPosIndex = cv::Mat::zeros ( matD.size(), CV_8UC1 );
-    cv::Mat matNegIndex = cv::Mat::zeros ( matD.size(), CV_8UC1 );
+    TimeLog::GetInstance()->addTimeLog("Combine to D take: ", stopWatch.Span() );
+    //cv::transpose ( matD, matD );    
 
-    cv::compare ( matD, cv::Scalar::all( 0.9999 * CV_PI), matPosIndex, cv::CmpTypes::CMP_GT );
-    cv::compare ( matD, cv::Scalar::all(-0.9999 * CV_PI), matNegIndex, cv::CmpTypes::CMP_LT );
+    //{
+    //cv::Mat matPosIndex = cv::Mat::zeros ( matD.size(), CV_8UC1 );
+    //cv::Mat matNegIndex = cv::Mat::zeros ( matD.size(), CV_8UC1 );
 
-    // Work as ds(idx) = ds(idx) - sign(d(idx))*pi*2;
-    cv::subtract ( matD, OneCycle, matD, matPosIndex );
-    cv::add      ( matD, OneCycle, matD, matNegIndex );
+    //cv::compare ( matD, cv::Scalar::all( 0.9999 * CV_PI), matPosIndex, cv::CmpTypes::CMP_GT );
+    //cv::compare ( matD, cv::Scalar::all(-0.9999 * CV_PI), matNegIndex, cv::CmpTypes::CMP_LT );
+
+    //// Work as ds(idx) = ds(idx) - sign(d(idx))*pi*2;
+    //cv::subtract ( matD, OneCycle, matD, matPosIndex );
+    //cv::add      ( matD, OneCycle, matD, matNegIndex );
+    //}
+    for ( int row = 0; row < matD.rows; ++ row )
+    for ( int col = 0; col < matD.cols; ++ col ) {
+        if ( matD.at<DATA_TYPE>(row, col) > 0.9999 * CV_PI )
+            matD.at<DATA_TYPE>(row, col) -= OneCycle;
+        else if ( matD.at<DATA_TYPE>(row, col) < - 0.9999 * CV_PI )
+            matD.at<DATA_TYPE>(row, col) += OneCycle;
+    }
+
+    TimeLog::GetInstance()->addTimeLog("cv::subtract and cv::add takes take: ", stopWatch.Span() );
 
     cv::Mat matSum;
-    cv::reduce ( matD, matSum, 1, CV_REDUCE_SUM );
+    cv::reduce ( matD, matSum, 0, CV_REDUCE_SUM );
+
+    TimeLog::GetInstance()->addTimeLog("cv::reduce takes take: ", stopWatch.Span() );
 
 #ifdef _DEBUG
     cv::Mat matSumT;
@@ -73,22 +104,25 @@ Unwrap::~Unwrap ()
     auto vevVecSumT = CalcUtils::matToVector<DATA_TYPE>( matSumT );
 #endif
 
-    matPosIndex.setTo(0);
-    matNegIndex.setTo(0);
+    //matPosIndex.setTo(0);
+    //matNegIndex.setTo(0);
+    cv::Mat matPosIndex, matNegIndex;
     cv::compare ( matSum, cv::Scalar::all( 0.9999 * CV_PI * 2.f), matPosIndex, cv::CmpTypes::CMP_GT );
     cv::compare ( matSum, cv::Scalar::all(-0.9999 * CV_PI * 2.f), matNegIndex, cv::CmpTypes::CMP_LT );
 
-    int nSizeOfResultMat = ( matInput.rows - 1 ) * ( matInput.cols - 1 );
-    cv::Mat matResult = cv::Mat::zeros ( nSizeOfResultMat, 1, CV_8SC1 );
-    matResult.setTo( cv::Scalar::all(1), matPosIndex );
-    matResult.setTo( cv::Scalar::all(-1), matNegIndex );
-    matResult = matResult.reshape ( 1, matInput.rows - 1 );
+    TimeLog::GetInstance()->addTimeLog("cv::compare takes take: ", stopWatch.Span() );
 
-    matPosPole = matPosIndex.clone().reshape(1, matInput.rows - 1 );
-    matNegPole = matNegIndex.clone().reshape(1, matInput.rows - 1 );
+    int nSizeOfResultMat = ( matInput.rows - 1 ) * ( matInput.cols - 1 );
+    //cv::Mat matResult = cv::Mat::zeros ( nSizeOfResultMat, 1, CV_8SC1 );
+    //matResult.setTo( cv::Scalar::all(1), matPosIndex );
+    //matResult.setTo( cv::Scalar::all(-1), matNegIndex );
+    //matResult = matResult.reshape ( 1, matInput.rows - 1 );
+
+    matPosPole = matPosIndex.reshape(1, matInput.rows - 1 );
+    matNegPole = matNegIndex.reshape(1, matInput.rows - 1 );
 
     MARK_FUNCTION_END_TIME;
-    return matResult;
+    return cv::Mat();
 }
 
 template<typename T>
@@ -498,15 +532,21 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
     cv::compare ( matBeta, cv::Scalar::all ( CV_PI ), matOverPi, cv::CmpTypes::CMP_GT );
     cv::subtract ( matBeta, cv::Scalar::all ( 2.f * CV_PI ), matBeta, matOverPi );
 
+    TimeLog::GetInstance()->addTimeLog( "cv::phase, cv::compare and cv::subtract ", stopWatch.Span() );
+
     const auto ROWS = matAlpha.rows;
     const auto COLS = matAlpha.cols;
     
     cv::Mat matPosPole, matNegPole, matResidue;
     matResidue = _getResidualPoint ( matAlpha, matPosPole, matNegPole );
 
+    TimeLog::GetInstance()->addTimeLog( "_getResidualPoint. ", stopWatch.Span() );
+
     VectorOfPoint vecPosPole, vecNegPole;
     cv::findNonZero ( matPosPole, vecPosPole );
     cv::findNonZero ( matNegPole, vecNegPole );
+
+    TimeLog::GetInstance()->addTimeLog( "2 cv::findNonZero. ", stopWatch.Span() );
 
     VectorOfPoint vecPoint1, vecPoint2, vecPoint3;
     _selectPolePair ( vecPosPole, vecNegPole, ROWS - 1, COLS - 1, vecPoint1, vecPoint2, vecPoint3 );
