@@ -119,9 +119,9 @@ MatchTmpl::~MatchTmpl ()
                 matResult.at<float>(nRow, nCol) = fTotalDiffSqr;
                 ++ nCol;
             }
-            ++ nRow; 
+            ++ nRow;
         }
-        cv::minMaxLoc(matResult, &minVal, nullptr, &minLoc, nullptr );
+        cv::minMaxLoc ( matResult, &minVal, nullptr, &minLoc, nullptr );
         ptResult.x += (minLoc.x + nStartX);
         ptResult.y += (minLoc.y + nStartY);
         return ptResult;
@@ -145,7 +145,7 @@ MatchTmpl::~MatchTmpl ()
     return VisionStatus::OK;
 }
 
-/*static*/ VisionStatus MatchTmpl::matchTemplate(const cv::Mat &mat, const cv::Mat &matTmpl, PR_OBJECT_MOTION enMotion, cv::Point2f &ptResult, float &fRotation, float &fCorrelation)
+/*static*/ VisionStatus MatchTmpl::matchTemplate(const cv::Mat &mat, const cv::Mat &matTmpl, bool bSubPixelRefine, PR_OBJECT_MOTION enMotion, cv::Point2f &ptResult, float &fRotation, float &fCorrelation)
 {
     cv::Mat matResultImg;
     const int match_method = CV_TM_SQDIFF;
@@ -175,14 +175,17 @@ MatchTmpl::~MatchTmpl ()
 
     ptResult.x = (float)matchLoc.x;
     ptResult.y = (float)matchLoc.y;
-    try {
-        refineSrchTemplate ( mat, matTmpl, enMotion, ptResult, fRotation, fCorrelation );
-    }catch (std::exception) {
-        return VisionStatus::OPENCV_EXCEPTION;
+    if ( bSubPixelRefine ) {
+        try {
+            refineSrchTemplate ( mat, matTmpl, enMotion, ptResult, fRotation, fCorrelation );
+        }
+        catch (std::exception) {
+            return VisionStatus::OPENCV_EXCEPTION;
+        }
     }
 
-    ptResult.x += (float)( matTmpl.cols / 2 + 0.5 );
-    ptResult.y += (float)( matTmpl.rows / 2 + 0.5 );
+    ptResult.x += (float)( matTmpl.cols / 2 + 0.5f );
+    ptResult.y += (float)( matTmpl.rows / 2 + 0.5f );
     return VisionStatus::OK;
 }
 

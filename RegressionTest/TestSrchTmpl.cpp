@@ -39,6 +39,7 @@ void TestTmplMatch_1()
     stCmd.rectSrchWindow = cv::Rect(0, 0, stCmd.matInputImg.cols, stCmd.matInputImg.rows );
     stCmd.enAlgorithm = PR_MATCH_TMPL_ALGORITHM::SQUARE_DIFF;
     stCmd.nRecordId = stLrnRpy.nRecordId;
+    stCmd.bSubPixelRefine = true;
     stCmd.enMotion = PR_OBJECT_MOTION::EUCLIDEAN;
     
     PR_MatchTmpl(&stCmd, &stRpy);
@@ -75,9 +76,40 @@ void TestTmplMatch_2()
     PrintMatchTmplRpy ( stRpy );
 }
 
+void TestTmplMatch_3()
+{
+    std::cout << std::endl << "------------------------------------------";
+    std::cout << std::endl << "MATCH TEMPLATE REGRESSION TEST #3 STARTING";
+    std::cout << std::endl << "------------------------------------------";
+    std::cout << std::endl;
+
+    PR_LRN_TEMPLATE_CMD stLrnCmd;
+    PR_LRN_TEMPLATE_RPY stLrnRpy;
+    stLrnCmd.matInputImg = cv::imread("./data/CapsLock_1.png");
+    stLrnCmd.rectROI = cv::Rect (0, 0, stLrnCmd.matInputImg.cols, stLrnCmd.matInputImg.rows );
+    stLrnCmd.enAlgorithm = PR_MATCH_TMPL_ALGORITHM::SQUARE_DIFF;
+    PR_LrnTmpl ( &stLrnCmd, &stLrnRpy );
+    if ( stLrnRpy.enStatus != VisionStatus::OK ) {
+        std::cout << "Failed to learn template." << std::endl;
+        return;
+    }
+
+    PR_MATCH_TEMPLATE_CMD stCmd;
+    PR_MATCH_TEMPLATE_RPY stRpy;
+    stCmd.matInputImg = cv::imread("./data/CapsLock_2.png", cv::IMREAD_GRAYSCALE);
+    stCmd.rectSrchWindow = cv::Rect(0, 0, stCmd.matInputImg.cols, stCmd.matInputImg.rows );
+    stCmd.enAlgorithm = PR_MATCH_TMPL_ALGORITHM::SQUARE_DIFF;
+    stCmd.nRecordId = stLrnRpy.nRecordId;
+    stCmd.enMotion = PR_OBJECT_MOTION::TRANSLATION;
+    
+    PR_MatchTmpl(&stCmd, &stRpy);
+    PrintMatchTmplRpy ( stRpy );
+}
+
 void TestTmplMatch() {
     TestTmplMatch_1();
     TestTmplMatch_2();
+    TestTmplMatch_3();
 }
 
 static void PrintFiducialMarkResult(const PR_SRCH_FIDUCIAL_MARK_RPY &stRpy) {

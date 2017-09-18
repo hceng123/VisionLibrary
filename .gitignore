@@ -35,3 +35,8 @@ TestVisionLibrary/data
 RegressionTest/Vision
 *.yml
 *.log
+RegressionTest/Data/BranchCut_1.png
+RegressionTest/Data/NanMap_2.png
+RegressionTest/Data/NanMap_3.png
+RegressionTest/Data/BranchCut_2.png
+VisionLibrary/Unwrap_original.cpp

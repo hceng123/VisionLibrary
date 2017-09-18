@@ -90,11 +90,16 @@ struct PR_LRN_TEMPLATE_RPY {
 };
 
 struct PR_MATCH_TEMPLATE_CMD {
-    PR_MATCH_TEMPLATE_CMD() : enAlgorithm (PR_MATCH_TMPL_ALGORITHM::SQUARE_DIFF), nRecordId(-1) {}
+    PR_MATCH_TEMPLATE_CMD() :
+        enAlgorithm (PR_MATCH_TMPL_ALGORITHM::SQUARE_DIFF),
+        nRecordId(-1),
+        bSubPixelRefine(false),
+        enMotion (PR_OBJECT_MOTION::TRANSLATION) {}
     cv::Mat                 matInputImg;
     PR_MATCH_TMPL_ALGORITHM enAlgorithm;
     Int32                   nRecordId;
     cv::Rect                rectSrchWindow;
+    bool                    bSubPixelRefine;
     PR_OBJECT_MOTION        enMotion;
 };
 
@@ -840,10 +845,11 @@ struct PR_GRID_AVG_GRAY_SCALE_RPY {
 };
 
 struct PR_CALIB_3D_BASE_CMD {
-    PR_CALIB_3D_BASE_CMD() : bEnableGaussianFilter(true), bReverseSeq(true) {}
+    PR_CALIB_3D_BASE_CMD() : bEnableGaussianFilter(true), bReverseSeq(true), fRemoveHarmonicWaveK(0.f) {}
     VectorOfMat             vecInputImgs;
     bool                    bEnableGaussianFilter;
     bool                    bReverseSeq;            //Change the image sequence.
+    float                   fRemoveHarmonicWaveK;   //The factor to remove the harmonic wave in the thick stripe. If it is 0, then this procedure will be skipped.
 };
 
 struct PR_CALIB_3D_BASE_RPY {
@@ -858,9 +864,12 @@ struct PR_CALIB_3D_HEIGHT_CMD {
         bEnableGaussianFilter(true),
         bReverseSeq(true),
         bReverseHeight(false),
+        fRemoveHarmonicWaveK(0.f),
         fBaseStartAvgPhase(0),
         fMinIntensityDiff(3.f),
         fMinAvgIntensity(3.f),
+        nBlockStepCount(4),
+        fBlockStepHeight(1.f),        
         nResultImgGridRow(8),
         nResultImgGridCol(8),
         szMeasureWinSize (40, 40) {}
@@ -868,6 +877,7 @@ struct PR_CALIB_3D_HEIGHT_CMD {
     bool                    bEnableGaussianFilter;
     bool                    bReverseSeq;            //Change the image sequence.
     bool                    bReverseHeight;         //The calibration base is align to the top of calibration block.
+    float                   fRemoveHarmonicWaveK;   //The factor to remove the harmonic wave in the thick stripe. If it is 0, then this procedure will be skipped.
     float                   fMinIntensityDiff;      //In a group of 4 images, if a pixel's max and min intensity less than this value, this pixel will be discarded.
     float                   fMinAvgIntensity;       //In a group of 4 images, if a pixel's average intensity less than this value, this pixel will be discarded.
     cv::Mat                 matThickToThinStripeK;  //The factor between thick stripe and thin stripe.
@@ -891,11 +901,36 @@ struct PR_CALIB_3D_HEIGHT_RPY {
     cv::Mat                 matResultImg;
 };
 
+//Combine negative and positive calibration result to a single matPhaseToHeightK.
+struct PR_COMB_3D_CALIB_CMD {
+    PR_COMB_3D_CALIB_CMD() :
+        fBlockStepHeight(1.f),
+        nImageRows(2048),
+        nImageCols(2040) {}
+    VectorOfVectorOfFloat   vecVecStepPhasePos; //The phase of 4 corners and the center of the positive calibration. The step on top of base plane.
+    VectorOfVectorOfFloat   vecVecStepPhaseNeg; //The phase of 4 corners and the center of the negative calibration. The step below the base plane.
+    int                     nImageRows;         //The rows of camera image.
+    int                     nImageCols;         //The cols of camera image.
+    float                   fBlockStepHeight;   //The height of each step, unit mm. So the total block height is nBlockStepCount x fBlockStepHeight.
+};
+
+struct PR_COMB_3D_CALIB_RPY {
+    VisionStatus            enStatus;
+    cv::Mat                 matPhaseToHeightK;  //The factor to convert phase to height.
+    VectorOfVectorOfFloat   vecVecStepPhaseDiff;
+};
+
 struct PR_CALC_3D_HEIGHT_CMD {
-    PR_CALC_3D_HEIGHT_CMD() : bEnableGaussianFilter(true), bReverseSeq(true), fMinIntensityDiff(3.f), fMinAvgIntensity(3.f) {}
+    PR_CALC_3D_HEIGHT_CMD() :
+        bEnableGaussianFilter(true),
+        bReverseSeq(true),
+        fRemoveHarmonicWaveK(0.f),
+        fMinIntensityDiff(3.f),
+        fMinAvgIntensity(3.f) {}
     VectorOfMat             vecInputImgs;
     bool                    bEnableGaussianFilter;
     bool                    bReverseSeq;            //Change the image sequence.
+    float                   fRemoveHarmonicWaveK;   //The factor to remove the harmonic wave in the thick stripe. If it is 0, then this procedure will be skipped.
     float                   fMinIntensityDiff;      //In a group of 4 images, if a pixel's max and min intensity less than this value, this pixel will be discarded.
     float                   fMinAvgIntensity;       //In a group of 4 images, if a pixel's average intensity less than this value, this pixel will be discarded.
     cv::Mat                 matThickToThinStripeK;  //The factor between thick stripe and thin stripe.
@@ -908,6 +943,22 @@ struct PR_CALC_3D_HEIGHT_RPY {
     VisionStatus            enStatus;
     cv::Mat                 matPhase;
     cv::Mat                 matHeight;
+};
+
+struct PR_CALC_3D_HEIGHT_DIFF_CMD {
+    PR_CALC_3D_HEIGHT_DIFF_CMD() :
+        fEffectHRatioStart(0.3f),
+        fEffectHRatioEnd(0.7f) {}
+    cv::Mat                 matHeight;
+    VectorOfRect            vecRectBases;           //One or more bases as the reference surface.
+    cv::Rect                rectROI;                //The ROI to measure height difference to base.
+    float                   fEffectHRatioStart;     //If fEffectHRatioStart = 0.3, the lower 30% points in the window will be removed for fitting.
+    float                   fEffectHRatioEnd;       //If fEffectHRatioEnd = 0.7, the upper 30% of points in the window will be removed for fitting.
+};
+
+struct PR_CALC_3D_HEIGHT_DIFF_RPY {
+    VisionStatus            enStatus;
+    float                   fHeightDiff;
 };
 
 //Calculate the optics modulation transfer function.

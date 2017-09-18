@@ -122,6 +122,19 @@ public:
         return vecVecArray;
     }
 
+    template<typename _Tp>
+    static inline cv::Mat vectorToMat(const std::vector<std::vector<_Tp>> &vecVecArray) {
+        cv::Mat matResult( ToInt32 ( vecVecArray.size() ), ToInt32 ( vecVecArray[0].size() ), CV_32FC1 );
+        int nRow = 0;
+        for (const auto &vecRow : vecVecArray) {
+            cv::Mat matTarget ( matResult, cv::Range ( nRow, nRow + 1 ), cv::Range::all () );
+            cv::Mat matSrc ( cv::Size ( matResult.cols, 1 ), CV_32FC1, (void *)vecRow.data () );
+            matSrc.copyTo ( matTarget );
+            ++ nRow;
+        }
+        return matResult;
+    }
+
     //if nDimension == 1, returns the cumulative sum of each col, otherwise return the cumulative sum of each row.
     template<typename _Tp>
     static inline cv::Mat cumsum ( const cv::Mat &matInput, int nDimension ) {

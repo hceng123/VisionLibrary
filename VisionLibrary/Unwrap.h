@@ -31,7 +31,9 @@ public:
     ~Unwrap ();
     static void calib3DBase(const PR_CALIB_3D_BASE_CMD *const pstCmd, PR_CALIB_3D_BASE_RPY *const pstRpy);
     static void calib3DHeight(const PR_CALIB_3D_HEIGHT_CMD *const pstCmd, PR_CALIB_3D_HEIGHT_RPY *const pstRpy);
+    static void comb3DCalib(const PR_COMB_3D_CALIB_CMD *const pstCmd, PR_COMB_3D_CALIB_RPY *const pstRpy);
     static void calc3DHeight(const PR_CALC_3D_HEIGHT_CMD *const pstCmd, PR_CALC_3D_HEIGHT_RPY *const pstRpy);
+    static void calc3DHeightDiff(const PR_CALC_3D_HEIGHT_DIFF_CMD *const pstCmd, PR_CALC_3D_HEIGHT_DIFF_RPY *const pstRpy);
     static void calcMTF(const PR_CALC_MTF_CMD *const pstCmd, PR_CALC_MTF_RPY *const pstRpy);
     static void calcPD(const PR_CALC_PD_CMD *const pstCmd, PR_CALC_PD_RPY *const pstRpy);
 private:
@@ -52,10 +54,11 @@ private:
     static const int BEZIER_RANK =              5;
     static const int ERODE_WIN_SIZE =           41;
     static const int PHASE_SNOOP_WIN_SIZE =     10;
+    static const int CALIB_HEIGHT_MIN_SIZE =    200;
 
     static const float GAUSSIAN_FILTER_SIGMA;
     static const float ONE_HALF_CYCLE;
-    static const float UNSTABLE_DIFF;
+    static const float CALIB_HEIGHT_STEP_USEFUL_PT;
     static const float REMOVE_HEIGHT_NOSIE_RATIO;
     static const float LOW_BASE_PHASE;
 };

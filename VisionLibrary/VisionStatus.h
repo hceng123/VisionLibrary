@@ -66,8 +66,11 @@ enum class VisionStatus
     RATIO_OVER_LIMIT,
     BLOB_COUNT_OUT_OF_RANGE,
 
-    //Inspect lead staus
+    //Inspect lead status
     NOT_FIND_LEAD,
+
+    //3D Status
+    CALIB_3D_HEIGHT_SURFACE_TOO_SMALL   = 100,
 };
 
 }

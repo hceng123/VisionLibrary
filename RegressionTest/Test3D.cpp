@@ -103,9 +103,30 @@ void TestCalib3DHeight() {
     printfVectorOfVector<float> ( stRpy.vecVecStepPhaseDiff );
 }
 
+void TestComb3DCalib() {
+    std::cout << std::endl << "---------------------------------------------";
+    std::cout << std::endl << "COMBINE 3D HEIGHT CALIBRATION #1 STARTING";
+    std::cout << std::endl << "---------------------------------------------";
+    std::cout << std::endl;
+
+    PR_COMB_3D_CALIB_CMD stCmd;
+    PR_COMB_3D_CALIB_RPY stRpy;
+    stCmd.vecVecStepPhaseNeg = readDataFromFile("./data/StepPhaseData/StepPhaseNeg.csv");
+    stCmd.vecVecStepPhasePos = readDataFromFile("./data/StepPhaseData/StepPhasePos.csv");
+    PR_Comb3DCalib ( &stCmd, &stRpy );
+    std::cout << "PR_Comb3DCalib status " << ToInt32( stRpy.enStatus ) << std::endl;
+    if ( VisionStatus::OK == stRpy.enStatus ) {
+        std::cout << "Result PhaseToHeightK: " << std::endl;
+        printfMat<float>(stRpy.matPhaseToHeightK);
+        std::cout << "Step Phase Difference: " << std::endl;
+        printfVectorOfVector<float>(stRpy.vecVecStepPhaseDiff );
+    }
+}
+
 void Test3D() {
     TestCalib3dBase();
     TestCalib3DHeight();
+    TestComb3DCalib();
 }
 
 }

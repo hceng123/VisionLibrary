@@ -4,7 +4,6 @@
 #include "opencv2/calib3d.hpp"
 #include "opencv2/highgui.hpp"
 #include "TimeLog.h"
-#include "logcase.h"
 #include "boost/filesystem.hpp"
 #include "RecordManager.h"
 #include "Config.h"
@@ -83,10 +82,10 @@ VisionAlgorithm::VisionAlgorithm()
         pstCmd->rectLrn.width <= 0 || pstCmd->rectLrn.height <= 0 ||
         ( pstCmd->rectLrn.x + pstCmd->rectLrn.width ) > pstCmd->matInputImg.cols ||
         ( pstCmd->rectLrn.y + pstCmd->rectLrn.height ) > pstCmd->matInputImg.rows ) {
-        char charrMsg[1000];
-        _snprintf( charrMsg, sizeof( charrMsg ), "The learn rect (%d, %d, %d, %d) is invalid.",
+        char chArrMsg[1000];
+        _snprintf( chArrMsg, sizeof( chArrMsg ), "The learn rect (%d, %d, %d, %d) is invalid.",
             pstCmd->rectLrn.x, pstCmd->rectLrn.y, pstCmd->rectLrn.width, pstCmd->rectLrn.height );
-        WriteLog(charrMsg);
+        WriteLog(chArrMsg);
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return pstRpy->enStatus;
     }
@@ -133,25 +132,25 @@ VisionAlgorithm::VisionAlgorithm()
         return pstRpy->enStatus;
     }
 
-    char charrMsg[1000];
+    char chArrMsg[1000];
     if ( pstCmd->nRecordId <= 0 ) {
-        _snprintf(charrMsg, sizeof (charrMsg), "The input record ID %d is invalid.", pstCmd->nRecordId );
-        WriteLog ( charrMsg );
+        _snprintf(chArrMsg, sizeof (chArrMsg), "The input record ID %d is invalid.", pstCmd->nRecordId );
+        WriteLog ( chArrMsg );
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return pstRpy->enStatus;
     }
 
     ObjRecordPtr ptrRecord = std::static_pointer_cast<ObjRecord> ( RecordManager::getInstance()->get ( pstCmd->nRecordId ) );
     if ( nullptr == ptrRecord ) {
-        _snprintf(charrMsg, sizeof (charrMsg), "Failed to get record ID %d in system.", pstCmd->nRecordId );
-        WriteLog ( charrMsg );
+        _snprintf(chArrMsg, sizeof (chArrMsg), "Failed to get record ID %d in system.", pstCmd->nRecordId );
+        WriteLog ( chArrMsg );
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return pstRpy->enStatus;
     }
 
     if ( ptrRecord->getType() != PR_RECORD_TYPE::OBJECT ) {
-        _snprintf(charrMsg, sizeof (charrMsg), "The type of record ID %d is not OBJECT.", pstCmd->nRecordId );
-        WriteLog ( charrMsg );
+        _snprintf(chArrMsg, sizeof (chArrMsg), "The type of record ID %d is not OBJECT.", pstCmd->nRecordId );
+        WriteLog ( chArrMsg );
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return pstRpy->enStatus;
     }
@@ -178,7 +177,7 @@ VisionAlgorithm::VisionAlgorithm()
 
     if ( vecKeypointScene.size() < _constLeastFeatures ) {
         WriteLog("detectAndCompute can not find feature.");
-        WriteLog ( charrMsg );
+        WriteLog ( chArrMsg );
         pstRpy->enStatus = VisionStatus::SRCH_OBJ_FAIL;
         return pstRpy->enStatus;
     }
@@ -391,9 +390,8 @@ namespace
 * Note:      Mu is name of greek symbol μ.
 *            Omega and Eta are also greek symbol.
 *******************************************************************************/
-std::vector<Int16> VisionAlgorithm::autoMultiLevelThreshold(const cv::Mat &matInputImg, const cv::Mat &matMask, int N)
-{
-    assert(N >= 1 && N <= 4);
+std::vector<Int16> VisionAlgorithm::autoMultiLevelThreshold(const cv::Mat &matInputImg, const cv::Mat &matMask, int N) {
+    assert(N >= 1 && N <= PR_MAX_AUTO_THRESHOLD_COUNT);
 
     const int sbins = 128;
     const float MIN_P = 0.001f;
@@ -637,6 +635,97 @@ std::vector<Int16> VisionAlgorithm::autoMultiLevelThreshold(const cv::Mat &matIn
         vecThreshold.push_back(nResultT2 * PR_MAX_GRAY_LEVEL / sbins);
         vecThreshold.push_back(nResultT3 * PR_MAX_GRAY_LEVEL / sbins);
         vecThreshold.push_back(nResultT4 * PR_MAX_GRAY_LEVEL / sbins);
+    }else if ( 5 == N ) {
+        float fMaxSigma = 0;
+        int nResultT1 = 0, nResultT2 = 0, nResultT3 = 0, nResultT4 = 0, nResultT5 = 0;
+        for (int T1 = START;  T1 < sbins - 4; ++ T1)
+        for (int T2 = T1 + 1; T2 < sbins - 3; ++ T2)
+        for (int T3 = T2 + 1; T3 < sbins - 2; ++ T3)
+        for (int T4 = T3 + 1; T4 < sbins - 1; ++ T4)
+        for (int T5 = T4 + 1; T5 < sbins;     ++ T5)
+        {
+            float fSigma = 0.f;
+
+            if (vecVecEta[START][T1] >= 0.f)
+                fSigma += vecVecEta[START][T1];
+            else
+            {
+                if (vecVecOmega[START][T1] > MIN_P)
+                    vecVecEta[START][T1] = vecVecMu[START][T1] * vecVecMu[START][T1] / vecVecOmega[START][T1];
+                else
+                    vecVecEta[START][T1] = 0.f;
+                fSigma += vecVecEta[START][T1];
+            }
+
+            if (vecVecEta[T1][T2] >= 0.f)
+                fSigma += vecVecEta[T1][T2];
+            else
+            {
+                if (vecVecOmega[T1][T2] > MIN_P)
+                    vecVecEta[T1][T2] = vecVecMu[T1][T2] * vecVecMu[T1][T2] / vecVecOmega[T1][T2];
+                else
+                    vecVecEta[T1][T2] = 0.f;
+                fSigma += vecVecEta[T1][T2];
+            }
+
+            if (vecVecEta[T2][T3] >= 0.f)
+                fSigma += vecVecEta[T2][T3];
+            else
+            {
+                if (vecVecOmega[T2][T3] > MIN_P)
+                    vecVecEta[T2][T3] = vecVecMu[T2][T3] * vecVecMu[T2][T3] / vecVecOmega[T2][T3];
+                else
+                    vecVecEta[T2][T3] = 0.f;
+                fSigma += vecVecEta[T2][T3];
+            }
+
+            if (vecVecEta[T3][T4] >= 0.f)
+                fSigma += vecVecEta[T3][T4];
+            else
+            {
+                if (vecVecOmega[T3][T4] > MIN_P)
+                    vecVecEta[T3][T4] = vecVecMu[T3][T4] * vecVecMu[T3][T4] / vecVecOmega[T3][T4];
+                else
+                    vecVecEta[T3][T4] = 0.f;
+                fSigma += vecVecEta[T3][T4];
+            }
+
+            if (vecVecEta[T4][T5] >= 0.f)
+                fSigma += vecVecEta[T4][T5];
+            else
+            {
+                if (vecVecOmega[T4][T5] > MIN_P)
+                    vecVecEta[T4][T5] = vecVecMu[T4][T5] * vecVecMu[T4][T5] / vecVecOmega[T4][T5];
+                else
+                    vecVecEta[T4][T5] = 0.f;
+                fSigma += vecVecEta[T4][T5];
+            }
+
+            if (vecVecEta[T5][sbins] >= 0.f)
+                fSigma += vecVecEta[T5][sbins];
+            else
+            {
+                if (vecVecOmega[T5][sbins] > MIN_P)
+                    vecVecEta[T5][sbins] = vecVecMu[T5][sbins] * vecVecMu[T5][sbins] / vecVecOmega[T5][sbins];
+                else
+                    vecVecEta[T5][sbins] = 0.f;
+                fSigma += vecVecEta[T5][sbins];
+            }
+
+            if (fMaxSigma < fSigma)    {
+                nResultT1 = T1;
+                nResultT2 = T2;
+                nResultT3 = T3;
+                nResultT4 = T4;
+                nResultT5 = T5;
+                fMaxSigma = fSigma;
+            }
+        }
+        vecThreshold.push_back(nResultT1 * PR_MAX_GRAY_LEVEL / sbins);
+        vecThreshold.push_back(nResultT2 * PR_MAX_GRAY_LEVEL / sbins);
+        vecThreshold.push_back(nResultT3 * PR_MAX_GRAY_LEVEL / sbins);
+        vecThreshold.push_back(nResultT4 * PR_MAX_GRAY_LEVEL / sbins);
+        vecThreshold.push_back(nResultT5 * PR_MAX_GRAY_LEVEL / sbins);
     }
 
     return vecThreshold;
@@ -661,10 +750,10 @@ VisionStatus VisionAlgorithm::autoThreshold(PR_AUTO_THRESHOLD_CMD *pstCmd, PR_AU
 
     if ( ! pstCmd->matMask.empty() ) {
         if ( pstCmd->matMask.rows != pstCmd->matInputImg.rows || pstCmd->matMask.cols != pstCmd->matInputImg.cols ) {
-            char charrMsg[1000];
-            _snprintf(charrMsg, sizeof(charrMsg), "The mask size ( %d, %d ) not match with input image size ( %d, %d ).",
+            char chArrMsg[1000];
+            _snprintf(chArrMsg, sizeof(chArrMsg), "The mask size ( %d, %d ) not match with input image size ( %d, %d ).",
                 pstCmd->matMask.cols, pstCmd->matMask.rows, pstCmd->matInputImg.cols, pstCmd->matInputImg.rows);
-            WriteLog(charrMsg);
+            WriteLog(chArrMsg);
             pstRpy->enStatus = VisionStatus::INVALID_PARAM;
             return pstRpy->enStatus;
         }
@@ -869,10 +958,10 @@ int VisionAlgorithm::_autoThreshold(const cv::Mat &mat, const cv::Mat &matMask/*
 
 VisionStatus VisionAlgorithm::lrnDevice(PR_LRN_DEVICE_CMD *pstLrnDeviceCmd, PR_LRN_DEVICE_RPY *pstLrnDeivceRpy)
 {
-    char charrMsg[1000];
+    char chArrMsg[1000];
     if ( nullptr == pstLrnDeviceCmd || nullptr == pstLrnDeivceRpy ) {
-        _snprintf(charrMsg, sizeof(charrMsg), "Input is invalid, pstLrnDeviceCmd = %d, pstLrnDeivceRpy = %d", (int)pstLrnDeviceCmd, (int)pstLrnDeivceRpy);
-        WriteLog(charrMsg);
+        _snprintf(chArrMsg, sizeof(chArrMsg), "Input is invalid, pstLrnDeviceCmd = %d, pstLrnDeivceRpy = %d", (int)pstLrnDeviceCmd, (int)pstLrnDeivceRpy);
+        WriteLog(chArrMsg);
         return VisionStatus::INVALID_PARAM;
     }
 
@@ -943,10 +1032,10 @@ VisionStatus VisionAlgorithm::lrnDevice(PR_LRN_DEVICE_CMD *pstLrnDeviceCmd, PR_L
 VisionStatus VisionAlgorithm::inspDevice(PR_INSP_DEVICE_CMD *pstInspDeviceCmd, PR_INSP_DEVICE_RPY *pstInspDeivceRpy)
 {
     MARK_FUNCTION_START_TIME;
-    char charrMsg[1000];
+    char chArrMsg[1000];
     if ( pstInspDeviceCmd == nullptr || pstInspDeivceRpy == nullptr ) {
-        _snprintf(charrMsg, sizeof(charrMsg), "Input is invalid, pstInspDeviceCmd = %d, pstInspDeivceRpy = %d", (int)pstInspDeviceCmd, (int)pstInspDeivceRpy);
-        WriteLog(charrMsg);
+        _snprintf(chArrMsg, sizeof(chArrMsg), "Input is invalid, pstInspDeviceCmd = %d, pstInspDeivceRpy = %d", (int)pstInspDeviceCmd, (int)pstInspDeivceRpy);
+        WriteLog(chArrMsg);
         return VisionStatus::INVALID_PARAM;
     }
 
@@ -958,8 +1047,8 @@ VisionStatus VisionAlgorithm::inspDevice(PR_INSP_DEVICE_CMD *pstInspDeviceCmd, P
     pstInspDeivceRpy->nDeviceCount = pstInspDeviceCmd->nDeviceCount;
     for (Int32 i = 0; i < pstInspDeviceCmd->nDeviceCount; ++ i) {
         if ( pstInspDeviceCmd->astDeviceInfo[i].stSize.area() < 1)   {
-            _snprintf(charrMsg, sizeof(charrMsg), "Device[ %d ] size is invalid", i );
-            WriteLog(charrMsg);
+            _snprintf(chArrMsg, sizeof(chArrMsg), "Device[ %d ] size is invalid", i );
+            WriteLog(chArrMsg);
             return VisionStatus::INVALID_PARAM;
         }
 
@@ -1012,8 +1101,8 @@ VisionStatus VisionAlgorithm::inspDevice(PR_INSP_DEVICE_CMD *pstInspDeviceCmd, P
             || pstInspDeviceCmd->astDeviceInfo [ i ].stInspItem.bCheckScale )
         {
             if (0 > pstInspDeviceCmd->astDeviceInfo [ i ].nCriteriaNo || pstInspDeviceCmd->astDeviceInfo [ i ].nCriteriaNo >= PR_MAX_CRITERIA_COUNT) {
-                _snprintf(charrMsg, sizeof(charrMsg), "Device[ %d ] Input nCriteriaNo %d is invalid", i, pstInspDeviceCmd->astDeviceInfo [ i ].nCriteriaNo);
-                WriteLog(charrMsg);
+                _snprintf(chArrMsg, sizeof(chArrMsg), "Device[ %d ] Input nCriteriaNo %d is invalid", i, pstInspDeviceCmd->astDeviceInfo [ i ].nCriteriaNo);
+                WriteLog(chArrMsg);
                 return VisionStatus::INVALID_PARAM;
             }
         }
@@ -1084,10 +1173,10 @@ VisionStatus VisionAlgorithm::inspDevice(PR_INSP_DEVICE_CMD *pstInspDeviceCmd, P
         pstCmd->rectROI.width <= 0 || pstCmd->rectROI.height <= 0 ||
         ( pstCmd->rectROI.x + pstCmd->rectROI.width ) > pstCmd->matInputImg.cols ||
         ( pstCmd->rectROI.y + pstCmd->rectROI.height ) > pstCmd->matInputImg.rows ) {
-        char charrMsg[1000];
-        _snprintf( charrMsg, sizeof( charrMsg ), "The input ROI rect (%d, %d, %d, %d) is invalid",
+        char chArrMsg[1000];
+        _snprintf( chArrMsg, sizeof( chArrMsg ), "The input ROI rect (%d, %d, %d, %d) is invalid.",
             pstCmd->rectROI.x, pstCmd->rectROI.y, pstCmd->rectROI.width, pstCmd->rectROI.height );
-        WriteLog(charrMsg);
+        WriteLog(chArrMsg);
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return VisionStatus::INVALID_PARAM;
     }
@@ -1131,27 +1220,27 @@ VisionStatus VisionAlgorithm::inspDevice(PR_INSP_DEVICE_CMD *pstInspDeviceCmd, P
         pstCmd->rectSrchWindow.width <= 0 || pstCmd->rectSrchWindow.height <= 0 ||
         ( pstCmd->rectSrchWindow.x + pstCmd->rectSrchWindow.width ) > pstCmd->matInputImg.cols ||
         ( pstCmd->rectSrchWindow.y + pstCmd->rectSrchWindow.height ) > pstCmd->matInputImg.rows ) {
-        char charrMsg[1000];
-        _snprintf( charrMsg, sizeof( charrMsg ), "The search window (%d, %d, %d, %d) is invalid.",
+        char chArrMsg[1000];
+        _snprintf( chArrMsg, sizeof( chArrMsg ), "The search window (%d, %d, %d, %d) is invalid.",
             pstCmd->rectSrchWindow.x, pstCmd->rectSrchWindow.y, pstCmd->rectSrchWindow.width, pstCmd->rectSrchWindow.height );
-        WriteLog(charrMsg);
+        WriteLog(chArrMsg);
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return VisionStatus::INVALID_PARAM;
     }
 
     if ( pstCmd->nRecordId <= 0 ) {
-        char charrMsg[100];
-         _snprintf( charrMsg, sizeof( charrMsg ), "The input record id %d is invalid.", pstCmd->nRecordId );
-        WriteLog(charrMsg);
+        char chArrMsg[100];
+         _snprintf( chArrMsg, sizeof( chArrMsg ), "The input record id %d is invalid.", pstCmd->nRecordId );
+        WriteLog(chArrMsg);
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
-        return VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
     }
     
     TmplRecordPtr ptrRecord = std::static_pointer_cast<TmplRecord> ( RecordManager::getInstance()->get ( pstCmd->nRecordId ) );
     if ( nullptr == ptrRecord ) {
-        char charrMsg[100];
-        _snprintf ( charrMsg, sizeof (charrMsg), "Failed to get record ID %d in system.", pstCmd->nRecordId );
-        WriteLog ( charrMsg );
+        char chArrMsg[100];
+        _snprintf ( chArrMsg, sizeof (chArrMsg), "Failed to get record ID %d in system.", pstCmd->nRecordId );
+        WriteLog ( chArrMsg );
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return pstRpy->enStatus;
     }
@@ -1163,9 +1252,9 @@ VisionStatus VisionAlgorithm::inspDevice(PR_INSP_DEVICE_CMD *pstInspDeviceCmd, P
     }
 
     if ( ptrRecord->getAlgorithm() != pstCmd->enAlgorithm ) {
-        char charrMsg[100];
-        _snprintf ( charrMsg, sizeof (charrMsg), "The input algorithm %d is not match with record algorithm %d in system.", ToInt32 ( pstCmd->enAlgorithm ), ToInt32 ( ptrRecord->getAlgorithm() ) );
-        WriteLog ( charrMsg );
+        char chArrMsg[100];
+        _snprintf ( chArrMsg, sizeof (chArrMsg), "The input algorithm %d is not match with record algorithm %d in system.", ToInt32 ( pstCmd->enAlgorithm ), ToInt32 ( ptrRecord->getAlgorithm() ) );
+        WriteLog ( chArrMsg );
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return pstRpy->enStatus;
     }
@@ -1179,14 +1268,14 @@ VisionStatus VisionAlgorithm::inspDevice(PR_INSP_DEVICE_CMD *pstInspDeviceCmd, P
 
     if ( PR_MATCH_TMPL_ALGORITHM::SQUARE_DIFF == pstCmd->enAlgorithm ) {
         float fCorrelation;
-        pstRpy->enStatus = MatchTmpl::matchTemplate ( matSrchROI, ptrRecord->getTmpl(), pstCmd->enMotion, pstRpy->ptObjPos, pstRpy->fRotation, fCorrelation );
+        pstRpy->enStatus = MatchTmpl::matchTemplate ( matSrchROI, ptrRecord->getTmpl(), pstCmd->bSubPixelRefine, pstCmd->enMotion, pstRpy->ptObjPos, pstRpy->fRotation, fCorrelation );
         pstRpy->ptObjPos.x += pstCmd->rectSrchWindow.x;
         pstRpy->ptObjPos.y += pstCmd->rectSrchWindow.y;
         pstRpy->fMatchScore = fCorrelation * ConstToPercentage;
     }else if ( PR_MATCH_TMPL_ALGORITHM::HIERARCHICAL_EDGE == pstCmd->enAlgorithm ) {
         cv::Point ptResult = MatchTmpl::matchByRecursionEdge ( matSrchROI, ptrRecord->getTmpl(), ptrRecord->getEdgeMask() );
-        pstRpy->ptObjPos.x = ptResult.x + ptrRecord->getTmpl().cols / 2.f  + 0.5f + pstCmd->rectSrchWindow.x;
-        pstRpy->ptObjPos.y = ptResult.y + ptrRecord->getTmpl().rows / 2.f  + 0.5f + pstCmd->rectSrchWindow.y;
+        pstRpy->ptObjPos.x = ptResult.x + ptrRecord->getTmpl().cols / 2 + 0.5f + pstCmd->rectSrchWindow.x;
+        pstRpy->ptObjPos.y = ptResult.y + ptrRecord->getTmpl().rows / 2 + 0.5f + pstCmd->rectSrchWindow.y;
         pstRpy->fRotation = 0.f;
         pstRpy->enStatus = VisionStatus::OK;
     }
@@ -1571,6 +1660,104 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
     cv::destroyWindow ( strWindowName );
 }
 
+/*static*/ LogCasePtr VisionAlgorithm::_createLogCaseInstance(const String &strFolderPrefix, const String &strLocalPath) {
+    if ( LogCaseLrnObj::StaticGetFolderPrefix() == strFolderPrefix ) 
+        return std::make_unique<LogCaseLrnObj>( strLocalPath, true );
+
+    if (LogCaseSrchObj::StaticGetFolderPrefix() == strFolderPrefix)
+        return std::make_unique <LogCaseSrchObj>( strLocalPath, true );
+
+    if (LogCaseFitCircle::StaticGetFolderPrefix() == strFolderPrefix)
+        return std::make_unique <LogCaseFitCircle>( strLocalPath, true );
+
+    if (LogCaseFitLine::StaticGetFolderPrefix() == strFolderPrefix)
+        return std::make_unique<LogCaseFitLine>( strLocalPath, true );
+
+    if (LogCaseCaliper::StaticGetFolderPrefix() == strFolderPrefix)
+        return std::make_unique<LogCaseCaliper>( strLocalPath, true );
+
+    if (LogCaseFitParallelLine::StaticGetFolderPrefix() == strFolderPrefix)
+        return std::make_unique<LogCaseFitParallelLine>( strLocalPath, true );
+
+    if (LogCaseFitRect::StaticGetFolderPrefix() == strFolderPrefix)
+        return std::make_unique<LogCaseFitRect>( strLocalPath, true );
+
+    if (LogCaseFindEdge::StaticGetFolderPrefix() == strFolderPrefix)
+        return std::make_unique<LogCaseFindEdge>( strLocalPath, true );
+
+    if (LogCaseSrchFiducial::StaticGetFolderPrefix() == strFolderPrefix)
+        return std::make_unique<LogCaseSrchFiducial>( strLocalPath, true );
+
+    if (LogCaseOcr::StaticGetFolderPrefix() == strFolderPrefix)
+        return std::make_unique<LogCaseOcr>( strLocalPath, true );
+
+    if (LogCaseRemoveCC::StaticGetFolderPrefix() == strFolderPrefix )
+        return std::make_unique<LogCaseRemoveCC>( strLocalPath, true );
+
+    if (LogCaseDetectEdge::StaticGetFolderPrefix() == strFolderPrefix )
+        return std::make_unique<LogCaseDetectEdge>( strLocalPath, true );
+
+    if (LogCaseInspCircle::StaticGetFolderPrefix() == strFolderPrefix )
+        return std::make_unique<LogCaseInspCircle>( strLocalPath, true );
+
+    if (LogCaseAutoThreshold::StaticGetFolderPrefix() == strFolderPrefix )
+        return std::make_unique<LogCaseAutoThreshold>( strLocalPath, true );
+
+    if (LogCaseFillHole::StaticGetFolderPrefix() == strFolderPrefix )
+        return std::make_unique<LogCaseFillHole>( strLocalPath, true );
+
+    if (LogCaseLrnTmpl::StaticGetFolderPrefix() == strFolderPrefix )
+        return std::make_unique<LogCaseLrnTmpl>( strLocalPath, true );
+
+    if (LogCaseMatchTmpl::StaticGetFolderPrefix() == strFolderPrefix )
+        return std::make_unique<LogCaseMatchTmpl>( strLocalPath, true );
+
+    if (LogCasePickColor::StaticGetFolderPrefix() == strFolderPrefix )
+        return std::make_unique<LogCasePickColor>( strLocalPath, true );
+
+    if (LogCaseCalibrateCamera::StaticGetFolderPrefix() == strFolderPrefix )
+        return std::make_unique<LogCaseCalibrateCamera>( strLocalPath, true );
+
+    if (LogCaseRestoreImg::StaticGetFolderPrefix() == strFolderPrefix )
+        return std::make_unique<LogCaseRestoreImg>( strLocalPath, true );
+
+    if (LogCaseAutoLocateLead::StaticGetFolderPrefix() == strFolderPrefix )
+        return std::make_unique<LogCaseAutoLocateLead>( strLocalPath, true );
+
+    if (LogCaseInspBridge::StaticGetFolderPrefix() == strFolderPrefix )
+        return std::make_unique<LogCaseInspBridge>( strLocalPath, true );
+
+    if (LogCaseInspChip::StaticGetFolderPrefix() == strFolderPrefix )
+        return std::make_unique<LogCaseInspChip>( strLocalPath, true );
+
+    if (LogCaseLrnContour::StaticGetFolderPrefix() == strFolderPrefix )
+        return std::make_unique<LogCaseLrnContour>( strLocalPath, true );
+
+    if (LogCaseInspContour::StaticGetFolderPrefix() == strFolderPrefix )
+        return std::make_unique<LogCaseInspContour>( strLocalPath, true );
+
+    if (LogCaseInspHole::StaticGetFolderPrefix() == strFolderPrefix )
+        return std::make_unique<LogCaseInspHole>( strLocalPath, true );
+
+    if (LogCaseInspLead::StaticGetFolderPrefix() == strFolderPrefix )
+        return std::make_unique<LogCaseInspLead>( strLocalPath, true );
+
+    if (LogCaseCalib3DBase::StaticGetFolderPrefix() == strFolderPrefix )
+        return std::make_unique<LogCaseCalib3DBase>( strLocalPath, true );
+
+    if (LogCaseCalib3DHeight::StaticGetFolderPrefix() == strFolderPrefix )
+        return std::make_unique<LogCaseCalib3DHeight>( strLocalPath, true );
+
+    if ( LogCaseComb3DCalib::StaticGetFolderPrefix() == strFolderPrefix )
+        return std::make_unique<LogCaseComb3DCalib>( strLocalPath, true );
+
+    if (LogCaseCalc3DHeight::StaticGetFolderPrefix() == strFolderPrefix )
+        return std::make_unique<LogCaseCalc3DHeight>( strLocalPath, true );
+    
+    static String msg = strFolderPrefix + " is not handled in " + __FUNCTION__;
+    throw std::exception ( msg.c_str() );
+}
+
 /*static*/ VisionStatus VisionAlgorithm::runLogCase(const String &strFilePath)
 {
     if ( strFilePath.length() < 2 )
@@ -1595,70 +1782,13 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
 
     auto folderName = strLocalPath.substr ( pos + 1 );
     pos = folderName.find('_');
-    auto folderPrefix = folderName.substr(0, pos);
+    auto strFolderPrefix = folderName.substr(0, pos);
 
-    std::unique_ptr<LogCase> pLogCase = nullptr;
-    if ( LogCaseLrnObj::StaticGetFolderPrefix() == folderPrefix )
-        pLogCase = std::make_unique <LogCaseLrnObj>( strLocalPath, true );
-    else if (LogCaseSrchObj::StaticGetFolderPrefix() == folderPrefix)
-        pLogCase = std::make_unique <LogCaseSrchObj>( strLocalPath, true );
-    else if (LogCaseFitCircle::StaticGetFolderPrefix() == folderPrefix)
-        pLogCase = std::make_unique <LogCaseFitCircle>( strLocalPath, true );
-    else if (LogCaseFitLine::StaticGetFolderPrefix() == folderPrefix)
-        pLogCase = std::make_unique<LogCaseFitLine>( strLocalPath, true );
-    else if (LogCaseCaliper::StaticGetFolderPrefix() == folderPrefix)
-        pLogCase = std::make_unique<LogCaseCaliper>( strLocalPath, true );
-    else if (LogCaseFitParallelLine::StaticGetFolderPrefix() == folderPrefix)
-        pLogCase = std::make_unique<LogCaseFitParallelLine>( strLocalPath, true );
-    else if (LogCaseFitRect::StaticGetFolderPrefix() == folderPrefix)
-        pLogCase = std::make_unique<LogCaseFitRect>( strLocalPath, true );
-    else if (LogCaseFindEdge::StaticGetFolderPrefix() == folderPrefix)
-        pLogCase = std::make_unique<LogCaseFindEdge>( strLocalPath, true );
-    else if (LogCaseSrchFiducial::StaticGetFolderPrefix() == folderPrefix)
-        pLogCase = std::make_unique<LogCaseSrchFiducial>( strLocalPath, true );
-    else if (LogCaseOcr::StaticGetFolderPrefix() == folderPrefix)
-        pLogCase = std::make_unique<LogCaseOcr>( strLocalPath, true );
-    else if (LogCaseRemoveCC::StaticGetFolderPrefix() == folderPrefix )
-        pLogCase = std::make_unique<LogCaseRemoveCC>( strLocalPath, true );
-    else if (LogCaseDetectEdge::StaticGetFolderPrefix() == folderPrefix )
-        pLogCase = std::make_unique<LogCaseDetectEdge>( strLocalPath, true );
-    else if (LogCaseInspCircle::StaticGetFolderPrefix() == folderPrefix )
-        pLogCase = std::make_unique<LogCaseInspCircle>( strLocalPath, true );
-    else if (LogCaseAutoThreshold::StaticGetFolderPrefix() == folderPrefix )
-        pLogCase = std::make_unique<LogCaseAutoThreshold>( strLocalPath, true );
-    else if (LogCaseFillHole::StaticGetFolderPrefix() == folderPrefix )
-        pLogCase = std::make_unique<LogCaseFillHole>( strLocalPath, true );
-    else if (LogCaseLrnTmpl::StaticGetFolderPrefix() == folderPrefix )
-        pLogCase = std::make_unique<LogCaseLrnTmpl>( strLocalPath, true );
-    else if (LogCaseMatchTmpl::StaticGetFolderPrefix() == folderPrefix )
-        pLogCase = std::make_unique<LogCaseMatchTmpl>( strLocalPath, true );
-    else if (LogCasePickColor::StaticGetFolderPrefix() == folderPrefix )
-        pLogCase = std::make_unique<LogCasePickColor>( strLocalPath, true );
-    else if (LogCaseCalibrateCamera::StaticGetFolderPrefix() == folderPrefix )
-        pLogCase = std::make_unique<LogCaseCalibrateCamera>( strLocalPath, true );
-    else if (LogCaseRestoreImg::StaticGetFolderPrefix() == folderPrefix )
-        pLogCase = std::make_unique<LogCaseRestoreImg>( strLocalPath, true );
-    else if (LogCaseAutoLocateLead::StaticGetFolderPrefix() == folderPrefix )
-        pLogCase = std::make_unique<LogCaseAutoLocateLead>( strLocalPath, true );
-    else if (LogCaseInspBridge::StaticGetFolderPrefix() == folderPrefix )
-        pLogCase = std::make_unique<LogCaseInspBridge>( strLocalPath, true );
-    else if (LogCaseInspChip::StaticGetFolderPrefix() == folderPrefix )
-        pLogCase = std::make_unique<LogCaseInspChip>( strLocalPath, true );
-    else if (LogCaseLrnContour::StaticGetFolderPrefix() == folderPrefix )
-        pLogCase = std::make_unique<LogCaseLrnContour>( strLocalPath, true );
-    else if (LogCaseInspContour::StaticGetFolderPrefix() == folderPrefix )
-        pLogCase = std::make_unique<LogCaseInspContour>( strLocalPath, true );
-    else if (LogCaseInspHole::StaticGetFolderPrefix() == folderPrefix )
-        pLogCase = std::make_unique<LogCaseInspHole>( strLocalPath, true );
-    else if (LogCaseInspLead::StaticGetFolderPrefix() == folderPrefix )
-        pLogCase = std::make_unique<LogCaseInspLead>( strLocalPath, true );
-    else if (LogCaseCalib3DBase::StaticGetFolderPrefix() == folderPrefix )
-        pLogCase = std::make_unique<LogCaseCalib3DBase>( strLocalPath, true );
-    if (LogCaseCalc3DHeight::StaticGetFolderPrefix() == folderPrefix )
-        pLogCase = std::make_unique<LogCaseCalc3DHeight>( strLocalPath, true );
+    auto ptrLogCase = _createLogCaseInstance ( strFolderPrefix, strLocalPath );
+    assert ( ptrLogCase->GetFolderPrefix() == strFolderPrefix );
 
-    if ( nullptr != pLogCase )
-        enStatus = pLogCase->RunLogCase();
+    if ( nullptr != ptrLogCase )
+        enStatus = ptrLogCase->RunLogCase();
     else
         enStatus = VisionStatus::INVALID_LOGCASE;
     return enStatus;
@@ -1670,7 +1800,8 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
 
     if ( pstCmd->matInputImg.empty() ) {
         WriteLog("Input image is empty.");
-        return VisionStatus::INVALID_PARAM;
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
     }
 
     if ( pstCmd->rectSrchWindow.x < 0 || pstCmd->rectSrchWindow.y < 0 ||
@@ -1678,11 +1809,12 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
         (pstCmd->rectSrchWindow.x + pstCmd->rectSrchWindow.width) > pstCmd->matInputImg.cols || 
         (pstCmd->rectSrchWindow.y + pstCmd->rectSrchWindow.height) > pstCmd->matInputImg.rows )
     {
-        char charrMsg[1000];
-        _snprintf(charrMsg, sizeof(charrMsg), "Search window is invalid, rect x = %d, y = %d, width = %d, height = %d.", 
+        char chArrMsg[1000];
+        _snprintf(chArrMsg, sizeof(chArrMsg), "Search window is invalid, rect x = %d, y = %d, width = %d, height = %d.", 
                   pstCmd->rectSrchWindow.x, pstCmd->rectSrchWindow.y, pstCmd->rectSrchWindow.width, pstCmd->rectSrchWindow.height );
-        WriteLog(charrMsg);
-        return VisionStatus::INVALID_PARAM;
+        WriteLog(chArrMsg);
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
     }
 
     MARK_FUNCTION_START_TIME;
@@ -1711,7 +1843,7 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
         cv::cvtColor(matSrchROI, matSrchROI, cv::COLOR_BGR2GRAY);
 
     float fRotation = 0.f, fCorrelation = 0.f;
-    pstRpy->enStatus = MatchTmpl::matchTemplate ( matSrchROI, matTmpl, PR_OBJECT_MOTION::TRANSLATION, ptResult, fRotation, fCorrelation );
+    pstRpy->enStatus = MatchTmpl::matchTemplate ( matSrchROI, matTmpl, true, PR_OBJECT_MOTION::TRANSLATION, ptResult, fRotation, fCorrelation );
 
     pstRpy->ptPos.x = ptResult.x + pstCmd->rectSrchWindow.x;
     pstRpy->ptPos.y = ptResult.y + pstCmd->rectSrchWindow.y;
@@ -1838,7 +1970,7 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
 /*static*/ VisionStatus VisionAlgorithm::fitLine(const PR_FIT_LINE_CMD *const pstCmd, PR_FIT_LINE_RPY *const pstRpy, bool bReplay /*= false*/ )
 {
     assert ( pstCmd != nullptr && pstRpy != nullptr );
-    char charrMsg[1000];
+    char chArrMsg[1000];
 
     if (pstCmd->matInputImg.empty()) {
         WriteLog("Input image is empty");
@@ -1850,18 +1982,18 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
         pstCmd->rectROI.width <= 0 || pstCmd->rectROI.height <= 0 ||
         ( pstCmd->rectROI.x + pstCmd->rectROI.width ) > pstCmd->matInputImg.cols ||
         ( pstCmd->rectROI.y + pstCmd->rectROI.height ) > pstCmd->matInputImg.rows ) {
-        _snprintf( charrMsg, sizeof( charrMsg ), "The ROI rect (%d, %d, %d, %d) is invalid",
+        _snprintf( chArrMsg, sizeof( chArrMsg ), "The ROI rect (%d, %d, %d, %d) is invalid",
             pstCmd->rectROI.x, pstCmd->rectROI.y, pstCmd->rectROI.width, pstCmd->rectROI.height );
-        WriteLog(charrMsg);
+        WriteLog(chArrMsg);
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return pstRpy->enStatus;
     }
 
     if ( ! pstCmd->matMask.empty() ) {
         if ( pstCmd->matMask.rows != pstCmd->matInputImg.rows || pstCmd->matMask.cols != pstCmd->matInputImg.cols ) {
-            _snprintf(charrMsg, sizeof(charrMsg), "The mask size ( %d, %d ) not match with input image size ( %d, %d )",
+            _snprintf(chArrMsg, sizeof(chArrMsg), "The mask size ( %d, %d ) not match with input image size ( %d, %d )",
                 pstCmd->matMask.cols, pstCmd->matMask.rows, pstCmd->matInputImg.cols, pstCmd->matInputImg.rows);
-            WriteLog(charrMsg);
+            WriteLog(chArrMsg);
             pstRpy->enStatus = VisionStatus::INVALID_PARAM;
             return pstRpy->enStatus;
         }
@@ -1913,8 +2045,8 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
     }
     
     if ( vecPoints.size() > PR_FIT_LINE_MAX_POINT_COUNT ) {
-        _snprintf ( charrMsg, sizeof(charrMsg), "Too much noise to fit line, points number %d", vecPoints.size() );
-        WriteLog(charrMsg);
+        _snprintf ( chArrMsg, sizeof(chArrMsg), "Too much noise to fit line, points number %d", vecPoints.size() );
+        WriteLog(chArrMsg);
         pstRpy->enStatus = VisionStatus::TOO_MUCH_NOISE_TO_FIT;
         FINISH_LOGCASE;
         return pstRpy->enStatus;
@@ -2048,10 +2180,10 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
 
     if ( ! pstCmd->matMask.empty() ) {
         if ( pstCmd->matMask.rows != pstCmd->matInputImg.rows || pstCmd->matMask.cols != pstCmd->matInputImg.cols ) {
-            char charrMsg [ 1000 ];
-            _snprintf(charrMsg, sizeof(charrMsg), "The mask size ( %d, %d ) not match with input image size ( %d, %d ).",
+            char chArrMsg [ 1000 ];
+            _snprintf(chArrMsg, sizeof(chArrMsg), "The mask size ( %d, %d ) not match with input image size ( %d, %d ).",
                 pstCmd->matMask.cols, pstCmd->matMask.rows, pstCmd->matInputImg.cols, pstCmd->matInputImg.rows);
-            WriteLog(charrMsg);
+            WriteLog(chArrMsg);
             pstRpy->enStatus = VisionStatus::INVALID_PARAM;
             return pstRpy->enStatus;
         }
@@ -2064,10 +2196,10 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
     }
 
     if ( pstCmd->bCheckLinerity && ( pstCmd->fPointMaxOffset <= 0.f || pstCmd->fMinLinerity <= 0.f ) ) {
-        char charrMsg [ 1000 ];
-        _snprintf(charrMsg, sizeof(charrMsg), "Linerity check parameter is invalid. PointMaxOffset = %.2f, MinLinerity = %.2f",
+        char chArrMsg [ 1000 ];
+        _snprintf(chArrMsg, sizeof(chArrMsg), "Linerity check parameter is invalid. PointMaxOffset = %.2f, MinLinerity = %.2f",
             pstCmd->fPointMaxOffset, pstCmd->fMinLinerity);
-        WriteLog(charrMsg);
+        WriteLog(chArrMsg);
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return pstRpy->enStatus;
     }
@@ -2185,10 +2317,10 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
             rectBounding.width <= 0 || rectBounding.height <= 0 ||
             (rectBounding.x + rectBounding.width) > matInputImg.cols ||
             (rectBounding.y + rectBounding.height) > matInputImg.rows ) {
-            char charrMsg[1000];
-            _snprintf ( charrMsg, sizeof(charrMsg), "The ROI rect (%d, %d, %d, %d) is invalid.",
+            char chArrMsg[1000];
+            _snprintf ( chArrMsg, sizeof(chArrMsg), "The ROI rect (%d, %d, %d, %d) is invalid.",
                 rectBounding.x,rectBounding.y, rectBounding.width, rectBounding.height );
-            WriteLog ( charrMsg );
+            WriteLog ( chArrMsg );
             return VisionStatus::INVALID_PARAM;
         }
         matROI = cv::Mat ( matInputImg, rectBounding );
@@ -2479,9 +2611,9 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
         pstRpy->enStatus = VisionStatus::NOT_ENOUGH_POINTS_TO_FIT;
         return pstRpy->enStatus;
     }else if ( listPoint1.size() > PR_FIT_LINE_MAX_POINT_COUNT || listPoint2.size() > PR_FIT_LINE_MAX_POINT_COUNT ) {
-        char charrMsg[1000];
-        _snprintf ( charrMsg, sizeof(charrMsg), "Too much noise to fit parallel line, points number %d, %d.", listPoint1.size(), listPoint2.size() );
-        WriteLog(charrMsg);
+        char chArrMsg[1000];
+        _snprintf ( chArrMsg, sizeof(chArrMsg), "Too much noise to fit parallel line, points number %d, %d.", listPoint1.size(), listPoint2.size() );
+        WriteLog(chArrMsg);
         pstRpy->enStatus = VisionStatus::TOO_MUCH_NOISE_TO_FIT;
         return pstRpy->enStatus;
     }
@@ -2534,10 +2666,10 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
 
 /*static*/ VisionStatus VisionAlgorithm::fitRect(const PR_FIT_RECT_CMD *const pstCmd, PR_FIT_RECT_RPY *const pstRpy, bool bReplay /*= false*/ )
 {
-    char charrMsg [ 1000 ];
+    char chArrMsg [ 1000 ];
     if (NULL == pstCmd || NULL == pstRpy) {
-        _snprintf(charrMsg, sizeof(charrMsg), "Input is invalid, pstCmd = %d, pstRpy = %d", (int)pstCmd, (int)pstRpy);
-        WriteLog(charrMsg);
+        _snprintf(chArrMsg, sizeof(chArrMsg), "Input is invalid, pstCmd = %d, pstRpy = %d", (int)pstCmd, (int)pstRpy);
+        WriteLog(chArrMsg);
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return pstRpy->enStatus;
     }
@@ -2561,13 +2693,13 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     for ( int i = 0; i < PR_RECT_EDGE_COUNT; ++ i ) {
         vecListPoint.push_back ( _findPointsInRegionByThreshold ( matGray, pstCmd->rectArrROI[i], pstCmd->nThreshold, pstCmd->enAttribute ) );
         if ( vecListPoint [ i ].size() < 2 )  {
-            _snprintf(charrMsg, sizeof(charrMsg), "Edge %d not enough points to fit rect", i);
-            WriteLog(charrMsg);
+            _snprintf(chArrMsg, sizeof(chArrMsg), "Edge %d not enough points to fit rect", i);
+            WriteLog(chArrMsg);
             pstRpy->enStatus = VisionStatus::NOT_ENOUGH_POINTS_TO_FIT;
             return pstRpy->enStatus;
         }else if ( vecListPoint [ i ].size() > PR_FIT_LINE_MAX_POINT_COUNT ) {
-            _snprintf ( charrMsg, sizeof(charrMsg), "Too much noise to fit rect, line %d points number %d", i + 1, vecListPoint [ i ].size() );
-            WriteLog(charrMsg);
+            _snprintf ( chArrMsg, sizeof(chArrMsg), "Too much noise to fit rect, line %d points number %d", i + 1, vecListPoint [ i ].size() );
+            WriteLog(chArrMsg);
             pstRpy->enStatus = VisionStatus::TOO_MUCH_NOISE_TO_FIT;
             return pstRpy->enStatus;
         }
@@ -2629,8 +2761,8 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     for ( const auto &listPoint : vecListPoint ) {
         if (listPoint.size() < 2)  {
             pstRpy->enStatus = VisionStatus::TOO_MUCH_NOISE_TO_FIT;
-            _snprintf(charrMsg, sizeof(charrMsg), "Rect line %d has too much noise to fit.", nLineNumber);
-            WriteLog(charrMsg);
+            _snprintf(chArrMsg, sizeof(chArrMsg), "Rect line %d has too much noise to fit.", nLineNumber);
+            WriteLog(chArrMsg);
             FINISH_LOGCASE;
             return pstRpy->enStatus;
         }
@@ -2656,7 +2788,7 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
 
 /*static*/ VisionStatus VisionAlgorithm::findEdge(const PR_FIND_EDGE_CMD *const pstCmd, PR_FIND_EDGE_RPY *const pstRpy, bool bReplay /*= false*/) {
     assert ( pstCmd != nullptr && pstRpy != nullptr );
-    char charrMsg [ 1000 ];
+    char chArrMsg [ 1000 ];
 
     if ( pstCmd->matInputImg.empty() ) {
         WriteLog("Input image is empty");
@@ -2668,14 +2800,14 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     if ( matROI.empty() ){
         WriteLog("ROI image is empty");
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
-        return VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
     }
 
     if ( ! pstCmd->bAutoThreshold && ( pstCmd->nThreshold <= 0 || pstCmd->nThreshold >= PR_MAX_GRAY_LEVEL ) )  {
-         _snprintf(charrMsg, sizeof(charrMsg), "The threshold = %d is invalid", pstCmd->nThreshold);
-        WriteLog(charrMsg);
+         _snprintf(chArrMsg, sizeof(chArrMsg), "The threshold = %d is invalid", pstCmd->nThreshold);
+        WriteLog(chArrMsg);
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
-        return VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
     }
 
     MARK_FUNCTION_START_TIME;
@@ -2765,10 +2897,10 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
 
     if ( ! pstCmd->matMask.empty() ) {
         if ( pstCmd->matMask.rows != pstCmd->matInputImg.rows || pstCmd->matMask.cols != pstCmd->matInputImg.cols ) {
-            char charrMsg [ 1000 ];
-            _snprintf(charrMsg, sizeof(charrMsg), "The mask size ( %d, %d ) not match with input image size ( %d, %d ).",
+            char chArrMsg [ 1000 ];
+            _snprintf(chArrMsg, sizeof(chArrMsg), "The mask size ( %d, %d ) not match with input image size ( %d, %d ).",
                 pstCmd->matMask.cols, pstCmd->matMask.rows, pstCmd->matInputImg.cols, pstCmd->matInputImg.rows);
-            WriteLog(charrMsg);
+            WriteLog(chArrMsg);
             pstRpy->enStatus = VisionStatus::INVALID_PARAM;
             return pstRpy->enStatus;
         }
@@ -2781,9 +2913,9 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     }
 
     if (PR_FIT_METHOD::RANSAC == pstCmd->enMethod && (1000 <= pstCmd->nMaxRansacTime || pstCmd->nMaxRansacTime <= 0)) {
-        char charrMsg [ 1000 ];
-        _snprintf(charrMsg, sizeof(charrMsg), "Max Rransac time %d is invalid.", pstCmd->nMaxRansacTime);
-        WriteLog(charrMsg);
+        char chArrMsg [ 1000 ];
+        _snprintf(chArrMsg, sizeof(chArrMsg), "Max Rransac time %d is invalid.", pstCmd->nMaxRansacTime);
+        WriteLog(chArrMsg);
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return pstRpy->enStatus;
     }
@@ -2991,18 +3123,21 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     assert ( pstCmd != nullptr && pstRpy != nullptr );
 
     if (pstCmd->matInputImg.empty()) {
-        WriteLog("Input image is empty");
+        WriteLog("Input image is empty.");
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
-        return VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
     }
     
     if (pstCmd->rectROI.x < 0 || pstCmd->rectROI.y < 0 ||
         pstCmd->rectROI.width <= 0 || pstCmd->rectROI.height <= 0 ||
         ( pstCmd->rectROI.x + pstCmd->rectROI.width ) > pstCmd->matInputImg.cols ||
         ( pstCmd->rectROI.y + pstCmd->rectROI.height ) > pstCmd->matInputImg.rows )    {
-        WriteLog("The OCR search range is invalid");
+        char chArrMsg[1000];
+        _snprintf( chArrMsg, sizeof( chArrMsg ), "The input ROI rect (%d, %d, %d, %d) is invalid.",
+            pstCmd->rectROI.x, pstCmd->rectROI.y, pstCmd->rectROI.width, pstCmd->rectROI.height );
+        WriteLog(chArrMsg);
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
-        return VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
     }
 
     MARK_FUNCTION_START_TIME;
@@ -3061,9 +3196,9 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     }
     
     if ( pstCmd->matInputImg.channels() != 3 ) {
-        char charrMsg [ 1000 ];
-        _snprintf(charrMsg, sizeof(charrMsg), "Convert from color to gray, the input image channel number %d not equal to 3", pstCmd->matInputImg.channels());
-        WriteLog(charrMsg);
+        char chArrMsg [ 1000 ];
+        _snprintf(chArrMsg, sizeof(chArrMsg), "Convert from color to gray, the input image channel number %d not equal to 3", pstCmd->matInputImg.channels());
+        WriteLog(chArrMsg);
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return pstRpy->enStatus;
     }
@@ -3077,8 +3212,7 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
 }
 
 /*static*/ VisionStatus VisionAlgorithm::filter(PR_FILTER_CMD *pstCmd, PR_FILTER_RPY *pstRpy) {
-    assert ( pstCmd != nullptr && pstRpy != nullptr );
-    char charrMsg [ 1000 ];
+    assert ( pstCmd != nullptr && pstRpy != nullptr );    
 
     if (pstCmd->matInputImg.empty()) {
         WriteLog("Input image is empty");
@@ -3089,24 +3223,29 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     if (pstCmd->rectROI.x < 0 || pstCmd->rectROI.y < 0 ||
         pstCmd->rectROI.width <= 0 || pstCmd->rectROI.height <= 0 ||
         ( pstCmd->rectROI.x + pstCmd->rectROI.width ) > pstCmd->matInputImg.cols ||
-        ( pstCmd->rectROI.y + pstCmd->rectROI.height ) > pstCmd->matInputImg.rows )    {
-        WriteLog("The input ROI is invalid");
+        ( pstCmd->rectROI.y + pstCmd->rectROI.height ) > pstCmd->matInputImg.rows ) {
+        char chArrMsg[1000];
+        _snprintf( chArrMsg, sizeof( chArrMsg ), "The input ROI rect (%d, %d, %d, %d) is invalid.",
+            pstCmd->rectROI.x, pstCmd->rectROI.y, pstCmd->rectROI.width, pstCmd->rectROI.height );
+        WriteLog(chArrMsg);
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
-        return VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
     }
 
     if ( PR_FILTER_TYPE::GAUSSIAN_FILTER == pstCmd->enType &&
-        ( ( pstCmd->szKernel.width % 2 != 1 ) || ( pstCmd->szKernel.height % 2 != 1 ) ) )   {
-        _snprintf(charrMsg, sizeof (charrMsg), "Guassian filter kernel size ( %d, %d ) is invalid", pstCmd->szKernel.width, pstCmd->szKernel.height );
-        WriteLog ( charrMsg );
+        ( ( pstCmd->szKernel.width % 2 != 1 ) || ( pstCmd->szKernel.height % 2 != 1 ) ) ) {
+        char chArrMsg [ 1000 ];
+        _snprintf(chArrMsg, sizeof (chArrMsg), "Guassian filter kernel size ( %d, %d ) is invalid", pstCmd->szKernel.width, pstCmd->szKernel.height );
+        WriteLog ( chArrMsg );
         pstRpy->enStatus = VisionStatus::GUASSIAN_FILTER_KERNEL_INVALID;
         return VisionStatus::GUASSIAN_FILTER_KERNEL_INVALID;
     }
 
     if ( PR_FILTER_TYPE::MEDIAN_FILTER == pstCmd->enType &&
-        ( ( pstCmd->szKernel.width % 2 != 1 ) || ( pstCmd->szKernel.height % 2 != 1 ) ) )   {
-        _snprintf(charrMsg, sizeof (charrMsg), "Median filter kernel size ( %d, %d ) is invalid", pstCmd->szKernel.width, pstCmd->szKernel.height );
-        WriteLog ( charrMsg );
+        ( ( pstCmd->szKernel.width % 2 != 1 ) || ( pstCmd->szKernel.height % 2 != 1 ) ) ) {
+        char chArrMsg [ 1000 ];
+        _snprintf(chArrMsg, sizeof (chArrMsg), "Median filter kernel size ( %d, %d ) is invalid", pstCmd->szKernel.width, pstCmd->szKernel.height );
+        WriteLog ( chArrMsg );
         pstRpy->enStatus = VisionStatus::MEDIAN_FILTER_KERNEL_INVALID;
         return VisionStatus::MEDIAN_FILTER_KERNEL_INVALID;
     }
@@ -3135,14 +3274,12 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     }
 
     MARK_FUNCTION_END_TIME;
-
     pstRpy->enStatus = enStatus;
     return pstRpy->enStatus;
 }
 
 /*static*/ VisionStatus VisionAlgorithm::removeCC(PR_REMOVE_CC_CMD *pstCmd, PR_REMOVE_CC_RPY *pstRpy, bool bReplay /*= false*/) {
     assert ( pstCmd != nullptr && pstRpy != nullptr );
-    char chArrMsg [ 1000 ];
 
     if ( pstCmd->matInputImg.empty() ) {
         WriteLog("Input image is empty");
@@ -3153,17 +3290,21 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     if (pstCmd->rectROI.x < 0 || pstCmd->rectROI.y < 0 ||
         pstCmd->rectROI.width <= 0 || pstCmd->rectROI.height <= 0 ||
         ( pstCmd->rectROI.x + pstCmd->rectROI.width ) > pstCmd->matInputImg.cols ||
-        ( pstCmd->rectROI.y + pstCmd->rectROI.height ) > pstCmd->matInputImg.rows )    {
-        WriteLog("The input ROI is invalid");
+        ( pstCmd->rectROI.y + pstCmd->rectROI.height ) > pstCmd->matInputImg.rows ) {
+        char chArrMsg[1000];
+        _snprintf( chArrMsg, sizeof( chArrMsg ), "The input ROI rect (%d, %d, %d, %d) is invalid.",
+            pstCmd->rectROI.x, pstCmd->rectROI.y, pstCmd->rectROI.width, pstCmd->rectROI.height );
+        WriteLog(chArrMsg);
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
-        return VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
     }
 
     if ( pstCmd->nConnectivity != 4 && pstCmd->nConnectivity != 8 ) {
+        char chArrMsg[1000];
         _snprintf(chArrMsg, sizeof (chArrMsg), "The connectivity %d is not 4 or 8", pstCmd->nConnectivity );
         WriteLog ( chArrMsg );
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
-        return VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
     }
 
     MARK_FUNCTION_START_TIME;
@@ -3231,9 +3372,12 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
         pstCmd->rectROI.width <= 0 || pstCmd->rectROI.height <= 0 ||
         ( pstCmd->rectROI.x + pstCmd->rectROI.width ) > pstCmd->matInputImg.cols ||
         ( pstCmd->rectROI.y + pstCmd->rectROI.height ) > pstCmd->matInputImg.rows )    {
-        WriteLog("The input ROI is invalid");
+        char chArrMsg[1000];
+        _snprintf( chArrMsg, sizeof( chArrMsg ), "The input ROI rect (%d, %d, %d, %d) is invalid.",
+            pstCmd->rectROI.x, pstCmd->rectROI.y, pstCmd->rectROI.width, pstCmd->rectROI.height );
+        WriteLog(chArrMsg);
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
-        return VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
     }
 
     MARK_FUNCTION_START_TIME;
@@ -3275,9 +3419,12 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
         pstCmd->rectROI.width <= 0 || pstCmd->rectROI.height <= 0 ||
         ( pstCmd->rectROI.x + pstCmd->rectROI.width ) > pstCmd->matInputImg.cols ||
         ( pstCmd->rectROI.y + pstCmd->rectROI.height ) > pstCmd->matInputImg.rows ) {
-        WriteLog("The input ROI is invalid");
+        char chArrMsg[1000];
+        _snprintf( chArrMsg, sizeof( chArrMsg ), "The input ROI rect (%d, %d, %d, %d) is invalid.",
+            pstCmd->rectROI.x, pstCmd->rectROI.y, pstCmd->rectROI.width, pstCmd->rectROI.height );
+        WriteLog(chArrMsg);
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
-        return VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
     }
 
     if ( ! pstCmd->matMask.empty() ) {
@@ -3416,9 +3563,12 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
         pstCmd->rectROI.width <= 0 || pstCmd->rectROI.height <= 0 ||
         ( pstCmd->rectROI.x + pstCmd->rectROI.width ) > pstCmd->matInputImg.cols ||
         ( pstCmd->rectROI.y + pstCmd->rectROI.height ) > pstCmd->matInputImg.rows ) {
-        WriteLog("The input ROI is invalid.");
+        char chArrMsg[1000];
+        _snprintf( chArrMsg, sizeof( chArrMsg ), "The input ROI rect (%d, %d, %d, %d) is invalid.",
+            pstCmd->rectROI.x, pstCmd->rectROI.y, pstCmd->rectROI.width, pstCmd->rectROI.height );
+        WriteLog(chArrMsg);
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
-        return VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
     }
 
     MARK_FUNCTION_START_TIME;
@@ -3469,9 +3619,12 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
         pstCmd->rectROI.width <= 0 || pstCmd->rectROI.height <= 0 ||
         ( pstCmd->rectROI.x + pstCmd->rectROI.width ) > pstCmd->matInputImg.cols ||
         ( pstCmd->rectROI.y + pstCmd->rectROI.height ) > pstCmd->matInputImg.rows ) {
-        WriteLog("The input ROI is invalid.");
+        char chArrMsg[1000];
+        _snprintf( chArrMsg, sizeof( chArrMsg ), "The input ROI rect (%d, %d, %d, %d) is invalid.",
+            pstCmd->rectROI.x, pstCmd->rectROI.y, pstCmd->rectROI.width, pstCmd->rectROI.height );
+        WriteLog(chArrMsg);
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
-        return VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
     }
 
     if ( ! pstCmd->rectROI.contains(pstCmd->ptPick) ) {
@@ -3574,7 +3727,7 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
         cv::Mat matSrchROI ( mat, rectSrchROI );
         cv::Point2f ptResult;
         float fRotation, fCorrelation = 0.f;
-        enStatus = MatchTmpl::matchTemplate ( matSrchROI, matTmpl, PR_OBJECT_MOTION::TRANSLATION, ptResult, fRotation, fCorrelation );
+        enStatus = MatchTmpl::matchTemplate ( matSrchROI, matTmpl, true, PR_OBJECT_MOTION::TRANSLATION, ptResult, fRotation, fCorrelation );
         if ( VisionStatus::OK != enStatus )
             fCorrelation = 0;
         
@@ -3760,7 +3913,7 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
 
 /*static*/ VisionStatus VisionAlgorithm::calibrateCamera(const PR_CALIBRATE_CAMERA_CMD *const pstCmd, PR_CALIBRATE_CAMERA_RPY *const pstRpy, bool bReplay) {
     assert(pstCmd != nullptr && pstRpy != nullptr);
-    char charrMsg[1000];
+    char chArrMsg[1000];
     if ( pstCmd->matInputImg.empty() ) {
         WriteLog("Input image is empty.");
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
@@ -3768,15 +3921,15 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     }
 
     if ( pstCmd->fPatternDist <= 0 ) {
-        _snprintf(charrMsg, sizeof(charrMsg), "Pattern distance %f is invalid.", pstCmd->fPatternDist );
-        WriteLog(charrMsg);
+        _snprintf(chArrMsg, sizeof(chArrMsg), "Pattern distance %f is invalid.", pstCmd->fPatternDist );
+        WriteLog(chArrMsg);
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return pstRpy->enStatus;
     }
 
     if ( pstCmd->szBoardPattern.width <= 0 || pstCmd->szBoardPattern.height <= 0 ) {
-        _snprintf(charrMsg, sizeof(charrMsg), "Board pattern size %d, %d is invalid.", pstCmd->szBoardPattern.width, pstCmd->szBoardPattern.height );
-        WriteLog(charrMsg);
+        _snprintf(chArrMsg, sizeof(chArrMsg), "Board pattern size %d, %d is invalid.", pstCmd->szBoardPattern.width, pstCmd->szBoardPattern.height );
+        WriteLog(chArrMsg);
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return pstRpy->enStatus;
     }
@@ -3881,7 +4034,7 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
 
 /*static*/ VisionStatus VisionAlgorithm::restoreImage(const PR_RESTORE_IMG_CMD *const pstCmd, PR_RESTORE_IMG_RPY *const pstRpy, bool bReplay/* = false*/) {
     assert(pstCmd != nullptr && pstRpy != nullptr);
-    char charrMsg[1000];
+    char chArrMsg[1000];
     if ( pstCmd->matInputImg.empty() ) {
         WriteLog("Input image is empty.");
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
@@ -3889,17 +4042,17 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     }
 
     if ( pstCmd->vecMatRestoreImage.size() != 2 ) {
-        _snprintf( charrMsg, sizeof( charrMsg ), "The remap mat vector size %d is invalid.", pstCmd->vecMatRestoreImage.size() );
-        WriteLog(charrMsg);
+        _snprintf( chArrMsg, sizeof( chArrMsg ), "The remap mat vector size %d is invalid.", pstCmd->vecMatRestoreImage.size() );
+        WriteLog(chArrMsg);
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return pstRpy->enStatus;
     }
 
     if ( pstCmd->vecMatRestoreImage[0].size() != pstCmd->matInputImg.size() || pstCmd->vecMatRestoreImage[1].size() != pstCmd->matInputImg.size() ) {
-        _snprintf( charrMsg, sizeof( charrMsg ), "The remap mat size(%d, %d) is not match with input image size (%d, %d).", 
+        _snprintf( chArrMsg, sizeof( chArrMsg ), "The remap mat size(%d, %d) is not match with input image size (%d, %d).", 
             pstCmd->vecMatRestoreImage[0].size().width, pstCmd->vecMatRestoreImage[0].size().height,
             pstCmd->matInputImg.size().width, pstCmd->matInputImg.size().height );
-        WriteLog(charrMsg);
+        WriteLog(chArrMsg);
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return pstRpy->enStatus;
     }
@@ -3942,7 +4095,7 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
 /*static*/ VisionStatus VisionAlgorithm::autoLocateLead(const PR_AUTO_LOCATE_LEAD_CMD *const pstCmd, PR_AUTO_LOCATE_LEAD_RPY *const pstRpy, bool bReplay/* = false*/ )
 {
     assert(pstCmd != nullptr && pstRpy != nullptr);
-    char charrMsg[1000];
+    char chArrMsg[1000];
     if ( pstCmd->matInputImg.empty() ) {
         WriteLog("Input image is empty.");
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
@@ -3950,10 +4103,10 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     }
     if ( ! pstCmd->rectSrchWindow.contains ( cv::Point ( pstCmd->rectChipBody.x, pstCmd->rectChipBody.y ) )
         || ! pstCmd->rectSrchWindow.contains ( cv::Point ( pstCmd->rectChipBody.x + pstCmd->rectChipBody.width, pstCmd->rectChipBody.y + pstCmd->rectChipBody.height ) ) ) {
-        _snprintf( charrMsg, sizeof( charrMsg ), "The chip window(%d, %d, %d, %d) should inside search window (%d, %d, %d, %d).", 
+        _snprintf( chArrMsg, sizeof( chArrMsg ), "The chip window(%d, %d, %d, %d) should inside search window (%d, %d, %d, %d).", 
             pstCmd->rectChipBody.x, pstCmd->rectChipBody.y, pstCmd->rectChipBody.width, pstCmd->rectChipBody.height,
             pstCmd->rectSrchWindow.x, pstCmd->rectSrchWindow.y, pstCmd->rectSrchWindow.width, pstCmd->rectSrchWindow.height );
-        WriteLog(charrMsg);
+        WriteLog(chArrMsg);
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return pstRpy->enStatus;
     }
@@ -3961,11 +4114,11 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
         pstCmd->rectSrchWindow.width <= 0 || pstCmd->rectSrchWindow.height <= 0 ||
         ( pstCmd->rectSrchWindow.x + pstCmd->rectSrchWindow.width ) > pstCmd->matInputImg.cols ||
         ( pstCmd->rectSrchWindow.y + pstCmd->rectSrchWindow.height ) > pstCmd->matInputImg.rows ) {
-        _snprintf( charrMsg, sizeof( charrMsg ), "The input search window (%d, %d, %d, %d) is invalid",
+        _snprintf( chArrMsg, sizeof( chArrMsg ), "The input search window (%d, %d, %d, %d) is invalid",
             pstCmd->rectSrchWindow.x, pstCmd->rectSrchWindow.y, pstCmd->rectSrchWindow.width, pstCmd->rectSrchWindow.height );
-        WriteLog(charrMsg);
+        WriteLog(chArrMsg);
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
-        return VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
     }
 
     MARK_FUNCTION_START_TIME;
@@ -4218,7 +4371,7 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
 
 /*static*/ VisionStatus VisionAlgorithm::inspBridge(const PR_INSP_BRIDGE_CMD *const pstCmd, PR_INSP_BRIDGE_RPY *const pstRpy, bool bReplay /*= false*/ ) {
     assert(pstCmd != nullptr && pstRpy != nullptr);
-    char charrMsg[1000];
+    char chArrMsg[1000];
     if ( pstCmd->matInputImg.empty() ) {
         WriteLog("Input image is empty.");
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
@@ -4248,47 +4401,47 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
             if (rectROI.x < 0 || rectROI.y < 0 || rectROI.width <= 0 || rectROI.height <= 0
                 || (rectROI.x + rectROI.width) > pstCmd->matInputImg.cols || (rectROI.y + rectROI.height) > pstCmd->matInputImg.rows)
             {
-                _snprintf(charrMsg, sizeof(charrMsg), "The insect bridge outer check window (%d, %d, %d, %d) is invalid.",
+                _snprintf(chArrMsg, sizeof(chArrMsg), "The insect bridge outer check window (%d, %d, %d, %d) is invalid.",
                     rectROI.x, rectROI.y, rectROI.width, rectROI.height);
-                WriteLog(charrMsg);
+                WriteLog(chArrMsg);
                 pstRpy->enStatus = VisionStatus::INVALID_PARAM;
-                return VisionStatus::INVALID_PARAM;
+                return pstRpy->enStatus;
             }
             
             auto rectInnterWindow = inspItem.rectInnerWindow;
             if (!rectROI.contains(cv::Point(rectInnterWindow.x, rectInnterWindow.y)) ||
                 !rectROI.contains(cv::Point(rectInnterWindow.x + rectInnterWindow.width, rectInnterWindow.y + rectInnterWindow.height))) {
-                _snprintf(charrMsg, sizeof(charrMsg), "The inner check window(%d, %d, %d, %d) should inside outer check window (%d, %d, %d, %d).",
+                _snprintf(chArrMsg, sizeof(chArrMsg), "The inner check window(%d, %d, %d, %d) should inside outer check window (%d, %d, %d, %d).",
                     rectInnterWindow.x, rectInnterWindow.y, rectInnterWindow.width, rectInnterWindow.height,
                     rectROI.x, rectROI.y, rectROI.width, rectROI.height);
-                WriteLog(charrMsg);
+                WriteLog(chArrMsg);
                 pstRpy->enStatus = VisionStatus::INVALID_PARAM;
                 return pstRpy->enStatus;
             }
 
             if ( inspItem.vecOuterInspDirection.empty() ) {
-                _snprintf(charrMsg, sizeof(charrMsg), "The outer inspection direction of inspect Item %d is empty.", nIndexOfInspItem);
-                WriteLog(charrMsg);
+                _snprintf(chArrMsg, sizeof(chArrMsg), "The outer inspection direction of inspect Item %d is empty.", nIndexOfInspItem);
+                WriteLog(chArrMsg);
                 pstRpy->enStatus = VisionStatus::INVALID_PARAM;
-                return VisionStatus::INVALID_PARAM;
+                return pstRpy->enStatus;
             }
         }else if ( PR_INSP_BRIDGE_MODE::INNER == inspItem.enMode ) {
             auto rectROI = inspItem.rectInnerWindow;
             if (rectROI.x < 0 || rectROI.y < 0 || rectROI.width <= 0 || rectROI.height <= 0
                 || (rectROI.x + rectROI.width) > pstCmd->matInputImg.cols || (rectROI.y + rectROI.height) > pstCmd->matInputImg.rows) {
-                _snprintf(charrMsg, sizeof(charrMsg), "The insect bridge outer check window (%d, %d, %d, %d) is invalid.",
+                _snprintf(chArrMsg, sizeof(chArrMsg), "The insect bridge outer check window (%d, %d, %d, %d) is invalid.",
                     rectROI.x, rectROI.y, rectROI.width, rectROI.height);
-                WriteLog(charrMsg);
+                WriteLog(chArrMsg);
                 pstRpy->enStatus = VisionStatus::INVALID_PARAM;
-                return VisionStatus::INVALID_PARAM;
+                return pstRpy->enStatus;
             }
 
             if ( inspItem.stInnerInspCriteria.fMaxLengthX <= 0 || inspItem.stInnerInspCriteria.fMaxLengthY <= 0 ) {
-                _snprintf(charrMsg, sizeof(charrMsg), "The inner inspection criteria (%.2f, %.2f) of inspect Item %d is empty.", 
+                _snprintf(chArrMsg, sizeof(chArrMsg), "The inner inspection criteria (%.2f, %.2f) of inspect Item %d is empty.", 
                     inspItem.stInnerInspCriteria.fMaxLengthX, inspItem.stInnerInspCriteria.fMaxLengthY, nIndexOfInspItem );
-                WriteLog(charrMsg);
+                WriteLog(chArrMsg);
                 pstRpy->enStatus = VisionStatus::INVALID_PARAM;
-                return VisionStatus::INVALID_PARAM;
+                return pstRpy->enStatus;
             }
         }
         
@@ -4320,12 +4473,12 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
         pstCmd->rectChip.width <= 0 || pstCmd->rectChip.height <= 0 ||
         ( pstCmd->rectChip.x + pstCmd->rectChip.width ) > pstCmd->matInputImg.cols ||
         ( pstCmd->rectChip.y + pstCmd->rectChip.height ) > pstCmd->matInputImg.rows ) {
-        char charrMsg[1000];
-        _snprintf( charrMsg, sizeof( charrMsg ), "The input chip window (%d, %d, %d, %d) is invalid.",
+        char chArrMsg[1000];
+        _snprintf( chArrMsg, sizeof( chArrMsg ), "The input chip window (%d, %d, %d, %d) is invalid.",
             pstCmd->rectChip.x, pstCmd->rectChip.y, pstCmd->rectChip.width, pstCmd->rectChip.height );
-        WriteLog(charrMsg);
+        WriteLog(chArrMsg);
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
-        return VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
     }
 
     MARK_FUNCTION_START_TIME;
@@ -4528,30 +4681,30 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
         pstCmd->rectSrchWindow.width <= 0 || pstCmd->rectSrchWindow.height <= 0 ||
         ( pstCmd->rectSrchWindow.x + pstCmd->rectSrchWindow.width ) > pstCmd->matInputImg.cols ||
         ( pstCmd->rectSrchWindow.y + pstCmd->rectSrchWindow.height ) > pstCmd->matInputImg.rows ) {
-        char charrMsg[1000];
-        _snprintf( charrMsg, sizeof( charrMsg ), "The input search window (%d, %d, %d, %d) is invalid",
+        char chArrMsg[1000];
+        _snprintf( chArrMsg, sizeof( chArrMsg ), "The input search window (%d, %d, %d, %d) is invalid",
             pstCmd->rectSrchWindow.x, pstCmd->rectSrchWindow.y, pstCmd->rectSrchWindow.width, pstCmd->rectSrchWindow.height );
-        WriteLog(charrMsg);
+        WriteLog(chArrMsg);
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
-        return VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
     }
 
     ChipRecordPtr ptrRecord = nullptr;
     if ( pstCmd->nRecordId > 0 ) {
         ptrRecord = std::static_pointer_cast<ChipRecord> (RecordManager::getInstance ()->get ( pstCmd->nRecordId ));
         if (nullptr == ptrRecord) {
-            char charrMsg[1000];
-            _snprintf ( charrMsg, sizeof ( charrMsg ), "Failed to get record ID %d in system.", pstCmd->nRecordId );
-            WriteLog ( charrMsg );
+            char chArrMsg[1000];
+            _snprintf ( chArrMsg, sizeof ( chArrMsg ), "Failed to get record ID %d in system.", pstCmd->nRecordId );
+            WriteLog ( chArrMsg );
             pstRpy->enStatus = VisionStatus::INVALID_PARAM;
             return pstRpy->enStatus;
         }
 
         if (ptrRecord->getInspMode () != pstCmd->enInspMode) {
-            char charrMsg[1000];
-            _snprintf ( charrMsg, sizeof ( charrMsg ), "The record insp mode %d if record %d is not match with input insp mode %d",
+            char chArrMsg[1000];
+            _snprintf ( chArrMsg, sizeof ( chArrMsg ), "The record insp mode %d if record %d is not match with input insp mode %d",
                 ToInt32 ( ptrRecord->getInspMode () ), pstCmd->nRecordId, ToInt32 ( pstCmd->enInspMode ) );
-            WriteLog ( charrMsg );
+            WriteLog ( chArrMsg );
             pstRpy->enStatus = VisionStatus::INVALID_PARAM;
             return pstRpy->enStatus;
         }
@@ -4956,12 +5109,12 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
         pstCmd->rectROI.width <= 0 || pstCmd->rectROI.height <= 0 ||
         ( pstCmd->rectROI.x + pstCmd->rectROI.width ) > pstCmd->matInputImg.cols ||
         ( pstCmd->rectROI.y + pstCmd->rectROI.height ) > pstCmd->matInputImg.rows ) {
-        char charrMsg[1000];
-        _snprintf( charrMsg, sizeof( charrMsg ), "The input ROI rect (%d, %d, %d, %d) is invalid",
+        char chArrMsg[1000];
+        _snprintf( chArrMsg, sizeof( chArrMsg ), "The input ROI rect (%d, %d, %d, %d) is invalid.",
             pstCmd->rectROI.x, pstCmd->rectROI.y, pstCmd->rectROI.width, pstCmd->rectROI.height );
-        WriteLog(charrMsg);
+        WriteLog(chArrMsg);
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
-        return VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
     }
 
     MARK_FUNCTION_START_TIME;
@@ -5051,27 +5204,27 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
         pstCmd->rectROI.width <= 0 || pstCmd->rectROI.height <= 0 ||
         ( pstCmd->rectROI.x + pstCmd->rectROI.width ) > pstCmd->matInputImg.cols ||
         ( pstCmd->rectROI.y + pstCmd->rectROI.height ) > pstCmd->matInputImg.rows ) {
-        char charrMsg[1000];
-        _snprintf( charrMsg, sizeof( charrMsg ), "The input ROI rect (%d, %d, %d, %d) is invalid.",
+        char chArrMsg[1000];
+        _snprintf( chArrMsg, sizeof( chArrMsg ), "The input ROI rect (%d, %d, %d, %d) is invalid.",
             pstCmd->rectROI.x, pstCmd->rectROI.y, pstCmd->rectROI.width, pstCmd->rectROI.height );
-        WriteLog(charrMsg);
+        WriteLog(chArrMsg);
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
-        return VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
     }
 
     if ( pstCmd->nRecordId <= 0 ) {
-        char charrMsg[100];
-         _snprintf( charrMsg, sizeof( charrMsg ), "The input record id %d is invalid.", pstCmd->nRecordId );
-        WriteLog(charrMsg);
+        char chArrMsg[100];
+         _snprintf( chArrMsg, sizeof( chArrMsg ), "The input record id %d is invalid.", pstCmd->nRecordId );
+        WriteLog(chArrMsg);
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return VisionStatus::INVALID_PARAM;
     }
     
     ContourRecordPtr ptrRecord = std::static_pointer_cast<ContourRecord> ( RecordManager::getInstance()->get ( pstCmd->nRecordId ) );
     if ( nullptr == ptrRecord ) {
-        char charrMsg[1000];
-        _snprintf ( charrMsg, sizeof (charrMsg), "Failed to get record ID %d in system.", pstCmd->nRecordId );
-        WriteLog ( charrMsg );
+        char chArrMsg[1000];
+        _snprintf ( chArrMsg, sizeof (chArrMsg), "Failed to get record ID %d in system.", pstCmd->nRecordId );
+        WriteLog ( chArrMsg );
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return pstRpy->enStatus;
     }
@@ -5094,7 +5247,7 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     cv::Mat matTmpl = ptrRecord->getTmpl();
     if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE )
         showImage ( "Template image", matTmpl );
-    pstRpy->enStatus = MatchTmpl::matchTemplate ( matBlur, matTmpl, PR_OBJECT_MOTION::TRANSLATION, ptResult, fRotation, fCorrelation );
+    pstRpy->enStatus = MatchTmpl::matchTemplate ( matBlur, matTmpl, true, PR_OBJECT_MOTION::TRANSLATION, ptResult, fRotation, fCorrelation );
     if ( pstRpy->enStatus != VisionStatus::OK ) {
         WriteLog ( "Template match fail." );
         return pstRpy->enStatus;
@@ -5254,20 +5407,20 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
         pstCmd->rectROI.width <= 0 || pstCmd->rectROI.height <= 0 ||
         ( pstCmd->rectROI.x + pstCmd->rectROI.width ) > pstCmd->matInputImg.cols ||
         ( pstCmd->rectROI.y + pstCmd->rectROI.height ) > pstCmd->matInputImg.rows ) {
-        char charrMsg[1000];
-        _snprintf( charrMsg, sizeof( charrMsg ), "The input ROI rect (%d, %d, %d, %d) is invalid.",
+        char chArrMsg[1000];
+        _snprintf( chArrMsg, sizeof( chArrMsg ), "The input ROI rect (%d, %d, %d, %d) is invalid.",
             pstCmd->rectROI.x, pstCmd->rectROI.y, pstCmd->rectROI.width, pstCmd->rectROI.height );
-        WriteLog(charrMsg);
+        WriteLog(chArrMsg);
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return VisionStatus::INVALID_PARAM;
     }
 
     if ( ! pstCmd->matMask.empty() ) {
         if ( pstCmd->matMask.rows != pstCmd->matInputImg.rows || pstCmd->matMask.cols != pstCmd->matInputImg.cols ) {
-            char charrMsg[1000];
-            _snprintf(charrMsg, sizeof(charrMsg), "The mask size ( %d, %d ) not match with input image size ( %d, %d ).",
+            char chArrMsg[1000];
+            _snprintf(chArrMsg, sizeof(chArrMsg), "The mask size ( %d, %d ) not match with input image size ( %d, %d ).",
                 pstCmd->matMask.cols, pstCmd->matMask.rows, pstCmd->matInputImg.cols, pstCmd->matInputImg.rows);
-            WriteLog(charrMsg);
+            WriteLog(chArrMsg);
             pstRpy->enStatus = VisionStatus::INVALID_PARAM;
             return pstRpy->enStatus;
         }
@@ -5334,10 +5487,10 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     if (stGrayScaleRange.nStart < 0 ||
         stGrayScaleRange.nStart >= stGrayScaleRange.nEnd ||
         stGrayScaleRange.nEnd > PR_MAX_GRAY_LEVEL ) {
-        char charrMsg[1000];
-        _snprintf ( charrMsg, sizeof(charrMsg), "The gray scale range (%d, %d) is invalid.",
+        char chArrMsg[1000];
+        _snprintf ( chArrMsg, sizeof(chArrMsg), "The gray scale range (%d, %d) is invalid.",
             stGrayScaleRange.nStart, stGrayScaleRange.nEnd );
-        WriteLog ( charrMsg );
+        WriteLog ( chArrMsg );
         return VisionStatus::INVALID_PARAM;
     }
     cv::Mat matGray;
@@ -5356,10 +5509,10 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     if (stColorRange.nStartB < 0 || stColorRange.nStartB >= stColorRange.nEndB || stColorRange.nEndB > PR_MAX_GRAY_LEVEL ||
         stColorRange.nStartG < 0 || stColorRange.nStartG >= stColorRange.nEndG || stColorRange.nEndG > PR_MAX_GRAY_LEVEL ||
         stColorRange.nStartR < 0 || stColorRange.nStartR >= stColorRange.nEndR || stColorRange.nEndR > PR_MAX_GRAY_LEVEL ) {
-        char charrMsg[1000];
-        _snprintf ( charrMsg, sizeof(charrMsg), "The color scale range (%d, %d, %d, %d, %d, %d) is invalid.",
+        char chArrMsg[1000];
+        _snprintf ( chArrMsg, sizeof(chArrMsg), "The color scale range (%d, %d, %d, %d, %d, %d) is invalid.",
             stColorRange.nStartB, stColorRange.nEndB, stColorRange.nStartG, stColorRange.nEndG, stColorRange.nStartR, stColorRange.nEndR );
-        WriteLog ( charrMsg );
+        WriteLog ( chArrMsg );
         return VisionStatus::INVALID_PARAM;
     }
     if ( matInput.channels() < 3 ) {
@@ -5648,11 +5801,11 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     matGray.convertTo(matAverage, CV_32FC1);
 
     if ( pstCmd->vecInputImgs.size() > 1 ) {
-        for ( int i = 1; i < pstCmd->vecInputImgs.size(); ++ i ) {
+        for ( size_t i = 1; i < pstCmd->vecInputImgs.size(); ++ i ) {
             if ( pstCmd->vecInputImgs[i].size() != matAverage.size() ) {
-                char charrMsg[1000];
-                _snprintf ( charrMsg, sizeof ( charrMsg ), "The input image [%d] size is not consistent.", i );
-                WriteLog ( charrMsg );
+                char chArrMsg[1000];
+                _snprintf ( chArrMsg, sizeof ( chArrMsg ), "The input image [%d] size is not consistent.", i );
+                WriteLog ( chArrMsg );
                 pstRpy->enStatus = VisionStatus::INVALID_PARAM;
                 return pstRpy->enStatus;
             }
@@ -5766,38 +5919,64 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
         return pstRpy->enStatus;
     }
 
-    if ( pstCmd->nBlockStepCount <= 0 || pstCmd->nBlockStepCount > 4 ) {
-        char charrMsg[1000];
-        _snprintf( charrMsg, sizeof( charrMsg ), "The BlockStepCount %d is not in range [1, 4].", pstCmd->nBlockStepCount );
-        WriteLog(charrMsg);
+    if ( pstCmd->nBlockStepCount <= 0 || pstCmd->nBlockStepCount > PR_MAX_AUTO_THRESHOLD_COUNT ) {
+        char chArrMsg[1000];
+        _snprintf( chArrMsg, sizeof( chArrMsg ), "The BlockStepCount %d is not in range [1, 5].", pstCmd->nBlockStepCount );
+        WriteLog(chArrMsg);
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return pstRpy->enStatus;
     }
 
     if ( pstCmd->nResultImgGridRow <= 0 || pstCmd->nResultImgGridRow > 100 ||
          pstCmd->nResultImgGridCol <= 0 || pstCmd->nResultImgGridCol > 100 ) {
-        char charrMsg[1000];
-        _snprintf( charrMsg, sizeof( charrMsg ), "The Result image grid row %d or column %d is not in range [1, 100].", pstCmd->nResultImgGridRow, pstCmd->nResultImgGridCol );
-        WriteLog(charrMsg);
+        char chArrMsg[1000];
+        _snprintf( chArrMsg, sizeof( chArrMsg ), "The Result image grid row %d or column %d is not in range [1, 100].", pstCmd->nResultImgGridRow, pstCmd->nResultImgGridCol );
+        WriteLog(chArrMsg);
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return pstRpy->enStatus;
     }
 
     if ( pstCmd->szMeasureWinSize.width  <= 0 || pstCmd->szMeasureWinSize.width  > pstCmd->vecInputImgs[0].cols ||
          pstCmd->szMeasureWinSize.height <= 0 || pstCmd->szMeasureWinSize.height > pstCmd->vecInputImgs[0].rows ) {
-        char charrMsg[1000];
-        _snprintf( charrMsg, sizeof( charrMsg ), "The measure window size (%d, %d) is invalid.", pstCmd->szMeasureWinSize.width, pstCmd->szMeasureWinSize.height );
-        WriteLog(charrMsg);
+        char chArrMsg[1000];
+        _snprintf( chArrMsg, sizeof( chArrMsg ), "The measure window size (%d, %d) is invalid.", pstCmd->szMeasureWinSize.width, pstCmd->szMeasureWinSize.height );
+        WriteLog(chArrMsg);
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return pstRpy->enStatus;
     }
 
     MARK_FUNCTION_START_TIME;
+    SETUP_LOGCASE(LogCaseCalib3DHeight);
 
     Unwrap::calib3DHeight ( pstCmd, pstRpy );
 
+    FINISH_LOGCASE;
     MARK_FUNCTION_END_TIME;
+    return pstRpy->enStatus;
+}
+
+/*static*/ VisionStatus VisionAlgorithm::comb3DCalib(const PR_COMB_3D_CALIB_CMD *const pstCmd, PR_COMB_3D_CALIB_RPY *const pstRpy, bool bReplay /*= false*/) {
+    assert(pstCmd != nullptr && pstRpy != nullptr);
+    if ( pstCmd->vecVecStepPhasePos.empty() ) {
+        WriteLog("The input positive step phase is empty.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    if ( pstCmd->vecVecStepPhaseNeg.empty() ) {
+        WriteLog("The input negative step phase is empty.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+    MARK_FUNCTION_START_TIME;
+    SETUP_LOGCASE(LogCaseComb3DCalib);
+
+    Unwrap::comb3DCalib ( pstCmd, pstRpy );
+
     pstRpy->enStatus = VisionStatus::OK;
+    FINISH_LOGCASE;
+    MARK_FUNCTION_END_TIME;
+    
     return pstRpy->enStatus;
 }
 
@@ -5841,6 +6020,63 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     return pstRpy->enStatus;
 }
 
+/*static*/ VisionStatus VisionAlgorithm::calc3DHeightDiff(const PR_CALC_3D_HEIGHT_DIFF_CMD *const pstCmd, PR_CALC_3D_HEIGHT_DIFF_RPY *const pstRpy, bool bReplay /*= false*/) {
+    assert(pstCmd != nullptr && pstRpy != nullptr);
+    if ( pstCmd->matHeight.empty() ) {
+        WriteLog("The input height matrix is empty.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    if (pstCmd->rectROI.x < 0 || pstCmd->rectROI.y < 0 ||
+        pstCmd->rectROI.width <= 0 || pstCmd->rectROI.height <= 0 ||
+        ( pstCmd->rectROI.x + pstCmd->rectROI.width ) > pstCmd->matHeight.cols ||
+        ( pstCmd->rectROI.y + pstCmd->rectROI.height ) > pstCmd->matHeight.rows ) {
+        char chArrMsg[1000];
+        _snprintf( chArrMsg, sizeof( chArrMsg ), "The input ROI rect (%d, %d, %d, %d) is invalid.",
+            pstCmd->rectROI.x, pstCmd->rectROI.y, pstCmd->rectROI.width, pstCmd->rectROI.height );
+        WriteLog(chArrMsg);
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    if ( pstCmd->vecRectBases.empty() ) {
+        WriteLog("The base vector is empty.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    for ( auto const &rect : pstCmd->vecRectBases ) {
+        if (rect.x < 0 || rect.y < 0 ||
+            rect.width <= 0 || rect.height <= 0 ||
+            ( rect.x + rect.width ) > pstCmd->matHeight.cols ||
+            ( rect.y + rect.height ) > pstCmd->matHeight.rows ) {
+            char chArrMsg[1000];
+            _snprintf ( chArrMsg, sizeof ( chArrMsg ), "The base rect (%d, %d, %d, %d) is invalid.",
+                rect.x, rect.y, rect.width, rect.height );
+            WriteLog ( chArrMsg );
+            pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+            return pstRpy->enStatus;
+        }
+    }
+
+    if ( pstCmd->fEffectHRatioEnd <= pstCmd->fEffectHRatioStart ) {
+        char chArrMsg[1000];
+        _snprintf( chArrMsg, sizeof( chArrMsg ), "The EffectHRatioEnd %.2f should larger than EffectHRatioStart %.2f.",
+            pstCmd->fEffectHRatioEnd, pstCmd->fEffectHRatioStart );
+        WriteLog(chArrMsg);
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    MARK_FUNCTION_START_TIME;
+
+    Unwrap::calc3DHeightDiff ( pstCmd, pstRpy );
+
+    MARK_FUNCTION_END_TIME;
+    return pstRpy->enStatus;
+}
+
 /*static*/ VisionStatus VisionAlgorithm::calcMTF(const PR_CALC_MTF_CMD *const pstCmd, PR_CALC_MTF_RPY *const pstRpy, bool bReplay /*= false*/) {
     assert(pstCmd != nullptr && pstRpy != nullptr);
 
@@ -5859,9 +6095,9 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     }
 
     if ( pstCmd->fMagnitudeOfDLP <= 0 || pstCmd->fMagnitudeOfDLP > PR_MAX_GRAY_LEVEL ) {
-        char charrMsg[1000];
-        _snprintf( charrMsg, sizeof( charrMsg ), "The MagnitudeOfDLP %f is not in range [1, 255].", pstCmd->fMagnitudeOfDLP );
-        WriteLog(charrMsg);
+        char chArrMsg[1000];
+        _snprintf( chArrMsg, sizeof( chArrMsg ), "The MagnitudeOfDLP %f is not in range [1, 255].", pstCmd->fMagnitudeOfDLP );
+        WriteLog(chArrMsg);
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return pstRpy->enStatus;
     }
@@ -5892,9 +6128,9 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     }
 
     if ( pstCmd->fMagnitudeOfDLP <= 0 || pstCmd->fMagnitudeOfDLP > PR_MAX_GRAY_LEVEL ) {
-        char charrMsg[1000];
-        _snprintf( charrMsg, sizeof( charrMsg ), "The MagnitudeOfDLP %f is not in range [1, 255].", pstCmd->fMagnitudeOfDLP );
-        WriteLog(charrMsg);
+        char chArrMsg[1000];
+        _snprintf( chArrMsg, sizeof( chArrMsg ), "The MagnitudeOfDLP %f is not in range [1, 255].", pstCmd->fMagnitudeOfDLP );
+        WriteLog(chArrMsg);
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return pstRpy->enStatus;
     }
