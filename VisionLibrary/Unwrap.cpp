@@ -6,6 +6,7 @@
 #include "TimeLog.h"
 #include "Log.h"
 #include <numeric>
+#include <limits>
 
 #define MARK_FUNCTION_START_TIME    CStopWatch      stopWatch; __int64 functionStart = stopWatch.AbsNow()
 #define MARK_FUNCTION_END_TIME      TimeLog::GetInstance()->addTimeLog( __FUNCTION__, stopWatch.AbsNow() - functionStart )
@@ -190,11 +191,11 @@ inline std::vector<size_t> sort_indexes(const std::vector<T> &v) {
 
     for ( int range = 1; range <= MAX_RANGE; ++ range ) {
         std::vector<ListOfPoint::const_iterator> vecIter1;
-        for ( auto iter1 = listPosPoint.cbegin(); iter1 != listPosPoint.cend(); ++ iter1 )   {
+        for ( auto iter1 = listPosPoint.cbegin(); iter1 != listPosPoint.cend(); ++ iter1 ) {
             std::vector<ListOfPoint::const_iterator> vecIter2;
-            for ( auto iter2 = listNegPoint.cbegin(); iter2 != listNegPoint.cend(); ++ iter2 )   {
+            for ( auto iter2 = listNegPoint.cbegin(); iter2 != listNegPoint.cend(); ++ iter2 ) {
                 cv::Point point1 = *iter1, point2 = *iter2;
-                if ( abs ( point1.x - point2.x ) <= range && abs ( point1.y - point2.y ) <= range )   {
+                if ( abs ( point1.x - point2.x ) <= range && abs ( point1.y - point2.y ) <= range ) {
                     vecIter1.push_back ( iter1 );
                     vecIter2.push_back ( iter2 );
 
@@ -865,18 +866,46 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
 //For shadow area
 /*static*/ void Unwrap:: _findUnstablePoint(const std::vector<cv::Mat> &vecInputImgs, float fDiffTol, float fAvgTol, cv::Mat &matDiffUnderTolIndex, cv::Mat &matAvgUnderTolIndex) {
     MARK_FUNCTION_START_TIME;
+    
+    //int ROWS = vecInputImgs[0].rows;
+    //int COLS = vecInputImgs[0].cols;
+    //matDiffUnderTolIndex = cv::Mat::zeros(ROWS, COLS, CV_8UC1);
+    //matAvgUnderTolIndex  = cv::Mat::zeros(ROWS, COLS, CV_8UC1);
+    //const int GROUP_IMG_COUNT = 4;
+    //for ( int row = 0; row < ROWS; ++ row )
+    //for ( int col = 0; col < COLS; ++ col ) {
+    //    std::vector<DATA_TYPE> vecData(GROUP_IMG_COUNT);
+    //    for ( size_t i = 0; i < vecInputImgs.size(); ++ i )
+    //        vecData[i] = vecInputImgs[i].at<DATA_TYPE>(row, col);
+    //    DATA_TYPE minValue = std::numeric_limits<DATA_TYPE>::max(), maxValue = std::numeric_limits<DATA_TYPE>::min(), avgValue = 0.f;
+    //    for ( auto data : vecData ) {
+    //        if ( minValue > data ) minValue = data;
+    //        if ( maxValue < data ) maxValue = data;
+    //        avgValue += data;
+    //    }
+    //    avgValue /= GROUP_IMG_COUNT;
+    //    if ( (maxValue - minValue) < fDiffTol )
+    //        matDiffUnderTolIndex.at<uchar>(row, col) = 1;
+    //    if ( avgValue < fAvgTol )
+    //        matAvgUnderTolIndex.at<uchar>(row, col) = 1;
+    //}
 
-    int ROWS = vecInputImgs[0].rows;
-    int COLS = vecInputImgs[0].cols;
     cv::Mat matCombine;
     const int GROUP_IMG_COUNT = 4;
-    for ( int i = 0; i < GROUP_IMG_COUNT; ++ i )
-        matCombine.push_back ( vecInputImgs[i].reshape ( 1, 1 ) );
-    cv::transpose ( matCombine, matCombine );
+    int ROWS = vecInputImgs[0].rows;
+    int COLS = vecInputImgs[0].cols;
+    int nTotal = ToInt32 ( vecInputImgs[0].total() );
+    cv::Mat matArray[] = { vecInputImgs[0].reshape(1, 1), vecInputImgs[1].reshape(1, 1), vecInputImgs[2].reshape(1, 1), vecInputImgs[3].reshape(1, 1) };
+    cv::vconcat(matArray, GROUP_IMG_COUNT, matCombine );
+    //for ( int i = 0; i < GROUP_IMG_COUNT; ++ i )
+    //    matCombine.push_back ( vecInputImgs[i].reshape ( 1, 1 ) );
+    //cv::transpose ( matCombine, matCombine );
+    TimeLog::GetInstance()->addTimeLog("_findUnstablePoint combine image. ", stopWatch.Span() );
     cv::Mat matMax, matMin, matAvg;
-    cv::reduce ( matCombine, matMax, 1, cv::ReduceTypes::REDUCE_MAX );
-    cv::reduce ( matCombine, matMin, 1, cv::ReduceTypes::REDUCE_MIN );
-    cv::reduce ( matCombine, matAvg, 1, cv::ReduceTypes::REDUCE_AVG );
+    cv::reduce ( matCombine, matMax, 0, cv::ReduceTypes::REDUCE_MAX );
+    cv::reduce ( matCombine, matMin, 0, cv::ReduceTypes::REDUCE_MIN );
+    cv::reduce ( matCombine, matAvg, 0, cv::ReduceTypes::REDUCE_AVG );
+    TimeLog::GetInstance()->addTimeLog("3 cv::reduce combine image. ", stopWatch.Span());
     cv::Mat matDiff = matMax - matMin;
     cv::compare ( matDiff, fDiffTol, matDiffUnderTolIndex, cv::CmpTypes::CMP_LT);
     cv::compare ( matAvg,  fAvgTol,  matAvgUnderTolIndex,  cv::CmpTypes::CMP_LT);
