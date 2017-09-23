@@ -100,9 +100,9 @@ Unwrap::~Unwrap ()
     TimeLog::GetInstance()->addTimeLog("cv::reduce takes take: ", stopWatch.Span() );
 
 #ifdef _DEBUG
-    cv::Mat matSumT;
-    cv::transpose ( matSum, matSumT );
-    auto vevVecSumT = CalcUtils::matToVector<DATA_TYPE>( matSumT );
+    //cv::Mat matSumT;
+    //cv::transpose ( matSum, matSumT );
+    auto vevVecSum = CalcUtils::matToVector<DATA_TYPE>( matSum );
 #endif
 
     //matPosIndex.setTo(0);
@@ -361,14 +361,7 @@ inline std::vector<size_t> sort_indexes(const std::vector<T> &v) {
     int COLS = pstCmd->vecInputImgs[0].cols;
     cv::Mat matX, matY;
     CalcUtils::meshgrid<float> ( 1.f, 1.f, ToFloat ( COLS ), 1.f, 1.f, ToFloat ( ROWS ), matX, matY );
-
     pstRpy->matBaseSurfaceParam = _calculatePPz ( matX, matY, matBeta );
-    cv::Mat matZP1 = _calculateBaseSurface ( matAlpha.rows, matAlpha.cols, pstRpy->matBaseSurfaceParam );
-#ifdef _DEBUG
-    auto vecPPz = CalcUtils::matToVector<DATA_TYPE>(pstRpy->matBaseSurfaceParam);
-    auto vecZP1 = CalcUtils::matToVector<DATA_TYPE>(matZP1);
-#endif
-
     pstRpy->enStatus = VisionStatus::OK;
 }
 
@@ -423,7 +416,7 @@ inline std::vector<size_t> sort_indexes(const std::vector<T> &v) {
 
      cv::Mat matTmpl ( matPhaseResult,cv::Rect(1, 0, matPhaseResult.cols - 1, matPhaseResult.rows ) );
      matTmpl += CalcUtils::cumsum<DATA_TYPE> ( matDp, 2 );
-#ifdef _DEBUG 
+#ifdef _DEBUG
      vecPhaseResult = CalcUtils::matToVector<DATA_TYPE>( matPhaseResult );
 #endif
     return matPhaseResult;
@@ -470,7 +463,7 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
     return matBaseSurfaceParam;
 }
 
-/*static*/ cv::Mat Unwrap::_calculateBaseSurface(int rows, int cols, const cv::Mat &matBaseSurfaceParam) {
+/*static*/ cv::Mat Unwrap::calculateBaseSurface(int rows, int cols, const cv::Mat &matBaseSurfaceParam) {
     CStopWatch stopWatch;
     cv::Mat matU, matV;
     CalcUtils::meshgrid<float> ( 0, 1.f / ( cols - 1 ), 1.f, 0, 1.f / ( rows - 1 ), 1.f, matU, matV );
@@ -506,7 +499,9 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
 
     if ( pstCmd->bEnableGaussianFilter ) {
         //Filtering can reduce residues at the expense of a loss of spatial resolution.
-        for ( auto &mat : vecConvertedImgs )        
+        //for ( int i = 0; i < PR_GROUP_TEXTURE_IMG_COUNT; ++ i )        
+        //    cv::GaussianBlur ( vecConvertedImgs[i], vecConvertedImgs[i], cv::Size(GUASSIAN_FILTER_SIZE, GUASSIAN_FILTER_SIZE), GAUSSIAN_FILTER_SIGMA, GAUSSIAN_FILTER_SIGMA, cv::BorderTypes::BORDER_REPLICATE );
+        for ( auto &mat : vecConvertedImgs )
             cv::GaussianBlur ( mat, mat, cv::Size(GUASSIAN_FILTER_SIZE, GUASSIAN_FILTER_SIZE), GAUSSIAN_FILTER_SIGMA, GAUSSIAN_FILTER_SIGMA, cv::BorderTypes::BORDER_REPLICATE );
     }
 
@@ -518,9 +513,13 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
     }
     cv::Mat mat00 = vecConvertedImgs[2] - vecConvertedImgs[0];
     cv::Mat mat01 = vecConvertedImgs[3] - vecConvertedImgs[1];
+    mat00.convertTo ( mat00, CV_32FC1 );
+    mat01.convertTo ( mat01, CV_32FC1 );
 
     cv::Mat mat10 = vecConvertedImgs[6] - vecConvertedImgs[4];
     cv::Mat mat11 = vecConvertedImgs[7] - vecConvertedImgs[5];
+    mat10.convertTo ( mat10, CV_32FC1 );
+    mat11.convertTo ( mat11, CV_32FC1 );
 
     cv::Mat matAlpha, matBeta;
     cv::phase ( -mat00, mat01, matAlpha );
@@ -584,17 +583,18 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
     int nAvgUnderTolCount  = cv::countNonZero ( matAvgUnderTolIndex );
     auto vecVecBeta  = CalcUtils::matToVector<DATA_TYPE>(matBeta);
 #endif
-    matAlpha.setTo ( NAN, matDiffUnderTolIndex );
+    //matAlpha.setTo ( NAN, matDiffUnderTolIndex );
     matAlpha = matAlpha * pstCmd->matThickToThinStripeK.at<DATA_TYPE>(0, 0) + pstCmd->matThickToThinStripeK.at<DATA_TYPE>(1, 0);    
     matBeta = _phaseUnwrapSurfaceByRefer ( matBeta, matAlpha );
+    //if ( pstCmd->bEnableGaussianFilter )
+    //   cv::GaussianBlur ( matBeta, matBeta, cv::Size(GUASSIAN_FILTER_SIZE, GUASSIAN_FILTER_SIZE), GAUSSIAN_FILTER_SIGMA, GAUSSIAN_FILTER_SIGMA, cv::BorderTypes::BORDER_REPLICATE );
 
-    cv::Mat matZP1 = _calculateBaseSurface ( matAlpha.rows, matAlpha.cols, pstCmd->matBaseSurfaceParam );
+    cv::Mat matZP1 = pstCmd->matBaseSurface;
 #ifdef _DEBUG
     vecVecAlpha = CalcUtils::matToVector<DATA_TYPE>(matAlpha);
     auto vecVecZP1 = CalcUtils::matToVector<DATA_TYPE>(matZP1);
     vecVecBeta  = CalcUtils::matToVector<DATA_TYPE>(matBeta);
 #endif
-    matAlpha = matAlpha - matZP1;
     matBeta  = matBeta  - matZP1;
 
     auto matH = matBeta.clone();
@@ -925,7 +925,7 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
     stCalcCmd.fMinIntensityDiff = pstCmd->fMinIntensityDiff;
     stCalcCmd.fMinAvgIntensity = pstCmd->fMinAvgIntensity;
     stCalcCmd.matThickToThinStripeK = pstCmd->matThickToThinStripeK;
-    stCalcCmd.matBaseSurfaceParam = pstCmd->matBaseSurfaceParam;
+    stCalcCmd.matBaseSurface = pstCmd->matBaseSurface;
     stCalcCmd.fBaseStartAvgPhase = pstCmd->fBaseStartAvgPhase;
     calc3DHeight ( &stCalcCmd, &stCalcRpy );
     cv::Mat matPhase = stCalcRpy.matPhase;
@@ -961,7 +961,7 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
 #endif
         auto rectBounding = cv::boundingRect ( matInRange );
         if ( rectBounding.width < CALIB_HEIGHT_MIN_SIZE || rectBounding.height < CALIB_HEIGHT_MIN_SIZE ) {
-            WriteLog("The base surface size is too small in calibrate 3D height.");
+            WriteLog("The base surface size is too small to calibrate 3D height.");
             pstRpy->enStatus = VisionStatus::CALIB_3D_HEIGHT_SURFACE_TOO_SMALL;
             return;
         }
@@ -991,10 +991,18 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
         cv::Mat matYY ( vecPhaseTmp );
         cv::Mat matK;
         cv::solve ( matXX, matYY, matK, cv::DecompTypes::DECOMP_QR );
-#ifdef _DEBUG
-        auto vevVecK = CalcUtils::matToVector<DATA_TYPE> ( matK );
-#endif
         cv::Mat matZp = matX * matK.at<DATA_TYPE> ( 0, 0 ) + matY * matK.at<DATA_TYPE> ( 1, 0 ) + matK.at<DATA_TYPE> ( 2, 0 );
+#ifdef _DEBUG
+        auto vecVecZp = CalcUtils::matToVector<DATA_TYPE> ( matZp );
+        auto vecVecPhase = CalcUtils::matToVector<DATA_TYPE> ( matPhase );
+#endif
+        auto meanValue = cv::mean ( matZp )[0];
+        if ( meanValue > 1. ) {
+            WriteLog("The H 0 step is not found. Please make sure the input image has zero phase, the bReverseHeight and nBlockStepCount input value are correct.");
+            pstRpy->enStatus = VisionStatus::CALIB_3D_HEIGHT_NO_BASE_STEP;
+            return;
+        }
+
         matPhase = matPhase - matZp;
 
         cv::Mat matHz;
@@ -1016,6 +1024,11 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
 
             VectorOfPoint vecPtLocations;
             cv::findNonZero ( matBW, vecPtLocations );
+            if ( vecPtLocations.size() < 10 ) {
+                WriteLog ( "The step area is too small to calibrate 3D height. Please check if the input step count is correct." );
+                pstRpy->enStatus = VisionStatus::CALIB_3D_HEIGHT_SURFACE_TOO_SMALL;
+                return;
+            }
             for ( int i = 0; i < 2; ++ i) {
                 std::vector<DATA_TYPE> vecXt, vecYt, vecPhaseTmp;
                 vecXt.reserve ( vecPtLocations.size () );

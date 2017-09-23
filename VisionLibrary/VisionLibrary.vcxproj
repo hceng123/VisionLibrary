@@ -175,6 +175,7 @@
     <ClCompile Include="Log.cpp" />
     <ClCompile Include="LogCase.cpp" />
     <ClCompile Include="MatchTmpl.cpp" />
+    <ClCompile Include="MultiThresh.cpp" />
     <ClCompile Include="Record.cpp" />
     <ClCompile Include="RecordManager.cpp" />
     <ClCompile Include="TimeLog.cpp" />

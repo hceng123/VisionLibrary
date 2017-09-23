@@ -103,11 +103,11 @@ cv::Mat drawHeightGrid(const cv::Mat &matHeight, int nGridRow, int nGridCol) {
 }
 
 //static std::string gstrCalibResultFile("./data/capture/CalibPP.yml");
-static std::string gstrWorkingFolder("./data/Sch/");
+static std::string gstrWorkingFolder("./data/0916_NK_Step5/");
 static std::string gstrCalibResultFile = gstrWorkingFolder + "CalibPP.yml";
 void TestCalib3dBase() {
     const int IMAGE_COUNT = 8;
-    std::string strFolder = gstrWorkingFolder + "0831223425_45_Plane_Sch/";
+    std::string strFolder = gstrWorkingFolder + "0916113354NK_Plane/";
     PR_CALIB_3D_BASE_CMD stCmd;
     PR_CALIB_3D_BASE_RPY stRpy;
     for ( int i = 1; i <= IMAGE_COUNT; ++ i ) {
@@ -155,6 +155,7 @@ void TestCalib3DHeight() {
     stCmd.fBlockStepHeight = 1.f;
     stCmd.nResultImgGridRow = 10;
     stCmd.nResultImgGridCol = 10;
+    cv::Mat matBaseSurfaceParam;
 
     std::string strResultMatPath = gstrCalibResultFile;
     cv::FileStorage fs ( strResultMatPath, cv::FileStorage::READ );
@@ -162,11 +163,21 @@ void TestCalib3DHeight() {
     cv::read ( fileNode, stCmd.matThickToThinStripeK, cv::Mat() );
 
     fileNode = fs["PPz"];
-    cv::read ( fileNode, stCmd.matBaseSurfaceParam, cv::Mat() );
+    cv::read ( fileNode, matBaseSurfaceParam, cv::Mat() );
 
     fileNode = fs["BaseStartAvgPhase"];
     cv::read ( fileNode, stCmd.fBaseStartAvgPhase, 0.f );
     fs.release();
+
+    PR_CALC_3D_BASE_CMD stCalc3DBaseCmd;
+    PR_CALC_3D_BASE_RPY stCalc3DBaseRpy;
+    stCalc3DBaseCmd.matBaseSurfaceParam = matBaseSurfaceParam;
+    PR_Calc3DBase ( &stCalc3DBaseCmd, &stCalc3DBaseRpy );
+    if ( VisionStatus::OK != stCalc3DBaseRpy.enStatus ) {
+        std::cout << "PR_Calc3DBase fail. Status = " << ToInt32 ( stCalc3DBaseRpy.enStatus ) << std::endl;
+        return;
+    }
+    stCmd.matBaseSurface = stCalc3DBaseRpy.matBaseSurface;
 
     PR_Calib3DHeight ( &stCmd, &stRpy );
     std::cout << "PR_Calib3DHeight status " << ToInt32( stRpy.enStatus ) << std::endl;
@@ -203,13 +214,15 @@ void TestCalc3DHeight() {
     stCmd.fMinIntensityDiff = 3;
     stCmd.fMinAvgIntensity = 3;
 
+    cv::Mat matBaseSurfaceParam;
+
     std::string strResultMatPath = gstrCalibResultFile;
     cv::FileStorage fs ( strResultMatPath, cv::FileStorage::READ );
     cv::FileNode fileNode = fs["K"];
     cv::read ( fileNode, stCmd.matThickToThinStripeK, cv::Mat() );
 
     fileNode = fs["PPz"];
-    cv::read ( fileNode, stCmd.matBaseSurfaceParam, cv::Mat() );
+    cv::read ( fileNode, matBaseSurfaceParam, cv::Mat() );
 
     fileNode = fs["BaseStartAvgPhase"];
     cv::read ( fileNode, stCmd.fBaseStartAvgPhase, 0.f );
@@ -218,6 +231,16 @@ void TestCalc3DHeight() {
     cv::read ( fileNode, stCmd.matPhaseToHeightK, cv::Mat() );
 
     fs.release();
+
+    PR_CALC_3D_BASE_CMD stCalc3DBaseCmd;
+    PR_CALC_3D_BASE_RPY stCalc3DBaseRpy;
+    stCalc3DBaseCmd.matBaseSurfaceParam = matBaseSurfaceParam;
+    PR_Calc3DBase ( &stCalc3DBaseCmd, &stCalc3DBaseRpy );
+    if ( VisionStatus::OK != stCalc3DBaseRpy.enStatus ) {
+        std::cout << "PR_Calc3DBase fail. Status = " << ToInt32 ( stCalc3DBaseRpy.enStatus ) << std::endl;
+        return;
+    }    
+    stCmd.matBaseSurface = stCalc3DBaseRpy.matBaseSurface;
 
     PR_Calc3DHeight ( &stCmd, &stRpy );
     std::cout << "PR_Calc3DHeight status " << ToInt32( stRpy.enStatus ) << std::endl;

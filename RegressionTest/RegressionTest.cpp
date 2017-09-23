@@ -107,6 +107,8 @@ int _tmain(int argc, _TCHAR* argv[])
     TestInspContour();
 
     Test3D();
+
+    PR_DumpTimeLog("./Vision/Time.log");
 	return 0;
 }
 

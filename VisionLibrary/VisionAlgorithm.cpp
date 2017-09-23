@@ -13,6 +13,7 @@
 #include "Fitting.h"
 #include "MatchTmpl.h"
 #include "Unwrap.h"
+#include "SubFunctions.h"
 #include <iostream>
 #include <limits>
 #include <algorithm>
@@ -380,12 +381,37 @@ namespace
     }
 }
 
+namespace {
+cv::Mat getpdf ( const cv::Mat &matInput, double &dMin, double &dMax, int sbins ) {
+    assert ( ! matInput.empty() );
+    cv::Mat matMask = matInput == matInput;
+    cv::minMaxIdx ( matInput, &dMin, &dMax, 0, 0, matMask );
+    cv::Mat matFloat;
+    matInput.convertTo ( matFloat, CV_32FC1 );
+    cv::Mat matNormlized = ( matFloat - dMin ) / ( dMax - dMin );
+    cv::MatND hist;
+    int channels[] = { 0 };
+    int histSize[] = { sbins };
+    float sranges[] = { 0, 256 };
+    matNormlized = matNormlized * 255;
+    cv::Mat matConvertBack;
+    matNormlized.convertTo( matConvertBack, CV_8UC1 );
+    const float* ranges[] = { sranges };
+    cv::calcHist(&matConvertBack, 1, channels, matMask, // do not use mask
+        hist, 1, histSize, ranges,
+        true, // the histogram is uniform
+        false);
+    hist = hist / ToFloat ( matConvertBack.total() );
+    return hist;
+}
+
+}
 /*******************************************************************************
 * Purpose:   Auto find the threshold to distinguish the feature need to extract.
 * Algorithm: The method is come from paper: "A Fast Algorithm for Multilevel 
 *            Thresholding".
 * Input:     mat - The input image.
-             N - Number of therehold to calculate. 1 <= N <= 4
+             N - Number of therehold to calculate. 1 <= N <= 10
 * Output:    The calculated threshold.
 * Note:      Mu is name of greek symbol μ.
 *            Omega and Eta are also greek symbol.
@@ -393,7 +419,7 @@ namespace
 std::vector<Int16> VisionAlgorithm::autoMultiLevelThreshold(const cv::Mat &matInputImg, const cv::Mat &matMask, int N) {
     assert(N >= 1 && N <= PR_MAX_AUTO_THRESHOLD_COUNT);
 
-    const int sbins = 128;
+    const int sbins = 255;
     const float MIN_P = 0.001f;
     std::vector<Int16> vecThreshold;
     int channels[] = { 0 };
@@ -493,239 +519,34 @@ std::vector<Int16> VisionAlgorithm::autoMultiLevelThreshold(const cv::Mat &matIn
                 fMaxSigma = fSigma;
             }
         }
-        vecThreshold.push_back(nResultT1 * PR_MAX_GRAY_LEVEL / sbins);
-        vecThreshold.push_back(nResultT2 * PR_MAX_GRAY_LEVEL / sbins);
-    }else if ( 3 == N ) {
-        float fMaxSigma = 0;
-        int nResultT1 = 0, nResultT2 = 0, nResultT3 = 0;
-        for (int T1 = START;  T1 < sbins - 2; ++ T1)
-        for (int T2 = T1 + 1; T2 < sbins - 1; ++ T2)
-        for (int T3 = T2 + 1; T3 < sbins;     ++ T3)
-        {
+        vecThreshold.push_back ( nResultT1 * PR_MAX_GRAY_LEVEL / sbins );
+        vecThreshold.push_back ( nResultT2 * PR_MAX_GRAY_LEVEL / sbins );
+    }else if ( N >= 3 ) {
+        double dMin = 0.f, dMax = 0.f;
+        cv::Mat matP = getpdf ( matInputImg, dMin, dMax, sbins );
 
-            float fSigma = 0.f;
-            if (vecVecEta[START][T1] >= 0.f)
-                fSigma += vecVecEta[START][T1];
-            else
-            {
-                if (vecVecOmega[START][T1] > MIN_P)
-                    vecVecEta[START][T1] = vecVecMu[START][T1] * vecVecMu[START][T1] / vecVecOmega[START][T1];
-                else
-                    vecVecEta[START][T1] = 0.f;
-                fSigma += vecVecEta[START][T1];
-            }
+        cv::Mat omega = CalcUtils::cumsum<float>( matP, 1 );
+        cv::Mat matGo;
+        matGo = CalcUtils::intervals<float> ( 1.f, 1.f, ToFloat ( sbins ) );
+        matGo = matGo.mul ( matP );
 
-            if (vecVecEta[T1][T2] >= 0.f)
-                fSigma += vecVecEta[T1][T2];
-            else
-            {
-                if (vecVecOmega[T1][T2] > MIN_P)
-                    vecVecEta[T1][T2] = vecVecMu[T1][T2] * vecVecMu[T1][T2] / vecVecOmega[T1][T2];
-                else
-                    vecVecEta[T1][T2] = 0.f;
-                fSigma += vecVecEta[T1][T2];
-            }
+        cv::Mat mu = CalcUtils::cumsum<float>(matGo, 1);
+        float mu_t = mu.at<float> ( ToInt32 ( mu.total() - 1 ) );
 
-            if (vecVecEta[T2][T3] >= 0.f)
-                fSigma += vecVecEta[T2][T3];
-            else
-            {
-                if (vecVecOmega[T2][T3] > MIN_P)
-                    vecVecEta[T2][T3] = vecVecMu[T2][T3] * vecVecMu[T2][T3] / vecVecOmega[T2][T3];
-                else
-                    vecVecEta[T2][T3] = 0.f;
-                fSigma += vecVecEta[T2][T3];
-            }
-
-            if (vecVecEta[T3][sbins] >= 0.f)
-                fSigma += vecVecEta[T3][sbins];
-            else
-            {
-                if (vecVecOmega[T3][sbins] > MIN_P)
-                    vecVecEta[T3][sbins] = vecVecMu[T3][sbins] * vecVecMu[T3][sbins] / vecVecOmega[T3][sbins];
-                else
-                    vecVecEta[T3][sbins] = 0.f;
-                fSigma += vecVecEta[T3][sbins];
-            }
-
-            if (fMaxSigma < fSigma) {
-                nResultT1 = T1;
-                nResultT2 = T2;
-                nResultT3 = T3;
-                fMaxSigma = fSigma;
-            }
+        float fInterval = float( sbins - 1 ) / float( N + 1 );
+        float fThreshold = fInterval;
+        std::vector<float> vecX;
+        for ( int i = 0; i < N; ++ i ) {
+            vecX.push_back ( fThreshold );
+            fThreshold += fInterval;
         }
-        vecThreshold.push_back(nResultT1 * PR_MAX_GRAY_LEVEL / sbins);
-        vecThreshold.push_back(nResultT2 * PR_MAX_GRAY_LEVEL / sbins);
-        vecThreshold.push_back(nResultT3 * PR_MAX_GRAY_LEVEL / sbins);
-    }else if ( 4 == N ) {
-        float fMaxSigma = 0;
-        int nResultT1 = 0, nResultT2 = 0, nResultT3 = 0, nResultT4 = 0;
-        for (int T1 = START;  T1 < sbins - 3; ++ T1)
-        for (int T2 = T1 + 1; T2 < sbins - 2; ++ T2)
-        for (int T3 = T2 + 1; T3 < sbins - 1; ++ T3)
-        for (int T4 = T3 + 1; T4 < sbins;     ++ T4)
-        {
-            float fSigma = 0.f;
-
-            if (vecVecEta[START][T1] >= 0.f)
-                fSigma += vecVecEta[START][T1];
-            else
-            {
-                if (vecVecOmega[START][T1] > MIN_P)
-                    vecVecEta[START][T1] = vecVecMu[START][T1] * vecVecMu[START][T1] / vecVecOmega[START][T1];
-                else
-                    vecVecEta[START][T1] = 0.f;
-                fSigma += vecVecEta[START][T1];
-            }
-
-            if (vecVecEta[T1][T2] >= 0.f)
-                fSigma += vecVecEta[T1][T2];
-            else
-            {
-                if (vecVecOmega[T1][T2] > MIN_P)
-                    vecVecEta[T1][T2] = vecVecMu[T1][T2] * vecVecMu[T1][T2] / vecVecOmega[T1][T2];
-                else
-                    vecVecEta[T1][T2] = 0.f;
-                fSigma += vecVecEta[T1][T2];
-            }
-
-            if (vecVecEta[T2][T3] >= 0.f)
-                fSigma += vecVecEta[T2][T3];
-            else
-            {
-                if (vecVecOmega[T2][T3] > MIN_P)
-                    vecVecEta[T2][T3] = vecVecMu[T2][T3] * vecVecMu[T2][T3] / vecVecOmega[T2][T3];
-                else
-                    vecVecEta[T2][T3] = 0.f;
-                fSigma += vecVecEta[T2][T3];
-            }
-
-            if (vecVecEta[T3][T4] >= 0.f)
-                fSigma += vecVecEta[T3][T4];
-            else
-            {
-                if (vecVecOmega[T3][T4] > MIN_P)
-                    vecVecEta[T3][T4] = vecVecMu[T3][T4] * vecVecMu[T3][T4] / vecVecOmega[T3][T4];
-                else
-                    vecVecEta[T3][T4] = 0.f;
-                fSigma += vecVecEta[T3][T4];
-            }
-
-            if (vecVecEta[T4][sbins] >= 0.f)
-                fSigma += vecVecEta[T4][sbins];
-            else
-            {
-                if (vecVecOmega[T4][sbins] > MIN_P)
-                    vecVecEta[T4][sbins] = vecVecMu[T4][sbins] * vecVecMu[T4][sbins] / vecVecOmega[T4][sbins];
-                else
-                    vecVecEta[T4][sbins] = 0.f;
-                fSigma += vecVecEta[T4][sbins];
-            }
-
-            if (fMaxSigma < fSigma)    {
-                nResultT1 = T1;
-                nResultT2 = T2;
-                nResultT3 = T3;
-                nResultT4 = T4;
-                fMaxSigma = fSigma;
-            }
+        
+        fminsearch ( matlabObjFunction, vecX, sbins, omega, mu, mu_t );
+        for ( auto x : vecX ) {
+            auto normFactor = 255;
+            auto fThreshold = dMin + round ( x ) / normFactor* ( dMax - dMin );
+            vecThreshold.push_back ( ToInt16 ( round ( fThreshold ) ) );
         }
-        vecThreshold.push_back(nResultT1 * PR_MAX_GRAY_LEVEL / sbins);
-        vecThreshold.push_back(nResultT2 * PR_MAX_GRAY_LEVEL / sbins);
-        vecThreshold.push_back(nResultT3 * PR_MAX_GRAY_LEVEL / sbins);
-        vecThreshold.push_back(nResultT4 * PR_MAX_GRAY_LEVEL / sbins);
-    }else if ( 5 == N ) {
-        float fMaxSigma = 0;
-        int nResultT1 = 0, nResultT2 = 0, nResultT3 = 0, nResultT4 = 0, nResultT5 = 0;
-        for (int T1 = START;  T1 < sbins - 4; ++ T1)
-        for (int T2 = T1 + 1; T2 < sbins - 3; ++ T2)
-        for (int T3 = T2 + 1; T3 < sbins - 2; ++ T3)
-        for (int T4 = T3 + 1; T4 < sbins - 1; ++ T4)
-        for (int T5 = T4 + 1; T5 < sbins;     ++ T5)
-        {
-            float fSigma = 0.f;
-
-            if (vecVecEta[START][T1] >= 0.f)
-                fSigma += vecVecEta[START][T1];
-            else
-            {
-                if (vecVecOmega[START][T1] > MIN_P)
-                    vecVecEta[START][T1] = vecVecMu[START][T1] * vecVecMu[START][T1] / vecVecOmega[START][T1];
-                else
-                    vecVecEta[START][T1] = 0.f;
-                fSigma += vecVecEta[START][T1];
-            }
-
-            if (vecVecEta[T1][T2] >= 0.f)
-                fSigma += vecVecEta[T1][T2];
-            else
-            {
-                if (vecVecOmega[T1][T2] > MIN_P)
-                    vecVecEta[T1][T2] = vecVecMu[T1][T2] * vecVecMu[T1][T2] / vecVecOmega[T1][T2];
-                else
-                    vecVecEta[T1][T2] = 0.f;
-                fSigma += vecVecEta[T1][T2];
-            }
-
-            if (vecVecEta[T2][T3] >= 0.f)
-                fSigma += vecVecEta[T2][T3];
-            else
-            {
-                if (vecVecOmega[T2][T3] > MIN_P)
-                    vecVecEta[T2][T3] = vecVecMu[T2][T3] * vecVecMu[T2][T3] / vecVecOmega[T2][T3];
-                else
-                    vecVecEta[T2][T3] = 0.f;
-                fSigma += vecVecEta[T2][T3];
-            }
-
-            if (vecVecEta[T3][T4] >= 0.f)
-                fSigma += vecVecEta[T3][T4];
-            else
-            {
-                if (vecVecOmega[T3][T4] > MIN_P)
-                    vecVecEta[T3][T4] = vecVecMu[T3][T4] * vecVecMu[T3][T4] / vecVecOmega[T3][T4];
-                else
-                    vecVecEta[T3][T4] = 0.f;
-                fSigma += vecVecEta[T3][T4];
-            }
-
-            if (vecVecEta[T4][T5] >= 0.f)
-                fSigma += vecVecEta[T4][T5];
-            else
-            {
-                if (vecVecOmega[T4][T5] > MIN_P)
-                    vecVecEta[T4][T5] = vecVecMu[T4][T5] * vecVecMu[T4][T5] / vecVecOmega[T4][T5];
-                else
-                    vecVecEta[T4][T5] = 0.f;
-                fSigma += vecVecEta[T4][T5];
-            }
-
-            if (vecVecEta[T5][sbins] >= 0.f)
-                fSigma += vecVecEta[T5][sbins];
-            else
-            {
-                if (vecVecOmega[T5][sbins] > MIN_P)
-                    vecVecEta[T5][sbins] = vecVecMu[T5][sbins] * vecVecMu[T5][sbins] / vecVecOmega[T5][sbins];
-                else
-                    vecVecEta[T5][sbins] = 0.f;
-                fSigma += vecVecEta[T5][sbins];
-            }
-
-            if (fMaxSigma < fSigma)    {
-                nResultT1 = T1;
-                nResultT2 = T2;
-                nResultT3 = T3;
-                nResultT4 = T4;
-                nResultT5 = T5;
-                fMaxSigma = fSigma;
-            }
-        }
-        vecThreshold.push_back(nResultT1 * PR_MAX_GRAY_LEVEL / sbins);
-        vecThreshold.push_back(nResultT2 * PR_MAX_GRAY_LEVEL / sbins);
-        vecThreshold.push_back(nResultT3 * PR_MAX_GRAY_LEVEL / sbins);
-        vecThreshold.push_back(nResultT4 * PR_MAX_GRAY_LEVEL / sbins);
-        vecThreshold.push_back(nResultT5 * PR_MAX_GRAY_LEVEL / sbins);
     }
 
     return vecThreshold;
@@ -885,7 +706,7 @@ int VisionAlgorithm::_autoThreshold(const cv::Mat &mat, const cv::Mat &matMask/*
     int index = 0;
     for ( auto contour : vecContours ) {
         auto area = cv::contourArea ( contour );
-        if ( area > 200 && getContourRectRatio ( contour ) < MAX_TWO_DIM_RATIO && _isContourRectShape ( contour ) ) {
+        if ( area > 180 && getContourRectRatio ( contour ) < MAX_TWO_DIM_RATIO && _isContourRectShape ( contour ) ) {
             AOI_COUNTOUR stAoiContour;
             cv::Moments moment = cv::moments( contour );
             stAoiContour.ptCtr.x = static_cast< float >(moment.m10 / moment.m00);
@@ -5890,6 +5711,22 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     return pstRpy->enStatus;
 }
 
+/*static*/ VisionStatus VisionAlgorithm::calc3DBase(const PR_CALC_3D_BASE_CMD *const pstCmd, PR_CALC_3D_BASE_RPY *const pstRpy, bool bReplay /*= false*/) {
+    assert(pstCmd != nullptr && pstRpy != nullptr);
+    if ( pstCmd->matBaseSurfaceParam.empty() ) {
+        WriteLog("matBaseSurfaceParam is empty.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+    MARK_FUNCTION_START_TIME;
+
+    pstRpy->matBaseSurface = Unwrap::calculateBaseSurface ( pstCmd->nImageRows, pstCmd->nImageCols, pstCmd->matBaseSurfaceParam );
+
+    MARK_FUNCTION_END_TIME;
+    pstRpy->enStatus = VisionStatus::OK;
+    return pstRpy->enStatus;
+}
+
 /*static*/ VisionStatus VisionAlgorithm::calib3DHeight(const PR_CALIB_3D_HEIGHT_CMD *const pstCmd, PR_CALIB_3D_HEIGHT_RPY *const pstRpy, bool bReplay/* = false*/) {
     assert(pstCmd != nullptr && pstRpy != nullptr);
 
@@ -5913,8 +5750,14 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
         return pstRpy->enStatus;
     }
 
-    if ( pstCmd->matBaseSurfaceParam.empty() ) {
-        WriteLog("matBaseSurfaceParam is empty.");
+    if ( pstCmd->matBaseSurface.empty() ) {
+        WriteLog("matBaseSurface is empty.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    if ( pstCmd->matBaseSurface.size() != pstCmd->vecInputImgs[0].size() ) {
+        WriteLog("The size of matBaseSurface is not match with the input image size..");
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return pstRpy->enStatus;
     }
@@ -6003,8 +5846,14 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
         return pstRpy->enStatus;
     }
 
-    if ( pstCmd->matBaseSurfaceParam.empty() ) {
-        WriteLog("The matBaseSurfaceParam is empty.");
+    if ( pstCmd->matBaseSurface.empty() ) {
+        WriteLog("matBaseSurface is empty.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    if ( pstCmd->matBaseSurface.size() != pstCmd->vecInputImgs[0].size() ) {
+        WriteLog("The size of matBaseSurface is not match with the input image size..");
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return pstRpy->enStatus;
     }
