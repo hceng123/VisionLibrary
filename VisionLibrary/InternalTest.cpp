@@ -156,10 +156,22 @@ static void TestCalcUtilsMeshGrid()
     }
 }
 
+static void TestCountOfNan() {
+    std::cout << std::endl << "------------------------------------------";
+    std::cout << std::endl << "COUNT OF NAN TEST #1 STARTING";
+    std::cout << std::endl << "------------------------------------------";
+    std::cout << std::endl;
+
+    cv::Mat matNan (3, 3, CV_32FC1, NAN );
+    matNan.at<float>(0) = 0;
+    std::cout << "Count of Nan: " << CalcUtils::countOfNan(matNan) << std::endl;
+}
+
 void InternalTest() {
     TestCalcUtilsCumSum();
     TestCalcUtilsInternals();
     TestCalcUtilsMeshGrid();
+    TestCountOfNan();
 }
 
 }

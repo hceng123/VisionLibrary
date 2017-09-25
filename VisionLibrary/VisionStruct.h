@@ -30,9 +30,9 @@ using VectorOfMat = std::vector<cv::Mat>;
 using VectorOfFloat = std::vector<float>;
 using VectorOfVectorOfFloat = std::vector<VectorOfFloat>;
 
-#define ToInt32(param)      (static_cast<AOI::Int32>(param))
-#define ToInt16(param)      (static_cast<AOI::Int16>(param))
-#define ToFloat(param)      (static_cast<float>(param))
+template <typename Tp> inline Int32 ToInt32(Tp param) { return static_cast<Int32>(param); }
+template <typename Tp> inline Int16 ToInt16(Tp param) { return static_cast<Int16>(param); }
+template <typename Tp> inline float ToFloat(Tp param) { return static_cast<float>(param); }
 
 struct PR_VERSION_INFO {
     char                    chArrVersion[100];

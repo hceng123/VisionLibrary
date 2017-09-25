@@ -1595,7 +1595,7 @@ VisionStatus LogCaseLrnContour::WriteCmd(const PR_LRN_CONTOUR_CMD *const pstCmd)
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile(cmdRpyFilePath.c_str());
     ini.SetValue ( _CMD_SECTION.c_str(), _strKeyROI.c_str(), _formatRect ( pstCmd->rectROI ).c_str() );
-    ini.SetBoolValue(_CMD_SECTION.c_str(), _strKeyAutoThreshold.c_str(), ToInt32( pstCmd->bAutoThreshold ) );
+    ini.SetBoolValue(_CMD_SECTION.c_str(), _strKeyAutoThreshold.c_str(), pstCmd->bAutoThreshold );
     ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyThreshold.c_str(), pstCmd->nThreshold );
     ini.SaveFile(cmdRpyFilePath.c_str());
 
