@@ -708,7 +708,7 @@ private:
     const String _strKeyMinIntensityDiff    = "MinIntensityDiff";
     const String _strKeyMinAvgIntensity     = "MinAvgIntensity";
     const String _strKeyThickToThinStripeK  = "ThickToThinStripeK";
-    const String _strKeyBaseSurfaceParam    = "BaseSurfaceParam";
+    const String _strKeyBaseSurface         = "BaseSurface";
     const String _strKeyBaseStartAvgPhase   = "BaseStartAvgPhase";
     const String _strKeyBlockStepCount      = "BlockStepCount";
     const String _strKeyBlockStepHeight     = "BlockStepHeight";
@@ -760,7 +760,7 @@ private:
     const String _strKeyMinIntensityDiff    = "MinIntensityDiff";
     const String _strKeyMinAvgIntensity     = "MinAvgIntensity";
     const String _strKeyThickToThinStripeK  = "ThickToThinStripeK";
-    const String _strKeyBaseSurfaceParam    = "BaseSurfaceParam";
+    const String _strKeyBaseSurface         = "BaseSurface";
     const String _strKeyBaseStartAvgPhase   = "BaseStartAvgPhase";
 
     const String _strKeyStatus              = "Status";

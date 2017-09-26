@@ -40,3 +40,4 @@ RegressionTest/Data/NanMap_2.png
 RegressionTest/Data/NanMap_3.png
 RegressionTest/Data/BranchCut_2.png
 VisionLibrary/Unwrap_original.cpp
+TestVisionLibrary/TestVisionLibrary_result.txt

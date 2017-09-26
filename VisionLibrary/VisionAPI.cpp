@@ -364,7 +364,14 @@ PR_FUNCTION_EXIT
 VisionAPI VisionStatus PR_Calib3DBase(const PR_CALIB_3D_BASE_CMD *const pstCmd, PR_CALIB_3D_BASE_RPY *const pstRpy)
 {
 PR_FUNCTION_ENTRY
-    return VisionAlgorithm::calib3DBase  ( pstCmd, pstRpy );
+    return VisionAlgorithm::calib3DBase ( pstCmd, pstRpy );
+PR_FUNCTION_EXIT
+}
+
+VisionAPI VisionStatus PR_Calc3DBase(const PR_CALC_3D_BASE_CMD *const pstCmd, PR_CALC_3D_BASE_RPY *const pstRpy)
+{
+PR_FUNCTION_ENTRY
+    return VisionAlgorithm::calc3DBase ( pstCmd, pstRpy );
 PR_FUNCTION_EXIT
 }
 

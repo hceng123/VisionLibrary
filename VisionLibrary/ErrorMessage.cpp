@@ -156,6 +156,14 @@ VisionStatus GetErrorInfo(VisionStatus enStatus, PR_GET_ERROR_INFO_RPY *pstRpy)
         _snprintf(pstRpy->achErrorStr, PR_MAX_ERR_STR_LEN, "Lead is missing.");
         pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::INSP_STATUS;
         break;
+    case VisionStatus::CALIB_3D_HEIGHT_SURFACE_TOO_SMALL:
+        _snprintf(pstRpy->achErrorStr, PR_MAX_ERR_STR_LEN, "The step area is too small to calibrate 3D height.");
+        pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::INSP_STATUS;
+        break;
+    case VisionStatus::CALIB_3D_HEIGHT_NO_BASE_STEP:
+        _snprintf(pstRpy->achErrorStr, PR_MAX_ERR_STR_LEN, "The H 0 step is not found.");
+        pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::INSP_STATUS;
+        break;
     default:
         _snprintf(pstRpy->achErrorStr, PR_MAX_ERR_STR_LEN, "Undefined error code!");
         pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::FATAL_ERROR;

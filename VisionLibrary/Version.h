@@ -14,9 +14,13 @@
  * Copyright (c) 2016-2016, Xiao Shengguang.  All rights reserved.
  ****************************************************************************/
 
+//2017-09-23 (XSG) Use Nelder-Mead algorithm to do auto threshold to speed up.
+//2017-09-23 (XSG) Add PR_Calc3DBase function to avoid repeatly calculate base surface.
+#define AOI_VISION_VERSION          "1.00.07"
+
 //2017-09-17 (XSG) Add PR_Comb3DCalib function.
 //2017-09-16 (XSG) Add bSubPixelRefine in PR_MATCH_TEMPLATE_CMD. Default is false.
-#define AOI_VISION_VERSION          "1.00.06"
+//#define AOI_VISION_VERSION          "1.00.06"
 
 //2017-09-16 (XSG) Support 5 steps calibration.
 //2017-09-16 (XSG) Use new method to do 3D calibrate, remove the top error points to fit surface.
