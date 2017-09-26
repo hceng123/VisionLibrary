@@ -257,5 +257,20 @@ float CalcUtils::calcPointToContourDist(const cv::Point &ptInput, const VectorOf
     return ToInt32 ( matInput.total() ) - nCount;
 }
 
+/*static*/ void CalcUtils::findMinMaxCoord(const VectorOfPoint &vecPoints, int &xMin, int &xMax, int &yMin, int &yMax) {
+    xMin = yMin = std::numeric_limits<int>::max();
+    xMax = yMax = std::numeric_limits<int>::min();
+    for ( const auto &point : vecPoints ) {
+        if ( point.x > xMax )
+            xMax = point.x;
+        if ( point.x < xMin )
+            xMin = point.x;
+        if ( point.y > yMax )
+            yMax = point.y;
+        if ( point.y < yMin )
+            yMin = point.y;
+    }
+}
+
 }
 }

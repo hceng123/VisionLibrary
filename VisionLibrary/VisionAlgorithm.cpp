@@ -5926,6 +5926,100 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     return pstRpy->enStatus;
 }
 
+/*static*/ VisionStatus VisionAlgorithm::calcCameraMTF(const PR_CALC_CAMERA_MTF_CMD *const pstCmd, PR_CALC_CAMERA_MTF_RPY *const pstRpy, bool bReplay/* = false*/) {
+    assert(pstCmd != nullptr && pstRpy != nullptr);    
+    if ( pstCmd->matInputImg.empty() ) {
+        WriteLog("Input image is empty.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+   
+    if (pstCmd->rectBigPatternROI.x < 0 || pstCmd->rectBigPatternROI.y < 0 ||
+        pstCmd->rectBigPatternROI.width <= 0 || pstCmd->rectBigPatternROI.height <= 0 ||
+        ( pstCmd->rectBigPatternROI.x + pstCmd->rectBigPatternROI.width ) > pstCmd->matInputImg.cols ||
+        ( pstCmd->rectBigPatternROI.y + pstCmd->rectBigPatternROI.height ) > pstCmd->matInputImg.rows ) {
+        char chArrMsg[1000];
+        _snprintf( chArrMsg, sizeof( chArrMsg ), "The rectBigPatternROI rect (%d, %d, %d, %d) is invalid.",
+            pstCmd->rectBigPatternROI.x, pstCmd->rectBigPatternROI.y, pstCmd->rectBigPatternROI.width, pstCmd->rectBigPatternROI.height );
+        WriteLog(chArrMsg);
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return VisionStatus::INVALID_PARAM;
+    }
+
+    if (pstCmd->rectSmallPatternROI.x < 0 || pstCmd->rectSmallPatternROI.y < 0 ||
+        pstCmd->rectSmallPatternROI.width <= 0 || pstCmd->rectSmallPatternROI.height <= 0 ||
+        ( pstCmd->rectSmallPatternROI.x + pstCmd->rectSmallPatternROI.width ) > pstCmd->matInputImg.cols ||
+        ( pstCmd->rectSmallPatternROI.y + pstCmd->rectSmallPatternROI.height ) > pstCmd->matInputImg.rows ) {
+        char chArrMsg[1000];
+        _snprintf( chArrMsg, sizeof( chArrMsg ), "The rectSmallPatternROI rect (%d, %d, %d, %d) is invalid.",
+            pstCmd->rectSmallPatternROI.x, pstCmd->rectSmallPatternROI.y, pstCmd->rectSmallPatternROI.width, pstCmd->rectSmallPatternROI.height );
+        WriteLog(chArrMsg);
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return VisionStatus::INVALID_PARAM;
+    }
+    cv::Mat matGray;
+    if ( pstCmd->matInputImg.channels() > 1 )
+        cv::cvtColor ( pstCmd->matInputImg, matGray, CV_BGR2GRAY );
+    else
+        matGray = pstCmd->matInputImg;
+
+    cv::Mat matBigPattern ( matGray, pstCmd->rectBigPatternROI );
+    cv::Mat matSmlPattern ( matGray, pstCmd->rectSmallPatternROI );
+    VectorOfMat vecMat;
+    vecMat.push_back ( cv::Mat ( matBigPattern, cv::Rect ( 0, 0, matBigPattern.cols, matBigPattern.rows / 2 ) ) );
+    vecMat.push_back ( cv::Mat ( matBigPattern, cv::Rect ( 0, matBigPattern.rows / 2, 0, matBigPattern.rows / 2 ) ) );
+    vecMat.push_back ( cv::Mat ( matSmlPattern, cv::Rect ( 0, 0, matSmlPattern.cols, matSmlPattern.rows / 2 ) ) );
+    vecMat.push_back ( cv::Mat ( matSmlPattern, cv::Rect ( 0, matSmlPattern.rows / 2, 0, matSmlPattern.rows / 2 ) ) );
+    if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE ) {
+        showImage ("T1", vecMat[0] ); showImage ("T2", vecMat[1] ); showImage ("T3", vecMat[2] ); showImage ("T4", vecMat[3] );
+    }
+    for ( auto &mat : vecMat ) {
+        cv::Mat matCanny;
+        cv::Canny ( mat, matCanny, 150, 50 );
+        if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE )
+            showImage ( "Canny Result", matCanny );
+        VectorOfPoint vecPoints;
+        cv::findNonZero ( matCanny, vecPoints );
+        int xMin, xMax, yMin, yMax;
+        CalcUtils::findMinMaxCoord ( vecPoints, xMin, xMax, yMin, yMax );
+        int margin = 0.05 * mat.rows;
+        xMin -= margin; xMax += margin;
+        yMin -= margin; yMax += margin;
+        mat = cv::Mat ( mat, cv::Range(yMin, yMax), cv::Range(xMin, xMax) );
+    }
+    if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE ) {
+        showImage ("Trimmed T1", vecMat[0] ); showImage ("Trimmed T2", vecMat[1] );
+        showImage ("Trimmed T3", vecMat[2] ); showImage ("Trimmed T4", vecMat[3] );
+    }
+
+    const int DATA_LEN = 5;
+    std::vector<float> vecA1;
+    for( int row = 0; row < vecMat[0].rows - 1; ++ row ) {
+        cv::Mat matCol ( vecMat[0], cv::Rect ( 0, row, vecMat[0].cols, 1 ) );
+        cv::Mat matSorted;
+        cv::sort ( matCol, matSorted, cv::SortFlags::SORT_EVERY_ROW + cv::SortFlags::SORT_ASCENDING );
+        double dMaxAvg = cv::mean ( cv::Mat ( matSorted, cv::Rect( matSorted.cols - DATA_LEN, 0, DATA_LEN, 1) ) )[0];
+        double dMinAvg = cv::mean ( cv::Mat ( matSorted, cv::Rect (0, 0, DATA_LEN, 1) ) )[0];
+        vecA1.push_back ( ToFloat ( dMaxAvg - dMinAvg ) );
+    }
+
+    std::vector<float> vecA2;
+    for ( int col = 0; col < vecMat[1].cols - 1; ++ col ) {
+        cv::Mat matRow ( vecMat[0], cv::Rect ( col, 0, 1, vecMat[0].rows ) );
+        cv::Mat matSorted;
+        cv::sort ( matRow, matSorted, cv::SortFlags::SORT_EVERY_COLUMN + cv::SortFlags::SORT_ASCENDING );
+        
+        double dMaxAvg = cv::mean ( cv::Mat ( matSorted, cv::Rect( 0, matSorted.rows - DATA_LEN, 1, DATA_LEN) ) )[0];
+        double dMinAvg = cv::mean ( cv::Mat ( matSorted, cv::Rect (0, 0, 1, DATA_LEN) ) )[0];
+        vecA2.push_back ( ToFloat ( dMaxAvg - dMinAvg ) );
+    }
+
+    cv::Mat matRow(vecMat[2], cv::Rect(0, 0, vecMat[2].cols, 1 ) );
+    //cv::fft ()
+    pstRpy->enStatus = VisionStatus::OK;
+    return pstRpy->enStatus;
+}
+
 /*static*/ VisionStatus VisionAlgorithm::calcMTF(const PR_CALC_MTF_CMD *const pstCmd, PR_CALC_MTF_RPY *const pstRpy, bool bReplay /*= false*/) {
     assert(pstCmd != nullptr && pstRpy != nullptr);
 

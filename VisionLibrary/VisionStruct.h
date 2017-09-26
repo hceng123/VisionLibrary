@@ -975,7 +975,8 @@ struct PR_CALC_3D_HEIGHT_DIFF_RPY {
     float                   fHeightDiff;
 };
 
-//Calculate the optics modulation transfer function.
+//Calculate the system optics modulation transfer function.
+//The system is from DLP->DLP Optics->Camera Optics->Camera
 struct PR_CALC_MTF_CMD {
     VectorOfMat             vecInputImgs;
     float                   fMagnitudeOfDLP;        //The setted magnitude of DLP. The captured image magnitude divide the setted maganitude is the MTF result.
@@ -987,6 +988,16 @@ struct PR_CALC_MTF_RPY {
     VectorOfVectorOfFloat   vevVecRelMtfH;          //The relative modulation transfer function in horizontal direction.
     VectorOfVectorOfFloat   vevVecAbsMtfV;          //The absolute modulation transfer function in vertical direction.
     VectorOfVectorOfFloat   vevVecRelMtfV;          //The relative modulation transfer function in vertical direction.
+};
+
+struct PR_CALC_CAMERA_MTF_CMD {
+    cv::Mat                 matInputImg;
+    cv::Rect                rectBigPatternROI;
+    cv::Rect                rectSmallPatternROI;
+};
+
+struct PR_CALC_CAMERA_MTF_RPY {
+    VisionStatus            enStatus;
 };
 
 //Calculate the pattern distortion(PD). Use the texture stripe in two directions to find out the system distortion.
