@@ -3632,7 +3632,7 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     float fMaxBlockArea = 0;
     for ( const auto &contour : contours ) {
         auto area = cv::contourArea ( contour );
-        if ( area > 1000 )  {
+        if ( area > (nRoughBlockSize - 1) * (nRoughBlockSize - 1) )  {
             cv::RotatedRect rotatedRect = cv::minAreaRect ( contour );
             if ( ( fabs ( rotatedRect.size.width - rotatedRect.size.height ) / ( rotatedRect.size.width + rotatedRect.size.height ) < 0.05 ) &&
                 ( rotatedRect.size.width * 2 * ( szBoardPattern.width - 1 ) < matInputImg.cols ) ) {
@@ -3693,16 +3693,25 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
 
     //If didn't find the block, it may because the two blocks connected together make findContour find two connected blocks.
     //Need to use Morphology method to remove the dark connecter between them.
-    cv::threshold(matFilter, matThreshold, nThreshold, 255, cv::THRESH_BINARY_INV);
-    cv::Mat matKernal = cv::getStructuringElement(cv::MorphShapes::MORPH_ELLIPSE, { 7, 7 });
-    cv::morphologyEx(matThreshold, matThreshold, cv::MorphTypes::MORPH_CLOSE, matKernal, cv::Point(-1, -1), 3);
+    cv::threshold ( matFilter, matThreshold, nThreshold, 255, cv::THRESH_BINARY_INV );
     if (Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE) {
-        showImage("After morphologyEx image", matThreshold);
+        showImage("Before morphologyEx image", matThreshold);
+    }
+
+    float fBlockAreaMin = ( fBlockSize - 5 ) * ( fBlockSize - 5 );
+
+    if ( fBlockSize > 60 ) {
+        cv::Mat matKernal = cv::getStructuringElement ( cv::MorphShapes::MORPH_ELLIPSE, { 7, 7 } );
+        cv::morphologyEx ( matThreshold, matThreshold, cv::MorphTypes::MORPH_CLOSE, matKernal, cv::Point ( -1, -1 ), 3 );
+        if (Config::GetInstance ()->getDebugMode () == PR_DEBUG_MODE::SHOW_IMAGE) {
+            showImage ( "After morphologyEx image", matThreshold );
+        }
+        fBlockAreaMin = ( fBlockSize - 10 ) * ( fBlockSize - 10 );
     }
     cv::findContours(matThreshold, contours, cv::RETR_LIST, cv::CHAIN_APPROX_SIMPLE);
     for (const auto &contour : contours) {
         auto area = cv::contourArea(contour);
-        if (area > 1000) {
+        if (area > fBlockAreaMin ) {
             cv::RotatedRect rotatedRect = cv::minAreaRect(contour);
             if (fabs(rotatedRect.size.width - rotatedRect.size.height) / (rotatedRect.size.width + rotatedRect.size.height) < 0.1
                 && fabs(rotatedRect.size.width - fBlockSize) / fBlockSize < 0.2) {
@@ -3785,6 +3794,7 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     float fStepSize = fBlockSize * 2;
     int nSrchSize = ToInt32( fStepSize - 20 );
     if ( nSrchSize > 200 ) nSrchSize = 200;
+    if ( nSrchSize < ( matTmpl.rows + 10 ) ) nSrchSize = matTmpl.rows + 10;
     cv::Point2f ptFirstCorer = _findFirstChessBoardCorner ( matGray, fBlockSize );
     if ( ptFirstCorer.x <= 0 || ptFirstCorer.y <= 0 ) {
         WriteLog("Failed to find chess board first corner.");
@@ -5963,13 +5973,16 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     else
         matGray = pstCmd->matInputImg;
 
+    //auto nThreshold = _autoThreshold ( matGray );
+    //cv::threshold ( matGray, matGray, nThreshold, PR_MAX_GRAY_LEVEL, cv::ThresholdTypes::THRESH_BINARY );
+
     cv::Mat matBigPattern ( matGray, pstCmd->rectBigPatternROI );
     cv::Mat matSmlPattern ( matGray, pstCmd->rectSmallPatternROI );
     VectorOfMat vecMat;
     vecMat.push_back ( cv::Mat ( matBigPattern, cv::Rect ( 0, 0, matBigPattern.cols, matBigPattern.rows / 2 ) ) );
-    vecMat.push_back ( cv::Mat ( matBigPattern, cv::Rect ( 0, matBigPattern.rows / 2, 0, matBigPattern.rows / 2 ) ) );
+    vecMat.push_back ( cv::Mat ( matBigPattern, cv::Rect ( 0, matBigPattern.rows / 2, matBigPattern.cols, matBigPattern.rows / 2 ) ) );
     vecMat.push_back ( cv::Mat ( matSmlPattern, cv::Rect ( 0, 0, matSmlPattern.cols, matSmlPattern.rows / 2 ) ) );
-    vecMat.push_back ( cv::Mat ( matSmlPattern, cv::Rect ( 0, matSmlPattern.rows / 2, 0, matSmlPattern.rows / 2 ) ) );
+    vecMat.push_back ( cv::Mat ( matSmlPattern, cv::Rect ( 0, matSmlPattern.rows / 2, matSmlPattern.cols, matSmlPattern.rows / 2 ) ) );
     if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE ) {
         showImage ("T1", vecMat[0] ); showImage ("T2", vecMat[1] ); showImage ("T3", vecMat[2] ); showImage ("T4", vecMat[3] );
     }
@@ -5982,9 +5995,9 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
         cv::findNonZero ( matCanny, vecPoints );
         int xMin, xMax, yMin, yMax;
         CalcUtils::findMinMaxCoord ( vecPoints, xMin, xMax, yMin, yMax );
-        int margin = 0.05 * mat.rows;
-        xMin -= margin; xMax += margin;
-        yMin -= margin; yMax += margin;
+        int margin = ToInt32 ( 0.05f * mat.rows );
+        xMin += margin; xMax -= margin;
+        yMin += margin; yMax -= margin;
         mat = cv::Mat ( mat, cv::Range(yMin, yMax), cv::Range(xMin, xMax) );
     }
     if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE ) {
@@ -5998,6 +6011,8 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
         cv::Mat matCol ( vecMat[0], cv::Rect ( 0, row, vecMat[0].cols, 1 ) );
         cv::Mat matSorted;
         cv::sort ( matCol, matSorted, cv::SortFlags::SORT_EVERY_ROW + cv::SortFlags::SORT_ASCENDING );
+        auto vecVecCol = CalcUtils::matToVector<uchar> ( matCol );
+        auto vecVecSorted = CalcUtils::matToVector<uchar> ( matSorted );
         double dMaxAvg = cv::mean ( cv::Mat ( matSorted, cv::Rect( matSorted.cols - DATA_LEN, 0, DATA_LEN, 1) ) )[0];
         double dMinAvg = cv::mean ( cv::Mat ( matSorted, cv::Rect (0, 0, DATA_LEN, 1) ) )[0];
         vecA1.push_back ( ToFloat ( dMaxAvg - dMinAvg ) );
@@ -6005,7 +6020,7 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
 
     std::vector<float> vecA2;
     for ( int col = 0; col < vecMat[1].cols - 1; ++ col ) {
-        cv::Mat matRow ( vecMat[0], cv::Rect ( col, 0, 1, vecMat[0].rows ) );
+        cv::Mat matRow ( vecMat[1], cv::Rect ( col, 0, 1, vecMat[1].rows ) );
         cv::Mat matSorted;
         cv::sort ( matRow, matSorted, cv::SortFlags::SORT_EVERY_COLUMN + cv::SortFlags::SORT_ASCENDING );
         
@@ -6015,7 +6030,13 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     }
 
     cv::Mat matRow(vecMat[2], cv::Rect(0, 0, vecMat[2].cols, 1 ) );
-    //cv::fft ()
+    cv::Mat matRowFloat;
+    matRow.convertTo( matRowFloat, CV_32FC1 );
+    cv::Mat matDft;
+    cv::dft ( matRowFloat, matDft, cv::DftFlags::DCT_ROWS);
+    auto vecVecRowFloat = CalcUtils::matToVector<float> ( matRowFloat );
+    auto vecVecDft = CalcUtils::matToVector<float> ( matDft );
+    //int m = cv::getOptimalDFTSize( matRow.cols );
     pstRpy->enStatus = VisionStatus::OK;
     return pstRpy->enStatus;
 }

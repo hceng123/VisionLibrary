@@ -136,7 +136,7 @@ float matlabObjFunction(const VectorOfFloat &vecThreshold, int num_bins, const c
     boundaries.push_back ( num_bins - 1 );
     float fDiff = mu.at<float>(boundaries[0]) / omega.at<float>(boundaries[0]) - mu_t;
     float sigma_b_squared_val = omega.at<float>(boundaries[0]) * fDiff * fDiff;
-    for ( int kk = 1; kk < boundaries.size(); ++ kk ) {
+    for ( size_t kk = 1; kk < boundaries.size(); ++ kk ) {
         float omegaKK = omega.at<float> ( boundaries[kk] ) - omega.at<float> ( boundaries[kk - 1] );
         float muKK = (mu.at<float>( boundaries[kk] ) - mu.at<float>(boundaries[kk-1] ) ) / omegaKK;
         sigma_b_squared_val += omegaKK * pow (muKK - mu_t, 2); // Eqn. 14 in Otsu's paper

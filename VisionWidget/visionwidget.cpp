@@ -11,6 +11,22 @@
 
 using namespace AOI::Vision;
 
+template<class T>
+std::string formatMat(const cv::Mat &mat)
+{
+    std::string strResult;
+    char chArray[100];
+	for (short row = 0; row < mat.rows; ++row)
+	{
+		for (short col = 0; col < mat.cols; ++col)
+		{
+            _snprintf ( chArray, sizeof(chArray), "%.2f, ", mat.at<T>(row, col) );
+			strResult += chArray;
+		}
+	}
+    return strResult;
+}
+
 inline cv::RotatedRect rectToRotatedRect(const cv::Rect &rect) {
     cv::RotatedRect rotatedRect;
     rotatedRect.angle = 0;
@@ -443,6 +459,7 @@ void VisionWidget::on_btnCalibrateCamera_clicked() {
     {
         ui.lineEditResolutionX->setText ( std::to_string ( stRpy.dResolutionX ).c_str() );
         ui.lineEditResolutionY->setText ( std::to_string ( stRpy.dResolutionY ).c_str() );
+        ui.lineEditCameraDistCoeff->setText ( formatMat<double> ( stRpy.matDistCoeffs ).c_str() );
     }else {
         PR_GET_ERROR_INFO_RPY stErrStrRpy;
         PR_GetErrorInfo(stRpy.enStatus, &stErrStrRpy);

@@ -405,9 +405,9 @@ PR_FUNCTION_EXIT
 
 VisionAPI VisionStatus PR_CalcCameraMTF(const PR_CALC_CAMERA_MTF_CMD *const pstCmd, PR_CALC_CAMERA_MTF_RPY *const pstRpy)
 {
-PR_FUNCTION_ENTRY
+//PR_FUNCTION_ENTRY
     return VisionAlgorithm::calcCameraMTF ( pstCmd, pstRpy );
-PR_FUNCTION_EXIT
+//PR_FUNCTION_EXIT
 }
 
 VisionAPI VisionStatus PR_CalcMTF(const PR_CALC_MTF_CMD *const pstCmd, PR_CALC_MTF_RPY *const pstRpy)
