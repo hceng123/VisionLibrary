@@ -305,6 +305,7 @@ public:
     static cv::Mat diff ( const cv::Mat &matInput, int nRecersiveTime, int nDimension );
     static int countOfNan ( const cv::Mat &matInput );
     static void findMinMaxCoord(const VectorOfPoint &vecPoints, int &xMin, int &xMax, int &yMin, int &yMax);
+    static float calcFrequency(const cv::Mat &matInput);
 };
 
 }

@@ -578,7 +578,7 @@ int _tmain(int argc, _TCHAR* argv[])
     PR_GetVersion(&stVersionInfo);
     std::cout << "VisionLibrary Version: " << stVersionInfo.chArrVersion << std::endl;
 
-    PR_SetDebugMode ( PR_DEBUG_MODE::SHOW_IMAGE );
+    PR_SetDebugMode ( PR_DEBUG_MODE::DISABLED );
     //TestTemplate();
     //TestInspDevice();
     //TestRunLogcase();

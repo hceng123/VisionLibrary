@@ -1326,10 +1326,10 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
         vecConvertedImgs.push_back ( matConvert );
     }
 
-    pstRpy->vevVecAbsMtfH.clear();
-    pstRpy->vevVecRelMtfH.clear();
-    pstRpy->vevVecAbsMtfV.clear();
-    pstRpy->vevVecRelMtfV.clear();
+    pstRpy->vecVecAbsMtfH.clear();
+    pstRpy->vecVecRelMtfH.clear();
+    pstRpy->vecVecAbsMtfV.clear();
+    pstRpy->vecVecRelMtfV.clear();
     int TOTAL_GROUP = ToInt32 ( pstCmd->vecInputImgs.size() ) / PR_GROUP_TEXTURE_IMG_COUNT;
     for ( int nGroup = 0; nGroup < TOTAL_GROUP; ++ nGroup ) {
         cv::Mat mat00 = vecConvertedImgs[nGroup * PR_GROUP_TEXTURE_IMG_COUNT + 0] - vecConvertedImgs[nGroup * PR_GROUP_TEXTURE_IMG_COUNT + 2];
@@ -1361,10 +1361,10 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
             cv::solve ( matXX, matYYT, matK, cv::DecompTypes::DECOMP_SVD );
             vecMtfAbsH[row] = std::sqrt ( matK.at<DATA_TYPE>(0, 0) * matK.at<DATA_TYPE>(0, 0) + matK.at<DATA_TYPE>(1, 0) * matK.at<DATA_TYPE>(1, 0) ) / pstCmd->fMagnitudeOfDLP;
             if ( nGroup > 0 )
-                vecMtfRelH[row] = vecMtfAbsH[row] / pstRpy->vevVecAbsMtfH[0][row];
+                vecMtfRelH[row] = vecMtfAbsH[row] / pstRpy->vecVecAbsMtfH[0][row];
         }
-        pstRpy->vevVecAbsMtfH.push_back ( vecMtfAbsH );
-        pstRpy->vevVecRelMtfH.push_back ( vecMtfRelH );
+        pstRpy->vecVecAbsMtfH.push_back ( vecMtfAbsH );
+        pstRpy->vecVecRelMtfH.push_back ( vecMtfRelH );
 
         cv::transpose ( matPhase, matPhase );
         cv::transpose ( mat00, mat00 );
@@ -1387,10 +1387,10 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
             cv::solve ( matXX, matYYT, matK, cv::DecompTypes::DECOMP_SVD );
             vecMtfAbsV[row] = std::sqrt ( matK.at<DATA_TYPE>(0, 0) * matK.at<DATA_TYPE>(0, 0) + matK.at<DATA_TYPE>(1, 0) * matK.at<DATA_TYPE>(1, 0) ) / pstCmd->fMagnitudeOfDLP;
             if ( nGroup > 0 )
-                vecMtfRelV[row] = vecMtfAbsV[row] / pstRpy->vevVecAbsMtfV[0][row];
+                vecMtfRelV[row] = vecMtfAbsV[row] / pstRpy->vecVecAbsMtfV[0][row];
         }
-        pstRpy->vevVecAbsMtfV.push_back ( vecMtfAbsV );
-        pstRpy->vevVecRelMtfV.push_back ( vecMtfRelV );
+        pstRpy->vecVecAbsMtfV.push_back ( vecMtfAbsV );
+        pstRpy->vecVecRelMtfV.push_back ( vecMtfRelV );
     }
     pstRpy->enStatus = VisionStatus::OK;
 }

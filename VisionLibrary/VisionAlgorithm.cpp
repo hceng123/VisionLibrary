@@ -6028,15 +6028,18 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
         double dMinAvg = cv::mean ( cv::Mat ( matSorted, cv::Rect (0, 0, 1, DATA_LEN) ) )[0];
         vecA2.push_back ( ToFloat ( dMaxAvg - dMinAvg ) );
     }
-
-    cv::Mat matRow(vecMat[2], cv::Rect(0, 0, vecMat[2].cols, 1 ) );
-    cv::Mat matRowFloat;
-    matRow.convertTo( matRowFloat, CV_32FC1 );
-    cv::Mat matDft;
-    cv::dft ( matRowFloat, matDft, cv::DftFlags::DCT_ROWS);
-    auto vecVecRowFloat = CalcUtils::matToVector<float> ( matRowFloat );
-    auto vecVecDft = CalcUtils::matToVector<float> ( matDft );
-    //int m = cv::getOptimalDFTSize( matRow.cols );
+    const int SAMPLE_FREQUENCY = 1;
+    float fFrequency1 = 0.f, fFrequency2 = 0.f;
+    //Calculate frequency
+    fFrequency1 = CalcUtils::calcFrequency ( cv::Mat ( vecMat[2], cv::Rect ( 0, 5, vecMat[2].cols, 1 ) ) );
+    cv::Mat matCol ( vecMat[3], cv::Rect ( 5, 0, 1, vecMat[3].rows ) ), matColT;
+    cv::transpose ( matCol, matColT );
+    fFrequency2 = CalcUtils::calcFrequency ( matColT );
+    cv::Mat matTt1 = CalcUtils::intervals<float> ( 1, 1, vecMat[2].cols );
+    matTt1 = matTt1.reshape ( 1, 1 );
+    cv::Mat matXX1 =  CalcUtils::sin<float>( matTt1 * 2 * CV_PI * fFrequency1 );
+    matXX1.push_back ( CalcUtils::cos<float>( matTt1 * 2 * CV_PI * fFrequency1 ) );
+    matXX1.push_back ( cv::Mat (cv::Mat::ones ( 1, matXX1.cols, CV_32FC1 ) ) );
     pstRpy->enStatus = VisionStatus::OK;
     return pstRpy->enStatus;
 }

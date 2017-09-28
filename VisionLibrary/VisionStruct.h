@@ -978,16 +978,17 @@ struct PR_CALC_3D_HEIGHT_DIFF_RPY {
 //Calculate the system optics modulation transfer function.
 //The system is from DLP->DLP Optics->Camera Optics->Camera
 struct PR_CALC_MTF_CMD {
+    PR_CALC_MTF_CMD() : fMagnitudeOfDLP ( 161 ) {}
     VectorOfMat             vecInputImgs;
     float                   fMagnitudeOfDLP;        //The setted magnitude of DLP. The captured image magnitude divide the setted maganitude is the MTF result.
 };
 
 struct PR_CALC_MTF_RPY {
     VisionStatus            enStatus;
-    VectorOfVectorOfFloat   vevVecAbsMtfH;          //The absolute modulation transfer function in horizontal direction.
-    VectorOfVectorOfFloat   vevVecRelMtfH;          //The relative modulation transfer function in horizontal direction.
-    VectorOfVectorOfFloat   vevVecAbsMtfV;          //The absolute modulation transfer function in vertical direction.
-    VectorOfVectorOfFloat   vevVecRelMtfV;          //The relative modulation transfer function in vertical direction.
+    VectorOfVectorOfFloat   vecVecAbsMtfH;          //The absolute modulation transfer function in horizontal direction.
+    VectorOfVectorOfFloat   vecVecRelMtfH;          //The relative modulation transfer function in horizontal direction.
+    VectorOfVectorOfFloat   vecVecAbsMtfV;          //The absolute modulation transfer function in vertical direction.
+    VectorOfVectorOfFloat   vecVecRelMtfV;          //The relative modulation transfer function in vertical direction.
 };
 
 struct PR_CALC_CAMERA_MTF_CMD {
