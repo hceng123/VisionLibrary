@@ -61,6 +61,16 @@ public:
             cv::Point_<T>(rectInput.x + ( 1.f + fScale ) * rectInput.width, rectInput.y + ( 1.f + fScale ) * rectInput.height ) );
     }
 
+    template<typename Tp>
+    static inline Tp mean (const std::vector<Tp> &vecInput) {
+        if ( vecInput.empty() )
+            return 0;
+        Tp sum = 0;
+        for ( auto value : vecInput )
+            sum += value;
+        return sum / vecInput.size();
+    }
+
     //Calculate deviation in one pass. The algorithm is get from https://www.strchr.com/standard_deviation_in_one_pass
     template<typename T>
     static double calcStdDeviation(std::vector<T> vecValue)

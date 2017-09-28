@@ -993,12 +993,20 @@ struct PR_CALC_MTF_RPY {
 
 struct PR_CALC_CAMERA_MTF_CMD {
     cv::Mat                 matInputImg;
-    cv::Rect                rectBigPatternROI;
-    cv::Rect                rectSmallPatternROI;
+    cv::Rect                rectVBigPatternROI;
+    cv::Rect                rectHBigPatternROI;
+    cv::Rect                rectVSmallPatternROI;
+    cv::Rect                rectHSmallPatternROI;
 };
 
 struct PR_CALC_CAMERA_MTF_RPY {
     VisionStatus            enStatus;
+    float                   fBigPatternAbsMtfV;     //The big pattern absolute modulation transfer function in vertical direction.
+    float                   fBigPatternAbsMtfH;     //The big pattern absolute modulation transfer function in horizontal direction.
+    float                   fSmallPatternAbsMtfV;   //The small pattern absolute modulation transfer function in vertical direction.
+    float                   fSmallPatternAbsMtfH;   //The small pattern absolute modulation transfer function in horizontal direction.
+    float                   fSmallPatternRelMtfV;   //The small pattern relative modulation transfer function in vertical direction.
+    float                   fSmallPatternRelMtfH;   //The small pattern relative modulation transfer function in horizontal direction.
 };
 
 //Calculate the pattern distortion(PD). Use the texture stripe in two directions to find out the system distortion.

@@ -28,6 +28,7 @@ namespace Vision
 
 #define MARK_FUNCTION_START_TIME    CStopWatch      stopWatch; __int64 functionStart = stopWatch.AbsNow()
 #define MARK_FUNCTION_END_TIME      TimeLog::GetInstance()->addTimeLog( __FUNCTION__, stopWatch.AbsNow() - functionStart )
+#define AT __FILE__, __LINE__
 
 #define SETUP_LOGCASE(classname) \
 std::unique_ptr<classname> pLogCase; \
@@ -1479,6 +1480,20 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
     cv::imshow( strWindowName, mat );
     cv::waitKey(0);
     cv::destroyWindow ( strWindowName );
+}
+
+/*static*/ VisionStatus VisionAlgorithm::_checkInputROI(const cv::Rect &rect, const cv::Mat &matInputImg, const char *filename, int line) {
+    if (rect.x < 0 || rect.y < 0 ||
+        rect.width <= 0 || rect.height <= 0 ||
+        ( rect.x + rect.width ) > matInputImg.cols ||
+        ( rect.y + rect.height ) > matInputImg.rows ) {
+        char chArrMsg[1000];
+        _snprintf( chArrMsg, sizeof( chArrMsg ), "The input ROI rect (%d, %d, %d, %d) is invalid.",
+            rect.x, rect.y, rect.width, rect.height );
+       Log::GetInstance()->Write(chArrMsg, filename, line );
+       return VisionStatus::INVALID_PARAM;
+    }
+    return VisionStatus::OK;
 }
 
 /*static*/ LogCasePtr VisionAlgorithm::_createLogCaseInstance(const String &strFolderPrefix, const String &strLocalPath) {
@@ -5944,45 +5959,28 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
         return pstRpy->enStatus;
     }
    
-    if (pstCmd->rectBigPatternROI.x < 0 || pstCmd->rectBigPatternROI.y < 0 ||
-        pstCmd->rectBigPatternROI.width <= 0 || pstCmd->rectBigPatternROI.height <= 0 ||
-        ( pstCmd->rectBigPatternROI.x + pstCmd->rectBigPatternROI.width ) > pstCmd->matInputImg.cols ||
-        ( pstCmd->rectBigPatternROI.y + pstCmd->rectBigPatternROI.height ) > pstCmd->matInputImg.rows ) {
-        char chArrMsg[1000];
-        _snprintf( chArrMsg, sizeof( chArrMsg ), "The rectBigPatternROI rect (%d, %d, %d, %d) is invalid.",
-            pstCmd->rectBigPatternROI.x, pstCmd->rectBigPatternROI.y, pstCmd->rectBigPatternROI.width, pstCmd->rectBigPatternROI.height );
-        WriteLog(chArrMsg);
-        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
-        return VisionStatus::INVALID_PARAM;
-    }
+    pstRpy->enStatus = _checkInputROI ( pstCmd->rectVBigPatternROI, pstCmd->matInputImg, AT );
+    if ( pstRpy->enStatus != VisionStatus::OK ) return pstRpy->enStatus;
+    pstRpy->enStatus = _checkInputROI ( pstCmd->rectHBigPatternROI, pstCmd->matInputImg, AT );
+    if ( pstRpy->enStatus != VisionStatus::OK ) return pstRpy->enStatus;
+    pstRpy->enStatus = _checkInputROI ( pstCmd->rectVSmallPatternROI, pstCmd->matInputImg, AT );
+    if ( pstRpy->enStatus != VisionStatus::OK ) return pstRpy->enStatus;
+    pstRpy->enStatus = _checkInputROI ( pstCmd->rectHSmallPatternROI, pstCmd->matInputImg, AT );
+    if ( pstRpy->enStatus != VisionStatus::OK ) return pstRpy->enStatus;
 
-    if (pstCmd->rectSmallPatternROI.x < 0 || pstCmd->rectSmallPatternROI.y < 0 ||
-        pstCmd->rectSmallPatternROI.width <= 0 || pstCmd->rectSmallPatternROI.height <= 0 ||
-        ( pstCmd->rectSmallPatternROI.x + pstCmd->rectSmallPatternROI.width ) > pstCmd->matInputImg.cols ||
-        ( pstCmd->rectSmallPatternROI.y + pstCmd->rectSmallPatternROI.height ) > pstCmd->matInputImg.rows ) {
-        char chArrMsg[1000];
-        _snprintf( chArrMsg, sizeof( chArrMsg ), "The rectSmallPatternROI rect (%d, %d, %d, %d) is invalid.",
-            pstCmd->rectSmallPatternROI.x, pstCmd->rectSmallPatternROI.y, pstCmd->rectSmallPatternROI.width, pstCmd->rectSmallPatternROI.height );
-        WriteLog(chArrMsg);
-        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
-        return VisionStatus::INVALID_PARAM;
-    }
+    MARK_FUNCTION_START_TIME;
+
     cv::Mat matGray;
     if ( pstCmd->matInputImg.channels() > 1 )
         cv::cvtColor ( pstCmd->matInputImg, matGray, CV_BGR2GRAY );
     else
         matGray = pstCmd->matInputImg;
 
-    //auto nThreshold = _autoThreshold ( matGray );
-    //cv::threshold ( matGray, matGray, nThreshold, PR_MAX_GRAY_LEVEL, cv::ThresholdTypes::THRESH_BINARY );
-
-    cv::Mat matBigPattern ( matGray, pstCmd->rectBigPatternROI );
-    cv::Mat matSmlPattern ( matGray, pstCmd->rectSmallPatternROI );
     VectorOfMat vecMat;
-    vecMat.push_back ( cv::Mat ( matBigPattern, cv::Rect ( 0, 0, matBigPattern.cols, matBigPattern.rows / 2 ) ) );
-    vecMat.push_back ( cv::Mat ( matBigPattern, cv::Rect ( 0, matBigPattern.rows / 2, matBigPattern.cols, matBigPattern.rows / 2 ) ) );
-    vecMat.push_back ( cv::Mat ( matSmlPattern, cv::Rect ( 0, 0, matSmlPattern.cols, matSmlPattern.rows / 2 ) ) );
-    vecMat.push_back ( cv::Mat ( matSmlPattern, cv::Rect ( 0, matSmlPattern.rows / 2, matSmlPattern.cols, matSmlPattern.rows / 2 ) ) );
+    vecMat.push_back ( cv::Mat ( pstCmd->matInputImg, pstCmd->rectVBigPatternROI ) );
+    vecMat.push_back ( cv::Mat ( pstCmd->matInputImg, pstCmd->rectHBigPatternROI ) );
+    vecMat.push_back ( cv::Mat ( pstCmd->matInputImg, pstCmd->rectVSmallPatternROI ) );
+    vecMat.push_back ( cv::Mat ( pstCmd->matInputImg, pstCmd->rectHSmallPatternROI ) );
     if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE ) {
         showImage ("T1", vecMat[0] ); showImage ("T2", vecMat[1] ); showImage ("T3", vecMat[2] ); showImage ("T4", vecMat[3] );
     }
@@ -6006,7 +6004,7 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     }
 
     const int DATA_LEN = 5;
-    std::vector<float> vecA1;
+    std::vector<float> vecA1, vecA2, vecA3, vecA4;
     for( int row = 0; row < vecMat[0].rows - 1; ++ row ) {
         cv::Mat matCol ( vecMat[0], cv::Rect ( 0, row, vecMat[0].cols, 1 ) );
         cv::Mat matSorted;
@@ -6015,10 +6013,9 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
         auto vecVecSorted = CalcUtils::matToVector<uchar> ( matSorted );
         double dMaxAvg = cv::mean ( cv::Mat ( matSorted, cv::Rect( matSorted.cols - DATA_LEN, 0, DATA_LEN, 1) ) )[0];
         double dMinAvg = cv::mean ( cv::Mat ( matSorted, cv::Rect (0, 0, DATA_LEN, 1) ) )[0];
-        vecA1.push_back ( ToFloat ( dMaxAvg - dMinAvg ) );
+        vecA1.push_back ( ToFloat ( dMaxAvg - dMinAvg ) / PR_MAX_GRAY_LEVEL );
     }
 
-    std::vector<float> vecA2;
     for ( int col = 0; col < vecMat[1].cols - 1; ++ col ) {
         cv::Mat matRow ( vecMat[1], cv::Rect ( col, 0, 1, vecMat[1].rows ) );
         cv::Mat matSorted;
@@ -6026,20 +6023,56 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
         
         double dMaxAvg = cv::mean ( cv::Mat ( matSorted, cv::Rect( 0, matSorted.rows - DATA_LEN, 1, DATA_LEN) ) )[0];
         double dMinAvg = cv::mean ( cv::Mat ( matSorted, cv::Rect (0, 0, 1, DATA_LEN) ) )[0];
-        vecA2.push_back ( ToFloat ( dMaxAvg - dMinAvg ) );
+        vecA2.push_back ( ToFloat ( dMaxAvg - dMinAvg ) / PR_MAX_GRAY_LEVEL );
     }
     const int SAMPLE_FREQUENCY = 1;
     float fFrequency1 = 0.f, fFrequency2 = 0.f;
     //Calculate frequency
     fFrequency1 = CalcUtils::calcFrequency ( cv::Mat ( vecMat[2], cv::Rect ( 0, 5, vecMat[2].cols, 1 ) ) );
-    cv::Mat matCol ( vecMat[3], cv::Rect ( 5, 0, 1, vecMat[3].rows ) ), matColT;
-    cv::transpose ( matCol, matColT );
-    fFrequency2 = CalcUtils::calcFrequency ( matColT );
     cv::Mat matTt1 = CalcUtils::intervals<float> ( 1, 1, vecMat[2].cols );
     matTt1 = matTt1.reshape ( 1, 1 );
     cv::Mat matXX1 =  CalcUtils::sin<float>( matTt1 * 2 * CV_PI * fFrequency1 );
     matXX1.push_back ( CalcUtils::cos<float>( matTt1 * 2 * CV_PI * fFrequency1 ) );
     matXX1.push_back ( cv::Mat (cv::Mat::ones ( 1, matXX1.cols, CV_32FC1 ) ) );
+    cv::transpose ( matXX1, matXX1 );
+    cv::Mat matT3;
+    vecMat[2].convertTo ( matT3, CV_32FC1 );
+    for ( int row = 0; row < vecMat[2].rows; ++ row ) {
+        cv::Mat matYY( matT3, cv::Rect ( 0, row, matT3.cols, 1 ) );
+        cv::transpose ( matYY, matYY );
+        cv::Mat matK;
+        cv::solve ( matXX1, matYY, matK, cv::DecompTypes::DECOMP_SVD );
+        float A = 2.f * sqrt ( matK.at<float>(0) * matK.at<float>(0) + matK.at<float>(1) * matK.at<float>(1) );
+        vecA3.push_back ( A / PR_MAX_GRAY_LEVEL );
+    }
+
+    //Calculate MTF for pattern 4.
+    cv::Mat matPattern4Float;
+    vecMat[3].convertTo ( matPattern4Float, CV_32FC1 );
+    cv::Mat matCol ( matPattern4Float, cv::Rect ( matPattern4Float.cols / 2, 0, 1, matPattern4Float.rows ) ), matColT;
+    cv::transpose ( matCol, matColT );
+    fFrequency2 = CalcUtils::calcFrequency ( matColT );
+    cv::Mat matTt2 = CalcUtils::intervals<float>(1.f, 1.f, ToFloat ( matPattern4Float.rows ) );
+    matTt2 = matTt2.reshape ( 1, 1 );
+    cv::Mat matXX2 =  CalcUtils::sin<float>( matTt2 * 2 * CV_PI * fFrequency2 );
+    matXX2.push_back ( CalcUtils::cos<float>( matTt2 * 2 * CV_PI * fFrequency2 ) );
+    matXX2.push_back ( cv::Mat (cv::Mat::ones ( 1, matXX2.cols, CV_32FC1 ) ) );
+    cv::transpose ( matXX2, matXX2 );
+    for ( int col = 0; col < matPattern4Float.cols; ++ col ) {
+        cv::Mat matYY ( matPattern4Float, cv::Rect ( col, 0, 1, matPattern4Float.rows ) );
+        cv::Mat matK;
+        cv::solve ( matXX1, matYY, matK, cv::DecompTypes::DECOMP_SVD );
+        float A = 2.f * sqrt ( matK.at<float>(0) * matK.at<float>(0) + matK.at<float>(1) * matK.at<float>(1) );
+        vecA4.push_back ( A / PR_MAX_GRAY_LEVEL );
+    }
+    pstRpy->fBigPatternAbsMtfV   = CalcUtils::mean ( vecA1 );
+    pstRpy->fBigPatternAbsMtfH   = CalcUtils::mean ( vecA2 );
+    pstRpy->fSmallPatternAbsMtfV = CalcUtils::mean ( vecA3 );
+    pstRpy->fSmallPatternAbsMtfH = CalcUtils::mean ( vecA4 );
+    pstRpy->fSmallPatternRelMtfV = pstRpy->fSmallPatternAbsMtfV / pstRpy->fBigPatternAbsMtfV;
+    pstRpy->fSmallPatternRelMtfH = pstRpy->fSmallPatternAbsMtfH / pstRpy->fBigPatternAbsMtfH;
+
+    MARK_FUNCTION_END_TIME;
     pstRpy->enStatus = VisionStatus::OK;
     return pstRpy->enStatus;
 }
