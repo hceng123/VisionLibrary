@@ -1589,6 +1589,9 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
 
     if (LogCaseCalc3DHeight::StaticGetFolderPrefix() == strFolderPrefix )
         return std::make_unique<LogCaseCalc3DHeight>( strLocalPath, true );
+
+    if (LogCaseCalcCameraMTF::StaticGetFolderPrefix() == strFolderPrefix )
+        return std::make_unique<LogCaseCalcCameraMTF>( strLocalPath, true );
     
     static String msg = strFolderPrefix + " is not handled in " + __FUNCTION__;
     throw std::exception ( msg.c_str() );
@@ -5969,6 +5972,7 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     if ( pstRpy->enStatus != VisionStatus::OK ) return pstRpy->enStatus;
 
     MARK_FUNCTION_START_TIME;
+    SETUP_LOGCASE(LogCaseCalcCameraMTF);
 
     cv::Mat matGray;
     if ( pstCmd->matInputImg.channels() > 1 )
@@ -5977,13 +5981,15 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
         matGray = pstCmd->matInputImg;
 
     VectorOfMat vecMat;
-    vecMat.push_back ( cv::Mat ( pstCmd->matInputImg, pstCmd->rectVBigPatternROI ) );
-    vecMat.push_back ( cv::Mat ( pstCmd->matInputImg, pstCmd->rectHBigPatternROI ) );
-    vecMat.push_back ( cv::Mat ( pstCmd->matInputImg, pstCmd->rectVSmallPatternROI ) );
-    vecMat.push_back ( cv::Mat ( pstCmd->matInputImg, pstCmd->rectHSmallPatternROI ) );
+    vecMat.push_back ( cv::Mat ( matGray, pstCmd->rectVBigPatternROI ) );
+    vecMat.push_back ( cv::Mat ( matGray, pstCmd->rectHBigPatternROI ) );
+    vecMat.push_back ( cv::Mat ( matGray, pstCmd->rectVSmallPatternROI ) );
+    vecMat.push_back ( cv::Mat ( matGray, pstCmd->rectHSmallPatternROI ) );
     if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE ) {
         showImage ("T1", vecMat[0] ); showImage ("T2", vecMat[1] ); showImage ("T3", vecMat[2] ); showImage ("T4", vecMat[3] );
     }
+
+    const int MIN_PATTERN_SIZE = 5;
     for ( auto &mat : vecMat ) {
         cv::Mat matCanny;
         cv::Canny ( mat, matCanny, 150, 50 );
@@ -5991,11 +5997,23 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
             showImage ( "Canny Result", matCanny );
         VectorOfPoint vecPoints;
         cv::findNonZero ( matCanny, vecPoints );
+
+        if ( vecPoints.empty() ) {
+            WriteLog("Can not find MTF pattern in the given ROI.");
+            pstRpy->enStatus = VisionStatus::CAN_NOT_FIND_MTF_PATTERN;
+            return pstRpy->enStatus;
+        }
+
         int xMin, xMax, yMin, yMax;
         CalcUtils::findMinMaxCoord ( vecPoints, xMin, xMax, yMin, yMax );
         int margin = ToInt32 ( 0.05f * mat.rows );
         xMin += margin; xMax -= margin;
         yMin += margin; yMax -= margin;
+        if ( (xMax - xMin) < MIN_PATTERN_SIZE || (yMax - yMin) < MIN_PATTERN_SIZE ) {
+            WriteLog("The MTF pattern is too small.");
+            pstRpy->enStatus = VisionStatus::MTF_PATTERN_TOO_SMALL;
+            return pstRpy->enStatus;
+        }
         mat = cv::Mat ( mat, cv::Range(yMin, yMax), cv::Range(xMin, xMax) );
     }
     if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE ) {
@@ -6029,9 +6047,9 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     float fFrequency1 = 0.f, fFrequency2 = 0.f;
     //Calculate frequency
     fFrequency1 = CalcUtils::calcFrequency ( cv::Mat ( vecMat[2], cv::Rect ( 0, 5, vecMat[2].cols, 1 ) ) );
-    cv::Mat matTt1 = CalcUtils::intervals<float> ( 1, 1, vecMat[2].cols );
+    cv::Mat matTt1 = CalcUtils::intervals<float> ( 1.f, 1.f, ToFloat ( vecMat[2].cols ) );
     matTt1 = matTt1.reshape ( 1, 1 );
-    cv::Mat matXX1 =  CalcUtils::sin<float>( matTt1 * 2 * CV_PI * fFrequency1 );
+    cv::Mat matXX1 =   CalcUtils::sin<float>( matTt1 * 2 * CV_PI * fFrequency1 );
     matXX1.push_back ( CalcUtils::cos<float>( matTt1 * 2 * CV_PI * fFrequency1 ) );
     matXX1.push_back ( cv::Mat (cv::Mat::ones ( 1, matXX1.cols, CV_32FC1 ) ) );
     cv::transpose ( matXX1, matXX1 );
@@ -6054,7 +6072,7 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     fFrequency2 = CalcUtils::calcFrequency ( matColT );
     cv::Mat matTt2 = CalcUtils::intervals<float>(1.f, 1.f, ToFloat ( matPattern4Float.rows ) );
     matTt2 = matTt2.reshape ( 1, 1 );
-    cv::Mat matXX2 =  CalcUtils::sin<float>( matTt2 * 2 * CV_PI * fFrequency2 );
+    cv::Mat matXX2 =   CalcUtils::sin<float>( matTt2 * 2 * CV_PI * fFrequency2 );
     matXX2.push_back ( CalcUtils::cos<float>( matTt2 * 2 * CV_PI * fFrequency2 ) );
     matXX2.push_back ( cv::Mat (cv::Mat::ones ( 1, matXX2.cols, CV_32FC1 ) ) );
     cv::transpose ( matXX2, matXX2 );
@@ -6072,6 +6090,7 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     pstRpy->fSmallPatternRelMtfV = pstRpy->fSmallPatternAbsMtfV / pstRpy->fBigPatternAbsMtfV;
     pstRpy->fSmallPatternRelMtfH = pstRpy->fSmallPatternAbsMtfH / pstRpy->fBigPatternAbsMtfH;
 
+    FINISH_LOGCASE;
     MARK_FUNCTION_END_TIME;
     pstRpy->enStatus = VisionStatus::OK;
     return pstRpy->enStatus;

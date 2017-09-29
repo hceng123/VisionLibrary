@@ -2215,8 +2215,8 @@ VisionStatus LogCaseCalc3DHeight::WriteCmd(const PR_CALC_3D_HEIGHT_CMD *const ps
 VisionStatus LogCaseCalc3DHeight::WriteRpy(const PR_CALC_3D_HEIGHT_RPY *const pstRpy) {
     CSimpleIni ini(false, false, false);
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
-    ini.LoadFile(cmdRpyFilePath.c_str());    
-    ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyStatus.c_str(), ToInt32 ( pstRpy->enStatus ) );    
+    ini.LoadFile(cmdRpyFilePath.c_str());
+    ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyStatus.c_str(), ToInt32 ( pstRpy->enStatus ) );
     _zip();
     return VisionStatus::OK;
 }
@@ -2260,6 +2260,68 @@ VisionStatus LogCaseCalc3DHeight::RunLogCase() {
 
     VisionStatus enStatus = VisionStatus::OK;
     enStatus = VisionAlgorithm::calc3DHeight ( &stCmd, &stRpy, true );
+    WriteRpy(&stRpy);
+    return enStatus;
+}
+
+/*static*/ String LogCaseCalcCameraMTF::StaticGetFolderPrefix() {
+    return "CalcCameraMTF";
+}
+
+VisionStatus LogCaseCalcCameraMTF::WriteCmd(const PR_CALC_CAMERA_MTF_CMD *const pstCmd) {
+    if ( !_bReplay ) {
+        _strLogCasePath = _generateLogCaseName(GetFolderPrefix());
+        bfs::path dir(_strLogCasePath);
+        bfs::create_directories(dir);
+    }
+
+    CSimpleIni ini(false, false, false);
+    auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
+    ini.LoadFile(cmdRpyFilePath.c_str());
+    ini.SetValue(_CMD_SECTION.c_str(), _strKeyVBigPatternROI.c_str(), _formatRect ( pstCmd->rectVBigPatternROI ).c_str() );
+    ini.SetValue(_CMD_SECTION.c_str(), _strKeyHBigPatternROI.c_str(), _formatRect ( pstCmd->rectHBigPatternROI ).c_str() );
+    ini.SetValue(_CMD_SECTION.c_str(), _strKeyVSmallPatternROI.c_str(), _formatRect ( pstCmd->rectVSmallPatternROI ).c_str() );
+    ini.SetValue(_CMD_SECTION.c_str(), _strKeyHSmallPatternROI.c_str(), _formatRect ( pstCmd->rectHSmallPatternROI ).c_str() );
+    ini.SaveFile(cmdRpyFilePath.c_str());
+
+    cv::imwrite ( _strLogCasePath + _IMAGE_NAME, pstCmd->matInputImg );
+    
+    return VisionStatus::OK;
+}
+
+VisionStatus LogCaseCalcCameraMTF::WriteRpy(const PR_CALC_CAMERA_MTF_RPY *const pstRpy) {
+    CSimpleIni ini(false, false, false);
+    auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
+    ini.LoadFile(cmdRpyFilePath.c_str());    
+    ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyStatus.c_str(), ToInt32 ( pstRpy->enStatus ) );
+    ini.SetDoubleValue(_RPY_SECTION.c_str(), _strKeyBigPatternAbsMtfV.c_str(), pstRpy->fBigPatternAbsMtfV );
+    ini.SetDoubleValue(_RPY_SECTION.c_str(), _strKeyBigPatternAbsMtfH.c_str(), pstRpy->fBigPatternAbsMtfH );
+    ini.SetDoubleValue(_RPY_SECTION.c_str(), _strKeySmallPatternAbsMtfV.c_str(), pstRpy->fSmallPatternAbsMtfV );
+    ini.SetDoubleValue(_RPY_SECTION.c_str(), _strKeySmallPatternAbsMtfH.c_str(), pstRpy->fSmallPatternAbsMtfH );
+    ini.SetDoubleValue(_RPY_SECTION.c_str(), _strKeySmallPatternRelMtfV.c_str(), pstRpy->fSmallPatternRelMtfV );
+    ini.SetDoubleValue(_RPY_SECTION.c_str(), _strKeySmallPatternRelMtfH.c_str(), pstRpy->fSmallPatternRelMtfH );
+    ini.SaveFile(cmdRpyFilePath.c_str());
+
+    _zip();
+    return VisionStatus::OK;
+}
+
+VisionStatus LogCaseCalcCameraMTF::RunLogCase() {
+    PR_CALC_CAMERA_MTF_CMD stCmd;
+    PR_CALC_CAMERA_MTF_RPY stRpy;
+
+    CSimpleIni ini(false, false, false);
+    auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
+    ini.LoadFile(cmdRpyFilePath.c_str());
+
+    stCmd.rectVBigPatternROI = _parseRect ( ini.GetValue ( _CMD_SECTION.c_str(), _strKeyVBigPatternROI.c_str(), _DEFAULT_RECT.c_str() ) );
+    stCmd.rectHBigPatternROI = _parseRect ( ini.GetValue ( _CMD_SECTION.c_str(), _strKeyHBigPatternROI.c_str(), _DEFAULT_RECT.c_str() ) );
+    stCmd.rectVSmallPatternROI = _parseRect ( ini.GetValue ( _CMD_SECTION.c_str(), _strKeyVSmallPatternROI.c_str(), _DEFAULT_RECT.c_str() ) );
+    stCmd.rectHSmallPatternROI = _parseRect ( ini.GetValue ( _CMD_SECTION.c_str(), _strKeyHSmallPatternROI.c_str(), _DEFAULT_RECT.c_str() ) );
+
+    stCmd.matInputImg = cv::imread(_strLogCasePath + _IMAGE_NAME);
+    VisionStatus enStatus = VisionStatus::OK;
+    enStatus = VisionAlgorithm::calcCameraMTF ( &stCmd, &stRpy, true );
     WriteRpy(&stRpy);
     return enStatus;
 }

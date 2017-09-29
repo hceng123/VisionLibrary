@@ -2013,7 +2013,7 @@
        </rect>
       </property>
       <property name="title">
-       <string>Auto Locate Lead</string>
+       <string>Grid Average Gray Scale</string>
       </property>
       <widget class="QPushButton" name="btnGridAvgGrayScale">
        <property name="geometry">
@@ -2084,6 +2084,206 @@
        </property>
        <property name="text">
         <string>Rows</string>
+       </property>
+      </widget>
+     </widget>
+     <widget class="QGroupBox" name="groupCameraMTF">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>180</y>
+        <width>590</width>
+        <height>91</height>
+       </rect>
+      </property>
+      <property name="title">
+       <string>Camera MTF</string>
+      </property>
+      <widget class="QPushButton" name="btnCameraMTF">
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>20</y>
+         <width>101</width>
+         <height>23</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Camera MTF</string>
+       </property>
+      </widget>
+      <widget class="QLineEdit" name="lineEditBigPatternAbsMTFV">
+       <property name="enabled">
+        <bool>true</bool>
+       </property>
+       <property name="geometry">
+        <rect>
+         <x>210</x>
+         <y>20</y>
+         <width>61</width>
+         <height>20</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>0</string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="labelBigPatternAbsMTFV">
+       <property name="geometry">
+        <rect>
+         <x>130</x>
+         <y>20</y>
+         <width>71</width>
+         <height>16</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Big Abs MTF V</string>
+       </property>
+      </widget>
+      <widget class="QLineEdit" name="lineEditBigPatternAbsMTFH">
+       <property name="enabled">
+        <bool>true</bool>
+       </property>
+       <property name="geometry">
+        <rect>
+         <x>210</x>
+         <y>50</y>
+         <width>61</width>
+         <height>20</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>0</string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="labelBigPatternAbsMTFH">
+       <property name="geometry">
+        <rect>
+         <x>130</x>
+         <y>50</y>
+         <width>71</width>
+         <height>16</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Big Abs MTF H</string>
+       </property>
+      </widget>
+      <widget class="QLineEdit" name="lineEditSmallPatternAbsMTFV">
+       <property name="enabled">
+        <bool>true</bool>
+       </property>
+       <property name="geometry">
+        <rect>
+         <x>380</x>
+         <y>20</y>
+         <width>51</width>
+         <height>20</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>0</string>
+       </property>
+      </widget>
+      <widget class="QLineEdit" name="lineEditSmallPatternAbsMTFH">
+       <property name="enabled">
+        <bool>true</bool>
+       </property>
+       <property name="geometry">
+        <rect>
+         <x>380</x>
+         <y>50</y>
+         <width>51</width>
+         <height>20</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>0</string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="labelSmallPatternAbsMTFV">
+       <property name="geometry">
+        <rect>
+         <x>290</x>
+         <y>20</y>
+         <width>81</width>
+         <height>16</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Small Abs MTF V</string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="labelSmallPatternAbsMTFH">
+       <property name="geometry">
+        <rect>
+         <x>290</x>
+         <y>50</y>
+         <width>81</width>
+         <height>16</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Small Abs MTF H</string>
+       </property>
+      </widget>
+      <widget class="QLineEdit" name="lineEditSmallPatternRelMTFH">
+       <property name="enabled">
+        <bool>true</bool>
+       </property>
+       <property name="geometry">
+        <rect>
+         <x>530</x>
+         <y>50</y>
+         <width>51</width>
+         <height>20</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>0</string>
+       </property>
+      </widget>
+      <widget class="QLineEdit" name="lineEditSmallPatternRelMTFV">
+       <property name="enabled">
+        <bool>true</bool>
+       </property>
+       <property name="geometry">
+        <rect>
+         <x>530</x>
+         <y>20</y>
+         <width>51</width>
+         <height>20</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>0</string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="labelSmallPatternRelMTFH">
+       <property name="geometry">
+        <rect>
+         <x>440</x>
+         <y>50</y>
+         <width>81</width>
+         <height>16</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Small Rel MTF H</string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="labelSmallPatternRelMTFV">
+       <property name="geometry">
+        <rect>
+         <x>440</x>
+         <y>20</y>
+         <width>81</width>
+         <height>16</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Small Rel MTF V</string>
        </property>
       </widget>
      </widget>

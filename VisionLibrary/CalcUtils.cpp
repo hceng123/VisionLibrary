@@ -277,7 +277,7 @@ float CalcUtils::calcPointToContourDist(const cv::Point &ptInput, const VectorOf
     const float SAMPLE_FREQUENCY = 1.f;
     cv::Mat matRowFloat;
     matInput.convertTo ( matRowFloat, CV_32FC1 );
-    int m = pow ( 2, std::floor ( log2 ( matRowFloat.cols ) ) );
+    int m = ToInt32 ( pow ( 2, std::floor ( log2 ( matRowFloat.cols ) ) ) );
     matRowFloat = cv::Mat ( matRowFloat, cv::Range::all (), cv::Range ( 0, m ) );
     cv::Mat matDft;
     cv::dft ( matRowFloat, matDft, cv::DftFlags::DCT_ROWS );
@@ -286,7 +286,7 @@ float CalcUtils::calcPointToContourDist(const cv::Point &ptInput, const VectorOf
     matAbsDft = cv::Mat ( matAbsDft, cv::Rect ( 1, 0, matAbsDft.cols - 1, 1 ) ).clone ();
     auto vecVecDft = CalcUtils::matToVector<float> ( matAbsDft );
     auto maxElement = std::max_element ( vecVecDft[0].begin (), vecVecDft[0].end () );
-    int nIndex = std::distance ( vecVecDft[0].begin (), maxElement );
+    int nIndex = ToInt32 ( std::distance ( vecVecDft[0].begin (), maxElement ) );
     float fFrequency = (float)nIndex * SAMPLE_FREQUENCY / m;
     return fFrequency;
 }

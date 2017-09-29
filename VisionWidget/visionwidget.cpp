@@ -813,3 +813,60 @@ void VisionWidget::on_btnGridAvgGrayScale_clicked() {
         QMessageBox::critical(nullptr, "Inspect Lead", stErrStrRpy.achErrorStr, "Quit");
     }
 }
+
+void VisionWidget::on_btnCameraMTF_clicked() {
+    if ( _sourceImagePath.empty() ) {
+        QMessageBox::information(this, "Vision Widget", "Please select an image first!", "Quit");
+        return;
+    }
+
+    ui.visionView->setState ( VisionView::VISION_VIEW_STATE::TEST_VISION_LIBRARY );
+    ui.visionView->applyIntermediateResult();
+    QString strArrayTitle[] = {
+        "Please input the vertical big pattern window",
+        "Please input the horizontal big pattern window",
+        "Please input the vertical small pattern window",
+        "Please input the horizontal small pattern window",
+    };
+
+    PR_CALC_CAMERA_MTF_CMD stCmd;
+    PR_CALC_CAMERA_MTF_RPY stRpy;
+    for ( int i = 0; i < 4; ++ i ) {
+        std::unique_ptr<MessageBoxDialog> pMessageBox = std::make_unique<MessageBoxDialog> ();
+        pMessageBox->setGeometry ( 700, 500, pMessageBox->size ().width (), pMessageBox->size ().height () );
+        pMessageBox->setWindowTitle ( "Camera MTF" );
+        pMessageBox->SetMessageText1 ( strArrayTitle[i] );
+        pMessageBox->SetMessageText2 ( "Press and drag the left mouse buttont to input" );
+        pMessageBox->setWindowFlags ( Qt::WindowStaysOnTopHint );
+        pMessageBox->show ();
+        pMessageBox->raise ();
+        pMessageBox->activateWindow ();
+        ui.visionView->setTestVisionState ( VisionView::TEST_VISION_STATE::SET_MULTIPLE_WINDOW );
+        ui.visionView->setCurrentSrchWindowIndex ( i );
+        int iReturn = pMessageBox->exec ();
+        if( iReturn != QDialog::Accepted ) {
+            ui.visionView->setTestVisionState ( VisionView::TEST_VISION_STATE::IDLE );
+            return;
+        }
+    }
+    auto vecRectROI = ui.visionView->getVecSrchWindow();
+    stCmd.rectVBigPatternROI = vecRectROI[0];
+    stCmd.rectHBigPatternROI = vecRectROI[1];
+    stCmd.rectVSmallPatternROI = vecRectROI[2];
+    stCmd.rectHSmallPatternROI = vecRectROI[3];
+
+    stCmd.matInputImg = ui.visionView->getMat();
+    PR_CalcCameraMTF ( &stCmd, &stRpy );
+    if ( VisionStatus::OK == stRpy.enStatus ) {
+        ui.lineEditBigPatternAbsMTFV->setText( std::to_string ( stRpy.fBigPatternAbsMtfV ).c_str() );
+        ui.lineEditBigPatternAbsMTFH->setText( std::to_string ( stRpy.fBigPatternAbsMtfH ).c_str() );
+        ui.lineEditSmallPatternAbsMTFV->setText( std::to_string ( stRpy.fSmallPatternAbsMtfV ).c_str() );
+        ui.lineEditSmallPatternAbsMTFH->setText( std::to_string ( stRpy.fSmallPatternAbsMtfH ).c_str() );
+        ui.lineEditSmallPatternRelMTFV->setText( std::to_string ( stRpy.fSmallPatternRelMtfV ).c_str() );
+        ui.lineEditSmallPatternRelMTFH->setText( std::to_string ( stRpy.fSmallPatternRelMtfH ).c_str() );
+    }else {
+        PR_GET_ERROR_INFO_RPY stErrStrRpy;
+        PR_GetErrorInfo(stRpy.enStatus, &stErrStrRpy);        
+        QMessageBox::critical(nullptr, "Camera MTF", stErrStrRpy.achErrorStr, "Quit");
+    }
+}
