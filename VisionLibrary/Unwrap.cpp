@@ -1451,7 +1451,7 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
     matDlpPattern0.convertTo ( pstRpy->matCaptureRegionImg, CV_8U );
     cv::cvtColor ( pstRpy->matCaptureRegionImg, pstRpy->matCaptureRegionImg, CV_GRAY2BGR );
     cv::Mat matXX1 = ( matAlpha - matBeta ) / 4 / CV_PI * pstCmd->fDlpPixelCycle;   //Convert the unwrapped phase to DLP pattern phase.
-    cv::Mat matYY1 = ( matAlpha + matBeta ) / 4 / CV_PI * pstCmd->fDlpPixelCycle;
+    cv::Mat matYY1 = ( matAlpha + matBeta ) / 4 / CV_PI * pstCmd->fDlpPixelCycle;   //divide 4 actually means divide (2*2*PI), a cycle is 2*PI.
 #ifdef _DEBUG
     auto vecVecXX1 = CalcUtils::matToVector<DATA_TYPE> ( matXX1 );
     auto vecVecYY1 = CalcUtils::matToVector<DATA_TYPE> ( matYY1 );
@@ -1511,6 +1511,10 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
     {
         cv::Mat matXt(matXXt1, cv::Rect(0, 0, 1, ROWS ) );
         cv::Mat matYt(matYYt1, cv::Rect(0, 0, 1, ROWS ) );
+#ifdef _DEBUG
+        auto vecVecXt = CalcUtils::matToVector<DATA_TYPE> ( matXt );
+        auto vecVecYt = CalcUtils::matToVector<DATA_TYPE> ( matYt );
+#endif
         matError = ( matYt - matYt.at<DATA_TYPE>(0) - ( matYt.at<DATA_TYPE>(ROWS - 1) - matYt.at<DATA_TYPE>(0))/(matXt.at<DATA_TYPE>(ROWS - 1) - matXt.at<DATA_TYPE>(0))*( matXt - matXt.at<DATA_TYPE>(0)))*( ROWS - 1 )/ ( matXt.at<DATA_TYPE>(ROWS - 1) - matXt.at<DATA_TYPE>(0) );
         matError = matError.reshape(1, 1);
         pstRpy->vecDistortionLeft = CalcUtils::matToVector<DATA_TYPE>(matError)[0];
@@ -1525,6 +1529,10 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
     {
         cv::Mat matYt(matXXt1, cv::Rect(0, 0, COLS, 1 ) );
         cv::Mat matXt(matYYt1, cv::Rect(0, 0, COLS, 1 ) );
+#ifdef _DEBUG
+        auto vecVecXt = CalcUtils::matToVector<DATA_TYPE> ( matXt );
+        auto vecVecYt = CalcUtils::matToVector<DATA_TYPE> ( matYt );
+#endif
         matError = ( matYt - matYt.at<DATA_TYPE>(0) - ( matYt.at<DATA_TYPE>(COLS - 1) - matYt.at<DATA_TYPE>(0))/(matXt.at<DATA_TYPE>(COLS - 1) - matXt.at<DATA_TYPE>(0))*( matXt - matXt.at<DATA_TYPE>(0)))*( COLS - 1 )/ ( matXt.at<DATA_TYPE>(COLS - 1) - matXt.at<DATA_TYPE>(0) );
         pstRpy->vecDistortionTop = CalcUtils::matToVector<DATA_TYPE>(matError)[0];
     }

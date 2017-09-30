@@ -305,7 +305,7 @@ void TestCalcMTF() {
 
 void TestCalcPD() {
     const int IMAGE_COUNT = 12;
-    std::string strFolder = "./data/0715184554_10ms_80_Plane1/";
+    std::string strFolder = "./data/0927225721_invert/";
     PR_CALC_PD_CMD stCmd;
     PR_CALC_PD_RPY stRpy;
     for ( int i = 1; i <= IMAGE_COUNT; ++ i ) {

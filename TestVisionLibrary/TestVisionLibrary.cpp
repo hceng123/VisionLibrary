@@ -635,9 +635,9 @@ int _tmain(int argc, _TCHAR* argv[])
     //TestCalcMTF();
 
     //PR_RunLogCase("D:/xsg/Logcase/Calib3DBase_2017_09_10_21_13_02_836.logcase");
-    //TestCalcPD();
+    TestCalcPD();
 
-    TestCalcCameraMTF();
+    //TestCalcCameraMTF();
 
     PR_DumpTimeLog("./Vision/Time.log");
     std::cout << "Press any key to exist." << std::endl;

@@ -286,7 +286,7 @@ float CalcUtils::calcPointToContourDist(const cv::Point &ptInput, const VectorOf
     matAbsDft = cv::Mat ( matAbsDft, cv::Rect ( 1, 0, matAbsDft.cols - 1, 1 ) ).clone ();
     auto vecVecDft = CalcUtils::matToVector<float> ( matAbsDft );
     auto maxElement = std::max_element ( vecVecDft[0].begin (), vecVecDft[0].end () );
-    int nIndex = ToInt32 ( std::distance ( vecVecDft[0].begin (), maxElement ) );
+    int nIndex = ToInt32 ( std::distance ( vecVecDft[0].begin (), maxElement ) ) + 1;
     float fFrequency = (float)nIndex * SAMPLE_FREQUENCY / m;
     return fFrequency;
 }

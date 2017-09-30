@@ -5997,7 +5997,6 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
             showImage ( "Canny Result", matCanny );
         VectorOfPoint vecPoints;
         cv::findNonZero ( matCanny, vecPoints );
-
         if ( vecPoints.empty() ) {
             WriteLog("Can not find MTF pattern in the given ROI.");
             pstRpy->enStatus = VisionStatus::CAN_NOT_FIND_MTF_PATTERN;
@@ -6022,7 +6021,10 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     }
 
     const int DATA_LEN = 5;
-    std::vector<float> vecA1, vecA2, vecA3, vecA4;
+    pstRpy->vecBigPatternAbsMtfV.clear();
+    pstRpy->vecBigPatternAbsMtfH.clear();
+    pstRpy->vecSmallPatternAbsMtfV.clear();
+    pstRpy->vecSmallPatternAbsMtfH.clear();
     for( int row = 0; row < vecMat[0].rows - 1; ++ row ) {
         cv::Mat matCol ( vecMat[0], cv::Rect ( 0, row, vecMat[0].cols, 1 ) );
         cv::Mat matSorted;
@@ -6031,7 +6033,7 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
         auto vecVecSorted = CalcUtils::matToVector<uchar> ( matSorted );
         double dMaxAvg = cv::mean ( cv::Mat ( matSorted, cv::Rect( matSorted.cols - DATA_LEN, 0, DATA_LEN, 1) ) )[0];
         double dMinAvg = cv::mean ( cv::Mat ( matSorted, cv::Rect (0, 0, DATA_LEN, 1) ) )[0];
-        vecA1.push_back ( ToFloat ( dMaxAvg - dMinAvg ) / PR_MAX_GRAY_LEVEL );
+        pstRpy->vecBigPatternAbsMtfV.push_back ( ToFloat ( dMaxAvg - dMinAvg ) / PR_MAX_GRAY_LEVEL );
     }
 
     for ( int col = 0; col < vecMat[1].cols - 1; ++ col ) {
@@ -6041,7 +6043,7 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
         
         double dMaxAvg = cv::mean ( cv::Mat ( matSorted, cv::Rect( 0, matSorted.rows - DATA_LEN, 1, DATA_LEN) ) )[0];
         double dMinAvg = cv::mean ( cv::Mat ( matSorted, cv::Rect (0, 0, 1, DATA_LEN) ) )[0];
-        vecA2.push_back ( ToFloat ( dMaxAvg - dMinAvg ) / PR_MAX_GRAY_LEVEL );
+        pstRpy->vecBigPatternAbsMtfH.push_back ( ToFloat ( dMaxAvg - dMinAvg ) / PR_MAX_GRAY_LEVEL );
     }
     const int SAMPLE_FREQUENCY = 1;
     float fFrequency1 = 0.f, fFrequency2 = 0.f;
@@ -6053,15 +6055,15 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     matXX1.push_back ( CalcUtils::cos<float>( matTt1 * 2 * CV_PI * fFrequency1 ) );
     matXX1.push_back ( cv::Mat (cv::Mat::ones ( 1, matXX1.cols, CV_32FC1 ) ) );
     cv::transpose ( matXX1, matXX1 );
-    cv::Mat matT3;
-    vecMat[2].convertTo ( matT3, CV_32FC1 );
+    cv::Mat matPattern3Float;
+    vecMat[2].convertTo ( matPattern3Float, CV_32FC1 );
     for ( int row = 0; row < vecMat[2].rows; ++ row ) {
-        cv::Mat matYY( matT3, cv::Rect ( 0, row, matT3.cols, 1 ) );
+        cv::Mat matYY( matPattern3Float, cv::Rect ( 0, row, matPattern3Float.cols, 1 ) );
         cv::transpose ( matYY, matYY );
         cv::Mat matK;
         cv::solve ( matXX1, matYY, matK, cv::DecompTypes::DECOMP_SVD );
         float A = 2.f * sqrt ( matK.at<float>(0) * matK.at<float>(0) + matK.at<float>(1) * matK.at<float>(1) );
-        vecA3.push_back ( A / PR_MAX_GRAY_LEVEL );
+        pstRpy->vecSmallPatternAbsMtfV.push_back ( A / PR_MAX_GRAY_LEVEL );
     }
 
     //Calculate MTF for pattern 4.
@@ -6081,12 +6083,12 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
         cv::Mat matK;
         cv::solve ( matXX1, matYY, matK, cv::DecompTypes::DECOMP_SVD );
         float A = 2.f * sqrt ( matK.at<float>(0) * matK.at<float>(0) + matK.at<float>(1) * matK.at<float>(1) );
-        vecA4.push_back ( A / PR_MAX_GRAY_LEVEL );
+        pstRpy->vecSmallPatternAbsMtfH.push_back ( A / PR_MAX_GRAY_LEVEL );
     }
-    pstRpy->fBigPatternAbsMtfV   = CalcUtils::mean ( vecA1 );
-    pstRpy->fBigPatternAbsMtfH   = CalcUtils::mean ( vecA2 );
-    pstRpy->fSmallPatternAbsMtfV = CalcUtils::mean ( vecA3 );
-    pstRpy->fSmallPatternAbsMtfH = CalcUtils::mean ( vecA4 );
+    pstRpy->fBigPatternAbsMtfV   = CalcUtils::mean ( pstRpy->vecBigPatternAbsMtfV );
+    pstRpy->fBigPatternAbsMtfH   = CalcUtils::mean ( pstRpy->vecBigPatternAbsMtfH );
+    pstRpy->fSmallPatternAbsMtfV = CalcUtils::mean ( pstRpy->vecSmallPatternAbsMtfV );
+    pstRpy->fSmallPatternAbsMtfH = CalcUtils::mean ( pstRpy->vecSmallPatternAbsMtfH );
     pstRpy->fSmallPatternRelMtfV = pstRpy->fSmallPatternAbsMtfV / pstRpy->fBigPatternAbsMtfV;
     pstRpy->fSmallPatternRelMtfH = pstRpy->fSmallPatternAbsMtfH / pstRpy->fBigPatternAbsMtfH;
 

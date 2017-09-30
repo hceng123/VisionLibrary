@@ -1007,6 +1007,10 @@ struct PR_CALC_CAMERA_MTF_RPY {
     float                   fSmallPatternAbsMtfH;   //The small pattern absolute modulation transfer function in horizontal direction.
     float                   fSmallPatternRelMtfV;   //The small pattern relative modulation transfer function in vertical direction.
     float                   fSmallPatternRelMtfH;   //The small pattern relative modulation transfer function in horizontal direction.
+    VectorOfFloat           vecBigPatternAbsMtfV;
+    VectorOfFloat           vecBigPatternAbsMtfH;
+    VectorOfFloat           vecSmallPatternAbsMtfV;
+    VectorOfFloat           vecSmallPatternAbsMtfH;
 };
 
 //Calculate the pattern distortion(PD). Use the texture stripe in two directions to find out the system distortion.
