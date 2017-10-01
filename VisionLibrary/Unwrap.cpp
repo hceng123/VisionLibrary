@@ -1508,6 +1508,7 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
     }
 
     cv::Mat matError;
+    bool bSwap = false;
     {
         cv::Mat matXt(matXXt1, cv::Rect(0, 0, 1, ROWS ) );
         cv::Mat matYt(matYYt1, cv::Rect(0, 0, 1, ROWS ) );
@@ -1515,6 +1516,11 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
         auto vecVecXt = CalcUtils::matToVector<DATA_TYPE> ( matXt );
         auto vecVecYt = CalcUtils::matToVector<DATA_TYPE> ( matYt );
 #endif
+        if ( fabs( matYt.at<DATA_TYPE>(0) - matYt.at<DATA_TYPE>(ROWS - 1) ) > fabs( matXt.at<DATA_TYPE>(0) - matXt.at<DATA_TYPE>(ROWS - 1) ) )
+            bSwap = true;
+        if ( bSwap )
+            std::swap ( matXt, matYt );
+
         matError = ( matYt - matYt.at<DATA_TYPE>(0) - ( matYt.at<DATA_TYPE>(ROWS - 1) - matYt.at<DATA_TYPE>(0))/(matXt.at<DATA_TYPE>(ROWS - 1) - matXt.at<DATA_TYPE>(0))*( matXt - matXt.at<DATA_TYPE>(0)))*( ROWS - 1 )/ ( matXt.at<DATA_TYPE>(ROWS - 1) - matXt.at<DATA_TYPE>(0) );
         matError = matError.reshape(1, 1);
         pstRpy->vecDistortionLeft = CalcUtils::matToVector<DATA_TYPE>(matError)[0];
@@ -1522,6 +1528,8 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
     {
         cv::Mat matXt(matXXt1, cv::Rect(COLS - 1, 0, 1, ROWS ) );
         cv::Mat matYt(matYYt1, cv::Rect(COLS - 1, 0, 1, ROWS ) );
+        if ( bSwap )
+            std::swap ( matXt, matYt );
         matError = ( matYt - matYt.at<DATA_TYPE>(0) - ( matYt.at<DATA_TYPE>(ROWS - 1) - matYt.at<DATA_TYPE>(0))/(matXt.at<DATA_TYPE>(ROWS - 1) - matXt.at<DATA_TYPE>(0))*( matXt - matXt.at<DATA_TYPE>(1)))*( ROWS - 1 )/ ( matXt.at<DATA_TYPE>(ROWS - 1) - matXt.at<DATA_TYPE>(0) );
         matError = matError.reshape(1, 1);
         pstRpy->vecDistortionRight = CalcUtils::matToVector<DATA_TYPE>(matError)[0];
@@ -1533,12 +1541,16 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
         auto vecVecXt = CalcUtils::matToVector<DATA_TYPE> ( matXt );
         auto vecVecYt = CalcUtils::matToVector<DATA_TYPE> ( matYt );
 #endif
+        if ( bSwap )
+            std::swap ( matXt, matYt );
         matError = ( matYt - matYt.at<DATA_TYPE>(0) - ( matYt.at<DATA_TYPE>(COLS - 1) - matYt.at<DATA_TYPE>(0))/(matXt.at<DATA_TYPE>(COLS - 1) - matXt.at<DATA_TYPE>(0))*( matXt - matXt.at<DATA_TYPE>(0)))*( COLS - 1 )/ ( matXt.at<DATA_TYPE>(COLS - 1) - matXt.at<DATA_TYPE>(0) );
         pstRpy->vecDistortionTop = CalcUtils::matToVector<DATA_TYPE>(matError)[0];
     }
     {
         cv::Mat matYt(matXXt1, cv::Rect(0, ROWS - 1, COLS, 1 ) );
         cv::Mat matXt(matYYt1, cv::Rect(0, ROWS - 1, COLS, 1 ) );
+        if ( bSwap )
+            std::swap ( matXt, matYt );
         matError = ( matYt - matYt.at<DATA_TYPE>(0) - ( matYt.at<DATA_TYPE>(COLS - 1) - matYt.at<DATA_TYPE>(0))/(matXt.at<DATA_TYPE>(COLS - 1) - matXt.at<DATA_TYPE>(0))*( matXt - matXt.at<DATA_TYPE>(0)))*( COLS - 1 )/ ( matXt.at<DATA_TYPE>(COLS - 1) - matXt.at<DATA_TYPE>(0) );
         pstRpy->vecDistortionBottom = CalcUtils::matToVector<DATA_TYPE>(matError)[0];
     }
