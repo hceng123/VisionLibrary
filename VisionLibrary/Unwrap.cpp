@@ -930,6 +930,7 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
     calc3DHeight ( &stCalcCmd, &stCalcRpy );
     cv::Mat matPhase = stCalcRpy.matPhase;
     cv::Mat matTmpPhase = matPhase.clone();
+    pstRpy->matPhase = stCalcRpy.matPhase.clone();
     int ROWS = matPhase.rows;
     int COLS = matPhase.cols;
     cv::Mat matST = cv::getStructuringElement ( cv::MORPH_RECT, cv::Size ( ERODE_WIN_SIZE, ERODE_WIN_SIZE ) );
@@ -944,6 +945,7 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
         cv::Mat matGrayScalePhase = matNormalizedPhase * PR_MAX_GRAY_LEVEL;
         matGrayScalePhase.convertTo ( pstRpy->matDivideStepResultImg, CV_8U );
         cv::cvtColor ( pstRpy->matDivideStepResultImg, pstRpy->matDivideStepResultImg, CV_GRAY2BGR );
+        pstRpy->matDivideStepIndex = cv::Mat::zeros(pstRpy->matDivideStepResultImg.size(), CV_8SC1 );
         auto vecThreshold = VisionAlgorithm::autoMultiLevelThreshold ( matGrayScalePhase, matMask, pstCmd->nBlockStepCount );
         std::vector<float> vecNormaledThreshold;
         vecNormaledThreshold.push_back ( 0.f );
@@ -1012,7 +1014,7 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
         vecPointToFectch.emplace_back ( COLS - 1, 0 );
         vecPointToFectch.emplace_back ( 0, ROWS - 1 );
         vecPointToFectch.emplace_back ( COLS - 1, ROWS - 1 );
-        for (size_t index = 0; index < vecNormaledThreshold.size () - 1; ++ index) {
+        for (int index = 0; index < ToInt32 ( vecNormaledThreshold.size() ) - 1; ++ index) {
             cv::Mat matBW = cv::Mat::zeros ( ROWS, COLS, CV_8UC1 );
             cv::inRange ( matNormalizedPhase, vecNormaledThreshold[index], vecNormaledThreshold[index + 1], matBW );
             cv::Mat matFirstRow ( matBW, cv::Rect ( 0, 0, COLS, 1 ) ); matFirstRow.setTo ( 0 );
@@ -1021,6 +1023,13 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
             cv::Mat matLastCol ( matBW, cv::Rect ( COLS - 1, 0, 1, ROWS ) ); matLastCol.setTo ( 0 );
             cv::erode ( matBW, matBW, matST );
             pstRpy->matDivideStepResultImg.setTo ( MATLAB_COLOR_ORDER[index], matBW );
+
+            if ( NN == n ) {
+                if ( ! pstCmd->bReverseHeight )
+                    pstRpy->matDivideStepIndex.setTo( - index - 1, matBW );
+                else
+                    pstRpy->matDivideStepIndex.setTo( index + 1, matBW );
+            }
 
             VectorOfPoint vecPtLocations;
             cv::findNonZero ( matBW, vecPtLocations );
@@ -1560,7 +1569,7 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
 /*static*/ void Unwrap::comb3DCalib(const PR_COMB_3D_CALIB_CMD *const pstCmd, PR_COMB_3D_CALIB_RPY *const pstRpy) {
     cv::Mat matHz1 = CalcUtils::vectorToMat<DATA_TYPE> ( pstCmd->vecVecStepPhaseNeg );
     if ( cv::mean ( matHz1 )[0] > 0. ) {
-        WriteLog("The mean negative phase is not negative.");        
+        WriteLog("The mean negative phase is not negative.");
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return;
     }

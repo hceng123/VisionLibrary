@@ -886,7 +886,7 @@ struct PR_CALIB_3D_HEIGHT_CMD {
         fBlockStepHeight(1.f),        
         nResultImgGridRow(8),
         nResultImgGridCol(8),
-        szMeasureWinSize (40, 40) {}
+        szMeasureWinSize(40, 40) {}
     VectorOfMat             vecInputImgs;
     bool                    bEnableGaussianFilter;
     bool                    bReverseSeq;            //Change the image sequence.
@@ -911,6 +911,8 @@ struct PR_CALIB_3D_HEIGHT_RPY {
     VectorOfMat             vecMatStepSurface;      //The regression surface of the steps. Its size should be nBlockStepCount + 1.
     VectorOfFloat           vecStepPhaseSlope;      //5 slopes of the phase-step fitting lines.
     VectorOfVectorOfFloat   vecVecStepPhaseDiff;    //The actual phase and the fitting line difference.
+    cv::Mat                 matDivideStepIndex;     //Denote each step belong to which step.
+    cv::Mat                 matPhase;               //The unwrapped phase.
     cv::Mat                 matDivideStepResultImg; //Use auto threshold to divide each step of the phase image. This result image can show to user confirm if the auto threshold is working correctly.
     cv::Mat                 matResultImg;
 };
