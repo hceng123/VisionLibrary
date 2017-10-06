@@ -936,6 +936,13 @@ struct PR_COMB_3D_CALIB_RPY {
     VectorOfVectorOfFloat   vecVecStepPhaseDiff;
 };
 
+struct PR_INTEGRATE_3D_CALIB_CMD {
+};
+
+struct PR_INTEGRATE_3D_CALIB_RPY {
+    VisionStatus            enStatus;
+};
+
 struct PR_CALC_3D_HEIGHT_CMD {
     PR_CALC_3D_HEIGHT_CMD() :
         bEnableGaussianFilter(true),

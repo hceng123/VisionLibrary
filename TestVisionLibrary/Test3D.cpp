@@ -103,11 +103,11 @@ cv::Mat drawHeightGrid(const cv::Mat &matHeight, int nGridRow, int nGridCol) {
 }
 
 //static std::string gstrCalibResultFile("./data/capture/CalibPP.yml");
-static std::string gstrWorkingFolder("./data/0916_NK_Step5/");
+static std::string gstrWorkingFolder("./data/New3DCalibMethod/");
 static std::string gstrCalibResultFile = gstrWorkingFolder + "CalibPP.yml";
 void TestCalib3dBase() {
     const int IMAGE_COUNT = 8;
-    std::string strFolder = gstrWorkingFolder + "0916113354NK_Plane/";
+    std::string strFolder = gstrWorkingFolder + "0920234214_base/";
     PR_CALIB_3D_BASE_CMD stCmd;
     PR_CALIB_3D_BASE_RPY stRpy;
     for ( int i = 1; i <= IMAGE_COUNT; ++ i ) {
@@ -136,7 +136,7 @@ void TestCalib3dBase() {
 
 void TestCalib3DHeight() {
     const int IMAGE_COUNT = 8;
-    std::string strFolder = gstrWorkingFolder + "0916113626NK_Step/";
+    std::string strFolder = gstrWorkingFolder + "0920235040_lefttop/";
     PR_CALIB_3D_HEIGHT_CMD stCmd;
     PR_CALIB_3D_HEIGHT_RPY stRpy;
     for ( int i = 1; i <= IMAGE_COUNT; ++ i ) {
@@ -305,7 +305,8 @@ void TestCalcMTF() {
 
 void TestCalcPD() {
     const int IMAGE_COUNT = 12;
-    std::string strFolder = "./data/0927225721_invert/";
+    //std::string strFolder = "./data/0927225721_invert/";
+    std::string strFolder = "./data/0715/0715184554_10ms_80_Plane1/";
     PR_CALC_PD_CMD stCmd;
     PR_CALC_PD_RPY stRpy;
     for ( int i = 1; i <= IMAGE_COUNT; ++ i ) {

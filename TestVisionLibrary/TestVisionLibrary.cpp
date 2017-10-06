@@ -627,15 +627,15 @@ int _tmain(int argc, _TCHAR* argv[])
 
     //TestSrchDie();
 
-    //TestCalib3dBase();
-    //TestCalib3DHeight();
+    TestCalib3dBase();
+    TestCalib3DHeight();
     //TestComb3DCalib();
     //TestCalc3DHeight();
 
     //TestCalcMTF();
 
     //PR_RunLogCase("D:/xsg/Logcase/Calib3DBase_2017_09_10_21_13_02_836.logcase");
-    TestCalcPD();
+    //TestCalcPD();
 
     //TestCalcCameraMTF();
 
