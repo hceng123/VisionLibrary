@@ -499,10 +499,10 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
 
     if ( pstCmd->bEnableGaussianFilter ) {
         //Filtering can reduce residues at the expense of a loss of spatial resolution.
-        //for ( int i = 0; i < PR_GROUP_TEXTURE_IMG_COUNT; ++ i )        
-        //    cv::GaussianBlur ( vecConvertedImgs[i], vecConvertedImgs[i], cv::Size(GUASSIAN_FILTER_SIZE, GUASSIAN_FILTER_SIZE), GAUSSIAN_FILTER_SIGMA, GAUSSIAN_FILTER_SIGMA, cv::BorderTypes::BORDER_REPLICATE );
-        for ( auto &mat : vecConvertedImgs )
-            cv::GaussianBlur ( mat, mat, cv::Size(GUASSIAN_FILTER_SIZE, GUASSIAN_FILTER_SIZE), GAUSSIAN_FILTER_SIGMA, GAUSSIAN_FILTER_SIGMA, cv::BorderTypes::BORDER_REPLICATE );
+        for ( int i = 0; i < PR_GROUP_TEXTURE_IMG_COUNT; ++ i )        
+            cv::GaussianBlur ( vecConvertedImgs[i], vecConvertedImgs[i], cv::Size(GUASSIAN_FILTER_SIZE, GUASSIAN_FILTER_SIZE), GAUSSIAN_FILTER_SIGMA, GAUSSIAN_FILTER_SIGMA, cv::BorderTypes::BORDER_REPLICATE );
+        //for ( auto &mat : vecConvertedImgs )
+        //    cv::GaussianBlur ( mat, mat, cv::Size(GUASSIAN_FILTER_SIZE, GUASSIAN_FILTER_SIZE), GAUSSIAN_FILTER_SIGMA, GAUSSIAN_FILTER_SIGMA, cv::BorderTypes::BORDER_REPLICATE );
     }
 
     TimeLog::GetInstance()->addTimeLog( "Guassian Filter.", stopWatch.Span() );
@@ -585,9 +585,7 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
 #endif
     //matAlpha.setTo ( NAN, matDiffUnderTolIndex );
     matAlpha = matAlpha * pstCmd->matThickToThinStripeK.at<DATA_TYPE>(0, 0) + pstCmd->matThickToThinStripeK.at<DATA_TYPE>(1, 0);    
-    matBeta = _phaseUnwrapSurfaceByRefer ( matBeta, matAlpha );
-    //if ( pstCmd->bEnableGaussianFilter )
-    //   cv::GaussianBlur ( matBeta, matBeta, cv::Size(GUASSIAN_FILTER_SIZE, GUASSIAN_FILTER_SIZE), GAUSSIAN_FILTER_SIGMA, GAUSSIAN_FILTER_SIGMA, cv::BorderTypes::BORDER_REPLICATE );
+    matBeta = _phaseUnwrapSurfaceByRefer ( matBeta, matAlpha );    
 
     cv::Mat matZP1 = pstCmd->matBaseSurface;
 #ifdef _DEBUG
@@ -610,7 +608,12 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
     TimeLog::GetInstance()->addTimeLog( "MedianBlur.", stopWatch.Span() );
 #ifdef _DEBUG
     vecVecH = CalcUtils::matToVector<DATA_TYPE>( matH );
-#endif    
+#endif
+
+    if ( pstCmd->bEnableGaussianFilter ) {
+        float fSigma = ToFloat ( pow ( 5, 0.5 ) );
+        cv::GaussianBlur ( matH, matH, cv::Size(5, 5), fSigma, fSigma, cv::BorderTypes::BORDER_REPLICATE );
+    }    
 
     if ( CalcUtils::countOfNan ( matH ) < (1 - REMOVE_HEIGHT_NOSIE_RATIO) * matH.total() ) {
         cv::Mat matHReshape = matH.reshape ( 1, 1 );
@@ -1670,6 +1673,10 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
     cv::Mat matAllDiff = matHz - matFitResultData;
     pstRpy->vecVecStepPhaseDiff = CalcUtils::matToVector<DATA_TYPE> ( matAllDiff );
     pstRpy->matPhaseToHeightK = matK;
+    pstRpy->enStatus = VisionStatus::OK;
+}
+
+/*static*/ void Unwrap::integrate3DCalib(const PR_INTEGRATE_3D_CALIB_CMD *const pstCmd, PR_INTEGRATE_3D_CALIB_RPY *const pstRpy) {
     pstRpy->enStatus = VisionStatus::OK;
 }
 

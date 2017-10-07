@@ -128,6 +128,7 @@ enum class PR_FILL_HOLE_METHOD {
 enum class PR_MATCH_TMPL_ALGORITHM {
     SQUARE_DIFF,
     HIERARCHICAL_EDGE       = 10,
+    HIERARCHICAL_AREA       = 11,
 };
 
 enum class PR_OBJECT_MOTION {

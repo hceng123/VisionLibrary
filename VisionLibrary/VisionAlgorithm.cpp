@@ -1100,6 +1100,12 @@ VisionStatus VisionAlgorithm::inspDevice(PR_INSP_DEVICE_CMD *pstInspDeviceCmd, P
         pstRpy->ptObjPos.y = ptResult.y + ptrRecord->getTmpl().rows / 2 + 0.5f + pstCmd->rectSrchWindow.y;
         pstRpy->fRotation = 0.f;
         pstRpy->enStatus = VisionStatus::OK;
+    }else if ( PR_MATCH_TMPL_ALGORITHM::HIERARCHICAL_AREA == pstCmd->enAlgorithm ) {
+        cv::Point ptResult = MatchTmpl::matchTemplateRecursive ( matSrchROI, ptrRecord->getTmpl() );
+        pstRpy->ptObjPos.x = ptResult.x + ptrRecord->getTmpl().cols / 2 + 0.5f + pstCmd->rectSrchWindow.x;
+        pstRpy->ptObjPos.y = ptResult.y + ptrRecord->getTmpl().rows / 2 + 0.5f + pstCmd->rectSrchWindow.y;
+        pstRpy->fRotation = 0.f;
+        pstRpy->enStatus = VisionStatus::OK;
     }
 
     if ( ! isAutoMode () ) {
@@ -5848,6 +5854,31 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     FINISH_LOGCASE;
     MARK_FUNCTION_END_TIME;
     
+    return pstRpy->enStatus;
+}
+
+/*static*/ VisionStatus VisionAlgorithm::integrate3DCalib(const PR_INTEGRATE_3D_CALIB_CMD *const pstCmd, PR_INTEGRATE_3D_CALIB_RPY *const pstRpy, bool bReplay/* = false*/) {
+    if ( pstCmd->vecCalibData.empty() ) {
+        WriteLog("The input calibration data vector is empty.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    for ( const auto &stCalibData : pstCmd->vecCalibData ) {
+        if ( stCalibData.matPhase.empty() ) {
+            WriteLog("The input phase data is empty.");
+            pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+            return pstRpy->enStatus;
+        }
+
+        if ( stCalibData.matDivideStepIndex.empty() ) {
+            WriteLog("The input phase step divide data is empty.");
+            pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+            return pstRpy->enStatus;
+        }
+    }
+
+    Unwrap::integrate3DCalib(pstCmd, pstRpy);
     return pstRpy->enStatus;
 }
 

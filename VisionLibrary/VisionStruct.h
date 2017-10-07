@@ -937,10 +937,19 @@ struct PR_COMB_3D_CALIB_RPY {
 };
 
 struct PR_INTEGRATE_3D_CALIB_CMD {
+    struct SINGLE_CALIB_DATA {
+        cv::Mat             matPhase;
+        cv::Mat             matDivideStepIndex;
+    };
+    using CALIB_DATA_VECTOR = std::vector<SINGLE_CALIB_DATA>;
+    CALIB_DATA_VECTOR       vecCalibData;
+    cv::Mat                 matTopSurfacePhase;
+    float                   fTopSurfaceHeight;
 };
 
 struct PR_INTEGRATE_3D_CALIB_RPY {
     VisionStatus            enStatus;
+    cv::Mat                 matHtt;
 };
 
 struct PR_CALC_3D_HEIGHT_CMD {

@@ -151,6 +151,13 @@ Match template status 0
 Match template result 1154.5, 727.5
 Match template angle 0
 
+------------------------------------------
+MATCH TEMPLATE REGRESSION TEST #4 STARTING
+------------------------------------------
+Match template status 0
+Match template result 909.5, 1169.5
+Match template angle 0
+
 ------------------------------------------------
 SEARCH FIDUCIAL MARK REGRESSION TEST #1 STARTING
 ------------------------------------------------
@@ -822,7 +829,7 @@ PhaseToHeightK:
 1.9 
 Fetched StepPhase: 
 -6.84 -5.74 -7.02 -6.65 -7.93 
--4.56 -3.86 -4.68 -4.44 -5.26 
+-4.56 -3.85 -4.68 -4.44 -5.27 
 -2.29 -1.94 -2.35 -2.23 -2.64 
 -0.00 -0.01 0.00 -0.00 0.01 
 Step-Phase slope: 
