@@ -911,7 +911,7 @@ struct PR_CALIB_3D_HEIGHT_RPY {
     VectorOfMat             vecMatStepSurface;      //The regression surface of the steps. Its size should be nBlockStepCount + 1.
     VectorOfFloat           vecStepPhaseSlope;      //5 slopes of the phase-step fitting lines.
     VectorOfVectorOfFloat   vecVecStepPhaseDiff;    //The actual phase and the fitting line difference.
-    cv::Mat                 matDivideStepIndex;     //Denote each step belong to which step.
+    cv::Mat                 matDivideStepIndex;     //Denote each pixel belong to which step. The type is CV_8SC1, can be positive or negative.
     cv::Mat                 matPhase;               //The unwrapped phase.
     cv::Mat                 matDivideStepResultImg; //Use auto threshold to divide each step of the phase image. This result image can show to user confirm if the auto threshold is working correctly.
     cv::Mat                 matResultImg;
@@ -937,6 +937,10 @@ struct PR_COMB_3D_CALIB_RPY {
 };
 
 struct PR_INTEGRATE_3D_CALIB_CMD {
+    PR_INTEGRATE_3D_CALIB_CMD() :
+        nResultImgGridRow(10),
+        nResultImgGridCol(10),
+        szMeasureWinSize(40, 40) {}
     struct SINGLE_CALIB_DATA {
         cv::Mat             matPhase;
         cv::Mat             matDivideStepIndex;
@@ -945,11 +949,16 @@ struct PR_INTEGRATE_3D_CALIB_CMD {
     CALIB_DATA_VECTOR       vecCalibData;
     cv::Mat                 matTopSurfacePhase;
     float                   fTopSurfaceHeight;
+    Int32                   nResultImgGridRow;
+    Int32                   nResultImgGridCol;
+    cv::Size                szMeasureWinSize;       //The window size in the center of grid to measure the height.
 };
 
 struct PR_INTEGRATE_3D_CALIB_RPY {
     VisionStatus            enStatus;
-    cv::Mat                 matHtt;
+    cv::Mat                 matInteragedK;          //The 12 parameters to calculate height. They are K1~K10 and P1, P2. H = (Phase + P1*Phase^2 + P2*Phase^3) ./ (K(1)*x1.^3 + K(2)*y1.^3 + K(3)*x1.^2.*y1 + K(4)*x1.*y1.^2 + K(5)*x1.^2 + K(6)*y1.^2 + K(7)*x1.*y1 + K(8)*x1 + K(9)*y1 + K(10))
+    cv::Mat                 mat3OrderCurveSurface;  //The regression 3 order curve surface to convert phase to height. It is calculated by K(1)*x1.^3 + K(2)*y1.^3 + K(3)*x1.^2.*y1 + K(4)*x1.*y1.^2 + K(5)*x1.^2 + K(6)*y1.^2 + K(7)*x1.*y1 + K(8)*x1 + K(9)*y1 + K(10)
+    VectorOfMat             vecMatResultImg;
 };
 
 struct PR_CALC_3D_HEIGHT_CMD {

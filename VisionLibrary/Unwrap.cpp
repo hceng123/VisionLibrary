@@ -615,7 +615,8 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
         cv::GaussianBlur ( matH, matH, cv::Size(5, 5), fSigma, fSigma, cv::BorderTypes::BORDER_REPLICATE );
     }    
 
-    if ( CalcUtils::countOfNan ( matH ) < (1 - REMOVE_HEIGHT_NOSIE_RATIO) * matH.total() ) {
+    int nCountOfNan = CalcUtils::countOfNan ( matH );
+    if ( 0 < nCountOfNan && nCountOfNan < (1 - REMOVE_HEIGHT_NOSIE_RATIO) * matH.total() ) {
         cv::Mat matHReshape = matH.reshape ( 1, 1 );
 
 #ifdef _DEBUG
@@ -1028,8 +1029,8 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
             pstRpy->matDivideStepResultImg.setTo ( MATLAB_COLOR_ORDER[index], matBW );
 
             if ( NN == n ) {
-                if ( ! pstCmd->bReverseHeight )
-                    pstRpy->matDivideStepIndex.setTo( - index - 1, matBW );
+                if ( pstCmd->bReverseHeight )
+                    pstRpy->matDivideStepIndex.setTo( index - pstCmd->nBlockStepCount - 1, matBW );
                 else
                     pstRpy->matDivideStepIndex.setTo( index + 1, matBW );
             }
@@ -1615,7 +1616,7 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
     cv::Mat matYt0 = cv::Mat ( vecYt ).reshape ( 1, 1 );
     matYt0 = cv::repeat ( matYt0, nTotalStep, 1 );
     cv::transpose ( matYt0, matYt0T );
-    matYt0T = matYt0T.reshape ( 1, 1 );    
+    matYt0T = matYt0T.reshape ( 1, 1 );
 
     cv::transpose ( matHz, matHzT );
     matHzT = matHzT.reshape ( 1, ToInt32 ( matHzT.total () ) );
@@ -1646,7 +1647,7 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
         cv::Mat matXX = cv::Mat ( matXXt.mul ( matXt ) );
         matXX.push_back ( cv::Mat ( matXXt.mul ( matYt ) ) );
         matXX.push_back ( matXXt );
-        cv::transpose ( matXX, matXX );        
+        cv::transpose ( matXX, matXX );
 
         assert ( matXX.rows == matYY.rows );
         cv::solve ( matXX, matYY, matK, cv::DecompTypes::DECOMP_SVD );
@@ -1663,7 +1664,7 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
             std::vector<int> vecTmpIndex;
             int nKeepPoints = ToInt32 ( std::floor ( matErrSort.rows * CALIB_HEIGHT_STEP_USEFUL_PT ) );
             vecTmpIndex.reserve ( nKeepPoints );
-            for (int j = 0; j < nKeepPoints; ++j)
+            for ( int j = 0; j < nKeepPoints; ++ j )
                 vecTmpIndex.push_back ( matErrSort.at<int> ( j ) );
             std::swap ( vecTmpIndex, vecIndex );
         }
@@ -1676,7 +1677,124 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
     pstRpy->enStatus = VisionStatus::OK;
 }
 
+static inline cv::Mat calcRank3SurfaceCoeff(const cv::Mat &matX, const cv::Mat &matY) {
+    assert ( matX.cols == 1 && matY.cols == 1 );
+    cv::Mat matXPow2 = matX.    mul ( matX );
+    cv::Mat matXPow3 = matXPow2.mul ( matX );
+    cv::Mat matYPow2 = matY.    mul ( matY );
+    cv::Mat matYPow3 = matYPow2.mul ( matY );
+    cv::Mat matArray[] = { 
+        matXPow3,
+        matYPow3,
+        matXPow2.mul ( matY ),
+        matYPow2.mul ( matX ),
+        matXPow2,
+        matYPow2,
+        matX.mul ( matY ),
+        matX,
+        matY,
+        cv::Mat::ones(matX.size(), matX.type() ),
+    };
+    const int RANK_3_SURFACE_COEFF_COL = 10;
+    static_assert ( sizeof( matArray ) / sizeof(cv::Mat) == RANK_3_SURFACE_COEFF_COL, "Size of array not correct" );
+    cv::Mat matResult;
+    cv::hconcat ( matArray, RANK_3_SURFACE_COEFF_COL, matResult );
+    return matResult;
+}
+
+static inline cv::Mat calcRank3Surface(const cv::Mat &matX, const cv::Mat &matY, const cv::Mat &matK) {
+    cv::Mat matXPow2 = matX.    mul ( matX );
+    cv::Mat matXPow3 = matXPow2.mul ( matX );
+    cv::Mat matYPow2 = matY.    mul ( matY );
+    cv::Mat matYPow3 = matYPow2.mul ( matY );
+    cv::Mat matArray[] = { 
+        matXPow3 * matK.at<DATA_TYPE>(0),
+        matYPow3 * matK.at<DATA_TYPE>(1),
+        matXPow2.mul ( matY ) * matK.at<DATA_TYPE>(2),
+        matYPow2.mul ( matX ) * matK.at<DATA_TYPE>(3),
+        matXPow2 * matK.at<DATA_TYPE>(4),
+        matYPow2 * matK.at<DATA_TYPE>(5),
+        matX.mul ( matY ) * matK.at<DATA_TYPE>(6),
+        matX * matK.at<DATA_TYPE>(7),
+        matY * matK.at<DATA_TYPE>(8),
+        cv::Mat::ones ( matX.size(), matX.type() ) * matK.at<DATA_TYPE>(9),
+    };
+    const int RANK_3_SURFACE_COEFF_COL = 10;
+    static_assert ( sizeof( matArray ) / sizeof(cv::Mat) == RANK_3_SURFACE_COEFF_COL, "Size of array not correct" );
+    cv::Mat matResult = matArray[0];
+    for ( int i = 1; i < RANK_3_SURFACE_COEFF_COL; ++ i )
+        matResult = matResult + matArray[i];
+    return matResult;
+}
+
+/*static*/ cv::Mat Unwrap::_calcHeightFromPhase(const cv::Mat &matPhase, const cv::Mat &matHtt, const cv::Mat &matK) {
+    cv::Mat matPhasePow2 = matPhase.mul ( matPhase );
+    cv::Mat matPhasePow3 = matPhasePow2.mul ( matPhase );
+    cv::Mat matLeft = matPhase + matK.at<DATA_TYPE> ( 10 ) * matPhasePow2 + matK.at<DATA_TYPE> ( 11 ) * matPhasePow3;
+    cv::Mat matHeight;
+    cv::divide ( matLeft, matHtt, matHeight );
+    return matHeight;
+}
+
 /*static*/ void Unwrap::integrate3DCalib(const PR_INTEGRATE_3D_CALIB_CMD *const pstCmd, PR_INTEGRATE_3D_CALIB_RPY *const pstRpy) {
+    cv::Mat matZ1, matZ2;
+    cv::Mat matX, matY;
+    CalcUtils::meshgrid<DATA_TYPE> ( 1.f, 1.f, ToFloat ( pstCmd->vecCalibData[0].matPhase.cols ), 1.f, 1.f, ToFloat ( pstCmd->vecCalibData[0].matPhase.rows ), matX, matY );
+    std::vector<DATA_TYPE> vecXt, vecYt, vecPhase, vecBP;
+    for ( const auto &stCalibData : pstCmd->vecCalibData ) {
+        bool bPositivePhase = cv::sum ( stCalibData.matDivideStepIndex )[0] > 0;
+        cv::Mat matAbsDivideStepIndex;
+        cv::Mat ( cv::abs ( stCalibData.matDivideStepIndex ) ).convertTo (matAbsDivideStepIndex, CV_8UC1 );
+        VectorOfPoint vecNonzeroPoints;
+        cv::findNonZero ( matAbsDivideStepIndex, vecNonzeroPoints );
+        vecXt.reserve ( vecXt.size() + vecNonzeroPoints.size() );
+        vecYt.reserve ( vecYt.size() + vecNonzeroPoints.size() );
+        vecPhase.reserve ( vecPhase.size() + vecNonzeroPoints.size() );
+        for (const auto &point : vecNonzeroPoints) {
+            vecXt.push_back ( matX.at<DATA_TYPE> ( point ) );
+            vecYt.push_back ( matY.at<DATA_TYPE> ( point ) );
+            vecPhase.push_back ( stCalibData.matPhase.at<DATA_TYPE> ( point ) );
+            if ( bPositivePhase )
+                vecBP.push_back ( ToFloat ( stCalibData.matDivideStepIndex.at<char>(point) - 1 ) );
+            else
+                vecBP.push_back ( ToFloat ( stCalibData.matDivideStepIndex.at<char>(point) + 1 ) );
+        }
+    }
+    cv::Mat matXt ( vecXt ), matYt ( vecYt ), matPhase ( vecPhase ), matBP ( vecBP );
+    if ( ! pstCmd->matTopSurfacePhase.empty() ) {        
+        matXt.push_back ( matX.reshape ( 1, ToInt32 ( matX.total () ) ) );
+        matYt.push_back ( matY.reshape ( 1, ToInt32 ( matY.total () ) ) );
+        matPhase.push_back ( pstCmd->matTopSurfacePhase.reshape ( 1, ToInt32 ( pstCmd->matTopSurfacePhase.total () ) ) );
+        matBP.push_back ( cv::Mat ( cv::Mat::ones ( ToInt32 ( pstCmd->matTopSurfacePhase.total() ), 1, CV_32FC1 ) * pstCmd->fTopSurfaceHeight ) );
+    }
+    matXt.reshape ( 1, 1 );
+    matYt.reshape ( 1, 1 );
+    cv::Mat matXX = calcRank3SurfaceCoeff ( matXt, matYt );
+    cv::Mat matBPRepeat = cv::repeat ( matBP, 1, matXX.cols );
+    matXX = matXX.mul ( matBPRepeat );
+    cv::Mat matPhasePow2 = matPhase.mul ( matPhase );
+    cv::Mat matPhasePow3 = matPhasePow2.mul ( matPhase );
+    cv::Mat matArray[] = {
+        matXX,
+        - matPhasePow2,
+        - matPhasePow3,
+    };
+    cv::hconcat ( matArray, 3, matXX );
+    cv::Mat matK;
+    cv::solve ( matXX, matPhase, matK, cv::DecompTypes::DECOMP_SVD );
+#ifdef _DEBUG
+    auto vecVecK = CalcUtils::matToVector<DATA_TYPE> ( matK );
+#endif
+    pstRpy->mat3OrderCurveSurface = calcRank3Surface ( matX, matY, matK );
+    for ( const auto &stCalibData : pstCmd->vecCalibData ) {
+        cv::Mat matHeight = _calcHeightFromPhase ( stCalibData.matPhase, pstRpy->mat3OrderCurveSurface, matK );
+        cv::Mat matHeightGridImg = _drawHeightGrid ( matHeight, pstCmd->nResultImgGridRow, pstCmd->nResultImgGridCol, pstCmd->szMeasureWinSize );
+        pstRpy->vecMatResultImg.push_back ( matHeightGridImg );
+    }
+    cv::Mat matHeight = _calcHeightFromPhase ( pstCmd->matTopSurfacePhase, pstRpy->mat3OrderCurveSurface, matK );
+    cv::Mat matHeightGridImg = _drawHeightGrid ( matHeight, pstCmd->nResultImgGridRow, pstCmd->nResultImgGridCol, pstCmd->szMeasureWinSize );
+    pstRpy->vecMatResultImg.push_back ( matHeightGridImg );
+    pstRpy->matInteragedK = matK;
     pstRpy->enStatus = VisionStatus::OK;
 }
 

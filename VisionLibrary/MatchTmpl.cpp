@@ -200,8 +200,6 @@ MatchTmpl::~MatchTmpl ()
         auto interpFlag = cv::InterpolationFlags::INTER_AREA;
         cv::resize( matInput, matInputPyr, cv::Size(), 0.5, 0.5, interpFlag );
         cv::resize( matTmpl,  matTmplPyr,  cv::Size(), 0.5, 0.5, interpFlag );
-        //cv::pyrDown ( matInput, matInputPyr );
-        //cv::pyrDown ( matTmpl,  matTmplPyr );
 
         cv::Point ptResult = matchTemplateRecursive ( matInputPyr, matTmplPyr );
         ptResult.x *= 2;

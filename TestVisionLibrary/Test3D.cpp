@@ -103,7 +103,7 @@ cv::Mat drawHeightGrid(const cv::Mat &matHeight, int nGridRow, int nGridCol) {
 }
 
 //static std::string gstrCalibResultFile("./data/capture/CalibPP.yml");
-static std::string gstrWorkingFolder("./data/Sch/");
+static std::string gstrWorkingFolder("./data/New3DCalibMethod/");
 static std::string gstrCalibResultFile = gstrWorkingFolder + "CalibPP.yml";
 void TestCalib3dBase() {
     const int IMAGE_COUNT = 8;
@@ -136,7 +136,7 @@ void TestCalib3dBase() {
 
 void TestCalib3DHeight() {
     const int IMAGE_COUNT = 8;
-    std::string strFolder = gstrWorkingFolder + "0920235040_lefttop/";
+    std::string strFolder = gstrWorkingFolder + "0920235405_negitive/";
     PR_CALIB_3D_HEIGHT_CMD stCmd;
     PR_CALIB_3D_HEIGHT_RPY stRpy;
     for ( int i = 1; i <= IMAGE_COUNT; ++ i ) {
@@ -148,10 +148,10 @@ void TestCalib3DHeight() {
     }
     stCmd.bEnableGaussianFilter = true;
     stCmd.bReverseSeq = true;
-    stCmd.bReverseHeight = false;
+    stCmd.bReverseHeight = true;
     stCmd.fMinIntensityDiff = 3;
     stCmd.fMinAvgIntensity = 3;
-    stCmd.nBlockStepCount = 5;
+    stCmd.nBlockStepCount = 3;
     stCmd.fBlockStepHeight = 1.f;
     stCmd.nResultImgGridRow = 10;
     stCmd.nResultImgGridCol = 10;
@@ -190,15 +190,21 @@ void TestCalib3DHeight() {
     cv::FileStorage fs1(strResultMatPath, cv::FileStorage::APPEND);
     if ( ! fs1.isOpened() )
         return;
-    if ( VisionStatus::OK == stRpy.enStatus )
-        cv::write ( fs1, "PhaseToHeightK", stRpy.matPhaseToHeightK );
-
+    cv::write ( fs1, "PhaseToHeightK", stRpy.matPhaseToHeightK );
     fs1.release();
+
+    std::string strCalibDataFile(gstrWorkingFolder + "03.yml");
+    cv::FileStorage fsCalibData ( strCalibDataFile, cv::FileStorage::WRITE );
+    if ( ! fsCalibData.isOpened() )
+        return;
+    cv::write ( fsCalibData, "Phase", stRpy.matPhase );
+    cv::write ( fsCalibData, "DivideStepIndex", stRpy.matDivideStepIndex );
+    fsCalibData.release();
 }
 
 void TestCalc3DHeight() {
     const int IMAGE_COUNT = 8;
-    std::string strFolder = gstrWorkingFolder + "0901210205/";
+    std::string strFolder = gstrWorkingFolder + "0921202157_H5mm/";
     //std::string strFolder = "./data/0913212217_Unwrap_Not_Finish/";
     PR_CALC_3D_HEIGHT_CMD stCmd;
     PR_CALC_3D_HEIGHT_RPY stRpy;
@@ -244,14 +250,21 @@ void TestCalc3DHeight() {
 
     PR_Calc3DHeight ( &stCmd, &stRpy );
     std::cout << "PR_Calc3DHeight status " << ToInt32( stRpy.enStatus ) << std::endl;
-    if ( VisionStatus::OK == stRpy.enStatus ) {
-        cv::Mat matHeightResultImg = drawHeightGrid ( stRpy.matHeight, 9, 9 );
-        cv::imwrite( gstrWorkingFolder + "PR_Calc3DHeight_HeightGridImg.png", matHeightResultImg );
-        cv::Mat matPhaseResultImg = drawHeightGrid ( stRpy.matPhase, 9, 9 );
-        cv::imwrite( gstrWorkingFolder + "PR_Calc3DHeight_PhaseGridImg.png", matPhaseResultImg );
+    if ( VisionStatus::OK != stRpy.enStatus )
+        return;
 
-        TestCalc3DHeightDiff ( stRpy.matHeight );
-    }
+    cv::Mat matHeightResultImg = drawHeightGrid ( stRpy.matHeight, 9, 9 );
+    cv::imwrite ( gstrWorkingFolder + "PR_Calc3DHeight_HeightGridImg.png", matHeightResultImg );
+    cv::Mat matPhaseResultImg = drawHeightGrid ( stRpy.matPhase, 9, 9 );
+    cv::imwrite ( gstrWorkingFolder + "PR_Calc3DHeight_PhaseGridImg.png", matPhaseResultImg );
+
+    std::string strCalibDataFile(gstrWorkingFolder + "H5.yml");
+    cv::FileStorage fsCalibData ( strCalibDataFile, cv::FileStorage::WRITE );
+    if ( ! fsCalibData.isOpened() )
+        return;
+    cv::write ( fsCalibData, "Phase", stRpy.matPhase );
+    fsCalibData.release();
+        //TestCalc3DHeightDiff ( stRpy.matHeight );
 }
 
 void TestComb3DCalib() {
@@ -266,6 +279,59 @@ void TestComb3DCalib() {
         printfMat<float>(stRpy.matPhaseToHeightK);
         std::cout << "Step Phase Difference: " << std::endl;
         printfVectorOfVector<float>(stRpy.vecVecStepPhaseDiff );
+    }
+}
+
+void TestIntegrate3DCalib() {
+    PR_INTEGRATE_3D_CALIB_CMD stCmd;
+    PR_INTEGRATE_3D_CALIB_RPY stRpy;
+    for ( int i = 1; i <= 3; ++ i ) {
+        char chArrFileName[100];
+        _snprintf( chArrFileName, sizeof (chArrFileName), "%02d.yml", i );
+        std::string strDataFile = gstrWorkingFolder + chArrFileName;
+        
+        std::string strCalibDataFile( strDataFile );
+        cv::FileStorage fsCalibData ( strCalibDataFile, cv::FileStorage::READ );
+        if ( ! fsCalibData.isOpened() ) {
+            std::cout << "Failed to open file: " << strCalibDataFile << std::endl;
+            return;
+        }
+
+        PR_INTEGRATE_3D_CALIB_CMD::SINGLE_CALIB_DATA stCalibData;
+        cv::FileNode fileNode = fsCalibData["Phase"];
+        cv::read ( fileNode, stCalibData.matPhase, cv::Mat() );
+
+        fileNode = fsCalibData["DivideStepIndex"];
+        cv::read ( fileNode, stCalibData.matDivideStepIndex, cv::Mat() );
+        fsCalibData.release();
+
+        stCmd.vecCalibData.push_back ( stCalibData );
+    }
+
+    std::string strCalibDataFile( gstrWorkingFolder + "H5.yml" );
+    cv::FileStorage fsCalibData ( strCalibDataFile, cv::FileStorage::READ );
+    if (!fsCalibData.isOpened ()) {
+        std::cout << "Failed to open file: " << strCalibDataFile << std::endl;
+        return;
+    }
+    cv::FileNode fileNode = fsCalibData["Phase"];
+    cv::read ( fileNode, stCmd.matTopSurfacePhase, cv::Mat() );
+    fsCalibData.release();
+
+    stCmd.fTopSurfaceHeight = 5;
+
+    PR_Integrate3DCalib ( &stCmd, &stRpy );
+    std::cout << "PR_Integrate3DCalib status " << ToInt32( stRpy.enStatus ) << std::endl;
+    if ( VisionStatus::OK != stRpy.enStatus )
+        return;
+
+    int i = 1;
+    for ( const auto &matResultImg : stRpy.vecMatResultImg ) {
+        char chArrFileName[100];
+        _snprintf( chArrFileName, sizeof (chArrFileName), "ResultImg_%02d.png", i );
+        std::string strDataFile = gstrWorkingFolder + chArrFileName;
+        cv::imwrite ( strDataFile, matResultImg );
+        ++ i;
     }
 }
 

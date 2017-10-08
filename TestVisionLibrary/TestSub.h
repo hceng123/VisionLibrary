@@ -23,6 +23,7 @@ void TestComb3DCalib();
 void TestCalcMTF();
 void TestCalcPD();
 void TestCalcCameraMTF();
+void TestIntegrate3DCalib();
 
 template<class T>
 void printfMat(const cv::Mat &mat)
