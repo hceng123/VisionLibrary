@@ -232,8 +232,8 @@ public:
     // To heapify a subtree rooted with node i which is
     // an index in arr[]. n is size of heap
     template<typename T>
-    static void heapifyMinToRoot ( std::vector<T> &vecInput, const int n, const int i, std::vector<int> &vecIndex ) {
-        int smallestIndex = i;  // Initialize largest as root
+    static void heapifyMinToRoot ( std::vector<T> &vecInput, const int n, const int i, std::vector<size_t> &vecIndex ) {
+        int smallestIndex = i;  // Initialize smallest as root
         int l = 2 * i + 1;  // left = 2*i + 1
         int r = 2 * i + 2;  // right = 2*i + 2
 
@@ -257,7 +257,7 @@ public:
     }
 
     template<typename T>
-    static std::vector<T> SelectLargestKItems ( const cv::Mat &matInput, const size_t K, std::vector<int> &vecIndex ) {
+    static std::vector<T> FindLargestKItems ( const cv::Mat &matInput, const size_t K, std::vector<size_t> &vecIndex ) {
         if ( K > matInput.total () )  {
             return matInput;
         }
@@ -277,16 +277,16 @@ public:
             heapifyMinToRoot ( vecResult, K, K1, vecIndex );
 
         for (size_t i = index; i < matInput.total (); ++i) {
-            if (matInput.at<T> ( i ) == matInput.at<T> ( i ) && matInput.at<T> ( i ) > vecResult[0]) {
-                vecResult[0] = matInput.at<T> ( i );
-                vecIndex[0] = i;
+            if (matInput.at<T> ( i ) == matInput.at<T> ( i ) && matInput.at<T> ( i ) > vecResult.front() ) {
+                vecResult.front() = matInput.at<T> ( i );
+                vecIndex.front() = i;
 
                 for (int K1 = K / 2 - 1; K1 >= 0; --K1)
                     heapifyMinToRoot ( vecResult, K, K1, vecIndex );
             }
         }
 
-        for (int k = K - 1; k >= 0; --k)
+        for (int k = K - 1; k >= 0; -- k)
         {
             std::swap ( vecResult[k], vecResult[0] );
             std::swap ( vecIndex[k], vecIndex[0] );

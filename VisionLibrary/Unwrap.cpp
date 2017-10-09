@@ -577,20 +577,20 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
     auto vecVecAlpha = CalcUtils::matToVector<DATA_TYPE>(matAlpha);
 #endif
     TimeLog::GetInstance()->addTimeLog("Before find amplitude less than tol. ", stopWatch.Span() );
-    cv::Mat matAvgUnderTolIndex;
-    cv::Mat matB;
-    matB = mat10.mul(mat10) + mat11.mul(mat11); //matB is amplitude of the wave. mat10 = 2*sin(theta), mat11 = 2*cos(theta).
-    cv::compare ( matB, pstCmd->fMinAvgIntensity * pstCmd->fMinAvgIntensity * 4, matAvgUnderTolIndex,  cv::CmpTypes::CMP_LT);
-    TimeLog::GetInstance()->addTimeLog("After amplitude less than tol. ", stopWatch.Span() );
-    //_findUnstablePoint ( vecConvertedImgs, pstCmd->fMinIntensityDiff, matDiffUnderTolIndex );
+    cv::Mat matDiffUnderTolIndex, matAvgUnderTolIndex;
+    //cv::Mat matB;
+    //matB = mat10.mul(mat10) + mat11.mul(mat11); //matB is amplitude of the wave. mat10 = 2*sin(theta), mat11 = 2*cos(theta).
+    //cv::compare ( matB, pstCmd->fMinAvgIntensity * pstCmd->fMinAvgIntensity * 4, matAvgUnderTolIndex,  cv::CmpTypes::CMP_LT);
+    //TimeLog::GetInstance()->addTimeLog("After amplitude less than tol. ", stopWatch.Span() );
+    _findUnstablePoint ( vecConvertedImgs, pstCmd->fMinIntensityDiff, pstCmd->fMinAvgIntensity, matDiffUnderTolIndex, matAvgUnderTolIndex );
 #ifdef _DEBUG
-    //int nDiffUnderTolCount = cv::countNonZero ( matDiffUnderTolIndex );
+    int nDiffUnderTolCount = cv::countNonZero ( matDiffUnderTolIndex );
     int nAvgUnderTolCount  = cv::countNonZero ( matAvgUnderTolIndex );
     auto vecVecBeta  = CalcUtils::matToVector<DATA_TYPE>(matBeta);
 #endif
     //matAlpha.setTo ( NAN, matDiffUnderTolIndex );
     matAlpha = matAlpha * pstCmd->matThickToThinStripeK.at<DATA_TYPE>(0, 0) + pstCmd->matThickToThinStripeK.at<DATA_TYPE>(1, 0);    
-    matBeta = _phaseUnwrapSurfaceByRefer ( matBeta, matAlpha );    
+    matBeta = _phaseUnwrapSurfaceByRefer ( matBeta, matAlpha );
 
     cv::Mat matZP1 = pstCmd->matBaseSurface;
 #ifdef _DEBUG
@@ -622,17 +622,13 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
 
     int nCountOfNan = CalcUtils::countOfNan ( matH );
     if ( 0 < nCountOfNan && nCountOfNan < (1 - REMOVE_HEIGHT_NOSIE_RATIO) * matH.total() ) {
-        cv::Mat matHReshape = matH.reshape ( 1, 1 );
-
 #ifdef _DEBUG
         cv::Mat matTopPoints = cv::Mat::zeros ( ROWS, COLS, CV_8UC1 );
 #endif
-
-        auto vecVecHReshape = CalcUtils::matToVector<DATA_TYPE> ( matHReshape );
-        auto vecSortedIndex = sort_indexes ( vecVecHReshape[0] );
+        std::vector<size_t> vecSortedIndex;
+        CalcUtils::FindLargestKItems<DATA_TYPE> ( matH, (1 - REMOVE_HEIGHT_NOSIE_RATIO) * matH.total(), vecSortedIndex );
         for (int i = ToInt32 ( REMOVE_HEIGHT_NOSIE_RATIO * vecSortedIndex.size () ); i < ToInt32 ( vecSortedIndex.size () ); ++ i ) {
             matH.at<DATA_TYPE> ( i ) = NAN;
-
 #ifdef _DEBUG
             matTopPoints.at<uchar> ( i ) = 255;
 #endif
@@ -875,7 +871,7 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
 }
 
 //For shadow area
-/*static*/ void Unwrap:: _findUnstablePoint(const VectorOfMat &vecInputImgs, float fDiffTol, cv::Mat &matDiffUnderTolIndex) {
+/*static*/ void Unwrap::_findUnstablePoint(const std::vector<cv::Mat> &vecInputImgs, float fDiffTol, float fAvgTol, cv::Mat &matDiffUnderTolIndex, cv::Mat &matAvgUnderTolIndex) {
     MARK_FUNCTION_START_TIME;
     
     //int ROWS = vecInputImgs[0].rows;
@@ -915,11 +911,13 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
     cv::Mat matMax, matMin, matAvg;
     cv::reduce ( matCombine, matMax, 0, cv::ReduceTypes::REDUCE_MAX );
     cv::reduce ( matCombine, matMin, 0, cv::ReduceTypes::REDUCE_MIN );
+    cv::reduce ( matCombine, matAvg, 0, cv::ReduceTypes::REDUCE_AVG );
     TimeLog::GetInstance()->addTimeLog("3 cv::reduce combine image. ", stopWatch.Span());
     cv::Mat matDiff = matMax - matMin;
     cv::compare ( matDiff, fDiffTol, matDiffUnderTolIndex, cv::CmpTypes::CMP_LT);
+    cv::compare ( matAvg,  fAvgTol,  matAvgUnderTolIndex,  cv::CmpTypes::CMP_LT);
     matDiffUnderTolIndex = matDiffUnderTolIndex.reshape ( 1, ROWS );
-
+    matAvgUnderTolIndex  = matAvgUnderTolIndex. reshape ( 1, ROWS );
     MARK_FUNCTION_END_TIME;
 }
 
@@ -1025,6 +1023,9 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
         for (int index = 0; index < ToInt32 ( vecNormaledThreshold.size() ) - 1; ++ index) {
             cv::Mat matBW = cv::Mat::zeros ( ROWS, COLS, CV_8UC1 );
             cv::inRange ( matNormalizedPhase, vecNormaledThreshold[index], vecNormaledThreshold[index + 1], matBW );
+#ifdef _DEBUG
+            int nCountOfPoint = cv::countNonZero ( matBW );
+#endif
             cv::Mat matFirstRow ( matBW, cv::Rect ( 0, 0, COLS, 1 ) ); matFirstRow.setTo ( 0 );
             cv::Mat matFirstCol ( matBW, cv::Rect ( 0, 0, 1, ROWS ) ); matFirstCol.setTo ( 0 );
             cv::Mat matLastRow  ( matBW, cv::Rect ( 0, ROWS - 1, COLS, 1 ) ); matLastRow.setTo ( 0 );
@@ -1175,11 +1176,11 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
                 for (int i = 0; i < ToInt32 ( vecPointToFectch.size () ); ++ i ) {
                     cv::Mat matXX = cv::Mat ( matXp, cv::Rect ( i, 0, 1, matHz.rows ) );
                     cv::Mat matYY = cv::Mat ( matHz, cv::Rect ( i, 0, 1, matHz.rows ) );
-                    cv::Mat matK;
+                    cv::Mat matSlope;
 
                     assert ( matXX.rows == matYY.rows );
-                    cv::solve ( matXX, matYY, matK, cv::DecompTypes::DECOMP_SVD );
-                    pstRpy->vecStepPhaseSlope.push_back ( matK.at<DATA_TYPE> ( 0, 0 ) );
+                    cv::solve ( matXX, matYY, matSlope, cv::DecompTypes::DECOMP_SVD );
+                    pstRpy->vecStepPhaseSlope.push_back ( matSlope.at<DATA_TYPE> ( 0, 0 ) );
                 }
             }
         }
