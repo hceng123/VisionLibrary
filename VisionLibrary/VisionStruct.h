@@ -881,9 +881,9 @@ struct PR_CALIB_3D_HEIGHT_CMD {
         fRemoveHarmonicWaveK(0.f),
         fBaseStartAvgPhase(0),
         fMinIntensityDiff(3.f),
-        fMinAvgIntensity(3.f),
+        fMinAvgIntensity(2.f),
         nBlockStepCount(4),
-        fBlockStepHeight(1.f),        
+        fBlockStepHeight(1.f),
         nResultImgGridRow(8),
         nResultImgGridCol(8),
         szMeasureWinSize(40, 40) {}
@@ -956,8 +956,8 @@ struct PR_INTEGRATE_3D_CALIB_CMD {
 
 struct PR_INTEGRATE_3D_CALIB_RPY {
     VisionStatus            enStatus;
-    cv::Mat                 matInteragedK;          //The 12 parameters to calculate height. They are K1~K10 and P1, P2. H = (Phase + P1*Phase^2 + P2*Phase^3) ./ (K(1)*x1.^3 + K(2)*y1.^3 + K(3)*x1.^2.*y1 + K(4)*x1.*y1.^2 + K(5)*x1.^2 + K(6)*y1.^2 + K(7)*x1.*y1 + K(8)*x1 + K(9)*y1 + K(10))
-    cv::Mat                 mat3OrderCurveSurface;  //The regression 3 order curve surface to convert phase to height. It is calculated by K(1)*x1.^3 + K(2)*y1.^3 + K(3)*x1.^2.*y1 + K(4)*x1.*y1.^2 + K(5)*x1.^2 + K(6)*y1.^2 + K(7)*x1.*y1 + K(8)*x1 + K(9)*y1 + K(10)
+    cv::Mat                 matIntegratedK;         //The 12 parameters to calculate height. They are K1~K10 and P1, P2. H = (Phase + P1*Phase^2 + P2*Phase^3) ./ (K(1)*x1.^3 + K(2)*y1.^3 + K(3)*x1.^2.*y1 + K(4)*x1.*y1.^2 + K(5)*x1.^2 + K(6)*y1.^2 + K(7)*x1.*y1 + K(8)*x1 + K(9)*y1 + K(10))
+    cv::Mat                 matOrder3CurveSurface;  //The regression 3 order curve surface to convert phase to height. It is calculated by K(1)*x1.^3 + K(2)*y1.^3 + K(3)*x1.^2.*y1 + K(4)*x1.*y1.^2 + K(5)*x1.^2 + K(6)*y1.^2 + K(7)*x1.*y1 + K(8)*x1 + K(9)*y1 + K(10)
     VectorOfMat             vecMatResultImg;
 };
 
@@ -967,7 +967,7 @@ struct PR_CALC_3D_HEIGHT_CMD {
         bReverseSeq(true),
         fRemoveHarmonicWaveK(0.f),
         fMinIntensityDiff(3.f),
-        fMinAvgIntensity(3.f) {}
+        fMinAvgIntensity(2.f) {}
     VectorOfMat             vecInputImgs;
     bool                    bEnableGaussianFilter;
     bool                    bReverseSeq;            //Change the image sequence.
@@ -977,7 +977,10 @@ struct PR_CALC_3D_HEIGHT_CMD {
     cv::Mat                 matThickToThinStripeK;  //The factor between thick stripe and thin stripe.
     cv::Mat                 matBaseSurface;
     float                   fBaseStartAvgPhase;     //The average phase of the top-left corner of the thick stripe. It is used to constrain the object's phase within -pi~pi of base phase.
-    cv::Mat                 matPhaseToHeightK;      //The factor to convert phase to height.
+    cv::Mat                 matPhaseToHeightK;      //The factor to convert phase to height. This is the single group of image calibration result.
+    //Below 2 parameters are result of PR_Integrate3DCalib, they are calibrated from positive, negative and H = 5mm surface phase. If these 2 parameters are used, then matPhaseToHeightK will be ignored.
+    cv::Mat                 matIntegratedK;          //The 12 parameters to calculate height. They are K1~K10 and P1, P2. H = (Phase + P1*Phase^2 + P2*Phase^3) ./ (K(1)*x1.^3 + K(2)*y1.^3 + K(3)*x1.^2.*y1 + K(4)*x1.*y1.^2 + K(5)*x1.^2 + K(6)*y1.^2 + K(7)*x1.*y1 + K(8)*x1 + K(9)*y1 + K(10))
+    cv::Mat                 matOrder3CurveSurface;  //The regression 3 order curve surface to convert phase to height. It is calculated by K(1)*x1.^3 + K(2)*y1.^3 + K(3)*x1.^2.*y1 + K(4)*x1.*y1.^2 + K(5)*x1.^2 + K(6)*y1.^2 + K(7)*x1.*y1 + K(8)*x1 + K(9)*y1 + K(10)
 };
 
 struct PR_CALC_3D_HEIGHT_RPY {

@@ -5936,17 +5936,8 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
         return pstRpy->enStatus;
     }
 
-    if (pstCmd->rectROI.x < 0 || pstCmd->rectROI.y < 0 ||
-        pstCmd->rectROI.width <= 0 || pstCmd->rectROI.height <= 0 ||
-        ( pstCmd->rectROI.x + pstCmd->rectROI.width ) > pstCmd->matHeight.cols ||
-        ( pstCmd->rectROI.y + pstCmd->rectROI.height ) > pstCmd->matHeight.rows ) {
-        char chArrMsg[1000];
-        _snprintf( chArrMsg, sizeof( chArrMsg ), "The input ROI rect (%d, %d, %d, %d) is invalid.",
-            pstCmd->rectROI.x, pstCmd->rectROI.y, pstCmd->rectROI.width, pstCmd->rectROI.height );
-        WriteLog(chArrMsg);
-        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
-        return pstRpy->enStatus;
-    }
+    pstRpy->enStatus = _checkInputROI ( pstCmd->rectROI, pstCmd->matHeight, AT );
+    if ( VisionStatus::OK != pstRpy->enStatus ) return pstRpy->enStatus;
 
     if ( pstCmd->vecRectBases.empty() ) {
         WriteLog("The base vector is empty.");
@@ -5955,17 +5946,8 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     }
 
     for ( auto const &rect : pstCmd->vecRectBases ) {
-        if (rect.x < 0 || rect.y < 0 ||
-            rect.width <= 0 || rect.height <= 0 ||
-            ( rect.x + rect.width ) > pstCmd->matHeight.cols ||
-            ( rect.y + rect.height ) > pstCmd->matHeight.rows ) {
-            char chArrMsg[1000];
-            _snprintf ( chArrMsg, sizeof ( chArrMsg ), "The base rect (%d, %d, %d, %d) is invalid.",
-                rect.x, rect.y, rect.width, rect.height );
-            WriteLog ( chArrMsg );
-            pstRpy->enStatus = VisionStatus::INVALID_PARAM;
-            return pstRpy->enStatus;
-        }
+        pstRpy->enStatus = _checkInputROI ( rect, pstCmd->matHeight, AT );
+        if ( VisionStatus::OK != pstRpy->enStatus ) return pstRpy->enStatus;
     }
 
     if ( pstCmd->fEffectHRatioEnd <= pstCmd->fEffectHRatioStart ) {

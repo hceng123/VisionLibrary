@@ -14,9 +14,12 @@
  * Copyright (c) 2016-2016, Xiao Shengguang.  All rights reserved.
  ****************************************************************************/
 
+//2017-10-09 (XSG) Add PR_Integrate3DCalib function.
+#define AOI_VISION_VERSION          "1.00.09"
+
 //2017-09-29 (XSG) Add PR_CalcCameraMTF function.
 //2017-09-28 (XSG) Fix PR_CalibrateCamera fail problem on new optics image.
-#define AOI_VISION_VERSION          "1.00.08"
+//#define AOI_VISION_VERSION          "1.00.08"
 
 //2017-09-23 (XSG) Use Nelder-Mead algorithm to do auto threshold to speed up.
 //2017-09-23 (XSG) Add PR_Calc3DBase function to avoid repeatly calculate base surface.

@@ -46,16 +46,15 @@ private:
     static cv::Mat _phaseUnwrapSurface(const cv::Mat &matPhase);
     static cv::Mat _phaseUnwrapSurfaceTrk ( const cv::Mat &matPhase, const cv::Mat &matBranchCut);
     static cv::Mat _phaseUnwrapSurfaceByRefer(const cv::Mat &matPhase, const cv::Mat &matRef );
-    static cv::Mat _calculatePPz(const cv::Mat &matX, const cv::Mat &matY, const cv::Mat &matZ);
-    
+    static cv::Mat _calculatePPz(const cv::Mat &matX, const cv::Mat &matY, const cv::Mat &matZ);    
     static cv::Mat _setBySign(cv::Mat &matInput, DATA_TYPE value );
-    static void _findUnstablePoint(const std::vector<cv::Mat> &vecInputImgs, float fDiffTol, float fAvgTol, cv::Mat &matDiffUnderTolIndex, cv::Mat &matAvgUnderTolIndex);
+    static void _findUnstablePoint(const VectorOfMat &vecInputImgs, float fDiffTol,cv::Mat &matDiffUnderTolIndex);
     static cv::Mat _drawHeightGrid(const cv::Mat &matHeight, int nGridRow, int nGridCol, const cv::Size &szMeasureWinSize);
     static void _drawStar(cv::Mat &matInOut, cv::Point ptPosition, int nSize );
     static cv::Mat _calcHeightFromPhase(const cv::Mat &matPhase, const cv::Mat &matHtt, const cv::Mat &matK);
     static const int GUASSIAN_FILTER_SIZE =     11;
     static const int BEZIER_RANK =              5;
-    static const int ERODE_WIN_SIZE =           41;
+    static const int ERODE_WIN_SIZE =           31;
     static const int PHASE_SNOOP_WIN_SIZE =     10;
     static const int CALIB_HEIGHT_MIN_SIZE =    200;
 

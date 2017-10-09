@@ -576,10 +576,15 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
     auto vevVecBranchCut = CalcUtils::matToVector<uchar>(matBranchCut);
     auto vecVecAlpha = CalcUtils::matToVector<DATA_TYPE>(matAlpha);
 #endif
-    cv::Mat matDiffUnderTolIndex, matAvgUnderTolIndex;
-    _findUnstablePoint ( vecConvertedImgs, pstCmd->fMinIntensityDiff, pstCmd->fMinAvgIntensity, matDiffUnderTolIndex, matAvgUnderTolIndex );
+    TimeLog::GetInstance()->addTimeLog("Before find amplitude less than tol. ", stopWatch.Span() );
+    cv::Mat matAvgUnderTolIndex;
+    cv::Mat matB;
+    matB = mat10.mul(mat10) + mat11.mul(mat11); //matB is amplitude of the wave. mat10 = 2*sin(theta), mat11 = 2*cos(theta).
+    cv::compare ( matB, pstCmd->fMinAvgIntensity * pstCmd->fMinAvgIntensity * 4, matAvgUnderTolIndex,  cv::CmpTypes::CMP_LT);
+    TimeLog::GetInstance()->addTimeLog("After amplitude less than tol. ", stopWatch.Span() );
+    //_findUnstablePoint ( vecConvertedImgs, pstCmd->fMinIntensityDiff, matDiffUnderTolIndex );
 #ifdef _DEBUG
-    int nDiffUnderTolCount = cv::countNonZero ( matDiffUnderTolIndex );
+    //int nDiffUnderTolCount = cv::countNonZero ( matDiffUnderTolIndex );
     int nAvgUnderTolCount  = cv::countNonZero ( matAvgUnderTolIndex );
     auto vecVecBeta  = CalcUtils::matToVector<DATA_TYPE>(matBeta);
 #endif
@@ -597,7 +602,7 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
 
     auto matH = matBeta.clone();
     matH.setTo ( NAN, matAvgUnderTolIndex );
-    matH.setTo ( NAN, matDiffUnderTolIndex );
+    //matH.setTo ( NAN, matDiffUnderTolIndex );
 
 #ifdef _DEBUG
     auto vecVecH = CalcUtils::matToVector<DATA_TYPE>( matH );
@@ -638,7 +643,7 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
         matDisplay.convertTo ( matDisplay, CV_8UC1 );
         cv::cvtColor ( matDisplay, matDisplay, CV_GRAY2BGR );
         matDisplay.setTo ( cv::Scalar ( 0, 255, 255 ), matAvgUnderTolIndex );
-        matDisplay.setTo ( cv::Scalar ( 0, 255, 0 ), matDiffUnderTolIndex );
+        //matDisplay.setTo ( cv::Scalar ( 0, 255, 0 ), matDiffUnderTolIndex );
         matDisplay.setTo ( cv::Scalar ( 0, 0, 255 ), matTopPoints );
         cv::imwrite ( "./data/Nan_5.png", matDisplay );
         vecVecH = CalcUtils::matToVector<DATA_TYPE> ( matH );
@@ -646,7 +651,9 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
     }
 
     pstRpy->matPhase = matH;
-    if ( ! pstCmd->matPhaseToHeightK.empty() ) {
+    if ( ! pstCmd->matOrder3CurveSurface.empty() && ! pstCmd->matIntegratedK.empty() ) {
+        pstRpy->matHeight = _calcHeightFromPhase ( pstRpy->matPhase, pstCmd->matOrder3CurveSurface, pstCmd->matIntegratedK );
+    }else if ( ! pstCmd->matPhaseToHeightK.empty() ) {
         cv::Mat matX, matY;
         CalcUtils::meshgrid<DATA_TYPE> ( 1.f, 1.f, ToFloat ( matH.cols ), 1.f, 1.f, ToFloat ( matH.rows ), matX, matY );
         cv::Mat matRatio = pstCmd->matPhaseToHeightK.at<DATA_TYPE>(0, 0) * matX + pstCmd->matPhaseToHeightK.at<DATA_TYPE>(1, 0) * matY + pstCmd->matPhaseToHeightK.at<DATA_TYPE>(2, 0);
@@ -868,7 +875,7 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
 }
 
 //For shadow area
-/*static*/ void Unwrap:: _findUnstablePoint(const std::vector<cv::Mat> &vecInputImgs, float fDiffTol, float fAvgTol, cv::Mat &matDiffUnderTolIndex, cv::Mat &matAvgUnderTolIndex) {
+/*static*/ void Unwrap:: _findUnstablePoint(const VectorOfMat &vecInputImgs, float fDiffTol, cv::Mat &matDiffUnderTolIndex) {
     MARK_FUNCTION_START_TIME;
     
     //int ROWS = vecInputImgs[0].rows;
@@ -896,11 +903,11 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
 
     cv::Mat matCombine;
     const int GROUP_IMG_COUNT = 4;
-    int ROWS = vecInputImgs[0].rows;
-    int COLS = vecInputImgs[0].cols;
-    int nTotal = ToInt32 ( vecInputImgs[0].total() );
-    cv::Mat matArray[] = { vecInputImgs[0].reshape(1, 1), vecInputImgs[1].reshape(1, 1), vecInputImgs[2].reshape(1, 1), vecInputImgs[3].reshape(1, 1) };
-    cv::vconcat(matArray, GROUP_IMG_COUNT, matCombine );
+    int ROWS = vecInputImgs[4].rows;
+    int COLS = vecInputImgs[4].cols;
+    int nTotal = ToInt32 ( vecInputImgs[4].total() );
+    cv::Mat matArray[] = { vecInputImgs[4].reshape(1, 1), vecInputImgs[5].reshape(1, 1), vecInputImgs[6].reshape(1, 1), vecInputImgs[7].reshape(1, 1) };
+    cv::vconcat ( matArray, GROUP_IMG_COUNT, matCombine );
     //for ( int i = 0; i < GROUP_IMG_COUNT; ++ i )
     //    matCombine.push_back ( vecInputImgs[i].reshape ( 1, 1 ) );
     //cv::transpose ( matCombine, matCombine );
@@ -908,13 +915,10 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
     cv::Mat matMax, matMin, matAvg;
     cv::reduce ( matCombine, matMax, 0, cv::ReduceTypes::REDUCE_MAX );
     cv::reduce ( matCombine, matMin, 0, cv::ReduceTypes::REDUCE_MIN );
-    cv::reduce ( matCombine, matAvg, 0, cv::ReduceTypes::REDUCE_AVG );
     TimeLog::GetInstance()->addTimeLog("3 cv::reduce combine image. ", stopWatch.Span());
     cv::Mat matDiff = matMax - matMin;
     cv::compare ( matDiff, fDiffTol, matDiffUnderTolIndex, cv::CmpTypes::CMP_LT);
-    cv::compare ( matAvg,  fAvgTol,  matAvgUnderTolIndex,  cv::CmpTypes::CMP_LT);
     matDiffUnderTolIndex = matDiffUnderTolIndex.reshape ( 1, ROWS );
-    matAvgUnderTolIndex  = matAvgUnderTolIndex. reshape ( 1, ROWS );
 
     MARK_FUNCTION_END_TIME;
 }
@@ -1023,8 +1027,8 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
             cv::inRange ( matNormalizedPhase, vecNormaledThreshold[index], vecNormaledThreshold[index + 1], matBW );
             cv::Mat matFirstRow ( matBW, cv::Rect ( 0, 0, COLS, 1 ) ); matFirstRow.setTo ( 0 );
             cv::Mat matFirstCol ( matBW, cv::Rect ( 0, 0, 1, ROWS ) ); matFirstCol.setTo ( 0 );
-            cv::Mat matLastRow ( matBW, cv::Rect ( 0, ROWS - 1, COLS, 1 ) ); matLastRow.setTo ( 0 );
-            cv::Mat matLastCol ( matBW, cv::Rect ( COLS - 1, 0, 1, ROWS ) ); matLastCol.setTo ( 0 );
+            cv::Mat matLastRow  ( matBW, cv::Rect ( 0, ROWS - 1, COLS, 1 ) ); matLastRow.setTo ( 0 );
+            cv::Mat matLastCol  ( matBW, cv::Rect ( COLS - 1, 0, 1, ROWS ) ); matLastCol.setTo ( 0 );
             cv::erode ( matBW, matBW, matST );
             pstRpy->matDivideStepResultImg.setTo ( MATLAB_COLOR_ORDER[index], matBW );
 
@@ -1148,6 +1152,7 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
                 auto vecVecYY = CalcUtils::matToVector<DATA_TYPE> ( matYY );
                 auto vecVecK  = CalcUtils::matToVector<DATA_TYPE> ( matK );
 #endif
+                //Remove the points with the largest fitting error, in the second pass, fit again with better data.
                 if ( i == 0 ) {
                     cv::Mat matErr = cv::abs ( matYY - matXX * matK );
                     cv::Mat matErrSort;
@@ -1162,8 +1167,8 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
             }
             if ( NN == n ) {
                 //Matlab code: Hz - (xp.*xt0*K(1) + xp.*yt0*K(2) + xp*K(3)
-                cv::Mat matFitResultData = matXp.mul ( matXt0 ) * matK.at<DATA_TYPE> ( 0 ) + matXp.mul ( matYt0 ) * matK.at<DATA_TYPE> ( 1 ) + matXp * matK.at<DATA_TYPE> ( 2 );
-                cv::Mat matAllDiff = matHz - matFitResultData;
+                cv::Mat matFitH = matXp.mul ( matXt0 ) * matK.at<DATA_TYPE> ( 0 ) + matXp.mul ( matYt0 ) * matK.at<DATA_TYPE> ( 1 ) + matXp * matK.at<DATA_TYPE> ( 2 );
+                cv::Mat matAllDiff = matHz - matFitH;
                 pstRpy->vecVecStepPhaseDiff = CalcUtils::matToVector<DATA_TYPE> ( matAllDiff );
 
                 pstRpy->vecStepPhaseSlope.clear ();
@@ -1677,7 +1682,7 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
     pstRpy->enStatus = VisionStatus::OK;
 }
 
-static inline cv::Mat calcRank3SurfaceCoeff(const cv::Mat &matX, const cv::Mat &matY) {
+static inline cv::Mat prepareOrder3SurfaceFit(const cv::Mat &matX, const cv::Mat &matY) {
     assert ( matX.cols == 1 && matY.cols == 1 );
     cv::Mat matXPow2 = matX.    mul ( matX );
     cv::Mat matXPow3 = matXPow2.mul ( matX );
@@ -1702,7 +1707,7 @@ static inline cv::Mat calcRank3SurfaceCoeff(const cv::Mat &matX, const cv::Mat &
     return matResult;
 }
 
-static inline cv::Mat calcRank3Surface(const cv::Mat &matX, const cv::Mat &matY, const cv::Mat &matK) {
+static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY, const cv::Mat &matK) {
     cv::Mat matXPow2 = matX.    mul ( matX );
     cv::Mat matXPow3 = matXPow2.mul ( matX );
     cv::Mat matYPow2 = matY.    mul ( matY );
@@ -1769,7 +1774,7 @@ static inline cv::Mat calcRank3Surface(const cv::Mat &matX, const cv::Mat &matY,
     }
     matXt.reshape ( 1, 1 );
     matYt.reshape ( 1, 1 );
-    cv::Mat matXX = calcRank3SurfaceCoeff ( matXt, matYt );
+    cv::Mat matXX = prepareOrder3SurfaceFit ( matXt, matYt );
     cv::Mat matBPRepeat = cv::repeat ( matBP, 1, matXX.cols );
     matXX = matXX.mul ( matBPRepeat );
     cv::Mat matPhasePow2 = matPhase.mul ( matPhase );
@@ -1785,16 +1790,16 @@ static inline cv::Mat calcRank3Surface(const cv::Mat &matX, const cv::Mat &matY,
 #ifdef _DEBUG
     auto vecVecK = CalcUtils::matToVector<DATA_TYPE> ( matK );
 #endif
-    pstRpy->mat3OrderCurveSurface = calcRank3Surface ( matX, matY, matK );
+    pstRpy->matOrder3CurveSurface = calcOrder3Surface ( matX, matY, matK );
     for ( const auto &stCalibData : pstCmd->vecCalibData ) {
-        cv::Mat matHeight = _calcHeightFromPhase ( stCalibData.matPhase, pstRpy->mat3OrderCurveSurface, matK );
+        cv::Mat matHeight = _calcHeightFromPhase ( stCalibData.matPhase, pstRpy->matOrder3CurveSurface, matK );
         cv::Mat matHeightGridImg = _drawHeightGrid ( matHeight, pstCmd->nResultImgGridRow, pstCmd->nResultImgGridCol, pstCmd->szMeasureWinSize );
         pstRpy->vecMatResultImg.push_back ( matHeightGridImg );
     }
-    cv::Mat matHeight = _calcHeightFromPhase ( pstCmd->matTopSurfacePhase, pstRpy->mat3OrderCurveSurface, matK );
+    cv::Mat matHeight = _calcHeightFromPhase ( pstCmd->matTopSurfacePhase, pstRpy->matOrder3CurveSurface, matK );
     cv::Mat matHeightGridImg = _drawHeightGrid ( matHeight, pstCmd->nResultImgGridRow, pstCmd->nResultImgGridCol, pstCmd->szMeasureWinSize );
     pstRpy->vecMatResultImg.push_back ( matHeightGridImg );
-    pstRpy->matInteragedK = matK;
+    pstRpy->matIntegratedK = matK;
     pstRpy->enStatus = VisionStatus::OK;
 }
 

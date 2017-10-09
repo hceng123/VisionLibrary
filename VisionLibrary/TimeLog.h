@@ -27,6 +27,7 @@ private:
     static std::atomic<TimeLog*>    _pInstance;
     static std::mutex               _mutex;
     static const size_t             _SIZE   = 5000;
+    static const size_t             _MSG_WIDTH = 100;
 
     std::atomic<size_t>             _anIndex;
     StringVector                    _vecStringTimeLog;

@@ -96,7 +96,7 @@ void TestCalib3DHeight() {
 
     stCmd.matBaseSurface = stCalc3DBaseRpy.matBaseSurface;
     PR_Calib3DHeight ( &stCmd, &stRpy );
-    std::cout << "PR_Calc3DHeight status " << ToInt32( stRpy.enStatus ) << std::endl;
+    std::cout << "PR_Calib3DHeight status " << ToInt32( stRpy.enStatus ) << std::endl;
     if ( VisionStatus::OK != stRpy.enStatus )
         return;
     std::cout << "PhaseToHeightK: " << std::endl;

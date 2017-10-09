@@ -134,6 +134,17 @@ float matlabObjFunction(const VectorOfFloat &vecThreshold, int num_bins, const c
     for ( auto thresh : vecThreshold )
         boundaries.push_back ( ToInt32( std::round(thresh) ) );
     boundaries.push_back ( num_bins - 1 );
+
+    //Below pre-condition check is equal to below matlab code.
+    //if (~all(diff([1 boundaries num_bins]) > 0))
+    //  sigma_b_squared_val = Inf;
+    //  return;
+    //end
+    for ( size_t i = 0; i < boundaries.size() - 1; ++ i ) {
+        if ( boundaries[i + 1] < boundaries[i] )
+            return std::numeric_limits<float>::max();
+    }
+
     float fDiff = mu.at<float>(boundaries[0]) / omega.at<float>(boundaries[0]) - mu_t;
     float sigma_b_squared_val = omega.at<float>(boundaries[0]) * fDiff * fDiff;
     for ( size_t kk = 1; kk < boundaries.size(); ++ kk ) {
@@ -212,7 +223,7 @@ int fminsearch (objFuntion          funfcn,
     
     while ( func_evals < maxfun && itercount < maxiter ) {
         auto vecVecTwo2Np1V = getMultipleRow (v, two2np1);
-        if ( isVectorAbsDiffLessThan ( fv, two2np1, fv[0], tolf) &&
+        if ( isVectorAbsDiffLessThan ( fv, two2np1, fv[0], tolf ) &&
             maxInVV ( substract ( vecVecTwo2Np1V, v[0] ) ) < 1 ) {
             if ( prnt == 3 )
                 std::cout << "Finish iteration with converged result." << std::endl;
