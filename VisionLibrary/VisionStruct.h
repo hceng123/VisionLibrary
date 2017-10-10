@@ -881,7 +881,7 @@ struct PR_CALIB_3D_HEIGHT_CMD {
         fRemoveHarmonicWaveK(0.f),
         fBaseStartAvgPhase(0),
         fMinIntensityDiff(3.f),
-        fMinAvgIntensity(2.f),
+        fMinAvgIntensity(1.5f),
         nBlockStepCount(4),
         fBlockStepHeight(1.f),
         nResultImgGridRow(8),
@@ -967,7 +967,7 @@ struct PR_CALC_3D_HEIGHT_CMD {
         bReverseSeq(true),
         fRemoveHarmonicWaveK(0.f),
         fMinIntensityDiff(3.f),
-        fMinAvgIntensity(2.f) {}
+        fMinAvgIntensity(1.5f) {}
     VectorOfMat             vecInputImgs;
     bool                    bEnableGaussianFilter;
     bool                    bReverseSeq;            //Change the image sequence.

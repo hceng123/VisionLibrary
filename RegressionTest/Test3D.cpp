@@ -67,7 +67,7 @@ void TestCalib3DHeight() {
     stCmd.bEnableGaussianFilter = true;
     stCmd.bReverseSeq = true;
     stCmd.fMinIntensityDiff = 3;
-    stCmd.fMinAvgIntensity = 3;
+    stCmd.fMinAvgIntensity = 1.5;
     stCmd.nBlockStepCount = 3;
     stCmd.fBlockStepHeight = 1.f;
     stCmd.bReverseHeight = true;
@@ -112,6 +112,9 @@ void TestCalib3DHeight() {
 
     std::cout << "StepPhaseDiff: " << std::endl;
     printfVectorOfVector<float> ( stRpy.vecVecStepPhaseDiff );
+
+    cv::imwrite ( "./data/PR_Calib3DHeight_DivideStepResultImg.png", stRpy.matDivideStepResultImg );
+    cv::imwrite ( "./data/PR_Calib3DHeight_Calib3DHeightResultImg.png", stRpy.matResultImg );
 }
 
 void TestComb3DCalib() {

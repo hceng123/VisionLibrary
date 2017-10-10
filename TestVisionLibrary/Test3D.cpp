@@ -106,7 +106,7 @@ static cv::Mat _drawHeightGrid(const cv::Mat &matHeight, int nGridRow, int nGrid
 }
 
 //static std::string gstrCalibResultFile("./data/capture/CalibPP.yml");
-static std::string gstrWorkingFolder("./data/20170715/");
+static std::string gstrWorkingFolder("./data/New3DCalibMethod/");
 static std::string gstrCalibResultFile = gstrWorkingFolder + "CalibPP.yml";
 void TestCalib3dBase() {
     const int IMAGE_COUNT = 8;
@@ -139,7 +139,7 @@ void TestCalib3dBase() {
 
 void TestCalib3DHeight() {
     const int IMAGE_COUNT = 8;
-    std::string strFolder = gstrWorkingFolder + "0715190516_10ms_80_Step/";
+    std::string strFolder = gstrWorkingFolder + "0920235040_lefttop/";
     PR_CALIB_3D_HEIGHT_CMD stCmd;
     PR_CALIB_3D_HEIGHT_RPY stRpy;
     for ( int i = 1; i <= IMAGE_COUNT; ++ i ) {
@@ -151,10 +151,10 @@ void TestCalib3DHeight() {
     }
     stCmd.bEnableGaussianFilter = true;
     stCmd.bReverseSeq = true;
-    stCmd.bReverseHeight = true;
+    stCmd.bReverseHeight = false;
     stCmd.fMinIntensityDiff = 3;
-    stCmd.fMinAvgIntensity = 3;
-    stCmd.nBlockStepCount = 3;
+    stCmd.fMinAvgIntensity = 1.5;
+    stCmd.nBlockStepCount = 5;
     stCmd.fBlockStepHeight = 1.f;
     stCmd.nResultImgGridRow = 10;
     stCmd.nResultImgGridCol = 10;
@@ -196,7 +196,8 @@ void TestCalib3DHeight() {
     cv::write ( fs1, "PhaseToHeightK", stRpy.matPhaseToHeightK );
     fs1.release();
 
-    std::string strCalibDataFile(gstrWorkingFolder + "03.yml");
+    //Write the phase and divide step result for PR_Integrate3DCalib.
+    std::string strCalibDataFile(gstrWorkingFolder + "01.yml");
     cv::FileStorage fsCalibData ( strCalibDataFile, cv::FileStorage::WRITE );
     if ( ! fsCalibData.isOpened() )
         return;
@@ -340,7 +341,7 @@ void TestIntegrate3DCalib() {
     std::string strCalibResultFile( gstrWorkingFolder + "IntegrateCalibResult.yml" );
     cv::FileStorage fsCalibResultData ( strCalibResultFile, cv::FileStorage::WRITE );
     if (!fsCalibResultData.isOpened ()) {
-        std::cout << "Failed to open file: " << strCalibDataFile << std::endl;
+        std::cout << "Failed to open file: " << strCalibResultFile << std::endl;
         return;
     }
     cv::write ( fsCalibResultData, "IntegratedK", stRpy.matIntegratedK );
@@ -350,7 +351,7 @@ void TestIntegrate3DCalib() {
 
 void TestCalc3DHeightNew() {
     const int IMAGE_COUNT = 8;
-    std::string strFolder = gstrWorkingFolder + "0715190516_10ms_80_Step/";
+    std::string strFolder = gstrWorkingFolder + "0920235128_rightbottom/";
     //std::string strFolder = "./data/0913212217_Unwrap_Not_Finish/";
     PR_CALC_3D_HEIGHT_CMD stCmd;
     PR_CALC_3D_HEIGHT_RPY stRpy;

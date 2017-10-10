@@ -576,19 +576,19 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
     auto vevVecBranchCut = CalcUtils::matToVector<uchar>(matBranchCut);
     auto vecVecAlpha = CalcUtils::matToVector<DATA_TYPE>(matAlpha);
 #endif
-    TimeLog::GetInstance()->addTimeLog("Before find amplitude less than tol. ", stopWatch.Span() );
-    cv::Mat matDiffUnderTolIndex, matAvgUnderTolIndex;
-    //cv::Mat matB;
-    //matB = mat10.mul(mat10) + mat11.mul(mat11); //matB is amplitude of the wave. mat10 = 2*sin(theta), mat11 = 2*cos(theta).
-    //cv::compare ( matB, pstCmd->fMinAvgIntensity * pstCmd->fMinAvgIntensity * 4, matAvgUnderTolIndex,  cv::CmpTypes::CMP_LT);
-    //TimeLog::GetInstance()->addTimeLog("After amplitude less than tol. ", stopWatch.Span() );
-    _findUnstablePoint ( vecConvertedImgs, pstCmd->fMinIntensityDiff, pstCmd->fMinAvgIntensity, matDiffUnderTolIndex, matAvgUnderTolIndex );
+    
+    cv::Mat matAvgUnderTolIndex;
+    {
+        cv::Mat matB;
+        TimeLog::GetInstance ()->addTimeLog ( "Before find amplitude less than tol. ", stopWatch.Span () );
+        matB = mat10.mul ( mat10 ) + mat11.mul ( mat11 ); //matB is amplitude of the wave. mat10 = 2*sin(theta), mat11 = 2*cos(theta).
+        cv::compare ( matB, pstCmd->fMinAvgIntensity * pstCmd->fMinAvgIntensity * 4, matAvgUnderTolIndex, cv::CmpTypes::CMP_LT );
+        TimeLog::GetInstance ()->addTimeLog ( "After amplitude less than tol. ", stopWatch.Span () );
+    }
 #ifdef _DEBUG
-    int nDiffUnderTolCount = cv::countNonZero ( matDiffUnderTolIndex );
     int nAvgUnderTolCount  = cv::countNonZero ( matAvgUnderTolIndex );
     auto vecVecBeta  = CalcUtils::matToVector<DATA_TYPE>(matBeta);
 #endif
-    //matAlpha.setTo ( NAN, matDiffUnderTolIndex );
     matAlpha = matAlpha * pstCmd->matThickToThinStripeK.at<DATA_TYPE>(0, 0) + pstCmd->matThickToThinStripeK.at<DATA_TYPE>(1, 0);    
     matBeta = _phaseUnwrapSurfaceByRefer ( matBeta, matAlpha );
 
@@ -602,49 +602,15 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
 
     auto matH = matBeta.clone();
     matH.setTo ( NAN, matAvgUnderTolIndex );
-    //matH.setTo ( NAN, matDiffUnderTolIndex );
-
-#ifdef _DEBUG
-    auto vecVecH = CalcUtils::matToVector<DATA_TYPE>( matH );
-#endif
 
     stopWatch.Start();
     cv::medianBlur ( matH, matH, 5 );
     TimeLog::GetInstance()->addTimeLog( "MedianBlur.", stopWatch.Span() );
-#ifdef _DEBUG
-    vecVecH = CalcUtils::matToVector<DATA_TYPE>( matH );
-#endif
 
     if ( pstCmd->bEnableGaussianFilter ) {
         float fSigma = ToFloat ( pow ( 5, 0.5 ) );
         cv::GaussianBlur ( matH, matH, cv::Size(5, 5), fSigma, fSigma, cv::BorderTypes::BORDER_REPLICATE );
     }    
-
-    int nCountOfNan = CalcUtils::countOfNan ( matH );
-    if ( 0 < nCountOfNan && nCountOfNan < (1 - REMOVE_HEIGHT_NOSIE_RATIO) * matH.total() ) {
-#ifdef _DEBUG
-        cv::Mat matTopPoints = cv::Mat::zeros ( ROWS, COLS, CV_8UC1 );
-#endif
-        std::vector<size_t> vecSortedIndex;
-        CalcUtils::FindLargestKItems<DATA_TYPE> ( matH, (1 - REMOVE_HEIGHT_NOSIE_RATIO) * matH.total(), vecSortedIndex );
-        for (int i = ToInt32 ( REMOVE_HEIGHT_NOSIE_RATIO * vecSortedIndex.size () ); i < ToInt32 ( vecSortedIndex.size () ); ++ i ) {
-            matH.at<DATA_TYPE> ( i ) = NAN;
-#ifdef _DEBUG
-            matTopPoints.at<uchar> ( i ) = 255;
-#endif
-        }
-
-#ifdef _DEBUG
-        cv::Mat matDisplay = (vecConvertedImgs[0] + vecConvertedImgs[1] + vecConvertedImgs[2] + vecConvertedImgs[3]) / 4;
-        matDisplay.convertTo ( matDisplay, CV_8UC1 );
-        cv::cvtColor ( matDisplay, matDisplay, CV_GRAY2BGR );
-        matDisplay.setTo ( cv::Scalar ( 0, 255, 255 ), matAvgUnderTolIndex );
-        //matDisplay.setTo ( cv::Scalar ( 0, 255, 0 ), matDiffUnderTolIndex );
-        matDisplay.setTo ( cv::Scalar ( 0, 0, 255 ), matTopPoints );
-        cv::imwrite ( "./data/Nan_5.png", matDisplay );
-        vecVecH = CalcUtils::matToVector<DATA_TYPE> ( matH );
-#endif
-    }
 
     pstRpy->matPhase = matH;
     if ( ! pstCmd->matOrder3CurveSurface.empty() && ! pstCmd->matIntegratedK.empty() ) {
@@ -1797,9 +1763,11 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
         cv::Mat matHeightGridImg = _drawHeightGrid ( matHeight, pstCmd->nResultImgGridRow, pstCmd->nResultImgGridCol, pstCmd->szMeasureWinSize );
         pstRpy->vecMatResultImg.push_back ( matHeightGridImg );
     }
-    cv::Mat matHeight = _calcHeightFromPhase ( pstCmd->matTopSurfacePhase, pstRpy->matOrder3CurveSurface, matK );
-    cv::Mat matHeightGridImg = _drawHeightGrid ( matHeight, pstCmd->nResultImgGridRow, pstCmd->nResultImgGridCol, pstCmd->szMeasureWinSize );
-    pstRpy->vecMatResultImg.push_back ( matHeightGridImg );
+    if ( ! pstCmd->matTopSurfacePhase.empty() ) {
+        cv::Mat matHeight = _calcHeightFromPhase ( pstCmd->matTopSurfacePhase, pstRpy->matOrder3CurveSurface, matK );
+        cv::Mat matHeightGridImg = _drawHeightGrid ( matHeight, pstCmd->nResultImgGridRow, pstCmd->nResultImgGridCol, pstCmd->szMeasureWinSize );
+        pstRpy->vecMatResultImg.push_back ( matHeightGridImg );
+    }
     pstRpy->matIntegratedK = matK;
     pstRpy->enStatus = VisionStatus::OK;
 }

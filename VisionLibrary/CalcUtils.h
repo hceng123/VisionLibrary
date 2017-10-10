@@ -257,7 +257,7 @@ public:
     }
 
     template<typename T>
-    static std::vector<T> FindLargestKItems ( const cv::Mat &matInput, const size_t K, std::vector<size_t> &vecIndex ) {
+    static std::vector<T> FindLargestKItems ( const cv::Mat &matInput, const int K, std::vector<size_t> &vecIndex ) {
         if ( K > matInput.total () )  {
             return matInput;
         }
@@ -274,15 +274,15 @@ public:
         }
 
         for ( int K1 = K / 2 - 1; K1 >= 0; -- K1 )
-            heapifyMinToRoot ( vecResult, K, K1, vecIndex );
+            heapifyMinToRoot ( vecResult, ToInt32 ( K ), K1, vecIndex );
 
-        for (size_t i = index; i < matInput.total (); ++i) {
-            if (matInput.at<T> ( i ) == matInput.at<T> ( i ) && matInput.at<T> ( i ) > vecResult.front() ) {
+        for (int i = index; i < ToInt32 ( matInput.total() ); ++i) {
+            if ( matInput.at<T> ( i ) == matInput.at<T> ( i ) && matInput.at<T> ( i ) > vecResult.front() ) {
                 vecResult.front() = matInput.at<T> ( i );
                 vecIndex.front() = i;
 
-                for (int K1 = K / 2 - 1; K1 >= 0; --K1)
-                    heapifyMinToRoot ( vecResult, K, K1, vecIndex );
+                for (int K1 = K / 2 - 1; K1 >= 0; -- K1 )
+                    heapifyMinToRoot ( vecResult, ToInt32 ( K ), K1, vecIndex );
             }
         }
 
