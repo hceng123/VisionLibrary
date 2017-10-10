@@ -28,6 +28,7 @@ namespace Vision
 
 #define MARK_FUNCTION_START_TIME    CStopWatch      stopWatch; __int64 functionStart = stopWatch.AbsNow()
 #define MARK_FUNCTION_END_TIME      TimeLog::GetInstance()->addTimeLog( __FUNCTION__, stopWatch.AbsNow() - functionStart )
+#define AT __FILE__, __LINE__
 
 #define SETUP_LOGCASE(classname) \
 std::unique_ptr<classname> pLogCase; \
@@ -1099,6 +1100,12 @@ VisionStatus VisionAlgorithm::inspDevice(PR_INSP_DEVICE_CMD *pstInspDeviceCmd, P
         pstRpy->ptObjPos.y = ptResult.y + ptrRecord->getTmpl().rows / 2 + 0.5f + pstCmd->rectSrchWindow.y;
         pstRpy->fRotation = 0.f;
         pstRpy->enStatus = VisionStatus::OK;
+    }else if ( PR_MATCH_TMPL_ALGORITHM::HIERARCHICAL_AREA == pstCmd->enAlgorithm ) {
+        cv::Point ptResult = MatchTmpl::matchTemplateRecursive ( matSrchROI, ptrRecord->getTmpl() );
+        pstRpy->ptObjPos.x = ptResult.x + ptrRecord->getTmpl().cols / 2 + 0.5f + pstCmd->rectSrchWindow.x;
+        pstRpy->ptObjPos.y = ptResult.y + ptrRecord->getTmpl().rows / 2 + 0.5f + pstCmd->rectSrchWindow.y;
+        pstRpy->fRotation = 0.f;
+        pstRpy->enStatus = VisionStatus::OK;
     }
 
     if ( ! isAutoMode () ) {
@@ -1481,6 +1488,20 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
     cv::destroyWindow ( strWindowName );
 }
 
+/*static*/ VisionStatus VisionAlgorithm::_checkInputROI(const cv::Rect &rect, const cv::Mat &matInputImg, const char *filename, int line) {
+    if (rect.x < 0 || rect.y < 0 ||
+        rect.width <= 0 || rect.height <= 0 ||
+        ( rect.x + rect.width ) > matInputImg.cols ||
+        ( rect.y + rect.height ) > matInputImg.rows ) {
+        char chArrMsg[1000];
+        _snprintf( chArrMsg, sizeof( chArrMsg ), "The input ROI rect (%d, %d, %d, %d) is invalid.",
+            rect.x, rect.y, rect.width, rect.height );
+       Log::GetInstance()->Write(chArrMsg, filename, line );
+       return VisionStatus::INVALID_PARAM;
+    }
+    return VisionStatus::OK;
+}
+
 /*static*/ LogCasePtr VisionAlgorithm::_createLogCaseInstance(const String &strFolderPrefix, const String &strLocalPath) {
     if ( LogCaseLrnObj::StaticGetFolderPrefix() == strFolderPrefix ) 
         return std::make_unique<LogCaseLrnObj>( strLocalPath, true );
@@ -1574,6 +1595,9 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
 
     if (LogCaseCalc3DHeight::StaticGetFolderPrefix() == strFolderPrefix )
         return std::make_unique<LogCaseCalc3DHeight>( strLocalPath, true );
+
+    if (LogCaseCalcCameraMTF::StaticGetFolderPrefix() == strFolderPrefix )
+        return std::make_unique<LogCaseCalcCameraMTF>( strLocalPath, true );
     
     static String msg = strFolderPrefix + " is not handled in " + __FUNCTION__;
     throw std::exception ( msg.c_str() );
@@ -3632,7 +3656,7 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     float fMaxBlockArea = 0;
     for ( const auto &contour : contours ) {
         auto area = cv::contourArea ( contour );
-        if ( area > 1000 )  {
+        if ( area > (nRoughBlockSize - 1) * (nRoughBlockSize - 1) )  {
             cv::RotatedRect rotatedRect = cv::minAreaRect ( contour );
             if ( ( fabs ( rotatedRect.size.width - rotatedRect.size.height ) / ( rotatedRect.size.width + rotatedRect.size.height ) < 0.05 ) &&
                 ( rotatedRect.size.width * 2 * ( szBoardPattern.width - 1 ) < matInputImg.cols ) ) {
@@ -3693,16 +3717,25 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
 
     //If didn't find the block, it may because the two blocks connected together make findContour find two connected blocks.
     //Need to use Morphology method to remove the dark connecter between them.
-    cv::threshold(matFilter, matThreshold, nThreshold, 255, cv::THRESH_BINARY_INV);
-    cv::Mat matKernal = cv::getStructuringElement(cv::MorphShapes::MORPH_ELLIPSE, { 7, 7 });
-    cv::morphologyEx(matThreshold, matThreshold, cv::MorphTypes::MORPH_CLOSE, matKernal, cv::Point(-1, -1), 3);
+    cv::threshold ( matFilter, matThreshold, nThreshold, 255, cv::THRESH_BINARY_INV );
     if (Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE) {
-        showImage("After morphologyEx image", matThreshold);
+        showImage("Before morphologyEx image", matThreshold);
+    }
+
+    float fBlockAreaMin = ( fBlockSize - 5 ) * ( fBlockSize - 5 );
+
+    if ( fBlockSize > 60 ) {
+        cv::Mat matKernal = cv::getStructuringElement ( cv::MorphShapes::MORPH_ELLIPSE, { 7, 7 } );
+        cv::morphologyEx ( matThreshold, matThreshold, cv::MorphTypes::MORPH_CLOSE, matKernal, cv::Point ( -1, -1 ), 3 );
+        if (Config::GetInstance ()->getDebugMode () == PR_DEBUG_MODE::SHOW_IMAGE) {
+            showImage ( "After morphologyEx image", matThreshold );
+        }
+        fBlockAreaMin = ( fBlockSize - 10 ) * ( fBlockSize - 10 );
     }
     cv::findContours(matThreshold, contours, cv::RETR_LIST, cv::CHAIN_APPROX_SIMPLE);
     for (const auto &contour : contours) {
         auto area = cv::contourArea(contour);
-        if (area > 1000) {
+        if (area > fBlockAreaMin ) {
             cv::RotatedRect rotatedRect = cv::minAreaRect(contour);
             if (fabs(rotatedRect.size.width - rotatedRect.size.height) / (rotatedRect.size.width + rotatedRect.size.height) < 0.1
                 && fabs(rotatedRect.size.width - fBlockSize) / fBlockSize < 0.2) {
@@ -3785,6 +3818,7 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     float fStepSize = fBlockSize * 2;
     int nSrchSize = ToInt32( fStepSize - 20 );
     if ( nSrchSize > 200 ) nSrchSize = 200;
+    if ( nSrchSize < ( matTmpl.rows + 10 ) ) nSrchSize = matTmpl.rows + 10;
     cv::Point2f ptFirstCorer = _findFirstChessBoardCorner ( matGray, fBlockSize );
     if ( ptFirstCorer.x <= 0 || ptFirstCorer.y <= 0 ) {
         WriteLog("Failed to find chess board first corner.");
@@ -5823,6 +5857,31 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     return pstRpy->enStatus;
 }
 
+/*static*/ VisionStatus VisionAlgorithm::integrate3DCalib(const PR_INTEGRATE_3D_CALIB_CMD *const pstCmd, PR_INTEGRATE_3D_CALIB_RPY *const pstRpy, bool bReplay/* = false*/) {
+    if ( pstCmd->vecCalibData.empty() ) {
+        WriteLog("The input calibration data vector is empty.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    for ( const auto &stCalibData : pstCmd->vecCalibData ) {
+        if ( stCalibData.matPhase.empty() ) {
+            WriteLog("The input phase data is empty.");
+            pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+            return pstRpy->enStatus;
+        }
+
+        if ( stCalibData.matDivideStepIndex.empty() ) {
+            WriteLog("The input phase step divide data is empty.");
+            pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+            return pstRpy->enStatus;
+        }
+    }
+
+    Unwrap::integrate3DCalib(pstCmd, pstRpy);
+    return pstRpy->enStatus;
+}
+
 /*static*/ VisionStatus VisionAlgorithm::calc3DHeight(const PR_CALC_3D_HEIGHT_CMD *const pstCmd, PR_CALC_3D_HEIGHT_RPY *const pstRpy, bool bReplay /*= false*/) {
     assert(pstCmd != nullptr && pstRpy != nullptr);
 
@@ -5877,17 +5936,8 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
         return pstRpy->enStatus;
     }
 
-    if (pstCmd->rectROI.x < 0 || pstCmd->rectROI.y < 0 ||
-        pstCmd->rectROI.width <= 0 || pstCmd->rectROI.height <= 0 ||
-        ( pstCmd->rectROI.x + pstCmd->rectROI.width ) > pstCmd->matHeight.cols ||
-        ( pstCmd->rectROI.y + pstCmd->rectROI.height ) > pstCmd->matHeight.rows ) {
-        char chArrMsg[1000];
-        _snprintf( chArrMsg, sizeof( chArrMsg ), "The input ROI rect (%d, %d, %d, %d) is invalid.",
-            pstCmd->rectROI.x, pstCmd->rectROI.y, pstCmd->rectROI.width, pstCmd->rectROI.height );
-        WriteLog(chArrMsg);
-        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
-        return pstRpy->enStatus;
-    }
+    pstRpy->enStatus = _checkInputROI ( pstCmd->rectROI, pstCmd->matHeight, AT );
+    if ( VisionStatus::OK != pstRpy->enStatus ) return pstRpy->enStatus;
 
     if ( pstCmd->vecRectBases.empty() ) {
         WriteLog("The base vector is empty.");
@@ -5896,17 +5946,8 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     }
 
     for ( auto const &rect : pstCmd->vecRectBases ) {
-        if (rect.x < 0 || rect.y < 0 ||
-            rect.width <= 0 || rect.height <= 0 ||
-            ( rect.x + rect.width ) > pstCmd->matHeight.cols ||
-            ( rect.y + rect.height ) > pstCmd->matHeight.rows ) {
-            char chArrMsg[1000];
-            _snprintf ( chArrMsg, sizeof ( chArrMsg ), "The base rect (%d, %d, %d, %d) is invalid.",
-                rect.x, rect.y, rect.width, rect.height );
-            WriteLog ( chArrMsg );
-            pstRpy->enStatus = VisionStatus::INVALID_PARAM;
-            return pstRpy->enStatus;
-        }
+        pstRpy->enStatus = _checkInputROI ( rect, pstCmd->matHeight, AT );
+        if ( VisionStatus::OK != pstRpy->enStatus ) return pstRpy->enStatus;
     }
 
     if ( pstCmd->fEffectHRatioEnd <= pstCmd->fEffectHRatioStart ) {
@@ -5923,6 +5964,150 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     Unwrap::calc3DHeightDiff ( pstCmd, pstRpy );
 
     MARK_FUNCTION_END_TIME;
+    return pstRpy->enStatus;
+}
+
+/*static*/ VisionStatus VisionAlgorithm::calcCameraMTF(const PR_CALC_CAMERA_MTF_CMD *const pstCmd, PR_CALC_CAMERA_MTF_RPY *const pstRpy, bool bReplay/* = false*/) {
+    assert(pstCmd != nullptr && pstRpy != nullptr);    
+    if ( pstCmd->matInputImg.empty() ) {
+        WriteLog("Input image is empty.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+   
+    pstRpy->enStatus = _checkInputROI ( pstCmd->rectVBigPatternROI, pstCmd->matInputImg, AT );
+    if ( pstRpy->enStatus != VisionStatus::OK ) return pstRpy->enStatus;
+    pstRpy->enStatus = _checkInputROI ( pstCmd->rectHBigPatternROI, pstCmd->matInputImg, AT );
+    if ( pstRpy->enStatus != VisionStatus::OK ) return pstRpy->enStatus;
+    pstRpy->enStatus = _checkInputROI ( pstCmd->rectVSmallPatternROI, pstCmd->matInputImg, AT );
+    if ( pstRpy->enStatus != VisionStatus::OK ) return pstRpy->enStatus;
+    pstRpy->enStatus = _checkInputROI ( pstCmd->rectHSmallPatternROI, pstCmd->matInputImg, AT );
+    if ( pstRpy->enStatus != VisionStatus::OK ) return pstRpy->enStatus;
+
+    MARK_FUNCTION_START_TIME;
+    SETUP_LOGCASE(LogCaseCalcCameraMTF);
+
+    cv::Mat matGray;
+    if ( pstCmd->matInputImg.channels() > 1 )
+        cv::cvtColor ( pstCmd->matInputImg, matGray, CV_BGR2GRAY );
+    else
+        matGray = pstCmd->matInputImg;
+
+    VectorOfMat vecMat;
+    vecMat.push_back ( cv::Mat ( matGray, pstCmd->rectVBigPatternROI ) );
+    vecMat.push_back ( cv::Mat ( matGray, pstCmd->rectHBigPatternROI ) );
+    vecMat.push_back ( cv::Mat ( matGray, pstCmd->rectVSmallPatternROI ) );
+    vecMat.push_back ( cv::Mat ( matGray, pstCmd->rectHSmallPatternROI ) );
+    if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE ) {
+        showImage ("T1", vecMat[0] ); showImage ("T2", vecMat[1] ); showImage ("T3", vecMat[2] ); showImage ("T4", vecMat[3] );
+    }
+
+    const int MIN_PATTERN_SIZE = 5;
+    for ( auto &mat : vecMat ) {
+        cv::Mat matCanny;
+        cv::Canny ( mat, matCanny, 150, 50 );
+        if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE )
+            showImage ( "Canny Result", matCanny );
+        VectorOfPoint vecPoints;
+        cv::findNonZero ( matCanny, vecPoints );
+        if ( vecPoints.empty() ) {
+            WriteLog("Can not find MTF pattern in the given ROI.");
+            pstRpy->enStatus = VisionStatus::CAN_NOT_FIND_MTF_PATTERN;
+            return pstRpy->enStatus;
+        }
+
+        int xMin, xMax, yMin, yMax;
+        CalcUtils::findMinMaxCoord ( vecPoints, xMin, xMax, yMin, yMax );
+        int margin = ToInt32 ( 0.05f * mat.rows );
+        xMin += margin; xMax -= margin;
+        yMin += margin; yMax -= margin;
+        if ( (xMax - xMin) < MIN_PATTERN_SIZE || (yMax - yMin) < MIN_PATTERN_SIZE ) {
+            WriteLog("The MTF pattern is too small.");
+            pstRpy->enStatus = VisionStatus::MTF_PATTERN_TOO_SMALL;
+            return pstRpy->enStatus;
+        }
+        mat = cv::Mat ( mat, cv::Range(yMin, yMax), cv::Range(xMin, xMax) );
+    }
+    if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE ) {
+        showImage ("Trimmed T1", vecMat[0] ); showImage ("Trimmed T2", vecMat[1] );
+        showImage ("Trimmed T3", vecMat[2] ); showImage ("Trimmed T4", vecMat[3] );
+    }
+
+    const int DATA_LEN = 5;
+    pstRpy->vecBigPatternAbsMtfV.clear();
+    pstRpy->vecBigPatternAbsMtfH.clear();
+    pstRpy->vecSmallPatternAbsMtfV.clear();
+    pstRpy->vecSmallPatternAbsMtfH.clear();
+    for( int row = 0; row < vecMat[0].rows - 1; ++ row ) {
+        cv::Mat matCol ( vecMat[0], cv::Rect ( 0, row, vecMat[0].cols, 1 ) );
+        cv::Mat matSorted;
+        cv::sort ( matCol, matSorted, cv::SortFlags::SORT_EVERY_ROW + cv::SortFlags::SORT_ASCENDING );
+        auto vecVecCol = CalcUtils::matToVector<uchar> ( matCol );
+        auto vecVecSorted = CalcUtils::matToVector<uchar> ( matSorted );
+        double dMaxAvg = cv::mean ( cv::Mat ( matSorted, cv::Rect( matSorted.cols - DATA_LEN, 0, DATA_LEN, 1) ) )[0];
+        double dMinAvg = cv::mean ( cv::Mat ( matSorted, cv::Rect (0, 0, DATA_LEN, 1) ) )[0];
+        pstRpy->vecBigPatternAbsMtfV.push_back ( ToFloat ( dMaxAvg - dMinAvg ) / PR_MAX_GRAY_LEVEL );
+    }
+
+    for ( int col = 0; col < vecMat[1].cols - 1; ++ col ) {
+        cv::Mat matRow ( vecMat[1], cv::Rect ( col, 0, 1, vecMat[1].rows ) );
+        cv::Mat matSorted;
+        cv::sort ( matRow, matSorted, cv::SortFlags::SORT_EVERY_COLUMN + cv::SortFlags::SORT_ASCENDING );
+        
+        double dMaxAvg = cv::mean ( cv::Mat ( matSorted, cv::Rect( 0, matSorted.rows - DATA_LEN, 1, DATA_LEN) ) )[0];
+        double dMinAvg = cv::mean ( cv::Mat ( matSorted, cv::Rect (0, 0, 1, DATA_LEN) ) )[0];
+        pstRpy->vecBigPatternAbsMtfH.push_back ( ToFloat ( dMaxAvg - dMinAvg ) / PR_MAX_GRAY_LEVEL );
+    }
+    const int SAMPLE_FREQUENCY = 1;
+    float fFrequency1 = 0.f, fFrequency2 = 0.f;
+    //Calculate frequency
+    fFrequency1 = CalcUtils::calcFrequency ( cv::Mat ( vecMat[2], cv::Rect ( 0, 5, vecMat[2].cols, 1 ) ) );
+    cv::Mat matTt1 = CalcUtils::intervals<float> ( 1.f, 1.f, ToFloat ( vecMat[2].cols ) );
+    matTt1 = matTt1.reshape ( 1, 1 );
+    cv::Mat matXX1 =   CalcUtils::sin<float>( matTt1 * 2 * CV_PI * fFrequency1 );
+    matXX1.push_back ( CalcUtils::cos<float>( matTt1 * 2 * CV_PI * fFrequency1 ) );
+    matXX1.push_back ( cv::Mat (cv::Mat::ones ( 1, matXX1.cols, CV_32FC1 ) ) );
+    cv::transpose ( matXX1, matXX1 );
+    cv::Mat matPattern3Float;
+    vecMat[2].convertTo ( matPattern3Float, CV_32FC1 );
+    for ( int row = 0; row < vecMat[2].rows; ++ row ) {
+        cv::Mat matYY( matPattern3Float, cv::Rect ( 0, row, matPattern3Float.cols, 1 ) );
+        cv::transpose ( matYY, matYY );
+        cv::Mat matK;
+        cv::solve ( matXX1, matYY, matK, cv::DecompTypes::DECOMP_SVD );
+        float A = 2.f * sqrt ( matK.at<float>(0) * matK.at<float>(0) + matK.at<float>(1) * matK.at<float>(1) );
+        pstRpy->vecSmallPatternAbsMtfV.push_back ( A / PR_MAX_GRAY_LEVEL );
+    }
+
+    //Calculate MTF for pattern 4.
+    cv::Mat matPattern4Float;
+    vecMat[3].convertTo ( matPattern4Float, CV_32FC1 );
+    cv::Mat matCol ( matPattern4Float, cv::Rect ( matPattern4Float.cols / 2, 0, 1, matPattern4Float.rows ) ), matColT;
+    cv::transpose ( matCol, matColT );
+    fFrequency2 = CalcUtils::calcFrequency ( matColT );
+    cv::Mat matTt2 = CalcUtils::intervals<float>(1.f, 1.f, ToFloat ( matPattern4Float.rows ) );
+    matTt2 = matTt2.reshape ( 1, 1 );
+    cv::Mat matXX2 =   CalcUtils::sin<float>( matTt2 * 2 * CV_PI * fFrequency2 );
+    matXX2.push_back ( CalcUtils::cos<float>( matTt2 * 2 * CV_PI * fFrequency2 ) );
+    matXX2.push_back ( cv::Mat (cv::Mat::ones ( 1, matXX2.cols, CV_32FC1 ) ) );
+    cv::transpose ( matXX2, matXX2 );
+    for ( int col = 0; col < matPattern4Float.cols; ++ col ) {
+        cv::Mat matYY ( matPattern4Float, cv::Rect ( col, 0, 1, matPattern4Float.rows ) );
+        cv::Mat matK;
+        cv::solve ( matXX1, matYY, matK, cv::DecompTypes::DECOMP_SVD );
+        float A = 2.f * sqrt ( matK.at<float>(0) * matK.at<float>(0) + matK.at<float>(1) * matK.at<float>(1) );
+        pstRpy->vecSmallPatternAbsMtfH.push_back ( A / PR_MAX_GRAY_LEVEL );
+    }
+    pstRpy->fBigPatternAbsMtfV   = CalcUtils::mean ( pstRpy->vecBigPatternAbsMtfV );
+    pstRpy->fBigPatternAbsMtfH   = CalcUtils::mean ( pstRpy->vecBigPatternAbsMtfH );
+    pstRpy->fSmallPatternAbsMtfV = CalcUtils::mean ( pstRpy->vecSmallPatternAbsMtfV );
+    pstRpy->fSmallPatternAbsMtfH = CalcUtils::mean ( pstRpy->vecSmallPatternAbsMtfH );
+    pstRpy->fSmallPatternRelMtfV = pstRpy->fSmallPatternAbsMtfV / pstRpy->fBigPatternAbsMtfV;
+    pstRpy->fSmallPatternRelMtfH = pstRpy->fSmallPatternAbsMtfH / pstRpy->fBigPatternAbsMtfH;
+
+    FINISH_LOGCASE;
+    MARK_FUNCTION_END_TIME;
+    pstRpy->enStatus = VisionStatus::OK;
     return pstRpy->enStatus;
 }
 

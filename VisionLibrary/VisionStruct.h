@@ -881,12 +881,12 @@ struct PR_CALIB_3D_HEIGHT_CMD {
         fRemoveHarmonicWaveK(0.f),
         fBaseStartAvgPhase(0),
         fMinIntensityDiff(3.f),
-        fMinAvgIntensity(3.f),
+        fMinAvgIntensity(1.5f),
         nBlockStepCount(4),
-        fBlockStepHeight(1.f),        
+        fBlockStepHeight(1.f),
         nResultImgGridRow(8),
         nResultImgGridCol(8),
-        szMeasureWinSize (40, 40) {}
+        szMeasureWinSize(40, 40) {}
     VectorOfMat             vecInputImgs;
     bool                    bEnableGaussianFilter;
     bool                    bReverseSeq;            //Change the image sequence.
@@ -911,6 +911,8 @@ struct PR_CALIB_3D_HEIGHT_RPY {
     VectorOfMat             vecMatStepSurface;      //The regression surface of the steps. Its size should be nBlockStepCount + 1.
     VectorOfFloat           vecStepPhaseSlope;      //5 slopes of the phase-step fitting lines.
     VectorOfVectorOfFloat   vecVecStepPhaseDiff;    //The actual phase and the fitting line difference.
+    cv::Mat                 matDivideStepIndex;     //Denote each pixel belong to which step. The type is CV_8SC1, can be positive or negative.
+    cv::Mat                 matPhase;               //The unwrapped phase.
     cv::Mat                 matDivideStepResultImg; //Use auto threshold to divide each step of the phase image. This result image can show to user confirm if the auto threshold is working correctly.
     cv::Mat                 matResultImg;
 };
@@ -934,13 +936,38 @@ struct PR_COMB_3D_CALIB_RPY {
     VectorOfVectorOfFloat   vecVecStepPhaseDiff;
 };
 
+struct PR_INTEGRATE_3D_CALIB_CMD {
+    PR_INTEGRATE_3D_CALIB_CMD() :
+        nResultImgGridRow(10),
+        nResultImgGridCol(10),
+        szMeasureWinSize(40, 40) {}
+    struct SINGLE_CALIB_DATA {
+        cv::Mat             matPhase;
+        cv::Mat             matDivideStepIndex;
+    };
+    using CALIB_DATA_VECTOR = std::vector<SINGLE_CALIB_DATA>;
+    CALIB_DATA_VECTOR       vecCalibData;
+    cv::Mat                 matTopSurfacePhase;
+    float                   fTopSurfaceHeight;
+    Int32                   nResultImgGridRow;
+    Int32                   nResultImgGridCol;
+    cv::Size                szMeasureWinSize;       //The window size in the center of grid to measure the height.
+};
+
+struct PR_INTEGRATE_3D_CALIB_RPY {
+    VisionStatus            enStatus;
+    cv::Mat                 matIntegratedK;         //The 12 parameters to calculate height. They are K1~K10 and P1, P2. H = (Phase + P1*Phase^2 + P2*Phase^3) ./ (K(1)*x1.^3 + K(2)*y1.^3 + K(3)*x1.^2.*y1 + K(4)*x1.*y1.^2 + K(5)*x1.^2 + K(6)*y1.^2 + K(7)*x1.*y1 + K(8)*x1 + K(9)*y1 + K(10))
+    cv::Mat                 matOrder3CurveSurface;  //The regression 3 order curve surface to convert phase to height. It is calculated by K(1)*x1.^3 + K(2)*y1.^3 + K(3)*x1.^2.*y1 + K(4)*x1.*y1.^2 + K(5)*x1.^2 + K(6)*y1.^2 + K(7)*x1.*y1 + K(8)*x1 + K(9)*y1 + K(10)
+    VectorOfMat             vecMatResultImg;
+};
+
 struct PR_CALC_3D_HEIGHT_CMD {
     PR_CALC_3D_HEIGHT_CMD() :
         bEnableGaussianFilter(true),
         bReverseSeq(true),
         fRemoveHarmonicWaveK(0.f),
         fMinIntensityDiff(3.f),
-        fMinAvgIntensity(3.f) {}
+        fMinAvgIntensity(1.5f) {}
     VectorOfMat             vecInputImgs;
     bool                    bEnableGaussianFilter;
     bool                    bReverseSeq;            //Change the image sequence.
@@ -950,7 +977,10 @@ struct PR_CALC_3D_HEIGHT_CMD {
     cv::Mat                 matThickToThinStripeK;  //The factor between thick stripe and thin stripe.
     cv::Mat                 matBaseSurface;
     float                   fBaseStartAvgPhase;     //The average phase of the top-left corner of the thick stripe. It is used to constrain the object's phase within -pi~pi of base phase.
-    cv::Mat                 matPhaseToHeightK;      //The factor to convert phase to height.
+    cv::Mat                 matPhaseToHeightK;      //The factor to convert phase to height. This is the single group of image calibration result.
+    //Below 2 parameters are result of PR_Integrate3DCalib, they are calibrated from positive, negative and H = 5mm surface phase. If these 2 parameters are used, then matPhaseToHeightK will be ignored.
+    cv::Mat                 matIntegratedK;          //The 12 parameters to calculate height. They are K1~K10 and P1, P2. H = (Phase + P1*Phase^2 + P2*Phase^3) ./ (K(1)*x1.^3 + K(2)*y1.^3 + K(3)*x1.^2.*y1 + K(4)*x1.*y1.^2 + K(5)*x1.^2 + K(6)*y1.^2 + K(7)*x1.*y1 + K(8)*x1 + K(9)*y1 + K(10))
+    cv::Mat                 matOrder3CurveSurface;  //The regression 3 order curve surface to convert phase to height. It is calculated by K(1)*x1.^3 + K(2)*y1.^3 + K(3)*x1.^2.*y1 + K(4)*x1.*y1.^2 + K(5)*x1.^2 + K(6)*y1.^2 + K(7)*x1.*y1 + K(8)*x1 + K(9)*y1 + K(10)
 };
 
 struct PR_CALC_3D_HEIGHT_RPY {
@@ -975,18 +1005,42 @@ struct PR_CALC_3D_HEIGHT_DIFF_RPY {
     float                   fHeightDiff;
 };
 
-//Calculate the optics modulation transfer function.
+//Calculate the system optics modulation transfer function.
+//The system is from DLP->DLP Optics->Camera Optics->Camera
 struct PR_CALC_MTF_CMD {
+    PR_CALC_MTF_CMD() : fMagnitudeOfDLP ( 161 ) {}
     VectorOfMat             vecInputImgs;
     float                   fMagnitudeOfDLP;        //The setted magnitude of DLP. The captured image magnitude divide the setted maganitude is the MTF result.
 };
 
 struct PR_CALC_MTF_RPY {
     VisionStatus            enStatus;
-    VectorOfVectorOfFloat   vevVecAbsMtfH;          //The absolute modulation transfer function in horizontal direction.
-    VectorOfVectorOfFloat   vevVecRelMtfH;          //The relative modulation transfer function in horizontal direction.
-    VectorOfVectorOfFloat   vevVecAbsMtfV;          //The absolute modulation transfer function in vertical direction.
-    VectorOfVectorOfFloat   vevVecRelMtfV;          //The relative modulation transfer function in vertical direction.
+    VectorOfVectorOfFloat   vecVecAbsMtfH;          //The absolute modulation transfer function in horizontal direction.
+    VectorOfVectorOfFloat   vecVecRelMtfH;          //The relative modulation transfer function in horizontal direction.
+    VectorOfVectorOfFloat   vecVecAbsMtfV;          //The absolute modulation transfer function in vertical direction.
+    VectorOfVectorOfFloat   vecVecRelMtfV;          //The relative modulation transfer function in vertical direction.
+};
+
+struct PR_CALC_CAMERA_MTF_CMD {
+    cv::Mat                 matInputImg;
+    cv::Rect                rectVBigPatternROI;
+    cv::Rect                rectHBigPatternROI;
+    cv::Rect                rectVSmallPatternROI;
+    cv::Rect                rectHSmallPatternROI;
+};
+
+struct PR_CALC_CAMERA_MTF_RPY {
+    VisionStatus            enStatus;
+    float                   fBigPatternAbsMtfV;     //The big pattern absolute modulation transfer function in vertical direction.
+    float                   fBigPatternAbsMtfH;     //The big pattern absolute modulation transfer function in horizontal direction.
+    float                   fSmallPatternAbsMtfV;   //The small pattern absolute modulation transfer function in vertical direction.
+    float                   fSmallPatternAbsMtfH;   //The small pattern absolute modulation transfer function in horizontal direction.
+    float                   fSmallPatternRelMtfV;   //The small pattern relative modulation transfer function in vertical direction.
+    float                   fSmallPatternRelMtfH;   //The small pattern relative modulation transfer function in horizontal direction.
+    VectorOfFloat           vecBigPatternAbsMtfV;
+    VectorOfFloat           vecBigPatternAbsMtfH;
+    VectorOfFloat           vecSmallPatternAbsMtfV;
+    VectorOfFloat           vecSmallPatternAbsMtfH;
 };
 
 //Calculate the pattern distortion(PD). Use the texture stripe in two directions to find out the system distortion.

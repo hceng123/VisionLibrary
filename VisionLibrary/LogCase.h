@@ -766,6 +766,30 @@ private:
     const String _strKeyStatus              = "Status";
 };
 
+class LogCaseCalcCameraMTF : public LogCase
+{
+public:
+    explicit LogCaseCalcCameraMTF(const String &strPath, bool bReplay = false) : LogCase(strPath, bReplay) {}
+    VisionStatus WriteCmd(const PR_CALC_CAMERA_MTF_CMD *const pstCmd);
+    VisionStatus WriteRpy(const PR_CALC_CAMERA_MTF_RPY *const pstRpy);
+    virtual VisionStatus RunLogCase() override;
+    virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
+    static String StaticGetFolderPrefix();
+private:
+    const String _strKeyVBigPatternROI      = "VBigPatternROI";
+    const String _strKeyHBigPatternROI      = "HBigPatternROI";
+    const String _strKeyVSmallPatternROI    = "VSmallPatternROI";
+    const String _strKeyHSmallPatternROI    = "HSmallPatternROI";
+
+    const String _strKeyStatus              = "Status";
+    const String _strKeyBigPatternAbsMtfV   = "BigPatternAbsMtfV";
+    const String _strKeyBigPatternAbsMtfH   = "BigPatternAbsMtfH";
+    const String _strKeySmallPatternAbsMtfV = "SmallPatternAbsMtfV";
+    const String _strKeySmallPatternAbsMtfH = "SmallPatternAbsMtfH";
+    const String _strKeySmallPatternRelMtfV = "SmallPatternRelMtfV";
+    const String _strKeySmallPatternRelMtfH = "SmallPatternRelMtfH";
+};
+
 }
 }
 #endif

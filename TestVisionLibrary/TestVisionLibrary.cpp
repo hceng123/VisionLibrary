@@ -578,7 +578,7 @@ int _tmain(int argc, _TCHAR* argv[])
     PR_GetVersion(&stVersionInfo);
     std::cout << "VisionLibrary Version: " << stVersionInfo.chArrVersion << std::endl;
 
-    PR_SetDebugMode ( PR_DEBUG_MODE::LOG_FAIL_CASE );
+    PR_SetDebugMode ( PR_DEBUG_MODE::DISABLED );
     //TestTemplate();
     //TestInspDevice();
     //TestRunLogcase();
@@ -628,14 +628,18 @@ int _tmain(int argc, _TCHAR* argv[])
     //TestSrchDie();
 
     //TestCalib3dBase();
-    TestCalib3DHeight();
+    //TestCalib3DHeight();
     //TestComb3DCalib();
     //TestCalc3DHeight();
+    //TestIntegrate3DCalib();
+    TestCalc3DHeightNew();
 
     //TestCalcMTF();
 
     //PR_RunLogCase("D:/xsg/Logcase/Calib3DBase_2017_09_10_21_13_02_836.logcase");
     //TestCalcPD();
+
+    //TestCalcCameraMTF();
 
     PR_DumpTimeLog("./Vision/Time.log");
     std::cout << "Press any key to exist." << std::endl;

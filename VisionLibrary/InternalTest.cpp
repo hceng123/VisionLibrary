@@ -167,11 +167,40 @@ static void TestCountOfNan() {
     std::cout << "Count of Nan: " << CalcUtils::countOfNan(matNan) << std::endl;
 }
 
+static void TestFindLargestKItems() {
+    std::cout << std::endl << "------------------------------------------------";
+    std::cout << std::endl << "FIND LARGEST K ITEMS REGRESSION TEST #1 STARTING";
+    std::cout << std::endl << "------------------------------------------------";
+    std::cout << std::endl;
+    std::vector<float> vecFloat{
+        NAN, 0.8f, 0.2f, 0.3f,
+        0.3f, 0.5f, 0.3f, 0.4f,
+        0.9f, -0.8f, 0.6f, 0.5f,
+        1.8f, 1.9f, 0.7f, NAN
+    };
+    cv::Mat matInput ( vecFloat ), matResult;
+    matInput = matInput.reshape ( 1, 4 );
+    std::cout << "INPUT: " << std::endl;
+    printfMat<float> ( matInput );
+
+    std::vector<size_t> vecIndex;
+    auto vecValues = CalcUtils::FindLargestKItems<float> ( matInput, 5, vecIndex );
+    std::cout << "Largest Item Values: " << std::endl;
+    for ( const auto value : vecValues )
+        std::cout << value << " ";
+    std::cout << std::endl;
+    std::cout << "Largest Item Index: " << std::endl;
+    for ( const auto value : vecIndex )
+        std::cout << value << " ";
+    std::cout << std::endl;
+}
+
 void InternalTest() {
     TestCalcUtilsCumSum();
     TestCalcUtilsInternals();
     TestCalcUtilsMeshGrid();
     TestCountOfNan();
+    TestFindLargestKItems();
 }
 
 }

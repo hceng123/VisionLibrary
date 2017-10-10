@@ -61,6 +61,16 @@ public:
             cv::Point_<T>(rectInput.x + ( 1.f + fScale ) * rectInput.width, rectInput.y + ( 1.f + fScale ) * rectInput.height ) );
     }
 
+    template<typename Tp>
+    static inline Tp mean (const std::vector<Tp> &vecInput) {
+        if ( vecInput.empty() )
+            return 0;
+        Tp sum = 0;
+        for ( auto value : vecInput )
+            sum += value;
+        return sum / vecInput.size();
+    }
+
     //Calculate deviation in one pass. The algorithm is get from https://www.strchr.com/standard_deviation_in_one_pass
     template<typename T>
     static double calcStdDeviation(std::vector<T> vecValue)
@@ -222,8 +232,8 @@ public:
     // To heapify a subtree rooted with node i which is
     // an index in arr[]. n is size of heap
     template<typename T>
-    static void heapifyMinToRoot ( std::vector<T> &vecInput, const int n, const int i, std::vector<int> &vecIndex ) {
-        int smallestIndex = i;  // Initialize largest as root
+    static void heapifyMinToRoot ( std::vector<T> &vecInput, const int n, const int i, std::vector<size_t> &vecIndex ) {
+        int smallestIndex = i;  // Initialize smallest as root
         int l = 2 * i + 1;  // left = 2*i + 1
         int r = 2 * i + 2;  // right = 2*i + 2
 
@@ -247,7 +257,7 @@ public:
     }
 
     template<typename T>
-    static std::vector<T> SelectLargestKItems ( const cv::Mat &matInput, const size_t K, std::vector<int> &vecIndex ) {
+    static std::vector<T> FindLargestKItems ( const cv::Mat &matInput, const int K, std::vector<size_t> &vecIndex ) {
         if ( K > matInput.total () )  {
             return matInput;
         }
@@ -264,19 +274,19 @@ public:
         }
 
         for ( int K1 = K / 2 - 1; K1 >= 0; -- K1 )
-            heapifyMinToRoot ( vecResult, K, K1, vecIndex );
+            heapifyMinToRoot ( vecResult, ToInt32 ( K ), K1, vecIndex );
 
-        for (size_t i = index; i < matInput.total (); ++i) {
-            if (matInput.at<T> ( i ) == matInput.at<T> ( i ) && matInput.at<T> ( i ) > vecResult[0]) {
-                vecResult[0] = matInput.at<T> ( i );
-                vecIndex[0] = i;
+        for (int i = index; i < ToInt32 ( matInput.total() ); ++i) {
+            if ( matInput.at<T> ( i ) == matInput.at<T> ( i ) && matInput.at<T> ( i ) > vecResult.front() ) {
+                vecResult.front() = matInput.at<T> ( i );
+                vecIndex.front() = i;
 
-                for (int K1 = K / 2 - 1; K1 >= 0; --K1)
-                    heapifyMinToRoot ( vecResult, K, K1, vecIndex );
+                for (int K1 = K / 2 - 1; K1 >= 0; -- K1 )
+                    heapifyMinToRoot ( vecResult, ToInt32 ( K ), K1, vecIndex );
             }
         }
 
-        for (int k = K - 1; k >= 0; --k)
+        for (int k = K - 1; k >= 0; -- k)
         {
             std::swap ( vecResult[k], vecResult[0] );
             std::swap ( vecIndex[k], vecIndex[0] );
@@ -304,6 +314,8 @@ public:
     static cv::Point2f getContourCtr ( const VectorOfPoint &contour );
     static cv::Mat diff ( const cv::Mat &matInput, int nRecersiveTime, int nDimension );
     static int countOfNan ( const cv::Mat &matInput );
+    static void findMinMaxCoord(const VectorOfPoint &vecPoints, int &xMin, int &xMax, int &yMin, int &yMax);
+    static float calcFrequency(const cv::Mat &matInput);
 };
 
 }

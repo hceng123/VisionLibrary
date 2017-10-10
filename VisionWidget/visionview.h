@@ -64,7 +64,7 @@ public:
         PICK_COLOR,
     };
 
-    enum class DISPLAY_SOURCE
+    enum DISPLAY_SOURCE
     {
         ORIGINAL,
         INTERMEDIATE,       //Test Image Source
@@ -132,7 +132,7 @@ private:
     cv::Point                       _ptLeftClickEndPos;
     VISION_VIEW_STATE               _enState;
     TEST_VISION_STATE               _enTestVisionState;
-    cv::Mat                         _matArray[ToInt32(DISPLAY_SOURCE::SIZE)];
+    cv::Mat                         _matArray[DISPLAY_SOURCE::SIZE];
     DISPLAY_SOURCE                  _enDisplaySource;
 	cv::Mat             			_matDisplay;
     cv::Mat                         _matMaskForDisplay;

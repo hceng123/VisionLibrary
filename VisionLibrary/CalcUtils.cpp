@@ -257,5 +257,39 @@ float CalcUtils::calcPointToContourDist(const cv::Point &ptInput, const VectorOf
     return ToInt32 ( matInput.total() ) - nCount;
 }
 
+/*static*/ void CalcUtils::findMinMaxCoord(const VectorOfPoint &vecPoints, int &xMin, int &xMax, int &yMin, int &yMax) {
+    xMin = yMin = std::numeric_limits<int>::max();
+    xMax = yMax = std::numeric_limits<int>::min();
+    for ( const auto &point : vecPoints ) {
+        if ( point.x > xMax )
+            xMax = point.x;
+        if ( point.x < xMin )
+            xMin = point.x;
+        if ( point.y > yMax )
+            yMax = point.y;
+        if ( point.y < yMin )
+            yMin = point.y;
+    }
+}
+
+/*static*/ float CalcUtils::calcFrequency(const cv::Mat &matInput) {
+    assert ( matInput.rows == 1 );
+    const float SAMPLE_FREQUENCY = 1.f;
+    cv::Mat matRowFloat;
+    matInput.convertTo ( matRowFloat, CV_32FC1 );
+    int m = ToInt32 ( pow ( 2, std::floor ( log2 ( matRowFloat.cols ) ) ) );
+    matRowFloat = cv::Mat ( matRowFloat, cv::Range::all (), cv::Range ( 0, m ) );
+    cv::Mat matDft;
+    cv::dft ( matRowFloat, matDft, cv::DftFlags::DCT_ROWS );
+    auto vecVecRowFloat = CalcUtils::matToVector<float> ( matRowFloat );
+    cv::Mat matAbsDft = cv::abs ( matDft );
+    matAbsDft = cv::Mat ( matAbsDft, cv::Rect ( 1, 0, matAbsDft.cols - 1, 1 ) ).clone ();
+    auto vecVecDft = CalcUtils::matToVector<float> ( matAbsDft );
+    auto maxElement = std::max_element ( vecVecDft[0].begin (), vecVecDft[0].end () );
+    int nIndex = ToInt32 ( std::distance ( vecVecDft[0].begin (), maxElement ) ) + 1;
+    float fFrequency = (float)nIndex * SAMPLE_FREQUENCY / m;
+    return fFrequency;
+}
+
 }
 }

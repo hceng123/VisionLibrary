@@ -164,6 +164,14 @@ VisionStatus GetErrorInfo(VisionStatus enStatus, PR_GET_ERROR_INFO_RPY *pstRpy)
         _snprintf(pstRpy->achErrorStr, PR_MAX_ERR_STR_LEN, "The H 0 step is not found.");
         pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::INSP_STATUS;
         break;
+    case VisionStatus::CAN_NOT_FIND_MTF_PATTERN:
+        _snprintf(pstRpy->achErrorStr, PR_MAX_ERR_STR_LEN, "Can not find MTF pattern in the given ROI.");
+        pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::INSP_STATUS;
+        break;
+    case VisionStatus::MTF_PATTERN_TOO_SMALL:
+        _snprintf(pstRpy->achErrorStr, PR_MAX_ERR_STR_LEN, "The MTF pattern is too small.");
+        pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::INSP_STATUS;
+        break;
     default:
         _snprintf(pstRpy->achErrorStr, PR_MAX_ERR_STR_LEN, "Undefined error code!");
         pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::FATAL_ERROR;

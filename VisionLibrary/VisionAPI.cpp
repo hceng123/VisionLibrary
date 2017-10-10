@@ -389,6 +389,13 @@ PR_FUNCTION_ENTRY
 PR_FUNCTION_EXIT
 }
 
+VisionAPI VisionStatus PR_Integrate3DCalib(const PR_INTEGRATE_3D_CALIB_CMD *const pstCmd, PR_INTEGRATE_3D_CALIB_RPY *const pstRpy)
+{
+//PR_FUNCTION_ENTRY
+    return VisionAlgorithm::integrate3DCalib  ( pstCmd, pstRpy );
+//PR_FUNCTION_EXIT
+}
+
 VisionAPI VisionStatus PR_Calc3DHeight(const PR_CALC_3D_HEIGHT_CMD *const pstCmd, PR_CALC_3D_HEIGHT_RPY *const pstRpy)
 {
 PR_FUNCTION_ENTRY
@@ -403,17 +410,24 @@ PR_FUNCTION_ENTRY
 PR_FUNCTION_EXIT
 }
 
+VisionAPI VisionStatus PR_CalcCameraMTF(const PR_CALC_CAMERA_MTF_CMD *const pstCmd, PR_CALC_CAMERA_MTF_RPY *const pstRpy)
+{
+PR_FUNCTION_ENTRY
+    return VisionAlgorithm::calcCameraMTF ( pstCmd, pstRpy );
+PR_FUNCTION_EXIT
+}
+
 VisionAPI VisionStatus PR_CalcMTF(const PR_CALC_MTF_CMD *const pstCmd, PR_CALC_MTF_RPY *const pstRpy)
 {
 PR_FUNCTION_ENTRY
-    return VisionAlgorithm::calcMTF  ( pstCmd, pstRpy );
+    return VisionAlgorithm::calcMTF ( pstCmd, pstRpy );
 PR_FUNCTION_EXIT
 }
 
 VisionAPI VisionStatus PR_CalcPD(const PR_CALC_PD_CMD *const pstCmd, PR_CALC_PD_RPY *const pstRpy)
 {
 PR_FUNCTION_ENTRY
-    return VisionAlgorithm::calcPD  ( pstCmd, pstRpy );
+    return VisionAlgorithm::calcPD ( pstCmd, pstRpy );
 PR_FUNCTION_EXIT
 }
 

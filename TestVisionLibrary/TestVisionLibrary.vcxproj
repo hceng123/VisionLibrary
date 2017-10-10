@@ -184,6 +184,7 @@
     <ClCompile Include="TestInspChip.cpp" />
     <ClCompile Include="TestInspLead.cpp" />
     <ClCompile Include="TestMatchTemplate.cpp" />
+    <ClCompile Include="TestMTF.cpp" />
     <ClCompile Include="TestSrchObj.cpp" />
     <ClCompile Include="TestVisionLibrary.cpp" />
   </ItemGroup>

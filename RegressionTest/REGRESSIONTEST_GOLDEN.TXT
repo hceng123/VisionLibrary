@@ -110,6 +110,19 @@ COUNT OF NAN TEST #1 STARTING
 ------------------------------------------
 Count of Nan: 8
 
+------------------------------------------------
+FIND LARGEST K ITEMS REGRESSION TEST #1 STARTING
+------------------------------------------------
+INPUT: 
+-1.#J 0.80 0.20 0.30 
+0.30 0.50 0.30 0.40 
+0.90 -0.80 0.60 0.50 
+1.80 1.90 0.70 -1.#J 
+Largest Item Values: 
+1.9 1.8 0.9 0.8 0.7 
+Largest Item Index: 
+13 12 8 1 14 
+
 ------------------------------------------
 INSPECT DEVICE REGRESSION TEST #1 STARTING
 ------------------------------------------
@@ -149,6 +162,13 @@ MATCH TEMPLATE REGRESSION TEST #3 STARTING
 ------------------------------------------
 Match template status 0
 Match template result 1154.5, 727.5
+Match template angle 0
+
+------------------------------------------
+MATCH TEMPLATE REGRESSION TEST #4 STARTING
+------------------------------------------
+Match template status 0
+Match template result 909.5, 1169.5
 Match template angle 0
 
 ------------------------------------------------
@@ -494,7 +514,7 @@ CALIBRATE CAMERA REGRESSION TEST #1 STARTING
 Calibrate camera status 0
 Camera resolution (23.76, 23.78)
 Camera distoration coefficients:
--6.9 -0.3 -0.0 -0.0 -0.0 
+-7.0 -0.2 -0.0 -0.0 -0.0 
 
 ---------------------------------------------
 CALIBRATE CAMERA REGRESSION TEST #2 STARTING
@@ -532,6 +552,14 @@ Calibrate camera status 0
 Camera resolution (15.89, 15.89)
 Camera distoration coefficients:
 -2.2 0.0 -0.0 0.0 0.0 
+
+---------------------------------------------
+CALIBRATE CAMERA REGRESSION TEST #7 STARTING
+---------------------------------------------
+Calibrate camera status 0
+Camera resolution (41.04, 41.04)
+Camera distoration coefficients:
+-0.0 -0.0 0.0 -0.0 0.9 
 
 ---------------------------------------------
 AUTO LOCATE LEAD REGRESSION TEST #1 STARTING
@@ -807,22 +835,22 @@ BaseStartAvgPhase: 1.62
 ---------------------------------------------
 CALIB 3D HEIGHT TEST #1 STARTING
 ---------------------------------------------
-PR_Calc3DHeight status 0
+PR_Calib3DHeight status 0
 PhaseToHeightK: 
 0.0 
 0.0 
 1.9 
 Fetched StepPhase: 
--6.84 -5.74 -7.02 -6.65 -7.93 
--4.56 -3.86 -4.68 -4.44 -5.26 
+-6.83 -5.74 -7.02 -6.65 -7.93 
+-4.56 -3.85 -4.68 -4.44 -5.27 
 -2.29 -1.94 -2.35 -2.23 -2.64 
 -0.00 -0.01 0.00 -0.00 0.01 
 Step-Phase slope: 
 -2.28 -1.92 -2.34 -2.22 -2.64 
 StepPhaseDiff: 
-0.00 0.01 0.00 0.00 -0.00 
--0.00 -0.02 0.00 0.00 0.02 
--0.01 -0.03 -0.01 -0.01 0.00 
+0.00 0.01 0.00 0.01 0.00 
+-0.00 -0.02 0.00 -0.00 0.02 
+-0.01 -0.03 -0.01 -0.01 -0.00 
 -0.00 -0.01 0.00 -0.00 0.01 
 
 ---------------------------------------------

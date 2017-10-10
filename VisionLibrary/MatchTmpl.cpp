@@ -147,34 +147,8 @@ MatchTmpl::~MatchTmpl ()
 
 /*static*/ VisionStatus MatchTmpl::matchTemplate(const cv::Mat &mat, const cv::Mat &matTmpl, bool bSubPixelRefine, PR_OBJECT_MOTION enMotion, cv::Point2f &ptResult, float &fRotation, float &fCorrelation)
 {
-    cv::Mat matResultImg;
-    const int match_method = CV_TM_SQDIFF;
+    ptResult = myMatchTemplate ( mat, matTmpl );
     fRotation = 0.f;
-
-    /// Create the result matrix
-    int result_cols = mat.cols - matTmpl.cols + 1;
-    int result_rows = mat.rows - matTmpl.rows + 1;
-
-    matResultImg.create(result_rows, result_cols, CV_32FC1);
-
-    // Do the Matching and Normalize
-    cv::matchTemplate(mat, matTmpl, matResultImg, match_method);
-    //cv::normalize ( matResultImg, matResultImg, 0, 1, cv::NORM_MINMAX, -1, cv::Mat() );
-
-    /// Localizing the best match with minMaxLoc
-    double minVal; double maxVal;
-    cv::Point minLoc, maxLoc, matchLoc;
-
-    cv::minMaxLoc ( matResultImg, &minVal, &maxVal, &minLoc, &maxLoc, cv::Mat() );
-
-    /// For SQDIFF and SQDIFF_NORMED, the best matches are lower values. For all the other methods, the higher the better
-    if (match_method == CV_TM_SQDIFF || match_method == CV_TM_SQDIFF_NORMED)
-        matchLoc = minLoc;
-    else
-        matchLoc = maxLoc;
-
-    ptResult.x = (float)matchLoc.x;
-    ptResult.y = (float)matchLoc.y;
     if ( bSubPixelRefine ) {
         try {
             refineSrchTemplate ( mat, matTmpl, enMotion, ptResult, fRotation, fCorrelation );
@@ -187,6 +161,63 @@ MatchTmpl::~MatchTmpl ()
     ptResult.x += (float)( matTmpl.cols / 2 + 0.5f );
     ptResult.y += (float)( matTmpl.rows / 2 + 0.5f );
     return VisionStatus::OK;
+}
+
+/*static*/ cv::Point MatchTmpl::myMatchTemplate(const cv::Mat &mat, const cv::Mat &matTmpl)
+{
+    cv::Mat matResult;
+    const int match_method = CV_TM_SQDIFF;
+
+    /// Create the result matrix
+    int result_cols = mat.cols - matTmpl.cols + 1;
+    int result_rows = mat.rows - matTmpl.rows + 1;
+
+    matResult.create(result_rows, result_cols, CV_32FC1);
+
+    /// Do the Matching and Normalize
+    cv::matchTemplate ( mat, matTmpl, matResult, match_method );
+
+    /// Localizing the best match with minMaxLoc
+    double minVal; double maxVal;
+    cv::Point minLoc, maxLoc, matchLoc;
+
+    /// For SQDIFF and SQDIFF_NORMED, the best matches are lower values. For all the other methods, the higher the better
+    if ( match_method == CV_TM_SQDIFF || match_method == CV_TM_SQDIFF_NORMED ) {
+        cv::minMaxLoc(matResult, &minVal, nullptr, &minLoc, nullptr );
+        matchLoc = minLoc;
+    }
+    else {
+        cv::minMaxLoc(matResult, nullptr, &maxVal, nullptr, &maxLoc );
+        matchLoc = maxLoc;
+    }
+
+    return matchLoc;
+}
+
+/*static*/ cv::Point MatchTmpl::matchTemplateRecursive(const cv::Mat &matInput, const cv::Mat &matTmpl ) {
+    if ( matTmpl.cols * matTmpl.rows > 4e4 ) {
+        cv::Mat matInputPyr, matTmplPyr;
+        auto interpFlag = cv::InterpolationFlags::INTER_AREA;
+        cv::resize( matInput, matInputPyr, cv::Size(), 0.5, 0.5, interpFlag );
+        cv::resize( matTmpl,  matTmplPyr,  cv::Size(), 0.5, 0.5, interpFlag );
+
+        cv::Point ptResult = matchTemplateRecursive ( matInputPyr, matTmplPyr );
+        ptResult.x *= 2;
+        ptResult.y *= 2;
+
+        int nStartX = MAX ( -ptResult.x, -2 );
+        int nStartY = MAX ( -ptResult.y, -2 );
+        int nEndX = MIN ( matInput.cols - ptResult.x - matTmpl.cols, 2 );
+        int nEndY = MIN ( matInput.rows - ptResult.y - matTmpl.rows, 2 );
+        cv::Mat matROI ( matInput, cv::Rect ( ptResult.x + nStartX, ptResult.y + nStartY, matTmpl.cols + ( nEndX - nStartX ), matTmpl.rows + ( nEndY - nStartY ) ) );
+        
+        auto subResult = myMatchTemplate ( matROI, matTmpl );
+        ptResult.x += (subResult.x + nStartX);
+        ptResult.y += (subResult.y + nStartY);
+        return ptResult;
+    }else {
+        return myMatchTemplate ( matInput, matTmpl );
+    }
 }
 
 }
