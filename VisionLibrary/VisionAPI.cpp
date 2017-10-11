@@ -86,12 +86,17 @@ VisionAPI VisionStatus PR_FreeRecord(Int32 nRecordId)
     return RecordManager::getInstance()->free(nRecordId);
 }
 
-VisionAPI VisionStatus  PR_FreeAllRecord()
+VisionAPI VisionStatus PR_FreeAllRecord()
 {
-    return RecordManager::getInstance()->freeAllRecord();
+    try {
+        return RecordManager::getInstance ()->freeAllRecord ();
+    }catch (std::exception &e) {
+        WriteLog ( e.what () );
+        return VisionStatus::OPENCV_EXCEPTION;
+    }
 }
 
-VisionAPI VisionStatus  PR_LrnDevice(PR_LRN_DEVICE_CMD *pstLrnDeviceCmd, PR_LRN_DEVICE_RPY *pstLrnDeivceRpy)
+VisionAPI VisionStatus PR_LrnDevice(PR_LRN_DEVICE_CMD *pstLrnDeviceCmd, PR_LRN_DEVICE_RPY *pstLrnDeivceRpy)
 {
     try
     {
@@ -124,11 +129,9 @@ VisionAPI void PR_SetDebugMode(PR_DEBUG_MODE enDebugMode)
 
 VisionAPI VisionStatus PR_RunLogCase(const std::string &strPath)
 {
-    try
-    {
+    try {
         return VisionAlgorithm::runLogCase( strPath);
-    }catch(std::exception &e)
-    {
+    }catch(std::exception &e) {
         WriteLog(e.what());
         return VisionStatus::OPENCV_EXCEPTION;
     }
@@ -137,7 +140,7 @@ VisionAPI VisionStatus PR_RunLogCase(const std::string &strPath)
 VisionAPI VisionStatus PR_SrchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd, PR_SRCH_FIDUCIAL_MARK_RPY *pstRpy)
 {
 PR_FUNCTION_ENTRY
-        return VisionAlgorithm::srchFiducialMark ( pstCmd, pstRpy );
+    return VisionAlgorithm::srchFiducialMark ( pstCmd, pstRpy );
 PR_FUNCTION_EXIT
 }
 

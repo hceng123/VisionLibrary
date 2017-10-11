@@ -579,6 +579,7 @@ int _tmain(int argc, _TCHAR* argv[])
     std::cout << "VisionLibrary Version: " << stVersionInfo.chArrVersion << std::endl;
 
     PR_SetDebugMode ( PR_DEBUG_MODE::DISABLED );
+
     //TestTemplate();
     //TestInspDevice();
     //TestRunLogcase();
@@ -642,7 +643,7 @@ int _tmain(int argc, _TCHAR* argv[])
     //TestCalcCameraMTF();
 
     PR_DumpTimeLog("./Vision/Time.log");
-    std::cout << "Press any key to exist." << std::endl;
+    std::cout << "Press any key to exit." << std::endl;
     getchar();
 
     return 0;

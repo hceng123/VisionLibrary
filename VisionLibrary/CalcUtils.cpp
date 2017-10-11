@@ -228,28 +228,6 @@ float CalcUtils::calcPointToContourDist(const cv::Point &ptInput, const VectorOf
     return ptCenter;
 }
 
-/*static*/ cv::Mat CalcUtils::diff ( const cv::Mat &matInput, int nRecersiveTime, int nDimension ) {
-    const int DIFF_ON_ROW = 1;
-    const int DIFF_ON_COL = 2;
-    assert ( DIFF_ON_COL == nDimension || DIFF_ON_ROW == nDimension );
-    if ( nRecersiveTime > 1 )
-        return diff ( diff ( matInput, nRecersiveTime - 1, nDimension ), 1, nDimension );
-
-    cv::Mat matKernel;
-    if ( DIFF_ON_COL == nDimension )
-        matKernel = (cv::Mat_<float>(1, 2) << -1, 1);
-    else if ( DIFF_ON_ROW == nDimension )
-        matKernel = (cv::Mat_<float>(2, 1) << -1, 1);
-
-    cv::Mat matResult;
-    cv::filter2D(matInput, matResult, -1, matKernel, cv::Point(-1, -1), 0.0, cv::BORDER_CONSTANT);
-    if ( DIFF_ON_COL == nDimension )
-        return cv::Mat ( matResult, cv::Rect(1, 0, matResult.cols - 1, matResult.rows ) ).clone();
-    else if (  DIFF_ON_ROW == nDimension )
-        return cv::Mat ( matResult, cv::Rect(0, 1, matResult.cols, matResult.rows - 1 ) ).clone();
-    return cv::Mat();
-}
-
 /*static*/ int CalcUtils::countOfNan(const cv::Mat &matInput) {
     cv::Mat matNan;
     cv::compare ( matInput, matInput, matNan, cv::CmpTypes::CMP_EQ );

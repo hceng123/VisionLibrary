@@ -34,23 +34,24 @@ Unwrap::~Unwrap ()
     MARK_FUNCTION_START_TIME;
 
     const float OneCycle = 2.f * ONE_HALF_CYCLE;
+    const float PI_WITH_MARGIN = ToFloat ( 0.9999 * CV_PI );
 
     cv::Mat matDB1 = cv::Mat::zeros ( matPhaseDx.size(), CV_8SC1 );
     cv::Mat matDB2 = cv::Mat::zeros ( matPhaseDy.size(), CV_8SC1 );
 
     for ( int i = 0; i < matPhaseDx.total(); ++ i ) {
         auto value = matPhaseDx.at<DATA_TYPE>( i );
-        if ( value > 0.9999 * CV_PI )
+        if ( value > PI_WITH_MARGIN )
             matDB1.at<char> ( i ) = -1;
-        else if ( value < - 0.9999 * CV_PI )
+        else if ( value < - PI_WITH_MARGIN )
             matDB1.at<char>( i ) = 1;
     }
 
     for ( int i = 0; i < matPhaseDy.total(); ++ i ) {
         auto value = matPhaseDy.at<DATA_TYPE>( i );
-        if ( value > 0.9999 * CV_PI )
+        if ( value > PI_WITH_MARGIN )
             matDB2.at<char> ( i ) = -1;
-        else if ( value < - 0.9999 * CV_PI )
+        else if ( value < - PI_WITH_MARGIN )
             matDB2.at<char>( i ) = 1;
     }
 
@@ -61,7 +62,7 @@ Unwrap::~Unwrap ()
 
     cv::Mat matDD = matD1 + matD2 + matD3 + matD4;
 
-    TimeLog::GetInstance()->addTimeLog("Clone takes take: ", stopWatch.Span() );
+    TimeLog::GetInstance()->addTimeLog("Prepare and sum take: ", stopWatch.Span() );
 
     cv::Mat matPosIndex, matNegIndex;
     cv::compare ( matDD, cv::Scalar::all( 0.9999), matPosPole, cv::CmpTypes::CMP_GT );
@@ -469,25 +470,27 @@ static inline cv::Mat calcOrder5BezierCoeff ( const cv::Mat &matU ) {
     TimeLog::GetInstance()->addTimeLog( "2 cv::phase ", stopWatch.Span() );
 
     //The opencv cv::phase function return result is 0~2*PI, but matlab is -PI~PI, so here need to do a conversion.
-    cv::Mat matOverPi;
-    cv::compare ( matAlpha, cv::Scalar::all ( CV_PI ), matOverPi, cv::CmpTypes::CMP_GT );
-    cv::subtract ( matAlpha, cv::Scalar::all ( 2.f * CV_PI ), matAlpha, matOverPi );
-    
-    cv::compare ( matBeta, cv::Scalar::all ( CV_PI ), matOverPi, cv::CmpTypes::CMP_GT );
-    cv::subtract ( matBeta, cv::Scalar::all ( 2.f * CV_PI ), matBeta, matOverPi );
+    //cv::Mat matOverPi;
+    //cv::compare ( matAlpha, cv::Scalar::all ( CV_PI ), matOverPi, cv::CmpTypes::CMP_GT );
+    //cv::subtract ( matAlpha, cv::Scalar::all ( 2.f * CV_PI ), matAlpha, matOverPi );
+    //
+    //cv::compare ( matBeta, cv::Scalar::all ( CV_PI ), matOverPi, cv::CmpTypes::CMP_GT );
+    //cv::subtract ( matBeta, cv::Scalar::all ( 2.f * CV_PI ), matBeta, matOverPi );
 
-    TimeLog::GetInstance()->addTimeLog( "2 cv::compare and cv::subtract ", stopWatch.Span() );
+    //TimeLog::GetInstance()->addTimeLog( "2 cv::compare and cv::subtract ", stopWatch.Span() );
 
     const auto ROWS = matAlpha.rows;
     const auto COLS = matAlpha.cols;
 
     cv::Mat matPhaseDx = CalcUtils::diff ( matAlpha, 1, 2 ); //The size of dxPhase is [ROWS, COLS - 1]
-    cv::Mat matPhaseDy = CalcUtils::diff ( matAlpha, 1, 1 ); //The size of dyPhase is [ROWS - 1, COLS]    
+    cv::Mat matPhaseDy = CalcUtils::diff ( matAlpha, 1, 1 ); //The size of dyPhase is [ROWS - 1, COLS]
+
+    TimeLog::GetInstance()->addTimeLog( "2 diff take. ", stopWatch.Span() );
     
     cv::Mat matPosPole, matNegPole, matResidue;
     matResidue = _getResidualPoint ( matPhaseDx, matPhaseDy, matPosPole, matNegPole );
 
-    TimeLog::GetInstance()->addTimeLog( "_getResidualPoint. ", stopWatch.Span() );
+    TimeLog::GetInstance()->addTimeLog( "_getResidualPoint take. ", stopWatch.Span() );
 
     VectorOfPoint vecPosPole, vecNegPole;
     cv::findNonZero ( matPosPole, vecPosPole );
@@ -537,7 +540,7 @@ static inline cv::Mat calcOrder5BezierCoeff ( const cv::Mat &matU ) {
     auto vecVecBeta  = CalcUtils::matToVector<DATA_TYPE>(matBeta);
 #endif
     matAlpha = matAlpha * pstCmd->matThickToThinStripeK.at<DATA_TYPE>(0, 0) + pstCmd->matThickToThinStripeK.at<DATA_TYPE>(1, 0);    
-    matBeta = _phaseUnwrapSurfaceByRefer ( matBeta, matAlpha );
+    matBeta = _phaseUnwrapSurfaceByRefer ( matBeta, matAlpha, matAvgUnderTolIndex );
 
     cv::Mat matZP1 = pstCmd->matBaseSurface;
 #ifdef _DEBUG
@@ -547,8 +550,8 @@ static inline cv::Mat calcOrder5BezierCoeff ( const cv::Mat &matU ) {
 #endif
     matBeta  = matBeta  - matZP1;
 
-    auto matH = matBeta.clone();
-    matH.setTo ( NAN, matAvgUnderTolIndex );
+    auto matH = matBeta;
+    //matH.setTo ( NAN, matAvgUnderTolIndex );
 
     stopWatch.Start();
     cv::medianBlur ( matH, matH, 5 );
@@ -750,31 +753,16 @@ static inline cv::Mat calcOrder5BezierCoeff ( const cv::Mat &matU ) {
     return matPhaseResult;
 }
 
-/*static*/ cv::Mat Unwrap::_phaseUnwrapSurfaceByRefer(const cv::Mat &matPhase, const cv::Mat &matRef ) {
+/*static*/ cv::Mat Unwrap::_phaseUnwrapSurfaceByRefer(const cv::Mat &matPhase, const cv::Mat &matRef, const cv::Mat &matNan ) {
     MARK_FUNCTION_START_TIME;
 
     const float OneCycle = 2.f * ONE_HALF_CYCLE;
     cv::Mat matPhaseResult = matPhase.clone();
-    cv::Mat matNan = CalcUtils::getNanMask ( matRef );
     matPhaseResult.setTo ( NAN, matNan );
 
     cv::Mat matErr = matPhaseResult - matRef;
-    matErr /= OneCycle;
-    auto matN = CalcUtils::floor<DATA_TYPE>(matErr);
-#ifdef _DEBUG
-    auto vecVecN = CalcUtils::matToVector<DATA_TYPE> ( matN );
-#endif
-    matPhaseResult = matPhaseResult - matN * OneCycle;
-
-    matErr = matPhaseResult - matRef;
-    
-    // Same as matlab idx = find( abs(pErr) > 0.9999*Th );
-    cv::Mat matPosOverHalfCycleIndex, matNegOverHalfCycleIndex;
-    cv::compare ( matErr,   0.9999 * ONE_HALF_CYCLE, matPosOverHalfCycleIndex, cv::CmpTypes::CMP_GT );
-    cv::compare ( matErr, - 0.9999 * ONE_HALF_CYCLE, matNegOverHalfCycleIndex, cv::CmpTypes::CMP_LT );
-    // Same as matlab Phase(idx) = Phase(idx) - sign(pErr(idx))*2*Th;
-    cv::subtract ( matPhaseResult, OneCycle, matPhaseResult, matPosOverHalfCycleIndex );
-    cv::add      ( matPhaseResult, OneCycle, matPhaseResult, matNegOverHalfCycleIndex );
+    cv::Mat matNn = CalcUtils::floor<DATA_TYPE>( matErr / OneCycle + 0.5 );
+    matPhaseResult = matPhaseResult - matNn * OneCycle;
 
     MARK_FUNCTION_END_TIME;
     return matPhaseResult;
