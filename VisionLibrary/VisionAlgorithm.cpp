@@ -1088,23 +1088,28 @@ VisionStatus VisionAlgorithm::inspDevice(PR_INSP_DEVICE_CMD *pstInspDeviceCmd, P
     if ( matSrchROI.channels() > 1 )
         cv::cvtColor ( matSrchROI, matSrchROI, cv::COLOR_BGR2GRAY );
 
+    cv::Mat matTmpl = ptrRecord->getTmpl();
     if ( PR_MATCH_TMPL_ALGORITHM::SQUARE_DIFF == pstCmd->enAlgorithm ) {
         float fCorrelation;
-        pstRpy->enStatus = MatchTmpl::matchTemplate ( matSrchROI, ptrRecord->getTmpl(), pstCmd->bSubPixelRefine, pstCmd->enMotion, pstRpy->ptObjPos, pstRpy->fRotation, fCorrelation );
+        pstRpy->enStatus = MatchTmpl::matchTemplate ( matSrchROI, matTmpl, pstCmd->bSubPixelRefine, pstCmd->enMotion, pstRpy->ptObjPos, pstRpy->fRotation, fCorrelation );
         pstRpy->ptObjPos.x += pstCmd->rectSrchWindow.x;
         pstRpy->ptObjPos.y += pstCmd->rectSrchWindow.y;
         pstRpy->fMatchScore = fCorrelation * ConstToPercentage;
     }else if ( PR_MATCH_TMPL_ALGORITHM::HIERARCHICAL_EDGE == pstCmd->enAlgorithm ) {
-        cv::Point ptResult = MatchTmpl::matchByRecursionEdge ( matSrchROI, ptrRecord->getTmpl(), ptrRecord->getEdgeMask() );
+        cv::Point ptResult = MatchTmpl::matchByRecursionEdge ( matSrchROI, matTmpl, ptrRecord->getEdgeMask() );
         pstRpy->ptObjPos.x = ptResult.x + ptrRecord->getTmpl().cols / 2 + 0.5f + pstCmd->rectSrchWindow.x;
         pstRpy->ptObjPos.y = ptResult.y + ptrRecord->getTmpl().rows / 2 + 0.5f + pstCmd->rectSrchWindow.y;
         pstRpy->fRotation = 0.f;
+        cv::Mat matImgROI( matSrchROI, cv::Rect ( ptResult, matTmpl.size() ) );
+        pstRpy->fMatchScore = MatchTmpl::calcCorrelation ( matTmpl, matImgROI ) * ConstToPercentage;
         pstRpy->enStatus = VisionStatus::OK;
     }else if ( PR_MATCH_TMPL_ALGORITHM::HIERARCHICAL_AREA == pstCmd->enAlgorithm ) {
         cv::Point ptResult = MatchTmpl::matchTemplateRecursive ( matSrchROI, ptrRecord->getTmpl() );
         pstRpy->ptObjPos.x = ptResult.x + ptrRecord->getTmpl().cols / 2 + 0.5f + pstCmd->rectSrchWindow.x;
         pstRpy->ptObjPos.y = ptResult.y + ptrRecord->getTmpl().rows / 2 + 0.5f + pstCmd->rectSrchWindow.y;
         pstRpy->fRotation = 0.f;
+        cv::Mat matImgROI( matSrchROI, cv::Rect ( ptResult, matTmpl.size() ) );
+        pstRpy->fMatchScore = MatchTmpl::calcCorrelation ( matTmpl, matImgROI ) * ConstToPercentage;
         pstRpy->enStatus = VisionStatus::OK;
     }
 

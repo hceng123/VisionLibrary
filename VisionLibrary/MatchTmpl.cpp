@@ -156,6 +156,9 @@ MatchTmpl::~MatchTmpl ()
         catch (std::exception) {
             return VisionStatus::OPENCV_EXCEPTION;
         }
+    }else {
+        cv::Mat matImgROI ( mat, cv::Rect ( ptResult, matTmpl.size() ) );
+        fCorrelation = calcCorrelation ( matTmpl, matImgROI );
     }
 
     ptResult.x += (float)( matTmpl.cols / 2 + 0.5f );
@@ -218,6 +221,35 @@ MatchTmpl::~MatchTmpl ()
     }else {
         return myMatchTemplate ( matInput, matTmpl );
     }
+}
+
+/*static*/ float MatchTmpl::calcCorrelation(const cv::Mat &matT, const cv::Mat &matI, const cv::Mat &matMaskT, const cv::Mat &matMaskI) {
+    assert ( matT.size() == matI.size() );
+
+    cv::Mat matFloatT, matFloatI;
+    matT.convertTo ( matFloatT, CV_32FC1 );
+    matI.convertTo ( matFloatI, CV_32FC1 );
+    cv::Scalar tmpMean, tmpStd, imgMean, imgStd;
+    cv::meanStdDev ( matFloatT, tmpMean, tmpStd, matMaskT);
+    cv::meanStdDev ( matFloatI, imgMean, imgStd, matMaskI);    
+
+    cv::Mat tmpSubtractedMean, imgSubtractedMean;
+    cv::subtract ( matFloatT, tmpMean, tmpSubtractedMean, matMaskT );//zero-mean template
+    cv::subtract ( matFloatI, imgMean, imgSubtractedMean, matMaskI );//zero-mean input    
+
+    auto nTmpComparePoints = matT.total();
+    if ( ! matMaskT.empty() )
+        nTmpComparePoints = cv::countNonZero ( matMaskT );
+    const double tmpNorm = std::sqrt ( nTmpComparePoints * ( tmpStd.val[0] ) * ( tmpStd.val[0]) );
+
+    auto nImgComparePoints = matI.total();
+    if ( ! matMaskI.empty() )
+        nImgComparePoints = cv::countNonZero ( matMaskI );
+    const double imgNorm = std::sqrt ( nImgComparePoints * ( imgStd.val[0] ) * ( imgStd.val[0]) );
+
+    const double correlation = tmpSubtractedMean.dot( imgSubtractedMean );
+    float rho = ToFloat ( correlation/(imgNorm*tmpNorm) );
+    return rho;
 }
 
 }

@@ -30,97 +30,42 @@ Unwrap::~Unwrap ()
 /*static*/ const float Unwrap::REMOVE_HEIGHT_NOSIE_RATIO    =  0.995f;
 /*static*/ const float Unwrap::LOW_BASE_PHASE               = - ToFloat( CV_PI );
 
-/*static*/ cv::Mat Unwrap::_getResidualPoint(const cv::Mat &matInput, cv::Mat &matPosPole, cv::Mat &matNegPole) {
+/*static*/ cv::Mat Unwrap::_getResidualPoint(const cv::Mat &matPhaseDx, const cv::Mat &matPhaseDy, cv::Mat &matPosPole, cv::Mat &matNegPole) {
     MARK_FUNCTION_START_TIME;
 
     const float OneCycle = 2.f * ONE_HALF_CYCLE;
-    cv::Mat matKernelY = (cv::Mat_<DATA_TYPE>(2, 1) << -1, 1);
-    cv::Mat matKernelX = (cv::Mat_<DATA_TYPE>(1, 2) << -1, 1);
-    cv::Mat matDx, matDy, matD1, matD2, matD3, matD4;
-    cv::filter2D(matInput, matDx, -1, matKernelX, cv::Point(-1, -1), 0.0, cv::BORDER_CONSTANT);
-    matDx = cv::Mat(matDx, cv::Rect(1, 0, matDx.cols - 1, matDx.rows));
 
-    cv::filter2D(matInput, matDy, -1, matKernelY, cv::Point(-1, -1), 0.0, cv::BORDER_CONSTANT);
-    matDy = cv::Mat(matDy, cv::Rect(0, 1, matDy.cols, matDy.rows - 1));
+    cv::Mat matDB1 = cv::Mat::zeros ( matPhaseDx.size(), CV_8SC1 );
+    cv::Mat matDB2 = cv::Mat::zeros ( matPhaseDy.size(), CV_8SC1 );
 
-    TimeLog::GetInstance()->addTimeLog("2 cv::filter2D take: ", stopWatch.Span() );
+    for ( int i = 0; i < matPhaseDx.total(); ++ i ) {
+        auto value = matPhaseDx.at<DATA_TYPE>( i );
+        if ( value > 0.9999 * CV_PI )
+            matDB1.at<char> ( i ) = -1;
+        else if ( value < - 0.9999 * CV_PI )
+            matDB1.at<char>( i ) = 1;
+    }
 
-    matD1 =  cv::Mat(matDx, cv::Rect(0, 0, matDx.cols,     matDx.rows - 1)).clone();
-    matD2 =  cv::Mat(matDy, cv::Rect(1, 0, matDy.cols - 1, matDy.rows    )).clone();
-    matD3 = -cv::Mat(matDx, cv::Rect(0, 1, matDx.cols,     matDx.rows - 1)).clone();
-    matD4 = -cv::Mat(matDy, cv::Rect(0, 0, matDy.cols - 1, matDy.rows    )).clone();
+    for ( int i = 0; i < matPhaseDy.total(); ++ i ) {
+        auto value = matPhaseDy.at<DATA_TYPE>( i );
+        if ( value > 0.9999 * CV_PI )
+            matDB2.at<char> ( i ) = -1;
+        else if ( value < - 0.9999 * CV_PI )
+            matDB2.at<char>( i ) = 1;
+    }
+
+    cv::Mat matD1 =  cv::Mat(matDB1, cv::Rect(0, 0, matDB1.cols,     matDB1.rows - 1) );
+    cv::Mat matD2 =  cv::Mat(matDB2, cv::Rect(1, 0, matDB2.cols - 1, matDB2.rows    ) );
+    cv::Mat matD3 = -cv::Mat(matDB1, cv::Rect(0, 1, matDB1.cols,     matDB1.rows - 1) );
+    cv::Mat matD4 = -cv::Mat(matDB2, cv::Rect(0, 0, matDB2.cols - 1, matDB2.rows    ) );
+
+    cv::Mat matDD = matD1 + matD2 + matD3 + matD4;
 
     TimeLog::GetInstance()->addTimeLog("Clone takes take: ", stopWatch.Span() );
 
-    //cv::Mat matD(4, matD1.total(), matD1.type() );
-    //cv::Mat matROIOfD1(matD, cv::Rect(0, 0, matD.cols, 1) );
-    //matD1.reshape(1, 1).copyTo(matROIOfD1);
-    //cv::Mat matROIOfD2(matD, cv::Rect(0, 1, matD.cols, 1) );
-    //matD2.reshape(1, 1).copyTo(matROIOfD2);
-    //cv::Mat matROIOfD3(matD, cv::Rect(0, 2, matD.cols, 1) );
-    //matD3.reshape(1, 1).copyTo(matROIOfD3);
-    //cv::Mat matROIOfD4(matD, cv::Rect(0, 3, matD.cols, 1) );
-    //matD4.reshape(1, 1).copyTo(matROIOfD4);
-    cv::Mat matArry[] = { matD1.reshape(1, 1), matD2.reshape(1, 1) , matD3.reshape(1, 1), matD4.reshape(1, 1) };
-    cv::Mat matD;
-    cv::vconcat ( matArry, 4, matD );
-    //matD.reserve(4);
-    //matD.push_back ( matD1.reshape(1, 1) );
-    //matD.push_back ( matD2.reshape(1, 1) );
-    //matD.push_back ( matD3.reshape(1, 1) );
-    //matD.push_back ( matD4.reshape(1, 1) );
-
-    TimeLog::GetInstance()->addTimeLog("Combine to D take: ", stopWatch.Span() );
-    //cv::transpose ( matD, matD );    
-
-    //{
-    //cv::Mat matPosIndex = cv::Mat::zeros ( matD.size(), CV_8UC1 );
-    //cv::Mat matNegIndex = cv::Mat::zeros ( matD.size(), CV_8UC1 );
-
-    //cv::compare ( matD, cv::Scalar::all( 0.9999 * CV_PI), matPosIndex, cv::CmpTypes::CMP_GT );
-    //cv::compare ( matD, cv::Scalar::all(-0.9999 * CV_PI), matNegIndex, cv::CmpTypes::CMP_LT );
-
-    //// Work as ds(idx) = ds(idx) - sign(d(idx))*pi*2;
-    //cv::subtract ( matD, OneCycle, matD, matPosIndex );
-    //cv::add      ( matD, OneCycle, matD, matNegIndex );
-    //}
-    for ( int row = 0; row < matD.rows; ++ row )
-    for ( int col = 0; col < matD.cols; ++ col ) {
-        if ( matD.at<DATA_TYPE>(row, col) > 0.9999 * CV_PI )
-            matD.at<DATA_TYPE>(row, col) -= OneCycle;
-        else if ( matD.at<DATA_TYPE>(row, col) < - 0.9999 * CV_PI )
-            matD.at<DATA_TYPE>(row, col) += OneCycle;
-    }
-
-    TimeLog::GetInstance()->addTimeLog("cv::subtract and cv::add takes take: ", stopWatch.Span() );
-
-    cv::Mat matSum;
-    cv::reduce ( matD, matSum, 0, CV_REDUCE_SUM );
-
-    TimeLog::GetInstance()->addTimeLog("cv::reduce takes take: ", stopWatch.Span() );
-
-#ifdef _DEBUG
-    //cv::Mat matSumT;
-    //cv::transpose ( matSum, matSumT );
-    auto vevVecSum = CalcUtils::matToVector<DATA_TYPE>( matSum );
-#endif
-
-    //matPosIndex.setTo(0);
-    //matNegIndex.setTo(0);
     cv::Mat matPosIndex, matNegIndex;
-    cv::compare ( matSum, cv::Scalar::all( 0.9999 * CV_PI * 2.f), matPosIndex, cv::CmpTypes::CMP_GT );
-    cv::compare ( matSum, cv::Scalar::all(-0.9999 * CV_PI * 2.f), matNegIndex, cv::CmpTypes::CMP_LT );
-
-    TimeLog::GetInstance()->addTimeLog("cv::compare takes take: ", stopWatch.Span() );
-
-    int nSizeOfResultMat = ( matInput.rows - 1 ) * ( matInput.cols - 1 );
-    //cv::Mat matResult = cv::Mat::zeros ( nSizeOfResultMat, 1, CV_8SC1 );
-    //matResult.setTo( cv::Scalar::all(1), matPosIndex );
-    //matResult.setTo( cv::Scalar::all(-1), matNegIndex );
-    //matResult = matResult.reshape ( 1, matInput.rows - 1 );
-
-    matPosPole = matPosIndex.reshape(1, matInput.rows - 1 );
-    matNegPole = matNegIndex.reshape(1, matInput.rows - 1 );
+    cv::compare ( matDD, cv::Scalar::all( 0.9999), matPosPole, cv::CmpTypes::CMP_GT );
+    cv::compare ( matDD, cv::Scalar::all(-0.9999), matNegPole, cv::CmpTypes::CMP_LT );
 
     MARK_FUNCTION_END_TIME;
     return cv::Mat();
@@ -422,7 +367,7 @@ inline std::vector<size_t> sort_indexes(const std::vector<T> &v) {
     return matPhaseResult;
 }
 
-static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
+static inline cv::Mat calcOrder5BezierCoeff ( const cv::Mat &matU ) {
     cv::Mat matUSubBy1Pow1 = 1.f - matU;
     cv::Mat matUSubBy1Pow2 = matUSubBy1Pow1.mul ( matUSubBy1Pow1 );
     cv::Mat matUSubBy1Pow3 = matUSubBy1Pow2.mul ( matUSubBy1Pow1 );
@@ -450,8 +395,8 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
     cv::Mat matZReshape = matZ.reshape ( 1, matZ.rows * matZ.cols );
     cv::Mat matXReshape = matX.reshape ( 1, 1 );
     cv::Mat matYReshape = matY.reshape ( 1, 1 );
-    cv::Mat matP1 = calcBezierCoeff ( matU );
-    cv::Mat matP2 = calcBezierCoeff ( matV );
+    cv::Mat matP1 = calcOrder5BezierCoeff ( matU );
+    cv::Mat matP2 = calcOrder5BezierCoeff ( matV );
     cv::Mat matXX;
     for ( int i = 0; i < BEZIER_RANK; ++ i )
     for ( int j = 0; j < BEZIER_RANK; ++ j ) {
@@ -469,8 +414,8 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
     CalcUtils::meshgrid<float> ( 0, 1.f / ( cols - 1 ), 1.f, 0, 1.f / ( rows - 1 ), 1.f, matU, matV );
     matU = matU.reshape ( 1, 1 );
     matV = matV.reshape ( 1, 1 );
-    cv::Mat matP1 = calcBezierCoeff ( matU );
-    cv::Mat matP2 = calcBezierCoeff ( matV );
+    cv::Mat matP1 = calcOrder5BezierCoeff ( matU );
+    cv::Mat matP2 = calcOrder5BezierCoeff ( matV );
     cv::Mat matXX;
     for ( int i = 0; i < BEZIER_RANK; ++ i )
     for ( int j = 0; j < BEZIER_RANK; ++ j ) {
@@ -513,32 +458,34 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
     }
     cv::Mat mat00 = vecConvertedImgs[2] - vecConvertedImgs[0];
     cv::Mat mat01 = vecConvertedImgs[3] - vecConvertedImgs[1];
-    mat00.convertTo ( mat00, CV_32FC1 );
-    mat01.convertTo ( mat01, CV_32FC1 );
 
     cv::Mat mat10 = vecConvertedImgs[6] - vecConvertedImgs[4];
     cv::Mat mat11 = vecConvertedImgs[7] - vecConvertedImgs[5];
-    mat10.convertTo ( mat10, CV_32FC1 );
-    mat11.convertTo ( mat11, CV_32FC1 );
 
     cv::Mat matAlpha, matBeta;
     cv::phase ( -mat00, mat01, matAlpha );
+    cv::phase ( -mat10, mat11, matBeta );
+
+    TimeLog::GetInstance()->addTimeLog( "2 cv::phase ", stopWatch.Span() );
+
     //The opencv cv::phase function return result is 0~2*PI, but matlab is -PI~PI, so here need to do a conversion.
     cv::Mat matOverPi;
     cv::compare ( matAlpha, cv::Scalar::all ( CV_PI ), matOverPi, cv::CmpTypes::CMP_GT );
     cv::subtract ( matAlpha, cv::Scalar::all ( 2.f * CV_PI ), matAlpha, matOverPi );
-
-    cv::phase ( -mat10, mat11, matBeta );
+    
     cv::compare ( matBeta, cv::Scalar::all ( CV_PI ), matOverPi, cv::CmpTypes::CMP_GT );
     cv::subtract ( matBeta, cv::Scalar::all ( 2.f * CV_PI ), matBeta, matOverPi );
 
-    TimeLog::GetInstance()->addTimeLog( "cv::phase, cv::compare and cv::subtract ", stopWatch.Span() );
+    TimeLog::GetInstance()->addTimeLog( "2 cv::compare and cv::subtract ", stopWatch.Span() );
 
     const auto ROWS = matAlpha.rows;
     const auto COLS = matAlpha.cols;
+
+    cv::Mat matPhaseDx = CalcUtils::diff ( matAlpha, 1, 2 ); //The size of dxPhase is [ROWS, COLS - 1]
+    cv::Mat matPhaseDy = CalcUtils::diff ( matAlpha, 1, 1 ); //The size of dyPhase is [ROWS - 1, COLS]    
     
     cv::Mat matPosPole, matNegPole, matResidue;
-    matResidue = _getResidualPoint ( matAlpha, matPosPole, matNegPole );
+    matResidue = _getResidualPoint ( matPhaseDx, matPhaseDy, matPosPole, matNegPole );
 
     TimeLog::GetInstance()->addTimeLog( "_getResidualPoint. ", stopWatch.Span() );
 
@@ -560,7 +507,7 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
     cv::imwrite("./data/BranchCut_1.png", matBranchCut );
 #endif
 
-    matAlpha = _phaseUnwrapSurfaceTrk ( matAlpha, matBranchCut );
+    matAlpha = _phaseUnwrapSurfaceTrk ( matAlpha, matPhaseDx, matPhaseDy, matBranchCut );
 
     cv::Mat matSnoop(matAlpha, cv::Rect(0, 0, PHASE_SNOOP_WIN_SIZE, PHASE_SNOOP_WIN_SIZE ) );
     auto fStartAvgPhase = ToFloat ( cv::mean ( matSnoop )[0] );
@@ -626,7 +573,7 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
     pstRpy->enStatus = VisionStatus::OK;
 }
 
-/*static*/ cv::Mat Unwrap::_phaseUnwrapSurfaceTrk ( const cv::Mat &matPhase, const cv::Mat &matBranchCut ) {
+/*static*/ cv::Mat Unwrap::_phaseUnwrapSurfaceTrk ( const cv::Mat &matPhase, const cv::Mat &dxPhase, const cv::Mat &dyPhase, const cv::Mat &matBranchCut ) {
     MARK_FUNCTION_START_TIME;
 
     int ROWS = matPhase.rows;
@@ -635,9 +582,6 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
     cv::Mat matPhaseResult;
     const float OneCycle = 2.f * ONE_HALF_CYCLE;
     cv::Mat matUnwrapped = matBranchCut.clone();
-
-    cv::Mat dyPhase = CalcUtils::diff ( matPhase, 1, 1 ); //The size of dyPhase is [ROWS - 1, COLS]
-    cv::Mat dxPhase = CalcUtils::diff ( matPhase, 1, 2 ); //The size of dxPhase is [ROWS, COLS - 1]
 
     //1. Unwrap from left to right, but to accelerate the operation, transpose the matrix first,
     //and do it from top to bottom, it is the same effect as from left to right on original phase.
@@ -1445,8 +1389,8 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
     matU = matU.reshape ( 1, 1 );
     matV = matV.reshape ( 1, 1 );
 
-    cv::Mat matP1 = calcBezierCoeff ( matU );
-    cv::Mat matP2 = calcBezierCoeff ( matV );
+    cv::Mat matP1 = calcOrder5BezierCoeff ( matU );
+    cv::Mat matP2 = calcOrder5BezierCoeff ( matV );
     cv::Mat matXX;
     for ( int i = 0; i < BEZIER_RANK; ++ i )
     for ( int j = 0; j < BEZIER_RANK; ++ j ) {

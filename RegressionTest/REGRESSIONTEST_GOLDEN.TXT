@@ -149,6 +149,7 @@ MATCH TEMPLATE REGRESSION TEST #1 STARTING
 Match template status 0
 Match template result 58.3325, 326.75
 Match template angle -8.7274
+Match template score 99.999
 
 ------------------------------------------
 MATCH TEMPLATE REGRESSION TEST #2 STARTING
@@ -156,6 +157,7 @@ MATCH TEMPLATE REGRESSION TEST #2 STARTING
 Match template status 0
 Match template result 1154.5, 727.5
 Match template angle 0
+Match template score 90.9921
 
 ------------------------------------------
 MATCH TEMPLATE REGRESSION TEST #3 STARTING
@@ -163,6 +165,7 @@ MATCH TEMPLATE REGRESSION TEST #3 STARTING
 Match template status 0
 Match template result 1154.5, 727.5
 Match template angle 0
+Match template score 90.9921
 
 ------------------------------------------
 MATCH TEMPLATE REGRESSION TEST #4 STARTING
@@ -170,6 +173,7 @@ MATCH TEMPLATE REGRESSION TEST #4 STARTING
 Match template status 0
 Match template result 909.5, 1169.5
 Match template angle 0
+Match template score 100
 
 ------------------------------------------------
 SEARCH FIDUCIAL MARK REGRESSION TEST #1 STARTING
