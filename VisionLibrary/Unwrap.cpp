@@ -39,21 +39,42 @@ Unwrap::~Unwrap ()
     cv::Mat matDB1 = cv::Mat::zeros ( matPhaseDx.size(), CV_8SC1 );
     cv::Mat matDB2 = cv::Mat::zeros ( matPhaseDy.size(), CV_8SC1 );
 
-    for ( int i = 0; i < matPhaseDx.total(); ++ i ) {
-        auto value = matPhaseDx.at<DATA_TYPE>( i );
-        if ( value > PI_WITH_MARGIN )
-            matDB1.at<char> ( i ) = -1;
-        else if ( value < - PI_WITH_MARGIN )
-            matDB1.at<char>( i ) = 1;
+    //This loop same as matlab code.
+    //idx = find( abs(dxPhase)>0.9999*pi );
+    //db1(idx) = - sign(dxPhase(idx)); 
+    //for ( int i = 0; i < matPhaseDx.total(); ++ i ) {
+    //    auto value = matPhaseDx.at<DATA_TYPE>( i );
+    //    if ( value > PI_WITH_MARGIN )
+    //        matDB1.at<char> ( i ) = -1;
+    //    else if ( value < - PI_WITH_MARGIN )
+    //        matDB1.at<char>( i ) = 1;
+    //}
+    {
+        cv::Mat matPosJump, matNegJump;
+        cv::compare ( matPhaseDx, cv::Scalar::all(  PI_WITH_MARGIN ), matPosJump, cv::CmpTypes::CMP_GT );
+        cv::compare ( matPhaseDx, cv::Scalar::all( -PI_WITH_MARGIN ), matNegJump, cv::CmpTypes::CMP_LT );
+        matDB1.setTo(-1, matPosJump);
+        matDB1.setTo( 1, matNegJump);
+    }    
+    //This loop same as matlab code.
+    //idx = find( abs(dyPhase)>0.9999*pi );
+    //db2(idx) = - sign(dyPhase(idx));
+    //for ( int i = 0; i < matPhaseDy.total(); ++ i ) {
+    //    auto value = matPhaseDy.at<DATA_TYPE>( i );
+    //    if ( value > PI_WITH_MARGIN )
+    //        matDB2.at<char> ( i ) = -1;
+    //    else if ( value < - PI_WITH_MARGIN )
+    //        matDB2.at<char>( i ) = 1;
+    //}
+    {
+        cv::Mat matPosJump, matNegJump;
+        cv::compare ( matPhaseDy, cv::Scalar::all(  PI_WITH_MARGIN ), matPosJump, cv::CmpTypes::CMP_GT );
+        cv::compare ( matPhaseDy, cv::Scalar::all( -PI_WITH_MARGIN ), matNegJump, cv::CmpTypes::CMP_LT );
+        matDB2.setTo(-1, matPosJump);
+        matDB2.setTo( 1, matNegJump);
     }
 
-    for ( int i = 0; i < matPhaseDy.total(); ++ i ) {
-        auto value = matPhaseDy.at<DATA_TYPE>( i );
-        if ( value > PI_WITH_MARGIN )
-            matDB2.at<char> ( i ) = -1;
-        else if ( value < - PI_WITH_MARGIN )
-            matDB2.at<char>( i ) = 1;
-    }
+    TimeLog::GetInstance()->addTimeLog("Prepare take: ", stopWatch.Span() );
 
     cv::Mat matD1 =  cv::Mat(matDB1, cv::Rect(0, 0, matDB1.cols,     matDB1.rows - 1) );
     cv::Mat matD2 =  cv::Mat(matDB2, cv::Rect(1, 0, matDB2.cols - 1, matDB2.rows    ) );
@@ -62,7 +83,7 @@ Unwrap::~Unwrap ()
 
     cv::Mat matDD = matD1 + matD2 + matD3 + matD4;
 
-    TimeLog::GetInstance()->addTimeLog("Prepare and sum take: ", stopWatch.Span() );
+    TimeLog::GetInstance()->addTimeLog("Sum take: ", stopWatch.Span() );
 
     cv::Mat matPosIndex, matNegIndex;
     cv::compare ( matDD, cv::Scalar::all( 0.9999), matPosPole, cv::CmpTypes::CMP_GT );
@@ -591,6 +612,8 @@ static inline cv::Mat calcOrder5BezierCoeff ( const cv::Mat &matU ) {
     cv::Mat matPhaseT;
     cv::transpose ( matPhase, matPhaseT );
 
+    TimeLog::GetInstance()->addTimeLog( "cv::transpose. ", stopWatch.Span() );
+
     cv::Mat matTmpPhase = cv::Mat ( matPhaseT, cv::Rect ( 0, 0, matPhaseT.cols, 1 ) );
     cv::Mat matDp = CalcUtils::diff ( matTmpPhase, 1, 2 );
 
@@ -608,7 +631,10 @@ static inline cv::Mat calcOrder5BezierCoeff ( const cv::Mat &matU ) {
     matDp = cv::repeat ( matDp, matPhase.cols, 1);
 
     cv::Mat matTmp ( matPhaseT, cv::Rect(1, 0, matPhaseT.cols - 1, matPhaseT.rows ) );
+
+    TimeLog::GetInstance()->addTimeLog( "Before cumsum. ", stopWatch.Span() );
     auto matCumSum = CalcUtils::cumsum<DATA_TYPE> ( matDp, 2 );
+    TimeLog::GetInstance()->addTimeLog( "After cumsum. ", stopWatch.Span() );
     matTmp += matCumSum;
 
     //2. Unwrap from top to bottom. Because last step do a transpose, this step need to transpose back.
@@ -761,7 +787,8 @@ static inline cv::Mat calcOrder5BezierCoeff ( const cv::Mat &matU ) {
     matPhaseResult.setTo ( NAN, matNan );
 
     cv::Mat matErr = matPhaseResult - matRef;
-    cv::Mat matNn = CalcUtils::floor<DATA_TYPE>( matErr / OneCycle + 0.5 );
+    cv::Mat matNn =  matErr / OneCycle + 0.5;
+    CalcUtils::floorByRef<DATA_TYPE>( matNn );
     matPhaseResult = matPhaseResult - matNn * OneCycle;
 
     MARK_FUNCTION_END_TIME;

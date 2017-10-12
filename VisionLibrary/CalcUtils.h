@@ -152,9 +152,8 @@ public:
         if( nDimension == 1 )
             cv::transpose ( matResult, matResult );
         for( int row = 0; row < matResult.rows; ++ row )
-        for( int col = 0; col < matResult.cols; ++ col ) {
-            if( col != 0 )
-                matResult.at<_Tp> ( row, col ) += matResult.at<_Tp> ( row, col - 1 );
+        for( int col = 0; col < matResult.cols - 1; ++ col ) {
+            matResult.at<_Tp> ( row, col + 1 ) += matResult.at<_Tp> ( row, col );
         }
         if( nDimension == 1 )
             cv::transpose ( matResult, matResult );
@@ -199,10 +198,19 @@ public:
     template<typename T>
     static inline cv::Mat floor ( const cv::Mat &matInput ) {
         cv::Mat matResult = matInput.clone ();
-        for( int row = 0; row < matInput.rows; ++row )
-        for( int col = 0; col < matInput.cols; ++col )
-            matResult.at<T> ( row, col ) = std::floor ( matResult.at<T> ( row, col ) );
+        for( int i = 0; i < matResult.total(); ++ i ) {
+            T &value = matResult.at<T> ( i );
+            value = std::floor ( value );
+        }
         return matResult;
+    }
+
+    template<typename T>
+    static inline void floorByRef ( cv::Mat &matInOut ) {
+        for( int i = 0; i < matInOut.total(); ++ i ) {
+            T &value = matInOut.at<T> ( i );
+            value = std::floor ( value );
+        }
     }
 
     static inline cv::Mat getNanMask(const cv::Mat &matInput) {
@@ -297,24 +305,24 @@ public:
     }
 
     static inline cv::Mat diff ( const cv::Mat &matInput, int nRecersiveTime, int nDimension ) {
-        const int DIFF_ON_ROW = 1;
-        const int DIFF_ON_COL = 2;
-        assert ( DIFF_ON_COL == nDimension || DIFF_ON_ROW == nDimension );
+        const int DIFF_ON_Y_DIR = 1;
+        const int DIFF_ON_X_DIR = 2;
+        assert ( DIFF_ON_X_DIR == nDimension || DIFF_ON_Y_DIR == nDimension );
         if (nRecersiveTime > 1)
             return diff ( diff ( matInput, nRecersiveTime - 1, nDimension ), 1, nDimension );
 
         cv::Mat matKernel;
-        if (DIFF_ON_COL == nDimension)
+        if (DIFF_ON_X_DIR == nDimension)
             matKernel = (cv::Mat_<float> ( 1, 2 ) << -1, 1);
-        else if (DIFF_ON_ROW == nDimension)
+        else if (DIFF_ON_Y_DIR == nDimension)
             matKernel = (cv::Mat_<float> ( 2, 1 ) << -1, 1);
 
         cv::Mat matResult;
         cv::filter2D ( matInput, matResult, -1, matKernel, cv::Point ( -1, -1 ), 0.0, cv::BORDER_CONSTANT );
-        if (DIFF_ON_COL == nDimension)
-            return cv::Mat ( matResult, cv::Rect ( 1, 0, matResult.cols - 1, matResult.rows ) ).clone ();
-        else if (DIFF_ON_ROW == nDimension)
-            return cv::Mat ( matResult, cv::Rect ( 0, 1, matResult.cols, matResult.rows - 1 ) ).clone ();
+        if (DIFF_ON_X_DIR == nDimension)
+            return cv::Mat ( matResult, cv::Rect ( 1, 0, matResult.cols - 1, matResult.rows ) );
+        else if (DIFF_ON_Y_DIR == nDimension)
+            return cv::Mat ( matResult, cv::Rect ( 0, 1, matResult.cols, matResult.rows - 1 ) );
         return cv::Mat ();
     }
 

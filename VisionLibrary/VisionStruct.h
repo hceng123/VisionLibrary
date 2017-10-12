@@ -558,19 +558,19 @@ struct PR_PICK_COLOR_RPY {
 struct PR_CALIBRATE_CAMERA_CMD {
     PR_CALIBRATE_CAMERA_CMD() : fPatternDist(1.f), fMinTmplMatchScore(90.f) {}
     cv::Mat                 matInputImg;
-    cv::Size                szBoardPattern; // Number of corners per chessboard row and col. szBoardPattern = cv::Size(points_per_row, points_per_col) = cv::Size(columns, rows).
-    float                   fPatternDist;   //The real chess board corner to corner distance. Unit: mm.
+    cv::Size                szBoardPattern;             // Number of corners per chessboard row and col. szBoardPattern = cv::Size(points_per_row, points_per_col) = cv::Size(columns, rows).
+    float                   fPatternDist;               //The real chess board corner to corner distance. Unit: mm.
     float                   fMinTmplMatchScore;
 };
 
 struct PR_CALIBRATE_CAMERA_RPY {
     VisionStatus            enStatus;
-    cv::Mat                 matIntrinsicMatrix; //type: CV_64FC1.
-    cv::Mat                 matExtrinsicMatrix; //type: CV_64FC1.
-    cv::Mat                 matDistCoeffs;      //type: CV_64FC1.
-    double                  dResolutionX;       //Unit: um/pixel.
-    double                  dResolutionY;       //Unit: um/pixel.
-    std::vector<cv::Mat>    vecMatRestoreImage; //The remap matrix to restore image. vector size is 2, the matrix dimension is same as input image.
+    cv::Mat                 matIntrinsicMatrix;         //type: CV_64FC1.
+    cv::Mat                 matExtrinsicMatrix;         //type: CV_64FC1.
+    cv::Mat                 matDistCoeffs;              //type: CV_64FC1.
+    double                  dResolutionX;               //Unit: um/pixel.
+    double                  dResolutionY;               //Unit: um/pixel.
+    std::vector<cv::Mat>    vecMatRestoreImage;         //The remap matrix to restore image. vector size is 2, the matrix dimension is same as input image.
     //Intermediate result.
     cv::Mat                 matCornerPointsImg;
     VectorOfPoint2f         vecImagePoints;
