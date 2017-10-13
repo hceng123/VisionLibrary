@@ -558,7 +558,7 @@ struct PR_PICK_COLOR_RPY {
 struct PR_CALIBRATE_CAMERA_CMD {
     PR_CALIBRATE_CAMERA_CMD() : fPatternDist(1.f), fMinTmplMatchScore(90.f) {}
     cv::Mat                 matInputImg;
-    cv::Size                szBoardPattern;             // Number of corners per chessboard row and col. szBoardPattern = cv::Size(points_per_row, points_per_col) = cv::Size(columns, rows).
+    cv::Size                szBoardPattern;             //Number of corners per chessboard row and col. szBoardPattern = cv::Size(points_per_row, points_per_col) = cv::Size(columns, rows).
     float                   fPatternDist;               //The real chess board corner to corner distance. Unit: mm.
     float                   fMinTmplMatchScore;
 };

@@ -149,14 +149,27 @@ public:
     template<typename _Tp>
     static inline cv::Mat cumsum ( const cv::Mat &matInput, int nDimension ) {
         cv::Mat matResult = matInput.clone ();
-        if( nDimension == 1 )
-            cv::transpose ( matResult, matResult );
-        for( int row = 0; row < matResult.rows; ++ row )
-        for( int col = 0; col < matResult.cols - 1; ++ col ) {
-            matResult.at<_Tp> ( row, col + 1 ) += matResult.at<_Tp> ( row, col );
+        const int ROWS = matInput.rows;
+        const int COLS = matInput.cols;
+        if( nDimension == 1 ) {
+            for ( int row = 0; row < ROWS - 1; ++ row ) {
+                cv::Mat matCurrentRow( matResult, cv::Rect (0, row,     COLS, 1 ) );
+                cv::Mat matNextRow   ( matResult, cv::Rect (0, row + 1, COLS, 1 ) );
+                matNextRow = matNextRow + matCurrentRow;
+            }
+        }else {
+            //Use the matrix add is not optimized for cache access, so it is slower than the one by one add.
+            //for ( int col = 0; col < COLS - 1; ++ col ) {
+            //    cv::Mat matCurrentCol ( matResult, cv::Rect ( col,     0, 1, ROWS ) );
+            //    cv::Mat matNextCol    ( matResult, cv::Rect ( col + 1, 0, 1, ROWS ) );
+            //    matNextCol = matNextCol + matCurrentCol;
+            //}
+            for( int row = 0; row < matResult.rows; ++ row ) {
+                for( int col = 0; col < matResult.cols - 1; ++ col ) {
+                    matResult.at<_Tp> ( row, col + 1 ) += matResult.at<_Tp> ( row, col ) ;
+                }
+            }
         }
-        if( nDimension == 1 )
-            cv::transpose ( matResult, matResult );
         return matResult;
     }
 
