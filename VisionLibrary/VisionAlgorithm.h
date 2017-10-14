@@ -202,6 +202,7 @@ protected:
                                         const PR_INSP_LEAD_CMD::LEAD_INPUT_INFO &stLeadInput,
                                         const PR_INSP_LEAD_CMD                  *pstCmd,
                                         PR_INSP_LEAD_RPY::LEAD_RESULT           &stLeadResult);
+    static VisionStatus _calcMtfByFFT(const cv::Mat &matInput, bool bHorizontalStrip );
 protected:
     static const int       _constMinHessian        = 300;
     static const int       _constOctave            = 4;

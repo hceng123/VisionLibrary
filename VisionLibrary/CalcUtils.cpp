@@ -1,4 +1,5 @@
 #include "CalcUtils.h"
+#include "spline.h"
 
 namespace AOI
 {
@@ -267,6 +268,16 @@ float CalcUtils::calcPointToContourDist(const cv::Point &ptInput, const VectorOf
     int nIndex = ToInt32 ( std::distance ( vecVecDft[0].begin (), maxElement ) ) + 1;
     float fFrequency = (float)nIndex * SAMPLE_FREQUENCY / m;
     return fFrequency;
+}
+
+/*static*/ VectorOfDouble CalcUtils::interp1(const VectorOfDouble &vecX, const VectorOfDouble &vecV, const VectorOfDouble &vecXq, bool bSpine ) {
+    tk::spline s;
+    s.set_points ( vecX, vecV, bSpine );    // currently it is required that X is already sorted
+    VectorOfDouble vecResult;
+    vecResult.reserve ( vecXq.size() );
+    for ( const auto xq : vecXq )
+        vecResult.push_back ( s( xq ) );
+    return vecResult;
 }
 
 }

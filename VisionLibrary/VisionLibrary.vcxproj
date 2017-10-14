@@ -153,6 +153,7 @@
     <ClInclude Include="Record.h" />
     <ClInclude Include="RecordManager.h" />
     <ClInclude Include="SimpleIni.h" />
+    <ClInclude Include="spline.h" />
     <ClInclude Include="SubFunctions.h" />
     <ClInclude Include="TimeLog.h" />
     <ClInclude Include="Unwrap.h" />

@@ -17,6 +17,7 @@
 #include <iostream>
 #include <limits>
 #include <algorithm>
+#include <numeric>
 
 using namespace cv::xfeatures2d;
 namespace bfs = boost::filesystem;
@@ -6114,6 +6115,44 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     MARK_FUNCTION_END_TIME;
     pstRpy->enStatus = VisionStatus::OK;
     return pstRpy->enStatus;
+}
+
+/*static*/ VisionStatus VisionAlgorithm::_calcMtfByFFT(const cv::Mat &matInput, bool bHorizontalStrip ) {
+    cv::Mat matDouble;
+    matInput.convertTo ( matDouble, CV_64FC1 );
+    if ( bHorizontalStrip )
+        cv::transpose ( matDouble, matDouble );
+    const int ROWS = matDouble.rows;
+    const int COLS = matDouble.cols;
+    const float Nf = 32;
+    float fInterval = 1.f / ( Nf / ( COLS - 1 ) );
+    cv::Mat matRowDouble ( matDouble, cv::Rect ( 0, ROWS / 2, COLS, 1 ) );
+    auto vecRowDouble = CalcUtils::matToVector<double> ( matRowDouble )[0];
+    VectorOfDouble vecX ( vecRowDouble.size() );
+    std::iota ( vecX.begin(), vecX.end(), 1 );
+    VectorOfDouble vecXq;
+    vecXq.reserve ( static_cast<size_t>( Nf ) );
+    for ( double xq = 1.; xq < COLS; xq += fInterval )
+        vecXq.push_back ( xq );
+    auto vecVq = CalcUtils::interp1 ( vecX, vecRowDouble, vecXq );
+
+    cv::Mat matDft, matAbsDft;
+    cv::dft ( vecVq, matDft, cv::DftFlags::DCT_ROWS );
+    matAbsDft = cv::abs ( matDft );
+    matAbsDft = cv::Mat ( matAbsDft, cv::Rect ( 1, 0, matAbsDft.cols / 2, 1 ) );
+    int nMinIdx = 0, nMaxIdx = 0;
+    double dMin = 0., dMax = 0.;
+    cv::minMaxIdx ( matAbsDft, &dMin, &dMax, &nMinIdx, &nMaxIdx );
+    float f00 = nMaxIdx / fInterval / Nf;
+    float f01 = ( nMaxIdx - 1) / fInterval / Nf;
+    float f02 = ( nMaxIdx + 1) / fInterval / Nf;
+    float f11 = ( f00 + f01 ) / 2.f;
+    float f12 = ( f00 + f02 ) / 2.f;
+    cv::Mat matTt1 = CalcUtils::intervals<float> ( 1.f, fInterval, ToFloat ( COLS ) );
+    float nff = 20;
+    for ( float f1 = f11; f1 <= f12; f1 += ( f12 - f11 ) / 20 )  {
+    }
+    return VisionStatus::OK;
 }
 
 /*static*/ VisionStatus VisionAlgorithm::calcMTF(const PR_CALC_MTF_CMD *const pstCmd, PR_CALC_MTF_RPY *const pstRpy, bool bReplay /*= false*/) {

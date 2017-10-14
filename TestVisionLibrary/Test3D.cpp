@@ -106,7 +106,7 @@ static cv::Mat _drawHeightGrid(const cv::Mat &matHeight, int nGridRow, int nGrid
 }
 
 //static std::string gstrCalibResultFile("./data/capture/CalibPP.yml");
-static std::string gstrWorkingFolder("./data/New3DCalibMethod/");
+static std::string gstrWorkingFolder("./data/sch_0831/");
 static std::string gstrCalibResultFile = gstrWorkingFolder + "CalibPP.yml";
 void TestCalib3dBase() {
     const int IMAGE_COUNT = 8;

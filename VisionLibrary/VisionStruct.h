@@ -29,6 +29,7 @@ using VectorOfSize2f = std::vector<cv::Size2f>;
 using VectorOfMat = std::vector<cv::Mat>;
 using VectorOfFloat = std::vector<float>;
 using VectorOfVectorOfFloat = std::vector<VectorOfFloat>;
+using VectorOfDouble = std::vector<double>;
 
 template <typename Tp> inline Int32 ToInt32(Tp param) { return static_cast<Int32>(param); }
 template <typename Tp> inline Int16 ToInt16(Tp param) { return static_cast<Int16>(param); }

@@ -1,6 +1,7 @@
 #include "Fitting.h"
 #include "CalcUtils.h"
 #include <iostream>
+#include <numeric>
 
 namespace AOI
 {
@@ -21,9 +22,19 @@ static void printfMat ( const cv::Mat &mat)
 }
 
 template<class T>
-static void printfVectorOfVector(const std::vector<std::vector<T>> &vevVecInput)
+static void printfVector(const std::vector<T> &vecInput)
 {
-	for (const auto &vecInput : vevVecInput )
+    for (const auto value : vecInput)
+    {
+        printf ( "%.2f ", value );
+    }
+    printf ( "\n" );
+}
+
+template<class T>
+static void printfVectorOfVector(const std::vector<std::vector<T>> &vecVecInput)
+{
+	for (const auto &vecInput : vecVecInput )
 	{
 		for (const auto value : vecInput )
 		{
@@ -274,6 +285,31 @@ static void TestCalcUtilsFloor() {
     printfMat<float> ( matResult );
 }
 
+static void TestCalcUtilsInterp1() {
+{
+    std::cout << std::endl << "------------------------------------------------";
+    std::cout << std::endl << "CALCUTILS FLOOR REGRESSION TEST #1 STARTING";
+    std::cout << std::endl << "------------------------------------------------";
+    std::cout << std::endl;
+    VectorOfDouble vecV( {0,  1.41,  2,  1.41,  0,  -1.41,  -2,  -1.41, 0});
+    std::cout << "Input: " << std::endl;
+    printfVector<double>(vecV);
+    VectorOfDouble vecX(vecV.size());
+    std::iota ( vecX.begin(), vecX.end(), 1 );
+    VectorOfDouble vecXq;
+    for ( double xq = 1.5; xq <= 8.5; xq += 1 ) {
+        vecXq.push_back ( xq );
+    }
+    auto vecVq = CalcUtils::interp1 ( vecX, vecV, vecXq );
+    std::cout << "Linear interp1 result: " << std::endl;
+    printfVector ( vecVq );
+
+    vecVq = CalcUtils::interp1 ( vecX, vecV, vecXq, true );
+    std::cout << "Spine interp1 result: " << std::endl;
+    printfVector ( vecVq );
+}
+}
+
 void InternalTest() {
     TestCalcUtilsCumSum();
     TestCalcUtilsInternals();
@@ -282,6 +318,7 @@ void InternalTest() {
     TestCountOfNan();
     TestFindLargestKItems();
     TestCalcUtilsFloor();
+    TestCalcUtilsInterp1();
 }
 
 }
