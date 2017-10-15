@@ -108,6 +108,8 @@ int _tmain(int argc, _TCHAR* argv[])
 
     Test3D();
 
+    TestCalcCameraMTF();
+
     PR_DumpTimeLog("./Vision/Time.log");
 	return 0;
 }

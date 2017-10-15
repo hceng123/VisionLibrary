@@ -178,6 +178,16 @@ CalcUtils::floor result:
 0.00 -1.00 0.00 0.00 
 1.00 1.00 0.00 -1.#J 
 
+------------------------------------------------
+CALCUTILS INTERP1 REGRESSION TEST #1 STARTING
+------------------------------------------------
+Input: 
+0.00 1.41 2.00 1.41 0.00 -1.41 -2.00 -1.41 0.00 
+Linear interp1 result: 
+0.70 1.71 1.71 0.70 -0.70 -1.71 -1.71 -0.70 
+Spine interp1 result: 
+0.76 1.84 1.84 0.76 -0.76 -1.84 -1.84 -0.76 
+
 ------------------------------------------
 INSPECT DEVICE REGRESSION TEST #1 STARTING
 ------------------------------------------
@@ -932,3 +942,14 @@ Step Phase Difference:
 0.15 0.20 0.09 0.20 0.09 
 0.17 0.21 0.12 0.21 0.12 
 0.19 0.18 0.17 0.22 0.21 
+
+---------------------------------------------
+CALC CAMERA MTF REGRESSION TEST #1 STARTING
+---------------------------------------------
+PR_CalcCameraMTF status 0
+Big pattern vertical absolute mtf 0.91
+Big pattern horizontal absolute mtf 0.93
+Small pattern vertical absolute mtf 0.60
+Small pattern horizontal absolute mtf 0.67
+Small pattern vertical relative mtf 0.66
+Small pattern horizontal relative mtf 0.72

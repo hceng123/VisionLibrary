@@ -288,7 +288,7 @@ static void TestCalcUtilsFloor() {
 static void TestCalcUtilsInterp1() {
 {
     std::cout << std::endl << "------------------------------------------------";
-    std::cout << std::endl << "CALCUTILS FLOOR REGRESSION TEST #1 STARTING";
+    std::cout << std::endl << "CALCUTILS INTERP1 REGRESSION TEST #1 STARTING";
     std::cout << std::endl << "------------------------------------------------";
     std::cout << std::endl;
     VectorOfDouble vecV( {0,  1.41,  2,  1.41,  0,  -1.41,  -2,  -1.41, 0});

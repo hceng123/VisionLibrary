@@ -6064,46 +6064,10 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
         double dMinAvg = cv::mean ( cv::Mat ( matSorted, cv::Rect (0, 0, 1, DATA_LEN) ) )[0];
         pstRpy->vecBigPatternAbsMtfH.push_back ( ToFloat ( dMaxAvg - dMinAvg ) / PR_MAX_GRAY_LEVEL );
     }
-    const int SAMPLE_FREQUENCY = 1;
-    float fFrequency1 = 0.f, fFrequency2 = 0.f;
-    //Calculate frequency
-    fFrequency1 = CalcUtils::calcFrequency ( cv::Mat ( vecMat[2], cv::Rect ( 0, 5, vecMat[2].cols, 1 ) ) );
-    cv::Mat matTt1 = CalcUtils::intervals<float> ( 1.f, 1.f, ToFloat ( vecMat[2].cols ) );
-    matTt1 = matTt1.reshape ( 1, 1 );
-    cv::Mat matXX1 =   CalcUtils::sin<float>( matTt1 * 2 * CV_PI * fFrequency1 );
-    matXX1.push_back ( CalcUtils::cos<float>( matTt1 * 2 * CV_PI * fFrequency1 ) );
-    matXX1.push_back ( cv::Mat (cv::Mat::ones ( 1, matXX1.cols, CV_32FC1 ) ) );
-    cv::transpose ( matXX1, matXX1 );
-    cv::Mat matPattern3Float;
-    vecMat[2].convertTo ( matPattern3Float, CV_32FC1 );
-    for ( int row = 0; row < vecMat[2].rows; ++ row ) {
-        cv::Mat matYY( matPattern3Float, cv::Rect ( 0, row, matPattern3Float.cols, 1 ) );
-        cv::transpose ( matYY, matYY );
-        cv::Mat matK;
-        cv::solve ( matXX1, matYY, matK, cv::DecompTypes::DECOMP_SVD );
-        float A = 2.f * sqrt ( matK.at<float>(0) * matK.at<float>(0) + matK.at<float>(1) * matK.at<float>(1) );
-        pstRpy->vecSmallPatternAbsMtfV.push_back ( A / PR_MAX_GRAY_LEVEL );
-    }
 
-    //Calculate MTF for pattern 4.
-    cv::Mat matPattern4Float;
-    vecMat[3].convertTo ( matPattern4Float, CV_32FC1 );
-    cv::Mat matCol ( matPattern4Float, cv::Rect ( matPattern4Float.cols / 2, 0, 1, matPattern4Float.rows ) ), matColT;
-    cv::transpose ( matCol, matColT );
-    fFrequency2 = CalcUtils::calcFrequency ( matColT );
-    cv::Mat matTt2 = CalcUtils::intervals<float>(1.f, 1.f, ToFloat ( matPattern4Float.rows ) );
-    matTt2 = matTt2.reshape ( 1, 1 );
-    cv::Mat matXX2 =   CalcUtils::sin<float>( matTt2 * 2 * CV_PI * fFrequency2 );
-    matXX2.push_back ( CalcUtils::cos<float>( matTt2 * 2 * CV_PI * fFrequency2 ) );
-    matXX2.push_back ( cv::Mat (cv::Mat::ones ( 1, matXX2.cols, CV_32FC1 ) ) );
-    cv::transpose ( matXX2, matXX2 );
-    for ( int col = 0; col < matPattern4Float.cols; ++ col ) {
-        cv::Mat matYY ( matPattern4Float, cv::Rect ( col, 0, 1, matPattern4Float.rows ) );
-        cv::Mat matK;
-        cv::solve ( matXX1, matYY, matK, cv::DecompTypes::DECOMP_SVD );
-        float A = 2.f * sqrt ( matK.at<float>(0) * matK.at<float>(0) + matK.at<float>(1) * matK.at<float>(1) );
-        pstRpy->vecSmallPatternAbsMtfH.push_back ( A / PR_MAX_GRAY_LEVEL );
-    }
+    _calcMtfByFFT ( vecMat[2], false, pstRpy->vecSmallPatternAbsMtfV );
+    _calcMtfByFFT ( vecMat[3], true,  pstRpy->vecSmallPatternAbsMtfH );
+
     pstRpy->fBigPatternAbsMtfV   = CalcUtils::mean ( pstRpy->vecBigPatternAbsMtfV );
     pstRpy->fBigPatternAbsMtfH   = CalcUtils::mean ( pstRpy->vecBigPatternAbsMtfH );
     pstRpy->fSmallPatternAbsMtfV = CalcUtils::mean ( pstRpy->vecSmallPatternAbsMtfV );
@@ -6117,11 +6081,12 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     return pstRpy->enStatus;
 }
 
-/*static*/ VisionStatus VisionAlgorithm::_calcMtfByFFT(const cv::Mat &matInput, bool bHorizontalStrip ) {
+/*static*/ VisionStatus VisionAlgorithm::_calcMtfByFFT(const cv::Mat &matInput, bool bHorizontalStrip, VectorOfFloat &vecMtf ) {
     cv::Mat matDouble;
     matInput.convertTo ( matDouble, CV_64FC1 );
     if ( bHorizontalStrip )
         cv::transpose ( matDouble, matDouble );
+    auto vecVecDouble = CalcUtils::matToVector<double> ( matDouble );
     const int ROWS = matDouble.rows;
     const int COLS = matDouble.cols;
     const float Nf = 32;
@@ -6134,23 +6099,58 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     vecXq.reserve ( static_cast<size_t>( Nf ) );
     for ( double xq = 1.; xq < COLS; xq += fInterval )
         vecXq.push_back ( xq );
-    auto vecVq = CalcUtils::interp1 ( vecX, vecRowDouble, vecXq );
+    auto vecVq = CalcUtils::interp1 ( vecX, vecRowDouble, vecXq, false );
+    cv::Mat matVq ( vecVq );
 
     cv::Mat matDft, matAbsDft;
     cv::dft ( vecVq, matDft, cv::DftFlags::DCT_ROWS );
     matAbsDft = cv::abs ( matDft );
+    auto vecVecAbsDft = CalcUtils::matToVector<double>( matAbsDft );
     matAbsDft = cv::Mat ( matAbsDft, cv::Rect ( 1, 0, matAbsDft.cols / 2, 1 ) );
-    int nMinIdx = 0, nMaxIdx = 0;
+    cv::Point ptMin, ptMax;
     double dMin = 0., dMax = 0.;
-    cv::minMaxIdx ( matAbsDft, &dMin, &dMax, &nMinIdx, &nMaxIdx );
-    float f00 = nMaxIdx / fInterval / Nf;
+    cv::minMaxLoc ( matAbsDft, &dMin, &dMax, &ptMin, &ptMax );
+    int nMaxIdx = ptMax.x + 1;
+    float f00 = ( nMaxIdx ) / fInterval / Nf;
     float f01 = ( nMaxIdx - 1) / fInterval / Nf;
     float f02 = ( nMaxIdx + 1) / fInterval / Nf;
     float f11 = ( f00 + f01 ) / 2.f;
     float f12 = ( f00 + f02 ) / 2.f;
-    cv::Mat matTt1 = CalcUtils::intervals<float> ( 1.f, fInterval, ToFloat ( COLS ) );
-    float nff = 20;
-    for ( float f1 = f11; f1 <= f12; f1 += ( f12 - f11 ) / 20 )  {
+    cv::Mat matTt1 = CalcUtils::intervals<double> ( 1.f, fInterval, ToFloat ( COLS ) );
+    matTt1 = matTt1.reshape ( 1, 1 );
+    float nff = 20.f;
+    VectorOfDouble vecA;
+    vecA.reserve ( ToInt32 ( nff) );
+    for ( float f1 = f11; f1 <= f12; f1 += ( f12 - f11 ) / 20 ) {     
+        cv::Mat matXX1 =   CalcUtils::sin<double>( matTt1 * 2 * CV_PI * f1 );
+        matXX1.push_back ( CalcUtils::cos<double>( matTt1 * 2 * CV_PI * f1 ) );
+        matXX1.push_back ( cv::Mat (cv::Mat::ones ( 1, matXX1.cols, CV_64FC1 ) ) );
+        cv::transpose ( matXX1, matXX1 );
+        cv::Mat matK;
+        cv::solve ( matXX1, matVq, matK, cv::DecompTypes::DECOMP_SVD );
+        double A = 2.0 * sqrt ( matK.at<double>(0) * matK.at<double>(0) + matK.at<double>(1) * matK.at<double>(1) );
+        vecA.push_back ( A );
+    }
+    auto maxElement = std::max_element ( vecA.begin (), vecA.end () );
+    int nIndex = ToInt32 ( std::distance ( vecA.begin (), maxElement ) ) + 1;
+
+    float fFinal = f11 + (nIndex - 1.f) * (f12 - f11) / nff;
+
+    cv::Mat matXX1 =   CalcUtils::sin<double>( matTt1 * 2 * CV_PI * fFinal );
+    matXX1.push_back ( CalcUtils::cos<double> ( matTt1 * 2 * CV_PI * fFinal ) );
+    matXX1.push_back ( cv::Mat ( cv::Mat::ones ( 1, matXX1.cols, CV_64FC1 ) ) );
+    cv::transpose ( matXX1, matXX1 );
+
+    for ( int row = 0; row < ROWS; ++ row ) {
+        cv::Mat matRow = cv::Mat ( matDouble, cv::Rect ( 0, row, COLS, 1 ) ).clone();
+        auto vecRowLocal = CalcUtils::matToVector<double> ( matRow )[0];
+        auto vecVqLocal = CalcUtils::interp1 ( vecX, vecRowLocal, vecXq, true );
+        cv::Mat matRowInterp( vecVqLocal );
+        cv::Mat matK;
+        cv::solve ( matXX1, matRowInterp, matK, cv::DecompTypes::DECOMP_SVD );
+        float A = ToFloat ( 2. * sqrt ( matK.at<double>(0) * matK.at<double>(0) + matK.at<double>(1) * matK.at<double>(1) ) );
+        float fMtf = ToFloat ( A / matK.at<double>(2) / 2. );
+        vecMtf.push_back ( fMtf );
     }
     return VisionStatus::OK;
 }
