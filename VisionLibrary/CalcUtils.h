@@ -211,7 +211,7 @@ public:
     template<typename T>
     static inline cv::Mat floor ( const cv::Mat &matInput ) {
         cv::Mat matResult = matInput.clone ();
-        for( int i = 0; i < matResult.total(); ++ i ) {
+        for( int i = 0; i < ToInt32 ( matResult.total() ); ++ i ) {
             T &value = matResult.at<T> ( i );
             value = std::floor ( value );
         }
@@ -220,7 +220,7 @@ public:
 
     template<typename T>
     static inline void floorByRef ( cv::Mat &matInOut ) {
-        for( int i = 0; i < matInOut.total(); ++ i ) {
+        for( int i = 0; i < ToInt32 ( matInOut.total() ); ++ i ) {
             T &value = matInOut.at<T> ( i );
             value = std::floor ( value );
         }
@@ -279,14 +279,14 @@ public:
 
     template<typename T>
     static std::vector<T> FindLargestKItems ( const cv::Mat &matInput, const int K, std::vector<size_t> &vecIndex ) {
-        if ( K > matInput.total () )  {
+        if ( K > ToInt32 ( matInput.total () ) )  {
             return matInput;
         }
 
         std::vector<T> vecResult;
         vecResult.reserve ( K );
         int index = 0;
-        while (vecResult.size () < K) {
+        while ( ToInt32 ( vecResult.size () ) < K) {
             if (matInput.at<T> ( index ) == matInput.at<T> ( index )) {
                 vecIndex.push_back ( index );
                 vecResult.push_back ( matInput.at<T> ( index ) );

@@ -106,7 +106,7 @@ static cv::Mat _drawHeightGrid(const cv::Mat &matHeight, int nGridRow, int nGrid
 }
 
 //static std::string gstrCalibResultFile("./data/capture/CalibPP.yml");
-static std::string gstrWorkingFolder("./data/sch_0831/");
+static std::string gstrWorkingFolder("./data/HaoYu_20171016/");
 static std::string gstrCalibResultFile = gstrWorkingFolder + "CalibPP.yml";
 void TestCalib3dBase() {
     const int IMAGE_COUNT = 8;
@@ -292,6 +292,69 @@ void TestIntegrate3DCalib() {
     for ( int i = 1; i <= 3; ++ i ) {
         char chArrFileName[100];
         _snprintf( chArrFileName, sizeof (chArrFileName), "%02d.yml", i );
+        std::string strDataFile = gstrWorkingFolder + chArrFileName;
+        
+        std::string strCalibDataFile( strDataFile );
+        cv::FileStorage fsCalibData ( strCalibDataFile, cv::FileStorage::READ );
+        if ( ! fsCalibData.isOpened() ) {
+            std::cout << "Failed to open file: " << strCalibDataFile << std::endl;
+            return;
+        }
+
+        PR_INTEGRATE_3D_CALIB_CMD::SINGLE_CALIB_DATA stCalibData;
+        cv::FileNode fileNode = fsCalibData["Phase"];
+        cv::read ( fileNode, stCalibData.matPhase, cv::Mat() );
+
+        fileNode = fsCalibData["DivideStepIndex"];
+        cv::read ( fileNode, stCalibData.matDivideStepIndex, cv::Mat() );
+        fsCalibData.release();
+
+        stCmd.vecCalibData.push_back ( stCalibData );
+    }
+
+    std::string strCalibDataFile( gstrWorkingFolder + "H5.yml" );
+    cv::FileStorage fsCalibData ( strCalibDataFile, cv::FileStorage::READ );
+    if (!fsCalibData.isOpened ()) {
+        std::cout << "Failed to open file: " << strCalibDataFile << std::endl;
+        return;
+    }
+    cv::FileNode fileNode = fsCalibData["Phase"];
+    cv::read ( fileNode, stCmd.matTopSurfacePhase, cv::Mat() );
+    fsCalibData.release();
+
+    stCmd.fTopSurfaceHeight = 5;
+
+    PR_Integrate3DCalib ( &stCmd, &stRpy );
+    std::cout << "PR_Integrate3DCalib status " << ToInt32( stRpy.enStatus ) << std::endl;
+    if ( VisionStatus::OK != stRpy.enStatus )
+        return;
+
+    int i = 1;
+    for ( const auto &matResultImg : stRpy.vecMatResultImg ) {
+        char chArrFileName[100];
+        _snprintf( chArrFileName, sizeof (chArrFileName), "ResultImg_%02d.png", i );
+        std::string strDataFile = gstrWorkingFolder + chArrFileName;
+        cv::imwrite ( strDataFile, matResultImg );
+        ++ i;
+    }
+
+    std::string strCalibResultFile( gstrWorkingFolder + "IntegrateCalibResult.yml" );
+    cv::FileStorage fsCalibResultData ( strCalibResultFile, cv::FileStorage::WRITE );
+    if (!fsCalibResultData.isOpened ()) {
+        std::cout << "Failed to open file: " << strCalibResultFile << std::endl;
+        return;
+    }
+    cv::write ( fsCalibResultData, "IntegratedK", stRpy.matIntegratedK );
+    cv::write ( fsCalibResultData, "Order3CurveSurface", stRpy.matOrder3CurveSurface );
+    fsCalibResultData.release();
+}
+
+void TestIntegrate3DCalibHaoYu() {
+    PR_INTEGRATE_3D_CALIB_CMD stCmd;
+    PR_INTEGRATE_3D_CALIB_RPY stRpy;
+    for ( int i = 1; i <= 3; ++ i ) {
+        char chArrFileName[100];
+        _snprintf( chArrFileName, sizeof (chArrFileName), "%d.yml", i );
         std::string strDataFile = gstrWorkingFolder + chArrFileName;
         
         std::string strCalibDataFile( strDataFile );
