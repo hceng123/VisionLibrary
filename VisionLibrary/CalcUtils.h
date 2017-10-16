@@ -339,6 +339,16 @@ public:
         return cv::Mat ();
     }
 
+    template<typename _tp>
+    static cv::Mat repeatInX ( const cv::Mat &matInput, int nx ) {
+        cv::Mat matResult ( matInput.rows, nx, matInput.type () );
+        for( int row = 0; row < matInput.rows; ++ row ) {
+            cv::Mat matTmp ( matResult, cv::Rect ( 0, row, nx, 1 ) );
+            matTmp.setTo ( matInput.at<_tp> ( row, 0 ) );
+        }
+        return matResult;
+    }
+
     static double radian2Degree ( double dRadian );
     static double degree2Radian ( double dDegree );
     static float ptDisToLine ( const cv::Point2f &ptInput, bool bReversedFit, float fSlope, float fIntercept );

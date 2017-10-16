@@ -291,6 +291,7 @@ static void TestCalcUtilsInterp1() {
     std::cout << std::endl << "CALCUTILS INTERP1 REGRESSION TEST #1 STARTING";
     std::cout << std::endl << "------------------------------------------------";
     std::cout << std::endl;
+
     VectorOfDouble vecV( {0,  1.41,  2,  1.41,  0,  -1.41,  -2,  -1.41, 0});
     std::cout << "Input: " << std::endl;
     printfVector<double>(vecV);
@@ -310,6 +311,20 @@ static void TestCalcUtilsInterp1() {
 }
 }
 
+static void TestCalcUtilsRepeat() {
+    std::cout << std::endl << "------------------------------------------------";
+    std::cout << std::endl << "CALCUTILS REPEAT REGRESSION TEST #1 STARTING";
+    std::cout << std::endl << "------------------------------------------------";
+    std::cout << std::endl;
+
+    std::vector<float> vecRow ( 5 );
+    std::iota ( vecRow.begin(), vecRow.end(), 1.f );
+    cv::Mat matRow(vecRow);
+    cv::Mat matResult = CalcUtils::repeatInX<float> ( matRow, 5 );
+    std::cout << "Repeat in X result: " << std::endl;
+    printfMat<float> ( matResult );
+}
+
 void InternalTest() {
     TestCalcUtilsCumSum();
     TestCalcUtilsInternals();
@@ -319,6 +334,7 @@ void InternalTest() {
     TestFindLargestKItems();
     TestCalcUtilsFloor();
     TestCalcUtilsInterp1();
+    TestCalcUtilsRepeat();
 }
 
 }

@@ -41,6 +41,8 @@ namespace
 namespace tk
 {
 
+template <typename Tp> inline int ToInt(Tp param) { return static_cast<int>(param); }
+
 // band matrix solver
 class band_matrix
 {
@@ -55,11 +57,11 @@ public:
     int dim() const;                             // matrix dimension
     int num_upper() const
     {
-        return m_upper.size()-1;
+        return ToInt ( m_upper.size() ) - 1;
     }
     int num_lower() const
     {
-        return m_lower.size()-1;
+        return ToInt ( m_lower.size() ) -1;
     }
     // access operator
     double & operator () (int i, int j);            // write
@@ -145,7 +147,7 @@ void band_matrix::resize(int dim, int n_u, int n_l)
 int band_matrix::dim() const
 {
     if(m_upper.size()>0) {
-        return m_upper[0].size();
+        return ToInt ( m_upper[0].size() );
     } else {
         return 0;
     }
@@ -289,7 +291,7 @@ void spline::set_points(const std::vector<double>& x,
     assert(x.size()>2);
     m_x=x;
     m_y=y;
-    int   n=x.size();
+    int n = ToInt ( x.size() );
     // TODO: maybe sort x and y, rather than returning an error
     for(int i=0; i<n-1; i++) {
         assert(m_x[i]<m_x[i+1]);
