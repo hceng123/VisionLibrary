@@ -41,3 +41,9 @@ RegressionTest/Data/NanMap_3.png
 RegressionTest/Data/BranchCut_2.png
 VisionLibrary/Unwrap_original.cpp
 TestVisionLibrary/TestVisionLibrary_result.txt
+RegressionTest/Data/HaoYu_20171017_Integrate3DCalibData/ResultImg_01.png
+RegressionTest/Data/HaoYu_20171017_Integrate3DCalibData/ResultImg_02.png
+RegressionTest/Data/HaoYu_20171017_Integrate3DCalibData/ResultImg_04.png
+RegressionTest/Data/HaoYu_20171017_Integrate3DCalibData/ResultImg_03.png
+RegressionTest/Data/PR_Calib3DHeight_Calib3DHeightResultImg.png
+RegressionTest/Data/PR_Calib3DHeight_DivideStepResultImg.png

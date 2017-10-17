@@ -35,7 +35,7 @@ void TestCalib3dBase() {
 
     std::cout << "BaseSurfaceParam: " << std::endl;
     printfMat<float>(stRpy.matBaseSurfaceParam);
-    std::cout << "BaseStartAvgPhase: " << stRpy.fBaseStartAvgPhase << std::endl;
+    std::cout << std::fixed << std::setprecision(2) << "BaseStartAvgPhase: " << stRpy.fBaseStartAvgPhase << std::endl;
 
     std::string strResultMatPath = "./data/CalibPP.yml";
     cv::FileStorage fs(strResultMatPath, cv::FileStorage::WRITE);
@@ -137,10 +137,72 @@ void TestComb3DCalib() {
     }
 }
 
+void TestIntegrate3DCalib() {
+    std::cout << std::endl << "---------------------------------------------";
+    std::cout << std::endl << "INTEGRATE 3D HEIGHT CALIBRATION #1 STARTING";
+    std::cout << std::endl << "---------------------------------------------";
+    std::cout << std::endl;
+
+    PR_INTEGRATE_3D_CALIB_CMD stCmd;
+    PR_INTEGRATE_3D_CALIB_RPY stRpy;
+    String strWorkingFolder("./data/HaoYu_20171017_Integrate3DCalibData/");
+    for ( int i = 1; i <= 3; ++ i ) {
+        char chArrFileName[100];
+        _snprintf( chArrFileName, sizeof (chArrFileName), "%d.yml", i );
+        std::string strDataFile = strWorkingFolder + chArrFileName;
+        
+        std::string strCalibDataFile( strDataFile );
+        cv::FileStorage fsCalibData ( strCalibDataFile, cv::FileStorage::READ );
+        if ( ! fsCalibData.isOpened() ) {
+            std::cout << "Failed to open file: " << strCalibDataFile << std::endl;
+            return;
+        }
+
+        PR_INTEGRATE_3D_CALIB_CMD::SINGLE_CALIB_DATA stCalibData;
+        cv::FileNode fileNode = fsCalibData["Phase"];
+        cv::read ( fileNode, stCalibData.matPhase, cv::Mat() );
+
+        fileNode = fsCalibData["DivideStepIndex"];
+        cv::read ( fileNode, stCalibData.matDivideStepIndex, cv::Mat() );
+        fsCalibData.release();
+
+        stCmd.vecCalibData.push_back ( stCalibData );
+    }
+
+    std::string strCalibDataFile( strWorkingFolder + "H5.yml" );
+    cv::FileStorage fsCalibData ( strCalibDataFile, cv::FileStorage::READ );
+    if (!fsCalibData.isOpened ()) {
+        std::cout << "Failed to open file: " << strCalibDataFile << std::endl;
+        return;
+    }
+    cv::FileNode fileNode = fsCalibData["Phase"];
+    cv::read ( fileNode, stCmd.matTopSurfacePhase, cv::Mat() );
+    fsCalibData.release();
+
+    stCmd.fTopSurfaceHeight = 5;
+
+    PR_Integrate3DCalib ( &stCmd, &stRpy );
+    std::cout << "PR_Integrate3DCalib status " << ToInt32 ( stRpy.enStatus ) << std::endl;
+    if ( VisionStatus::OK != stRpy.enStatus )
+        return;
+
+    int i = 1;
+    for ( const auto &matResultImg : stRpy.vecMatResultImg ) {
+        char chArrFileName[100];
+        _snprintf( chArrFileName, sizeof (chArrFileName), "ResultImg_%02d.png", i );
+        std::string strDataFile = strWorkingFolder + chArrFileName;
+        cv::imwrite ( strDataFile, matResultImg );
+        ++ i;
+    }
+    std::cout << "IntegratedK" << std::endl;
+    printfMat<float>( stRpy.matIntegratedK, 5 );
+}
+
 void Test3D() {
     TestCalib3dBase();
     TestCalib3DHeight();
     TestComb3DCalib();
+    TestIntegrate3DCalib();
 }
 
 }

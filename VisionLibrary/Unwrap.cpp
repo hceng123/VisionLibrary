@@ -812,7 +812,7 @@ static inline cv::Mat calcOrder5BezierCoeff ( const cv::Mat &matU ) {
 
     TimeLog::GetInstance()->addTimeLog( "Before cv::repeat. ", stopWatch.Span() );
     matDp = CalcUtils::repeatInX<DATA_TYPE> ( matDp, matPhase.cols );
-    TimeLog::GetInstance()->addTimeLog( "After cv::repeat. ", stopWatch.Span() );    
+    TimeLog::GetInstance()->addTimeLog( "After cv::repeat. ", stopWatch.Span() );
 
     TimeLog::GetInstance()->addTimeLog( "Before cumsum. ", stopWatch.Span() );
     auto matCumSum = CalcUtils::cumsum<DATA_TYPE> ( matDp, 1 );
@@ -1872,16 +1872,23 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
             else
                 vecBP.push_back ( ToFloat ( stCalibData.matDivideStepIndex.at<char>(point) + 1 ) );
         }
+    }    
+    if ( ! pstCmd->matTopSurfacePhase.empty() ) {
+        cv::Mat matNonNan = pstCmd->matTopSurfacePhase == pstCmd->matTopSurfacePhase;
+        VectorOfPoint vecEffectPoints;
+        cv::findNonZero ( matNonNan, vecEffectPoints );
+        vecXt.reserve ( vecXt.size() + vecEffectPoints.size() );
+        vecYt.reserve ( vecYt.size() + vecEffectPoints.size() );
+        vecPhase.reserve ( vecPhase.size() + vecEffectPoints.size() );
+        vecBP.reserve ( vecBP.size() + + vecEffectPoints.size()  );
+        for (const auto &point : vecEffectPoints) {
+            vecXt.push_back ( matX.at<DATA_TYPE> ( point ) );
+            vecYt.push_back ( matY.at<DATA_TYPE> ( point ) );
+            vecPhase.push_back ( pstCmd->matTopSurfacePhase.at<DATA_TYPE> ( point ) );
+            vecBP.push_back ( pstCmd->fTopSurfaceHeight );
+        }        
     }
     cv::Mat matXt ( vecXt ), matYt ( vecYt ), matPhase ( vecPhase ), matBP ( vecBP );
-    if ( ! pstCmd->matTopSurfacePhase.empty() ) {        
-        matXt.push_back ( matX.reshape ( 1, ToInt32 ( matX.total () ) ) );
-        matYt.push_back ( matY.reshape ( 1, ToInt32 ( matY.total () ) ) );
-        matPhase.push_back ( pstCmd->matTopSurfacePhase.reshape ( 1, ToInt32 ( pstCmd->matTopSurfacePhase.total () ) ) );
-        matBP.push_back ( cv::Mat ( cv::Mat::ones ( ToInt32 ( pstCmd->matTopSurfacePhase.total() ), 1, CV_32FC1 ) * pstCmd->fTopSurfaceHeight ) );
-    }
-    matXt.reshape ( 1, 1 );
-    matYt.reshape ( 1, 1 );
     cv::Mat matXX = prepareOrder3SurfaceFit ( matXt, matYt );
     cv::Mat matBPRepeat = cv::repeat ( matBP, 1, matXX.cols );
     matXX = matXX.mul ( matBPRepeat );
