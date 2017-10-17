@@ -234,7 +234,6 @@ struct PR_INSP_DEVICE_RPY {
     Int32                   nDeviceCount;
     PR_DEVICE_INSP_RESULT   astDeviceResult[PR_MAX_DEVICE_COUNT];
 };
-
 /******************************************
 * End of Device Inspection Section
 ******************************************/
@@ -699,7 +698,6 @@ struct PR_LRN_CONTOUR_RPY {
     VectorOfVectorOfPoint   vecContours;
     cv::Mat                 matResultImg;
     Int32                   nRecordId;
-
 };
 
 struct PR_INSP_CONTOUR_CMD {

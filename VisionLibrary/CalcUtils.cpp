@@ -6,18 +6,15 @@ namespace AOI
 namespace Vision
 {
 
-/*static*/ double CalcUtils::radian2Degree( double fRadian )
-{
+/*static*/ double CalcUtils::radian2Degree( double fRadian ) {
     return ( fRadian * 180.f / CV_PI );
 }
 
-/*static*/ double CalcUtils::degree2Radian( double fDegree )
-{
+/*static*/ double CalcUtils::degree2Radian( double fDegree ) {
     return ( fDegree * CV_PI / 180.f );
 }
 
-/*static*/ float CalcUtils::ptDisToLine(const cv::Point2f &ptInput, bool bReversedFit, float fSlope, float fIntercept )
-{
+/*static*/ float CalcUtils::ptDisToLine(const cv::Point2f &ptInput, bool bReversedFit, float fSlope, float fIntercept ) {
     float distance = 0.f;
     if ( bReversedFit ) {
         if (fabs(fSlope) < 0.0001) {
@@ -32,14 +29,10 @@ namespace Vision
             if (ptInput.x < ptCrossPoint.x)
                 distance = -distance;
         }
-    }
-    else
-    {
+    }else {
         if (fabs(fSlope) < 0.0001) {
             distance = ptInput.y - fIntercept;
-        }
-        else
-        {
+        }else {
             float fSlopeOfPerpendicularLine = -1.f / fSlope;
             float fInterceptOfPerpendicularLine = ptInput.y - fSlopeOfPerpendicularLine * ptInput.x;
             cv::Point2f ptCrossPoint;
@@ -49,13 +42,11 @@ namespace Vision
             if (ptInput.y < ptCrossPoint.y)
                 distance = -distance;
         }
-    }
-    
+    }    
     return distance;
 }
 
-/*static*/ PR_Line2f CalcUtils::calcEndPointOfLine( const VectorOfPoint &vecPoint, bool bReversedFit, float fSlope, float fIntercept )
-{
+/*static*/ PR_Line2f CalcUtils::calcEndPointOfLine( const VectorOfPoint &vecPoint, bool bReversedFit, float fSlope, float fIntercept ) {
     float fMinX = 10000.f, fMinY = 10000.f, fMaxX = -10000.f, fMaxY = -10000.f;
     for ( const auto &point : vecPoint )    {
         cv::Point2f pt2f(point);
@@ -80,8 +71,7 @@ namespace Vision
     return line;
 }
 
-/*static*/ PR_Line2f CalcUtils::calcEndPointOfLine( const ListOfPoint &listPoint, bool bReversedFit, float fSlope, float fIntercept )
-{
+/*static*/ PR_Line2f CalcUtils::calcEndPointOfLine( const ListOfPoint &listPoint, bool bReversedFit, float fSlope, float fIntercept ) {
     float fMinX = 10000.f, fMinY = 10000.f, fMaxX = -10000.f, fMaxY = -10000.f;
     for ( const auto &point : listPoint )    {
         cv::Point2f pt2f(point);
@@ -106,8 +96,7 @@ namespace Vision
     return line;
 }
 
-/*static*/ cv::Point2f CalcUtils::lineIntersect(float fSlope1, float fIntercept1, float fSlope2, float fIntercept2)
-{
+/*static*/ cv::Point2f CalcUtils::lineIntersect(float fSlope1, float fIntercept1, float fSlope2, float fIntercept2) {
     cv::Point2f ptResult;
     if ( fabs ( fSlope1 - fSlope2 ) < 0.0001 )
         return ptResult;
@@ -145,8 +134,7 @@ namespace Vision
     return vecPoint;
 }
 
-/*static*/ float CalcUtils::guassianValue(float ssq, float x )
-{
+/*static*/ float CalcUtils::guassianValue(float ssq, float x ) {
     return ToFloat ( exp ( - ( x * x ) / ( 2.0 * ssq ) ) / ( CV_PI * ssq ) );
 }
 
@@ -164,8 +152,7 @@ namespace Vision
 
 /*static*/ void CalcUtils::filter2D_Conv(cv::InputArray src, cv::OutputArray dst, int ddepth,
                    cv::InputArray kernel, cv::Point anchor,
-                   double delta, int borderType )
-{
+                   double delta, int borderType ) {
     cv::Mat newKernel;
     const int FLIP_H_Z = -1;
     cv::flip ( kernel, newKernel, FLIP_H_Z );
