@@ -332,7 +332,7 @@ void VisionWidget::drawTmplImage(const cv::Mat &matTmpl)
         cvtColor ( matDisplay, matDisplay, CV_BGR2RGB );
     else
         cvtColor ( matDisplay, matDisplay, CV_GRAY2RGB );
-    QImage image = QImage((uchar*) matDisplay.data, matDisplay.cols, matDisplay.rows, ToInt32(matDisplay.step), QImage::Format_RGB888);
+    QImage image = QImage((uchar*) matDisplay.data, matDisplay.cols, matDisplay.rows, ToInt(matDisplay.step), QImage::Format_RGB888);
     ui.labelTmplView->setPixmap(QPixmap::fromImage(image));
 }
 

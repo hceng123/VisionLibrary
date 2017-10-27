@@ -23,12 +23,13 @@ void TestCalcCameraMTF() {
     stCmd.rectHSmallPatternROI = cv::Rect ( 989, 1010, 27, 27 );
     PR_CalcCameraMTF ( &stCmd, &stRpy );
     std::cout << "PR_CalcCameraMTF status " << ToInt32( stRpy.enStatus ) << std::endl;
-    std::cout << std::fixed << std::setprecision ( 2 ) << "Big pattern vertical absolute mtf " << stRpy.fBigPatternAbsMtfV << std::endl;
-    std::cout << std::fixed << std::setprecision ( 2 ) << "Big pattern horizontal absolute mtf " << stRpy.fBigPatternAbsMtfH << std::endl;
-    std::cout << std::fixed << std::setprecision ( 2 ) << "Small pattern vertical absolute mtf " << stRpy.fSmallPatternAbsMtfV << std::endl;
-    std::cout << std::fixed << std::setprecision ( 2 ) << "Small pattern horizontal absolute mtf " << stRpy.fSmallPatternAbsMtfH << std::endl;
-    std::cout << std::fixed << std::setprecision ( 2 ) << "Small pattern vertical relative mtf " << stRpy.fSmallPatternRelMtfV << std::endl;
-    std::cout << std::fixed << std::setprecision ( 2 ) << "Small pattern horizontal relative mtf " << stRpy.fSmallPatternRelMtfH << std::endl;
+    std::cout << std::fixed << std::setprecision ( 2 );
+    std::cout << "Big pattern vertical absolute mtf " << stRpy.fBigPatternAbsMtfV << std::endl;
+    std::cout << "Big pattern horizontal absolute mtf " << stRpy.fBigPatternAbsMtfH << std::endl;
+    std::cout << "Small pattern vertical absolute mtf " << stRpy.fSmallPatternAbsMtfV << std::endl;
+    std::cout << "Small pattern horizontal absolute mtf " << stRpy.fSmallPatternAbsMtfH << std::endl;
+    std::cout << "Small pattern vertical relative mtf " << stRpy.fSmallPatternRelMtfV << std::endl;
+    std::cout << "Small pattern horizontal relative mtf " << stRpy.fSmallPatternRelMtfH << std::endl;
 }
 
 }

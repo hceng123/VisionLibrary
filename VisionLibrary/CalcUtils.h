@@ -220,7 +220,8 @@ public:
 
     template<typename T>
     static inline void floorByRef ( cv::Mat &matInOut ) {
-        for( int i = 0; i < ToInt32 ( matInOut.total() ); ++ i ) {
+        int TOTAL = ToInt32 ( matInOut.total() );
+        for( int i = 0; i < TOTAL; ++ i ) {
             T &value = matInOut.at<T> ( i );
             value = std::floor ( value );
         }

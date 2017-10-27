@@ -1128,8 +1128,12 @@ VisionStatus VisionAlgorithm::inspDevice(PR_INSP_DEVICE_CMD *pstInspDeviceCmd, P
         crossLineTwoPtOne = pstRpy->ptObjPos + CalcUtils::warpPoint<double> ( matWarp, crossLineTwoPtOne );
         crossLineTwoPtTwo = pstRpy->ptObjPos + CalcUtils::warpPoint<double> ( matWarp, crossLineTwoPtTwo );
 
-        cv::line ( pstRpy->matResultImg, crossLineOnePtOne, crossLineOnePtTwo, _constBlueScalar, 2 );
-        cv::line ( pstRpy->matResultImg, crossLineTwoPtOne, crossLineTwoPtTwo, _constBlueScalar, 2 );
+        int nLineWidth = 1;
+        if ( ptrRecord->getTmpl().total() > 1000 )
+            nLineWidth = 2;
+
+        cv::line ( pstRpy->matResultImg, crossLineOnePtOne, crossLineOnePtTwo, _constBlueScalar, nLineWidth );
+        cv::line ( pstRpy->matResultImg, crossLineTwoPtOne, crossLineTwoPtTwo, _constBlueScalar, nLineWidth );
 
         matWarp = cv::getRotationMatrix2D ( pstRpy->ptObjPos, -pstRpy->fRotation, 1. );
         auto vecPoint2f = CalcUtils::warpRect<double> ( matWarp, cv::Rect2f ( pstRpy->ptObjPos.x - ToFloat ( ptrRecord->getTmpl().cols / 2 ),
@@ -1137,7 +1141,7 @@ VisionStatus VisionAlgorithm::inspDevice(PR_INSP_DEVICE_CMD *pstInspDeviceCmd, P
         VectorOfVectorOfPoint vecVecPoint(1);
         for ( const auto &point : vecPoint2f )
             vecVecPoint[0].push_back ( point );
-        cv::polylines ( pstRpy->matResultImg, vecVecPoint, true, _constBlueScalar, 2 );
+        cv::polylines ( pstRpy->matResultImg, vecVecPoint, true, _constBlueScalar, nLineWidth );
     }
     FINISH_LOGCASE;
     MARK_FUNCTION_END_TIME;
@@ -5929,6 +5933,62 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     Unwrap::calc3DHeight ( pstCmd, pstRpy );
 
     FINISH_LOGCASE;
+    MARK_FUNCTION_END_TIME;
+    pstRpy->enStatus = VisionStatus::OK;
+    return pstRpy->enStatus;
+}
+
+/*static*/ VisionStatus VisionAlgorithm::fastCalc3DHeight(const PR_FAST_CALC_3D_HEIGHT_CMD *const pstCmd, PR_FAST_CALC_3D_HEIGHT_RPY *pstRpy, bool bReplay /*= false*/) {
+    assert(pstCmd != nullptr && pstRpy != nullptr);
+
+    if ( pstCmd->vecInputImgs.size() != 8 ) {
+        WriteLog("The input image count is not 8.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    for ( const auto &mat : pstCmd->vecInputImgs ) {
+        if ( mat.empty() ) {
+            WriteLog("The input image is empty.");
+            pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+            return pstRpy->enStatus;
+        }
+    }
+
+    if ( pstCmd->matThickToThinStripeK.empty() ) {
+        WriteLog("The matThickToThinStripeK is empty.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    if ( pstCmd->matBaseWrappedAlpha.empty() ) {
+        WriteLog("matBaseWrappedAlpha is empty.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    if ( pstCmd->matBaseWrappedAlpha.size() != pstCmd->vecInputImgs[0].size() ) {
+        WriteLog("The size of matBaseWrappedAlpha is not match with the input image size..");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    if ( pstCmd->matBaseWrappedBeta.empty() ) {
+        WriteLog("matBaseWrappedBeta is empty.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    if ( pstCmd->matBaseWrappedBeta.size() != pstCmd->vecInputImgs[0].size() ) {
+        WriteLog("The size of matBaseWrappedBeta is not match with the input image size..");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    MARK_FUNCTION_START_TIME;
+
+    Unwrap::fastCalc3DHeight ( pstCmd, pstRpy );
+
     MARK_FUNCTION_END_TIME;
     pstRpy->enStatus = VisionStatus::OK;
     return pstRpy->enStatus;

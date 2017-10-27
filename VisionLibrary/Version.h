@@ -14,8 +14,11 @@
  * Copyright (c) 2016-2016, Xiao Shengguang.  All rights reserved.
  ****************************************************************************/
 
+//2017-10-27 (XSG) Add PR_FastCalc3DHeight function.
+#define AOI_VISION_VERSION          "1.00.10"
+
 //2017-10-09 (XSG) Add PR_Integrate3DCalib function.
-#define AOI_VISION_VERSION          "1.00.09"
+//#define AOI_VISION_VERSION          "1.00.09"
 
 //2017-09-29 (XSG) Add PR_CalcCameraMTF function.
 //2017-09-28 (XSG) Fix PR_CalibrateCamera fail problem on new optics image.

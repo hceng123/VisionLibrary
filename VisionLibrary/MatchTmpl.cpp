@@ -169,13 +169,13 @@ MatchTmpl::~MatchTmpl ()
 /*static*/ cv::Point MatchTmpl::myMatchTemplate(const cv::Mat &mat, const cv::Mat &matTmpl)
 {
     cv::Mat matResult;
-    const int match_method = CV_TM_SQDIFF;
+    int match_method = CV_TM_SQDIFF;
 
     /// Create the result matrix
     int result_cols = mat.cols - matTmpl.cols + 1;
     int result_rows = mat.rows - matTmpl.rows + 1;
 
-    matResult.create(result_rows, result_cols, CV_32FC1);
+    matResult.create ( result_rows, result_cols, CV_32FC1);
 
     /// Do the Matching and Normalize
     cv::matchTemplate ( mat, matTmpl, matResult, match_method );

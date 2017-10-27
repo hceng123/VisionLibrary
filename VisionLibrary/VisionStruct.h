@@ -856,6 +856,8 @@ struct PR_CALIB_3D_BASE_RPY {
     cv::Mat                 matThickToThinStripeK;  //The factor between thick stripe and thin stripe.
     cv::Mat                 matBaseSurfaceParam;    //The bezier parameters to form the base surface.
     float                   fBaseStartAvgPhase;     //The average phase of the top-left corner of the thick stripe. It is used to constrain the object's phase within -pi~pi of base phase.
+    cv::Mat                 matBaseWrappedAlpha;    //The wrapped thick stripe phase.
+    cv::Mat                 matBaseWrappedBeta;     //The wrapped think stripe phase.
 };
 
 struct PR_CALC_3D_BASE_CMD {
@@ -983,6 +985,32 @@ struct PR_CALC_3D_HEIGHT_CMD {
 };
 
 struct PR_CALC_3D_HEIGHT_RPY {
+    VisionStatus            enStatus;
+    cv::Mat                 matPhase;
+    cv::Mat                 matHeight;
+};
+
+struct PR_FAST_CALC_3D_HEIGHT_CMD {
+    PR_FAST_CALC_3D_HEIGHT_CMD() :
+        bEnableGaussianFilter ( true ),
+        bReverseSeq ( true ),
+        fRemoveHarmonicWaveK ( 0.f ),
+        fMinAmplitude ( 1.5f ) {}
+    VectorOfMat             vecInputImgs;
+    bool                    bEnableGaussianFilter;
+    bool                    bReverseSeq;            //Change the image sequence.
+    float                   fRemoveHarmonicWaveK;   //The factor to remove the harmonic wave in the thick stripe. If it is 0, then this procedure will be skipped.
+    float                   fMinAmplitude;          //In a group of 4 images, if a pixel's gray scale amplitude less than this value, this pixel will be discarded.
+    cv::Mat                 matThickToThinStripeK;  //The factor between thick stripe and thin stripe.
+    cv::Mat                 matBaseWrappedAlpha;    //The wrapped thick stripe phase.
+    cv::Mat                 matBaseWrappedBeta;     //The wrapped think stripe phase.
+    float                   fBaseStartAvgPhase;     //The average phase of the top-left corner of the thick stripe. It is used to constrain the object's phase within -pi~pi of base phase.
+    //Below 2 parameters are result of PR_Integrate3DCalib, they are calibrated from positive, negative and H = 5mm surface phase. If these 2 parameters are used, then matPhaseToHeightK will be ignored.
+    cv::Mat                 matIntegratedK;          //The 12 parameters to calculate height. They are K1~K10 and P1, P2. H = (Phase + P1*Phase^2 + P2*Phase^3) ./ (K(1)*x1.^3 + K(2)*y1.^3 + K(3)*x1.^2.*y1 + K(4)*x1.*y1.^2 + K(5)*x1.^2 + K(6)*y1.^2 + K(7)*x1.*y1 + K(8)*x1 + K(9)*y1 + K(10))
+    cv::Mat                 matOrder3CurveSurface;  //The regression 3 order curve surface to convert phase to height. It is calculated by K(1)*x1.^3 + K(2)*y1.^3 + K(3)*x1.^2.*y1 + K(4)*x1.*y1.^2 + K(5)*x1.^2 + K(6)*y1.^2 + K(7)*x1.*y1 + K(8)*x1 + K(9)*y1 + K(10)
+};
+
+struct PR_FAST_CALC_3D_HEIGHT_RPY {
     VisionStatus            enStatus;
     cv::Mat                 matPhase;
     cv::Mat                 matHeight;

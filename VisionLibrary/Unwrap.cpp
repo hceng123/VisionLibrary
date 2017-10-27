@@ -26,6 +26,7 @@ Unwrap::~Unwrap ()
 
 /*static*/ const float Unwrap::GAUSSIAN_FILTER_SIGMA        = ToFloat ( pow ( 20, 0.5 ) );
 /*static*/ const float Unwrap::ONE_HALF_CYCLE               = ToFloat ( CV_PI );
+/*static*/ const float Unwrap::ONE_CYCLE                    = ONE_HALF_CYCLE * 2;
 /*static*/ const float Unwrap::CALIB_HEIGHT_STEP_USEFUL_PT  =  0.8f;
 /*static*/ const float Unwrap::REMOVE_HEIGHT_NOSIE_RATIO    =  0.995f;
 /*static*/ const float Unwrap::LOW_BASE_PHASE               = - ToFloat( CV_PI );
@@ -294,12 +295,12 @@ inline std::vector<size_t> sort_indexes(const std::vector<T> &v) {
 
     cv::Mat matAlpha, matBeta;
     cv::phase ( -mat00, mat01, matAlpha );
+    cv::phase ( -mat10, mat11, matBeta );
+
     //The opencv cv::phase function return result is 0~2*PI, but matlab is -PI~PI, so here need to do a conversion.
     cv::Mat matOverPi;
     cv::compare ( matAlpha, cv::Scalar::all ( CV_PI ), matOverPi, cv::CmpTypes::CMP_GT );
-    cv::subtract ( matAlpha, cv::Scalar::all ( 2.f * CV_PI ), matAlpha, matOverPi );
-
-    cv::phase ( -mat10, mat11, matBeta );
+    cv::subtract ( matAlpha, cv::Scalar::all ( 2.f * CV_PI ), matAlpha, matOverPi );    
     cv::compare ( matBeta, cv::Scalar::all ( CV_PI ), matOverPi, cv::CmpTypes::CMP_GT );
     cv::subtract ( matBeta, cv::Scalar::all ( 2.f * CV_PI ), matBeta, matOverPi );
 
@@ -329,6 +330,13 @@ inline std::vector<size_t> sort_indexes(const std::vector<T> &v) {
     cv::Mat matX, matY;
     CalcUtils::meshgrid<float> ( 1.f, 1.f, ToFloat ( COLS ), 1.f, 1.f, ToFloat ( ROWS ), matX, matY );
     pstRpy->matBaseSurfaceParam = _calculatePPz ( matX, matY, matBeta );
+
+    cv::Mat matFittedBeta  = calculateBaseSurface ( matBeta.rows, matBeta.cols, pstRpy->matBaseSurfaceParam );
+    cv::Mat matFittedAlpha = ( matFittedBeta - pstRpy->matThickToThinStripeK.at<DATA_TYPE>(1) ) / pstRpy->matThickToThinStripeK.at<DATA_TYPE>(0);
+    _phaseWrap ( matFittedAlpha );
+    pstRpy->matBaseWrappedAlpha = matFittedAlpha;
+     _phaseWrap ( matFittedBeta );
+    pstRpy->matBaseWrappedBeta = matFittedBeta;
     pstRpy->enStatus = VisionStatus::OK;
 }
 
@@ -409,6 +417,7 @@ static inline cv::Mat calcOrder5BezierCoeff ( const cv::Mat &matU ) {
     return matP;
 }
 
+//The 5 order bezier surface has 25 parameters.
 /*static*/ cv::Mat Unwrap::_calculatePPz(const cv::Mat &matX, const cv::Mat &matY, const cv::Mat &matZ) {
     int ROWS = matX.rows;
     int COLS = matX.cols;
@@ -583,7 +592,7 @@ static inline cv::Mat calcOrder5BezierCoeff ( const cv::Mat &matU ) {
     if ( pstCmd->bEnableGaussianFilter ) {
         float fSigma = ToFloat ( pow ( 5, 0.5 ) );
         cv::GaussianBlur ( matH, matH, cv::Size(5, 5), fSigma, fSigma, cv::BorderTypes::BORDER_REPLICATE );
-    }    
+    }
 
     pstRpy->matPhase = matH;
     if ( ! pstCmd->matOrder3CurveSurface.empty() && ! pstCmd->matIntegratedK.empty() ) {
@@ -595,6 +604,96 @@ static inline cv::Mat calcOrder5BezierCoeff ( const cv::Mat &matU ) {
         cv::divide ( matH, matRatio, pstRpy->matHeight );
     }else
         pstRpy->matHeight = matH;
+
+    pstRpy->enStatus = VisionStatus::OK;
+}
+
+/*static*/ void Unwrap::fastCalc3DHeight(const PR_FAST_CALC_3D_HEIGHT_CMD *const pstCmd, PR_FAST_CALC_3D_HEIGHT_RPY *pstRpy) {
+    CStopWatch stopWatch;
+    std::vector<cv::Mat> vecConvertedImgs;
+    for ( auto &mat : pstCmd->vecInputImgs ) {
+        cv::Mat matConvert = mat;
+        if ( mat.channels() > 1 )
+            cv::cvtColor ( mat, matConvert, CV_BGR2GRAY );
+        matConvert.convertTo ( matConvert, CV_32FC1 );
+        vecConvertedImgs.push_back ( matConvert );
+    }
+
+    TimeLog::GetInstance()->addTimeLog( "Convert image to float.", stopWatch.Span() );
+
+    if ( pstCmd->bEnableGaussianFilter ) {
+        //Filtering can reduce residues at the expense of a loss of spatial resolution.
+        for ( int i = 0; i < PR_GROUP_TEXTURE_IMG_COUNT; ++ i )        
+            cv::GaussianBlur ( vecConvertedImgs[i], vecConvertedImgs[i], cv::Size(GUASSIAN_FILTER_SIZE, GUASSIAN_FILTER_SIZE), GAUSSIAN_FILTER_SIGMA, GAUSSIAN_FILTER_SIGMA, cv::BorderTypes::BORDER_REPLICATE );
+    }
+
+    TimeLog::GetInstance()->addTimeLog( "Guassian Filter.", stopWatch.Span() );
+
+    if ( pstCmd->bReverseSeq ) {
+        std::swap ( vecConvertedImgs[1], vecConvertedImgs[3] );
+        std::swap ( vecConvertedImgs[5], vecConvertedImgs[7] );
+    }
+    cv::Mat mat00 = vecConvertedImgs[2] - vecConvertedImgs[0];
+    cv::Mat mat01 = vecConvertedImgs[3] - vecConvertedImgs[1];
+
+    cv::Mat mat10 = vecConvertedImgs[6] - vecConvertedImgs[4];
+    cv::Mat mat11 = vecConvertedImgs[7] - vecConvertedImgs[5];
+
+    cv::Mat matAlpha, matBeta;
+    cv::phase ( -mat00, mat01, matAlpha );
+    cv::phase ( -mat10, mat11, matBeta );
+
+    TimeLog::GetInstance()->addTimeLog( "2 cv::phase ", stopWatch.Span() );
+
+    //The opencv cv::phase function return result is 0~2*PI, but matlab is -PI~PI, so here need to do a conversion.
+    //cv::Mat matOverPi;
+    //cv::compare ( matAlpha, cv::Scalar::all ( CV_PI ), matOverPi, cv::CmpTypes::CMP_GT );
+    //cv::subtract ( matAlpha, cv::Scalar::all ( 2.f * CV_PI ), matAlpha, matOverPi );
+    //
+    //cv::compare ( matBeta, cv::Scalar::all ( CV_PI ), matOverPi, cv::CmpTypes::CMP_GT );
+    //cv::subtract ( matBeta, cv::Scalar::all ( 2.f * CV_PI ), matBeta, matOverPi );
+
+    //TimeLog::GetInstance()->addTimeLog( "2 cv::compare and cv::subtract ", stopWatch.Span() );
+
+    cv::Mat matAvgUnderTolIndex;
+    {
+        cv::Mat matB;
+        TimeLog::GetInstance ()->addTimeLog ( "Before find amplitude less than tol. ", stopWatch.Span () );
+        matB = mat10.mul ( mat10 ) + mat11.mul ( mat11 ); //matB is amplitude of the wave. mat10 = 2*sin(theta), mat11 = 2*cos(theta).
+        cv::compare ( matB, pstCmd->fMinAmplitude * pstCmd->fMinAmplitude * 4, matAvgUnderTolIndex, cv::CmpTypes::CMP_LT );
+        TimeLog::GetInstance ()->addTimeLog ( "After amplitude less than tol. ", stopWatch.Span () );
+    }
+
+    matAlpha = matAlpha - pstCmd->matBaseWrappedAlpha;
+    matBeta  = matBeta  - pstCmd->matBaseWrappedBeta;
+
+    _phaseWrap ( matAlpha );
+    TimeLog::GetInstance()->addTimeLog( "_phaseWrap.", stopWatch.Span() );
+
+    _phaseWrapByRefer ( matBeta, matAlpha * pstCmd->matThickToThinStripeK.at<DATA_TYPE>(0) );
+    TimeLog::GetInstance()->addTimeLog( "_phaseWrapByRefer.", stopWatch.Span() );
+
+    matBeta.setTo ( NAN, matAvgUnderTolIndex );
+
+    cv::Mat matH = matBeta;
+
+    cv::medianBlur ( matH, matH, 5 );
+    TimeLog::GetInstance()->addTimeLog( "MedianBlur.", stopWatch.Span() );
+
+    cv::Mat matSnoop(matAlpha, cv::Rect(0, 0, PHASE_SNOOP_WIN_SIZE, PHASE_SNOOP_WIN_SIZE ) );
+    auto fStartAvgPhase = ToFloat ( cv::mean ( matSnoop )[0] );
+    if ( ( fStartAvgPhase - pstCmd->fBaseStartAvgPhase ) > ( LOW_BASE_PHASE + ToFloat ( CV_PI ) * 2.f ) )
+        matAlpha = matAlpha - ToFloat ( CV_PI ) * 2.f;
+    else if ( ( fStartAvgPhase - pstCmd->fBaseStartAvgPhase ) < LOW_BASE_PHASE )
+        matAlpha = matAlpha + ToFloat ( CV_PI ) * 2.f;
+
+    pstRpy->matPhase = matH;
+    if ( ! pstCmd->matOrder3CurveSurface.empty() && ! pstCmd->matIntegratedK.empty() )
+        pstRpy->matHeight = _calcHeightFromPhase ( pstRpy->matPhase, pstCmd->matOrder3CurveSurface, pstCmd->matIntegratedK );
+    else
+        pstRpy->matHeight = matH;
+
+    TimeLog::GetInstance()->addTimeLog( "_calcHeightFromPhase.", stopWatch.Span() );
 
     pstRpy->enStatus = VisionStatus::OK;
 }

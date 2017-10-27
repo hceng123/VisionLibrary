@@ -2,6 +2,7 @@
 #define _AOI_UNWRAP_H_
 
 #include "VisionHeader.h"
+#include "CalcUtils.h"
 
 namespace AOI
 {
@@ -35,6 +36,7 @@ public:
     static void comb3DCalib(const PR_COMB_3D_CALIB_CMD *const pstCmd, PR_COMB_3D_CALIB_RPY *const pstRpy);
     static void integrate3DCalib(const PR_INTEGRATE_3D_CALIB_CMD *const pstCmd, PR_INTEGRATE_3D_CALIB_RPY *const pstRpy);
     static void calc3DHeight(const PR_CALC_3D_HEIGHT_CMD *const pstCmd, PR_CALC_3D_HEIGHT_RPY *const pstRpy);
+    static void fastCalc3DHeight(const PR_FAST_CALC_3D_HEIGHT_CMD *const pstCmd, PR_FAST_CALC_3D_HEIGHT_RPY *pstRpy);
     static void calc3DHeightDiff(const PR_CALC_3D_HEIGHT_DIFF_CMD *const pstCmd, PR_CALC_3D_HEIGHT_DIFF_RPY *const pstRpy);
     static void calcMTF(const PR_CALC_MTF_CMD *const pstCmd, PR_CALC_MTF_RPY *const pstRpy);
     static void calcPD(const PR_CALC_PD_CMD *const pstCmd, PR_CALC_PD_RPY *const pstRpy);
@@ -53,6 +55,16 @@ private:
     static cv::Mat _drawHeightGrid(const cv::Mat &matHeight, int nGridRow, int nGridCol, const cv::Size &szMeasureWinSize);
     static void _drawStar(cv::Mat &matInOut, cv::Point ptPosition, int nSize );
     static cv::Mat _calcHeightFromPhase(const cv::Mat &matPhase, const cv::Mat &matHtt, const cv::Mat &matK);
+    static inline void _phaseWrap(cv::Mat &matPhase) {
+        cv::Mat matNn = matPhase / ONE_CYCLE + 0.5;
+        CalcUtils::floorByRef<DATA_TYPE> ( matNn ); //The floor takes about 36ms, need to optimize
+        matPhase = matPhase - matNn * ONE_CYCLE;
+    }
+    static inline void _phaseWrapByRefer(cv::Mat &matPhase, const cv::Mat &matRef) {
+        cv::Mat matNn = ( matPhase - matRef ) / ONE_CYCLE + 0.5;  //Use matResult to store the substract result to reduce memory allocate time.
+        CalcUtils::floorByRef<DATA_TYPE> ( matNn );
+        matPhase = matPhase - matNn * ONE_CYCLE;
+    }
     static const int GUASSIAN_FILTER_SIZE =     11;
     static const int BEZIER_RANK =              5;
     static const int ERODE_WIN_SIZE =           31;
@@ -61,6 +73,7 @@ private:
 
     static const float GAUSSIAN_FILTER_SIGMA;
     static const float ONE_HALF_CYCLE;
+    static const float ONE_CYCLE;
     static const float CALIB_HEIGHT_STEP_USEFUL_PT;
     static const float REMOVE_HEIGHT_NOSIE_RATIO;
     static const float LOW_BASE_PHASE;
