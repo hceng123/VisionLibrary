@@ -5,6 +5,7 @@
 #include "VisionAlgorithm.h"
 #include "TimeLog.h"
 #include "Log.h"
+#include <iostream>
 #include <numeric>
 #include <limits>
 
@@ -633,14 +634,19 @@ static inline cv::Mat calcOrder5BezierCoeff ( const cv::Mat &matU ) {
         std::swap ( vecConvertedImgs[1], vecConvertedImgs[3] );
         std::swap ( vecConvertedImgs[5], vecConvertedImgs[7] );
     }
-    cv::Mat mat00 = vecConvertedImgs[2] - vecConvertedImgs[0];
-    cv::Mat mat01 = vecConvertedImgs[3] - vecConvertedImgs[1];
 
-    cv::Mat mat10 = vecConvertedImgs[6] - vecConvertedImgs[4];
-    cv::Mat mat11 = vecConvertedImgs[7] - vecConvertedImgs[5];
+    cv::Mat matBuffer1 ( vecConvertedImgs[0] ), matBuffer2 ( vecConvertedImgs[1] ), mat10 ( vecConvertedImgs[2] ), mat11( vecConvertedImgs[3] ), matAlpha ( vecConvertedImgs[4] ), matBeta( vecConvertedImgs[5] ) ;
 
-    cv::Mat matAlpha, matBeta;
-    cv::phase ( -mat00, mat01, matAlpha );
+    matBuffer1 = vecConvertedImgs[2] - vecConvertedImgs[0];
+    matBuffer2 = vecConvertedImgs[3] - vecConvertedImgs[1];
+    //cv::Mat mat00 = vecConvertedImgs[2] - vecConvertedImgs[0];
+    //cv::Mat mat01 = vecConvertedImgs[3] - vecConvertedImgs[1];
+
+    mat10 = vecConvertedImgs[6] - vecConvertedImgs[4];
+    mat11 = vecConvertedImgs[7] - vecConvertedImgs[5];
+
+    //cv::Mat matAlpha, matBeta;
+    cv::phase ( -matBuffer1, matBuffer2, matAlpha );
     cv::phase ( -mat10, mat11, matBeta );
 
     TimeLog::GetInstance()->addTimeLog( "2 cv::phase ", stopWatch.Span() );
@@ -657,20 +663,30 @@ static inline cv::Mat calcOrder5BezierCoeff ( const cv::Mat &matU ) {
 
     cv::Mat matAvgUnderTolIndex;
     {
-        cv::Mat matB;
         TimeLog::GetInstance ()->addTimeLog ( "Before find amplitude less than tol. ", stopWatch.Span () );
-        matB = mat10.mul ( mat10 ) + mat11.mul ( mat11 ); //matB is amplitude of the wave. mat10 = 2*sin(theta), mat11 = 2*cos(theta).
-        cv::compare ( matB, pstCmd->fMinAmplitude * pstCmd->fMinAmplitude * 4, matAvgUnderTolIndex, cv::CmpTypes::CMP_LT );
+        matBuffer1 = mat10.mul ( mat10 );
+        matBuffer2 = mat11.mul ( mat11 );
+        matBuffer1 = matBuffer1 + matBuffer2;
+        //matBuffer1 = matBuffer1 + ; //matB is amplitude of the wave. mat10 = 2*sin(theta), mat11 = 2*cos(theta).
+        cv::compare ( matBuffer1, pstCmd->fMinAmplitude * pstCmd->fMinAmplitude * 4, matAvgUnderTolIndex, cv::CmpTypes::CMP_LT );
         TimeLog::GetInstance ()->addTimeLog ( "After amplitude less than tol. ", stopWatch.Span () );
     }
-
+    
     matAlpha = matAlpha - pstCmd->matBaseWrappedAlpha;
     matBeta  = matBeta  - pstCmd->matBaseWrappedBeta;
+    //cv::subtract ( matAlpha, pstCmd->matBaseWrappedAlpha, matAlpha );
+    //cv::subtract ( matBeta,  pstCmd->matBaseWrappedBeta,  matBeta );
 
-    _phaseWrap ( matAlpha );
-    TimeLog::GetInstance()->addTimeLog( "_phaseWrap.", stopWatch.Span() );
+    TimeLog::GetInstance ()->addTimeLog ( "2 substract take. ", stopWatch.Span () );
 
-    _phaseWrapByRefer ( matBeta, matAlpha * pstCmd->matThickToThinStripeK.at<DATA_TYPE>(0) );
+    _phaseWrapBuffer ( matAlpha, matBuffer1 );
+    TimeLog::GetInstance()->addTimeLog( "_phaseWrapBuffer.", stopWatch.Span() );
+
+    //cv::multiply ( matAlpha, pstCmd->matThickToThinStripeK.at<DATA_TYPE>(0), matBuffer1 );
+    matBuffer1 = matAlpha * pstCmd->matThickToThinStripeK.at<DATA_TYPE>(0);
+    TimeLog::GetInstance()->addTimeLog( "Multiply takes.", stopWatch.Span() );
+
+    _phaseWrapByRefer ( matBeta, matBuffer1 );
     TimeLog::GetInstance()->addTimeLog( "_phaseWrapByRefer.", stopWatch.Span() );
 
     matBeta.setTo ( NAN, matAvgUnderTolIndex );
@@ -689,7 +705,7 @@ static inline cv::Mat calcOrder5BezierCoeff ( const cv::Mat &matU ) {
 
     pstRpy->matPhase = matH;
     if ( ! pstCmd->matOrder3CurveSurface.empty() && ! pstCmd->matIntegratedK.empty() )
-        pstRpy->matHeight = _calcHeightFromPhase ( pstRpy->matPhase, pstCmd->matOrder3CurveSurface, pstCmd->matIntegratedK );
+        pstRpy->matHeight = _calcHeightFromPhaseBuffer ( pstRpy->matPhase, pstCmd->matOrder3CurveSurface, pstCmd->matIntegratedK, matBuffer1, matBuffer2 );
     else
         pstRpy->matHeight = matH;
 
@@ -1940,12 +1956,36 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
 }
 
 /*static*/ cv::Mat Unwrap::_calcHeightFromPhase(const cv::Mat &matPhase, const cv::Mat &matHtt, const cv::Mat &matK) {
+    CStopWatch stopWatch;
     cv::Mat matPhasePow2 = matPhase.mul ( matPhase );
     cv::Mat matPhasePow3 = matPhasePow2.mul ( matPhase );
-    cv::Mat matLeft = matPhase + matK.at<DATA_TYPE> ( 10 ) * matPhasePow2 + matK.at<DATA_TYPE> ( 11 ) * matPhasePow3;
-    cv::Mat matHeight;
+    TimeLog::GetInstance()->addTimeLog("_calcHeightFromPhase 2 mul take: ", stopWatch.Span() );
+    cv::Mat matLeft = matPhase + matPhasePow2 * matK.at<DATA_TYPE> ( 10 ) + matPhasePow3 * matK.at<DATA_TYPE> ( 11 );
+    TimeLog::GetInstance()->addTimeLog("_calcHeightFromPhase add and muliply take: ", stopWatch.Span() );
+    cv::Mat matHeight; 
     cv::divide ( matLeft, matHtt, matHeight );
+    TimeLog::GetInstance()->addTimeLog("cv::divide take: ", stopWatch.Span() );
     return matHeight;
+}
+
+/*static*/ cv::Mat Unwrap::_calcHeightFromPhaseBuffer(const cv::Mat &matPhase, const cv::Mat &matHtt, const cv::Mat &matK, cv::Mat &matBuffer1, cv::Mat &matBuffer2 ) {
+    CStopWatch stopWatch;
+    matBuffer1 = matPhase.mul ( matPhase );     //Pow 2    
+    TimeLog::GetInstance()->addTimeLog("_calcHeightFromPhase mul take: ", stopWatch.Span() );
+    auto K10 = matK.at<DATA_TYPE> ( 10 );
+    auto K11 = matK.at<DATA_TYPE> ( 11 );
+    
+    if ( K11 > 1e-5 ) {
+        matBuffer2 = matBuffer1.mul ( matPhase );   //Pow 3
+        matBuffer1 = matPhase + matBuffer1 * matK.at<DATA_TYPE> ( 10 ) + matBuffer2 * matK.at<DATA_TYPE> ( 11 );
+    }else {
+        matBuffer1 = matPhase + matBuffer1 * matK.at<DATA_TYPE> ( 10 );
+    }
+    
+    TimeLog::GetInstance()->addTimeLog("_calcHeightFromPhase add and muliply take: ", stopWatch.Span() );
+    matBuffer1 = matBuffer1 / matHtt;
+    TimeLog::GetInstance()->addTimeLog("cv::divide take: ", stopWatch.Span() );
+    return matBuffer1;
 }
 
 /*static*/ void Unwrap::integrate3DCalib(const PR_INTEGRATE_3D_CALIB_CMD *const pstCmd, PR_INTEGRATE_3D_CALIB_RPY *const pstRpy) {

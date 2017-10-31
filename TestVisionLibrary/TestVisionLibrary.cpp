@@ -571,7 +571,7 @@ int _tmain(int argc, _TCHAR* argv[])
 {
     cv::Mat matNan (3, 3, CV_32FC1, NAN );
     cv::Mat matCmpResult = cv::Mat ( matNan == matNan );
-    int nCount = cv::countNonZero ( matCmpResult );
+    int nCount = cv::countNonZero ( matNan );
     std::cout << "find NAN cout " << matCmpResult.total() - nCount << std::endl;
 
     PR_VERSION_INFO stVersionInfo;

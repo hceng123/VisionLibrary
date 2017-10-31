@@ -3,6 +3,7 @@
 
 #include "VisionHeader.h"
 #include "CalcUtils.h"
+#include "TimeLog.h"
 
 namespace AOI
 {
@@ -55,16 +56,48 @@ private:
     static cv::Mat _drawHeightGrid(const cv::Mat &matHeight, int nGridRow, int nGridCol, const cv::Size &szMeasureWinSize);
     static void _drawStar(cv::Mat &matInOut, cv::Point ptPosition, int nSize );
     static cv::Mat _calcHeightFromPhase(const cv::Mat &matPhase, const cv::Mat &matHtt, const cv::Mat &matK);
+    static cv::Mat _calcHeightFromPhaseBuffer(const cv::Mat &matPhase, const cv::Mat &matHtt, const cv::Mat &matK, cv::Mat &matBuffer1, cv::Mat &matBuffer2 );
+
     static inline void _phaseWrap(cv::Mat &matPhase) {
+        CStopWatch stopWatch;
         cv::Mat matNn = matPhase / ONE_CYCLE + 0.5;
+        TimeLog::GetInstance()->addTimeLog( "_phaseWrap Divide and add.", stopWatch.Span() );
+
         CalcUtils::floorByRef<DATA_TYPE> ( matNn ); //The floor takes about 36ms, need to optimize
+
+        TimeLog::GetInstance()->addTimeLog( "_phaseWrap floor takes.", stopWatch.Span() );
+
         matPhase = matPhase - matNn * ONE_CYCLE;
+
+        TimeLog::GetInstance()->addTimeLog( "_phaseWrap multiply and subtract takes.", stopWatch.Span() );
     }
-    static inline void _phaseWrapByRefer(cv::Mat &matPhase, const cv::Mat &matRef) {
-        cv::Mat matNn = ( matPhase - matRef ) / ONE_CYCLE + 0.5;  //Use matResult to store the substract result to reduce memory allocate time.
-        CalcUtils::floorByRef<DATA_TYPE> ( matNn );
-        matPhase = matPhase - matNn * ONE_CYCLE;
+
+    static inline void _phaseWrapBuffer(cv::Mat &matPhase, cv::Mat &matBuffer) {
+        CStopWatch stopWatch;
+        matBuffer = matPhase / ONE_CYCLE + 0.5;
+        TimeLog::GetInstance()->addTimeLog( "_phaseWrap Divide and add.", stopWatch.Span() );
+
+        CalcUtils::floorByRef<DATA_TYPE> ( matBuffer ); //The floor takes about 36ms, need to optimize
+
+        TimeLog::GetInstance()->addTimeLog( "_phaseWrap floor takes.", stopWatch.Span() );
+
+        matPhase = matPhase - matBuffer * ONE_CYCLE;
+
+        TimeLog::GetInstance()->addTimeLog( "_phaseWrap multiply and subtract takes.", stopWatch.Span() );
     }
+
+    static inline void _phaseWrapByRefer(cv::Mat &matPhase, cv::Mat &matRef) {
+        CStopWatch stopWatch;
+        matRef = ( matPhase - matRef ) / ONE_CYCLE + 0.5;  //Use matResult to store the substract result to reduce memory allocate time.
+        TimeLog::GetInstance()->addTimeLog( "_phaseWrapByRefer Divide and add.", stopWatch.Span() );
+
+        CalcUtils::floorByRef<DATA_TYPE> ( matRef );
+        TimeLog::GetInstance()->addTimeLog( "_phaseWrapByRefer floor takes.", stopWatch.Span() );
+
+        matPhase = matPhase - matRef * ONE_CYCLE;
+        TimeLog::GetInstance()->addTimeLog( "_phaseWrapByRefer multiply and subtract takes.", stopWatch.Span() );
+    }
+
     static const int GUASSIAN_FILTER_SIZE =     11;
     static const int BEZIER_RANK =              5;
     static const int ERODE_WIN_SIZE =           31;

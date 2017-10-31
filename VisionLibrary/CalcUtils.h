@@ -220,11 +220,10 @@ public:
 
     template<typename T>
     static inline void floorByRef ( cv::Mat &matInOut ) {
-        int TOTAL = ToInt32 ( matInOut.total() );
-        for( int i = 0; i < TOTAL; ++ i ) {
-            T &value = matInOut.at<T> ( i );
-            value = std::floor ( value );
-        }
+        float *ptrData = matInOut.ptr<T>(0);
+        int total = ToInt32 ( matInOut.total () );
+        for( int i = 0; i < total; ++i )
+            ptrData[i] = std::floor ( ptrData[i] );
     }
 
     static inline cv::Mat getNanMask(const cv::Mat &matInput) {
