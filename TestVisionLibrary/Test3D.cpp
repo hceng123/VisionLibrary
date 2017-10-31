@@ -493,7 +493,7 @@ void TestFastCalc3DHeight() {
         cv::Mat mat = cv::imread ( strImageFile, cv::IMREAD_GRAYSCALE );
         stCmd.vecInputImgs.push_back ( mat );
     }
-    stCmd.bEnableGaussianFilter = true;
+    stCmd.bEnableGaussianFilter = false;
     stCmd.bReverseSeq = true;
     stCmd.fMinAmplitude = 2;
 

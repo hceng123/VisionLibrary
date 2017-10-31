@@ -992,7 +992,7 @@ struct PR_CALC_3D_HEIGHT_RPY {
 
 struct PR_FAST_CALC_3D_HEIGHT_CMD {
     PR_FAST_CALC_3D_HEIGHT_CMD() :
-        bEnableGaussianFilter ( true ),
+        bEnableGaussianFilter ( false ),
         bReverseSeq ( true ),
         fRemoveHarmonicWaveK ( 0.f ),
         fMinAmplitude ( 1.5f ) {}

@@ -360,7 +360,7 @@ inline std::vector<size_t> sort_indexes(const std::vector<T> &v) {
     cv::Mat matTmpPhase = cv::Mat ( matPhaseT, cv::Rect ( 0, 0, matPhaseT.cols, 1 ) );
     cv::Mat matDp = CalcUtils::diff ( matTmpPhase, 1, 2 );
 
-#ifdef _DEBUG 
+#ifdef _DEBUG
     auto vecVecDp = CalcUtils::matToVector<DATA_TYPE>( matDp );
 #endif
 
@@ -389,7 +389,7 @@ inline std::vector<size_t> sort_indexes(const std::vector<T> &v) {
      matDp.setTo ( 0, matAbsUnderPI );
      _setBySign ( matDp, OneCycle);
 
-     cv::Mat matTmpl ( matPhaseResult,cv::Rect(1, 0, matPhaseResult.cols - 1, matPhaseResult.rows ) );
+     cv::Mat matTmpl ( matPhaseResult,cv::Rect ( 1, 0, matPhaseResult.cols - 1, matPhaseResult.rows ) );
      matTmpl += CalcUtils::cumsum<DATA_TYPE> ( matDp, 2 );
 #ifdef _DEBUG
      vecPhaseResult = CalcUtils::matToVector<DATA_TYPE>( matPhaseResult );
