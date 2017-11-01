@@ -578,11 +578,12 @@ int _tmain(int argc, _TCHAR* argv[])
     PR_GetVersion(&stVersionInfo);
     std::cout << "VisionLibrary Version: " << stVersionInfo.chArrVersion << std::endl;
 
-    float fTest = -1.2;
-    int nTest = fTest;
+    float fTest = -1.2f;
+    int nTest = static_cast<int>( fTest );
 
     auto fFloorResult = std::floor ( fTest );
 
+    //PR_Init();
     PR_SetDebugMode ( PR_DEBUG_MODE::DISABLED );
 
     //TestTemplate();
@@ -637,7 +638,8 @@ int _tmain(int argc, _TCHAR* argv[])
     //TestCalib3DHeight();
     //TestComb3DCalib();
     //TestCalc3DHeight();
-    TestFastCalc3DHeight();
+    //for ( int i = 0; i < 10; ++ i )
+        TestFastCalc3DHeight();
 
     //TestIntegrate3DCalib();
     //TestIntegrate3DCalibHaoYu();

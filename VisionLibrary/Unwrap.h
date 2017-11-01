@@ -31,6 +31,7 @@ class Unwrap
 public:
     Unwrap ();
     ~Unwrap ();
+    static void initAtan2Table();
     static void calib3DBase(const PR_CALIB_3D_BASE_CMD *const pstCmd, PR_CALIB_3D_BASE_RPY *const pstRpy);
     static cv::Mat calculateBaseSurface(int rows, int cols, const cv::Mat &matBaseSurfaceParam);
     static void calib3DHeight(const PR_CALIB_3D_HEIGHT_CMD *const pstCmd, PR_CALIB_3D_HEIGHT_RPY *const pstRpy);
@@ -77,7 +78,7 @@ private:
         matBuffer = matPhase / ONE_CYCLE + 0.5;
         TimeLog::GetInstance()->addTimeLog( "_phaseWrap Divide and add.", stopWatch.Span() );
 
-        CalcUtils::floorByRef<DATA_TYPE> ( matBuffer ); //The floor takes about 36ms, need to optimize
+        CalcUtils::floorByRef<DATA_TYPE> ( matBuffer );
 
         TimeLog::GetInstance()->addTimeLog( "_phaseWrap floor takes.", stopWatch.Span() );
 
@@ -110,6 +111,7 @@ private:
     static const float CALIB_HEIGHT_STEP_USEFUL_PT;
     static const float REMOVE_HEIGHT_NOSIE_RATIO;
     static const float LOW_BASE_PHASE;
+    static VectorOfVectorOfFloat vecVecAtan2Table;
 };
 
 }

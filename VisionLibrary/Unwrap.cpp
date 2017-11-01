@@ -31,6 +31,18 @@ Unwrap::~Unwrap ()
 /*static*/ const float Unwrap::CALIB_HEIGHT_STEP_USEFUL_PT  =  0.8f;
 /*static*/ const float Unwrap::REMOVE_HEIGHT_NOSIE_RATIO    =  0.995f;
 /*static*/ const float Unwrap::LOW_BASE_PHASE               = - ToFloat( CV_PI );
+/*static*/ VectorOfVectorOfFloat Unwrap::vecVecAtan2Table( PR_MAX_GRAY_LEVEL * 2 + 1, VectorOfFloat ( PR_MAX_GRAY_LEVEL * 2 + 1, 0 ) );
+
+/*static*/ void Unwrap::initAtan2Table() {
+    for ( int x = -PR_MAX_GRAY_LEVEL; x <= PR_MAX_GRAY_LEVEL; ++ x )
+    for ( int y = -PR_MAX_GRAY_LEVEL; y <= PR_MAX_GRAY_LEVEL; ++ y ) {
+        //The opencv cv::phase function return result is 0~2*PI, but matlab is -PI~PI, so here need to do a conversion.
+        auto radian = cv::fastAtan2 ( ToFloat( y ), ToFloat ( x ) ) * CV_PI / 180.;
+        if ( radian > CV_PI )
+            radian -= CV_PI * 2.;
+        vecVecAtan2Table[x + PR_MAX_GRAY_LEVEL][y + PR_MAX_GRAY_LEVEL] = ToFloat ( radian );
+    }
+}
 
 /*static*/ cv::Mat Unwrap::_getResidualPoint(const cv::Mat &matPhaseDx, const cv::Mat &matPhaseDy, cv::Mat &matPosPole, cv::Mat &matNegPole) {
     MARK_FUNCTION_START_TIME;
@@ -503,14 +515,14 @@ static inline cv::Mat calcOrder5BezierCoeff ( const cv::Mat &matU ) {
     TimeLog::GetInstance()->addTimeLog( "2 cv::phase ", stopWatch.Span() );
 
     //The opencv cv::phase function return result is 0~2*PI, but matlab is -PI~PI, so here need to do a conversion.
-    //cv::Mat matOverPi;
-    //cv::compare ( matAlpha, cv::Scalar::all ( CV_PI ), matOverPi, cv::CmpTypes::CMP_GT );
-    //cv::subtract ( matAlpha, cv::Scalar::all ( 2.f * CV_PI ), matAlpha, matOverPi );
-    //
-    //cv::compare ( matBeta, cv::Scalar::all ( CV_PI ), matOverPi, cv::CmpTypes::CMP_GT );
-    //cv::subtract ( matBeta, cv::Scalar::all ( 2.f * CV_PI ), matBeta, matOverPi );
+    cv::Mat matOverPi;
+    cv::compare ( matAlpha, cv::Scalar::all ( CV_PI ), matOverPi, cv::CmpTypes::CMP_GT );
+    cv::subtract ( matAlpha, cv::Scalar::all ( 2.f * CV_PI ), matAlpha, matOverPi );
+    
+    cv::compare ( matBeta, cv::Scalar::all ( CV_PI ), matOverPi, cv::CmpTypes::CMP_GT );
+    cv::subtract ( matBeta, cv::Scalar::all ( 2.f * CV_PI ), matBeta, matOverPi );
 
-    //TimeLog::GetInstance()->addTimeLog( "2 cv::compare and cv::subtract ", stopWatch.Span() );
+    TimeLog::GetInstance()->addTimeLog( "2 cv::compare and cv::subtract ", stopWatch.Span() );
 
     const auto ROWS = matAlpha.rows;
     const auto COLS = matAlpha.cols;
@@ -616,10 +628,8 @@ static inline cv::Mat calcOrder5BezierCoeff ( const cv::Mat &matU ) {
         cv::Mat matConvert = mat;
         if ( mat.channels() > 1 )
             cv::cvtColor ( mat, matConvert, CV_BGR2GRAY );
-        matConvert.convertTo ( matConvert, CV_32FC1 );
         vecConvertedImgs.push_back ( matConvert );
     }
-
     TimeLog::GetInstance()->addTimeLog( "Convert image to float.", stopWatch.Span() );
 
     if ( pstCmd->bEnableGaussianFilter ) {
@@ -635,19 +645,46 @@ static inline cv::Mat calcOrder5BezierCoeff ( const cv::Mat &matU ) {
         std::swap ( vecConvertedImgs[5], vecConvertedImgs[7] );
     }
 
-    cv::Mat matBuffer1 ( vecConvertedImgs[0] ), matBuffer2 ( vecConvertedImgs[1] ), mat10 ( vecConvertedImgs[2] ), mat11( vecConvertedImgs[3] ), matAlpha ( vecConvertedImgs[4] ), matBeta( vecConvertedImgs[5] ) ;
-
-    matBuffer1 = vecConvertedImgs[2] - vecConvertedImgs[0];
-    matBuffer2 = vecConvertedImgs[3] - vecConvertedImgs[1];
+    auto size = vecConvertedImgs[0].size();
+    auto total = ToInt32 ( vecConvertedImgs[0].total() );
+    //cv::Mat matBuffer1 ( vecConvertedImgs[0] ), matBuffer2 ( vecConvertedImgs[1] ), mat10 ( vecConvertedImgs[2] ), mat11( vecConvertedImgs[3] ), matAlpha ( vecConvertedImgs[4] ), matBeta( vecConvertedImgs[5] ) ;
+    cv::Mat matAlpha ( size, CV_32FC1 ), matBeta ( size, CV_32FC1), matBuffer1 ( size, CV_32FC1 ), matBuffer2 ( size, CV_32FC1 );
+    cv::Mat matAvgUnderTolIndex = cv::Mat::zeros ( size, CV_8UC1 );
+    //matBuffer1 = vecConvertedImgs[2] - vecConvertedImgs[0];
+    //matBuffer2 = vecConvertedImgs[3] - vecConvertedImgs[1];
     //cv::Mat mat00 = vecConvertedImgs[2] - vecConvertedImgs[0];
     //cv::Mat mat01 = vecConvertedImgs[3] - vecConvertedImgs[1];
 
-    mat10 = vecConvertedImgs[6] - vecConvertedImgs[4];
-    mat11 = vecConvertedImgs[7] - vecConvertedImgs[5];
+    //mat10 = vecConvertedImgs[6] - vecConvertedImgs[4];
+    //mat11 = vecConvertedImgs[7] - vecConvertedImgs[5];
 
     //cv::Mat matAlpha, matBeta;
-    cv::phase ( -matBuffer1, matBuffer2, matAlpha );
-    cv::phase ( -mat10, mat11, matBeta );
+    //cv::phase ( -matBuffer1, matBuffer2, matAlpha );
+    //cv::phase ( -mat10, mat11, matBeta );
+    auto ptrData0 = vecConvertedImgs[0].ptr<uchar>(0);
+    auto ptrData1 = vecConvertedImgs[1].ptr<uchar>(0);
+    auto ptrData2 = vecConvertedImgs[2].ptr<uchar>(0);
+    auto ptrData3 = vecConvertedImgs[3].ptr<uchar>(0);
+    for ( int i = 0; i < total; ++ i ) {
+        short x = (short)ptrData0[i] - (short)ptrData2[i];
+        short y = (short)ptrData3[i] - (short)ptrData1[i];
+        matAlpha.at<float>(i) = vecVecAtan2Table[x + PR_MAX_GRAY_LEVEL ][y+ PR_MAX_GRAY_LEVEL];
+    }
+
+    float fMinimumAlpitudeSquare = pstCmd->fMinAmplitude * pstCmd->fMinAmplitude;
+
+    ptrData0 = vecConvertedImgs[4].ptr<uchar>(0);
+    ptrData1 = vecConvertedImgs[5].ptr<uchar>(0);
+    ptrData2 = vecConvertedImgs[6].ptr<uchar>(0);
+    ptrData3 = vecConvertedImgs[7].ptr<uchar>(0);
+    for ( int i = 0; i < total; ++ i ) {
+        short x = (short)ptrData0[i] - (short)ptrData2[i];  // x = 2*cos(beta)
+        short y = (short)ptrData3[i] - (short)ptrData1[i];  // y = 2*sin(beta)
+        float fAmplitudeSquare = (x*x + y*y) / 4.f;
+        if ( fAmplitudeSquare < fMinimumAlpitudeSquare )
+            matAvgUnderTolIndex.at<uchar>(i) = 1;
+        matBeta.at<float>(i) = vecVecAtan2Table[x + PR_MAX_GRAY_LEVEL ][y+ PR_MAX_GRAY_LEVEL];
+    }
 
     TimeLog::GetInstance()->addTimeLog( "2 cv::phase ", stopWatch.Span() );
 
@@ -661,28 +698,24 @@ static inline cv::Mat calcOrder5BezierCoeff ( const cv::Mat &matU ) {
 
     //TimeLog::GetInstance()->addTimeLog( "2 cv::compare and cv::subtract ", stopWatch.Span() );
 
-    cv::Mat matAvgUnderTolIndex;
-    {
-        TimeLog::GetInstance ()->addTimeLog ( "Before find amplitude less than tol. ", stopWatch.Span () );
-        matBuffer1 = mat10.mul ( mat10 );
-        matBuffer2 = mat11.mul ( mat11 );
-        matBuffer1 = matBuffer1 + matBuffer2;
-        //matBuffer1 = matBuffer1 + ; //matB is amplitude of the wave. mat10 = 2*sin(theta), mat11 = 2*cos(theta).
-        cv::compare ( matBuffer1, pstCmd->fMinAmplitude * pstCmd->fMinAmplitude * 4, matAvgUnderTolIndex, cv::CmpTypes::CMP_LT );
-        TimeLog::GetInstance ()->addTimeLog ( "After amplitude less than tol. ", stopWatch.Span () );
-    }
+    //cv::Mat matAvgUnderTolIndex;
+    //{
+    //    TimeLog::GetInstance ()->addTimeLog ( "Before find amplitude less than tol. ", stopWatch.Span () );
+    //    matBuffer1 = mat10.mul ( mat10 );
+    //    matBuffer2 = mat11.mul ( mat11 );
+    //    matBuffer1 = matBuffer1 + matBuffer2;
+    //    //matBuffer1 = matBuffer1 + ; //matB is amplitude of the wave. mat10 = 2*sin(theta), mat11 = 2*cos(theta).
+    //    cv::compare ( matBuffer1, pstCmd->fMinAmplitude * pstCmd->fMinAmplitude * 4, matAvgUnderTolIndex, cv::CmpTypes::CMP_LT );
+    //    TimeLog::GetInstance ()->addTimeLog ( "After amplitude less than tol. ", stopWatch.Span () );
+    //}
     
     matAlpha = matAlpha - pstCmd->matBaseWrappedAlpha;
     matBeta  = matBeta  - pstCmd->matBaseWrappedBeta;
-    //cv::subtract ( matAlpha, pstCmd->matBaseWrappedAlpha, matAlpha );
-    //cv::subtract ( matBeta,  pstCmd->matBaseWrappedBeta,  matBeta );
-
     TimeLog::GetInstance ()->addTimeLog ( "2 substract take. ", stopWatch.Span () );
 
     _phaseWrapBuffer ( matAlpha, matBuffer1 );
     TimeLog::GetInstance()->addTimeLog( "_phaseWrapBuffer.", stopWatch.Span() );
 
-    //cv::multiply ( matAlpha, pstCmd->matThickToThinStripeK.at<DATA_TYPE>(0), matBuffer1 );
     matBuffer1 = matAlpha * pstCmd->matThickToThinStripeK.at<DATA_TYPE>(0);
     TimeLog::GetInstance()->addTimeLog( "Multiply takes.", stopWatch.Span() );
 
@@ -1970,7 +2003,7 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
 
 /*static*/ cv::Mat Unwrap::_calcHeightFromPhaseBuffer(const cv::Mat &matPhase, const cv::Mat &matHtt, const cv::Mat &matK, cv::Mat &matBuffer1, cv::Mat &matBuffer2 ) {
     CStopWatch stopWatch;
-    matBuffer1 = matPhase.mul ( matPhase );     //Pow 2    
+    matBuffer1 = matPhase.mul ( matPhase );     //Pow 2
     TimeLog::GetInstance()->addTimeLog("_calcHeightFromPhase mul take: ", stopWatch.Span() );
     auto K10 = matK.at<DATA_TYPE> ( 10 );
     auto K11 = matK.at<DATA_TYPE> ( 11 );

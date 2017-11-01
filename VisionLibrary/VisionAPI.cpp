@@ -11,6 +11,7 @@
 #include "SubFunctions.h"
 #include "Log.h"
 #include "CalcUtils.h"
+#include "Unwrap.h"
 
 #define PR_FUNCTION_ENTRY   \
 try \
@@ -37,6 +38,7 @@ VisionAPI void PR_GetVersion(PR_VERSION_INFO *pstVersionInfo)
 
 VisionAPI VisionStatus PR_Init()
 {
+    Unwrap::initAtan2Table();
     return RecordManager::getInstance()->load();
 }
 
