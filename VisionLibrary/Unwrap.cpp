@@ -5,6 +5,7 @@
 #include "VisionAlgorithm.h"
 #include "TimeLog.h"
 #include "Log.h"
+#include <iostream>
 #include <numeric>
 #include <limits>
 
@@ -26,101 +27,81 @@ Unwrap::~Unwrap ()
 
 /*static*/ const float Unwrap::GAUSSIAN_FILTER_SIGMA        = ToFloat ( pow ( 20, 0.5 ) );
 /*static*/ const float Unwrap::ONE_HALF_CYCLE               = ToFloat ( CV_PI );
+/*static*/ const float Unwrap::ONE_CYCLE                    = ONE_HALF_CYCLE * 2;
 /*static*/ const float Unwrap::CALIB_HEIGHT_STEP_USEFUL_PT  =  0.8f;
 /*static*/ const float Unwrap::REMOVE_HEIGHT_NOSIE_RATIO    =  0.995f;
 /*static*/ const float Unwrap::LOW_BASE_PHASE               = - ToFloat( CV_PI );
+/*static*/ VectorOfVectorOfFloat Unwrap::vecVecAtan2Table( PR_MAX_GRAY_LEVEL * 2 + 1, VectorOfFloat ( PR_MAX_GRAY_LEVEL * 2 + 1, 0 ) );
 
-/*static*/ cv::Mat Unwrap::_getResidualPoint(const cv::Mat &matInput, cv::Mat &matPosPole, cv::Mat &matNegPole) {
+/*static*/ void Unwrap::initAtan2Table() {
+    for ( int x = -PR_MAX_GRAY_LEVEL; x <= PR_MAX_GRAY_LEVEL; ++ x )
+    for ( int y = -PR_MAX_GRAY_LEVEL; y <= PR_MAX_GRAY_LEVEL; ++ y ) {
+        //The opencv cv::phase function return result is 0~2*PI, but matlab is -PI~PI, so here need to do a conversion.
+        auto radian = cv::fastAtan2 ( ToFloat( y ), ToFloat ( x ) ) * CV_PI / 180.;
+        if ( radian > CV_PI )
+            radian -= CV_PI * 2.;
+        vecVecAtan2Table[x + PR_MAX_GRAY_LEVEL][y + PR_MAX_GRAY_LEVEL] = ToFloat ( radian );
+    }
+}
+
+/*static*/ cv::Mat Unwrap::_getResidualPoint(const cv::Mat &matPhaseDx, const cv::Mat &matPhaseDy, cv::Mat &matPosPole, cv::Mat &matNegPole) {
     MARK_FUNCTION_START_TIME;
 
     const float OneCycle = 2.f * ONE_HALF_CYCLE;
-    cv::Mat matKernelY = (cv::Mat_<DATA_TYPE>(2, 1) << -1, 1);
-    cv::Mat matKernelX = (cv::Mat_<DATA_TYPE>(1, 2) << -1, 1);
-    cv::Mat matDx, matDy, matD1, matD2, matD3, matD4;
-    cv::filter2D(matInput, matDx, -1, matKernelX, cv::Point(-1, -1), 0.0, cv::BORDER_CONSTANT);
-    matDx = cv::Mat(matDx, cv::Rect(1, 0, matDx.cols - 1, matDx.rows));
+    const float PI_WITH_MARGIN = ToFloat ( 0.9999 * CV_PI );
 
-    cv::filter2D(matInput, matDy, -1, matKernelY, cv::Point(-1, -1), 0.0, cv::BORDER_CONSTANT);
-    matDy = cv::Mat(matDy, cv::Rect(0, 1, matDy.cols, matDy.rows - 1));
+    cv::Mat matDB1 = cv::Mat::zeros ( matPhaseDx.size(), CV_8SC1 );
+    cv::Mat matDB2 = cv::Mat::zeros ( matPhaseDy.size(), CV_8SC1 );
 
-    TimeLog::GetInstance()->addTimeLog("2 cv::filter2D take: ", stopWatch.Span() );
-
-    matD1 =  cv::Mat(matDx, cv::Rect(0, 0, matDx.cols,     matDx.rows - 1)).clone();
-    matD2 =  cv::Mat(matDy, cv::Rect(1, 0, matDy.cols - 1, matDy.rows    )).clone();
-    matD3 = -cv::Mat(matDx, cv::Rect(0, 1, matDx.cols,     matDx.rows - 1)).clone();
-    matD4 = -cv::Mat(matDy, cv::Rect(0, 0, matDy.cols - 1, matDy.rows    )).clone();
-
-    TimeLog::GetInstance()->addTimeLog("Clone takes take: ", stopWatch.Span() );
-
-    //cv::Mat matD(4, matD1.total(), matD1.type() );
-    //cv::Mat matROIOfD1(matD, cv::Rect(0, 0, matD.cols, 1) );
-    //matD1.reshape(1, 1).copyTo(matROIOfD1);
-    //cv::Mat matROIOfD2(matD, cv::Rect(0, 1, matD.cols, 1) );
-    //matD2.reshape(1, 1).copyTo(matROIOfD2);
-    //cv::Mat matROIOfD3(matD, cv::Rect(0, 2, matD.cols, 1) );
-    //matD3.reshape(1, 1).copyTo(matROIOfD3);
-    //cv::Mat matROIOfD4(matD, cv::Rect(0, 3, matD.cols, 1) );
-    //matD4.reshape(1, 1).copyTo(matROIOfD4);
-    cv::Mat matArry[] = { matD1.reshape(1, 1), matD2.reshape(1, 1) , matD3.reshape(1, 1), matD4.reshape(1, 1) };
-    cv::Mat matD;
-    cv::vconcat ( matArry, 4, matD );
-    //matD.reserve(4);
-    //matD.push_back ( matD1.reshape(1, 1) );
-    //matD.push_back ( matD2.reshape(1, 1) );
-    //matD.push_back ( matD3.reshape(1, 1) );
-    //matD.push_back ( matD4.reshape(1, 1) );
-
-    TimeLog::GetInstance()->addTimeLog("Combine to D take: ", stopWatch.Span() );
-    //cv::transpose ( matD, matD );    
-
-    //{
-    //cv::Mat matPosIndex = cv::Mat::zeros ( matD.size(), CV_8UC1 );
-    //cv::Mat matNegIndex = cv::Mat::zeros ( matD.size(), CV_8UC1 );
-
-    //cv::compare ( matD, cv::Scalar::all( 0.9999 * CV_PI), matPosIndex, cv::CmpTypes::CMP_GT );
-    //cv::compare ( matD, cv::Scalar::all(-0.9999 * CV_PI), matNegIndex, cv::CmpTypes::CMP_LT );
-
-    //// Work as ds(idx) = ds(idx) - sign(d(idx))*pi*2;
-    //cv::subtract ( matD, OneCycle, matD, matPosIndex );
-    //cv::add      ( matD, OneCycle, matD, matNegIndex );
+    //This loop same as matlab code.
+    //idx = find( abs(dxPhase)>0.9999*pi );
+    //db1(idx) = - sign(dxPhase(idx)); 
+    //for ( int i = 0; i < matPhaseDx.total(); ++ i ) {
+    //    auto value = matPhaseDx.at<DATA_TYPE>( i );
+    //    if ( value > PI_WITH_MARGIN )
+    //        matDB1.at<char> ( i ) = -1;
+    //    else if ( value < - PI_WITH_MARGIN )
+    //        matDB1.at<char>( i ) = 1;
     //}
-    for ( int row = 0; row < matD.rows; ++ row )
-    for ( int col = 0; col < matD.cols; ++ col ) {
-        if ( matD.at<DATA_TYPE>(row, col) > 0.9999 * CV_PI )
-            matD.at<DATA_TYPE>(row, col) -= OneCycle;
-        else if ( matD.at<DATA_TYPE>(row, col) < - 0.9999 * CV_PI )
-            matD.at<DATA_TYPE>(row, col) += OneCycle;
+    {
+        cv::Mat matPosJump, matNegJump;
+        cv::compare ( matPhaseDx, cv::Scalar::all(  PI_WITH_MARGIN ), matPosJump, cv::CmpTypes::CMP_GT );
+        cv::compare ( matPhaseDx, cv::Scalar::all( -PI_WITH_MARGIN ), matNegJump, cv::CmpTypes::CMP_LT );
+        matDB1.setTo(-1, matPosJump);
+        matDB1.setTo( 1, matNegJump);
+    }    
+    //This loop same as matlab code.
+    //idx = find( abs(dyPhase)>0.9999*pi );
+    //db2(idx) = - sign(dyPhase(idx));
+    //for ( int i = 0; i < matPhaseDy.total(); ++ i ) {
+    //    auto value = matPhaseDy.at<DATA_TYPE>( i );
+    //    if ( value > PI_WITH_MARGIN )
+    //        matDB2.at<char> ( i ) = -1;
+    //    else if ( value < - PI_WITH_MARGIN )
+    //        matDB2.at<char>( i ) = 1;
+    //}
+    {
+        cv::Mat matPosJump, matNegJump;
+        cv::compare ( matPhaseDy, cv::Scalar::all(  PI_WITH_MARGIN ), matPosJump, cv::CmpTypes::CMP_GT );
+        cv::compare ( matPhaseDy, cv::Scalar::all( -PI_WITH_MARGIN ), matNegJump, cv::CmpTypes::CMP_LT );
+        matDB2.setTo(-1, matPosJump);
+        matDB2.setTo( 1, matNegJump);
     }
 
-    TimeLog::GetInstance()->addTimeLog("cv::subtract and cv::add takes take: ", stopWatch.Span() );
+    TimeLog::GetInstance()->addTimeLog("Prepare take: ", stopWatch.Span() );
 
-    cv::Mat matSum;
-    cv::reduce ( matD, matSum, 0, CV_REDUCE_SUM );
+    cv::Mat matD1 =  cv::Mat(matDB1, cv::Rect(0, 0, matDB1.cols,     matDB1.rows - 1) );
+    cv::Mat matD2 =  cv::Mat(matDB2, cv::Rect(1, 0, matDB2.cols - 1, matDB2.rows    ) );
+    cv::Mat matD3 = -cv::Mat(matDB1, cv::Rect(0, 1, matDB1.cols,     matDB1.rows - 1) );
+    cv::Mat matD4 = -cv::Mat(matDB2, cv::Rect(0, 0, matDB2.cols - 1, matDB2.rows    ) );
 
-    TimeLog::GetInstance()->addTimeLog("cv::reduce takes take: ", stopWatch.Span() );
+    cv::Mat matDD = matD1 + matD2 + matD3 + matD4;
 
-#ifdef _DEBUG
-    //cv::Mat matSumT;
-    //cv::transpose ( matSum, matSumT );
-    auto vevVecSum = CalcUtils::matToVector<DATA_TYPE>( matSum );
-#endif
+    TimeLog::GetInstance()->addTimeLog("Sum take: ", stopWatch.Span() );
 
-    //matPosIndex.setTo(0);
-    //matNegIndex.setTo(0);
     cv::Mat matPosIndex, matNegIndex;
-    cv::compare ( matSum, cv::Scalar::all( 0.9999 * CV_PI * 2.f), matPosIndex, cv::CmpTypes::CMP_GT );
-    cv::compare ( matSum, cv::Scalar::all(-0.9999 * CV_PI * 2.f), matNegIndex, cv::CmpTypes::CMP_LT );
-
-    TimeLog::GetInstance()->addTimeLog("cv::compare takes take: ", stopWatch.Span() );
-
-    int nSizeOfResultMat = ( matInput.rows - 1 ) * ( matInput.cols - 1 );
-    //cv::Mat matResult = cv::Mat::zeros ( nSizeOfResultMat, 1, CV_8SC1 );
-    //matResult.setTo( cv::Scalar::all(1), matPosIndex );
-    //matResult.setTo( cv::Scalar::all(-1), matNegIndex );
-    //matResult = matResult.reshape ( 1, matInput.rows - 1 );
-
-    matPosPole = matPosIndex.reshape(1, matInput.rows - 1 );
-    matNegPole = matNegIndex.reshape(1, matInput.rows - 1 );
+    cv::compare ( matDD, cv::Scalar::all( 0.9999), matPosPole, cv::CmpTypes::CMP_GT );
+    cv::compare ( matDD, cv::Scalar::all(-0.9999), matNegPole, cv::CmpTypes::CMP_LT );
 
     MARK_FUNCTION_END_TIME;
     return cv::Mat();
@@ -327,12 +308,12 @@ inline std::vector<size_t> sort_indexes(const std::vector<T> &v) {
 
     cv::Mat matAlpha, matBeta;
     cv::phase ( -mat00, mat01, matAlpha );
+    cv::phase ( -mat10, mat11, matBeta );
+
     //The opencv cv::phase function return result is 0~2*PI, but matlab is -PI~PI, so here need to do a conversion.
     cv::Mat matOverPi;
     cv::compare ( matAlpha, cv::Scalar::all ( CV_PI ), matOverPi, cv::CmpTypes::CMP_GT );
-    cv::subtract ( matAlpha, cv::Scalar::all ( 2.f * CV_PI ), matAlpha, matOverPi );
-
-    cv::phase ( -mat10, mat11, matBeta );
+    cv::subtract ( matAlpha, cv::Scalar::all ( 2.f * CV_PI ), matAlpha, matOverPi );    
     cv::compare ( matBeta, cv::Scalar::all ( CV_PI ), matOverPi, cv::CmpTypes::CMP_GT );
     cv::subtract ( matBeta, cv::Scalar::all ( 2.f * CV_PI ), matBeta, matOverPi );
 
@@ -362,22 +343,29 @@ inline std::vector<size_t> sort_indexes(const std::vector<T> &v) {
     cv::Mat matX, matY;
     CalcUtils::meshgrid<float> ( 1.f, 1.f, ToFloat ( COLS ), 1.f, 1.f, ToFloat ( ROWS ), matX, matY );
     pstRpy->matBaseSurfaceParam = _calculatePPz ( matX, matY, matBeta );
+
+    cv::Mat matFittedBeta  = calculateBaseSurface ( matBeta.rows, matBeta.cols, pstRpy->matBaseSurfaceParam );
+    cv::Mat matFittedAlpha = ( matFittedBeta - pstRpy->matThickToThinStripeK.at<DATA_TYPE>(1) ) / pstRpy->matThickToThinStripeK.at<DATA_TYPE>(0);
+    _phaseWrap ( matFittedAlpha );
+    pstRpy->matBaseWrappedAlpha = matFittedAlpha;
+     _phaseWrap ( matFittedBeta );
+    pstRpy->matBaseWrappedBeta = matFittedBeta;
     pstRpy->enStatus = VisionStatus::OK;
 }
 
-/*static*/ inline cv::Mat Unwrap::_setBySign(cv::Mat &matInput, DATA_TYPE value ) {
-    cv::Mat matResult = matInput.clone();
-    cv::Mat matPosIndex = cv::Mat::zeros(matResult.size(), CV_8UC1);
-    cv::Mat matNegIndex = cv::Mat::zeros(matResult.size(), CV_8UC1);
-    cv::compare ( matResult, cv::Scalar::all( 0.0001), matPosIndex, cv::CmpTypes::CMP_GT );
-    cv::compare ( matResult, cv::Scalar::all(-0.0001), matNegIndex, cv::CmpTypes::CMP_LT );
+/*static*/ inline void Unwrap::_setBySign(cv::Mat &matInOut, DATA_TYPE value ) {
+    cv::Mat matPosIndex = cv::Mat::zeros ( matInOut.size(), CV_8UC1 );
+    cv::Mat matNegIndex = cv::Mat::zeros ( matInOut.size(), CV_8UC1 );
+    cv::compare ( matInOut, cv::Scalar::all( 0.0001), matPosIndex, cv::CmpTypes::CMP_GT );
+    cv::compare ( matInOut, cv::Scalar::all(-0.0001), matNegIndex, cv::CmpTypes::CMP_LT );
 
-    matResult.setTo ( cv::Scalar::all(-value), matPosIndex );
-    matResult.setTo ( cv::Scalar::all( value), matNegIndex );
-    return matResult;
+    matInOut.setTo ( cv::Scalar::all(-value), matPosIndex );
+    matInOut.setTo ( cv::Scalar::all( value), matNegIndex );
 }
 
-/*static*/ cv::Mat Unwrap::_phaseUnwrapSurface(const cv::Mat &matPhase) {    
+/*static*/ cv::Mat Unwrap::_phaseUnwrapSurface(const cv::Mat &matPhase) {
+    MARK_FUNCTION_START_TIME;
+
     const float OneCycle = 2.f * ONE_HALF_CYCLE;
 
     cv::Mat matPhaseT;
@@ -385,7 +373,7 @@ inline std::vector<size_t> sort_indexes(const std::vector<T> &v) {
     cv::Mat matTmpPhase = cv::Mat ( matPhaseT, cv::Rect ( 0, 0, matPhaseT.cols, 1 ) );
     cv::Mat matDp = CalcUtils::diff ( matTmpPhase, 1, 2 );
 
-#ifdef _DEBUG 
+#ifdef _DEBUG
     auto vecVecDp = CalcUtils::matToVector<DATA_TYPE>( matDp );
 #endif
 
@@ -393,7 +381,7 @@ inline std::vector<size_t> sort_indexes(const std::vector<T> &v) {
     cv::compare ( cv::abs ( matDp ), cv::Scalar::all ( ONE_HALF_CYCLE ), matAbsUnderPI, cv::CmpTypes::CMP_LT );
     matDp.setTo ( 0, matAbsUnderPI );
 
-    matDp = _setBySign ( matDp, OneCycle);       //Correspoinding to matlab: dp(idx) = -sign(dp(idx))*Th;
+    _setBySign ( matDp, OneCycle);       //Correspoinding to matlab: dp(idx) = -sign(dp(idx))*Th;
     matDp = cv::repeat ( matDp, matPhase.cols, 1);
 
     cv::Mat matTmp ( matPhaseT, cv::Rect(1, 0, matPhaseT.cols - 1, matPhaseT.rows ) );
@@ -412,17 +400,19 @@ inline std::vector<size_t> sort_indexes(const std::vector<T> &v) {
      matDp = CalcUtils::diff ( matPhaseResult, 1, 2 );
      cv::compare ( cv::abs ( matDp ), cv::Scalar::all ( ONE_HALF_CYCLE ), matAbsUnderPI, cv::CmpTypes::CMP_LT );
      matDp.setTo ( 0, matAbsUnderPI );
-     matDp = _setBySign ( matDp, OneCycle);
+     _setBySign ( matDp, OneCycle);
 
-     cv::Mat matTmpl ( matPhaseResult,cv::Rect(1, 0, matPhaseResult.cols - 1, matPhaseResult.rows ) );
+     cv::Mat matTmpl ( matPhaseResult,cv::Rect ( 1, 0, matPhaseResult.cols - 1, matPhaseResult.rows ) );
      matTmpl += CalcUtils::cumsum<DATA_TYPE> ( matDp, 2 );
 #ifdef _DEBUG
      vecPhaseResult = CalcUtils::matToVector<DATA_TYPE>( matPhaseResult );
 #endif
+
+    MARK_FUNCTION_END_TIME;
     return matPhaseResult;
 }
 
-static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
+static inline cv::Mat calcOrder5BezierCoeff ( const cv::Mat &matU ) {
     cv::Mat matUSubBy1Pow1 = 1.f - matU;
     cv::Mat matUSubBy1Pow2 = matUSubBy1Pow1.mul ( matUSubBy1Pow1 );
     cv::Mat matUSubBy1Pow3 = matUSubBy1Pow2.mul ( matUSubBy1Pow1 );
@@ -440,6 +430,7 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
     return matP;
 }
 
+//The 5 order bezier surface has 25 parameters.
 /*static*/ cv::Mat Unwrap::_calculatePPz(const cv::Mat &matX, const cv::Mat &matY, const cv::Mat &matZ) {
     int ROWS = matX.rows;
     int COLS = matX.cols;
@@ -450,8 +441,8 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
     cv::Mat matZReshape = matZ.reshape ( 1, matZ.rows * matZ.cols );
     cv::Mat matXReshape = matX.reshape ( 1, 1 );
     cv::Mat matYReshape = matY.reshape ( 1, 1 );
-    cv::Mat matP1 = calcBezierCoeff ( matU );
-    cv::Mat matP2 = calcBezierCoeff ( matV );
+    cv::Mat matP1 = calcOrder5BezierCoeff ( matU );
+    cv::Mat matP2 = calcOrder5BezierCoeff ( matV );
     cv::Mat matXX;
     for ( int i = 0; i < BEZIER_RANK; ++ i )
     for ( int j = 0; j < BEZIER_RANK; ++ j ) {
@@ -469,8 +460,8 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
     CalcUtils::meshgrid<float> ( 0, 1.f / ( cols - 1 ), 1.f, 0, 1.f / ( rows - 1 ), 1.f, matU, matV );
     matU = matU.reshape ( 1, 1 );
     matV = matV.reshape ( 1, 1 );
-    cv::Mat matP1 = calcBezierCoeff ( matU );
-    cv::Mat matP2 = calcBezierCoeff ( matV );
+    cv::Mat matP1 = calcOrder5BezierCoeff ( matU );
+    cv::Mat matP2 = calcOrder5BezierCoeff ( matV );
     cv::Mat matXX;
     for ( int i = 0; i < BEZIER_RANK; ++ i )
     for ( int j = 0; j < BEZIER_RANK; ++ j ) {
@@ -513,34 +504,38 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
     }
     cv::Mat mat00 = vecConvertedImgs[2] - vecConvertedImgs[0];
     cv::Mat mat01 = vecConvertedImgs[3] - vecConvertedImgs[1];
-    mat00.convertTo ( mat00, CV_32FC1 );
-    mat01.convertTo ( mat01, CV_32FC1 );
 
     cv::Mat mat10 = vecConvertedImgs[6] - vecConvertedImgs[4];
     cv::Mat mat11 = vecConvertedImgs[7] - vecConvertedImgs[5];
-    mat10.convertTo ( mat10, CV_32FC1 );
-    mat11.convertTo ( mat11, CV_32FC1 );
 
     cv::Mat matAlpha, matBeta;
     cv::phase ( -mat00, mat01, matAlpha );
+    cv::phase ( -mat10, mat11, matBeta );
+
+    TimeLog::GetInstance()->addTimeLog( "2 cv::phase ", stopWatch.Span() );
+
     //The opencv cv::phase function return result is 0~2*PI, but matlab is -PI~PI, so here need to do a conversion.
     cv::Mat matOverPi;
     cv::compare ( matAlpha, cv::Scalar::all ( CV_PI ), matOverPi, cv::CmpTypes::CMP_GT );
     cv::subtract ( matAlpha, cv::Scalar::all ( 2.f * CV_PI ), matAlpha, matOverPi );
-
-    cv::phase ( -mat10, mat11, matBeta );
+    
     cv::compare ( matBeta, cv::Scalar::all ( CV_PI ), matOverPi, cv::CmpTypes::CMP_GT );
     cv::subtract ( matBeta, cv::Scalar::all ( 2.f * CV_PI ), matBeta, matOverPi );
 
-    TimeLog::GetInstance()->addTimeLog( "cv::phase, cv::compare and cv::subtract ", stopWatch.Span() );
+    TimeLog::GetInstance()->addTimeLog( "2 cv::compare and cv::subtract ", stopWatch.Span() );
 
     const auto ROWS = matAlpha.rows;
     const auto COLS = matAlpha.cols;
+
+    cv::Mat matPhaseDx = CalcUtils::diff ( matAlpha, 1, 2 ); //The size of dxPhase is [ROWS, COLS - 1]
+    cv::Mat matPhaseDy = CalcUtils::diff ( matAlpha, 1, 1 ); //The size of dyPhase is [ROWS - 1, COLS]
+
+    TimeLog::GetInstance()->addTimeLog( "2 diff take. ", stopWatch.Span() );
     
     cv::Mat matPosPole, matNegPole, matResidue;
-    matResidue = _getResidualPoint ( matAlpha, matPosPole, matNegPole );
+    matResidue = _getResidualPoint ( matPhaseDx, matPhaseDy, matPosPole, matNegPole );
 
-    TimeLog::GetInstance()->addTimeLog( "_getResidualPoint. ", stopWatch.Span() );
+    TimeLog::GetInstance()->addTimeLog( "_getResidualPoint take. ", stopWatch.Span() );
 
     VectorOfPoint vecPosPole, vecNegPole;
     cv::findNonZero ( matPosPole, vecPosPole );
@@ -560,7 +555,7 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
     cv::imwrite("./data/BranchCut_1.png", matBranchCut );
 #endif
 
-    matAlpha = _phaseUnwrapSurfaceTrk ( matAlpha, matBranchCut );
+    matAlpha = _phaseUnwrapSurfaceTrkNew ( matAlpha, matPhaseDx, matPhaseDy, matBranchCut );
 
     cv::Mat matSnoop(matAlpha, cv::Rect(0, 0, PHASE_SNOOP_WIN_SIZE, PHASE_SNOOP_WIN_SIZE ) );
     auto fStartAvgPhase = ToFloat ( cv::mean ( matSnoop )[0] );
@@ -590,7 +585,7 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
     auto vecVecBeta  = CalcUtils::matToVector<DATA_TYPE>(matBeta);
 #endif
     matAlpha = matAlpha * pstCmd->matThickToThinStripeK.at<DATA_TYPE>(0, 0) + pstCmd->matThickToThinStripeK.at<DATA_TYPE>(1, 0);    
-    matBeta = _phaseUnwrapSurfaceByRefer ( matBeta, matAlpha );
+    matBeta = _phaseUnwrapSurfaceByRefer ( matBeta, matAlpha, matAvgUnderTolIndex );
 
     cv::Mat matZP1 = pstCmd->matBaseSurface;
 #ifdef _DEBUG
@@ -600,8 +595,8 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
 #endif
     matBeta  = matBeta  - matZP1;
 
-    auto matH = matBeta.clone();
-    matH.setTo ( NAN, matAvgUnderTolIndex );
+    auto matH = matBeta;
+    //matH.setTo ( NAN, matAvgUnderTolIndex );
 
     stopWatch.Start();
     cv::medianBlur ( matH, matH, 5 );
@@ -610,7 +605,7 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
     if ( pstCmd->bEnableGaussianFilter ) {
         float fSigma = ToFloat ( pow ( 5, 0.5 ) );
         cv::GaussianBlur ( matH, matH, cv::Size(5, 5), fSigma, fSigma, cv::BorderTypes::BORDER_REPLICATE );
-    }    
+    }
 
     pstRpy->matPhase = matH;
     if ( ! pstCmd->matOrder3CurveSurface.empty() && ! pstCmd->matIntegratedK.empty() ) {
@@ -626,7 +621,133 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
     pstRpy->enStatus = VisionStatus::OK;
 }
 
-/*static*/ cv::Mat Unwrap::_phaseUnwrapSurfaceTrk ( const cv::Mat &matPhase, const cv::Mat &matBranchCut ) {
+/*static*/ void Unwrap::fastCalc3DHeight(const PR_FAST_CALC_3D_HEIGHT_CMD *const pstCmd, PR_FAST_CALC_3D_HEIGHT_RPY *pstRpy) {
+    CStopWatch stopWatch;
+    std::vector<cv::Mat> vecConvertedImgs;
+    for ( auto &mat : pstCmd->vecInputImgs ) {
+        cv::Mat matConvert = mat;
+        if ( mat.channels() > 1 )
+            cv::cvtColor ( mat, matConvert, CV_BGR2GRAY );
+        vecConvertedImgs.push_back ( matConvert );
+    }
+    TimeLog::GetInstance()->addTimeLog( "Convert image to float.", stopWatch.Span() );
+
+    if ( pstCmd->bEnableGaussianFilter ) {
+        //Filtering can reduce residues at the expense of a loss of spatial resolution.
+        for ( int i = 0; i < PR_GROUP_TEXTURE_IMG_COUNT; ++ i )        
+            cv::GaussianBlur ( vecConvertedImgs[i], vecConvertedImgs[i], cv::Size(GUASSIAN_FILTER_SIZE, GUASSIAN_FILTER_SIZE), GAUSSIAN_FILTER_SIGMA, GAUSSIAN_FILTER_SIGMA, cv::BorderTypes::BORDER_REPLICATE );
+    }
+
+    TimeLog::GetInstance()->addTimeLog( "Guassian Filter.", stopWatch.Span() );
+
+    if ( pstCmd->bReverseSeq ) {
+        std::swap ( vecConvertedImgs[1], vecConvertedImgs[3] );
+        std::swap ( vecConvertedImgs[5], vecConvertedImgs[7] );
+    }
+
+    auto size = vecConvertedImgs[0].size();
+    auto total = ToInt32 ( vecConvertedImgs[0].total() );
+    //cv::Mat matBuffer1 ( vecConvertedImgs[0] ), matBuffer2 ( vecConvertedImgs[1] ), mat10 ( vecConvertedImgs[2] ), mat11( vecConvertedImgs[3] ), matAlpha ( vecConvertedImgs[4] ), matBeta( vecConvertedImgs[5] ) ;
+    cv::Mat matAlpha ( size, CV_32FC1 ), matBeta ( size, CV_32FC1), matBuffer1 ( size, CV_32FC1 ), matBuffer2 ( size, CV_32FC1 );
+    cv::Mat matAvgUnderTolIndex = cv::Mat::zeros ( size, CV_8UC1 );
+    //matBuffer1 = vecConvertedImgs[2] - vecConvertedImgs[0];
+    //matBuffer2 = vecConvertedImgs[3] - vecConvertedImgs[1];
+    //cv::Mat mat00 = vecConvertedImgs[2] - vecConvertedImgs[0];
+    //cv::Mat mat01 = vecConvertedImgs[3] - vecConvertedImgs[1];
+
+    //mat10 = vecConvertedImgs[6] - vecConvertedImgs[4];
+    //mat11 = vecConvertedImgs[7] - vecConvertedImgs[5];
+
+    //cv::Mat matAlpha, matBeta;
+    //cv::phase ( -matBuffer1, matBuffer2, matAlpha );
+    //cv::phase ( -mat10, mat11, matBeta );
+    auto ptrData0 = vecConvertedImgs[0].ptr<uchar>(0);
+    auto ptrData1 = vecConvertedImgs[1].ptr<uchar>(0);
+    auto ptrData2 = vecConvertedImgs[2].ptr<uchar>(0);
+    auto ptrData3 = vecConvertedImgs[3].ptr<uchar>(0);
+    for ( int i = 0; i < total; ++ i ) {
+        short x = (short)ptrData0[i] - (short)ptrData2[i];
+        short y = (short)ptrData3[i] - (short)ptrData1[i];
+        matAlpha.at<float>(i) = vecVecAtan2Table[x + PR_MAX_GRAY_LEVEL ][y+ PR_MAX_GRAY_LEVEL];
+    }
+
+    float fMinimumAlpitudeSquare = pstCmd->fMinAmplitude * pstCmd->fMinAmplitude;
+
+    ptrData0 = vecConvertedImgs[4].ptr<uchar>(0);
+    ptrData1 = vecConvertedImgs[5].ptr<uchar>(0);
+    ptrData2 = vecConvertedImgs[6].ptr<uchar>(0);
+    ptrData3 = vecConvertedImgs[7].ptr<uchar>(0);
+    for ( int i = 0; i < total; ++ i ) {
+        short x = (short)ptrData0[i] - (short)ptrData2[i];  // x = 2*cos(beta)
+        short y = (short)ptrData3[i] - (short)ptrData1[i];  // y = 2*sin(beta)
+        float fAmplitudeSquare = (x*x + y*y) / 4.f;
+        if ( fAmplitudeSquare < fMinimumAlpitudeSquare )
+            matAvgUnderTolIndex.at<uchar>(i) = 1;
+        matBeta.at<float>(i) = vecVecAtan2Table[x + PR_MAX_GRAY_LEVEL ][y+ PR_MAX_GRAY_LEVEL];
+    }
+
+    TimeLog::GetInstance()->addTimeLog( "2 cv::phase ", stopWatch.Span() );
+
+    //The opencv cv::phase function return result is 0~2*PI, but matlab is -PI~PI, so here need to do a conversion.
+    //cv::Mat matOverPi;
+    //cv::compare ( matAlpha, cv::Scalar::all ( CV_PI ), matOverPi, cv::CmpTypes::CMP_GT );
+    //cv::subtract ( matAlpha, cv::Scalar::all ( 2.f * CV_PI ), matAlpha, matOverPi );
+    //
+    //cv::compare ( matBeta, cv::Scalar::all ( CV_PI ), matOverPi, cv::CmpTypes::CMP_GT );
+    //cv::subtract ( matBeta, cv::Scalar::all ( 2.f * CV_PI ), matBeta, matOverPi );
+
+    //TimeLog::GetInstance()->addTimeLog( "2 cv::compare and cv::subtract ", stopWatch.Span() );
+
+    //cv::Mat matAvgUnderTolIndex;
+    //{
+    //    TimeLog::GetInstance ()->addTimeLog ( "Before find amplitude less than tol. ", stopWatch.Span () );
+    //    matBuffer1 = mat10.mul ( mat10 );
+    //    matBuffer2 = mat11.mul ( mat11 );
+    //    matBuffer1 = matBuffer1 + matBuffer2;
+    //    //matBuffer1 = matBuffer1 + ; //matB is amplitude of the wave. mat10 = 2*sin(theta), mat11 = 2*cos(theta).
+    //    cv::compare ( matBuffer1, pstCmd->fMinAmplitude * pstCmd->fMinAmplitude * 4, matAvgUnderTolIndex, cv::CmpTypes::CMP_LT );
+    //    TimeLog::GetInstance ()->addTimeLog ( "After amplitude less than tol. ", stopWatch.Span () );
+    //}
+    
+    matAlpha = matAlpha - pstCmd->matBaseWrappedAlpha;
+    matBeta  = matBeta  - pstCmd->matBaseWrappedBeta;
+    TimeLog::GetInstance ()->addTimeLog ( "2 substract take. ", stopWatch.Span () );
+
+    _phaseWrapBuffer ( matAlpha, matBuffer1 );
+    TimeLog::GetInstance()->addTimeLog( "_phaseWrapBuffer.", stopWatch.Span() );
+
+    matBuffer1 = matAlpha * pstCmd->matThickToThinStripeK.at<DATA_TYPE>(0);
+    TimeLog::GetInstance()->addTimeLog( "Multiply takes.", stopWatch.Span() );
+
+    _phaseWrapByRefer ( matBeta, matBuffer1 );
+    TimeLog::GetInstance()->addTimeLog( "_phaseWrapByRefer.", stopWatch.Span() );
+
+    matBeta.setTo ( NAN, matAvgUnderTolIndex );
+
+    cv::Mat matH = matBeta;
+
+    cv::medianBlur ( matH, matH, 5 );
+    TimeLog::GetInstance()->addTimeLog( "MedianBlur.", stopWatch.Span() );
+
+    cv::Mat matSnoop(matAlpha, cv::Rect(0, 0, PHASE_SNOOP_WIN_SIZE, PHASE_SNOOP_WIN_SIZE ) );
+    auto fStartAvgPhase = ToFloat ( cv::mean ( matSnoop )[0] );
+    if ( ( fStartAvgPhase - pstCmd->fBaseStartAvgPhase ) > ( LOW_BASE_PHASE + ToFloat ( CV_PI ) * 2.f ) )
+        matAlpha = matAlpha - ToFloat ( CV_PI ) * 2.f;
+    else if ( ( fStartAvgPhase - pstCmd->fBaseStartAvgPhase ) < LOW_BASE_PHASE )
+        matAlpha = matAlpha + ToFloat ( CV_PI ) * 2.f;
+
+    pstRpy->matPhase = matH;
+    if ( ! pstCmd->matOrder3CurveSurface.empty() && ! pstCmd->matIntegratedK.empty() )
+        pstRpy->matHeight = _calcHeightFromPhaseBuffer ( pstRpy->matPhase, pstCmd->matOrder3CurveSurface, pstCmd->matIntegratedK, matBuffer1, matBuffer2 );
+    else
+        pstRpy->matHeight = matH;
+
+    TimeLog::GetInstance()->addTimeLog( "_calcHeightFromPhase.", stopWatch.Span() );
+
+    pstRpy->enStatus = VisionStatus::OK;
+}
+
+/*static*/ cv::Mat Unwrap::_phaseUnwrapSurfaceTrk ( const cv::Mat &matPhase, const cv::Mat &dxPhase, const cv::Mat &dyPhase, const cv::Mat &matBranchCut ) {
     MARK_FUNCTION_START_TIME;
 
     int ROWS = matPhase.rows;
@@ -636,13 +757,12 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
     const float OneCycle = 2.f * ONE_HALF_CYCLE;
     cv::Mat matUnwrapped = matBranchCut.clone();
 
-    cv::Mat dyPhase = CalcUtils::diff ( matPhase, 1, 1 ); //The size of dyPhase is [ROWS - 1, COLS]
-    cv::Mat dxPhase = CalcUtils::diff ( matPhase, 1, 2 ); //The size of dxPhase is [ROWS, COLS - 1]
-
     //1. Unwrap from left to right, but to accelerate the operation, transpose the matrix first,
     //and do it from top to bottom, it is the same effect as from left to right on original phase.
     cv::Mat matPhaseT;
     cv::transpose ( matPhase, matPhaseT );
+
+    TimeLog::GetInstance()->addTimeLog( "cv::transpose. ", stopWatch.Span() );
 
     cv::Mat matTmpPhase = cv::Mat ( matPhaseT, cv::Rect ( 0, 0, matPhaseT.cols, 1 ) );
     cv::Mat matDp = CalcUtils::diff ( matTmpPhase, 1, 2 );
@@ -657,11 +777,17 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
     cv::compare ( cv::abs ( matDp ), cv::Scalar::all ( ONE_HALF_CYCLE ), matAbsUnderPI, cv::CmpTypes::CMP_LT );
     matDp.setTo ( 0, matAbsUnderPI );
 
-    matDp = _setBySign ( matDp, OneCycle);
+    _setBySign ( matDp, OneCycle);
+
+    TimeLog::GetInstance()->addTimeLog( "Before cv::repeat. ", stopWatch.Span() );
     matDp = cv::repeat ( matDp, matPhase.cols, 1);
+    TimeLog::GetInstance()->addTimeLog( "After cv::repeat. ", stopWatch.Span() );
 
     cv::Mat matTmp ( matPhaseT, cv::Rect(1, 0, matPhaseT.cols - 1, matPhaseT.rows ) );
+
+    TimeLog::GetInstance()->addTimeLog( "Before cumsum. ", stopWatch.Span() );
     auto matCumSum = CalcUtils::cumsum<DATA_TYPE> ( matDp, 2 );
+    TimeLog::GetInstance()->addTimeLog( "After cumsum. ", stopWatch.Span() );
     matTmp += matCumSum;
 
     //2. Unwrap from top to bottom. Because last step do a transpose, this step need to transpose back.
@@ -671,7 +797,7 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
     matDp = CalcUtils::diff ( matPhaseResult, 1, 2 );
     cv::compare ( cv::abs ( matDp ), cv::Scalar::all ( ONE_HALF_CYCLE ), matAbsUnderPI, cv::CmpTypes::CMP_LT );
     matDp.setTo ( 0, matAbsUnderPI );
-    matDp = _setBySign ( matDp, OneCycle );
+    _setBySign ( matDp, OneCycle );
 
     cv::Mat matTmp1 ( matPhaseResult,cv::Rect(1, 0, matPhaseResult.cols - 1, matPhaseResult.rows ) );
     matCumSum = CalcUtils::cumsum<DATA_TYPE> ( matDp, 2 );
@@ -704,7 +830,7 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
         matDp = matPhaseDiff;
         cv::compare ( cv::abs ( matDp ), cv::Scalar ( ONE_HALF_CYCLE ), matAbsUnderPI, cv::CmpTypes::CMP_LT );
         matDp.setTo ( 0, matAbsUnderPI );
-        matDp = _setBySign ( matDp, OneCycle );
+        _setBySign ( matDp, OneCycle );
         
         cv::Mat matPhaseLastRowClone = matPhaseLastRow.clone();
         cv::accumulate ( matPhaseDiff, matPhaseLastRowClone, matOneRowIndex );
@@ -741,7 +867,7 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
         matDp = matPhaseDiff;
         cv::compare ( cv::abs ( matDp ), cv::Scalar ( ONE_HALF_CYCLE ), matAbsUnderPI, cv::CmpTypes::CMP_LT );
         matDp.setTo ( 0, matAbsUnderPI );
-        matDp = _setBySign ( matDp, OneCycle );
+        _setBySign ( matDp, OneCycle );
         
         cv::Mat matPhaseNextRowClone = matPhaseNextRow.clone();
         cv::accumulate ( matPhaseDiff, matPhaseNextRowClone, matOneRowIndex );
@@ -779,7 +905,7 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
         matDp = matPhaseDiff;
         cv::compare ( cv::abs(matDp), cv::Scalar::all(ONE_HALF_CYCLE), matAbsUnderPI, cv::CmpTypes::CMP_LT );
         matDp.setTo ( 0, matAbsUnderPI );
-        matDp = _setBySign ( matDp, OneCycle );
+        _setBySign ( matDp, OneCycle );
         
         cv::Mat matPhaseNextColClone = matPhaseNextCol.clone();
         cv::accumulate ( matPhaseDiff, matPhaseNextColClone, matOneColIndex );
@@ -806,31 +932,194 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
     return matPhaseResult;
 }
 
-/*static*/ cv::Mat Unwrap::_phaseUnwrapSurfaceByRefer(const cv::Mat &matPhase, const cv::Mat &matRef ) {
+/*static*/ cv::Mat Unwrap::_phaseUnwrapSurfaceTrkNew ( const cv::Mat &matPhase, const cv::Mat &dxPhase, const cv::Mat &dyPhase, const cv::Mat &matBranchCut ) {
+    MARK_FUNCTION_START_TIME;
+
+    int ROWS = matPhase.rows;
+    int COLS = matPhase.cols;
+
+    cv::Mat matPhaseResult = matPhase.clone();
+    const float OneCycle = 2.f * ONE_HALF_CYCLE;
+
+    //1. Unwrap from left to right, but to accelerate the operation, transpose the matrix first,
+    //and do it from top to bottom, it is the same effect as from left to right on original phase.
+    cv::Mat matTmpPhase = cv::Mat ( matPhase, cv::Rect ( 0, 0, 1, ROWS ) );
+    cv::Mat matDp = CalcUtils::diff ( matTmpPhase, 1, 1 );
+
+#ifdef _DEBUG
+    auto vecVecArray = CalcUtils::matToVector<DATA_TYPE>( dxPhase );
+    auto vecmatTmp = CalcUtils::matToVector<DATA_TYPE>( matTmpPhase );
+    auto vecVecMatDp_1 = CalcUtils::matToVector<DATA_TYPE>( matDp );
+#endif
+
+    cv::Mat matAbsUnderPI;
+    cv::compare ( cv::abs ( matDp ), cv::Scalar::all ( ONE_HALF_CYCLE ), matAbsUnderPI, cv::CmpTypes::CMP_LT );
+    matDp.setTo ( 0, matAbsUnderPI );
+
+    _setBySign ( matDp, OneCycle);
+
+    TimeLog::GetInstance()->addTimeLog( "Before cv::repeat. ", stopWatch.Span() );
+    matDp = CalcUtils::repeatInX<DATA_TYPE> ( matDp, matPhase.cols );
+    TimeLog::GetInstance()->addTimeLog( "After cv::repeat. ", stopWatch.Span() );
+
+    TimeLog::GetInstance()->addTimeLog( "Before cumsum. ", stopWatch.Span() );
+    auto matCumSum = CalcUtils::cumsum<DATA_TYPE> ( matDp, 1 );
+    TimeLog::GetInstance()->addTimeLog( "After cumsum. ", stopWatch.Span() );
+
+    cv::Mat matTmp ( matPhaseResult, cv::Rect ( 0, 1, COLS, ROWS - 1 ) );
+    matTmp += matCumSum;
+
+    //2. Unwrap from top to bottom. Because last step do a transpose, this step need to transpose back.
+    matPhaseResult.setTo ( cv::Scalar::all(NAN), matBranchCut );
+
+    matDp = CalcUtils::diff ( matPhaseResult, 1, 2 );
+    cv::compare ( cv::abs ( matDp ), cv::Scalar::all ( ONE_HALF_CYCLE ), matAbsUnderPI, cv::CmpTypes::CMP_LT );
+    matDp.setTo ( 0, matAbsUnderPI );
+    _setBySign ( matDp, OneCycle );
+
+    cv::Mat matTmp1 ( matPhaseResult,cv::Rect(1, 0, matPhaseResult.cols - 1, matPhaseResult.rows ) );
+    matCumSum = CalcUtils::cumsum<DATA_TYPE> ( matDp, 2 );
+    matTmp1 += matCumSum;
+
+#ifdef _DEBUG
+    auto vecVecCumSum = CalcUtils::matToVector<DATA_TYPE> ( matCumSum );
+#endif
+
+    //3. Unwrap from Top to Bottom. Use the last row to unwrap next row.
+    matPhaseResult.setTo ( cv::Scalar(0), matBranchCut );
+    cv::Mat matNan = CalcUtils::getNanMask ( matPhaseResult );  //Find out points been blocked by branch cut.
+    cv::Mat matIsRowNeedUnwrap;
+    cv::reduce ( matNan, matIsRowNeedUnwrap, 1, CV_REDUCE_MAX );
+    std::vector<cv::Point> vecRowsNeedToUnwrap;
+    cv::findNonZero ( matIsRowNeedUnwrap, vecRowsNeedToUnwrap );
+    std::vector<int> vecRows;
+    for ( const auto &point : vecRowsNeedToUnwrap )
+        vecRows.push_back ( point.y );
+    std::sort ( vecRows.begin(), vecRows.end() );
+    std::reverse( vecRows.begin(), vecRows.end() );
+    for ( const auto &row : vecRows ) {
+        cv::Mat matOneRowIndex ( matNan, cv::Range ( row, row + 1 ) );
+        if ( cv::sum ( matOneRowIndex )[0] <= 1 || row >= ROWS - 1 )
+            continue;
+        cv::Mat matPhaseNextRow ( matPhaseResult, cv::Range ( row + 1, row + 2 ) );
+        cv::Mat matPhaseDiff ( dyPhase, cv::Range ( row, row + 1 ) );
+
+        cv::Mat matZero;
+        cv::compare ( matPhaseNextRow, cv::Scalar(0), matZero, cv::CmpTypes::CMP_EQ );
+        if ( cv::sum ( matZero )[0] > 0 )
+            matPhaseNextRow.setTo ( cv::Scalar(NAN), matZero );
+
+        matDp = matPhaseDiff;
+        cv::compare ( cv::abs ( matDp ), cv::Scalar ( ONE_HALF_CYCLE ), matAbsUnderPI, cv::CmpTypes::CMP_LT );
+        matDp.setTo ( 0, matAbsUnderPI );
+        _setBySign ( matDp, OneCycle );
+        
+        //Must use clone, and copy it back. Othereise the time is very slow.
+        cv::Mat matPhaseNextRowClone = matPhaseNextRow.clone();
+        cv::accumulate ( matPhaseDiff, matPhaseNextRowClone, matOneRowIndex );
+        cv::accumulate ( matDp,        matPhaseNextRowClone, matOneRowIndex );
+
+        cv::Mat matOneRowPhase ( matPhaseResult, cv::Range ( row, row + 1 ) );
+        matPhaseNextRowClone.copyTo ( matOneRowPhase, matOneRowIndex );
+    }
+
+    //4. Unwrap from bottom to top. Use the next row to unwrap last row.
+    matPhaseResult.setTo ( cv::Scalar(0), matBranchCut );    
+    matNan = CalcUtils::getNanMask ( matPhaseResult );  //Find out points been blocked by branch cut.    
+    cv::reduce ( matNan, matIsRowNeedUnwrap, 1, CV_REDUCE_MAX );
+    vecRowsNeedToUnwrap.clear();
+    cv::findNonZero ( matIsRowNeedUnwrap, vecRowsNeedToUnwrap );
+    for ( const auto &point : vecRowsNeedToUnwrap ) {
+        int row = point.y;
+        cv::Mat matOneRowIndex ( matNan, cv::Range ( row, row + 1 ) );
+        if ( cv::sum ( matOneRowIndex )[0] <= 1 || row <= 0 )
+            continue;
+        cv::Mat matPhaseLastRow ( matPhaseResult, cv::Range ( row - 1, row ) );
+        cv::Mat matPhaseDiff(dyPhase, cv::Range ( row - 1, row ) );
+
+        cv::Mat matZero;
+        cv::compare ( matPhaseLastRow, cv::Scalar(0), matZero, cv::CmpTypes::CMP_EQ );
+        if ( cv::sum ( matZero )[0] > 0 )
+            matPhaseLastRow.setTo ( cv::Scalar(NAN), matZero );
+
+        matDp = matPhaseDiff;
+        cv::compare ( cv::abs ( matDp ), cv::Scalar ( ONE_HALF_CYCLE ), matAbsUnderPI, cv::CmpTypes::CMP_LT );
+        matDp.setTo ( 0, matAbsUnderPI );
+        _setBySign ( matDp, OneCycle );
+        
+        cv::Mat matPhaseLastRowClone = matPhaseLastRow.clone();
+        cv::accumulate ( matPhaseDiff, matPhaseLastRowClone, matOneRowIndex );
+        cv::accumulate ( matDp,        matPhaseLastRowClone, matOneRowIndex );
+
+        cv::Mat matOneRowPhase ( matPhaseResult, cv::Range ( row, row + 1 ) );
+        matPhaseLastRowClone.copyTo ( matOneRowPhase, matOneRowIndex );
+    }
+
+    //5. Unwrap from right to left. One column by one column.
+    matPhaseResult.setTo ( cv::Scalar(0), matBranchCut );
+    matNan = CalcUtils::getNanMask ( matPhaseResult );
+
+    cv::Mat matIsColNeedUnwrap;
+    cv::reduce ( matNan, matIsColNeedUnwrap, 0, CV_REDUCE_MAX );
+    std::vector<cv::Point> vecColsNeedToUnwrap;
+    cv::findNonZero ( matIsColNeedUnwrap, vecColsNeedToUnwrap );
+    std::vector<int> vecCols;
+    for ( const auto &point : vecColsNeedToUnwrap )
+        vecCols.push_back ( point.x );
+    std::sort( vecCols.begin(), vecCols.end() );
+    std::reverse( vecCols.begin(), vecCols.end() );
+    for ( const auto col : vecCols ) {
+        cv::Mat matOneColIndex ( matNan, cv::Range::all(), cv::Range ( col, col + 1 ) );
+        if ( cv::sum ( matOneColIndex )[0] <= 1 || col >= COLS - 1 )
+            continue;
+        cv::Mat matPhaseNextCol ( matPhaseResult, cv::Range::all(), cv::Range ( col + 1, col + 2 ) );
+        cv::Mat matPhaseDiff ( dxPhase, cv::Range::all(), cv::Range ( col, col + 1 ) );
+
+        cv::Mat matZero;
+        cv::compare ( matPhaseNextCol, cv::Scalar(0), matZero, cv::CmpTypes::CMP_EQ );
+        if ( cv::sum ( matZero )[0] > 0 )
+            matPhaseNextCol.setTo ( cv::Scalar(NAN), matZero );
+
+        matDp = matPhaseDiff;
+        cv::compare ( cv::abs(matDp), cv::Scalar::all(ONE_HALF_CYCLE), matAbsUnderPI, cv::CmpTypes::CMP_LT );
+        matDp.setTo ( 0, matAbsUnderPI );
+        _setBySign ( matDp, OneCycle );
+        
+        cv::Mat matPhaseNextColClone = matPhaseNextCol.clone();
+        cv::accumulate ( matPhaseDiff, matPhaseNextColClone, matOneColIndex );
+        cv::accumulate ( matDp,        matPhaseNextColClone, matOneColIndex );
+
+        cv::Mat matOneColPhase ( matPhaseResult, cv::Range::all(), cv::Range ( col, col + 1 ) );
+        matPhaseNextColClone.copyTo ( matOneColPhase, matOneColIndex );
+    }
+
+#ifdef _DEBUG
+    matNan = CalcUtils::getNanMask ( matPhaseResult );
+    cv::imwrite("./data/NanMap_2.png", matNan);
+#endif
+
+    matPhaseResult.setTo ( cv::Scalar(NAN), matBranchCut );
+
+#ifdef _DEBUG
+    matNan = CalcUtils::getNanMask ( matPhaseResult );
+    cv::imwrite("./data/NanMap_3.png", matNan);
+#endif
+
+    MARK_FUNCTION_END_TIME;
+    return matPhaseResult;
+}
+
+/*static*/ cv::Mat Unwrap::_phaseUnwrapSurfaceByRefer(const cv::Mat &matPhase, const cv::Mat &matRef, const cv::Mat &matNan ) {
     MARK_FUNCTION_START_TIME;
 
     const float OneCycle = 2.f * ONE_HALF_CYCLE;
     cv::Mat matPhaseResult = matPhase.clone();
-    cv::Mat matNan = CalcUtils::getNanMask ( matRef );
     matPhaseResult.setTo ( NAN, matNan );
 
     cv::Mat matErr = matPhaseResult - matRef;
-    matErr /= OneCycle;
-    auto matN = CalcUtils::floor<DATA_TYPE>(matErr);
-#ifdef _DEBUG
-    auto vecVecN = CalcUtils::matToVector<DATA_TYPE> ( matN );
-#endif
-    matPhaseResult = matPhaseResult - matN * OneCycle;
-
-    matErr = matPhaseResult - matRef;
-    
-    // Same as matlab idx = find( abs(pErr) > 0.9999*Th );
-    cv::Mat matPosOverHalfCycleIndex, matNegOverHalfCycleIndex;
-    cv::compare ( matErr,   0.9999 * ONE_HALF_CYCLE, matPosOverHalfCycleIndex, cv::CmpTypes::CMP_GT );
-    cv::compare ( matErr, - 0.9999 * ONE_HALF_CYCLE, matNegOverHalfCycleIndex, cv::CmpTypes::CMP_LT );
-    // Same as matlab Phase(idx) = Phase(idx) - sign(pErr(idx))*2*Th;
-    cv::subtract ( matPhaseResult, OneCycle, matPhaseResult, matPosOverHalfCycleIndex );
-    cv::add      ( matPhaseResult, OneCycle, matPhaseResult, matNegOverHalfCycleIndex );
+    cv::Mat matNn =  matErr / OneCycle + 0.5;
+    CalcUtils::floorByRef<DATA_TYPE>( matNn );
+    matPhaseResult = matPhaseResult - matNn * OneCycle;
 
     MARK_FUNCTION_END_TIME;
     return matPhaseResult;
@@ -1445,8 +1734,8 @@ static inline cv::Mat calcBezierCoeff ( const cv::Mat &matU ) {
     matU = matU.reshape ( 1, 1 );
     matV = matV.reshape ( 1, 1 );
 
-    cv::Mat matP1 = calcBezierCoeff ( matU );
-    cv::Mat matP2 = calcBezierCoeff ( matV );
+    cv::Mat matP1 = calcOrder5BezierCoeff ( matU );
+    cv::Mat matP2 = calcOrder5BezierCoeff ( matV );
     cv::Mat matXX;
     for ( int i = 0; i < BEZIER_RANK; ++ i )
     for ( int j = 0; j < BEZIER_RANK; ++ j ) {
@@ -1700,12 +1989,36 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
 }
 
 /*static*/ cv::Mat Unwrap::_calcHeightFromPhase(const cv::Mat &matPhase, const cv::Mat &matHtt, const cv::Mat &matK) {
+    CStopWatch stopWatch;
     cv::Mat matPhasePow2 = matPhase.mul ( matPhase );
     cv::Mat matPhasePow3 = matPhasePow2.mul ( matPhase );
-    cv::Mat matLeft = matPhase + matK.at<DATA_TYPE> ( 10 ) * matPhasePow2 + matK.at<DATA_TYPE> ( 11 ) * matPhasePow3;
-    cv::Mat matHeight;
+    TimeLog::GetInstance()->addTimeLog("_calcHeightFromPhase 2 mul take: ", stopWatch.Span() );
+    cv::Mat matLeft = matPhase + matPhasePow2 * matK.at<DATA_TYPE> ( 10 ) + matPhasePow3 * matK.at<DATA_TYPE> ( 11 );
+    TimeLog::GetInstance()->addTimeLog("_calcHeightFromPhase add and muliply take: ", stopWatch.Span() );
+    cv::Mat matHeight; 
     cv::divide ( matLeft, matHtt, matHeight );
+    TimeLog::GetInstance()->addTimeLog("cv::divide take: ", stopWatch.Span() );
     return matHeight;
+}
+
+/*static*/ cv::Mat Unwrap::_calcHeightFromPhaseBuffer(const cv::Mat &matPhase, const cv::Mat &matHtt, const cv::Mat &matK, cv::Mat &matBuffer1, cv::Mat &matBuffer2 ) {
+    CStopWatch stopWatch;
+    matBuffer1 = matPhase.mul ( matPhase );     //Pow 2
+    TimeLog::GetInstance()->addTimeLog("_calcHeightFromPhase mul take: ", stopWatch.Span() );
+    auto K10 = matK.at<DATA_TYPE> ( 10 );
+    auto K11 = matK.at<DATA_TYPE> ( 11 );
+    
+    if ( K11 > 1e-5 ) {
+        matBuffer2 = matBuffer1.mul ( matPhase );   //Pow 3
+        matBuffer1 = matPhase + matBuffer1 * matK.at<DATA_TYPE> ( 10 ) + matBuffer2 * matK.at<DATA_TYPE> ( 11 );
+    }else {
+        matBuffer1 = matPhase + matBuffer1 * matK.at<DATA_TYPE> ( 10 );
+    }
+    
+    TimeLog::GetInstance()->addTimeLog("_calcHeightFromPhase add and muliply take: ", stopWatch.Span() );
+    matBuffer1 = matBuffer1 / matHtt;
+    TimeLog::GetInstance()->addTimeLog("cv::divide take: ", stopWatch.Span() );
+    return matBuffer1;
 }
 
 /*static*/ void Unwrap::integrate3DCalib(const PR_INTEGRATE_3D_CALIB_CMD *const pstCmd, PR_INTEGRATE_3D_CALIB_RPY *const pstRpy) {
@@ -1731,16 +2044,23 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
             else
                 vecBP.push_back ( ToFloat ( stCalibData.matDivideStepIndex.at<char>(point) + 1 ) );
         }
+    }    
+    if ( ! pstCmd->matTopSurfacePhase.empty() ) {
+        cv::Mat matNonNan = pstCmd->matTopSurfacePhase == pstCmd->matTopSurfacePhase;
+        VectorOfPoint vecEffectPoints;
+        cv::findNonZero ( matNonNan, vecEffectPoints );
+        vecXt.reserve ( vecXt.size() + vecEffectPoints.size() );
+        vecYt.reserve ( vecYt.size() + vecEffectPoints.size() );
+        vecPhase.reserve ( vecPhase.size() + vecEffectPoints.size() );
+        vecBP.reserve ( vecBP.size() + + vecEffectPoints.size()  );
+        for (const auto &point : vecEffectPoints) {
+            vecXt.push_back ( matX.at<DATA_TYPE> ( point ) );
+            vecYt.push_back ( matY.at<DATA_TYPE> ( point ) );
+            vecPhase.push_back ( pstCmd->matTopSurfacePhase.at<DATA_TYPE> ( point ) );
+            vecBP.push_back ( pstCmd->fTopSurfaceHeight );
+        }        
     }
     cv::Mat matXt ( vecXt ), matYt ( vecYt ), matPhase ( vecPhase ), matBP ( vecBP );
-    if ( ! pstCmd->matTopSurfacePhase.empty() ) {        
-        matXt.push_back ( matX.reshape ( 1, ToInt32 ( matX.total () ) ) );
-        matYt.push_back ( matY.reshape ( 1, ToInt32 ( matY.total () ) ) );
-        matPhase.push_back ( pstCmd->matTopSurfacePhase.reshape ( 1, ToInt32 ( pstCmd->matTopSurfacePhase.total () ) ) );
-        matBP.push_back ( cv::Mat ( cv::Mat::ones ( ToInt32 ( pstCmd->matTopSurfacePhase.total() ), 1, CV_32FC1 ) * pstCmd->fTopSurfaceHeight ) );
-    }
-    matXt.reshape ( 1, 1 );
-    matYt.reshape ( 1, 1 );
     cv::Mat matXX = prepareOrder3SurfaceFit ( matXt, matYt );
     cv::Mat matBPRepeat = cv::repeat ( matBP, 1, matXX.cols );
     matXX = matXX.mul ( matBPRepeat );

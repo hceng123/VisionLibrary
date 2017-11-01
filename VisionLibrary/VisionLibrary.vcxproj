@@ -129,6 +129,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_WINDLL;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(BuildLevel)\ExtLibs\opencv\include;$(BuildLevel)\ExtLibs\boost_1_59_0;$(BuildLevel)\JoinSplit;</AdditionalIncludeDirectories>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -152,6 +153,7 @@
     <ClInclude Include="Record.h" />
     <ClInclude Include="RecordManager.h" />
     <ClInclude Include="SimpleIni.h" />
+    <ClInclude Include="spline.h" />
     <ClInclude Include="SubFunctions.h" />
     <ClInclude Include="TimeLog.h" />
     <ClInclude Include="Unwrap.h" />

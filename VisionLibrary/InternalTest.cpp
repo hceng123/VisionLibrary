@@ -1,6 +1,7 @@
 #include "Fitting.h"
 #include "CalcUtils.h"
 #include <iostream>
+#include <numeric>
 
 namespace AOI
 {
@@ -21,9 +22,19 @@ static void printfMat ( const cv::Mat &mat)
 }
 
 template<class T>
-static void printfVectorOfVector(const std::vector<std::vector<T>> &vevVecInput)
+static void printfVector(const std::vector<T> &vecInput)
 {
-	for (const auto &vecInput : vevVecInput )
+    for (const auto value : vecInput)
+    {
+        printf ( "%.2f ", value );
+    }
+    printf ( "\n" );
+}
+
+template<class T>
+static void printfVectorOfVector(const std::vector<std::vector<T>> &vecVecInput)
+{
+	for (const auto &vecInput : vecVecInput )
 	{
 		for (const auto value : vecInput )
 		{
@@ -156,6 +167,65 @@ static void TestCalcUtilsMeshGrid()
     }
 }
 
+static void TestCalcUtilsDiff() {
+    {
+        std::cout << std::endl << "------------------------------------------";
+        std::cout << std::endl << "CALCUTILS DIFF TEST #1 STARTING";
+        std::cout << std::endl << "------------------------------------------";
+        std::cout << std::endl;
+        std::vector<float> vecInput {
+            1,  3,  5,
+            7,  11, 13,
+            17, 19, 23
+        };
+        cv::Mat matInput ( vecInput ), matResult;
+        matInput = matInput.reshape ( 1, 3 );
+        std::cout << "INPUT: " << std::endl;
+        printfMat<float> ( matInput );
+
+        matResult = CalcUtils::diff ( matInput, 1, 1 );
+        std::cout << "Diff recursive time 1, dim 1 result: " << std::endl;
+        printfMat<float> ( matResult );
+
+        matResult = CalcUtils::diff ( matInput, 1, 2 );
+        std::cout << "Diff recursive time 1, dim 2 result: " << std::endl;
+        printfMat<float> ( matResult );
+    }
+
+    {
+        std::cout << std::endl << "------------------------------------------";
+        std::cout << std::endl << "CALCUTILS DIFF TEST #2 STARTING";
+        std::cout << std::endl << "------------------------------------------";
+        std::cout << std::endl;
+        std::vector<float> vecInput {
+            1,  3,  5,  -6,
+            7,  11, 13, 16,
+            17, 19, 23, -1,
+            -5, -7, 9,  -21,
+        };
+        cv::Mat matInput ( vecInput ), matResult;
+        matInput = matInput.reshape ( 1, 4 );
+        std::cout << "INPUT: " << std::endl;
+        printfMat<float> ( matInput );
+
+        matResult = CalcUtils::diff ( matInput, 1, 1 );
+        std::cout << "Diff recursive time 1, dim 1 result: " << std::endl;
+        printfMat<float> ( matResult );
+
+        matResult = CalcUtils::diff ( matInput, 1, 2 );
+        std::cout << "Diff recursive time 1, dim 2 result: " << std::endl;
+        printfMat<float> ( matResult );
+
+        matResult = CalcUtils::diff ( matInput, 2, 1 );
+        std::cout << "Diff recursive time 2, dim 1 result: " << std::endl;
+        printfMat<float> ( matResult );
+
+        matResult = CalcUtils::diff ( matInput, 2, 2 );
+        std::cout << "Diff recursive time 2, dim 2 result: " << std::endl;
+        printfMat<float> ( matResult );
+    }
+}
+
 static void TestCountOfNan() {
     std::cout << std::endl << "------------------------------------------";
     std::cout << std::endl << "COUNT OF NAN TEST #1 STARTING";
@@ -195,12 +265,76 @@ static void TestFindLargestKItems() {
     std::cout << std::endl;
 }
 
+static void TestCalcUtilsFloor() {
+    std::cout << std::endl << "------------------------------------------------";
+    std::cout << std::endl << "CALCUTILS FLOOR REGRESSION TEST #1 STARTING";
+    std::cout << std::endl << "------------------------------------------------";
+    std::cout << std::endl;
+    std::vector<float> vecFloat {
+        NAN, 0.8f, 0.2f, 0.3f,
+        0.3f, 0.5f, 0.3f, 0.4f,
+        0.9f, -0.8f, 0.6f, 0.5f,
+        1.8f, 1.9f, 0.7f, NAN
+    };
+    cv::Mat matInput ( vecFloat );
+    matInput = matInput.reshape ( 1, 4 );
+    std::cout << "INPUT: " << std::endl;
+    printfMat<float> ( matInput );
+    cv::Mat matResult = CalcUtils::floor<float>( matInput );
+    std::cout << "CalcUtils::floor result: " << std::endl;
+    printfMat<float> ( matResult );
+}
+
+static void TestCalcUtilsInterp1() {
+{
+    std::cout << std::endl << "------------------------------------------------";
+    std::cout << std::endl << "CALCUTILS INTERP1 REGRESSION TEST #1 STARTING";
+    std::cout << std::endl << "------------------------------------------------";
+    std::cout << std::endl;
+
+    VectorOfDouble vecV( {0,  1.41,  2,  1.41,  0,  -1.41,  -2,  -1.41, 0});
+    std::cout << "Input: " << std::endl;
+    printfVector<double>(vecV);
+    VectorOfDouble vecX(vecV.size());
+    std::iota ( vecX.begin(), vecX.end(), 1 );
+    VectorOfDouble vecXq;
+    for ( double xq = 1.5; xq <= 8.5; xq += 1 ) {
+        vecXq.push_back ( xq );
+    }
+    auto vecVq = CalcUtils::interp1 ( vecX, vecV, vecXq );
+    std::cout << "Linear interp1 result: " << std::endl;
+    printfVector ( vecVq );
+
+    vecVq = CalcUtils::interp1 ( vecX, vecV, vecXq, true );
+    std::cout << "Spine interp1 result: " << std::endl;
+    printfVector ( vecVq );
+}
+}
+
+static void TestCalcUtilsRepeat() {
+    std::cout << std::endl << "------------------------------------------------";
+    std::cout << std::endl << "CALCUTILS REPEAT REGRESSION TEST #1 STARTING";
+    std::cout << std::endl << "------------------------------------------------";
+    std::cout << std::endl;
+
+    std::vector<float> vecRow ( 5 );
+    std::iota ( vecRow.begin(), vecRow.end(), 1.f );
+    cv::Mat matRow(vecRow);
+    cv::Mat matResult = CalcUtils::repeatInX<float> ( matRow, 5 );
+    std::cout << "Repeat in X result: " << std::endl;
+    printfMat<float> ( matResult );
+}
+
 void InternalTest() {
     TestCalcUtilsCumSum();
     TestCalcUtilsInternals();
     TestCalcUtilsMeshGrid();
+    TestCalcUtilsDiff();
     TestCountOfNan();
     TestFindLargestKItems();
+    TestCalcUtilsFloor();
+    TestCalcUtilsInterp1();
+    TestCalcUtilsRepeat();
 }
 
 }

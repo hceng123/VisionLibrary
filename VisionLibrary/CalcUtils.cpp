@@ -1,22 +1,20 @@
 #include "CalcUtils.h"
+#include "spline.h"
 
 namespace AOI
 {
 namespace Vision
 {
 
-/*static*/ double CalcUtils::radian2Degree( double fRadian )
-{
+/*static*/ double CalcUtils::radian2Degree( double fRadian ) {
     return ( fRadian * 180.f / CV_PI );
 }
 
-/*static*/ double CalcUtils::degree2Radian( double fDegree )
-{
+/*static*/ double CalcUtils::degree2Radian( double fDegree ) {
     return ( fDegree * CV_PI / 180.f );
 }
 
-/*static*/ float CalcUtils::ptDisToLine(const cv::Point2f &ptInput, bool bReversedFit, float fSlope, float fIntercept )
-{
+/*static*/ float CalcUtils::ptDisToLine(const cv::Point2f &ptInput, bool bReversedFit, float fSlope, float fIntercept ) {
     float distance = 0.f;
     if ( bReversedFit ) {
         if (fabs(fSlope) < 0.0001) {
@@ -31,14 +29,10 @@ namespace Vision
             if (ptInput.x < ptCrossPoint.x)
                 distance = -distance;
         }
-    }
-    else
-    {
+    }else {
         if (fabs(fSlope) < 0.0001) {
             distance = ptInput.y - fIntercept;
-        }
-        else
-        {
+        }else {
             float fSlopeOfPerpendicularLine = -1.f / fSlope;
             float fInterceptOfPerpendicularLine = ptInput.y - fSlopeOfPerpendicularLine * ptInput.x;
             cv::Point2f ptCrossPoint;
@@ -48,13 +42,11 @@ namespace Vision
             if (ptInput.y < ptCrossPoint.y)
                 distance = -distance;
         }
-    }
-    
+    }    
     return distance;
 }
 
-/*static*/ PR_Line2f CalcUtils::calcEndPointOfLine( const VectorOfPoint &vecPoint, bool bReversedFit, float fSlope, float fIntercept )
-{
+/*static*/ PR_Line2f CalcUtils::calcEndPointOfLine( const VectorOfPoint &vecPoint, bool bReversedFit, float fSlope, float fIntercept ) {
     float fMinX = 10000.f, fMinY = 10000.f, fMaxX = -10000.f, fMaxY = -10000.f;
     for ( const auto &point : vecPoint )    {
         cv::Point2f pt2f(point);
@@ -79,8 +71,7 @@ namespace Vision
     return line;
 }
 
-/*static*/ PR_Line2f CalcUtils::calcEndPointOfLine( const ListOfPoint &listPoint, bool bReversedFit, float fSlope, float fIntercept )
-{
+/*static*/ PR_Line2f CalcUtils::calcEndPointOfLine( const ListOfPoint &listPoint, bool bReversedFit, float fSlope, float fIntercept ) {
     float fMinX = 10000.f, fMinY = 10000.f, fMaxX = -10000.f, fMaxY = -10000.f;
     for ( const auto &point : listPoint )    {
         cv::Point2f pt2f(point);
@@ -105,8 +96,7 @@ namespace Vision
     return line;
 }
 
-/*static*/ cv::Point2f CalcUtils::lineIntersect(float fSlope1, float fIntercept1, float fSlope2, float fIntercept2)
-{
+/*static*/ cv::Point2f CalcUtils::lineIntersect(float fSlope1, float fIntercept1, float fSlope2, float fIntercept2) {
     cv::Point2f ptResult;
     if ( fabs ( fSlope1 - fSlope2 ) < 0.0001 )
         return ptResult;
@@ -144,8 +134,7 @@ namespace Vision
     return vecPoint;
 }
 
-/*static*/ float CalcUtils::guassianValue(float ssq, float x )
-{
+/*static*/ float CalcUtils::guassianValue(float ssq, float x ) {
     return ToFloat ( exp ( - ( x * x ) / ( 2.0 * ssq ) ) / ( CV_PI * ssq ) );
 }
 
@@ -163,8 +152,7 @@ namespace Vision
 
 /*static*/ void CalcUtils::filter2D_Conv(cv::InputArray src, cv::OutputArray dst, int ddepth,
                    cv::InputArray kernel, cv::Point anchor,
-                   double delta, int borderType )
-{
+                   double delta, int borderType ) {
     cv::Mat newKernel;
     const int FLIP_H_Z = -1;
     cv::flip ( kernel, newKernel, FLIP_H_Z );
@@ -228,28 +216,6 @@ float CalcUtils::calcPointToContourDist(const cv::Point &ptInput, const VectorOf
     return ptCenter;
 }
 
-/*static*/ cv::Mat CalcUtils::diff ( const cv::Mat &matInput, int nRecersiveTime, int nDimension ) {
-    const int DIFF_ON_ROW = 1;
-    const int DIFF_ON_COL = 2;
-    assert ( DIFF_ON_COL == nDimension || DIFF_ON_ROW == nDimension );
-    if ( nRecersiveTime > 1 )
-        return diff ( diff ( matInput, nRecersiveTime - 1, nDimension ), 1, nDimension );
-
-    cv::Mat matKernel;
-    if ( DIFF_ON_COL == nDimension )
-        matKernel = (cv::Mat_<float>(1, 2) << -1, 1);
-    else if ( DIFF_ON_ROW == nDimension )
-        matKernel = (cv::Mat_<float>(2, 1) << -1, 1);
-
-    cv::Mat matResult;
-    cv::filter2D(matInput, matResult, -1, matKernel, cv::Point(-1, -1), 0.0, cv::BORDER_CONSTANT);
-    if ( DIFF_ON_COL == nDimension )
-        return cv::Mat ( matResult, cv::Rect(1, 0, matResult.cols - 1, matResult.rows ) ).clone();
-    else if (  DIFF_ON_ROW == nDimension )
-        return cv::Mat ( matResult, cv::Rect(0, 1, matResult.cols, matResult.rows - 1 ) ).clone();
-    return cv::Mat();
-}
-
 /*static*/ int CalcUtils::countOfNan(const cv::Mat &matInput) {
     cv::Mat matNan;
     cv::compare ( matInput, matInput, matNan, cv::CmpTypes::CMP_EQ );
@@ -289,6 +255,16 @@ float CalcUtils::calcPointToContourDist(const cv::Point &ptInput, const VectorOf
     int nIndex = ToInt32 ( std::distance ( vecVecDft[0].begin (), maxElement ) ) + 1;
     float fFrequency = (float)nIndex * SAMPLE_FREQUENCY / m;
     return fFrequency;
+}
+
+/*static*/ VectorOfDouble CalcUtils::interp1(const VectorOfDouble &vecX, const VectorOfDouble &vecV, const VectorOfDouble &vecXq, bool bSpine ) {
+    tk::spline s;
+    s.set_points ( vecX, vecV, bSpine );    // currently it is required that X is already sorted
+    VectorOfDouble vecResult;
+    vecResult.reserve ( vecXq.size() );
+    for ( const auto xq : vecXq )
+        vecResult.push_back ( s( xq ) );
+    return vecResult;
 }
 
 }

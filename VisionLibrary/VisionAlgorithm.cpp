@@ -17,6 +17,7 @@
 #include <iostream>
 #include <limits>
 #include <algorithm>
+#include <numeric>
 
 using namespace cv::xfeatures2d;
 namespace bfs = boost::filesystem;
@@ -1088,23 +1089,28 @@ VisionStatus VisionAlgorithm::inspDevice(PR_INSP_DEVICE_CMD *pstInspDeviceCmd, P
     if ( matSrchROI.channels() > 1 )
         cv::cvtColor ( matSrchROI, matSrchROI, cv::COLOR_BGR2GRAY );
 
+    cv::Mat matTmpl = ptrRecord->getTmpl();
     if ( PR_MATCH_TMPL_ALGORITHM::SQUARE_DIFF == pstCmd->enAlgorithm ) {
         float fCorrelation;
-        pstRpy->enStatus = MatchTmpl::matchTemplate ( matSrchROI, ptrRecord->getTmpl(), pstCmd->bSubPixelRefine, pstCmd->enMotion, pstRpy->ptObjPos, pstRpy->fRotation, fCorrelation );
+        pstRpy->enStatus = MatchTmpl::matchTemplate ( matSrchROI, matTmpl, pstCmd->bSubPixelRefine, pstCmd->enMotion, pstRpy->ptObjPos, pstRpy->fRotation, fCorrelation );
         pstRpy->ptObjPos.x += pstCmd->rectSrchWindow.x;
         pstRpy->ptObjPos.y += pstCmd->rectSrchWindow.y;
         pstRpy->fMatchScore = fCorrelation * ConstToPercentage;
     }else if ( PR_MATCH_TMPL_ALGORITHM::HIERARCHICAL_EDGE == pstCmd->enAlgorithm ) {
-        cv::Point ptResult = MatchTmpl::matchByRecursionEdge ( matSrchROI, ptrRecord->getTmpl(), ptrRecord->getEdgeMask() );
+        cv::Point ptResult = MatchTmpl::matchByRecursionEdge ( matSrchROI, matTmpl, ptrRecord->getEdgeMask() );
         pstRpy->ptObjPos.x = ptResult.x + ptrRecord->getTmpl().cols / 2 + 0.5f + pstCmd->rectSrchWindow.x;
         pstRpy->ptObjPos.y = ptResult.y + ptrRecord->getTmpl().rows / 2 + 0.5f + pstCmd->rectSrchWindow.y;
         pstRpy->fRotation = 0.f;
+        cv::Mat matImgROI( matSrchROI, cv::Rect ( ptResult, matTmpl.size() ) );
+        pstRpy->fMatchScore = MatchTmpl::calcCorrelation ( matTmpl, matImgROI ) * ConstToPercentage;
         pstRpy->enStatus = VisionStatus::OK;
     }else if ( PR_MATCH_TMPL_ALGORITHM::HIERARCHICAL_AREA == pstCmd->enAlgorithm ) {
         cv::Point ptResult = MatchTmpl::matchTemplateRecursive ( matSrchROI, ptrRecord->getTmpl() );
         pstRpy->ptObjPos.x = ptResult.x + ptrRecord->getTmpl().cols / 2 + 0.5f + pstCmd->rectSrchWindow.x;
         pstRpy->ptObjPos.y = ptResult.y + ptrRecord->getTmpl().rows / 2 + 0.5f + pstCmd->rectSrchWindow.y;
         pstRpy->fRotation = 0.f;
+        cv::Mat matImgROI( matSrchROI, cv::Rect ( ptResult, matTmpl.size() ) );
+        pstRpy->fMatchScore = MatchTmpl::calcCorrelation ( matTmpl, matImgROI ) * ConstToPercentage;
         pstRpy->enStatus = VisionStatus::OK;
     }
 
@@ -1122,8 +1128,12 @@ VisionStatus VisionAlgorithm::inspDevice(PR_INSP_DEVICE_CMD *pstInspDeviceCmd, P
         crossLineTwoPtOne = pstRpy->ptObjPos + CalcUtils::warpPoint<double> ( matWarp, crossLineTwoPtOne );
         crossLineTwoPtTwo = pstRpy->ptObjPos + CalcUtils::warpPoint<double> ( matWarp, crossLineTwoPtTwo );
 
-        cv::line ( pstRpy->matResultImg, crossLineOnePtOne, crossLineOnePtTwo, _constBlueScalar, 2 );
-        cv::line ( pstRpy->matResultImg, crossLineTwoPtOne, crossLineTwoPtTwo, _constBlueScalar, 2 );
+        int nLineWidth = 1;
+        if ( ptrRecord->getTmpl().total() > 1000 )
+            nLineWidth = 2;
+
+        cv::line ( pstRpy->matResultImg, crossLineOnePtOne, crossLineOnePtTwo, _constBlueScalar, nLineWidth );
+        cv::line ( pstRpy->matResultImg, crossLineTwoPtOne, crossLineTwoPtTwo, _constBlueScalar, nLineWidth );
 
         matWarp = cv::getRotationMatrix2D ( pstRpy->ptObjPos, -pstRpy->fRotation, 1. );
         auto vecPoint2f = CalcUtils::warpRect<double> ( matWarp, cv::Rect2f ( pstRpy->ptObjPos.x - ToFloat ( ptrRecord->getTmpl().cols / 2 ),
@@ -1131,7 +1141,7 @@ VisionStatus VisionAlgorithm::inspDevice(PR_INSP_DEVICE_CMD *pstInspDeviceCmd, P
         VectorOfVectorOfPoint vecVecPoint(1);
         for ( const auto &point : vecPoint2f )
             vecVecPoint[0].push_back ( point );
-        cv::polylines ( pstRpy->matResultImg, vecVecPoint, true, _constBlueScalar, 2 );
+        cv::polylines ( pstRpy->matResultImg, vecVecPoint, true, _constBlueScalar, nLineWidth );
     }
     FINISH_LOGCASE;
     MARK_FUNCTION_END_TIME;
@@ -5928,6 +5938,62 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     return pstRpy->enStatus;
 }
 
+/*static*/ VisionStatus VisionAlgorithm::fastCalc3DHeight(const PR_FAST_CALC_3D_HEIGHT_CMD *const pstCmd, PR_FAST_CALC_3D_HEIGHT_RPY *pstRpy, bool bReplay /*= false*/) {
+    assert(pstCmd != nullptr && pstRpy != nullptr);
+
+    if ( pstCmd->vecInputImgs.size() != 8 ) {
+        WriteLog("The input image count is not 8.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    for ( const auto &mat : pstCmd->vecInputImgs ) {
+        if ( mat.empty() ) {
+            WriteLog("The input image is empty.");
+            pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+            return pstRpy->enStatus;
+        }
+    }
+
+    if ( pstCmd->matThickToThinStripeK.empty() ) {
+        WriteLog("The matThickToThinStripeK is empty.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    if ( pstCmd->matBaseWrappedAlpha.empty() ) {
+        WriteLog("matBaseWrappedAlpha is empty.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    if ( pstCmd->matBaseWrappedAlpha.size() != pstCmd->vecInputImgs[0].size() ) {
+        WriteLog("The size of matBaseWrappedAlpha is not match with the input image size..");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    if ( pstCmd->matBaseWrappedBeta.empty() ) {
+        WriteLog("matBaseWrappedBeta is empty.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    if ( pstCmd->matBaseWrappedBeta.size() != pstCmd->vecInputImgs[0].size() ) {
+        WriteLog("The size of matBaseWrappedBeta is not match with the input image size..");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    MARK_FUNCTION_START_TIME;
+
+    Unwrap::fastCalc3DHeight ( pstCmd, pstRpy );
+
+    MARK_FUNCTION_END_TIME;
+    pstRpy->enStatus = VisionStatus::OK;
+    return pstRpy->enStatus;
+}
+
 /*static*/ VisionStatus VisionAlgorithm::calc3DHeightDiff(const PR_CALC_3D_HEIGHT_DIFF_CMD *const pstCmd, PR_CALC_3D_HEIGHT_DIFF_RPY *const pstRpy, bool bReplay /*= false*/) {
     assert(pstCmd != nullptr && pstRpy != nullptr);
     if ( pstCmd->matHeight.empty() ) {
@@ -5968,7 +6034,7 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
 }
 
 /*static*/ VisionStatus VisionAlgorithm::calcCameraMTF(const PR_CALC_CAMERA_MTF_CMD *const pstCmd, PR_CALC_CAMERA_MTF_RPY *const pstRpy, bool bReplay/* = false*/) {
-    assert(pstCmd != nullptr && pstRpy != nullptr);    
+    assert(pstCmd != nullptr && pstRpy != nullptr);
     if ( pstCmd->matInputImg.empty() ) {
         WriteLog("Input image is empty.");
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
@@ -6058,46 +6124,10 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
         double dMinAvg = cv::mean ( cv::Mat ( matSorted, cv::Rect (0, 0, 1, DATA_LEN) ) )[0];
         pstRpy->vecBigPatternAbsMtfH.push_back ( ToFloat ( dMaxAvg - dMinAvg ) / PR_MAX_GRAY_LEVEL );
     }
-    const int SAMPLE_FREQUENCY = 1;
-    float fFrequency1 = 0.f, fFrequency2 = 0.f;
-    //Calculate frequency
-    fFrequency1 = CalcUtils::calcFrequency ( cv::Mat ( vecMat[2], cv::Rect ( 0, 5, vecMat[2].cols, 1 ) ) );
-    cv::Mat matTt1 = CalcUtils::intervals<float> ( 1.f, 1.f, ToFloat ( vecMat[2].cols ) );
-    matTt1 = matTt1.reshape ( 1, 1 );
-    cv::Mat matXX1 =   CalcUtils::sin<float>( matTt1 * 2 * CV_PI * fFrequency1 );
-    matXX1.push_back ( CalcUtils::cos<float>( matTt1 * 2 * CV_PI * fFrequency1 ) );
-    matXX1.push_back ( cv::Mat (cv::Mat::ones ( 1, matXX1.cols, CV_32FC1 ) ) );
-    cv::transpose ( matXX1, matXX1 );
-    cv::Mat matPattern3Float;
-    vecMat[2].convertTo ( matPattern3Float, CV_32FC1 );
-    for ( int row = 0; row < vecMat[2].rows; ++ row ) {
-        cv::Mat matYY( matPattern3Float, cv::Rect ( 0, row, matPattern3Float.cols, 1 ) );
-        cv::transpose ( matYY, matYY );
-        cv::Mat matK;
-        cv::solve ( matXX1, matYY, matK, cv::DecompTypes::DECOMP_SVD );
-        float A = 2.f * sqrt ( matK.at<float>(0) * matK.at<float>(0) + matK.at<float>(1) * matK.at<float>(1) );
-        pstRpy->vecSmallPatternAbsMtfV.push_back ( A / PR_MAX_GRAY_LEVEL );
-    }
 
-    //Calculate MTF for pattern 4.
-    cv::Mat matPattern4Float;
-    vecMat[3].convertTo ( matPattern4Float, CV_32FC1 );
-    cv::Mat matCol ( matPattern4Float, cv::Rect ( matPattern4Float.cols / 2, 0, 1, matPattern4Float.rows ) ), matColT;
-    cv::transpose ( matCol, matColT );
-    fFrequency2 = CalcUtils::calcFrequency ( matColT );
-    cv::Mat matTt2 = CalcUtils::intervals<float>(1.f, 1.f, ToFloat ( matPattern4Float.rows ) );
-    matTt2 = matTt2.reshape ( 1, 1 );
-    cv::Mat matXX2 =   CalcUtils::sin<float>( matTt2 * 2 * CV_PI * fFrequency2 );
-    matXX2.push_back ( CalcUtils::cos<float>( matTt2 * 2 * CV_PI * fFrequency2 ) );
-    matXX2.push_back ( cv::Mat (cv::Mat::ones ( 1, matXX2.cols, CV_32FC1 ) ) );
-    cv::transpose ( matXX2, matXX2 );
-    for ( int col = 0; col < matPattern4Float.cols; ++ col ) {
-        cv::Mat matYY ( matPattern4Float, cv::Rect ( col, 0, 1, matPattern4Float.rows ) );
-        cv::Mat matK;
-        cv::solve ( matXX1, matYY, matK, cv::DecompTypes::DECOMP_SVD );
-        float A = 2.f * sqrt ( matK.at<float>(0) * matK.at<float>(0) + matK.at<float>(1) * matK.at<float>(1) );
-        pstRpy->vecSmallPatternAbsMtfH.push_back ( A / PR_MAX_GRAY_LEVEL );
-    }
+    _calcMtfByFFT ( vecMat[2], false, pstRpy->vecSmallPatternAbsMtfV );
+    _calcMtfByFFT ( vecMat[3], true,  pstRpy->vecSmallPatternAbsMtfH );
+
     pstRpy->fBigPatternAbsMtfV   = CalcUtils::mean ( pstRpy->vecBigPatternAbsMtfV );
     pstRpy->fBigPatternAbsMtfH   = CalcUtils::mean ( pstRpy->vecBigPatternAbsMtfH );
     pstRpy->fSmallPatternAbsMtfV = CalcUtils::mean ( pstRpy->vecSmallPatternAbsMtfV );
@@ -6109,6 +6139,80 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     MARK_FUNCTION_END_TIME;
     pstRpy->enStatus = VisionStatus::OK;
     return pstRpy->enStatus;
+}
+
+/*static*/ VisionStatus VisionAlgorithm::_calcMtfByFFT(const cv::Mat &matInput, bool bHorizontalStrip, VectorOfFloat &vecMtf ) {
+    cv::Mat matDouble;
+    matInput.convertTo ( matDouble, CV_64FC1 );
+    if ( bHorizontalStrip )
+        cv::transpose ( matDouble, matDouble );
+    auto vecVecDouble = CalcUtils::matToVector<double> ( matDouble );
+    const int ROWS = matDouble.rows;
+    const int COLS = matDouble.cols;
+    const float Nf = 32;
+    float fInterval = 1.f / ( Nf / ( COLS - 1 ) );
+    cv::Mat matRowDouble ( matDouble, cv::Rect ( 0, ROWS / 2, COLS, 1 ) );
+    auto vecRowDouble = CalcUtils::matToVector<double> ( matRowDouble )[0];
+    VectorOfDouble vecX ( vecRowDouble.size() );
+    std::iota ( vecX.begin(), vecX.end(), 1 );
+    VectorOfDouble vecXq;
+    vecXq.reserve ( static_cast<size_t>( Nf ) );
+    for ( double xq = 1.; xq < COLS; xq += fInterval )
+        vecXq.push_back ( xq );
+    auto vecVq = CalcUtils::interp1 ( vecX, vecRowDouble, vecXq, false );
+    cv::Mat matVq ( vecVq );
+
+    cv::Mat matDft, matAbsDft;
+    cv::dft ( vecVq, matDft, cv::DftFlags::DCT_ROWS );
+    matAbsDft = cv::abs ( matDft );
+    auto vecVecAbsDft = CalcUtils::matToVector<double>( matAbsDft );
+    matAbsDft = cv::Mat ( matAbsDft, cv::Rect ( 1, 0, matAbsDft.cols / 2, 1 ) );
+    cv::Point ptMin, ptMax;
+    double dMin = 0., dMax = 0.;
+    cv::minMaxLoc ( matAbsDft, &dMin, &dMax, &ptMin, &ptMax );
+    int nMaxIdx = ptMax.x + 1;
+    float f00 = ( nMaxIdx ) / fInterval / Nf;
+    float f01 = ( nMaxIdx - 1) / fInterval / Nf;
+    float f02 = ( nMaxIdx + 1) / fInterval / Nf;
+    float f11 = ( f00 + f01 ) / 2.f;
+    float f12 = ( f00 + f02 ) / 2.f;
+    cv::Mat matTt1 = CalcUtils::intervals<double> ( 1.f, fInterval, ToFloat ( COLS ) );
+    matTt1 = matTt1.reshape ( 1, 1 );
+    float nff = 20.f;
+    VectorOfDouble vecA;
+    vecA.reserve ( ToInt32 ( nff) );
+    for ( float f1 = f11; f1 <= f12; f1 += ( f12 - f11 ) / 20 ) {     
+        cv::Mat matXX1 =   CalcUtils::sin<double>( matTt1 * 2 * CV_PI * f1 );
+        matXX1.push_back ( CalcUtils::cos<double>( matTt1 * 2 * CV_PI * f1 ) );
+        matXX1.push_back ( cv::Mat (cv::Mat::ones ( 1, matXX1.cols, CV_64FC1 ) ) );
+        cv::transpose ( matXX1, matXX1 );
+        cv::Mat matK;
+        cv::solve ( matXX1, matVq, matK, cv::DecompTypes::DECOMP_SVD );
+        double A = 2.0 * sqrt ( matK.at<double>(0) * matK.at<double>(0) + matK.at<double>(1) * matK.at<double>(1) );
+        vecA.push_back ( A );
+    }
+    auto maxElement = std::max_element ( vecA.begin (), vecA.end () );
+    int nIndex = ToInt32 ( std::distance ( vecA.begin (), maxElement ) ) + 1;
+
+    float fFinal = f11 + (nIndex - 1.f) * (f12 - f11) / nff;
+
+    cv::Mat matXX1 =   CalcUtils::sin<double>( matTt1 * 2 * CV_PI * fFinal );
+    matXX1.push_back ( CalcUtils::cos<double> ( matTt1 * 2 * CV_PI * fFinal ) );
+    matXX1.push_back ( cv::Mat ( cv::Mat::ones ( 1, matXX1.cols, CV_64FC1 ) ) );
+    cv::transpose ( matXX1, matXX1 );
+
+    for ( int row = 0; row < ROWS; ++ row ) {
+        cv::Mat matRow = cv::Mat ( matDouble, cv::Rect ( 0, row, COLS, 1 ) ).clone();
+        auto vecRowLocal = CalcUtils::matToVector<double> ( matRow )[0];
+        auto vecVqLocal = CalcUtils::interp1 ( vecX, vecRowLocal, vecXq, true );
+        cv::Mat matRowInterp( vecVqLocal );
+        cv::Mat matK;
+        cv::solve ( matXX1, matRowInterp, matK, cv::DecompTypes::DECOMP_SVD );
+        float A = ToFloat ( 2. * sqrt ( matK.at<double>(0) * matK.at<double>(0) + matK.at<double>(1) * matK.at<double>(1) ) );
+        float fMtf = ToFloat ( A / matK.at<double>(2) / 2. );
+        vecMtf.push_back ( fMtf );
+    }
+    return VisionStatus::OK;
 }
 
 /*static*/ VisionStatus VisionAlgorithm::calcMTF(const PR_CALC_MTF_CMD *const pstCmd, PR_CALC_MTF_RPY *const pstRpy, bool bReplay /*= false*/) {

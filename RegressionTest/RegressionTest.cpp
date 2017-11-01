@@ -9,6 +9,8 @@ using namespace AOI::Vision;
 
 int _tmain(int argc, _TCHAR* argv[])
 {
+    PR_Init();
+
     /*****************************************
     * Test Vision Library Internal Functions *
     *****************************************/
@@ -107,6 +109,8 @@ int _tmain(int argc, _TCHAR* argv[])
     TestInspContour();
 
     Test3D();
+
+    TestCalcCameraMTF();
 
     PR_DumpTimeLog("./Vision/Time.log");
 	return 0;

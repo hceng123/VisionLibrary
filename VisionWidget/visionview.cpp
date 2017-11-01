@@ -201,6 +201,10 @@ void VisionView::mouseMoveEvent(QMouseEvent *event)
             else if ( TEST_VISION_STATE::SET_LINE == _enTestVisionState )   {
                 _lineOfIntensityCheck.pt1 = _ptLeftClickStartPos;
                 _lineOfIntensityCheck.pt2 = _ptLeftClickEndPos;
+                _lineOfIntensityCheck.pt1.x -= _szDisplayCenterOffset.width;
+                _lineOfIntensityCheck.pt1.y -= _szDisplayCenterOffset.height;
+                _lineOfIntensityCheck.pt2.x -= _szDisplayCenterOffset.width;
+                _lineOfIntensityCheck.pt2.y -= _szDisplayCenterOffset.height;
             }
             _drawDisplay();
         }else if ( VISION_VIEW_STATE::MOVE == _enState )    {
@@ -313,7 +317,12 @@ void VisionView::_drawTestVisionLibrary(cv::Mat &mat)
             cv::rectangle ( mat, rectLocal, _colorLrnWindow, 1 );
         }
     }else if ( TEST_VISION_STATE::SET_LINE == _enTestVisionState )  {
-        cv::line ( mat, _lineOfIntensityCheck.pt1, _lineOfIntensityCheck.pt2, _colorLrnWindow, 1 );
+        PR_Line lineDraw = _lineOfIntensityCheck;
+        lineDraw.pt1.x += _szDisplayCenterOffset.width;
+        lineDraw.pt1.y += _szDisplayCenterOffset.height;
+        lineDraw.pt2.x += _szDisplayCenterOffset.width;
+        lineDraw.pt2.y += _szDisplayCenterOffset.height;
+        cv::line ( mat, lineDraw.pt1, lineDraw.pt2, _colorLrnWindow, 1 );
     }
 }
 

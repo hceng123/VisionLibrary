@@ -12,8 +12,8 @@ void TestInspLead() {
     stCmd.matInputImg = cv::imread ( "./data/F4-26-2_InspLead.bmp");
     stCmd.rectChipWindow.angle = 0.f;
     cv::Rect rectChip(2830, 1611, 375, 492 );
-    stCmd.rectChipWindow.center.x = rectChip.x + rectChip.width / 2;
-    stCmd.rectChipWindow.center.y = rectChip.y + rectChip.height / 2;
+    stCmd.rectChipWindow.center.x = ToFloat ( rectChip.x + rectChip.width  / 2 );
+    stCmd.rectChipWindow.center.y = ToFloat ( rectChip.y + rectChip.height / 2 );
     stCmd.rectChipWindow.size = rectChip.size();
 
     PR_INSP_BRIDGE_CMD::INNER_INSP_CRITERIA stCriteria;

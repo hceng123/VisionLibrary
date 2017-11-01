@@ -149,15 +149,27 @@ public:
     template<typename _Tp>
     static inline cv::Mat cumsum ( const cv::Mat &matInput, int nDimension ) {
         cv::Mat matResult = matInput.clone ();
-        if( nDimension == 1 )
-            cv::transpose ( matResult, matResult );
-        for( int row = 0; row < matResult.rows; ++ row )
-        for( int col = 0; col < matResult.cols; ++ col ) {
-            if( col != 0 )
-                matResult.at<_Tp> ( row, col ) += matResult.at<_Tp> ( row, col - 1 );
+        const int ROWS = matInput.rows;
+        const int COLS = matInput.cols;
+        if( nDimension == 1 ) {
+            for ( int row = 0; row < ROWS - 1; ++ row ) {
+                cv::Mat matCurrentRow( matResult, cv::Rect (0, row,     COLS, 1 ) );
+                cv::Mat matNextRow   ( matResult, cv::Rect (0, row + 1, COLS, 1 ) );
+                matNextRow = matNextRow + matCurrentRow;
+            }
+        }else {
+            //Use the matrix add is not optimized for cache access, so it is slower than the one by one add.
+            //for ( int col = 0; col < COLS - 1; ++ col ) {
+            //    cv::Mat matCurrentCol ( matResult, cv::Rect ( col,     0, 1, ROWS ) );
+            //    cv::Mat matNextCol    ( matResult, cv::Rect ( col + 1, 0, 1, ROWS ) );
+            //    matNextCol = matNextCol + matCurrentCol;
+            //}
+            for( int row = 0; row < matResult.rows; ++ row ) {
+                for( int col = 0; col < matResult.cols - 1; ++ col ) {
+                    matResult.at<_Tp> ( row, col + 1 ) += matResult.at<_Tp> ( row, col ) ;
+                }
+            }
         }
-        if( nDimension == 1 )
-            cv::transpose ( matResult, matResult );
         return matResult;
     }
 
@@ -199,10 +211,19 @@ public:
     template<typename T>
     static inline cv::Mat floor ( const cv::Mat &matInput ) {
         cv::Mat matResult = matInput.clone ();
-        for( int row = 0; row < matInput.rows; ++row )
-        for( int col = 0; col < matInput.cols; ++col )
-            matResult.at<T> ( row, col ) = std::floor ( matResult.at<T> ( row, col ) );
+        for( int i = 0; i < ToInt32 ( matResult.total() ); ++ i ) {
+            T &value = matResult.at<T> ( i );
+            value = std::floor ( value );
+        }
         return matResult;
+    }
+
+    template<typename T>
+    static inline void floorByRef ( cv::Mat &matInOut ) {
+        float *ptrData = matInOut.ptr<T>(0);
+        int total = ToInt32 ( matInOut.total () );
+        for( int i = 0; i < total; ++i )
+            ptrData[i] = std::floor ( ptrData[i] );
     }
 
     static inline cv::Mat getNanMask(const cv::Mat &matInput) {
@@ -258,14 +279,14 @@ public:
 
     template<typename T>
     static std::vector<T> FindLargestKItems ( const cv::Mat &matInput, const int K, std::vector<size_t> &vecIndex ) {
-        if ( K > matInput.total () )  {
+        if ( K > ToInt32 ( matInput.total () ) )  {
             return matInput;
         }
 
         std::vector<T> vecResult;
         vecResult.reserve ( K );
         int index = 0;
-        while (vecResult.size () < K) {
+        while ( ToInt32 ( vecResult.size () ) < K) {
             if (matInput.at<T> ( index ) == matInput.at<T> ( index )) {
                 vecIndex.push_back ( index );
                 vecResult.push_back ( matInput.at<T> ( index ) );
@@ -296,6 +317,38 @@ public:
         return vecResult;
     }
 
+    static inline cv::Mat diff ( const cv::Mat &matInput, int nRecersiveTime, int nDimension ) {
+        const int DIFF_ON_Y_DIR = 1;
+        const int DIFF_ON_X_DIR = 2;
+        assert ( DIFF_ON_X_DIR == nDimension || DIFF_ON_Y_DIR == nDimension );
+        if (nRecersiveTime > 1)
+            return diff ( diff ( matInput, nRecersiveTime - 1, nDimension ), 1, nDimension );
+
+        cv::Mat matKernel;
+        if (DIFF_ON_X_DIR == nDimension)
+            matKernel = (cv::Mat_<float> ( 1, 2 ) << -1, 1);
+        else if (DIFF_ON_Y_DIR == nDimension)
+            matKernel = (cv::Mat_<float> ( 2, 1 ) << -1, 1);
+
+        cv::Mat matResult;
+        cv::filter2D ( matInput, matResult, -1, matKernel, cv::Point ( -1, -1 ), 0.0, cv::BORDER_CONSTANT );
+        if (DIFF_ON_X_DIR == nDimension)
+            return cv::Mat ( matResult, cv::Rect ( 1, 0, matResult.cols - 1, matResult.rows ) );
+        else if (DIFF_ON_Y_DIR == nDimension)
+            return cv::Mat ( matResult, cv::Rect ( 0, 1, matResult.cols, matResult.rows - 1 ) );
+        return cv::Mat ();
+    }
+
+    template<typename _tp>
+    static cv::Mat repeatInX ( const cv::Mat &matInput, int nx ) {
+        cv::Mat matResult ( matInput.rows, nx, matInput.type () );
+        for( int row = 0; row < matInput.rows; ++ row ) {
+            cv::Mat matTmp ( matResult, cv::Rect ( 0, row, nx, 1 ) );
+            matTmp.setTo ( matInput.at<_tp> ( row, 0 ) );
+        }
+        return matResult;
+    }
+
     static double radian2Degree ( double dRadian );
     static double degree2Radian ( double dDegree );
     static float ptDisToLine ( const cv::Point2f &ptInput, bool bReversedFit, float fSlope, float fIntercept );
@@ -312,10 +365,10 @@ public:
         double delta = 0, int borderType = cv::BORDER_DEFAULT );
     static float calcPointToContourDist ( const cv::Point &ptInput, const VectorOfPoint &contour, cv::Point &ptResult );
     static cv::Point2f getContourCtr ( const VectorOfPoint &contour );
-    static cv::Mat diff ( const cv::Mat &matInput, int nRecersiveTime, int nDimension );
     static int countOfNan ( const cv::Mat &matInput );
     static void findMinMaxCoord(const VectorOfPoint &vecPoints, int &xMin, int &xMax, int &yMin, int &yMax);
     static float calcFrequency(const cv::Mat &matInput);
+    static VectorOfDouble interp1(const VectorOfDouble &vecX, const VectorOfDouble &vecV, const VectorOfDouble &vecXq, bool bSpine = false );
 };
 
 }

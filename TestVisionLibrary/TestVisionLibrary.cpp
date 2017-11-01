@@ -571,14 +571,21 @@ int _tmain(int argc, _TCHAR* argv[])
 {
     cv::Mat matNan (3, 3, CV_32FC1, NAN );
     cv::Mat matCmpResult = cv::Mat ( matNan == matNan );
-    int nCount = cv::countNonZero ( matCmpResult );
+    int nCount = cv::countNonZero ( matNan );
     std::cout << "find NAN cout " << matCmpResult.total() - nCount << std::endl;
 
     PR_VERSION_INFO stVersionInfo;
     PR_GetVersion(&stVersionInfo);
     std::cout << "VisionLibrary Version: " << stVersionInfo.chArrVersion << std::endl;
 
+    float fTest = -1.2f;
+    int nTest = static_cast<int>( fTest );
+
+    auto fFloorResult = std::floor ( fTest );
+
+    //PR_Init();
     PR_SetDebugMode ( PR_DEBUG_MODE::DISABLED );
+
     //TestTemplate();
     //TestInspDevice();
     //TestRunLogcase();
@@ -631,8 +638,12 @@ int _tmain(int argc, _TCHAR* argv[])
     //TestCalib3DHeight();
     //TestComb3DCalib();
     //TestCalc3DHeight();
+    //for ( int i = 0; i < 10; ++ i )
+        TestFastCalc3DHeight();
+
     //TestIntegrate3DCalib();
-    TestCalc3DHeightNew();
+    //TestIntegrate3DCalibHaoYu();
+    //TestCalc3DHeightNew();
 
     //TestCalcMTF();
 
@@ -642,7 +653,7 @@ int _tmain(int argc, _TCHAR* argv[])
     //TestCalcCameraMTF();
 
     PR_DumpTimeLog("./Vision/Time.log");
-    std::cout << "Press any key to exist." << std::endl;
+    std::cout << "Press any key to exit." << std::endl;
     getchar();
 
     return 0;

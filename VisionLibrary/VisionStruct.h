@@ -29,6 +29,7 @@ using VectorOfSize2f = std::vector<cv::Size2f>;
 using VectorOfMat = std::vector<cv::Mat>;
 using VectorOfFloat = std::vector<float>;
 using VectorOfVectorOfFloat = std::vector<VectorOfFloat>;
+using VectorOfDouble = std::vector<double>;
 
 template <typename Tp> inline Int32 ToInt32(Tp param) { return static_cast<Int32>(param); }
 template <typename Tp> inline Int16 ToInt16(Tp param) { return static_cast<Int16>(param); }
@@ -233,7 +234,6 @@ struct PR_INSP_DEVICE_RPY {
     Int32                   nDeviceCount;
     PR_DEVICE_INSP_RESULT   astDeviceResult[PR_MAX_DEVICE_COUNT];
 };
-
 /******************************************
 * End of Device Inspection Section
 ******************************************/
@@ -558,19 +558,19 @@ struct PR_PICK_COLOR_RPY {
 struct PR_CALIBRATE_CAMERA_CMD {
     PR_CALIBRATE_CAMERA_CMD() : fPatternDist(1.f), fMinTmplMatchScore(90.f) {}
     cv::Mat                 matInputImg;
-    cv::Size                szBoardPattern; // Number of corners per chessboard row and col. szBoardPattern = cv::Size(points_per_row, points_per_col) = cv::Size(columns, rows).
-    float                   fPatternDist;   //The real chess board corner to corner distance. Unit: mm.
+    cv::Size                szBoardPattern;             //Number of corners per chessboard row and col. szBoardPattern = cv::Size(points_per_row, points_per_col) = cv::Size(columns, rows).
+    float                   fPatternDist;               //The real chess board corner to corner distance. Unit: mm.
     float                   fMinTmplMatchScore;
 };
 
 struct PR_CALIBRATE_CAMERA_RPY {
     VisionStatus            enStatus;
-    cv::Mat                 matIntrinsicMatrix; //type: CV_64FC1.
-    cv::Mat                 matExtrinsicMatrix; //type: CV_64FC1.
-    cv::Mat                 matDistCoeffs;      //type: CV_64FC1.
-    double                  dResolutionX;       //Unit: um/pixel.
-    double                  dResolutionY;       //Unit: um/pixel.
-    std::vector<cv::Mat>    vecMatRestoreImage; //The remap matrix to restore image. vector size is 2, the matrix dimension is same as input image.
+    cv::Mat                 matIntrinsicMatrix;         //type: CV_64FC1.
+    cv::Mat                 matExtrinsicMatrix;         //type: CV_64FC1.
+    cv::Mat                 matDistCoeffs;              //type: CV_64FC1.
+    double                  dResolutionX;               //Unit: um/pixel.
+    double                  dResolutionY;               //Unit: um/pixel.
+    std::vector<cv::Mat>    vecMatRestoreImage;         //The remap matrix to restore image. vector size is 2, the matrix dimension is same as input image.
     //Intermediate result.
     cv::Mat                 matCornerPointsImg;
     VectorOfPoint2f         vecImagePoints;
@@ -698,7 +698,6 @@ struct PR_LRN_CONTOUR_RPY {
     VectorOfVectorOfPoint   vecContours;
     cv::Mat                 matResultImg;
     Int32                   nRecordId;
-
 };
 
 struct PR_INSP_CONTOUR_CMD {
@@ -857,6 +856,8 @@ struct PR_CALIB_3D_BASE_RPY {
     cv::Mat                 matThickToThinStripeK;  //The factor between thick stripe and thin stripe.
     cv::Mat                 matBaseSurfaceParam;    //The bezier parameters to form the base surface.
     float                   fBaseStartAvgPhase;     //The average phase of the top-left corner of the thick stripe. It is used to constrain the object's phase within -pi~pi of base phase.
+    cv::Mat                 matBaseWrappedAlpha;    //The wrapped thick stripe phase.
+    cv::Mat                 matBaseWrappedBeta;     //The wrapped think stripe phase.
 };
 
 struct PR_CALC_3D_BASE_CMD {
@@ -984,6 +985,32 @@ struct PR_CALC_3D_HEIGHT_CMD {
 };
 
 struct PR_CALC_3D_HEIGHT_RPY {
+    VisionStatus            enStatus;
+    cv::Mat                 matPhase;
+    cv::Mat                 matHeight;
+};
+
+struct PR_FAST_CALC_3D_HEIGHT_CMD {
+    PR_FAST_CALC_3D_HEIGHT_CMD() :
+        bEnableGaussianFilter ( false ),
+        bReverseSeq ( true ),
+        fRemoveHarmonicWaveK ( 0.f ),
+        fMinAmplitude ( 1.5f ) {}
+    VectorOfMat             vecInputImgs;
+    bool                    bEnableGaussianFilter;
+    bool                    bReverseSeq;            //Change the image sequence.
+    float                   fRemoveHarmonicWaveK;   //The factor to remove the harmonic wave in the thick stripe. If it is 0, then this procedure will be skipped.
+    float                   fMinAmplitude;          //In a group of 4 images, if a pixel's gray scale amplitude less than this value, this pixel will be discarded.
+    cv::Mat                 matThickToThinStripeK;  //The factor between thick stripe and thin stripe.
+    cv::Mat                 matBaseWrappedAlpha;    //The wrapped thick stripe phase.
+    cv::Mat                 matBaseWrappedBeta;     //The wrapped think stripe phase.
+    float                   fBaseStartAvgPhase;     //The average phase of the top-left corner of the thick stripe. It is used to constrain the object's phase within -pi~pi of base phase.
+    //Below 2 parameters are result of PR_Integrate3DCalib, they are calibrated from positive, negative and H = 5mm surface phase. If these 2 parameters are used, then matPhaseToHeightK will be ignored.
+    cv::Mat                 matIntegratedK;          //The 12 parameters to calculate height. They are K1~K10 and P1, P2. H = (Phase + P1*Phase^2 + P2*Phase^3) ./ (K(1)*x1.^3 + K(2)*y1.^3 + K(3)*x1.^2.*y1 + K(4)*x1.*y1.^2 + K(5)*x1.^2 + K(6)*y1.^2 + K(7)*x1.*y1 + K(8)*x1 + K(9)*y1 + K(10))
+    cv::Mat                 matOrder3CurveSurface;  //The regression 3 order curve surface to convert phase to height. It is calculated by K(1)*x1.^3 + K(2)*y1.^3 + K(3)*x1.^2.*y1 + K(4)*x1.*y1.^2 + K(5)*x1.^2 + K(6)*y1.^2 + K(7)*x1.*y1 + K(8)*x1 + K(9)*y1 + K(10)
+};
+
+struct PR_FAST_CALC_3D_HEIGHT_RPY {
     VisionStatus            enStatus;
     cv::Mat                 matPhase;
     cv::Mat                 matHeight;

@@ -2,17 +2,20 @@
 #define _VISION_REGRESSION_TEST_UTILITY_FUNCTION_H_
 
 #include "../VisionLibrary/VisionAPI.h"
+#include <iostream>
+#include <iomanip>
 
 template<class T>
-void printfMat ( const cv::Mat &mat)
+void printfMat ( const cv::Mat &mat, int nPrecision = 1)
 {
+    std::cout << std::fixed << std::setprecision ( nPrecision );
     for ( short row = 0; row < mat.rows; ++ row )
     {
         for ( short col = 0; col < mat.cols; ++ col )
         {
-            printf ("%.1f ", mat.at<T>(row, col) );
+            std::cout << mat.at<T>(row, col) << " ";
         }
-        printf("\n");
+        std::cout << std::endl;
     }
 }
 

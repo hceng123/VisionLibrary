@@ -25,6 +25,8 @@ void TestCalcPD();
 void TestCalcCameraMTF();
 void TestIntegrate3DCalib();
 void TestCalc3DHeightNew();
+void TestFastCalc3DHeight();
+void TestIntegrate3DCalibHaoYu();
 
 template<class T>
 void printfMat(const cv::Mat &mat)

@@ -11,6 +11,7 @@
 #include "SubFunctions.h"
 #include "Log.h"
 #include "CalcUtils.h"
+#include "Unwrap.h"
 
 #define PR_FUNCTION_ENTRY   \
 try \
@@ -37,6 +38,7 @@ VisionAPI void PR_GetVersion(PR_VERSION_INFO *pstVersionInfo)
 
 VisionAPI VisionStatus PR_Init()
 {
+    Unwrap::initAtan2Table();
     return RecordManager::getInstance()->load();
 }
 
@@ -86,12 +88,17 @@ VisionAPI VisionStatus PR_FreeRecord(Int32 nRecordId)
     return RecordManager::getInstance()->free(nRecordId);
 }
 
-VisionAPI VisionStatus  PR_FreeAllRecord()
+VisionAPI VisionStatus PR_FreeAllRecord()
 {
-    return RecordManager::getInstance()->freeAllRecord();
+    try {
+        return RecordManager::getInstance ()->freeAllRecord ();
+    }catch (std::exception &e) {
+        WriteLog ( e.what () );
+        return VisionStatus::OPENCV_EXCEPTION;
+    }
 }
 
-VisionAPI VisionStatus  PR_LrnDevice(PR_LRN_DEVICE_CMD *pstLrnDeviceCmd, PR_LRN_DEVICE_RPY *pstLrnDeivceRpy)
+VisionAPI VisionStatus PR_LrnDevice(PR_LRN_DEVICE_CMD *pstLrnDeviceCmd, PR_LRN_DEVICE_RPY *pstLrnDeivceRpy)
 {
     try
     {
@@ -124,11 +131,9 @@ VisionAPI void PR_SetDebugMode(PR_DEBUG_MODE enDebugMode)
 
 VisionAPI VisionStatus PR_RunLogCase(const std::string &strPath)
 {
-    try
-    {
+    try {
         return VisionAlgorithm::runLogCase( strPath);
-    }catch(std::exception &e)
-    {
+    }catch(std::exception &e) {
         WriteLog(e.what());
         return VisionStatus::OPENCV_EXCEPTION;
     }
@@ -137,7 +142,7 @@ VisionAPI VisionStatus PR_RunLogCase(const std::string &strPath)
 VisionAPI VisionStatus PR_SrchFiducialMark(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd, PR_SRCH_FIDUCIAL_MARK_RPY *pstRpy)
 {
 PR_FUNCTION_ENTRY
-        return VisionAlgorithm::srchFiducialMark ( pstCmd, pstRpy );
+    return VisionAlgorithm::srchFiducialMark ( pstCmd, pstRpy );
 PR_FUNCTION_EXIT
 }
 
@@ -391,15 +396,22 @@ PR_FUNCTION_EXIT
 
 VisionAPI VisionStatus PR_Integrate3DCalib(const PR_INTEGRATE_3D_CALIB_CMD *const pstCmd, PR_INTEGRATE_3D_CALIB_RPY *const pstRpy)
 {
-//PR_FUNCTION_ENTRY
+PR_FUNCTION_ENTRY
     return VisionAlgorithm::integrate3DCalib  ( pstCmd, pstRpy );
-//PR_FUNCTION_EXIT
+PR_FUNCTION_EXIT
 }
 
 VisionAPI VisionStatus PR_Calc3DHeight(const PR_CALC_3D_HEIGHT_CMD *const pstCmd, PR_CALC_3D_HEIGHT_RPY *const pstRpy)
 {
 PR_FUNCTION_ENTRY
     return VisionAlgorithm::calc3DHeight  ( pstCmd, pstRpy );
+PR_FUNCTION_EXIT
+}
+
+VisionAPI VisionStatus PR_FastCalc3DHeight(const PR_FAST_CALC_3D_HEIGHT_CMD *const pstCmd, PR_FAST_CALC_3D_HEIGHT_RPY *pstRpy)
+{
+PR_FUNCTION_ENTRY
+    return VisionAlgorithm::fastCalc3DHeight  ( pstCmd, pstRpy );
 PR_FUNCTION_EXIT
 }
 

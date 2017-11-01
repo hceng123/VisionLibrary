@@ -18,6 +18,7 @@ public:
     static VisionStatus matchTemplate(const cv::Mat &mat, const cv::Mat &matTmpl, bool bSubPixelRefine, PR_OBJECT_MOTION enMotion, cv::Point2f &ptResult, float &fRotation, float &fCorrelation);
     static cv::Point myMatchTemplate(const cv::Mat &mat, const cv::Mat &matTmpl);
     static cv::Point matchTemplateRecursive(const cv::Mat &matInput, const cv::Mat &matTmpl);
+    static float calcCorrelation(const cv::Mat &matT, const cv::Mat &matI, const cv::Mat &matMaskT = cv::Mat(), const cv::Mat &matMaskI = cv::Mat());
 };
 
 }

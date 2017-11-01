@@ -13,6 +13,7 @@ static void PrintMatchTmplRpy(const PR_MATCH_TEMPLATE_RPY &stRpy) {
     std::cout << "Match template status " << ToInt32(stRpy.enStatus) << std::endl;
     std::cout << "Match template result " << stRpy.ptObjPos.x << ", " << stRpy.ptObjPos.y << std::endl;
     std::cout << "Match template angle " << stRpy.fRotation << std::endl;
+    std::cout << "Match template score " << stRpy.fMatchScore << std::endl;
 }
 
 void TestTmplMatch_1()

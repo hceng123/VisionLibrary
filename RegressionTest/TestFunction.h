@@ -28,6 +28,7 @@ void TestInspChipCAE();
 void TestInspChipCircular();
 void TestInspContour();
 void Test3D();
+void TestCalcCameraMTF();
 
 }
 }
