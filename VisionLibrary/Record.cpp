@@ -10,8 +10,7 @@ namespace Vision
 /******************************************
 * Object Record *
 ******************************************/
-VisionStatus ObjRecord::load(cv::FileStorage &fs, const String& strFilePath)
-{
+VisionStatus ObjRecord::load(cv::FileStorage &fs, const String& strFilePath) {
     cv::FileNode fileNode = fs["keypoints"];
     cv::read(fileNode, _vecModelKeyPoint);
 
@@ -20,36 +19,31 @@ VisionStatus ObjRecord::load(cv::FileStorage &fs, const String& strFilePath)
     return VisionStatus::OK;
 }
 
-VisionStatus ObjRecord::save(const String& strFilePath)
-{
+VisionStatus ObjRecord::save(const String& strFilePath) {
     cv::FileStorage fs(strFilePath, cv::FileStorage::WRITE);
     if ( ! fs.isOpened() )
         return VisionStatus::OPEN_FILE_FAIL;
 
-    write ( fs, "type", static_cast<int>(PR_RECORD_TYPE::OBJECT));
-    write ( fs, "keypoints", _vecModelKeyPoint );
-    write ( fs, "descriptor", _matModelDescritor );
+    cv::write ( fs, "type", static_cast<int>(PR_RECORD_TYPE::OBJECT));
+    cv::write ( fs, "keypoints", _vecModelKeyPoint );
+    cv::write ( fs, "descriptor", _matModelDescritor );
     fs.release();
     return VisionStatus::OK;
 }
 
-void ObjRecord::setModelKeyPoint(const VectorOfKeyPoint vecModelKeyPoint)
-{
+void ObjRecord::setModelKeyPoint(const VectorOfKeyPoint vecModelKeyPoint) {
     _vecModelKeyPoint = vecModelKeyPoint;
 }
 
-const VectorOfKeyPoint& ObjRecord::getModelKeyPoint() const
-{
+const VectorOfKeyPoint& ObjRecord::getModelKeyPoint() const {
     return _vecModelKeyPoint;
 }
 
-void ObjRecord::setModelDescriptor(const cv::Mat &matModelDescritor)
-{
+void ObjRecord::setModelDescriptor(const cv::Mat &matModelDescritor) {
     _matModelDescritor = matModelDescritor;
 }
 
-const cv::Mat& ObjRecord::getModelDescriptor() const
-{
+const cv::Mat& ObjRecord::getModelDescriptor() const {
     return _matModelDescritor;
 }
 
@@ -64,8 +58,7 @@ cv::Point2f ObjRecord::getObjCenter() const {
 /******************************************
 * Device Record *
 ******************************************/
-VisionStatus DeviceRecord::load(cv::FileStorage &fs, const String& strFilePath)
-{
+VisionStatus DeviceRecord::load(cv::FileStorage &fs, const String& strFilePath) {
     cv::FileNode fileNode = fs["size"];
     cv::read<float>(fileNode, _size, cv::Size2f(0, 0));
 
@@ -74,16 +67,15 @@ VisionStatus DeviceRecord::load(cv::FileStorage &fs, const String& strFilePath)
     return VisionStatus::OK;
 }
 
-VisionStatus DeviceRecord::save(const String& strFilePath)
-{
+VisionStatus DeviceRecord::save(const String& strFilePath) {
     String strParamFilePath = strFilePath + "/" + Config::GetInstance()->getRecordParamFile();
     cv::FileStorage fs(strParamFilePath, cv::FileStorage::WRITE);
     if ( ! fs.isOpened() )
         return VisionStatus::OPEN_FILE_FAIL;
 
-    write ( fs, "type", static_cast<int>(PR_RECORD_TYPE::DEVICE));
-    write ( fs, "size", _size);
-    write ( fs, "threshold", _nElectrodeThreshold );
+    cv::write ( fs, "type", static_cast<int>(PR_RECORD_TYPE::DEVICE));
+    cv::write ( fs, "size", _size);
+    cv::write ( fs, "threshold", _nElectrodeThreshold );
     fs.release();
     return VisionStatus::OK;
 }
@@ -96,21 +88,18 @@ const cv::Size2f& DeviceRecord::getSize() const {
     return _size;
 }
 
-void DeviceRecord::setElectrodeThreshold(Int16 nElectrodeThreshold)
-{
+void DeviceRecord::setElectrodeThreshold(Int16 nElectrodeThreshold) {
     _nElectrodeThreshold;
 }
 
-Int16 DeviceRecord::getElectrodeThreshold() const
-{
+Int16 DeviceRecord::getElectrodeThreshold() const {
     return _nElectrodeThreshold;
 }
 
 /******************************************
 * Chip Record *
 ******************************************/
-VisionStatus ChipRecord::load(cv::FileStorage &fs, const String& strFilePath)
-{
+VisionStatus ChipRecord::load(cv::FileStorage &fs, const String& strFilePath) {
     cv::FileNode fileNode = fs[_strKeySize];
     cv::read<float>(fileNode, _size, cv::Size2f(0, 0) );
 
@@ -130,10 +119,10 @@ VisionStatus ChipRecord::save(const String& strFilePath) {
     if ( ! fs.isOpened() )
         return VisionStatus::OPEN_FILE_FAIL;
 
-    write ( fs, _strKeyType, ToInt32 ( PR_RECORD_TYPE::CHIP ) );
-    write ( fs, _strKeyInspMode, ToInt32 ( _enInspMode ) );
-    write ( fs, _strKeySize, _size);
-    write ( fs, _strKeyThreshold, _nThreshold );
+    cv::write ( fs, _strKeyType, ToInt32 ( PR_RECORD_TYPE::CHIP ) );
+    cv::write ( fs, _strKeyInspMode, ToInt32 ( _enInspMode ) );
+    cv::write ( fs, _strKeySize, _size);
+    cv::write ( fs, _strKeyThreshold, _nThreshold );
     fs.release();
     return VisionStatus::OK;
 }
@@ -198,8 +187,8 @@ VisionStatus ContourRecord::save(const String& strFilePath) {
     if ( ! fs.isOpened() )
         return VisionStatus::OPEN_FILE_FAIL;
 
-    write ( fs, _strKeyType, ToInt32 ( PR_RECORD_TYPE::CONTOUR ) );
-    write ( fs, _strKeyThreshold, _nThreshold );
+    cv::write ( fs, _strKeyType, ToInt32 ( PR_RECORD_TYPE::CONTOUR ) );
+    cv::write ( fs, _strKeyThreshold, _nThreshold );
     cv::imwrite ( strFilePath + "/" + _strTmplFileName, _matTmpl );
     cv::imwrite ( strFilePath + "/" + _strContourFileName, _matContour );
     
@@ -273,8 +262,8 @@ VisionStatus TmplRecord::save(const String& strFilePath) {
     if ( ! fs.isOpened() )
         return VisionStatus::OPEN_FILE_FAIL;
 
-    write ( fs, _strKeyType, ToInt32 ( PR_RECORD_TYPE::TEMPLATE ) );
-    write ( fs, _strKeyAlgorithm, ToInt32 ( _enAlgorithm ) );
+    cv::write ( fs, _strKeyType, ToInt32 ( PR_RECORD_TYPE::TEMPLATE ) );
+    cv::write ( fs, _strKeyAlgorithm, ToInt32 ( _enAlgorithm ) );
     cv::imwrite ( strFilePath + "/" + _strTmplFileName, _matTmpl );
     if ( PR_MATCH_TMPL_ALGORITHM::HIERARCHICAL_EDGE == _enAlgorithm )
         cv::imwrite ( strFilePath + "/" + _strEdgeMaskName, _matEdgeMask );

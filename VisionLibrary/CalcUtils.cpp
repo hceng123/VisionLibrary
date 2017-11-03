@@ -187,7 +187,7 @@ float CalcUtils::calcPointToContourDist(const cv::Point &ptInput, const VectorOf
         return fDistance;
     }
     float A = distanceOf2Point<int> ( ptInput, ptNearestPoint1 );
-    float B = distanceOf2Point<int> ( ptInput, ptNearestPoint2 );    
+    float B = distanceOf2Point<int> ( ptInput, ptNearestPoint2 );
     
     float cosOfAngle = ( A*A + C*C - B*B ) / ( 2.f * A * C );
     float angle = acos ( cosOfAngle );
