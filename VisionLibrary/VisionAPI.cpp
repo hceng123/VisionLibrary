@@ -132,7 +132,7 @@ VisionAPI void PR_SetDebugMode(PR_DEBUG_MODE enDebugMode)
 VisionAPI VisionStatus PR_RunLogCase(const std::string &strPath)
 {
     try {
-        return VisionAlgorithm::runLogCase( strPath);
+        return VisionAlgorithm::runLogCase( strPath );
     }catch(std::exception &e) {
         WriteLog(e.what());
         return VisionStatus::OPENCV_EXCEPTION;

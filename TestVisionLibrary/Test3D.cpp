@@ -106,7 +106,7 @@ static cv::Mat _drawHeightGrid(const cv::Mat &matHeight, int nGridRow, int nGrid
 }
 
 //static std::string gstrCalibResultFile("./data/capture/CalibPP.yml");
-static std::string gstrWorkingFolder("./data/New3DCalibMethod/");
+static std::string gstrWorkingFolder("./data/HaoYu_20171017/");
 static std::string gstrCalibResultFile = gstrWorkingFolder + "CalibPP.yml";
 void TestCalib3dBase() {
     const int IMAGE_COUNT = 8;
@@ -482,7 +482,7 @@ void TestCalc3DHeightNew() {
 
 void TestFastCalc3DHeight() {
     const int IMAGE_COUNT = 8;
-    std::string strFolder = gstrWorkingFolder + "0920235128_rightbottom/";
+    std::string strFolder = gstrWorkingFolder + "1017001014_LT/";
     //std::string strFolder = "./data/0913212217_Unwrap_Not_Finish/";
     PR_FAST_CALC_3D_HEIGHT_CMD stCmd;
     PR_FAST_CALC_3D_HEIGHT_RPY stRpy;

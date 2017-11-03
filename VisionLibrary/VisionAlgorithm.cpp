@@ -1148,8 +1148,7 @@ VisionStatus VisionAlgorithm::inspDevice(PR_INSP_DEVICE_CMD *pstInspDeviceCmd, P
     return pstRpy->enStatus;
 }
 
-VisionStatus VisionAlgorithm::inspSurface(PR_INSP_SURFACE_CMD *const pInspCmd, PR_INSP_SURFACE_RPY *pInspRpy)
-{
+VisionStatus VisionAlgorithm::inspSurface(PR_INSP_SURFACE_CMD *const pInspCmd, PR_INSP_SURFACE_RPY *pInspRpy) {
     MARK_FUNCTION_START_TIME;
 	if ( NULL == pInspCmd || NULL == pInspRpy )
 		return VisionStatus::INVALID_PARAM;
@@ -1199,8 +1198,7 @@ VisionStatus VisionAlgorithm::inspSurface(PR_INSP_SURFACE_CMD *const pInspCmd, P
 	return VisionStatus::OK;
 }
 
-int VisionAlgorithm::_findBlob(const cv::Mat &mat, const cv::Mat &matRevs, PR_INSP_SURFACE_CMD *const pInspCmd, PR_INSP_SURFACE_RPY *pInspRpy)
-{
+int VisionAlgorithm::_findBlob(const cv::Mat &mat, const cv::Mat &matRevs, PR_INSP_SURFACE_CMD *const pInspCmd, PR_INSP_SURFACE_RPY *pInspRpy) {
 	cv::Mat im_with_keypoints(mat);
 	mat.copyTo(im_with_keypoints);
 
@@ -1273,8 +1271,7 @@ int VisionAlgorithm::_findBlob(const cv::Mat &mat, const cv::Mat &matRevs, PR_IN
 	return 0;
 }
 
-int VisionAlgorithm::_findLine(const cv::Mat &mat, PR_INSP_SURFACE_CMD *const pInspCmd, PR_INSP_SURFACE_RPY *pInspRpy)
-{
+int VisionAlgorithm::_findLine(const cv::Mat &mat, PR_INSP_SURFACE_CMD *const pInspCmd, PR_INSP_SURFACE_RPY *pInspRpy) {
     MARK_FUNCTION_START_TIME;
 	for (short nIndex = 0; nIndex < pInspCmd->u16NumOfDefectCriteria; ++nIndex)
 	{
@@ -1424,8 +1421,7 @@ int VisionAlgorithm::_findLine(const cv::Mat &mat, PR_INSP_SURFACE_CMD *const pI
 	return static_cast<int>(VisionStatus::OK);
 }
 
-/*static*/ int VisionAlgorithm::_mergeLines(const std::vector<PR_Line2f> &vecLines, std::vector<PR_Line2f> &vecResultLines)
-{
+/*static*/ int VisionAlgorithm::_mergeLines(const std::vector<PR_Line2f> &vecLines, std::vector<PR_Line2f> &vecResultLines) {
 	if ( vecLines.size() < 2 )  {
         vecResultLines = vecLines;
         return 0;
@@ -1488,8 +1484,7 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
     return VisionStatus::OK;
 }
 
-/*static*/ void VisionAlgorithm::showImage(String windowName, const cv::Mat &mat)
-{
+/*static*/ void VisionAlgorithm::showImage(String windowName, const cv::Mat &mat) {
     static Int32 nImageCount = 0;
     String strWindowName = windowName + "_" + std::to_string(nImageCount ++ );
     cv::namedWindow ( strWindowName );
