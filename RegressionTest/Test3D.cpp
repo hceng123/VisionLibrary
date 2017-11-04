@@ -43,7 +43,7 @@ static cv::Mat _drawHeightGrid(const cv::Mat &matHeight, int nGridRow, int nGrid
             float fAverage = ToFloat ( cv::mean ( matROI, matMask )[0] );
 
             char strAverage[100];
-            _snprintf ( strAverage, sizeof(strAverage), "%.4f", fAverage );
+            _snprintf ( strAverage, sizeof(strAverage), "%.3f", fAverage );
             std::cout << strAverage << " ";
             int baseline = 0;
             cv::Size textSize = cv::getTextSize ( strAverage, fontFace, fontScale, thickness, &baseline );
