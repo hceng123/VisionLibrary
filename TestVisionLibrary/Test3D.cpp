@@ -106,7 +106,7 @@ static cv::Mat _drawHeightGrid(const cv::Mat &matHeight, int nGridRow, int nGrid
 }
 
 //static std::string gstrCalibResultFile("./data/capture/CalibPP.yml");
-static std::string gstrWorkingFolder("./data/HaoYu_20171017/");
+static std::string gstrWorkingFolder("./data/New3DCalibMethod/");
 static std::string gstrCalibResultFile = gstrWorkingFolder + "CalibPP.yml";
 void TestCalib3dBase() {
     const int IMAGE_COUNT = 8;
@@ -482,7 +482,7 @@ void TestCalc3DHeightNew() {
 
 void TestFastCalc3DHeight() {
     const int IMAGE_COUNT = 8;
-    std::string strFolder = gstrWorkingFolder + "1017001014_LT/";
+    std::string strFolder = gstrWorkingFolder + "0920235128_rightbottom/";
     //std::string strFolder = "./data/0913212217_Unwrap_Not_Finish/";
     PR_FAST_CALC_3D_HEIGHT_CMD stCmd;
     PR_FAST_CALC_3D_HEIGHT_RPY stRpy;
@@ -535,10 +535,39 @@ void TestFastCalc3DHeight() {
     if ( VisionStatus::OK != stRpy.enStatus )
         return;
 
+    std::string strHeightResultPath = gstrWorkingFolder + "Height.yml";
+    cv::FileStorage fs ( strHeightResultPath, cv::FileStorage::WRITE );
+    cv::write ( fs, "Height", stRpy.matHeight );
+    fs.release();
+
     cv::Mat matHeightResultImg = _drawHeightGrid ( stRpy.matHeight, 10, 10 );
     cv::imwrite ( gstrWorkingFolder + "PR_FastCalc3DHeight_HeightGridImg.png", matHeightResultImg );
     cv::Mat matPhaseResultImg = _drawHeightGrid ( stRpy.matPhase, 10, 10 );
     cv::imwrite ( gstrWorkingFolder + "PR_FastCalc3DHeight_PhaseGridImg.png", matPhaseResultImg );
+}
+
+void TestMerge3DHeight() {
+    PR_MERGE_3D_HEIGHT_CMD stCmd;
+    PR_MERGE_3D_HEIGHT_RPY stRpy;
+
+    cv::Mat matHeight;
+    std::string strHeightResultPath = gstrWorkingFolder + "Height.yml";
+    cv::FileStorage fs ( strHeightResultPath, cv::FileStorage::READ );
+    cv::FileNode fileNode = fs["Height"];
+    cv::read ( fileNode, matHeight, cv::Mat () );
+    fs.release ();
+
+    stCmd.vecMatHeight.push_back ( matHeight );
+    cv::Mat matHeight1 = matHeight.clone();
+    matHeight1 = matHeight1 + 0.1;
+    stCmd.vecMatHeight.push_back ( matHeight1 );
+    PR_Merge3DHeight ( &stCmd, &stRpy );
+    std::cout << "PR_Merge3DHeight status " << ToInt32( stRpy.enStatus ) << std::endl;
+    if ( VisionStatus::OK != stRpy.enStatus )
+        return;
+
+    cv::Mat matHeightResultImg = _drawHeightGrid ( stRpy.matHeight, 10, 10 );
+    cv::imwrite ( gstrWorkingFolder + "PR_TestMerge3DHeight_HeightGridImg.png", matHeightResultImg );
 }
 
 void TestCalc3DHeightDiff(const cv::Mat &matHeight) {

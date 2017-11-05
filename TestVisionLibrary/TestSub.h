@@ -27,6 +27,7 @@ void TestIntegrate3DCalib();
 void TestCalc3DHeightNew();
 void TestFastCalc3DHeight();
 void TestIntegrate3DCalibHaoYu();
+void TestMerge3DHeight();
 
 template<class T>
 void printfMat(const cv::Mat &mat)

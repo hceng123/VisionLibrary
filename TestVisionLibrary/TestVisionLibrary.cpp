@@ -639,8 +639,9 @@ int _tmain(int argc, _TCHAR* argv[])
     //TestComb3DCalib();
     //TestCalc3DHeight();
     //for ( int i = 0; i < 10; ++ i )
-        TestFastCalc3DHeight();
+    //    TestFastCalc3DHeight();
 
+    TestMerge3DHeight();
     //TestIntegrate3DCalib();
     //TestIntegrate3DCalibHaoYu();
     //TestCalc3DHeightNew();

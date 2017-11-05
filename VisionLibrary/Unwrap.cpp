@@ -687,27 +687,6 @@ static inline cv::Mat calcOrder5BezierCoeff ( const cv::Mat &matU ) {
     }
 
     TimeLog::GetInstance()->addTimeLog( "2 cv::phase ", stopWatch.Span() );
-
-    //The opencv cv::phase function return result is 0~2*PI, but matlab is -PI~PI, so here need to do a conversion.
-    //cv::Mat matOverPi;
-    //cv::compare ( matAlpha, cv::Scalar::all ( CV_PI ), matOverPi, cv::CmpTypes::CMP_GT );
-    //cv::subtract ( matAlpha, cv::Scalar::all ( 2.f * CV_PI ), matAlpha, matOverPi );
-    //
-    //cv::compare ( matBeta, cv::Scalar::all ( CV_PI ), matOverPi, cv::CmpTypes::CMP_GT );
-    //cv::subtract ( matBeta, cv::Scalar::all ( 2.f * CV_PI ), matBeta, matOverPi );
-
-    //TimeLog::GetInstance()->addTimeLog( "2 cv::compare and cv::subtract ", stopWatch.Span() );
-
-    //cv::Mat matAvgUnderTolIndex;
-    //{
-    //    TimeLog::GetInstance ()->addTimeLog ( "Before find amplitude less than tol. ", stopWatch.Span () );
-    //    matBuffer1 = mat10.mul ( mat10 );
-    //    matBuffer2 = mat11.mul ( mat11 );
-    //    matBuffer1 = matBuffer1 + matBuffer2;
-    //    //matBuffer1 = matBuffer1 + ; //matB is amplitude of the wave. mat10 = 2*sin(theta), mat11 = 2*cos(theta).
-    //    cv::compare ( matBuffer1, pstCmd->fMinAmplitude * pstCmd->fMinAmplitude * 4, matAvgUnderTolIndex, cv::CmpTypes::CMP_LT );
-    //    TimeLog::GetInstance ()->addTimeLog ( "After amplitude less than tol. ", stopWatch.Span () );
-    //}
     
     matAlpha = matAlpha - pstCmd->matBaseWrappedAlpha;
     matBeta  = matBeta  - pstCmd->matBaseWrappedBeta;
@@ -745,6 +724,25 @@ static inline cv::Mat calcOrder5BezierCoeff ( const cv::Mat &matU ) {
     TimeLog::GetInstance()->addTimeLog( "_calcHeightFromPhase.", stopWatch.Span() );
 
     pstRpy->enStatus = VisionStatus::OK;
+}
+
+/*static*/ void Unwrap::merge3DHeight(const PR_MERGE_3D_HEIGHT_CMD *const pstCmd, PR_MERGE_3D_HEIGHT_RPY *const pstRpy) {    
+    pstRpy->matHeight = cv::Mat::zeros ( pstCmd->vecMatHeight[0].size(), pstCmd->vecMatHeight[0].type() );
+    cv::Mat matNan0 = CalcUtils::getNanMask( pstCmd->vecMatHeight[0] );
+    cv::Mat matNan1 = CalcUtils::getNanMask( pstCmd->vecMatHeight[1] );
+
+    cv::Mat matIdxH0, matIdxH1, matIdxH2;
+    matIdxH0 = cv::abs ( pstCmd->vecMatHeight[0] - pstCmd->vecMatHeight[1] ) < pstCmd->fHeightDiffThreshold;
+    matIdxH1 = (pstCmd->vecMatHeight[0] - pstCmd->vecMatHeight[1]) > pstCmd->fHeightDiffThreshold;
+    matIdxH2 = (pstCmd->vecMatHeight[1] - pstCmd->vecMatHeight[0]) > pstCmd->fHeightDiffThreshold;
+
+    matIdxH1 = matIdxH1 | matNan0;
+    matIdxH2 = matIdxH2 | matNan1;
+    pstCmd->vecMatHeight[1].copyTo ( pstRpy->matHeight, matIdxH1 );
+    pstCmd->vecMatHeight[0].copyTo ( pstRpy->matHeight, matIdxH2 );
+
+    cv::Mat matAverage;
+    cv::add ( pstCmd->vecMatHeight[0] / 2.f, pstCmd->vecMatHeight[1] / 2.f, pstRpy->matHeight, matIdxH0 );
 }
 
 /*static*/ cv::Mat Unwrap::_phaseUnwrapSurfaceTrk ( const cv::Mat &matPhase, const cv::Mat &dxPhase, const cv::Mat &dyPhase, const cv::Mat &matBranchCut ) {

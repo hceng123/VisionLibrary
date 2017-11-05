@@ -5989,6 +5989,30 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     return pstRpy->enStatus;
 }
 
+/*static*/ VisionStatus VisionAlgorithm::merge3DHeight(const PR_MERGE_3D_HEIGHT_CMD *const pstCmd, PR_MERGE_3D_HEIGHT_RPY *const pstRpy, bool bReplay /*= false*/) {
+    assert(pstCmd != nullptr && pstRpy != nullptr);
+    if  ( pstCmd->vecMatHeight.size() < 2 ) {
+        WriteLog("The height vector size is less than 2.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    for ( const auto &mat : pstCmd->vecMatHeight ) {
+        if ( mat.empty() ) {
+            WriteLog("The input height matrix is empty.");
+            pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+            return pstRpy->enStatus;
+        }
+    }
+    MARK_FUNCTION_START_TIME;
+
+    Unwrap::merge3DHeight ( pstCmd, pstRpy );
+
+    MARK_FUNCTION_END_TIME;
+    pstRpy->enStatus = VisionStatus::OK;
+    return pstRpy->enStatus;
+}
+
 /*static*/ VisionStatus VisionAlgorithm::calc3DHeightDiff(const PR_CALC_3D_HEIGHT_DIFF_CMD *const pstCmd, PR_CALC_3D_HEIGHT_DIFF_RPY *const pstRpy, bool bReplay /*= false*/) {
     assert(pstCmd != nullptr && pstRpy != nullptr);
     if ( pstCmd->matHeight.empty() ) {
