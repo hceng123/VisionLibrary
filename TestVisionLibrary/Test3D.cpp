@@ -24,11 +24,11 @@ VectorOfFloat split ( const std::string &s, char delim ) {
 VectorOfVectorOfFloat parseData(const std::string &strContent) {
     std::stringstream ss ( strContent );
     std::string strLine;
-    VectorOfVectorOfFloat vevVecResult;
+    VectorOfVectorOfFloat vecVecResult;
     while( std::getline ( ss, strLine ) ) {
-        vevVecResult.push_back ( split ( strLine, ',' ) );
+        vecVecResult.push_back ( split ( strLine, ',' ) );
     }
-    return vevVecResult;
+    return vecVecResult;
 }
 
 VectorOfVectorOfFloat readDataFromFile(const std::string &strFilePath) {
@@ -106,7 +106,7 @@ static cv::Mat _drawHeightGrid(const cv::Mat &matHeight, int nGridRow, int nGrid
 }
 
 //static std::string gstrCalibResultFile("./data/capture/CalibPP.yml");
-static std::string gstrWorkingFolder("./data/New3DCalibMethod/");
+static std::string gstrWorkingFolder("./data/20171106_Phase_Correction/");
 static std::string gstrCalibResultFile = gstrWorkingFolder + "CalibPP.yml";
 void TestCalib3dBase() {
     const int IMAGE_COUNT = 8;
@@ -536,6 +536,147 @@ void TestFastCalc3DHeight() {
         return;
 
     std::string strHeightResultPath = gstrWorkingFolder + "Height.yml";
+    cv::FileStorage fs ( strHeightResultPath, cv::FileStorage::WRITE );
+    cv::write ( fs, "Height", stRpy.matHeight );
+    fs.release();
+
+    cv::Mat matHeightResultImg = _drawHeightGrid ( stRpy.matHeight, 10, 10 );
+    cv::imwrite ( gstrWorkingFolder + "PR_FastCalc3DHeight_HeightGridImg.png", matHeightResultImg );
+    cv::Mat matPhaseResultImg = _drawHeightGrid ( stRpy.matPhase, 10, 10 );
+    cv::imwrite ( gstrWorkingFolder + "PR_FastCalc3DHeight_PhaseGridImg.png", matPhaseResultImg );
+}
+
+void copyVectorOfVectorToMat(const VectorOfVectorOfFloat &vecVecInput, cv::Mat &matOutput) {
+    matOutput = cv::Mat ( vecVecInput.size(), vecVecInput[0].size(), CV_32FC1 );
+    for ( int row = 0; row < matOutput.rows; ++ row )
+    for ( int col = 0; col < matOutput.cols; ++ col ) {
+        matOutput.at<float>(row, col) = vecVecInput[row][col];
+    }
+}
+
+static cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY, const cv::Mat &matK) {
+    cv::Mat matXPow2 = matX.    mul ( matX );
+    cv::Mat matXPow3 = matXPow2.mul ( matX );
+    cv::Mat matYPow2 = matY.    mul ( matY );
+    cv::Mat matYPow3 = matYPow2.mul ( matY );
+    cv::Mat matArray[] = { 
+        matXPow3 * matK.at<float>(0),
+        matYPow3 * matK.at<float>(1),
+        matXPow2.mul ( matY ) * matK.at<float>(2),
+        matYPow2.mul ( matX ) * matK.at<float>(3),
+        matXPow2 * matK.at<float>(4),
+        matYPow2 * matK.at<float>(5),
+        matX.mul ( matY ) * matK.at<float>(6),
+        matX * matK.at<float>(7),
+        matY * matK.at<float>(8),
+        cv::Mat::ones ( matX.size(), matX.type() ) * matK.at<float>(9),
+    };
+    const int RANK_3_SURFACE_COEFF_COL = 10;
+    static_assert ( sizeof( matArray ) / sizeof(cv::Mat) == RANK_3_SURFACE_COEFF_COL, "Size of array not correct" );
+    cv::Mat matResult = matArray[0];
+    for ( int i = 1; i < RANK_3_SURFACE_COEFF_COL; ++ i )
+        matResult = matResult + matArray[i];
+    return matResult;
+}
+
+template<typename _tp>
+static cv::Mat intervals ( _tp start, _tp interval, _tp end ) {
+    std::vector<_tp> vecValue;
+    int nSize = ToInt32 ( (end - start) / interval );
+    if (nSize <= 0) {
+        static std::string msg = std::string ( __FUNCTION__ ) + " input paramters are invalid.";
+        throw std::exception ( msg.c_str () );
+    }
+    vecValue.reserve ( nSize );
+    _tp value = start;
+    if (interval > 0) {
+        while (value <= end) {
+            vecValue.push_back ( value );
+            value += interval;
+        }
+    }
+    else {
+        while (value >= end) {
+            vecValue.push_back ( value );
+            value += interval;
+        }
+    }
+    //cv::Mat matResult ( vecValue ); //This have problem, because matResult share the memory with vecValue, after leave this function, the memory already released.
+    return cv::Mat ( vecValue ).clone ();
+}
+
+template<typename _tp>
+static void meshgrid ( _tp xStart, _tp xInterval, _tp xEnd, _tp yStart, _tp yInterval, _tp yEnd, cv::Mat &matX, cv::Mat &matY ) {
+    cv::Mat matCol = intervals<_tp> ( xStart, xInterval, xEnd );
+    matCol = matCol.reshape ( 1, 1 );
+
+    cv::Mat matRow = intervals<_tp> ( yStart, yInterval, yEnd );
+    matX = cv::repeat ( matCol, matRow.rows, 1 );
+    matY = cv::repeat ( matRow, 1, matCol.cols );
+}
+
+void TestFastCalc3DHeight_1() {
+    const int IMAGE_COUNT = 8;
+    std::string strFolder = gstrWorkingFolder + "1027160744_01/";
+    //std::string strFolder = "./data/0913212217_Unwrap_Not_Finish/";
+    PR_FAST_CALC_3D_HEIGHT_CMD stCmd;
+    PR_FAST_CALC_3D_HEIGHT_RPY stRpy;
+    for ( int i = 1; i <= IMAGE_COUNT; ++ i ) {
+        char chArrFileName[100];
+        _snprintf( chArrFileName, sizeof (chArrFileName), "%02d.bmp", i );
+        std::string strImageFile = strFolder + chArrFileName;
+        cv::Mat mat = cv::imread ( strImageFile, cv::IMREAD_GRAYSCALE );
+        stCmd.vecInputImgs.push_back ( mat );
+    }
+    stCmd.bEnableGaussianFilter = false;
+    stCmd.bReverseSeq = true;
+    stCmd.fMinAmplitude = 2;
+
+    auto vecVecData = readDataFromFile ( gstrWorkingFolder + "CalibrationMatrix3/pAlpha.csv");
+    copyVectorOfVectorToMat ( vecVecData, stCmd.matBaseWrappedAlpha );
+
+    vecVecData = readDataFromFile ( gstrWorkingFolder + "CalibrationMatrix3/pBeta.csv");
+    copyVectorOfVectorToMat ( vecVecData, stCmd.matBaseWrappedBeta );
+
+    stCmd.matThickToThinStripeK = cv::Mat(2, 1, CV_32FC1);
+    stCmd.matThickToThinStripeK.at<float>(0) = 4.999762f;
+    {
+        std::string strResultMatPath = gstrCalibResultFile;
+        cv::FileStorage fs ( strResultMatPath, cv::FileStorage::READ );
+        cv::FileNode fileNode = fs["K"];
+        cv::read ( fileNode, stCmd.matThickToThinStripeK, cv::Mat () );
+
+        fileNode = fs["BaseStartAvgPhase"];
+        cv::read ( fileNode, stCmd.fBaseStartAvgPhase, 0.f );
+
+        fileNode = fs["BaseWrappedAlpha"];
+        cv::read ( fileNode, stCmd.matBaseWrappedAlpha, cv::Mat () );
+
+        fileNode = fs["BaseWrappedBeta"];
+        cv::read ( fileNode, stCmd.matBaseWrappedBeta, cv::Mat () );
+
+        fs.release ();
+    }
+
+    {
+
+        VectorOfFloat vecK{-4.96231398e-012f, 1.05858230e-011f, 8.15840884e-012f,
+                           -4.87927320e-012f, 3.07154580e-010f, -2.42397249e-008f,
+                           1.17145926e-009f, -1.87926678e-004f, 2.95515900e-004f,
+                           2.17526913e+000f, -3.28916986e-003f, 1.85934448e-004f};
+        stCmd.matIntegratedK = cv::Mat(vecK);
+
+        cv::Mat matX, matY;
+        meshgrid<float> ( 1.f, 1.f, ToFloat ( stCmd.matBaseWrappedAlpha.cols ), 1.f, 1.f, ToFloat ( stCmd.matBaseWrappedAlpha.rows ), matX, matY );
+        stCmd.matOrder3CurveSurface = calcOrder3Surface ( matX, matY, stCmd.matIntegratedK);
+    }
+
+    PR_FastCalc3DHeight ( &stCmd, &stRpy );
+    std::cout << "PR_FastCalc3DHeight status " << ToInt32( stRpy.enStatus ) << std::endl;
+    if ( VisionStatus::OK != stRpy.enStatus )
+        return;
+
+    std::string strHeightResultPath = gstrWorkingFolder + "Height_1.yml";
     cv::FileStorage fs ( strHeightResultPath, cv::FileStorage::WRITE );
     cv::write ( fs, "Height", stRpy.matHeight );
     fs.release();
