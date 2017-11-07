@@ -349,6 +349,23 @@ public:
         return matResult;
     }
 
+    template<typename T>
+    static std::vector<size_t> sort_index_value ( std::vector<T> &v ) {
+        // initialize original index locations
+        std::vector<size_t> idx ( v.size () );
+        std::iota ( idx.begin (), idx.end (), 0 );
+
+        // sort indexes based on comparing values in v
+        sort ( idx.begin (), idx.end (),
+               [&v]( size_t i1, size_t i2 ) {return v[i1] < v[i2]; } );
+
+        std::vector<T> vClone ( v );
+        for( size_t i = 0; i < idx.size (); ++i )
+            v[i] = vClone[idx[i]];
+
+        return idx;
+    }
+
     static double radian2Degree ( double dRadian );
     static double degree2Radian ( double dDegree );
     static float ptDisToLine ( const cv::Point2f &ptInput, bool bReversedFit, float fSlope, float fIntercept );

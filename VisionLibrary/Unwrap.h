@@ -59,6 +59,7 @@ private:
     static void _drawStar(cv::Mat &matInOut, cv::Point ptPosition, int nSize );
     static cv::Mat _calcHeightFromPhase(const cv::Mat &matPhase, const cv::Mat &matHtt, const cv::Mat &matK);
     static cv::Mat _calcHeightFromPhaseBuffer(const cv::Mat &matPhase, const cv::Mat &matHtt, const cv::Mat &matK, cv::Mat &matBuffer1, cv::Mat &matBuffer2 );
+    static void _phaseCorrection(cv::Mat &matPhase, const cv::Mat &matIdxNan, int nJumpSpanX, int nJumpSpanY);
 
     static inline void _phaseWrap(cv::Mat &matPhase) {
         CStopWatch stopWatch;
