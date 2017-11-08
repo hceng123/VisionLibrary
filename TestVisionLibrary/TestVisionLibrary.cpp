@@ -635,12 +635,12 @@ int _tmain(int argc, _TCHAR* argv[])
     //TestSrchDie();
 
     //TestCalib3dBase();
-    //TestCalib3DHeight();
+    TestCalib3DHeight();
     //TestComb3DCalib();
     //TestCalc3DHeight();
     //for ( int i = 0; i < 10; ++ i )
     //    TestFastCalc3DHeight();
-    TestFastCalc3DHeight_1();
+    //TestFastCalc3DHeight_1();
     //TestMerge3DHeight();
     //TestIntegrate3DCalib();
     //TestIntegrate3DCalibHaoYu();

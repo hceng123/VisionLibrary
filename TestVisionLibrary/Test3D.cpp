@@ -106,11 +106,11 @@ static cv::Mat _drawHeightGrid(const cv::Mat &matHeight, int nGridRow, int nGrid
 }
 
 //static std::string gstrCalibResultFile("./data/capture/CalibPP.yml");
-static std::string gstrWorkingFolder("./data/20171106_Phase_Correction/");
+static std::string gstrWorkingFolder("./data/New3DCalibMethod/");
 static std::string gstrCalibResultFile = gstrWorkingFolder + "CalibPP.yml";
 void TestCalib3dBase() {
-    const int IMAGE_COUNT = 8;
-    std::string strFolder = gstrWorkingFolder + "1017000816_base/";
+    const int IMAGE_COUNT = 12;
+    std::string strFolder = gstrWorkingFolder + "0920234214_base/";
     PR_CALIB_3D_BASE_CMD stCmd;
     PR_CALIB_3D_BASE_RPY stRpy;
     for ( int i = 1; i <= IMAGE_COUNT; ++ i ) {
@@ -141,7 +141,7 @@ void TestCalib3dBase() {
 
 void TestCalib3DHeight() {
     const int IMAGE_COUNT = 8;
-    std::string strFolder = gstrWorkingFolder + "0920235040_lefttop/";
+    std::string strFolder = gstrWorkingFolder + "0920235405_negitive/";
     PR_CALIB_3D_HEIGHT_CMD stCmd;
     PR_CALIB_3D_HEIGHT_RPY stRpy;
     for ( int i = 1; i <= IMAGE_COUNT; ++ i ) {
@@ -153,10 +153,10 @@ void TestCalib3DHeight() {
     }
     stCmd.bEnableGaussianFilter = true;
     stCmd.bReverseSeq = true;
-    stCmd.bReverseHeight = false;
+    stCmd.bReverseHeight = true;
     stCmd.fMinIntensityDiff = 3;
     stCmd.fMinAvgIntensity = 1.5;
-    stCmd.nBlockStepCount = 5;
+    stCmd.nBlockStepCount = 3;
     stCmd.fBlockStepHeight = 1.f;
     stCmd.nResultImgGridRow = 10;
     stCmd.nResultImgGridCol = 10;
@@ -199,7 +199,7 @@ void TestCalib3DHeight() {
     fs1.release();
 
     //Write the phase and divide step result for PR_Integrate3DCalib.
-    std::string strCalibDataFile(gstrWorkingFolder + "01.yml");
+    std::string strCalibDataFile(gstrWorkingFolder + "03.yml");
     cv::FileStorage fsCalibData ( strCalibDataFile, cv::FileStorage::WRITE );
     if ( ! fsCalibData.isOpened() )
         return;
@@ -630,7 +630,7 @@ void TestFastCalc3DHeight_1() {
     }
     stCmd.bEnableGaussianFilter = false;
     stCmd.bReverseSeq = true;
-    stCmd.fMinAmplitude = 2;
+    stCmd.fMinAmplitude = 2.236;
 
     auto vecVecData = readDataFromFile ( gstrWorkingFolder + "CalibrationMatrix3/pAlpha.csv");
     copyVectorOfVectorToMat ( vecVecData, stCmd.matBaseWrappedAlpha );

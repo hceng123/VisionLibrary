@@ -5726,8 +5726,8 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
 /*static*/ VisionStatus VisionAlgorithm::calib3DBase(const PR_CALIB_3D_BASE_CMD *const pstCmd, PR_CALIB_3D_BASE_RPY *const pstRpy, bool bReplay/* = false*/) {
     assert(pstCmd != nullptr && pstRpy != nullptr);
 
-    if ( pstCmd->vecInputImgs.size() != 8 ) {
-        WriteLog("The input image count is not 8.");
+    if ( pstCmd->vecInputImgs.size() != 12 ) {
+        WriteLog("The input image count is not 12.");
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return pstRpy->enStatus;
     }
