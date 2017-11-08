@@ -26,7 +26,7 @@ Unwrap::~Unwrap ()
 }
 
 /*static*/ const float Unwrap::GAUSSIAN_FILTER_SIGMA        = ToFloat ( pow ( 20, 0.5 ) );
-/*static*/ const float Unwrap::ONE_HALF_CYCLE               = ToFloat ( CV_PI );
+/*static*/ const float Unwrap::ONE_HALF_CYCLE               = ToFloat ( 1.f );
 /*static*/ const float Unwrap::ONE_CYCLE                    = ONE_HALF_CYCLE * 2;
 /*static*/ const float Unwrap::CALIB_HEIGHT_STEP_USEFUL_PT  =  0.8f;
 /*static*/ const float Unwrap::REMOVE_HEIGHT_NOSIE_RATIO    =  0.995f;
@@ -40,6 +40,7 @@ Unwrap::~Unwrap ()
         auto radian = cv::fastAtan2 ( ToFloat( y ), ToFloat ( x ) ) * CV_PI / 180.;
         if ( radian > CV_PI )
             radian -= CV_PI * 2.;
+        radian /= CV_PI;
         vecVecAtan2Table[x + PR_MAX_GRAY_LEVEL][y + PR_MAX_GRAY_LEVEL] = ToFloat ( radian );
     }
 }
@@ -702,6 +703,7 @@ static inline cv::Mat calcOrder5BezierCoeff ( const cv::Mat &matU ) {
     TimeLog::GetInstance()->addTimeLog( "_phaseWrapByRefer.", stopWatch.Span() );
 
     _phaseCorrection ( matBeta, matAvgUnderTolIndex, 25, 7 );
+    TimeLog::GetInstance()->addTimeLog( "_phaseCorrection.", stopWatch.Span() );
 
     matBeta.setTo ( NAN, matAvgUnderTolIndex );
 
@@ -709,13 +711,6 @@ static inline cv::Mat calcOrder5BezierCoeff ( const cv::Mat &matU ) {
 
     cv::medianBlur ( matH, matH, 5 );
     TimeLog::GetInstance()->addTimeLog( "MedianBlur.", stopWatch.Span() );
-
-    cv::Mat matSnoop(matAlpha, cv::Rect(0, 0, PHASE_SNOOP_WIN_SIZE, PHASE_SNOOP_WIN_SIZE ) );
-    auto fStartAvgPhase = ToFloat ( cv::mean ( matSnoop )[0] );
-    if ( ( fStartAvgPhase - pstCmd->fBaseStartAvgPhase ) > ( LOW_BASE_PHASE + ToFloat ( CV_PI ) * 2.f ) )
-        matAlpha = matAlpha - ToFloat ( CV_PI ) * 2.f;
-    else if ( ( fStartAvgPhase - pstCmd->fBaseStartAvgPhase ) < LOW_BASE_PHASE )
-        matAlpha = matAlpha + ToFloat ( CV_PI ) * 2.f;
 
     pstRpy->matPhase = matH;
     if ( ! pstCmd->matOrder3CurveSurface.empty() && ! pstCmd->matIntegratedK.empty() )
@@ -2093,6 +2088,7 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
 }
 
 /*static*/ void Unwrap::_phaseCorrection(cv::Mat &matPhase, const cv::Mat &matIdxNan, int nJumpSpanX, int nJumpSpanY) {
+    CStopWatch stopWatch;
     const int ROWS = matPhase.rows;
     const int COLS = matPhase.cols;
     VectorOfPoint vecPoints;
@@ -2102,7 +2098,10 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
             continue;
         matPhase.at<DATA_TYPE>(point) = matPhase.at<DATA_TYPE> ( point.y, point.x - 1 );
     }
+    TimeLog::GetInstance()->addTimeLog( "_phaseCorrection set nan to neighbour.", stopWatch.Span() );
 
+    //X direction
+    {
     cv::Mat matPhaseDiff = CalcUtils::diff ( matPhase, 1, 2 );
     cv::Mat matDiffSign = cv::Mat::zeros ( ROWS, COLS, CV_8SC1 );
     cv::Mat matDiffAmpl = cv::Mat::zeros ( ROWS, COLS, CV_8SC1 );
@@ -2132,23 +2131,25 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
     for ( auto row : vecRowsWithJump ) {
         char *ptrSignOfRow = matDiffSign.ptr<char>(row);
         char *ptrAmplOfRow = matDiffAmpl.ptr<char>(row);
-        std::vector<int> vecJumpCol, vecJumpSpan, vecJumpIdxNeedToHandle;
-        vecJumpCol.reserve ( 20 );
-        for ( int col = 0; col < COLS; ++ col ) {
-            if ( ptrSignOfRow[col] != 0 )
-                vecJumpCol.push_back ( col );
-        }
-        if ( vecJumpCol.size() < 2 )
-            continue;
-        vecJumpSpan.reserve ( vecJumpCol.size() - 1 );
-        for ( size_t i = 1; i < vecJumpCol.size(); ++ i )
-            vecJumpSpan.push_back ( vecJumpCol[i] - vecJumpCol[i - 1] );
-        auto vecSortedJumpSpanIdx = CalcUtils::sort_index_value<int> ( vecJumpSpan );
-        for ( int i = 0; i < ToInt32 ( vecJumpSpan.size() ); ++ i ) {
-            if ( vecJumpSpan[i] < nJumpSpanX )
-                vecJumpIdxNeedToHandle.push_back ( i );
-        }
+        
         for ( int kk = 0; kk < 2; ++ kk ) {
+            std::vector<int> vecJumpCol, vecJumpSpan, vecJumpIdxNeedToHandle;
+            vecJumpCol.reserve ( 20 );
+            for( int col = 0; col < COLS; ++col ) {
+                if( ptrSignOfRow[col] != 0 )
+                    vecJumpCol.push_back ( col );
+            }
+            if( vecJumpCol.size () < 2 )
+                continue;
+            vecJumpSpan.reserve ( vecJumpCol.size () - 1 );
+            for( size_t i = 1; i < vecJumpCol.size (); ++i )
+                vecJumpSpan.push_back ( vecJumpCol[i] - vecJumpCol[i - 1] );
+            auto vecSortedJumpSpanIdx = CalcUtils::sort_index_value<int> ( vecJumpSpan );
+            for( int i = 0; i < ToInt32 ( vecJumpSpan.size () ); ++i ) {
+                if( vecJumpSpan[i] < nJumpSpanX )
+                    vecJumpIdxNeedToHandle.push_back ( i );
+            }
+
             for ( int jj = 0; jj < vecJumpIdxNeedToHandle.size(); ++ jj ) {
                 char chSignFirst  = ptrSignOfRow [ vecJumpCol [ vecSortedJumpSpanIdx [ jj ] ] ];        //The index is hard to understand. Use the sorted span index to find the original column.
                 char chSignSecond = ptrSignOfRow [ vecJumpCol [ vecSortedJumpSpanIdx [ jj ] + 1 ] ];
@@ -2167,30 +2168,92 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
                     if ( chAmplNew <= 0 )
                         ptrSignOfRow [ vecJumpCol [ vecSortedJumpSpanIdx[jj] + 1 ] ] = 0;
 
-                    for ( int col = vecJumpCol [ vecSortedJumpSpanIdx[jj] ]; col < vecJumpCol [ vecSortedJumpSpanIdx[jj] + 1 ]; ++ col)
+                    for ( int col = vecJumpCol [ vecSortedJumpSpanIdx[jj] ] + 1; col <= vecJumpCol [ vecSortedJumpSpanIdx[jj] + 1 ]; ++ col )
                         matPhase.at<DATA_TYPE>(row, col) -= chSignFirst * ONE_CYCLE * chTurnAmpl;
                 }
             }
+        }
+    }
+    }
 
-            vecJumpCol.clear();
-            vecJumpSpan.clear ();
-            vecJumpIdxNeedToHandle.clear ();
-            for( int col = 0; col < COLS; ++col ) {
-                if( ptrSignOfRow[col] != 0 )
-                    vecJumpCol.push_back ( col );
+    TimeLog::GetInstance()->addTimeLog( "_phaseCorrection in x direction.", stopWatch.Span() );
+
+    // Y direction
+    cv::Mat matPhaseDiff = CalcUtils::diff ( matPhase, 1, 1 );
+    cv::Mat matDiffSign = cv::Mat::zeros ( ROWS, COLS, CV_8SC1 );
+    cv::Mat matDiffAmpl = cv::Mat::zeros ( ROWS, COLS, CV_8SC1 );
+    std::vector<int> vecColsWithJump;
+    for ( int col = 0; col < matPhaseDiff.cols; ++ col ) {
+        bool bColWithPosJump = false, bColWithNegJump = false;
+        for( int row = 0; row < matPhaseDiff.rows; ++ row ) {
+            auto value = matPhaseDiff.at<DATA_TYPE> ( row, col );
+            if( value > ONE_HALF_CYCLE ) {
+                matDiffSign.at<char> ( row, col ) = 1;
+                bColWithPosJump = true;
             }
-            if( vecJumpCol.size () < 2 )
+            else if( value < -ONE_HALF_CYCLE ) {
+                matDiffSign.at<char> ( row, col ) = -1;
+                bColWithNegJump = true;
+            }
+
+            if( std::abs ( value ) > ONE_HALF_CYCLE ) {
+                char nJumpAmplitude = static_cast<char> ( std::ceil ( std::abs ( value ) / 2.f ) * 2 );
+                matDiffAmpl.at<char> ( row, col ) = nJumpAmplitude;
+            }
+        }
+        if ( bColWithPosJump && bColWithNegJump )
+            vecColsWithJump.push_back ( col );
+    }
+    
+    for ( auto col : vecColsWithJump ) {
+        cv::Mat matSignOfCol = cv::Mat ( matDiffSign, cv::Range::all(), cv::Range(col, col+1) ).clone();
+        char *ptrSignOfCol = matSignOfCol.ptr<char>(0);
+        cv::Mat matAmplOfCol = cv::Mat ( matDiffAmpl, cv::Range::all(), cv::Range(col, col+1) ).clone();
+        char *ptrAmplOfCol = matDiffAmpl.ptr<char>(0);
+        
+        for ( int kk = 0; kk < 2; ++ kk ) {
+            std::vector<int> vecJumpRow, vecJumpSpan, vecJumpIdxNeedToHandle;
+            vecJumpRow.reserve ( 20 );
+            for( int row = 0; row < ROWS; ++ row ) {
+                if( ptrSignOfCol[row] != 0 )
+                    vecJumpRow.push_back ( row );
+            }
+            if( vecJumpRow.size () < 2 )
                 continue;
-            vecJumpSpan.reserve ( vecJumpCol.size () - 1 );
-            for ( size_t i = 1; i < vecJumpCol.size (); ++ i )
-                vecJumpSpan.push_back ( vecJumpCol[i] - vecJumpCol[i - 1] );
+            vecJumpSpan.reserve ( vecJumpRow.size () - 1 );
+            for( size_t i = 1; i < vecJumpRow.size (); ++i )
+                vecJumpSpan.push_back ( vecJumpRow[i] - vecJumpRow[i - 1] );
             auto vecSortedJumpSpanIdx = CalcUtils::sort_index_value<int> ( vecJumpSpan );
-            for( int i = 0; i < ToInt32 ( vecJumpSpan.size () ); ++ i ) {
-                if( vecJumpSpan[i] < nJumpSpanX )
+            for( int i = 0; i < ToInt32 ( vecJumpSpan.size () ); ++i ) {
+                if( vecJumpSpan[i] < nJumpSpanY )
                     vecJumpIdxNeedToHandle.push_back ( i );
             }
-        }        
+
+            for ( int jj = 0; jj < vecJumpIdxNeedToHandle.size(); ++ jj ) {
+                char chSignFirst  = ptrSignOfCol [ vecJumpRow [ vecSortedJumpSpanIdx [ jj ] ] ];        //The index is hard to understand. Use the sorted span index to find the original column.
+                char chSignSecond = ptrSignOfCol [ vecJumpRow [ vecSortedJumpSpanIdx [ jj ] + 1 ] ];
+
+                char chAmplFirst  = ptrSignOfCol [ vecJumpRow [ vecSortedJumpSpanIdx[jj] ] ];
+                char chAmplSecond = ptrSignOfCol [ vecJumpRow [ vecSortedJumpSpanIdx[jj] + 1 ] ];
+                char chTurnAmpl = std::min ( chAmplFirst, chAmplSecond ) / 2;
+                if ( chSignFirst + chSignSecond == 0 ) { //it is a pair
+                    char chAmplNew = chAmplFirst - ONE_CYCLE * chTurnAmpl;
+                    ptrAmplOfCol [ vecJumpRow [ vecSortedJumpSpanIdx[jj] ] ] = chAmplNew;
+                    if ( chAmplNew <= 0 )
+                        ptrSignOfCol [ vecJumpRow [ vecSortedJumpSpanIdx[jj] ] ] = 0;  // Remove the sign of jump flag.
+
+                    chAmplNew = chAmplSecond - ONE_CYCLE * chTurnAmpl;
+                    ptrAmplOfCol [ vecJumpRow [ vecSortedJumpSpanIdx[jj] + 1 ] ] = chAmplNew;
+                    if ( chAmplNew <= 0 )
+                        ptrSignOfCol [ vecJumpRow [ vecSortedJumpSpanIdx[jj] + 1 ] ] = 0;
+
+                    for ( int row = vecJumpRow [ vecSortedJumpSpanIdx[jj] ] + 1; row <= vecJumpRow [ vecSortedJumpSpanIdx[jj] + 1 ]; ++ row )
+                        matPhase.at<DATA_TYPE>(row, col) -= chSignFirst * ONE_CYCLE * chTurnAmpl;
+                }
+            }
+        }
     }
+    TimeLog::GetInstance()->addTimeLog( "_phaseCorrection in y direction.", stopWatch.Span() );
 }
 
 }

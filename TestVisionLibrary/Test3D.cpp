@@ -639,37 +639,17 @@ void TestFastCalc3DHeight_1() {
     copyVectorOfVectorToMat ( vecVecData, stCmd.matBaseWrappedBeta );
 
     stCmd.matThickToThinStripeK = cv::Mat(2, 1, CV_32FC1);
-    stCmd.matThickToThinStripeK.at<float>(0) = 4.999762f;
-    {
-        std::string strResultMatPath = gstrCalibResultFile;
-        cv::FileStorage fs ( strResultMatPath, cv::FileStorage::READ );
-        cv::FileNode fileNode = fs["K"];
-        cv::read ( fileNode, stCmd.matThickToThinStripeK, cv::Mat () );
+    stCmd.matThickToThinStripeK.at<float>(0) = 4.999762f;    
 
-        fileNode = fs["BaseStartAvgPhase"];
-        cv::read ( fileNode, stCmd.fBaseStartAvgPhase, 0.f );
+    VectorOfFloat vecK{ -4.96231398e-012f, 1.05858230e-011f, 8.15840884e-012f,
+        -4.87927320e-012f, 3.07154580e-010f, -2.42397249e-008f,
+        1.17145926e-009f, -1.87926678e-004f, 2.95515900e-004f,
+        2.17526913e+000f, -3.28916986e-003f, 1.85934448e-004f };
+    stCmd.matIntegratedK = cv::Mat ( vecK );
 
-        fileNode = fs["BaseWrappedAlpha"];
-        cv::read ( fileNode, stCmd.matBaseWrappedAlpha, cv::Mat () );
-
-        fileNode = fs["BaseWrappedBeta"];
-        cv::read ( fileNode, stCmd.matBaseWrappedBeta, cv::Mat () );
-
-        fs.release ();
-    }
-
-    {
-
-        VectorOfFloat vecK{-4.96231398e-012f, 1.05858230e-011f, 8.15840884e-012f,
-                           -4.87927320e-012f, 3.07154580e-010f, -2.42397249e-008f,
-                           1.17145926e-009f, -1.87926678e-004f, 2.95515900e-004f,
-                           2.17526913e+000f, -3.28916986e-003f, 1.85934448e-004f};
-        stCmd.matIntegratedK = cv::Mat(vecK);
-
-        cv::Mat matX, matY;
-        meshgrid<float> ( 1.f, 1.f, ToFloat ( stCmd.matBaseWrappedAlpha.cols ), 1.f, 1.f, ToFloat ( stCmd.matBaseWrappedAlpha.rows ), matX, matY );
-        stCmd.matOrder3CurveSurface = calcOrder3Surface ( matX, matY, stCmd.matIntegratedK);
-    }
+    cv::Mat matX, matY;
+    meshgrid<float> ( 1.f, 1.f, ToFloat ( stCmd.matBaseWrappedAlpha.cols ), 1.f, 1.f, ToFloat ( stCmd.matBaseWrappedAlpha.rows ), matX, matY );
+    stCmd.matOrder3CurveSurface = calcOrder3Surface ( matX, matY, stCmd.matIntegratedK );
 
     PR_FastCalc3DHeight ( &stCmd, &stRpy );
     std::cout << "PR_FastCalc3DHeight status " << ToInt32( stRpy.enStatus ) << std::endl;
