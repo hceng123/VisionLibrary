@@ -106,7 +106,7 @@ static cv::Mat _drawHeightGrid(const cv::Mat &matHeight, int nGridRow, int nGrid
 }
 
 //static std::string gstrCalibResultFile("./data/capture/CalibPP.yml");
-static std::string gstrWorkingFolder("./data/New3DCalibMethod/");
+static std::string gstrWorkingFolder("./data/New3DCalibMethod_1/");
 static std::string gstrCalibResultFile = gstrWorkingFolder + "CalibPP.yml";
 void TestCalib3dBase() {
     const int IMAGE_COUNT = 12;
@@ -118,6 +118,10 @@ void TestCalib3dBase() {
         _snprintf( chArrFileName, sizeof (chArrFileName), "%02d.bmp", i );
         std::string strImageFile = strFolder + chArrFileName;
         cv::Mat mat = cv::imread ( strImageFile, cv::IMREAD_GRAYSCALE );
+        if ( mat.empty() ) {
+            std::cout << "Failed to read image " << strImageFile << std::endl;
+            return;
+        }
         stCmd.vecInputImgs.push_back ( mat );
     }
     stCmd.bEnableGaussianFilter = true;
