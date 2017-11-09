@@ -106,11 +106,11 @@ static cv::Mat _drawHeightGrid(const cv::Mat &matHeight, int nGridRow, int nGrid
 }
 
 //static std::string gstrCalibResultFile("./data/capture/CalibPP.yml");
-static std::string gstrWorkingFolder("./data/HaoYu_20171017/");
+static std::string gstrWorkingFolder("./data/New3DCalibMethod_pi/");
 static std::string gstrCalibResultFile = gstrWorkingFolder + "CalibPP.yml";
 void TestCalib3dBase() {
     const int IMAGE_COUNT = 8;
-    std::string strFolder = gstrWorkingFolder + "1017000816_base/";
+    std::string strFolder = gstrWorkingFolder + "0920234214_base/";
     PR_CALIB_3D_BASE_CMD stCmd;
     PR_CALIB_3D_BASE_RPY stRpy;
     for ( int i = 1; i <= IMAGE_COUNT; ++ i ) {
@@ -141,7 +141,7 @@ void TestCalib3dBase() {
 
 void TestCalib3DHeight() {
     const int IMAGE_COUNT = 8;
-    std::string strFolder = gstrWorkingFolder + "0920235040_lefttop/";
+    std::string strFolder = gstrWorkingFolder + "0920235405_negitive/";
     PR_CALIB_3D_HEIGHT_CMD stCmd;
     PR_CALIB_3D_HEIGHT_RPY stRpy;
     for ( int i = 1; i <= IMAGE_COUNT; ++ i ) {
@@ -153,10 +153,10 @@ void TestCalib3DHeight() {
     }
     stCmd.bEnableGaussianFilter = true;
     stCmd.bReverseSeq = true;
-    stCmd.bReverseHeight = false;
+    stCmd.bReverseHeight = true;
     stCmd.fMinIntensityDiff = 3;
     stCmd.fMinAvgIntensity = 1.5;
-    stCmd.nBlockStepCount = 5;
+    stCmd.nBlockStepCount = 3;
     stCmd.fBlockStepHeight = 1.f;
     stCmd.nResultImgGridRow = 10;
     stCmd.nResultImgGridCol = 10;
