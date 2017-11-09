@@ -5783,20 +5783,8 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
         }
     }
 
-    if ( pstCmd->matThickToThinStripeK.empty() ) {
+    if ( pstCmd->matThickToThinK.empty() ) {
         WriteLog("matThickToThinStripeK is empty.");
-        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
-        return pstRpy->enStatus;
-    }
-
-    if ( pstCmd->matBaseSurface.empty() ) {
-        WriteLog("matBaseSurface is empty.");
-        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
-        return pstRpy->enStatus;
-    }
-
-    if ( pstCmd->matBaseSurface.size() != pstCmd->vecInputImgs[0].size() ) {
-        WriteLog("The size of matBaseSurface is not match with the input image size..");
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return pstRpy->enStatus;
     }
@@ -5904,20 +5892,26 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
         }
     }
 
-    if ( pstCmd->matThickToThinStripeK.empty() ) {
-        WriteLog("The matThickToThinStripeK is empty.");
+    if ( pstCmd->matThickToThinK.empty() ) {
+        WriteLog("The matThickToThinK is empty.");
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return pstRpy->enStatus;
     }
 
-    if ( pstCmd->matBaseSurface.empty() ) {
-        WriteLog("matBaseSurface is empty.");
+    if ( pstCmd->matBaseWrappedAlpha.empty() ) {
+        WriteLog("matBaseWrappedAlpha is empty.");
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return pstRpy->enStatus;
     }
 
-    if ( pstCmd->matBaseSurface.size() != pstCmd->vecInputImgs[0].size() ) {
-        WriteLog("The size of matBaseSurface is not match with the input image size..");
+    if ( pstCmd->matBaseWrappedAlpha.size() != pstCmd->vecInputImgs[0].size() ) {
+        WriteLog("The size of matBaseWrappedAlpha is not match with the input image size..");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    if ( pstCmd->matBaseWrappedBeta.empty() ) {
+        WriteLog("matBaseWrappedBeta is empty.");
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return pstRpy->enStatus;
     }

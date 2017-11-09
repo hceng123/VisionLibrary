@@ -683,7 +683,8 @@ private:
     const String _strKeyRemoveHarmonicWaveK = "RemoveHarmonicWaveK";
 
     const String _strKeyStatus              = "Status";
-    const String _strKeyThickToThinStripeK  = "ThickToThinStripeK";
+    const String _strKeyThkToThinK          = "ThickToThinK";
+    const String _strKeyThkToThinnestK      = "ThickToThinnestK";
     const String _strKeyBaseSurfaceParam    = "BaseSurfaceParam";
     const String _strKeyBaseStartAvgPhase   = "BaseStartAvgPhase";
 };
@@ -706,10 +707,9 @@ private:
     const String _strKeyReverseHeight       = "ReverseHeight";
     const String _strKeyRemoveHarmonicWaveK = "RemoveHarmonicWaveK";
     const String _strKeyMinIntensityDiff    = "MinIntensityDiff";
-    const String _strKeyMinAvgIntensity     = "MinAvgIntensity";
-    const String _strKeyThickToThinStripeK  = "ThickToThinStripeK";
-    const String _strKeyBaseSurface         = "BaseSurface";
-    const String _strKeyBaseStartAvgPhase   = "BaseStartAvgPhase";
+    const String _strKeyMinAmplitude        = "MinAmplitude";
+    const String _strKeyThickToThinK        = "ThickToThinK";
+    const String _strKeyThickToThinnestK    = "ThickToThinnestK";
     const String _strKeyBlockStepCount      = "BlockStepCount";
     const String _strKeyBlockStepHeight     = "BlockStepHeight";
     const String _strKeyResultImgGridRow    = "ResultImgGridRow";
@@ -757,11 +757,9 @@ private:
     const String _strKeyEnableGF            = "EnableGaussianFilter";
     const String _strKeyReverseSeq          = "ReverseSeq";
     const String _strKeyRemoveHarmonicWaveK = "RemoveHarmonicWaveK";
-    const String _strKeyMinIntensityDiff    = "MinIntensityDiff";
-    const String _strKeyMinAvgIntensity     = "MinAvgIntensity";
-    const String _strKeyThickToThinStripeK  = "ThickToThinStripeK";
-    const String _strKeyBaseSurface         = "BaseSurface";
-    const String _strKeyBaseStartAvgPhase   = "BaseStartAvgPhase";
+    const String _strKeyMinAmplitude        = "MinAmplitude";
+    const String _strKeyThickToThinK        = "ThickToThinK";
+    const String _strKeyThickToThinnestK    = "ThickToThinnestK";
 
     const String _strKeyStatus              = "Status";
 };

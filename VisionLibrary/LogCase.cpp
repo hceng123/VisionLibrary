@@ -1958,9 +1958,8 @@ VisionStatus LogCaseCalib3DBase::WriteRpy(const PR_CALIB_3D_BASE_RPY *const pstR
     if ( ! fs.isOpened() )
         return VisionStatus::OPEN_FILE_FAIL;
 
-    cv::write ( fs, _strKeyThickToThinStripeK, pstRpy->matThickToThinStripeK );
-    cv::write ( fs, _strKeyBaseSurfaceParam,   pstRpy->matBaseSurfaceParam );
-    cv::write ( fs, _strKeyBaseStartAvgPhase,  pstRpy->fBaseStartAvgPhase );
+    cv::write ( fs, _strKeyThkToThinK,     pstRpy->matThickToThinK );
+    cv::write ( fs, _strKeyThkToThinnestK, pstRpy->matThickToThinnestK );
     fs.release();
 
     _zip();
@@ -2014,8 +2013,7 @@ VisionStatus LogCaseCalib3DHeight::WriteCmd(const PR_CALIB_3D_HEIGHT_CMD *const 
     ini.SetBoolValue(_CMD_SECTION.c_str(), _strKeyReverseSeq.c_str(), pstCmd->bReverseSeq );
     ini.SetBoolValue(_CMD_SECTION.c_str(), _strKeyReverseHeight.c_str(), pstCmd->bReverseHeight );
     ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyRemoveHarmonicWaveK.c_str(), pstCmd->fRemoveHarmonicWaveK );
-    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyMinIntensityDiff.c_str(), pstCmd->fMinIntensityDiff );
-    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyMinAvgIntensity.c_str(), pstCmd->fMinAvgIntensity );
+    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyMinAmplitude.c_str(), pstCmd->fMinAmplitude );
     ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyBlockStepCount.c_str(), pstCmd->nBlockStepCount);
     ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyBlockStepHeight.c_str(), pstCmd->fBlockStepHeight);
     ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyResultImgGridRow.c_str(), pstCmd->nResultImgGridRow );
@@ -2026,9 +2024,7 @@ VisionStatus LogCaseCalib3DHeight::WriteCmd(const PR_CALIB_3D_HEIGHT_CMD *const 
     if ( ! fs.isOpened() )
         return VisionStatus::OPEN_FILE_FAIL;
 
-    cv::write ( fs, _strKeyThickToThinStripeK, pstCmd->matThickToThinStripeK );
-    cv::write ( fs, _strKeyBaseSurface,        pstCmd->matBaseSurface );
-    cv::write ( fs, _strKeyBaseStartAvgPhase,  pstCmd->fBaseStartAvgPhase );
+    cv::write ( fs, _strKeyThickToThinK,       pstCmd->matThickToThinK );
     fs.release();
 
     int index = 0;
@@ -2061,21 +2057,15 @@ VisionStatus LogCaseCalib3DHeight::RunLogCase() {
     stCmd.bReverseSeq = ini.GetBoolValue ( _CMD_SECTION.c_str(), _strKeyReverseSeq.c_str(), false );
     stCmd.bReverseHeight = ini.GetBoolValue(_CMD_SECTION.c_str(), _strKeyReverseHeight.c_str(), false );
     stCmd.fRemoveHarmonicWaveK = ToFloat ( ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyRemoveHarmonicWaveK.c_str(), 0.f ) );
-    stCmd.fMinIntensityDiff = ToFloat ( ini.GetDoubleValue ( _CMD_SECTION.c_str(), _strKeyMinIntensityDiff.c_str(), 3. ) );
-    stCmd.fMinAvgIntensity = ToFloat ( ini.GetDoubleValue ( _CMD_SECTION.c_str(), _strKeyMinAvgIntensity.c_str(), 3. ) );
+    stCmd.fMinAmplitude = ToFloat ( ini.GetDoubleValue ( _CMD_SECTION.c_str(), _strKeyMinAmplitude.c_str(), 1.5 ) );
     stCmd.nResultImgGridRow = ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyResultImgGridRow.c_str(), 8 );
     stCmd.nResultImgGridCol = ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyResultImgGridCol.c_str(), 8 );
 
     cv::FileStorage fs ( _strLogCasePath + _strInputYmlFileName, cv::FileStorage::READ );
-    cv::FileNode fileNode = fs[_strKeyThickToThinStripeK];
-    cv::read ( fileNode, stCmd.matThickToThinStripeK, cv::Mat() );
-
-    fileNode = fs[_strKeyBaseSurface];
-    cv::read ( fileNode, stCmd.matBaseSurface, cv::Mat() );
-
-    fileNode = fs[_strKeyBaseStartAvgPhase];
-    cv::read ( fileNode, stCmd.fBaseStartAvgPhase, 0.f );
-
+    cv::FileNode fileNode = fs[_strKeyThickToThinK];
+    cv::read ( fileNode, stCmd.matThickToThinK, cv::Mat() );
+    fileNode = fs[_strKeyThickToThinnestK];
+    cv::read ( fileNode, stCmd.matThickToThinnestK, cv::Mat() );
     fs.release();
 
     int index = 0;
@@ -2190,17 +2180,15 @@ VisionStatus LogCaseCalc3DHeight::WriteCmd(const PR_CALC_3D_HEIGHT_CMD *const ps
     ini.SetBoolValue(_CMD_SECTION.c_str(), _strKeyEnableGF.c_str(), pstCmd->bEnableGaussianFilter );
     ini.SetBoolValue(_CMD_SECTION.c_str(), _strKeyReverseSeq.c_str(), pstCmd->bReverseSeq );
     ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyRemoveHarmonicWaveK.c_str(), pstCmd->fRemoveHarmonicWaveK );
-    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyMinIntensityDiff.c_str(), pstCmd->fMinIntensityDiff );
-    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyMinAvgIntensity.c_str(), pstCmd->fMinAvgIntensity );
+    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyMinAmplitude.c_str(), pstCmd->fMinAmplitude );
     ini.SaveFile(cmdRpyFilePath.c_str());
 
     cv::FileStorage fs( _strLogCasePath + _strInputYmlFileName, cv::FileStorage::WRITE);
     if ( ! fs.isOpened() )
         return VisionStatus::OPEN_FILE_FAIL;
 
-    cv::write ( fs, _strKeyThickToThinStripeK, pstCmd->matThickToThinStripeK );
-    cv::write ( fs, _strKeyBaseSurface,        pstCmd->matBaseSurface );
-    cv::write ( fs, _strKeyBaseStartAvgPhase,  pstCmd->fBaseStartAvgPhase );
+    cv::write ( fs, _strKeyThickToThinK,     pstCmd->matThickToThinK );
+    cv::write ( fs, _strKeyThickToThinnestK, pstCmd->matThickToThinnestK );
     fs.release();
 
     int index = 0;
@@ -2232,18 +2220,13 @@ VisionStatus LogCaseCalc3DHeight::RunLogCase() {
     stCmd.bEnableGaussianFilter = ini.GetBoolValue ( _CMD_SECTION.c_str(), _strKeyEnableGF.c_str(), false );
     stCmd.bReverseSeq = ini.GetBoolValue ( _CMD_SECTION.c_str(), _strKeyReverseSeq.c_str(), false );
     stCmd.fRemoveHarmonicWaveK = ToFloat ( ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyRemoveHarmonicWaveK.c_str(), 0.f ) );
-    stCmd.fMinIntensityDiff = ToFloat ( ini.GetDoubleValue ( _CMD_SECTION.c_str(), _strKeyMinIntensityDiff.c_str(), 3. ) );
-    stCmd.fMinAvgIntensity = ToFloat ( ini.GetDoubleValue ( _CMD_SECTION.c_str(), _strKeyMinAvgIntensity.c_str(), 3. ) );
+    stCmd.fMinAmplitude = ToFloat ( ini.GetDoubleValue ( _CMD_SECTION.c_str(), _strKeyMinAmplitude.c_str(), 1.5 ) );
 
     cv::FileStorage fs ( _strLogCasePath + _strInputYmlFileName, cv::FileStorage::READ );
-    cv::FileNode fileNode = fs[_strKeyThickToThinStripeK];
-    cv::read ( fileNode, stCmd.matThickToThinStripeK, cv::Mat() );
-
-    fileNode = fs[_strKeyBaseSurface];
-    cv::read ( fileNode, stCmd.matBaseSurface, cv::Mat() );
-
-    fileNode = fs[_strKeyBaseStartAvgPhase];
-    cv::read ( fileNode, stCmd.fBaseStartAvgPhase, 0.f );
+    cv::FileNode fileNode = fs[_strKeyThickToThinK];
+    cv::read ( fileNode, stCmd.matThickToThinK, cv::Mat() );
+    fileNode = fs[_strKeyThickToThinnestK];
+    cv::read ( fileNode, stCmd.matThickToThinnestK, cv::Mat() );
 
     fs.release();
 
