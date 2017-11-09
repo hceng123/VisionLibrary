@@ -21,11 +21,13 @@ void TestCalc3DHeight();
 void TestCalib3DHeight_01();
 void TestCalib3DHeight_02();
 void TestCalib3DHeight_03();
-void TestComb3DCalib();
+void TestIntegrate3DCalib();
+void TestCalc3DHeight_With_IntegrateCalibParam();
+
 void TestCalcMTF();
 void TestCalcPD();
 void TestCalcCameraMTF();
-void TestIntegrate3DCalib();
+
 void TestCalc3DHeightNew();
 void TestFastCalc3DHeight();
 void TestIntegrate3DCalibHaoYu();

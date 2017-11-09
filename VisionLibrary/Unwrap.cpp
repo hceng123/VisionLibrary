@@ -507,7 +507,7 @@ static inline cv::Mat calcOrder5BezierCoeff ( const cv::Mat &matU ) {
 }
 
 /*static*/ void Unwrap::calc3DHeight( const PR_CALC_3D_HEIGHT_CMD *const pstCmd, PR_CALC_3D_HEIGHT_RPY *const pstRpy) {
-   CStopWatch stopWatch;
+    CStopWatch stopWatch;
     std::vector<cv::Mat> vecConvertedImgs;
     for ( auto &mat : pstCmd->vecInputImgs ) {
         cv::Mat matConvert = mat;
@@ -573,11 +573,16 @@ static inline cv::Mat calcOrder5BezierCoeff ( const cv::Mat &matU ) {
             matGamma.at<float> ( i ) = vecVecAtan2Table[x + PR_MAX_GRAY_LEVEL][y + PR_MAX_GRAY_LEVEL];
         }
         matGamma = matGamma - pstCmd->matBaseWrappedGamma;
-    }    
+    }
     
     matAlpha = matAlpha - pstCmd->matBaseWrappedAlpha;
     matBeta  = matBeta  - pstCmd->matBaseWrappedBeta;
     TimeLog::GetInstance ()->addTimeLog ( "2 substract take. ", stopWatch.Span () );
+
+#ifdef _DEBUG
+    auto vecVecAlpha = CalcUtils::matToVector<DATA_TYPE>(matAlpha);
+    auto vecVecBeta  = CalcUtils::matToVector<DATA_TYPE>(matBeta);
+#endif
 
     _phaseWrapBuffer ( matAlpha, matBuffer1 );
     TimeLog::GetInstance()->addTimeLog( "_phaseWrapBuffer.", stopWatch.Span() );
@@ -588,8 +593,8 @@ static inline cv::Mat calcOrder5BezierCoeff ( const cv::Mat &matU ) {
     _phaseWrapByRefer ( matBeta, matBuffer1 );
     TimeLog::GetInstance()->addTimeLog( "_phaseWrapByRefer.", stopWatch.Span() );
 
-    _phaseCorrection ( matBeta, matAvgUnderTolIndex, 25, 2 );
-    TimeLog::GetInstance()->addTimeLog( "_phaseCorrection.", stopWatch.Span() );
+    //_phaseCorrection ( matBeta, matAvgUnderTolIndex, 2, 2 );
+    //TimeLog::GetInstance()->addTimeLog( "_phaseCorrection.", stopWatch.Span() );
 
     if ( pstCmd->bUseThinnestPattern ) {
         auto k1 = pstCmd->matThickToThinK.at<DATA_TYPE>(0);
@@ -606,6 +611,8 @@ static inline cv::Mat calcOrder5BezierCoeff ( const cv::Mat &matU ) {
 
     if ( ! pstCmd->matOrder3CurveSurface.empty() && ! pstCmd->matIntegratedK.empty() )
         pstRpy->matHeight = _calcHeightFromPhaseBuffer ( pstRpy->matPhase, pstCmd->matOrder3CurveSurface, pstCmd->matIntegratedK, matBuffer1, matBuffer2 );
+    else if ( ! pstCmd->matPhaseToHeightK.empty() )
+        pstRpy->matHeight = pstRpy->matPhase;
     else
         pstRpy->matHeight = pstRpy->matPhase;
 
@@ -1176,8 +1183,9 @@ static inline cv::Mat calcOrder5BezierCoeff ( const cv::Mat &matU ) {
     stCalcCmd.matBaseWrappedGamma = pstCmd->matBaseWrappedGamma;
     calc3DHeight ( &stCalcCmd, &stCalcRpy );
     cv::Mat matPhase = stCalcRpy.matPhase;
+    cv::medianBlur ( matPhase, matPhase, 5 );
     cv::Mat matTmpPhase = matPhase.clone();
-    pstRpy->matPhase = stCalcRpy.matPhase.clone();
+    pstRpy->matPhase = matPhase.clone();
     int ROWS = matPhase.rows;
     int COLS = matPhase.cols;
     cv::Mat matST = cv::getStructuringElement ( cv::MORPH_RECT, cv::Size ( ERODE_WIN_SIZE, ERODE_WIN_SIZE ) );
@@ -2127,7 +2135,7 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
         for ( int kk = 0; kk < 2; ++ kk ) {
             std::vector<int> vecJumpCol, vecJumpSpan, vecJumpIdxNeedToHandle;
             vecJumpCol.reserve ( 20 );
-            for( int col = 0; col < COLS; ++col ) {
+            for( int col = 0; col < COLS; ++ col ) {
                 if( ptrSignOfRow[col] != 0 )
                     vecJumpCol.push_back ( col );
             }
