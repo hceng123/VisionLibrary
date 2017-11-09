@@ -611,9 +611,12 @@ static inline cv::Mat calcOrder5BezierCoeff ( const cv::Mat &matU ) {
 
     if ( ! pstCmd->matOrder3CurveSurface.empty() && ! pstCmd->matIntegratedK.empty() )
         pstRpy->matHeight = _calcHeightFromPhaseBuffer ( pstRpy->matPhase, pstCmd->matOrder3CurveSurface, pstCmd->matIntegratedK, matBuffer1, matBuffer2 );
-    else if ( ! pstCmd->matPhaseToHeightK.empty() )
-        pstRpy->matHeight = pstRpy->matPhase;
-    else
+    else if ( ! pstCmd->matPhaseToHeightK.empty() ) {
+        cv::Mat matX, matY;
+        CalcUtils::meshgrid<DATA_TYPE> ( 1.f, 1.f, ToFloat ( pstRpy->matPhase.cols ), 1.f, 1.f, ToFloat ( pstRpy->matPhase.rows ), matX, matY );
+        cv::Mat matRatio = pstCmd->matPhaseToHeightK.at<DATA_TYPE>(0, 0) * matX + pstCmd->matPhaseToHeightK.at<DATA_TYPE>(1, 0) * matY + pstCmd->matPhaseToHeightK.at<DATA_TYPE>(2, 0);
+        cv::divide ( pstRpy->matPhase, matRatio, pstRpy->matHeight );
+    }else
         pstRpy->matHeight = pstRpy->matPhase;
 
     TimeLog::GetInstance()->addTimeLog( "_calcHeightFromPhase.", stopWatch.Span() );

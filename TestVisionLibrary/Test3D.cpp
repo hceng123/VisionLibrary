@@ -446,6 +446,52 @@ void TestIntegrate3DCalib() {
     fsCalibResultData.release();
 }
 
+void TestCalc3DHeight_With_NormalCalibParam() {
+    const int IMAGE_COUNT = 8;
+    std::string strFolder = gstrWorkingFolder + "1017001229_negative/";
+    //std::string strFolder = "./data/0913212217_Unwrap_Not_Finish/";
+    PR_CALC_3D_HEIGHT_CMD stCmd;
+    PR_CALC_3D_HEIGHT_RPY stRpy;
+    for ( int i = 1; i <= IMAGE_COUNT; ++ i ) {
+        char chArrFileName[100];
+        _snprintf( chArrFileName, sizeof (chArrFileName), "%02d.bmp", i );
+        std::string strImageFile = strFolder + chArrFileName;
+        cv::Mat mat = cv::imread ( strImageFile, cv::IMREAD_GRAYSCALE );
+        stCmd.vecInputImgs.push_back ( mat );
+    }
+    stCmd.bEnableGaussianFilter = true;
+    stCmd.bReverseSeq = true;
+    stCmd.fMinAmplitude = 1.5;
+
+    cv::Mat matBaseSurfaceParam;
+
+    std::string strResultMatPath = gstrCalibResultFile;
+    cv::FileStorage fs ( strResultMatPath, cv::FileStorage::READ );
+    cv::FileNode fileNode = fs["K1"];
+    cv::read ( fileNode, stCmd.matThickToThinK, cv::Mat() );
+    fileNode = fs["K2"];
+    cv::read ( fileNode, stCmd.matThickToThinnestK, cv::Mat() );
+    fileNode = fs["BaseWrappedAlpha"];
+    cv::read ( fileNode, stCmd.matBaseWrappedAlpha, cv::Mat() );
+    fileNode = fs["BaseWrappedBeta"];
+    cv::read ( fileNode, stCmd.matBaseWrappedBeta, cv::Mat() );
+    fileNode = fs["BaseWrappedGamma"];
+    cv::read ( fileNode, stCmd.matBaseWrappedGamma, cv::Mat() );
+    fileNode = fs["PhaseToHeightK"];
+    cv::read ( fileNode, stCmd.matPhaseToHeightK, cv::Mat() );
+    fs.release();
+
+    PR_Calc3DHeight ( &stCmd, &stRpy );
+    std::cout << "PR_Calc3DHeight status " << ToInt32( stRpy.enStatus ) << std::endl;
+    if ( VisionStatus::OK != stRpy.enStatus )
+        return;
+
+    cv::Mat matHeightResultImg = _drawHeightGrid ( stRpy.matHeight, 10, 10 );
+    cv::imwrite ( gstrWorkingFolder + "PR_Calc3DHeight_HeightGridImg_NormalalibParam.png", matHeightResultImg );
+    cv::Mat matPhaseResultImg = _drawHeightGrid ( stRpy.matPhase, 9, 9 );
+    cv::imwrite ( gstrWorkingFolder + "PR_Calc3DHeight_PhaseGridImg_NormalCalibParam.png", matPhaseResultImg );
+}
+
 void TestCalc3DHeight_With_IntegrateCalibParam() {
     const int IMAGE_COUNT = 8;
     std::string strFolder = gstrWorkingFolder + "1017001107_RB/";
