@@ -292,14 +292,22 @@ inline std::vector<size_t> sort_indexes(const std::vector<T> &v) {
 
     if ( pstCmd->bEnableGaussianFilter ) {
         //Filtering can reduce residues at the expense of a loss of spatial resolution.
-        for ( auto &mat : vecConvertedImgs )
-            cv::GaussianBlur ( mat, mat, cv::Size(GUASSIAN_FILTER_SIZE, GUASSIAN_FILTER_SIZE), GAUSSIAN_FILTER_SIGMA, GAUSSIAN_FILTER_SIGMA, cv::BorderTypes::BORDER_REPLICATE );
+        for ( int i = 0; i < PR_GROUP_TEXTURE_IMG_COUNT; ++ i )
+            cv::GaussianBlur ( vecConvertedImgs[i], vecConvertedImgs[i], cv::Size(GUASSIAN_FILTER_SIZE, GUASSIAN_FILTER_SIZE), GAUSSIAN_FILTER_SIGMA, GAUSSIAN_FILTER_SIGMA, cv::BorderTypes::BORDER_REPLICATE );
     }
+
+    for ( int i = 2 * PR_GROUP_TEXTURE_IMG_COUNT; i < 3 * PR_GROUP_TEXTURE_IMG_COUNT; ++ i ) {
+        cv::Mat matBlur;
+        cv::GaussianBlur ( vecConvertedImgs[i], matBlur, cv::Size(GUASSIAN_FILTER_SIZE, GUASSIAN_FILTER_SIZE), GAUSSIAN_FILTER_SIGMA, GAUSSIAN_FILTER_SIGMA, cv::BorderTypes::BORDER_REPLICATE );
+        vecConvertedImgs.push_back ( matBlur );
+    }
+    assert ( vecConvertedImgs.size() == 4 * PR_GROUP_TEXTURE_IMG_COUNT );
 
     if ( pstCmd->bReverseSeq ) {
         std::swap ( vecConvertedImgs[1], vecConvertedImgs[3] );
         std::swap ( vecConvertedImgs[5], vecConvertedImgs[7] );
         std::swap ( vecConvertedImgs[9], vecConvertedImgs[11] );
+        std::swap ( vecConvertedImgs[13], vecConvertedImgs[15] );
     }
     cv::Mat mat00 = vecConvertedImgs[2] - vecConvertedImgs[0];
     cv::Mat mat01 = vecConvertedImgs[3] - vecConvertedImgs[1];
@@ -310,10 +318,14 @@ inline std::vector<size_t> sort_indexes(const std::vector<T> &v) {
     cv::Mat mat20 = vecConvertedImgs[10] - vecConvertedImgs[8];
     cv::Mat mat21 = vecConvertedImgs[11] - vecConvertedImgs[9];
 
-    cv::Mat matAlpha, matBeta, matGamma;
+    cv::Mat mat30 = vecConvertedImgs[14] - vecConvertedImgs[12];
+    cv::Mat mat31 = vecConvertedImgs[15] - vecConvertedImgs[13];
+
+    cv::Mat matAlpha, matBeta, matGamma, matGammaRef;
     cv::phase ( -mat00, mat01, matAlpha );
     cv::phase ( -mat10, mat11, matBeta );
     cv::phase ( -mat20, mat21, matGamma );
+    cv::phase ( -mat30, mat31, matGammaRef );
 
     //The opencv cv::phase function return result is 0~2*PI, but matlab is -PI~PI, so here need to do a conversion.
     cv::Mat matOverPi;
@@ -323,25 +335,30 @@ inline std::vector<size_t> sort_indexes(const std::vector<T> &v) {
     cv::subtract ( matBeta, cv::Scalar::all ( 2.f * CV_PI ), matBeta, matOverPi );
     cv::compare ( matGamma, cv::Scalar::all ( CV_PI ), matOverPi, cv::CmpTypes::CMP_GT );
     cv::subtract ( matGamma, cv::Scalar::all ( 2.f * CV_PI ), matGamma, matOverPi );
+    cv::compare ( matGammaRef, cv::Scalar::all ( CV_PI ), matOverPi, cv::CmpTypes::CMP_GT );
+    cv::subtract ( matGammaRef, cv::Scalar::all ( 2.f * CV_PI ), matGammaRef, matOverPi );
 
     matAlpha = matAlpha / CV_PI;
     matBeta  = matBeta  / CV_PI;
     matGamma = matGamma / CV_PI;
+    matGammaRef = matGammaRef / CV_PI;
     matAlpha = _phaseUnwrapSurface ( matAlpha );
     matBeta  = _phaseUnwrapSurface ( matBeta );
-    matGamma = _phaseUnwrapSurface ( matGamma );
+    matGammaRef = _phaseUnwrapSurface ( matGammaRef );
+    matGamma = _phaseUnwrapSurfaceByRefer ( matGamma, matGammaRef, cv::Mat() );
 
     const int TOTAL = ToInt32 ( matAlpha.total() );
 
     if ( fabs ( pstCmd->fRemoveHarmonicWaveK ) > 1e-5 )
         matAlpha = matAlpha + CalcUtils::sin<DATA_TYPE>(4.f * matAlpha) * pstCmd->fRemoveHarmonicWaveK;
 
-    cv::Mat matAlphaReshape = matAlpha.reshape ( 1, 1 );
-    cv::Mat matYY = matBeta.reshape ( 1, TOTAL );
+    cv::Mat matAlphaReshape = matAlpha.reshape ( 1, 1 );    
     cv::Mat matXX = matAlphaReshape.clone();
     cv::Mat matOne = cv::Mat::ones(1, matAlpha.rows * matAlpha.cols, CV_32FC1);
     matXX.push_back ( matOne );
     cv::transpose ( matXX, matXX );
+
+    cv::Mat matYY = matBeta.reshape ( 1, TOTAL );
     cv::solve ( matXX, matYY, pstRpy->matThickToThinK, cv::DecompTypes::DECOMP_SVD );
 #ifdef _DEBUG
     auto vecVecAlpha = CalcUtils::matToVector<DATA_TYPE>(matAlpha);
@@ -349,17 +366,6 @@ inline std::vector<size_t> sort_indexes(const std::vector<T> &v) {
     auto vecVecMatK  = CalcUtils::matToVector<DATA_TYPE>(pstRpy->matThickToThinK);
 #endif
     
-    matYY = matGamma.reshape ( 1, TOTAL );
-    cv::solve ( matXX, matYY, pstRpy->matThickToThinnestK, cv::DecompTypes::DECOMP_SVD );
-
-#ifdef _DEBUG
-    vecVecMatK  = CalcUtils::matToVector<DATA_TYPE>(pstRpy->matThickToThinnestK);
-#endif
-
-    cv::Mat matGammaRef = matAlpha * pstRpy->matThickToThinnestK.at<DATA_TYPE>(0) + pstRpy->matThickToThinnestK.at<DATA_TYPE>(1);
-    matGamma = _phaseUnwrapSurfaceByRefer ( matGamma, matGammaRef, cv::Mat() );
-
-    //After unwrap by reference, need to calculate the factor again.
     matYY = matGamma.reshape ( 1, TOTAL );
     cv::solve ( matXX, matYY, pstRpy->matThickToThinnestK, cv::DecompTypes::DECOMP_SVD );
 
@@ -593,15 +599,22 @@ static inline cv::Mat calcOrder5BezierCoeff ( const cv::Mat &matU ) {
     _phaseWrapByRefer ( matBeta, matBuffer1 );
     TimeLog::GetInstance()->addTimeLog( "_phaseWrapByRefer.", stopWatch.Span() );
 
-    //_phaseCorrection ( matBeta, matAvgUnderTolIndex, 2, 2 );
-    //TimeLog::GetInstance()->addTimeLog( "_phaseCorrection.", stopWatch.Span() );
+    if ( pstCmd->removeBetaJumpSpanX > 0 || pstCmd->removeBetaJumpSpanY > 0 ) {
+        _phaseCorrection ( matBeta, matAvgUnderTolIndex, pstCmd->removeBetaJumpSpanX, pstCmd->removeBetaJumpSpanY );
+        TimeLog::GetInstance()->addTimeLog( "_phaseCorrection for beta.", stopWatch.Span() );
+    }
 
     if ( pstCmd->bUseThinnestPattern ) {
         auto k1 = pstCmd->matThickToThinK.at<DATA_TYPE>(0);
         auto k2 = pstCmd->matThickToThinnestK.at<DATA_TYPE>(0);
         matBuffer1 = matBeta * k2 / k1;
         _phaseWrapByRefer ( matGamma, matBuffer1 );
-        _phaseCorrection ( matBeta, matAvgUnderTolIndex, 23, 4 );
+
+        if ( pstCmd->removeGammaJumpSpanX > 0 || pstCmd->removeGammaJumpSpanY > 0 ) {
+            _phaseCorrection ( matBeta, matAvgUnderTolIndex, pstCmd->removeGammaJumpSpanX, pstCmd->removeGammaJumpSpanY );
+            TimeLog::GetInstance()->addTimeLog( "_phaseCorrection for gamma.", stopWatch.Span() );
+        }
+
         matGamma.setTo ( NAN, matAvgUnderTolIndex );
         pstRpy->matPhase = matGamma * k1 / k2;
     }else {
@@ -2044,7 +2057,9 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
         }
     }    
     if ( ! pstCmd->matTopSurfacePhase.empty() ) {
-        cv::Mat matNonNan = pstCmd->matTopSurfacePhase == pstCmd->matTopSurfacePhase;
+        cv::Mat matTopSurfacePhase = pstCmd->matTopSurfacePhase;
+        cv::medianBlur ( matTopSurfacePhase, matTopSurfacePhase, 5 );
+        cv::Mat matNonNan = matTopSurfacePhase == matTopSurfacePhase;
         VectorOfPoint vecEffectPoints;
         cv::findNonZero ( matNonNan, vecEffectPoints );
         vecXt.reserve ( vecXt.size() + vecEffectPoints.size() );
@@ -2054,7 +2069,7 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
         for (const auto &point : vecEffectPoints) {
             vecXt.push_back ( matX.at<DATA_TYPE> ( point ) );
             vecYt.push_back ( matY.at<DATA_TYPE> ( point ) );
-            vecPhase.push_back ( pstCmd->matTopSurfacePhase.at<DATA_TYPE> ( point ) );
+            vecPhase.push_back ( matTopSurfacePhase.at<DATA_TYPE> ( point ) );
             vecBP.push_back ( pstCmd->fTopSurfaceHeight );
         }        
     }

@@ -645,8 +645,8 @@ int _tmain(int argc, _TCHAR* argv[])
     //TestFastCalc3DHeight_1();
     //TestMerge3DHeight();
     //TestIntegrate3DCalib();
-    TestCalc3DHeight_With_NormalCalibParam();
-    //TestCalc3DHeight_With_IntegrateCalibParam();
+    //TestCalc3DHeight_With_NormalCalibParam();
+    TestCalc3DHeight_With_IntegrateCalibParam();
     //TestIntegrate3DCalibHaoYu();
     //TestCalc3DHeightNew();
 

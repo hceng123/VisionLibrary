@@ -5769,8 +5769,8 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
 /*static*/ VisionStatus VisionAlgorithm::calib3DHeight(const PR_CALIB_3D_HEIGHT_CMD *const pstCmd, PR_CALIB_3D_HEIGHT_RPY *const pstRpy, bool bReplay/* = false*/) {
     assert(pstCmd != nullptr && pstRpy != nullptr);
 
-    if ( pstCmd->vecInputImgs.size() != 8 ) {
-        WriteLog("The input image count is not 8.");
+    if ( pstCmd->vecInputImgs.size() < 8 ) {
+        WriteLog("The input image count is less than 8.");
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return pstRpy->enStatus;
     }
@@ -5787,6 +5787,44 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
         WriteLog("matThickToThinStripeK is empty.");
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return pstRpy->enStatus;
+    }
+
+    if ( pstCmd->matBaseWrappedAlpha.empty() ) {
+        WriteLog("matBaseWrappedAlpha is empty.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    if ( pstCmd->matBaseWrappedAlpha.size() != pstCmd->vecInputImgs[0].size() ) {
+        WriteLog("The size of matBaseWrappedAlpha is not match with the input image size..");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    if ( pstCmd->matBaseWrappedBeta.empty() ) {
+        WriteLog("matBaseWrappedBeta is empty.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    if ( pstCmd->bUseThinnestPattern ) {
+        if ( pstCmd->matBaseWrappedGamma.empty() ) {
+            WriteLog("matBaseWrappedGamma is empty.");
+            pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+            return pstRpy->enStatus;
+        }
+
+        if ( pstCmd->matThickToThinnestK.empty() ) {
+            WriteLog("matThickToThinnestK is empty.");
+            pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+            return pstRpy->enStatus;
+        }
+
+        if ( pstCmd->vecInputImgs.size() != 3 * PR_GROUP_TEXTURE_IMG_COUNT ) {
+            WriteLog("Please input 12 images if using the thinnest pattern.");
+            pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+            return pstRpy->enStatus;
+        }
     }
 
     if ( pstCmd->nBlockStepCount <= 0 || pstCmd->nBlockStepCount > PR_MAX_AUTO_THRESHOLD_COUNT ) {
@@ -5878,8 +5916,8 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
 /*static*/ VisionStatus VisionAlgorithm::calc3DHeight(const PR_CALC_3D_HEIGHT_CMD *const pstCmd, PR_CALC_3D_HEIGHT_RPY *const pstRpy, bool bReplay /*= false*/) {
     assert(pstCmd != nullptr && pstRpy != nullptr);
 
-    if ( pstCmd->vecInputImgs.size() != 8 ) {
-        WriteLog("The input image count is not 8.");
+    if ( pstCmd->vecInputImgs.size() < 8 ) {
+        WriteLog("The input image count is less than 8.");
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return pstRpy->enStatus;
     }
@@ -5916,6 +5954,26 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
         return pstRpy->enStatus;
     }
 
+    if ( pstCmd->bUseThinnestPattern ) {
+        if ( pstCmd->matBaseWrappedGamma.empty() ) {
+            WriteLog("matBaseWrappedGamma is empty.");
+            pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+            return pstRpy->enStatus;
+        }
+
+        if ( pstCmd->matThickToThinnestK.empty() ) {
+            WriteLog("matThickToThinnestK is empty.");
+            pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+            return pstRpy->enStatus;
+        }
+
+        if ( pstCmd->vecInputImgs.size() != 3 * PR_GROUP_TEXTURE_IMG_COUNT ) {
+            WriteLog("Please input 12 images if using the thinnest pattern.");
+            pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+            return pstRpy->enStatus;
+        }
+    }
+
     MARK_FUNCTION_START_TIME;
     SETUP_LOGCASE(LogCaseCalc3DHeight);
 
@@ -5930,8 +5988,8 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
 /*static*/ VisionStatus VisionAlgorithm::fastCalc3DHeight(const PR_FAST_CALC_3D_HEIGHT_CMD *const pstCmd, PR_FAST_CALC_3D_HEIGHT_RPY *pstRpy, bool bReplay /*= false*/) {
     assert(pstCmd != nullptr && pstRpy != nullptr);
 
-    if ( pstCmd->vecInputImgs.size() != 8 ) {
-        WriteLog("The input image count is not 8.");
+    if ( pstCmd->vecInputImgs.size() < 8 ) {
+        WriteLog("The input image count is less than 8.");
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return pstRpy->enStatus;
     }

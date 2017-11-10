@@ -70,7 +70,7 @@ void TestCalib3dBase() {
     std::cout << std::endl << "---------------------------------------------";
     std::cout << std::endl;
 
-    const int IMAGE_COUNT = 8;
+    const int IMAGE_COUNT = 12;
     std::string strFolder = "./data/0715184554_10ms_80_Plane1/";
     PR_CALIB_3D_BASE_CMD stCmd;
     PR_CALIB_3D_BASE_RPY stRpy;
@@ -85,20 +85,17 @@ void TestCalib3dBase() {
     stCmd.bReverseSeq = true;
     PR_Calib3DBase ( &stCmd, &stRpy );
     std::cout << "PR_Calib3DBase status " << ToInt32( stRpy.enStatus ) << std::endl;
-    std::cout << "ThickToThinStripeK: " << std::endl;
-    printfMat<float>(stRpy.matThickToThinStripeK);
-
-    std::cout << "BaseSurfaceParam: " << std::endl;
-    printfMat<float>(stRpy.matBaseSurfaceParam);
-    std::cout << std::fixed << std::setprecision(2) << "BaseStartAvgPhase: " << stRpy.fBaseStartAvgPhase << std::endl;
+    std::cout << "ThickToThinK: " << std::endl;
+    printfMat<float>(stRpy.matThickToThinK);
+    std::cout << "ThickToThinnestK: " << std::endl;
+    printfMat<float>(stRpy.matThickToThinnestK);
 
     std::string strResultMatPath = "./data/CalibPP.yml";
     cv::FileStorage fs(strResultMatPath, cv::FileStorage::WRITE);
     if ( ! fs.isOpened() )
         return;
-    cv::write ( fs, "K", stRpy.matThickToThinStripeK );
-    cv::write ( fs, "PPz", stRpy.matBaseSurfaceParam );
-    cv::write ( fs, "BaseStartAvgPhase", stRpy.fBaseStartAvgPhase );
+    cv::write ( fs, "K1", stRpy.matThickToThinK );
+    cv::write ( fs, "K2", stRpy.matThickToThinnestK );
     fs.release();
 }
 

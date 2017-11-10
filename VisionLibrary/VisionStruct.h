@@ -882,6 +882,10 @@ struct PR_CALIB_3D_HEIGHT_CMD {
         bUseThinnestPattern(false),
         fRemoveHarmonicWaveK(0.f),
         fMinAmplitude(1.5f),
+        removeBetaJumpSpanX(25),
+        removeBetaJumpSpanY(7),
+        removeGammaJumpSpanX(23),
+        removeGammaJumpSpanY(4),
         nBlockStepCount(4),
         fBlockStepHeight(1.f),
         nResultImgGridRow(8),
@@ -899,6 +903,10 @@ struct PR_CALIB_3D_HEIGHT_CMD {
     cv::Mat                 matBaseWrappedAlpha;    //The wrapped thick stripe phase.
     cv::Mat                 matBaseWrappedBeta;     //The wrapped thin stripe phase.
     cv::Mat                 matBaseWrappedGamma;    //The wrapped thin stripe phase.
+    int                     removeBetaJumpSpanX;    //The phase jump span in X direction under this value in beta phase(the thin pattern) will be removed.
+    int                     removeBetaJumpSpanY;    //The phase jump span in Y direction under this value in beta phase(the thin pattern) will be removed.
+    int                     removeGammaJumpSpanX;   //The phase jump span in X direction under this value in gamma phase(the thinnest pattern) will be removed.
+    int                     removeGammaJumpSpanY;   //The phase jump span in Y direction under this value in gamma phase(the thinnest pattern) will be removed.
     //Below is the calibration related parameters
     Int16                   nBlockStepCount;        //How many steps on the calibration block.
     float                   fBlockStepHeight;       //The height of each step, unit mm. So the total block height is nBlockStepCount x fBlockStepHeight.
@@ -970,7 +978,11 @@ struct PR_CALC_3D_HEIGHT_CMD {
         bReverseSeq(true),
         bUseThinnestPattern(false),
         fRemoveHarmonicWaveK(0.f),
-        fMinAmplitude(1.5f) {}
+        fMinAmplitude(1.5f),
+        removeBetaJumpSpanX(25),
+        removeBetaJumpSpanY(7),
+        removeGammaJumpSpanX(23),
+        removeGammaJumpSpanY(4) {}
     VectorOfMat             vecInputImgs;
     bool                    bEnableGaussianFilter;
     bool                    bReverseSeq;            //Change the image sequence.
@@ -983,6 +995,10 @@ struct PR_CALC_3D_HEIGHT_CMD {
     cv::Mat                 matBaseWrappedBeta;     //The wrapped thin stripe phase.
     cv::Mat                 matBaseWrappedGamma;    //The wrapped thin stripe phase.
     cv::Mat                 matPhaseToHeightK;      //The factor to convert phase to height. This is the single group of image calibration result.
+    int                     removeBetaJumpSpanX;    //The phase jump span in X direction under this value in beta phase(the thin pattern) will be removed.
+    int                     removeBetaJumpSpanY;    //The phase jump span in Y direction under this value in beta phase(the thin pattern) will be removed.
+    int                     removeGammaJumpSpanX;   //The phase jump span in X direction under this value in gamma phase(the thinnest pattern) will be removed.
+    int                     removeGammaJumpSpanY;   //The phase jump span in Y direction under this value in gamma phase(the thinnest pattern) will be removed.
     //Below 2 parameters are result of PR_Integrate3DCalib, they are calibrated from positive, negative and H = 5mm surface phase. If these 2 parameters are used, then matPhaseToHeightK will be ignored.
     cv::Mat                 matIntegratedK;          //The 12 parameters to calculate height. They are K1~K10 and P1, P2. H = (Phase + P1*Phase^2 + P2*Phase^3) ./ (K(1)*x1.^3 + K(2)*y1.^3 + K(3)*x1.^2.*y1 + K(4)*x1.*y1.^2 + K(5)*x1.^2 + K(6)*y1.^2 + K(7)*x1.*y1 + K(8)*x1 + K(9)*y1 + K(10))
     cv::Mat                 matOrder3CurveSurface;  //The regression 3 order curve surface to convert phase to height. It is calculated by K(1)*x1.^3 + K(2)*y1.^3 + K(3)*x1.^2.*y1 + K(4)*x1.*y1.^2 + K(5)*x1.^2 + K(6)*y1.^2 + K(7)*x1.*y1 + K(8)*x1 + K(9)*y1 + K(10)
