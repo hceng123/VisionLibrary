@@ -2012,6 +2012,7 @@ VisionStatus LogCaseCalib3DHeight::WriteCmd(const PR_CALIB_3D_HEIGHT_CMD *const 
     ini.SetBoolValue(_CMD_SECTION.c_str(), _strKeyEnableGF.c_str(), pstCmd->bEnableGaussianFilter );
     ini.SetBoolValue(_CMD_SECTION.c_str(), _strKeyReverseSeq.c_str(), pstCmd->bReverseSeq );
     ini.SetBoolValue(_CMD_SECTION.c_str(), _strKeyReverseHeight.c_str(), pstCmd->bReverseHeight );
+    ini.SetBoolValue(_CMD_SECTION.c_str(), _strKeyUseThinnestPattern.c_str(), pstCmd->bUseThinnestPattern );
     ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyRemoveHarmonicWaveK.c_str(), pstCmd->fRemoveHarmonicWaveK );
     ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyMinAmplitude.c_str(), pstCmd->fMinAmplitude );
     ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyBlockStepCount.c_str(), pstCmd->nBlockStepCount);
@@ -2055,7 +2056,8 @@ VisionStatus LogCaseCalib3DHeight::RunLogCase() {
 
     stCmd.bEnableGaussianFilter = ini.GetBoolValue ( _CMD_SECTION.c_str(), _strKeyEnableGF.c_str(), false );
     stCmd.bReverseSeq = ini.GetBoolValue ( _CMD_SECTION.c_str(), _strKeyReverseSeq.c_str(), false );
-    stCmd.bReverseHeight = ini.GetBoolValue(_CMD_SECTION.c_str(), _strKeyReverseHeight.c_str(), false );
+    stCmd.bReverseHeight = ini.GetBoolValue ( _CMD_SECTION.c_str(), _strKeyReverseHeight.c_str(), false );
+    stCmd.bUseThinnestPattern = ini.GetBoolValue ( _CMD_SECTION.c_str(), _strKeyUseThinnestPattern.c_str(), false );
     stCmd.fRemoveHarmonicWaveK = ToFloat ( ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyRemoveHarmonicWaveK.c_str(), 0.f ) );
     stCmd.fMinAmplitude = ToFloat ( ini.GetDoubleValue ( _CMD_SECTION.c_str(), _strKeyMinAmplitude.c_str(), 1.5 ) );
     stCmd.nResultImgGridRow = ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyResultImgGridRow.c_str(), 8 );
@@ -2085,84 +2087,6 @@ VisionStatus LogCaseCalib3DHeight::RunLogCase() {
     return enStatus;
 }
 
-/*static*/ String LogCaseComb3DCalib::StaticGetFolderPrefix() {
-    return "Comb3DCalib";
-}
-
-VisionStatus LogCaseComb3DCalib::WriteCmd(const PR_COMB_3D_CALIB_CMD *const pstCmd) {
-    if ( !_bReplay ) {
-        _strLogCasePath = _generateLogCaseName(GetFolderPrefix());
-        bfs::path dir(_strLogCasePath);
-        bfs::create_directories(dir);
-    }
-
-    CSimpleIni ini(false, false, false);
-    auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
-    ini.LoadFile(cmdRpyFilePath.c_str());
-    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyImageRows.c_str(), pstCmd->nImageRows );
-    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyImageCols.c_str(), pstCmd->nImageCols );
-    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyBlockStepHeight.c_str(), pstCmd->fBlockStepHeight);
-    ini.SaveFile(cmdRpyFilePath.c_str());
-
-    cv::FileStorage fs( _strLogCasePath + _strInputYmlFileName, cv::FileStorage::WRITE);
-    if ( ! fs.isOpened() )
-        return VisionStatus::OPEN_FILE_FAIL;
-
-    cv::write ( fs, _strKeyStepPhasePos, CalcUtils::vectorToMat<float>(pstCmd->vecVecStepPhasePos ) );
-    cv::write ( fs, _strKeyStepPhaseNeg, CalcUtils::vectorToMat<float>(pstCmd->vecVecStepPhaseNeg ) );
-    fs.release();
-    return VisionStatus::OK;
-}
-
-VisionStatus LogCaseComb3DCalib::WriteRpy(const PR_COMB_3D_CALIB_RPY *const pstRpy) {
-    CSimpleIni ini(false, false, false);
-    auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
-    ini.LoadFile(cmdRpyFilePath.c_str());    
-    ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyStatus.c_str(), ToInt32 ( pstRpy->enStatus ) );
-
-    cv::FileStorage fs( _strLogCasePath + _strResultYmlFileName, cv::FileStorage::WRITE);
-    if ( ! fs.isOpened() )
-        return VisionStatus::OPEN_FILE_FAIL;
-
-    cv::write ( fs, _strKeyPhaseToHeightK, pstRpy->matPhaseToHeightK );
-    cv::write ( fs, _strKeyStepPhaseDiff,  CalcUtils::vectorToMat<float>(pstRpy->vecVecStepPhaseDiff ) );
-    fs.release();
-
-    _zip();
-    return VisionStatus::OK;
-}
-
-VisionStatus LogCaseComb3DCalib::RunLogCase() {
-    PR_COMB_3D_CALIB_CMD stCmd;
-    PR_COMB_3D_CALIB_RPY stRpy;
-
-    CSimpleIni ini(false, false, false);
-    auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
-    ini.LoadFile(cmdRpyFilePath.c_str());
-
-    stCmd.fBlockStepHeight = ToFloat ( ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyBlockStepHeight.c_str(), 1.f) );
-    stCmd.nImageRows = ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyImageRows.c_str(), 8 );
-    stCmd.nImageCols = ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyImageCols.c_str(), 8 );
-
-    cv::FileStorage fs ( _strLogCasePath + _strInputYmlFileName, cv::FileStorage::READ );
-    cv::FileNode fileNode = fs[_strKeyStepPhasePos];
-    cv::Mat matStepPhasePos;
-    cv::read ( fileNode, matStepPhasePos, cv::Mat() );
-    stCmd.vecVecStepPhasePos = CalcUtils::matToVector<float>(matStepPhasePos);
-
-    fileNode = fs[_strKeyStepPhaseNeg];
-    cv::Mat matStepPhaseNeg;
-    cv::read ( fileNode, matStepPhaseNeg, cv::Mat() );
-    stCmd.vecVecStepPhaseNeg = CalcUtils::matToVector<float>(matStepPhaseNeg);
-
-    fs.release();
-
-    VisionStatus enStatus = VisionStatus::OK;
-    enStatus = VisionAlgorithm::comb3DCalib ( &stCmd, &stRpy, true );
-    WriteRpy(&stRpy);
-    return enStatus;
-}
-
 /*static*/ String LogCaseCalc3DHeight::StaticGetFolderPrefix() {
     return "Calc3DHeight";
 }
@@ -2179,8 +2103,13 @@ VisionStatus LogCaseCalc3DHeight::WriteCmd(const PR_CALC_3D_HEIGHT_CMD *const ps
     ini.LoadFile(cmdRpyFilePath.c_str());
     ini.SetBoolValue(_CMD_SECTION.c_str(), _strKeyEnableGF.c_str(), pstCmd->bEnableGaussianFilter );
     ini.SetBoolValue(_CMD_SECTION.c_str(), _strKeyReverseSeq.c_str(), pstCmd->bReverseSeq );
+    ini.SetBoolValue(_CMD_SECTION.c_str(), _strKeyUseThinnestPattern.c_str(), pstCmd->bUseThinnestPattern );
     ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyRemoveHarmonicWaveK.c_str(), pstCmd->fRemoveHarmonicWaveK );
     ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyMinAmplitude.c_str(), pstCmd->fMinAmplitude );
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyRmBetaJumpSpanX.c_str(), pstCmd->nRemoveBetaJumpSpanX );
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyRmBetaJumpSpanY.c_str(), pstCmd->nRemoveBetaJumpSpanY );
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyRmGammaJumpSpanX.c_str(), pstCmd->nRemoveGammaJumpSpanX );
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyRmGammaJumpSpanY.c_str(), pstCmd->nRemoveGammaJumpSpanY );
     ini.SaveFile(cmdRpyFilePath.c_str());
 
     cv::FileStorage fs( _strLogCasePath + _strInputYmlFileName, cv::FileStorage::WRITE);
@@ -2219,8 +2148,13 @@ VisionStatus LogCaseCalc3DHeight::RunLogCase() {
 
     stCmd.bEnableGaussianFilter = ini.GetBoolValue ( _CMD_SECTION.c_str(), _strKeyEnableGF.c_str(), false );
     stCmd.bReverseSeq = ini.GetBoolValue ( _CMD_SECTION.c_str(), _strKeyReverseSeq.c_str(), false );
+    stCmd.bUseThinnestPattern = ini.GetBoolValue ( _CMD_SECTION.c_str(), _strKeyUseThinnestPattern.c_str(), false );
     stCmd.fRemoveHarmonicWaveK = ToFloat ( ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyRemoveHarmonicWaveK.c_str(), 0.f ) );
     stCmd.fMinAmplitude = ToFloat ( ini.GetDoubleValue ( _CMD_SECTION.c_str(), _strKeyMinAmplitude.c_str(), 1.5 ) );
+    stCmd.nRemoveBetaJumpSpanX = ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyRmBetaJumpSpanX.c_str(), 25 );
+    stCmd.nRemoveBetaJumpSpanY = ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyRmBetaJumpSpanY.c_str(), 7 );
+    stCmd.nRemoveGammaJumpSpanX = ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyRmGammaJumpSpanX.c_str(), 23 );
+    stCmd.nRemoveGammaJumpSpanY = ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyRmGammaJumpSpanY.c_str(), 23 );
 
     cv::FileStorage fs ( _strLogCasePath + _strInputYmlFileName, cv::FileStorage::READ );
     cv::FileNode fileNode = fs[_strKeyThickToThinK];

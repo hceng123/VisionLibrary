@@ -566,7 +566,7 @@ static inline cv::Mat calcOrder5BezierCoeff ( const cv::Mat &matU ) {
         short y = (short)ptrData3[i] - (short)ptrData1[i];  // y = 2*sin(beta)        
         matBeta.at<float>(i) = vecVecAtan2Table[x + PR_MAX_GRAY_LEVEL ][y+ PR_MAX_GRAY_LEVEL];
     }
-    TimeLog::GetInstance()->addTimeLog( "2 cv::phase ", stopWatch.Span() );
+    TimeLog::GetInstance()->addTimeLog( "2 lookup phase ", stopWatch.Span() );
 
     if ( pstCmd->bUseThinnestPattern ) {
         ptrData0 = vecConvertedImgs[8].ptr<uchar>(0);
@@ -590,7 +590,7 @@ static inline cv::Mat calcOrder5BezierCoeff ( const cv::Mat &matU ) {
     auto vecVecBeta  = CalcUtils::matToVector<DATA_TYPE>(matBeta);
 #endif
 
-    _phaseWrapBuffer ( matAlpha, matBuffer1 );
+    _phaseWrapBuffer ( matAlpha, matBuffer1, pstCmd->fPhaseShift );
     TimeLog::GetInstance()->addTimeLog( "_phaseWrapBuffer.", stopWatch.Span() );
 
     matBuffer1 = matAlpha * pstCmd->matThickToThinK.at<DATA_TYPE>(0);
@@ -599,8 +599,8 @@ static inline cv::Mat calcOrder5BezierCoeff ( const cv::Mat &matU ) {
     _phaseWrapByRefer ( matBeta, matBuffer1 );
     TimeLog::GetInstance()->addTimeLog( "_phaseWrapByRefer.", stopWatch.Span() );
 
-    if ( pstCmd->removeBetaJumpSpanX > 0 || pstCmd->removeBetaJumpSpanY > 0 ) {
-        _phaseCorrection ( matBeta, matAvgUnderTolIndex, pstCmd->removeBetaJumpSpanX, pstCmd->removeBetaJumpSpanY );
+    if ( pstCmd->nRemoveBetaJumpSpanX > 0 || pstCmd->nRemoveBetaJumpSpanY > 0 ) {
+        _phaseCorrection ( matBeta, matAvgUnderTolIndex, pstCmd->nRemoveBetaJumpSpanX, pstCmd->nRemoveBetaJumpSpanY );
         TimeLog::GetInstance()->addTimeLog( "_phaseCorrection for beta.", stopWatch.Span() );
     }
 
@@ -610,8 +610,8 @@ static inline cv::Mat calcOrder5BezierCoeff ( const cv::Mat &matU ) {
         matBuffer1 = matBeta * k2 / k1;
         _phaseWrapByRefer ( matGamma, matBuffer1 );
 
-        if ( pstCmd->removeGammaJumpSpanX > 0 || pstCmd->removeGammaJumpSpanY > 0 ) {
-            _phaseCorrection ( matBeta, matAvgUnderTolIndex, pstCmd->removeGammaJumpSpanX, pstCmd->removeGammaJumpSpanY );
+        if ( pstCmd->nRemoveGammaJumpSpanX > 0 || pstCmd->nRemoveGammaJumpSpanY > 0 ) {
+            _phaseCorrection ( matBeta, matAvgUnderTolIndex, pstCmd->nRemoveGammaJumpSpanX, pstCmd->nRemoveGammaJumpSpanY );
             TimeLog::GetInstance()->addTimeLog( "_phaseCorrection for gamma.", stopWatch.Span() );
         }
 
@@ -631,105 +631,6 @@ static inline cv::Mat calcOrder5BezierCoeff ( const cv::Mat &matU ) {
         cv::divide ( pstRpy->matPhase, matRatio, pstRpy->matHeight );
     }else
         pstRpy->matHeight = pstRpy->matPhase;
-
-    TimeLog::GetInstance()->addTimeLog( "_calcHeightFromPhase.", stopWatch.Span() );
-
-    pstRpy->enStatus = VisionStatus::OK;
-}
-
-/*static*/ void Unwrap::fastCalc3DHeight(const PR_FAST_CALC_3D_HEIGHT_CMD *const pstCmd, PR_FAST_CALC_3D_HEIGHT_RPY *pstRpy) {
-    CStopWatch stopWatch;
-    std::vector<cv::Mat> vecConvertedImgs;
-    for ( auto &mat : pstCmd->vecInputImgs ) {
-        cv::Mat matConvert = mat;
-        if ( mat.channels() > 1 )
-            cv::cvtColor ( mat, matConvert, CV_BGR2GRAY );
-        vecConvertedImgs.push_back ( matConvert );
-    }
-    TimeLog::GetInstance()->addTimeLog( "Convert image to float.", stopWatch.Span() );
-
-    if ( pstCmd->bEnableGaussianFilter ) {
-        //Filtering can reduce residues at the expense of a loss of spatial resolution.
-        for ( int i = 0; i < PR_GROUP_TEXTURE_IMG_COUNT; ++ i )        
-            cv::GaussianBlur ( vecConvertedImgs[i], vecConvertedImgs[i], cv::Size(GUASSIAN_FILTER_SIZE, GUASSIAN_FILTER_SIZE), GAUSSIAN_FILTER_SIGMA, GAUSSIAN_FILTER_SIGMA, cv::BorderTypes::BORDER_REPLICATE );
-    }
-
-    TimeLog::GetInstance()->addTimeLog( "Guassian Filter.", stopWatch.Span() );
-
-    if ( pstCmd->bReverseSeq ) {
-        std::swap ( vecConvertedImgs[1], vecConvertedImgs[3] );
-        std::swap ( vecConvertedImgs[5], vecConvertedImgs[7] );
-    }
-
-    auto size = vecConvertedImgs[0].size();
-    auto total = ToInt32 ( vecConvertedImgs[0].total() );
-    //cv::Mat matBuffer1 ( vecConvertedImgs[0] ), matBuffer2 ( vecConvertedImgs[1] ), mat10 ( vecConvertedImgs[2] ), mat11( vecConvertedImgs[3] ), matAlpha ( vecConvertedImgs[4] ), matBeta( vecConvertedImgs[5] ) ;
-    cv::Mat matAlpha ( size, CV_32FC1 ), matBeta ( size, CV_32FC1), matBuffer1 ( size, CV_32FC1 ), matBuffer2 ( size, CV_32FC1 );
-    cv::Mat matAvgUnderTolIndex = cv::Mat::zeros ( size, CV_8UC1 );
-    float fMinimumAlpitudeSquare = pstCmd->fMinAmplitude * pstCmd->fMinAmplitude;
-    //matBuffer1 = vecConvertedImgs[2] - vecConvertedImgs[0];
-    //matBuffer2 = vecConvertedImgs[3] - vecConvertedImgs[1];
-    //cv::Mat mat00 = vecConvertedImgs[2] - vecConvertedImgs[0];
-    //cv::Mat mat01 = vecConvertedImgs[3] - vecConvertedImgs[1];
-
-    //mat10 = vecConvertedImgs[6] - vecConvertedImgs[4];
-    //mat11 = vecConvertedImgs[7] - vecConvertedImgs[5];
-
-    //cv::Mat matAlpha, matBeta;
-    //cv::phase ( -matBuffer1, matBuffer2, matAlpha );
-    //cv::phase ( -mat10, mat11, matBeta );
-    auto ptrData0 = vecConvertedImgs[0].ptr<uchar>(0);
-    auto ptrData1 = vecConvertedImgs[1].ptr<uchar>(0);
-    auto ptrData2 = vecConvertedImgs[2].ptr<uchar>(0);
-    auto ptrData3 = vecConvertedImgs[3].ptr<uchar>(0);
-    for ( int i = 0; i < total; ++ i ) {
-        short x = (short)ptrData0[i] - (short)ptrData2[i];
-        short y = (short)ptrData3[i] - (short)ptrData1[i];
-        float fAmplitudeSquare = (x*x + y*y) / 4.f;
-        if ( fAmplitudeSquare < fMinimumAlpitudeSquare )
-            matAvgUnderTolIndex.at<uchar>(i) = 1;
-        matAlpha.at<float>(i) = vecVecAtan2Table[x + PR_MAX_GRAY_LEVEL ][y+ PR_MAX_GRAY_LEVEL];
-    }    
-
-    ptrData0 = vecConvertedImgs[4].ptr<uchar>(0);
-    ptrData1 = vecConvertedImgs[5].ptr<uchar>(0);
-    ptrData2 = vecConvertedImgs[6].ptr<uchar>(0);
-    ptrData3 = vecConvertedImgs[7].ptr<uchar>(0);
-    for ( int i = 0; i < total; ++ i ) {
-        short x = (short)ptrData0[i] - (short)ptrData2[i];  // x = 2*cos(beta)
-        short y = (short)ptrData3[i] - (short)ptrData1[i];  // y = 2*sin(beta)        
-        matBeta.at<float>(i) = vecVecAtan2Table[x + PR_MAX_GRAY_LEVEL ][y+ PR_MAX_GRAY_LEVEL];
-    }
-
-    TimeLog::GetInstance()->addTimeLog( "2 cv::phase ", stopWatch.Span() );
-    
-    matAlpha = matAlpha - pstCmd->matBaseWrappedAlpha;
-    matBeta  = matBeta  - pstCmd->matBaseWrappedBeta;
-    TimeLog::GetInstance ()->addTimeLog ( "2 substract take. ", stopWatch.Span () );
-
-    _phaseWrapBuffer ( matAlpha, matBuffer1 );
-    TimeLog::GetInstance()->addTimeLog( "_phaseWrapBuffer.", stopWatch.Span() );
-
-    matBuffer1 = matAlpha * pstCmd->matThickToThinStripeK.at<DATA_TYPE>(0);
-    TimeLog::GetInstance()->addTimeLog( "Multiply takes.", stopWatch.Span() );
-
-    _phaseWrapByRefer ( matBeta, matBuffer1 );
-    TimeLog::GetInstance()->addTimeLog( "_phaseWrapByRefer.", stopWatch.Span() );
-
-    _phaseCorrection ( matBeta, matAvgUnderTolIndex, 25, 7 );
-    TimeLog::GetInstance()->addTimeLog( "_phaseCorrection.", stopWatch.Span() );
-
-    matBeta.setTo ( NAN, matAvgUnderTolIndex );
-
-    cv::Mat matH = matBeta;
-
-    TimeLog::GetInstance()->addTimeLog( "MedianBlur.", stopWatch.Span() );
-
-    pstRpy->matPhase = matH;
-    if ( ! pstCmd->matOrder3CurveSurface.empty() && ! pstCmd->matIntegratedK.empty() )
-        pstRpy->matHeight = _calcHeightFromPhaseBuffer ( pstRpy->matPhase, pstCmd->matOrder3CurveSurface, pstCmd->matIntegratedK, matBuffer1, matBuffer2 );
-    else
-        pstRpy->matHeight = matH;
 
     TimeLog::GetInstance()->addTimeLog( "_calcHeightFromPhase.", stopWatch.Span() );
 
@@ -1842,113 +1743,6 @@ static inline cv::Mat calcOrder5BezierCoeff ( const cv::Mat &matU ) {
     pstRpy->enStatus = VisionStatus::OK;
 }
 
-/*static*/ void Unwrap::comb3DCalib(const PR_COMB_3D_CALIB_CMD *const pstCmd, PR_COMB_3D_CALIB_RPY *const pstRpy) {
-    cv::Mat matHz1 = CalcUtils::vectorToMat<DATA_TYPE> ( pstCmd->vecVecStepPhaseNeg );
-    if ( cv::mean ( matHz1 )[0] > 0. ) {
-        WriteLog("The mean negative phase is not negative.");
-        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
-        return;
-    }
-
-    cv::Mat matHz2 = CalcUtils::vectorToMat<DATA_TYPE> ( pstCmd->vecVecStepPhasePos );
-    if ( cv::mean ( matHz2 )[0] < 0. ) {
-        WriteLog("The mean positive phase is not positive.");
-        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
-        return;
-    }
-    cv::Mat matHz = matHz1;
-    matHz.push_back ( matHz2 );
-
-    cv::Mat matXpT, matXt0T, matYt0T, matHzT;
-    cv::Mat matXp1 = CalcUtils::intervals<DATA_TYPE> ( 1.f - ToFloat ( pstCmd->vecVecStepPhaseNeg.size() ), 1.f, 0.f );
-    cv::Mat matXp2 = CalcUtils::intervals<DATA_TYPE> ( 0.f, 1.f, ToFloat ( pstCmd->vecVecStepPhasePos.size() - 1 ) );
-    cv::Mat matXp = matXp1;
-    matXp.push_back ( matXp2 );
-    matXp = cv::repeat ( matXp, 1, 5 );
-
-    cv::transpose ( matXp, matXpT );
-    matXpT = matXpT.reshape ( 1, 1 );
-
-#ifdef _DEBUG
-    auto vecVecXp = CalcUtils::matToVector<DATA_TYPE> ( matXp );
-    auto vecVecXpT = CalcUtils::matToVector<DATA_TYPE> ( matXpT );
-#endif
-
-    int ROWS = pstCmd->nImageRows;
-    int COLS = pstCmd->nImageCols;
-
-    int nTotalStep = matXp.rows;
-    auto vecXt = std::vector<DATA_TYPE> ( { ToFloat ( COLS / 2 ), 1.f, ToFloat ( COLS ), 1.f, ToFloat ( COLS ) } );
-    cv::Mat matXt0 = cv::Mat ( vecXt ).reshape ( 1, 1 );
-    matXt0 = cv::repeat ( matXt0, nTotalStep, 1 );
-    cv::transpose ( matXt0, matXt0T );
-    matXt0T = matXt0T.reshape ( 1, 1 );
-
-    auto vecYt = std::vector<DATA_TYPE> ( { ToFloat ( ROWS / 2 ), 1.f, 1.f, ToFloat ( ROWS ), ToFloat ( ROWS ) } );
-    cv::Mat matYt0 = cv::Mat ( vecYt ).reshape ( 1, 1 );
-    matYt0 = cv::repeat ( matYt0, nTotalStep, 1 );
-    cv::transpose ( matYt0, matYt0T );
-    matYt0T = matYt0T.reshape ( 1, 1 );
-
-    cv::transpose ( matHz, matHzT );
-    matHzT = matHzT.reshape ( 1, ToInt32 ( matHzT.total () ) );
-
-    std::vector<int> vecIndex ( matHz.total() );
-    std::iota ( vecIndex.begin (), vecIndex.end (), 0 );
-    cv::Mat matK;
-    //Data fitting using multiple level data.
-    //Z4 = k(1) * X * 4 + K(2) * Y * 4 + K(3) * 4
-    //....
-    //Z3 = k(1) * X * 3 + K(2) * Y * 3 + K(3) * 3
-    //....
-    //Z2 = k(1) * X * 2 + K(2) * Y * 2 + K(3) * 2
-    //....
-    //Z1 = k(1) * X * 1 + K(2) * Y * 1 + K(3) * 1
-    //....
-    for (int i = 0; i < 1; ++ i) {
-        cv::Mat matXXt ( 1, ToInt32 ( vecIndex.size () ), CV_32FC1 );
-        cv::Mat matXt ( 1, ToInt32 ( vecIndex.size () ), CV_32FC1 );
-        cv::Mat matYt ( 1, ToInt32 ( vecIndex.size () ), CV_32FC1 );
-        cv::Mat matYY ( ToInt32 ( vecIndex.size () ), 1, CV_32FC1 );
-        for (int j = 0; j < ToInt32 ( vecIndex.size() ); ++ j ) {
-            matXXt.at<DATA_TYPE> ( j ) = matXpT.at<DATA_TYPE> ( vecIndex[j] );
-            matXt.at<DATA_TYPE> ( j ) = matXt0T.at<DATA_TYPE> ( vecIndex[j] );
-            matYt.at<DATA_TYPE> ( j ) = matYt0T.at<DATA_TYPE> ( vecIndex[j] );
-            matYY.at<DATA_TYPE> ( j ) = matHzT.at<DATA_TYPE> ( vecIndex[j] );
-        }
-        cv::Mat matXX = cv::Mat ( matXXt.mul ( matXt ) );
-        matXX.push_back ( cv::Mat ( matXXt.mul ( matYt ) ) );
-        matXX.push_back ( matXXt );
-        cv::transpose ( matXX, matXX );
-
-        assert ( matXX.rows == matYY.rows );
-        cv::solve ( matXX, matYY, matK, cv::DecompTypes::DECOMP_SVD );
-#ifdef _DEBUG
-        auto vecVecXX = CalcUtils::matToVector<DATA_TYPE> ( matXX );
-        auto vecVecYY = CalcUtils::matToVector<DATA_TYPE> ( matYY );
-        auto vecVecK = CalcUtils::matToVector<DATA_TYPE> ( matK );
-#endif
-
-        if (i == 0) {
-            cv::Mat matErr = cv::abs ( matYY - matXX * matK );
-            cv::Mat matErrSort;
-            cv::sortIdx ( matErr, matErrSort, cv::SortFlags::SORT_ASCENDING + cv::SortFlags::SORT_EVERY_COLUMN );
-            std::vector<int> vecTmpIndex;
-            int nKeepPoints = ToInt32 ( std::floor ( matErrSort.rows * CALIB_HEIGHT_STEP_USEFUL_PT ) );
-            vecTmpIndex.reserve ( nKeepPoints );
-            for ( int j = 0; j < nKeepPoints; ++ j )
-                vecTmpIndex.push_back ( matErrSort.at<int> ( j ) );
-            std::swap ( vecTmpIndex, vecIndex );
-        }
-    }
-    //Matlab code: Hz - (xp.*xt0*K(1) + xp.*yt0*K(2) + xp*K(3)
-    cv::Mat matFitResultData = matXp.mul ( matXt0 ) * matK.at<DATA_TYPE> ( 0 ) + matXp.mul ( matYt0 ) * matK.at<DATA_TYPE> ( 1 ) + matXp * matK.at<DATA_TYPE> ( 2 );
-    cv::Mat matAllDiff = matHz - matFitResultData;
-    pstRpy->vecVecStepPhaseDiff = CalcUtils::matToVector<DATA_TYPE> ( matAllDiff );
-    pstRpy->matPhaseToHeightK = matK;
-    pstRpy->enStatus = VisionStatus::OK;
-}
-
 static inline cv::Mat prepareOrder3SurfaceFit(const cv::Mat &matX, const cv::Mat &matY) {
     assert ( matX.cols == 1 && matY.cols == 1 );
     cv::Mat matXPow2 = matX.    mul ( matX );
@@ -2126,7 +1920,7 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
     std::vector<int> vecRowsWithJump;
     for ( int row = 0; row < matPhaseDiff.rows; ++ row ) {
         bool bRowWithPosJump = false, bRowWithNegJump = false;
-        for( int col = 0; col < matPhaseDiff.cols; ++col ) {
+        for( int col = 0; col < matPhaseDiff.cols; ++ col ) {
             auto value = matPhaseDiff.at<DATA_TYPE> ( row, col );
             if( value > ONE_HALF_CYCLE ) {
                 matDiffSign.at<char> ( row, col ) = 1;
@@ -2169,26 +1963,36 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
             }
 
             for ( int jj = 0; jj < vecJumpIdxNeedToHandle.size(); ++ jj ) {
-                char chSignFirst  = ptrSignOfRow [ vecJumpCol [ vecSortedJumpSpanIdx [ jj ] ] ];        //The index is hard to understand. Use the sorted span index to find the original column.
-                char chSignSecond = ptrSignOfRow [ vecJumpCol [ vecSortedJumpSpanIdx [ jj ] + 1 ] ];
+                auto nStart = vecJumpCol [ vecSortedJumpSpanIdx [ jj ] ];
+                auto nEnd   = vecJumpCol [ vecSortedJumpSpanIdx [ jj ] + 1 ];
+                char chSignFirst  = ptrSignOfRow [ nStart ];        //The index is hard to understand. Use the sorted span index to find the original column.
+                char chSignSecond = ptrSignOfRow [ nEnd ];
 
-                char chAmplFirst  = ptrAmplOfRow [ vecJumpCol [ vecSortedJumpSpanIdx[jj] ] ];
-                char chAmplSecond = ptrAmplOfRow [ vecJumpCol [ vecSortedJumpSpanIdx[jj] + 1 ] ];
+                char chAmplFirst  = ptrAmplOfRow [ nStart ];
+                char chAmplSecond = ptrAmplOfRow [ nEnd ];
                 char chTurnAmpl = std::min ( chAmplFirst, chAmplSecond ) / 2;
-                if ( chSignFirst + chSignSecond == 0 ) { //it is a pair
+                if ( chSignFirst * chSignSecond == -1 ) { //it is a pair
                     char chAmplNew = chAmplFirst - 2 * chTurnAmpl;
-                    ptrAmplOfRow [ vecJumpCol [ vecSortedJumpSpanIdx[jj] ] ] = chAmplNew;
+                    ptrAmplOfRow [ nStart ] = chAmplNew;
                     if ( chAmplNew <= 0 )
-                        ptrSignOfRow [ vecJumpCol [ vecSortedJumpSpanIdx[jj] ] ] = 0;  // Remove the sign of jump flag.
+                        ptrSignOfRow [ nStart ] = 0;  // Remove the sign of jump flag.
 
                     chAmplNew = chAmplSecond - 2 * chTurnAmpl;
-                    ptrAmplOfRow [ vecJumpCol [ vecSortedJumpSpanIdx[jj] + 1 ] ] = chAmplNew;
+                    ptrAmplOfRow [ nEnd ] = chAmplNew;
                     if ( chAmplNew <= 0 )
-                        ptrSignOfRow [ vecJumpCol [ vecSortedJumpSpanIdx[jj] + 1 ] ] = 0;
+                        ptrSignOfRow [ nEnd ] = 0;
 
-                    for ( int col = vecJumpCol [ vecSortedJumpSpanIdx[jj] ] + 1; col <= vecJumpCol [ vecSortedJumpSpanIdx[jj] + 1 ]; ++ col ) {
+                    auto startValue = matPhase.at<DATA_TYPE>(row, nStart);
+                    for ( int col = nStart + 1; col <= nEnd; ++ col ) {
                         auto &value = matPhase.at<DATA_TYPE>(row, col);
                         value -= chSignFirst * ONE_CYCLE * chTurnAmpl;
+                        if ( chSignFirst > 0 && value < startValue )  { //Jump up, need to roll down, but can not over roll
+                            value = startValue;
+                        }else if ( chSignFirst < 0 && value > startValue ) { //Jump down, need to roll up
+                            value = startValue;
+                        }else {
+                            auto i = value;
+                        }
                     }                        
                 }
             }
@@ -2258,7 +2062,7 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
                 char chAmplFirst  = ptrAmplOfCol [ nStart ];
                 char chAmplSecond = ptrAmplOfCol [ nEnd ];
                 char chTurnAmpl = std::min ( chAmplFirst, chAmplSecond ) / 2;
-                if ( chSignFirst + chSignSecond == 0 ) { //it is a pair
+                if ( chSignFirst * chSignSecond == -1 ) { //it is a pair
                     char chAmplNew = chAmplFirst - 2 * chTurnAmpl;
                     ptrAmplOfCol [ nStart ] = chAmplNew;
                     if ( chAmplNew <= 0 )
@@ -2269,17 +2073,17 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
                     if ( chAmplNew <= 0 )
                         ptrSignOfCol [ nEnd ] = 0;
 
-                    auto startValue = matPhase.at<DATA_TYPE>(nStart + 1, col);
-                    auto endValue = matPhase.at<DATA_TYPE>(nEnd, col);
+                    auto startValue = matPhase.at<DATA_TYPE> ( nStart, col );
                     for ( int row = nStart + 1; row <= nEnd; ++ row ) {
                         auto &value = matPhase.at<DATA_TYPE>(row, col);
-                        if ( ( row - nStart - 1 ) < (nEnd - row ) ) {
-                            if ( fabs ( value - startValue ) < ONE_HALF_CYCLE / 2.f )
-                                value -= chSignFirst * ONE_CYCLE * chTurnAmpl;
+                        value -= chSignFirst * ONE_CYCLE * chTurnAmpl;
+                        if ( chSignFirst > 0 && value < startValue )  { //Jump up, need to roll down, but can not over roll
+                            value = startValue;
+                        }else if ( chSignFirst < 0 && value > startValue ) { //Jump down, need to roll up
+                            value = startValue;
                         }else {
-                            if ( fabs ( value - endValue ) < ONE_HALF_CYCLE / 2.f )
-                                value -= chSignFirst * ONE_CYCLE * chTurnAmpl;
-                        }                      
+                            auto i = value;
+                        }
                     }
                 }
             }

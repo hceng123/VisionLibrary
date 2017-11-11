@@ -1595,9 +1595,6 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
     if (LogCaseCalib3DHeight::StaticGetFolderPrefix() == strFolderPrefix )
         return std::make_unique<LogCaseCalib3DHeight>( strLocalPath, true );
 
-    if ( LogCaseComb3DCalib::StaticGetFolderPrefix() == strFolderPrefix )
-        return std::make_unique<LogCaseComb3DCalib>( strLocalPath, true );
-
     if (LogCaseCalc3DHeight::StaticGetFolderPrefix() == strFolderPrefix )
         return std::make_unique<LogCaseCalc3DHeight>( strLocalPath, true );
 
@@ -5863,31 +5860,6 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     return pstRpy->enStatus;
 }
 
-/*static*/ VisionStatus VisionAlgorithm::comb3DCalib(const PR_COMB_3D_CALIB_CMD *const pstCmd, PR_COMB_3D_CALIB_RPY *const pstRpy, bool bReplay /*= false*/) {
-    assert(pstCmd != nullptr && pstRpy != nullptr);
-    if ( pstCmd->vecVecStepPhasePos.empty() ) {
-        WriteLog("The input positive step phase is empty.");
-        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
-        return pstRpy->enStatus;
-    }
-
-    if ( pstCmd->vecVecStepPhaseNeg.empty() ) {
-        WriteLog("The input negative step phase is empty.");
-        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
-        return pstRpy->enStatus;
-    }
-    MARK_FUNCTION_START_TIME;
-    SETUP_LOGCASE(LogCaseComb3DCalib);
-
-    Unwrap::comb3DCalib ( pstCmd, pstRpy );
-
-    pstRpy->enStatus = VisionStatus::OK;
-    FINISH_LOGCASE;
-    MARK_FUNCTION_END_TIME;
-    
-    return pstRpy->enStatus;
-}
-
 /*static*/ VisionStatus VisionAlgorithm::integrate3DCalib(const PR_INTEGRATE_3D_CALIB_CMD *const pstCmd, PR_INTEGRATE_3D_CALIB_RPY *const pstRpy, bool bReplay/* = false*/) {
     if ( pstCmd->vecCalibData.empty() ) {
         WriteLog("The input calibration data vector is empty.");
@@ -5980,62 +5952,6 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     Unwrap::calc3DHeight ( pstCmd, pstRpy );
 
     FINISH_LOGCASE;
-    MARK_FUNCTION_END_TIME;
-    pstRpy->enStatus = VisionStatus::OK;
-    return pstRpy->enStatus;
-}
-
-/*static*/ VisionStatus VisionAlgorithm::fastCalc3DHeight(const PR_FAST_CALC_3D_HEIGHT_CMD *const pstCmd, PR_FAST_CALC_3D_HEIGHT_RPY *pstRpy, bool bReplay /*= false*/) {
-    assert(pstCmd != nullptr && pstRpy != nullptr);
-
-    if ( pstCmd->vecInputImgs.size() < 8 ) {
-        WriteLog("The input image count is less than 8.");
-        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
-        return pstRpy->enStatus;
-    }
-
-    for ( const auto &mat : pstCmd->vecInputImgs ) {
-        if ( mat.empty() ) {
-            WriteLog("The input image is empty.");
-            pstRpy->enStatus = VisionStatus::INVALID_PARAM;
-            return pstRpy->enStatus;
-        }
-    }
-
-    if ( pstCmd->matThickToThinStripeK.empty() ) {
-        WriteLog("The matThickToThinStripeK is empty.");
-        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
-        return pstRpy->enStatus;
-    }
-
-    if ( pstCmd->matBaseWrappedAlpha.empty() ) {
-        WriteLog("matBaseWrappedAlpha is empty.");
-        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
-        return pstRpy->enStatus;
-    }
-
-    if ( pstCmd->matBaseWrappedAlpha.size() != pstCmd->vecInputImgs[0].size() ) {
-        WriteLog("The size of matBaseWrappedAlpha is not match with the input image size..");
-        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
-        return pstRpy->enStatus;
-    }
-
-    if ( pstCmd->matBaseWrappedBeta.empty() ) {
-        WriteLog("matBaseWrappedBeta is empty.");
-        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
-        return pstRpy->enStatus;
-    }
-
-    if ( pstCmd->matBaseWrappedBeta.size() != pstCmd->vecInputImgs[0].size() ) {
-        WriteLog("The size of matBaseWrappedBeta is not match with the input image size..");
-        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
-        return pstRpy->enStatus;
-    }
-
-    MARK_FUNCTION_START_TIME;
-
-    Unwrap::fastCalc3DHeight ( pstCmd, pstRpy );
-
     MARK_FUNCTION_END_TIME;
     pstRpy->enStatus = VisionStatus::OK;
     return pstRpy->enStatus;

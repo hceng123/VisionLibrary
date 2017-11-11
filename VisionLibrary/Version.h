@@ -14,8 +14,13 @@
  * Copyright (c) 2016-2016, Xiao Shengguang.  All rights reserved.
  ****************************************************************************/
 
+//2017-11-11 (XSG) Update the method to calculate 3D height. Change the phase range from -pi~pi to -1~1.
+//2017-11-11 (XSG) Remove PR_Comb3DCalib and PR_FastCalc3DHeight function.
+//2017-11-09 (XSG) Support use thinnest pattern.
+#define AOI_VISION_VERSION          "1.00.13"
+
 //2017-11-05 (XSG) Add PR_Merge3DHeight function.
-#define AOI_VISION_VERSION          "1.00.12"
+//#define AOI_VISION_VERSION          "1.00.12"
 
 //2017-11-01 (XSG) Speed up PR_FastCalc3DHeight function by using atan2 lookup table.
 //#define AOI_VISION_VERSION          "1.00.11"
