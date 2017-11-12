@@ -60,6 +60,12 @@ void saveMatToCsv(cv::Mat &matrix, std::string filename){
     outputFile.close();
 }
 
+void saveMatToMatlab(cv::Mat &matrix, std::string filename){
+    std::ofstream outputFile(filename);
+    outputFile << cv::format ( matrix, cv::Formatter::FMT_MATLAB ) << std::endl;
+    outputFile.close();
+}
+
 static cv::Mat _drawHeightGrid(const cv::Mat &matHeight, int nGridRow, int nGridCol, const cv::Size &szMeasureWinSize = cv::Size(40, 40)) {
     double dMinValue = 0, dMaxValue = 0;
     cv::Mat matMask = ( matHeight == matHeight );
@@ -112,13 +118,13 @@ static cv::Mat _drawHeightGrid(const cv::Mat &matHeight, int nGridRow, int nGrid
     return matResultImg;
 }
 
-static std::string gstrWorkingFolder("./data/HaoYu_20171017/");
+static std::string gstrWorkingFolder("./data/HaoYu_20171112/newLens2/");
 static std::string gstrCalibResultFile = gstrWorkingFolder + "CalibPP.yml";
 static std::string gstrIntegrateCalibResultFile( gstrWorkingFolder + "IntegrateCalibResult.yml" );
 bool gbUseGamma = false;
 const int IMAGE_COUNT = 12;
 void TestCalib3dBase() {    
-    std::string strFolder = gstrWorkingFolder + "0920234214_base/";
+    std::string strFolder = gstrWorkingFolder + "1027154026_base/";
     PR_CALIB_3D_BASE_CMD stCmd;
     PR_CALIB_3D_BASE_RPY stRpy;
     for ( int i = 1; i <= IMAGE_COUNT; ++ i ) {
@@ -152,7 +158,7 @@ void TestCalib3dBase() {
 }
 
 void TestCalib3DHeight_01() {
-    std::string strFolder = gstrWorkingFolder + "0920235040_lefttop/";
+    std::string strFolder = gstrWorkingFolder + "1027154002_lt/";
     PR_CALIB_3D_HEIGHT_CMD stCmd;
     PR_CALIB_3D_HEIGHT_RPY stRpy;
     for ( int i = 1; i <= IMAGE_COUNT; ++ i ) {
@@ -167,15 +173,15 @@ void TestCalib3DHeight_01() {
     stCmd.bReverseHeight = false;
     stCmd.bUseThinnestPattern = gbUseGamma;
 
-    stCmd.fMinAmplitude = 2.f;
+    stCmd.fMinAmplitude = 5.f;
     stCmd.nBlockStepCount = 5;
     stCmd.fBlockStepHeight = 1.f;
     stCmd.nResultImgGridRow = 10;
     stCmd.nResultImgGridCol = 10;
-    stCmd.nRemoveBetaJumpSpanX = 0;
-    stCmd.nRemoveBetaJumpSpanY = 0;
-    stCmd.nRemoveGammaJumpSpanX = 0;
-    stCmd.nRemoveGammaJumpSpanY = 0;
+    //stCmd.nRemoveBetaJumpSpanX = 0;
+    //stCmd.nRemoveBetaJumpSpanY = 0;
+    //stCmd.nRemoveGammaJumpSpanX = 0;
+    //stCmd.nRemoveGammaJumpSpanY = 0;
     
     cv::Mat matBaseSurfaceParam;
 
@@ -511,7 +517,7 @@ void TestCalc3DHeight_With_NormalCalibParam() {
 }
 
 void TestCalc3DHeight_With_IntegrateCalibParam() {
-    std::string strFolder = gstrWorkingFolder + "1017001107_RB/";
+    std::string strFolder = gstrWorkingFolder + "1027160756_02/";
     //std::string strFolder = "./data/0913212217_Unwrap_Not_Finish/";
     PR_CALC_3D_HEIGHT_CMD stCmd;
     PR_CALC_3D_HEIGHT_RPY stRpy;
@@ -552,16 +558,27 @@ void TestCalc3DHeight_With_IntegrateCalibParam() {
     cv::read ( fileNode, stCmd.matIntegratedK, cv::Mat() );
     fileNode = fs["Order3CurveSurface"];
     cv::read ( fileNode, stCmd.matOrder3CurveSurface, cv::Mat() );
+    fs.release();
 
     PR_Calc3DHeight ( &stCmd, &stRpy );
     std::cout << "PR_Calc3DHeight status " << ToInt32( stRpy.enStatus ) << std::endl;
     if ( VisionStatus::OK != stRpy.enStatus )
         return;
-
+    
     cv::Mat matHeightResultImg = _drawHeightGrid ( stRpy.matHeight, 10, 10 );
     cv::imwrite ( gstrWorkingFolder + "PR_Calc3DHeight_HeightGridImg_IntegrateCalibParam.png", matHeightResultImg );
     cv::Mat matPhaseResultImg = _drawHeightGrid ( stRpy.matPhase, 9, 9 );
     cv::imwrite ( gstrWorkingFolder + "PR_Calc3DHeight_PhaseGridImg_IntegrateCalibParam.png", matPhaseResultImg );
+
+    saveMatToMatlab ( stRpy.matHeight, gstrWorkingFolder + "Height.mat" );
+    std::string strHeightFile( gstrWorkingFolder + "Height.yml" );
+    fs.open(strHeightFile, cv::FileStorage::WRITE);
+    if (!fs.isOpened ()) {
+        std::cout << "Failed to open file: " << strHeightFile << std::endl;
+        return;
+    }
+    cv::write ( fs, "Height", stRpy.matHeight );
+    fs.release();
 }
 
 void TestIntegrate3DCalibHaoYu() {
@@ -766,24 +783,28 @@ void TestMerge3DHeight() {
     PR_MERGE_3D_HEIGHT_CMD stCmd;
     PR_MERGE_3D_HEIGHT_RPY stRpy;
 
-    cv::Mat matHeight;
-    std::string strHeightResultPath = gstrWorkingFolder + "Height.yml";
-    cv::FileStorage fs ( strHeightResultPath, cv::FileStorage::READ );
-    cv::FileNode fileNode = fs["Height"];
-    cv::read ( fileNode, matHeight, cv::Mat () );
-    fs.release ();
+    std::string strArrayHeightFile[2] = {"./data/HaoYu_20171112/newLens1/Height.yml",
+    "./data/HaoYu_20171112/newLens2/Height.yml"};
 
-    stCmd.vecMatHeight.push_back ( matHeight );
-    cv::Mat matHeight1 = matHeight.clone();
-    matHeight1 = matHeight1 + 0.1;
-    stCmd.vecMatHeight.push_back ( matHeight1 );
+    for ( int i = 0; i < 2; ++ i ) {
+        cv::Mat matHeight;
+        cv::FileStorage fs ( strArrayHeightFile[i], cv::FileStorage::READ );
+        cv::FileNode fileNode = fs["Height"];
+        cv::read ( fileNode, matHeight, cv::Mat () );
+        fs.release ();
+        stCmd.vecMatHeight.push_back ( matHeight );
+    }
+
     PR_Merge3DHeight ( &stCmd, &stRpy );
     std::cout << "PR_Merge3DHeight status " << ToInt32( stRpy.enStatus ) << std::endl;
     if ( VisionStatus::OK != stRpy.enStatus )
         return;
 
     cv::Mat matHeightResultImg = _drawHeightGrid ( stRpy.matHeight, 10, 10 );
-    cv::imwrite ( gstrWorkingFolder + "PR_TestMerge3DHeight_HeightGridImg.png", matHeightResultImg );
+    cv::imwrite ( "./data/HaoYu_20171112/PR_TestMerge3DHeight_HeightGridImg.png", matHeightResultImg );
+
+    cv::patchNaNs ( stRpy.matHeight, 0 );
+    saveMatToCsv ( stRpy.matHeight, "./data/HaoYu_20171112/MergeHeight.csv");
 }
 
 void TestCalc3DHeightDiff(const cv::Mat &matHeight) {

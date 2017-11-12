@@ -1111,37 +1111,51 @@ static inline cv::Mat calcOrder5BezierCoeff ( const cv::Mat &matU ) {
     for ( int n = 1; n <= NN; ++ n ) {
         double dMinValue = 0, dMaxValue = 0;
         cv::Point ptMin, ptMax;
-        cv::Mat matMask = ( matTmpPhase == matTmpPhase ); //Find out value is not NAN.
-        cv::minMaxLoc ( matTmpPhase, &dMinValue, &dMaxValue, &ptMin, &ptMax, matMask );
-        cv::Mat matNormalizedPhase = (matTmpPhase - dMinValue) / (dMaxValue - dMinValue);
-        cv::Mat matGrayScalePhase = matNormalizedPhase * PR_MAX_GRAY_LEVEL;
-        matGrayScalePhase.convertTo ( pstRpy->matDivideStepResultImg, CV_8U );
-        cv::cvtColor ( pstRpy->matDivideStepResultImg, pstRpy->matDivideStepResultImg, CV_GRAY2BGR );
-        pstRpy->matDivideStepIndex = cv::Mat::zeros ( pstRpy->matDivideStepResultImg.size(), CV_8SC1 );
-        auto vecThreshold = VisionAlgorithm::autoMultiLevelThreshold ( matGrayScalePhase, matMask, pstCmd->nBlockStepCount );
-        std::vector<float> vecNormaledThreshold;
-        vecNormaledThreshold.push_back ( 0.f );
-        for (const auto thresh : vecThreshold)
-            vecNormaledThreshold.push_back ( ToFloat ( thresh ) / ToFloat ( PR_MAX_GRAY_LEVEL ) );
-        vecNormaledThreshold.push_back ( 1.f );
-
-        auto nKK = 0;
-        if (pstCmd->bReverseHeight)
-            nKK = ToInt32 ( vecNormaledThreshold.size () ) - 2;
-        cv::Mat matInRange;
-        cv::inRange ( matNormalizedPhase, vecNormaledThreshold[nKK], vecNormaledThreshold[nKK + 1], matInRange );
-#ifdef _DEBUG
-        auto vevVecNormalizedPhase = CalcUtils::matToVector<DATA_TYPE> ( matNormalizedPhase );
-#endif
-        auto rectBounding = cv::boundingRect ( matInRange );
-        if ( rectBounding.width < CALIB_HEIGHT_MIN_SIZE || rectBounding.height < CALIB_HEIGHT_MIN_SIZE ) {
-            WriteLog("The base surface size is too small to calibrate 3D height.");
-            pstRpy->enStatus = VisionStatus::CALIB_3D_HEIGHT_SURFACE_TOO_SMALL;
-            return;
-        }
-
         VectorOfPoint vecPtLocations;
-        cv::findNonZero ( matInRange, vecPtLocations );
+        cv::Mat matNormalizedPhase;
+        VectorOfFloat vecNormaledThreshold;
+        for ( int nRetryToFindBase = 0; nRetryToFindBase < 2; ++ nRetryToFindBase ) {
+            cv::Mat matMask = (matTmpPhase == matTmpPhase); //Find out value is not NAN.
+            cv::minMaxLoc ( matTmpPhase, &dMinValue, &dMaxValue, &ptMin, &ptMax, matMask );
+            matNormalizedPhase = (matTmpPhase - dMinValue) / (dMaxValue - dMinValue);
+            cv::Mat matGrayScalePhase = matNormalizedPhase * PR_MAX_GRAY_LEVEL;
+            matGrayScalePhase.convertTo ( pstRpy->matDivideStepResultImg, CV_8U );
+            cv::cvtColor ( pstRpy->matDivideStepResultImg, pstRpy->matDivideStepResultImg, CV_GRAY2BGR );
+            pstRpy->matDivideStepIndex = cv::Mat::zeros ( pstRpy->matDivideStepResultImg.size (), CV_8SC1 );
+            auto vecThreshold = VisionAlgorithm::autoMultiLevelThreshold ( matGrayScalePhase, matMask, pstCmd->nBlockStepCount );
+            
+            vecNormaledThreshold.push_back ( 0.f );
+            for (const auto thresh : vecThreshold)
+                vecNormaledThreshold.push_back ( ToFloat ( thresh ) / ToFloat ( PR_MAX_GRAY_LEVEL ) );
+            vecNormaledThreshold.push_back ( 1.f );
+
+            auto nKK = 0;
+            if (pstCmd->bReverseHeight)
+                nKK = ToInt32 ( vecNormaledThreshold.size () ) - 2;
+            cv::Mat matInRangeBaseSurface;
+            cv::inRange ( matNormalizedPhase, vecNormaledThreshold[nKK], vecNormaledThreshold[nKK + 1], matInRangeBaseSurface );
+#ifdef _DEBUG
+            auto vevVecNormalizedPhase = CalcUtils::matToVector<DATA_TYPE> ( matNormalizedPhase );
+            cv::Mat matAutoThresholdResult = _drawAutoThresholdResult ( matNormalizedPhase, vecNormaledThreshold );
+            cv::imwrite ( "./data/calib3DHeight_AutoThresholdResult.png", matAutoThresholdResult );
+            cv::imwrite ( "./data/calib3DHeight_NormGrayScale.png", matGrayScalePhase );
+#endif
+            auto rectBounding = cv::boundingRect ( matInRangeBaseSurface );
+            cv::findNonZero ( matInRangeBaseSurface, vecPtLocations );
+            if ( rectBounding.width > CALIB_HEIGHT_MIN_SIZE && rectBounding.height > CALIB_HEIGHT_MIN_SIZE && vecPtLocations.size() > 5000 ) {
+                //We are good here, find a good base surface, can exit the retry and continue the next step.
+                break;
+            }else if ( 0 == nRetryToFindBase ) {
+                //The first time retry, remove the fake base surface to NAN, and retry again.
+                matTmpPhase.setTo ( NAN, matInRangeBaseSurface );
+                vecNormaledThreshold.clear();
+            }
+            else if ( 1 == nRetryToFindBase  ) {
+                WriteLog ( "The base surface size is too small to calibrate 3D height." );
+                pstRpy->enStatus = VisionStatus::CALIB_3D_HEIGHT_SURFACE_TOO_SMALL;
+                return;
+            }
+        }
         std::sort ( vecPtLocations.begin (), vecPtLocations.end (), [&matNormalizedPhase]( const cv::Point &pt1, const cv::Point &pt2 ) {
             return matNormalizedPhase.at<DATA_TYPE> ( pt1 ) < matNormalizedPhase.at<DATA_TYPE> ( pt2 );
         } );
@@ -2077,7 +2091,7 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
                     for ( int row = nStart + 1; row <= nEnd; ++ row ) {
                         auto &value = matPhase.at<DATA_TYPE>(row, col);
                         value -= chSignFirst * ONE_CYCLE * chTurnAmpl;
-                        if ( chSignFirst > 0 && value < startValue )  { //Jump up, need to roll down, but can not over roll
+                        if ( chSignFirst > 0 && value < startValue ) { //Jump up, need to roll down, but can not over roll
                             value = startValue;
                         }else if ( chSignFirst < 0 && value > startValue ) { //Jump down, need to roll up
                             value = startValue;
@@ -2090,6 +2104,16 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
         }
     }
     TimeLog::GetInstance()->addTimeLog( "_phaseCorrection in y direction.", stopWatch.Span() );
+}
+
+/*static*/ cv::Mat Unwrap::_drawAutoThresholdResult(const cv::Mat &matInput, const VectorOfFloat &vecRanges) {
+    cv::Mat matResult = cv::Mat::ones(matInput.size(), CV_8UC3);
+    for ( size_t i = 0; i < vecRanges.size() - 1 && i < MATLAB_COLOR_COUNT; ++ i ) {
+        cv::Mat matRangeMask;
+        cv::inRange ( matInput, vecRanges[i], vecRanges[i+1], matRangeMask );
+        matResult.setTo ( MATLAB_COLOR_ORDER[i], matRangeMask );
+    }
+    return matResult;
 }
 
 }
