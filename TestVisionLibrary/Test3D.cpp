@@ -118,13 +118,13 @@ static cv::Mat _drawHeightGrid(const cv::Mat &matHeight, int nGridRow, int nGrid
     return matResultImg;
 }
 
-static std::string gstrWorkingFolder("./data/HaoYu_20171112/newLens2/");
+static std::string gstrWorkingFolder("./data/HaoYu_20171112/newLens1/");
 static std::string gstrCalibResultFile = gstrWorkingFolder + "CalibPP.yml";
 static std::string gstrIntegrateCalibResultFile( gstrWorkingFolder + "IntegrateCalibResult.yml" );
-bool gbUseGamma = false;
+bool gbUseGamma = true;
 const int IMAGE_COUNT = 12;
 void TestCalib3dBase() {    
-    std::string strFolder = gstrWorkingFolder + "1027154026_base/";
+    std::string strFolder = gstrWorkingFolder + "0920234214_base/";
     PR_CALIB_3D_BASE_CMD stCmd;
     PR_CALIB_3D_BASE_RPY stRpy;
     for ( int i = 1; i <= IMAGE_COUNT; ++ i ) {
@@ -158,7 +158,7 @@ void TestCalib3dBase() {
 }
 
 void TestCalib3DHeight_01() {
-    std::string strFolder = gstrWorkingFolder + "1027154002_lt/";
+    std::string strFolder = gstrWorkingFolder + "0920235040_lefttop/";
     PR_CALIB_3D_HEIGHT_CMD stCmd;
     PR_CALIB_3D_HEIGHT_RPY stRpy;
     for ( int i = 1; i <= IMAGE_COUNT; ++ i ) {
@@ -173,7 +173,7 @@ void TestCalib3DHeight_01() {
     stCmd.bReverseHeight = false;
     stCmd.bUseThinnestPattern = gbUseGamma;
 
-    stCmd.fMinAmplitude = 5.f;
+    stCmd.fMinAmplitude = 8.f;
     stCmd.nBlockStepCount = 5;
     stCmd.fBlockStepHeight = 1.f;
     stCmd.nResultImgGridRow = 10;
@@ -242,7 +242,7 @@ void TestCalib3DHeight_02() {
     stCmd.bReverseHeight = false;
     stCmd.bUseThinnestPattern = gbUseGamma;
 
-    stCmd.fMinAmplitude = 1.5;
+    stCmd.fMinAmplitude = 8;
     stCmd.nBlockStepCount = 5;
     stCmd.fBlockStepHeight = 1.f;
     stCmd.nResultImgGridRow = 10;
@@ -290,7 +290,7 @@ void TestCalib3DHeight_02() {
 }
 
 void TestCalib3DHeight_03() {
-    std::string strFolder = gstrWorkingFolder + "1017001229_negative/";
+    std::string strFolder = gstrWorkingFolder + "0920235405_negitive/";
     PR_CALIB_3D_HEIGHT_CMD stCmd;
     PR_CALIB_3D_HEIGHT_RPY stRpy;
     for ( int i = 1; i <= IMAGE_COUNT; ++ i ) {
@@ -305,7 +305,7 @@ void TestCalib3DHeight_03() {
     stCmd.bReverseHeight = true;
     stCmd.bUseThinnestPattern = gbUseGamma;
 
-    stCmd.fMinAmplitude = 1.5;
+    stCmd.fMinAmplitude = 8;
     stCmd.nBlockStepCount = 3;
     stCmd.fBlockStepHeight = 1.f;
     stCmd.nResultImgGridRow = 10;
@@ -517,7 +517,7 @@ void TestCalc3DHeight_With_NormalCalibParam() {
 }
 
 void TestCalc3DHeight_With_IntegrateCalibParam() {
-    std::string strFolder = gstrWorkingFolder + "1027160756_02/";
+    std::string strFolder = gstrWorkingFolder + "1027160744_01/";
     //std::string strFolder = "./data/0913212217_Unwrap_Not_Finish/";
     PR_CALC_3D_HEIGHT_CMD stCmd;
     PR_CALC_3D_HEIGHT_RPY stRpy;
@@ -569,6 +569,8 @@ void TestCalc3DHeight_With_IntegrateCalibParam() {
     cv::imwrite ( gstrWorkingFolder + "PR_Calc3DHeight_HeightGridImg_IntegrateCalibParam.png", matHeightResultImg );
     cv::Mat matPhaseResultImg = _drawHeightGrid ( stRpy.matPhase, 9, 9 );
     cv::imwrite ( gstrWorkingFolder + "PR_Calc3DHeight_PhaseGridImg_IntegrateCalibParam.png", matPhaseResultImg );
+
+    saveMatToCsv ( stRpy.matHeight, gstrWorkingFolder + "Height.csv");
 
     saveMatToMatlab ( stRpy.matHeight, gstrWorkingFolder + "Height.mat" );
     std::string strHeightFile( gstrWorkingFolder + "Height.yml" );
@@ -803,8 +805,16 @@ void TestMerge3DHeight() {
     cv::Mat matHeightResultImg = _drawHeightGrid ( stRpy.matHeight, 10, 10 );
     cv::imwrite ( "./data/HaoYu_20171112/PR_TestMerge3DHeight_HeightGridImg.png", matHeightResultImg );
 
-    cv::patchNaNs ( stRpy.matHeight, 0 );
     saveMatToCsv ( stRpy.matHeight, "./data/HaoYu_20171112/MergeHeight.csv");
+
+    double dMinValue = 0, dMaxValue = 0;
+    cv::Point ptMin, ptMax;
+    cv::Mat matMask = (stRpy.matHeight == stRpy.matHeight); //Find out value is not NAN.
+    cv::minMaxLoc ( stRpy.matHeight, &dMinValue, &dMaxValue, &ptMin, &ptMax, matMask );
+    std::cout << "Minimum position " << ptMin << std::endl;
+    std::cout << "Maximum position " << ptMax << std::endl;
+    double dMean = cv::mean ( stRpy.matHeight, matMask)[0];
+    std::cout << "Mean height " << dMean << std::endl;
 }
 
 void TestCalc3DHeightDiff(const cv::Mat &matHeight) {

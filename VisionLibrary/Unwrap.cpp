@@ -554,7 +554,7 @@ static inline cv::Mat calcOrder5BezierCoeff ( const cv::Mat &matU ) {
         float fAmplitudeSquare = (x*x + y*y) / 4.f;
         if ( fAmplitudeSquare < fMinimumAlpitudeSquare )
             matAvgUnderTolIndex.at<uchar>(i) = 1;
-        matAlpha.at<float>(i) = vecVecAtan2Table[x + PR_MAX_GRAY_LEVEL ][y+ PR_MAX_GRAY_LEVEL];
+        matAlpha.at<float>(i) = vecVecAtan2Table[x + PR_MAX_GRAY_LEVEL ][y + PR_MAX_GRAY_LEVEL];
     }    
 
     ptrData0 = vecConvertedImgs[4].ptr<uchar>(0);
@@ -637,7 +637,8 @@ static inline cv::Mat calcOrder5BezierCoeff ( const cv::Mat &matU ) {
     pstRpy->enStatus = VisionStatus::OK;
 }
 
-/*static*/ void Unwrap::merge3DHeight(const PR_MERGE_3D_HEIGHT_CMD *const pstCmd, PR_MERGE_3D_HEIGHT_RPY *const pstRpy) {    
+/*static*/ void Unwrap::merge3DHeight(const PR_MERGE_3D_HEIGHT_CMD *const pstCmd, PR_MERGE_3D_HEIGHT_RPY *const pstRpy) {
+    CStopWatch stopWatch;
     pstRpy->matHeight = cv::Mat::zeros ( pstCmd->vecMatHeight[0].size(), pstCmd->vecMatHeight[0].type() );
     cv::Mat matNan0 = CalcUtils::getNanMask( pstCmd->vecMatHeight[0] );
     cv::Mat matNan1 = CalcUtils::getNanMask( pstCmd->vecMatHeight[1] );
@@ -653,7 +654,33 @@ static inline cv::Mat calcOrder5BezierCoeff ( const cv::Mat &matU ) {
     pstCmd->vecMatHeight[0].copyTo ( pstRpy->matHeight, matIdxH2 );
 
     cv::add ( pstCmd->vecMatHeight[0] / 2.f, pstCmd->vecMatHeight[1] / 2.f, pstRpy->matHeight, matIdxH0 );
+
+    TimeLog::GetInstance()->addTimeLog( "Merge height.", stopWatch.Span() );
+
     cv::medianBlur ( pstRpy->matHeight, pstRpy->matHeight, 5 );
+
+    TimeLog::GetInstance()->addTimeLog( "medianBlur.", stopWatch.Span() );
+
+    cv::Mat matReshape = pstRpy->matHeight.reshape ( 1, 1 );
+    auto vecVecHeight = CalcUtils::matToVector<DATA_TYPE> ( matReshape );
+    auto vecSortedJumpSpanIdx = CalcUtils::sort_index_value<DATA_TYPE> ( vecVecHeight[0] );
+    int nRemoveCount = pstCmd->fRemoveLowerNoiseRatio * matReshape.rows * matReshape.cols;
+    for ( int i = 0; i < nRemoveCount; ++ i ) {
+        pstRpy->matHeight.at<DATA_TYPE>( vecSortedJumpSpanIdx[i] ) = NAN;
+    }
+    TimeLog::GetInstance()->addTimeLog( "Sort and set.", stopWatch.Span() );
+
+    VectorOfPoint vecNanPoints;
+    cv::Mat matNan = CalcUtils::getNanMask ( pstRpy->matHeight );
+    cv::findNonZero ( matNan, vecNanPoints );
+    for ( const auto &point : vecNanPoints ) {
+        if ( point.x > 0 )
+            pstRpy->matHeight.at<DATA_TYPE>(point) = pstRpy->matHeight.at<DATA_TYPE> ( point.y, point.x - 1 );
+        else if ( point.x == 0 && point.y > 0 )
+            pstRpy->matHeight.at<DATA_TYPE>(point) = pstRpy->matHeight.at<DATA_TYPE> ( point.y - 1, point.x  );
+    }
+
+    TimeLog::GetInstance()->addTimeLog( "Clear Nan values.", stopWatch.Span() );
 }
 
 /*static*/ cv::Mat Unwrap::_phaseUnwrapSurfaceTrk ( const cv::Mat &matPhase, const cv::Mat &dxPhase, const cv::Mat &dyPhase, const cv::Mat &matBranchCut ) {

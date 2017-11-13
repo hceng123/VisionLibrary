@@ -5881,7 +5881,11 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
         }
     }
 
+    MARK_FUNCTION_START_TIME;
+
     Unwrap::integrate3DCalib(pstCmd, pstRpy);
+
+    MARK_FUNCTION_END_TIME;
     return pstRpy->enStatus;
 }
 

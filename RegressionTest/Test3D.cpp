@@ -138,7 +138,10 @@ void TestCalib3DHeightSub(
     stCmd.bReverseSeq = true;
     stCmd.bUseThinnestPattern = bUseGamma;
     stCmd.bReverseHeight = bReverseHeight;
-    stCmd.fMinAmplitude = 2.f;
+    if ( stCmd.bUseThinnestPattern )
+        stCmd.fMinAmplitude = 8.f;
+    else
+        stCmd.fMinAmplitude = 2.f;
     stCmd.nBlockStepCount = nBlockStepCount;
     stCmd.fBlockStepHeight = 1.f;    
 
@@ -225,7 +228,7 @@ void TestCalcTopSurface3DHeightSub(
         return;
 
     cv::Mat matMask = stRpy.matPhase == stRpy.matPhase;
-    float fMeanPhase = cv::mean ( stRpy.matPhase, matMask )[0];
+    float fMeanPhase = ToFloat ( cv::mean ( stRpy.matPhase, matMask )[0] );
     std::cout << "Mean Phase: " << fMeanPhase << std::endl;
 
     std::cout << "Grid snoop phase: " << std::endl;

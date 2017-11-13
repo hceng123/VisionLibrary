@@ -995,9 +995,11 @@ struct PR_CALC_3D_HEIGHT_RPY {
 
 struct PR_MERGE_3D_HEIGHT_CMD {
     PR_MERGE_3D_HEIGHT_CMD() : 
-        fHeightDiffThreshold(0.2f) {}
+        fHeightDiffThreshold(0.2f),
+        fRemoveLowerNoiseRatio(0.001f) {}
     VectorOfMat             vecMatHeight;
     float                   fHeightDiffThreshold;   //The height difference threshold. Unit mm. If height difference less than it, the result height is average of the input height. If larger than it, the result height use the small height.
+    float                   fRemoveLowerNoiseRatio; //Remove the lower part of the image as noise, set to their neighbour values.
 };
 
 struct PR_MERGE_3D_HEIGHT_RPY {
