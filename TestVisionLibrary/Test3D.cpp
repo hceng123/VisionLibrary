@@ -118,12 +118,12 @@ static cv::Mat _drawHeightGrid(const cv::Mat &matHeight, int nGridRow, int nGrid
     return matResultImg;
 }
 
-static std::string gstrWorkingFolder("./data/HaoYu_20171112/newLens1/");
+static std::string gstrWorkingFolder("./data/HaoYu_20171112/newLens2/");
 static std::string gstrCalibResultFile = gstrWorkingFolder + "CalibPP.yml";
 static std::string gstrIntegrateCalibResultFile( gstrWorkingFolder + "IntegrateCalibResult.yml" );
 bool gbUseGamma = true;
 const int IMAGE_COUNT = 12;
-void TestCalib3dBase() {    
+void TestCalib3dBase() {
     std::string strFolder = gstrWorkingFolder + "0920234214_base/";
     PR_CALIB_3D_BASE_CMD stCmd;
     PR_CALIB_3D_BASE_RPY stRpy;
@@ -390,8 +390,8 @@ void TestCalc3DHeight() {
         return;
 
     cv::Mat matMask = stRpy.matPhase == stRpy.matPhase;
-    float fMeanPhase = cv::mean ( stRpy.matPhase, matMask )[0];
-    std::cout << "Mean Phase: " << fMeanPhase << std::endl;
+    auto dMeanPhase = cv::mean ( stRpy.matPhase, matMask )[0];
+    std::cout << "Mean Phase: " << dMeanPhase << std::endl;
 
     cv::Mat matHeightResultImg = _drawHeightGrid ( stRpy.matHeight, 9, 9 );
     cv::imwrite ( gstrWorkingFolder + "PR_Calc3DHeight_HeightGridImg.png", matHeightResultImg );
@@ -517,7 +517,7 @@ void TestCalc3DHeight_With_NormalCalibParam() {
 }
 
 void TestCalc3DHeight_With_IntegrateCalibParam() {
-    std::string strFolder = gstrWorkingFolder + "1027160744_01/";
+    std::string strFolder = gstrWorkingFolder + "1027160756_02/";
     //std::string strFolder = "./data/0913212217_Unwrap_Not_Finish/";
     PR_CALC_3D_HEIGHT_CMD stCmd;
     PR_CALC_3D_HEIGHT_RPY stRpy;
@@ -797,6 +797,7 @@ void TestMerge3DHeight() {
         stCmd.vecMatHeight.push_back ( matHeight );
     }
 
+    stCmd.fRemoveLowerNoiseRatio = 0.005f;
     PR_Merge3DHeight ( &stCmd, &stRpy );
     std::cout << "PR_Merge3DHeight status " << ToInt32( stRpy.enStatus ) << std::endl;
     if ( VisionStatus::OK != stRpy.enStatus )
@@ -810,11 +811,17 @@ void TestMerge3DHeight() {
     double dMinValue = 0, dMaxValue = 0;
     cv::Point ptMin, ptMax;
     cv::Mat matMask = (stRpy.matHeight == stRpy.matHeight); //Find out value is not NAN.
+    cv::Mat matNanMask = 255 - matMask;
     cv::minMaxLoc ( stRpy.matHeight, &dMinValue, &dMaxValue, &ptMin, &ptMax, matMask );
-    std::cout << "Minimum position " << ptMin << std::endl;
-    std::cout << "Maximum position " << ptMax << std::endl;
+    std::cout << "Minimum position " << ptMin << " min value: " << dMinValue << std::endl;
+    std::cout << "Maximum position " << ptMax << " max value: " << dMaxValue << std::endl;
     double dMean = cv::mean ( stRpy.matHeight, matMask)[0];
     std::cout << "Mean height " << dMean << std::endl;
+    VectorOfPoint vecNanPoints;
+    cv::findNonZero ( matNanMask, vecNanPoints );
+    std::cout << "Count of nan: " << vecNanPoints.size() << std::endl;
+    for ( const auto &point : vecNanPoints )
+        std::cout << point << std::endl;
 }
 
 void TestCalc3DHeightDiff(const cv::Mat &matHeight) {

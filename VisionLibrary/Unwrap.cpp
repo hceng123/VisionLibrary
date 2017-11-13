@@ -654,24 +654,31 @@ static inline cv::Mat calcOrder5BezierCoeff ( const cv::Mat &matU ) {
     pstCmd->vecMatHeight[0].copyTo ( pstRpy->matHeight, matIdxH2 );
 
     cv::add ( pstCmd->vecMatHeight[0] / 2.f, pstCmd->vecMatHeight[1] / 2.f, pstRpy->matHeight, matIdxH0 );
-
     TimeLog::GetInstance()->addTimeLog( "Merge height.", stopWatch.Span() );
 
-    cv::medianBlur ( pstRpy->matHeight, pstRpy->matHeight, 5 );
-
-    TimeLog::GetInstance()->addTimeLog( "medianBlur.", stopWatch.Span() );
+    VectorOfPoint vecNanPoints;
+    cv::Mat matNan = CalcUtils::getNanMask ( pstRpy->matHeight );
+    cv::dilate ( matNan, matNan, cv::getStructuringElement ( cv::MORPH_RECT, cv::Size ( MEDIAN_FILTER_SIZE, MEDIAN_FILTER_SIZE ) ) );
+    cv::findNonZero ( matNan, vecNanPoints );
+    for ( const auto &point : vecNanPoints ) {
+        if ( point.x > 0 )
+            pstRpy->matHeight.at<DATA_TYPE>(point) = pstRpy->matHeight.at<DATA_TYPE> ( point.y, point.x - 1 );
+        else if ( point.x == 0 && point.y > 0 )
+            pstRpy->matHeight.at<DATA_TYPE>(point) = pstRpy->matHeight.at<DATA_TYPE> ( point.y - 1, point.x );
+    }
+    TimeLog::GetInstance()->addTimeLog( "Clear Nan values.", stopWatch.Span() );
 
     cv::Mat matReshape = pstRpy->matHeight.reshape ( 1, 1 );
     auto vecVecHeight = CalcUtils::matToVector<DATA_TYPE> ( matReshape );
     auto vecSortedJumpSpanIdx = CalcUtils::sort_index_value<DATA_TYPE> ( vecVecHeight[0] );
-    int nRemoveCount = pstCmd->fRemoveLowerNoiseRatio * matReshape.rows * matReshape.cols;
+    int nRemoveCount = ToInt32 ( pstCmd->fRemoveLowerNoiseRatio * matReshape.rows * matReshape.cols );
+    std::cout << "Remove lower height count " << nRemoveCount << std::endl;
     for ( int i = 0; i < nRemoveCount; ++ i ) {
-        pstRpy->matHeight.at<DATA_TYPE>( vecSortedJumpSpanIdx[i] ) = NAN;
+        pstRpy->matHeight.at<DATA_TYPE>( ToInt32 ( vecSortedJumpSpanIdx[i] ) ) = NAN;
     }
     TimeLog::GetInstance()->addTimeLog( "Sort and set.", stopWatch.Span() );
 
-    VectorOfPoint vecNanPoints;
-    cv::Mat matNan = CalcUtils::getNanMask ( pstRpy->matHeight );
+    matNan = CalcUtils::getNanMask ( pstRpy->matHeight );
     cv::findNonZero ( matNan, vecNanPoints );
     for ( const auto &point : vecNanPoints ) {
         if ( point.x > 0 )
@@ -679,8 +686,10 @@ static inline cv::Mat calcOrder5BezierCoeff ( const cv::Mat &matU ) {
         else if ( point.x == 0 && point.y > 0 )
             pstRpy->matHeight.at<DATA_TYPE>(point) = pstRpy->matHeight.at<DATA_TYPE> ( point.y - 1, point.x  );
     }
+    TimeLog::GetInstance()->addTimeLog( "Clear Nan values again.", stopWatch.Span() );
 
-    TimeLog::GetInstance()->addTimeLog( "Clear Nan values.", stopWatch.Span() );
+    cv::medianBlur ( pstRpy->matHeight, pstRpy->matHeight, MEDIAN_FILTER_SIZE );
+    TimeLog::GetInstance()->addTimeLog( "medianBlur.", stopWatch.Span() );
 }
 
 /*static*/ cv::Mat Unwrap::_phaseUnwrapSurfaceTrk ( const cv::Mat &matPhase, const cv::Mat &dxPhase, const cv::Mat &dyPhase, const cv::Mat &matBranchCut ) {

@@ -386,6 +386,7 @@ public:
     static void findMinMaxCoord(const VectorOfPoint &vecPoints, int &xMin, int &xMax, int &yMin, int &yMax);
     static float calcFrequency(const cv::Mat &matInput);
     static VectorOfDouble interp1(const VectorOfDouble &vecX, const VectorOfDouble &vecV, const VectorOfDouble &vecXq, bool bSpine = false );
+    static void saveMatToCsv(cv::Mat &matrix, std::string filename);
 };
 
 }

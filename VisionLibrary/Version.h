@@ -14,10 +14,15 @@
  * Copyright (c) 2016-2016, Xiao Shengguang.  All rights reserved.
  ****************************************************************************/
 
+//2017-11-13 (XSG) Add fRemoveLowerNoiseRatio in PR_MERGE_3D_HEIGHT_CMD to remove lower noise.
+//2017-11-13 (XSG) Move median filter to the end of PR_Merge3DHeight.
+//2017-11-13 (XSG) Remove nan value in the output height.
+#define AOI_VISION_VERSION          "1.00.14"
+
 //2017-11-11 (XSG) Update the method to calculate 3D height. Change the phase range from -pi~pi to -1~1.
 //2017-11-11 (XSG) Remove PR_Comb3DCalib and PR_FastCalc3DHeight function.
 //2017-11-09 (XSG) Support use thinnest pattern.
-#define AOI_VISION_VERSION          "1.00.13"
+//#define AOI_VISION_VERSION          "1.00.13"
 
 //2017-11-05 (XSG) Add PR_Merge3DHeight function.
 //#define AOI_VISION_VERSION          "1.00.12"

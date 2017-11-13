@@ -1,5 +1,6 @@
 #include "CalcUtils.h"
 #include "spline.h"
+#include <fstream>
 
 namespace AOI
 {
@@ -265,6 +266,14 @@ float CalcUtils::calcPointToContourDist(const cv::Point &ptInput, const VectorOf
     for ( const auto xq : vecXq )
         vecResult.push_back ( s( xq ) );
     return vecResult;
+}
+
+/*static*/ void CalcUtils::saveMatToCsv(cv::Mat &matrix, std::string filename) {
+    std::ofstream outputFile(filename);
+    if ( ! outputFile.is_open() )
+        return;
+    outputFile << cv::format ( matrix, cv::Formatter::FMT_CSV ) << std::endl;
+    outputFile.close();
 }
 
 }
