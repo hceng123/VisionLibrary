@@ -600,8 +600,8 @@ static inline cv::Mat calcOrder5BezierCoeff ( const cv::Mat &matU ) {
     TimeLog::GetInstance()->addTimeLog( "_phaseWrapByRefer.", stopWatch.Span() );
 
     if ( pstCmd->nRemoveBetaJumpSpanX > 0 || pstCmd->nRemoveBetaJumpSpanY > 0 ) {
-        _phaseCorrection ( matBeta, matAvgUnderTolIndex, pstCmd->nRemoveBetaJumpSpanX, pstCmd->nRemoveBetaJumpSpanY );
-        TimeLog::GetInstance()->addTimeLog( "_phaseCorrection for beta.", stopWatch.Span() );
+        phaseCorrection ( matBeta, matAvgUnderTolIndex, pstCmd->nRemoveBetaJumpSpanX, pstCmd->nRemoveBetaJumpSpanY );
+        TimeLog::GetInstance()->addTimeLog( "phaseCorrection for beta.", stopWatch.Span() );
     }
 
     if ( pstCmd->bUseThinnestPattern ) {
@@ -611,8 +611,8 @@ static inline cv::Mat calcOrder5BezierCoeff ( const cv::Mat &matU ) {
         _phaseWrapByRefer ( matGamma, matBuffer1 );
 
         if ( pstCmd->nRemoveGammaJumpSpanX > 0 || pstCmd->nRemoveGammaJumpSpanY > 0 ) {
-            _phaseCorrection ( matBeta, matAvgUnderTolIndex, pstCmd->nRemoveGammaJumpSpanX, pstCmd->nRemoveGammaJumpSpanY );
-            TimeLog::GetInstance()->addTimeLog( "_phaseCorrection for gamma.", stopWatch.Span() );
+            phaseCorrection ( matBeta, matAvgUnderTolIndex, pstCmd->nRemoveGammaJumpSpanX, pstCmd->nRemoveGammaJumpSpanY );
+            TimeLog::GetInstance()->addTimeLog( "phaseCorrection for gamma.", stopWatch.Span() );
         }
 
         matGamma.setTo ( NAN, matAvgUnderTolIndex );
@@ -1949,7 +1949,7 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
     pstRpy->enStatus = VisionStatus::OK;
 }
 
-/*static*/ void Unwrap::_phaseCorrection(cv::Mat &matPhase, const cv::Mat &matIdxNan, int nJumpSpanX, int nJumpSpanY) {
+/*static*/ void Unwrap::phaseCorrection(cv::Mat &matPhase, const cv::Mat &matIdxNan, int nJumpSpanX, int nJumpSpanY) {
     CStopWatch stopWatch;
     const int ROWS = matPhase.rows;
     const int COLS = matPhase.cols;
@@ -1960,7 +1960,7 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
             continue;
         matPhase.at<DATA_TYPE>(point) = matPhase.at<DATA_TYPE> ( point.y, point.x - 1 );
     }
-    TimeLog::GetInstance()->addTimeLog( "_phaseCorrection set nan to neighbour.", stopWatch.Span() );
+    TimeLog::GetInstance()->addTimeLog( "phaseCorrection set nan to neighbour.", stopWatch.Span() );
 
     //X direction
     {
@@ -2050,7 +2050,7 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
     }
     }
 
-    TimeLog::GetInstance()->addTimeLog( "_phaseCorrection in x direction.", stopWatch.Span() );
+    TimeLog::GetInstance()->addTimeLog( "phaseCorrection in x direction.", stopWatch.Span() );
 
     // Y direction
     cv::Mat matPhaseDiff = CalcUtils::diff ( matPhase, 1, 1 );
@@ -2139,7 +2139,7 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
             }
         }
     }
-    TimeLog::GetInstance()->addTimeLog( "_phaseCorrection in y direction.", stopWatch.Span() );
+    TimeLog::GetInstance()->addTimeLog( "phaseCorrection in y direction.", stopWatch.Span() );
 }
 
 /*static*/ cv::Mat Unwrap::_drawAutoThresholdResult(const cv::Mat &matInput, const VectorOfFloat &vecRanges) {
