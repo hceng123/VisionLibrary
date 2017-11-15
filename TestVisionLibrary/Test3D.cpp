@@ -118,7 +118,7 @@ static cv::Mat _drawHeightGrid(const cv::Mat &matHeight, int nGridRow, int nGrid
     return matResultImg;
 }
 
-static std::string gstrWorkingFolder("./data/HaoYu_20171112/");
+static std::string gstrWorkingFolder("./data/HaoYu_20171114/test1/NewLens2/");
 static std::string gstrCalibResultFile = gstrWorkingFolder + "CalibPP.yml";
 static std::string gstrIntegrateCalibResultFile( gstrWorkingFolder + "IntegrateCalibResult.yml" );
 bool gbUseGamma = true;
@@ -517,7 +517,7 @@ void TestCalc3DHeight_With_NormalCalibParam() {
 }
 
 void TestCalc3DHeight_With_IntegrateCalibParam() {
-    std::string strFolder = gstrWorkingFolder + "1027160756_02/";
+    std::string strFolder = gstrWorkingFolder + "1114194025_02/";
     //std::string strFolder = "./data/0913212217_Unwrap_Not_Finish/";
     PR_CALC_3D_HEIGHT_CMD stCmd;
     PR_CALC_3D_HEIGHT_RPY stRpy;
@@ -571,6 +571,7 @@ void TestCalc3DHeight_With_IntegrateCalibParam() {
     cv::imwrite ( gstrWorkingFolder + "PR_Calc3DHeight_PhaseGridImg_IntegrateCalibParam.png", matPhaseResultImg );
 
     saveMatToCsv ( stRpy.matHeight, gstrWorkingFolder + "Height.csv");
+    saveMatToCsv ( stRpy.matPhase,  gstrWorkingFolder + "Phase.csv");
 
     saveMatToMatlab ( stRpy.matHeight, gstrWorkingFolder + "Height.mat" );
     std::string strHeightFile( gstrWorkingFolder + "Height.yml" );
@@ -785,8 +786,10 @@ void TestMerge3DHeight() {
     PR_MERGE_3D_HEIGHT_CMD stCmd;
     PR_MERGE_3D_HEIGHT_RPY stRpy;
 
-    std::string strArrayHeightFile[2] = {"./data/HaoYu_20171112/newLens1/Height.yml",
-    "./data/HaoYu_20171112/newLens2/Height.yml"};
+    std::string strWorkingFolder("./data/HaoYu_20171114/test1/");
+
+    std::string strArrayHeightFile[2] = {strWorkingFolder + "newLens1/Height.yml",
+                                         strWorkingFolder + "newLens2/Height.yml"};
 
     for ( int i = 0; i < 2; ++ i ) {
         cv::Mat matHeight;
@@ -804,9 +807,9 @@ void TestMerge3DHeight() {
         return;
 
     cv::Mat matHeightResultImg = _drawHeightGrid ( stRpy.matHeight, 10, 10 );
-    cv::imwrite ( "./data/HaoYu_20171112/PR_TestMerge3DHeight_HeightGridImg.png", matHeightResultImg );
+    cv::imwrite ( strWorkingFolder + "PR_TestMerge3DHeight_HeightGridImg.png", matHeightResultImg );
 
-    saveMatToCsv ( stRpy.matHeight, "./data/HaoYu_20171112/MergeHeight.csv");
+    saveMatToCsv ( stRpy.matHeight, strWorkingFolder + "MergeHeight.csv");
 
     double dMinValue = 0, dMaxValue = 0;
     cv::Point ptMin, ptMax;
@@ -824,7 +827,7 @@ void TestMerge3DHeight() {
         std::cout << point << std::endl;
     cv::Mat matNorm;
     cv::normalize ( stRpy.matHeight, matNorm, 0, 255, cv::NormTypes::NORM_MINMAX, CV_8UC1 );
-    cv::imwrite ( "./data/HaoYu_20171112/PR_TestMerge3DHeight_NormHeight.png", matNorm );
+    cv::imwrite ( strWorkingFolder + "PR_TestMerge3DHeight_NormHeight.png", matNorm );
 }
 
 void TestCalc3DHeightDiff(const cv::Mat &matHeight) {
