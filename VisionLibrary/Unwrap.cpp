@@ -668,25 +668,28 @@ static inline cv::Mat calcOrder5BezierCoeff ( const cv::Mat &matU ) {
     }
     TimeLog::GetInstance()->addTimeLog( "Clear Nan values.", stopWatch.Span() );
 
-    cv::Mat matReshape = pstRpy->matHeight.reshape ( 1, 1 );
-    auto vecVecHeight = CalcUtils::matToVector<DATA_TYPE> ( matReshape );
-    auto vecSortedJumpSpanIdx = CalcUtils::sort_index_value<DATA_TYPE> ( vecVecHeight[0] );
-    int nRemoveCount = ToInt32 ( pstCmd->fRemoveLowerNoiseRatio * matReshape.rows * matReshape.cols );
-    std::cout << "Remove lower height count " << nRemoveCount << std::endl;
-    for ( int i = 0; i < nRemoveCount; ++ i ) {
-        pstRpy->matHeight.at<DATA_TYPE>( ToInt32 ( vecSortedJumpSpanIdx[i] ) ) = NAN;
-    }
-    TimeLog::GetInstance()->addTimeLog( "Sort and set.", stopWatch.Span() );
+    removeJumpArea ( pstRpy->matHeight, 1000 );
+    TimeLog::GetInstance()->addTimeLog( "removeJumpArea.", stopWatch.Span() );
 
-    matNan = CalcUtils::getNanMask ( pstRpy->matHeight );
-    cv::findNonZero ( matNan, vecNanPoints );
-    for ( const auto &point : vecNanPoints ) {
-        if ( point.x > 0 )
-            pstRpy->matHeight.at<DATA_TYPE>(point) = pstRpy->matHeight.at<DATA_TYPE> ( point.y, point.x - 1 );
-        else if ( point.x == 0 && point.y > 0 )
-            pstRpy->matHeight.at<DATA_TYPE>(point) = pstRpy->matHeight.at<DATA_TYPE> ( point.y - 1, point.x  );
-    }
-    TimeLog::GetInstance()->addTimeLog( "Clear Nan values again.", stopWatch.Span() );
+    //cv::Mat matReshape = pstRpy->matHeight.reshape ( 1, 1 );
+    //auto vecVecHeight = CalcUtils::matToVector<DATA_TYPE> ( matReshape );
+    //auto vecSortedJumpSpanIdx = CalcUtils::sort_index_value<DATA_TYPE> ( vecVecHeight[0] );
+    //int nRemoveCount = ToInt32 ( pstCmd->fRemoveLowerNoiseRatio * matReshape.rows * matReshape.cols );
+    //std::cout << "Remove lower height count " << nRemoveCount << std::endl;
+    //for ( int i = 0; i < nRemoveCount; ++ i ) {
+    //    pstRpy->matHeight.at<DATA_TYPE>( ToInt32 ( vecSortedJumpSpanIdx[i] ) ) = NAN;
+    //}
+    //TimeLog::GetInstance()->addTimeLog( "Sort and set.", stopWatch.Span() );
+
+    //matNan = CalcUtils::getNanMask ( pstRpy->matHeight );
+    //cv::findNonZero ( matNan, vecNanPoints );
+    //for ( const auto &point : vecNanPoints ) {
+    //    if ( point.x > 0 )
+    //        pstRpy->matHeight.at<DATA_TYPE>(point) = pstRpy->matHeight.at<DATA_TYPE> ( point.y, point.x - 1 );
+    //    else if ( point.x == 0 && point.y > 0 )
+    //        pstRpy->matHeight.at<DATA_TYPE>(point) = pstRpy->matHeight.at<DATA_TYPE> ( point.y - 1, point.x  );
+    //}
+    //TimeLog::GetInstance()->addTimeLog( "Clear Nan values again.", stopWatch.Span() );
 
     cv::medianBlur ( pstRpy->matHeight, pstRpy->matHeight, MEDIAN_FILTER_SIZE );
     TimeLog::GetInstance()->addTimeLog( "medianBlur.", stopWatch.Span() );
@@ -2150,6 +2153,44 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
         matResult.setTo ( MATLAB_COLOR_ORDER[i], matRangeMask );
     }
     return matResult;
+}
+
+/*static*/ void Unwrap::removeJumpArea(cv::Mat &matHeight, float fAreaLimit) {
+    int nRepeatTimes = 0;
+    cv::Mat matNormHeight, matThreshold, matThreshold1, matBlob;
+    do {
+        
+        cv::normalize ( matHeight, matNormHeight, 0, 255, cv::NormTypes::NORM_MINMAX, CV_8UC1 );
+        cv::threshold ( matNormHeight, matThreshold, 50, 255, cv::ThresholdTypes::THRESH_BINARY_INV );
+        cv::threshold ( matNormHeight, matThreshold1, 250, 255, cv::ThresholdTypes::THRESH_BINARY );
+        cv::imwrite ( "./data/HaoYu_20171112/Threhold1_" + std::to_string(nRepeatTimes) + ".png", matThreshold );
+        cv::imwrite ( "./data/HaoYu_20171112/Threhold2_" + std::to_string(nRepeatTimes) + ".png", matThreshold1 );        matThreshold = matThreshold | matThreshold1;
+
+        
+        matBlob = matThreshold.clone();
+        cv::imwrite ( "./data/HaoYu_20171112/Threhold3_" + std::to_string(nRepeatTimes) + ".png", matBlob );
+        VectorOfVectorOfPoint contours, effectiveContours, vecDrawContours;
+        cv::findContours ( matThreshold, contours, cv::RETR_LIST, cv::CHAIN_APPROX_SIMPLE );
+        for( const auto &contour : contours ) {
+            if( cv::contourArea ( contour ) > fAreaLimit ) {
+                effectiveContours.push_back ( contour );
+            }
+        }
+        if( effectiveContours.size () > 0 )
+            cv::fillPoly ( matBlob, effectiveContours, cv::Scalar::all ( 0 ) );
+
+        cv::imwrite ( "./data/HaoYu_20171112/Threhold4_" + std::to_string(nRepeatTimes) + ".png", matBlob );
+        VectorOfPoint vecNanPoints;
+        cv::findNonZero ( matBlob, vecNanPoints );
+        std::cout << "Remove neg noise points " << vecNanPoints.size () << std::endl;
+        for( const auto &point : vecNanPoints ) {
+            if( point.x > 0 )
+                matHeight.at<DATA_TYPE> ( point ) = matHeight.at<DATA_TYPE> ( point.y, point.x - 1 );
+            else if( point.x == 0 && point.y > 0 )
+                matHeight.at<DATA_TYPE> ( point ) = matHeight.at<DATA_TYPE> ( point.y - 1, point.x );
+        }
+        ++ nRepeatTimes;
+    } while( nRepeatTimes < 5 );
 }
 
 }

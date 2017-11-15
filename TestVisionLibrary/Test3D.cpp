@@ -118,13 +118,13 @@ static cv::Mat _drawHeightGrid(const cv::Mat &matHeight, int nGridRow, int nGrid
     return matResultImg;
 }
 
-static std::string gstrWorkingFolder("./data/HaoYu_20171112/newLens2/");
+static std::string gstrWorkingFolder("./data/HaoYu_20171112/");
 static std::string gstrCalibResultFile = gstrWorkingFolder + "CalibPP.yml";
 static std::string gstrIntegrateCalibResultFile( gstrWorkingFolder + "IntegrateCalibResult.yml" );
 bool gbUseGamma = true;
 const int IMAGE_COUNT = 12;
 void TestCalib3dBase() {
-    std::string strFolder = gstrWorkingFolder + "0920234214_base/";
+    std::string strFolder = gstrWorkingFolder + "1114193238_base/";
     PR_CALIB_3D_BASE_CMD stCmd;
     PR_CALIB_3D_BASE_RPY stRpy;
     for ( int i = 1; i <= IMAGE_COUNT; ++ i ) {
@@ -822,6 +822,9 @@ void TestMerge3DHeight() {
     std::cout << "Count of nan: " << vecNanPoints.size() << std::endl;
     for ( const auto &point : vecNanPoints )
         std::cout << point << std::endl;
+    cv::Mat matNorm;
+    cv::normalize ( stRpy.matHeight, matNorm, 0, 255, cv::NormTypes::NORM_MINMAX, CV_8UC1 );
+    cv::imwrite ( "./data/HaoYu_20171112/PR_TestMerge3DHeight_NormHeight.png", matNorm );
 }
 
 void TestCalc3DHeightDiff(const cv::Mat &matHeight) {
