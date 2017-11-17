@@ -1966,192 +1966,199 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
     TimeLog::GetInstance()->addTimeLog( "phaseCorrection set nan to neighbour.", stopWatch.Span() );
 
     //X direction
+    if ( nJumpSpanX > 0 )
     {
-    cv::Mat matPhaseDiff = CalcUtils::diff ( matPhase, 1, 2 );
+        cv::Mat matPhaseDiff = CalcUtils::diff ( matPhase, 1, 2 );
 #ifdef _DEBUG
-    auto vecVecPhase = CalcUtils::matToVector<float> ( matPhase );
-    auto vecVecPhaseDiff = CalcUtils::matToVector<float> ( matPhaseDiff );
+        auto vecVecPhase = CalcUtils::matToVector<float> ( matPhase );
+        auto vecVecPhaseDiff = CalcUtils::matToVector<float> ( matPhaseDiff );
 #endif
-    cv::Mat matDiffSign = cv::Mat::zeros ( ROWS, COLS, CV_8SC1 );
-    cv::Mat matDiffAmpl = cv::Mat::zeros ( ROWS, COLS, CV_8SC1 );
-    std::vector<int> vecRowsWithJump;
-    for ( int row = 0; row < matPhaseDiff.rows; ++ row ) {
-        bool bRowWithPosJump = false, bRowWithNegJump = false;
-        for( int col = 0; col < matPhaseDiff.cols; ++ col ) {
-            auto value = matPhaseDiff.at<DATA_TYPE> ( row, col );
-            if( value > ONE_HALF_CYCLE ) {
-                matDiffSign.at<char> ( row, col ) = 1;
-                bRowWithPosJump = true;
+        cv::Mat matDiffSign = cv::Mat::zeros ( ROWS, COLS, CV_8SC1 );
+        cv::Mat matDiffAmpl = cv::Mat::zeros ( ROWS, COLS, CV_8SC1 );
+        std::vector<int> vecRowsWithJump;
+        for (int row = 0; row < matPhaseDiff.rows; ++row) {
+            bool bRowWithPosJump = false, bRowWithNegJump = false;
+            for (int col = 0; col < matPhaseDiff.cols; ++col) {
+                auto value = matPhaseDiff.at<DATA_TYPE> ( row, col );
+                if (value > ONE_HALF_CYCLE) {
+                    matDiffSign.at<char> ( row, col ) = 1;
+                    bRowWithPosJump = true;
 
-                char nJumpAmplitude = static_cast<char> ( std::ceil ( std::abs ( value ) / 2.f ) * 2 );
-                matDiffAmpl.at<char> ( row, col ) = nJumpAmplitude;
-            }
-            else if( value < - ONE_HALF_CYCLE ) {
-                matDiffSign.at<char> ( row, col ) = -1;
-                bRowWithNegJump = true;
+                    char nJumpAmplitude = static_cast<char> (std::ceil ( std::abs ( value ) / 2.f ) * 2);
+                    matDiffAmpl.at<char> ( row, col ) = nJumpAmplitude;
+                }
+                else if (value < -ONE_HALF_CYCLE) {
+                    matDiffSign.at<char> ( row, col ) = -1;
+                    bRowWithNegJump = true;
 
-                char nJumpAmplitude = static_cast<char> ( std::ceil ( std::abs ( value ) / 2.f ) * 2 );
-                matDiffAmpl.at<char> ( row, col ) = nJumpAmplitude;
-            }
-        }
-        if ( bRowWithPosJump && bRowWithNegJump )
-            vecRowsWithJump.push_back ( row );
-    }
-    
-    for ( auto row : vecRowsWithJump ) {
-        char *ptrSignOfRow = matDiffSign.ptr<char>(row);
-        char *ptrAmplOfRow = matDiffAmpl.ptr<char>(row);
-        
-        for ( int kk = 0; kk < 2; ++ kk ) {
-            std::vector<int> vecJumpCol, vecJumpSpan, vecJumpIdxNeedToHandle;
-            vecJumpCol.reserve ( 20 );
-            for( int col = 0; col < COLS; ++ col ) {
-                if( ptrSignOfRow[col] != 0 )
-                    vecJumpCol.push_back ( col );
-            }
-            if( vecJumpCol.size () < 2 )
-                continue;
-            vecJumpSpan.reserve ( vecJumpCol.size () - 1 );
-            for( size_t i = 1; i < vecJumpCol.size (); ++i )
-                vecJumpSpan.push_back ( vecJumpCol[i] - vecJumpCol[i - 1] );
-            auto vecSortedJumpSpanIdx = CalcUtils::sort_index_value<int> ( vecJumpSpan );
-            for( int i = 0; i < ToInt32 ( vecJumpSpan.size () ); ++i ) {
-                if( vecJumpSpan[i] < nJumpSpanX )
-                    vecJumpIdxNeedToHandle.push_back ( i );
-            }
-
-            for ( size_t jj = 0; jj < vecJumpIdxNeedToHandle.size(); ++ jj ) {
-                auto nStart = vecJumpCol [ vecSortedJumpSpanIdx [ jj ] ];
-                auto nEnd   = vecJumpCol [ vecSortedJumpSpanIdx [ jj ] + 1 ];
-                char chSignFirst  = ptrSignOfRow [ nStart ];        //The index is hard to understand. Use the sorted span index to find the original column.
-                char chSignSecond = ptrSignOfRow [ nEnd ];
-
-                char chAmplFirst  = ptrAmplOfRow [ nStart ];
-                char chAmplSecond = ptrAmplOfRow [ nEnd ];
-                char chTurnAmpl = std::min ( chAmplFirst, chAmplSecond ) / 2;
-                if ( chSignFirst * chSignSecond == -1 ) { //it is a pair
-                    char chAmplNew = chAmplFirst - 2 * chTurnAmpl;
-                    ptrAmplOfRow [ nStart ] = chAmplNew;
-                    if ( chAmplNew <= 0 )
-                        ptrSignOfRow [ nStart ] = 0;  // Remove the sign of jump flag.
-
-                    chAmplNew = chAmplSecond - 2 * chTurnAmpl;
-                    ptrAmplOfRow [ nEnd ] = chAmplNew;
-                    if ( chAmplNew <= 0 )
-                        ptrSignOfRow [ nEnd ] = 0;
-
-                    auto startValue = matPhase.at<DATA_TYPE>(row, nStart);
-                    for ( int col = nStart + 1; col <= nEnd; ++ col ) {
-                        auto &value = matPhase.at<DATA_TYPE>(row, col);
-                        value -= chSignFirst * ONE_CYCLE * chTurnAmpl;
-                        if ( chSignFirst > 0 && value < startValue )  { //Jump up, need to roll down, but can not over roll
-                            value = startValue;
-                        }else if ( chSignFirst < 0 && value > startValue ) { //Jump down, need to roll up
-                            value = startValue;
-                        }else {
-                            auto i = value;
-                        }
-                    }                        
+                    char nJumpAmplitude = static_cast<char> (std::ceil ( std::abs ( value ) / 2.f ) * 2);
+                    matDiffAmpl.at<char> ( row, col ) = nJumpAmplitude;
                 }
             }
+            if (bRowWithPosJump && bRowWithNegJump)
+                vecRowsWithJump.push_back ( row );
         }
-    }
-    }
 
-    TimeLog::GetInstance()->addTimeLog( "phaseCorrection in x direction.", stopWatch.Span() );
+        for (auto row : vecRowsWithJump) {
+            char *ptrSignOfRow = matDiffSign.ptr<char> ( row );
+            char *ptrAmplOfRow = matDiffAmpl.ptr<char> ( row );
 
-    // Y direction
-    cv::Mat matPhaseDiff = CalcUtils::diff ( matPhase, 1, 1 );
-#ifdef _DEBUG
-    auto vecVecPhase = CalcUtils::matToVector<float> ( matPhase );
-    auto vecVecPhaseDiff = CalcUtils::matToVector<float> ( matPhaseDiff );
-#endif
-    cv::Mat matDiffSign = cv::Mat::zeros ( ROWS, COLS, CV_8SC1 );
-    cv::Mat matDiffAmpl = cv::Mat::zeros ( ROWS, COLS, CV_8SC1 );
-    std::vector<int> vecColsWithJump;
-    for ( int col = 0; col < matPhaseDiff.cols; ++ col ) {
-        bool bColWithPosJump = false, bColWithNegJump = false;
-        for( int row = 0; row < matPhaseDiff.rows; ++ row ) {
-            auto value = matPhaseDiff.at<DATA_TYPE> ( row, col );
-            if( value > ONE_HALF_CYCLE ) {
-                matDiffSign.at<char> ( row, col ) = 1;
-                bColWithPosJump = true;
-            }
-            else if( value < -ONE_HALF_CYCLE ) {
-                matDiffSign.at<char> ( row, col ) = -1;
-                bColWithNegJump = true;
-            }
+            for (int kk = 0; kk < 2; ++kk) {
+                std::vector<int> vecJumpCol, vecJumpSpan, vecJumpIdxNeedToHandle;
+                vecJumpCol.reserve ( 20 );
+                for (int col = 0; col < COLS; ++col) {
+                    if (ptrSignOfRow[col] != 0)
+                        vecJumpCol.push_back ( col );
+                }
+                if (vecJumpCol.size () < 2)
+                    continue;
+                vecJumpSpan.reserve ( vecJumpCol.size () - 1 );
+                for (size_t i = 1; i < vecJumpCol.size (); ++i)
+                    vecJumpSpan.push_back ( vecJumpCol[i] - vecJumpCol[i - 1] );
+                auto vecSortedJumpSpanIdx = CalcUtils::sort_index_value<int> ( vecJumpSpan );
+                for (int i = 0; i < ToInt32 ( vecJumpSpan.size () ); ++i) {
+                    if (vecJumpSpan[i] < nJumpSpanX)
+                        vecJumpIdxNeedToHandle.push_back ( i );
+                }
 
-            if( std::abs ( value ) > ONE_HALF_CYCLE ) {
-                char nJumpAmplitude = static_cast<char> ( std::ceil ( std::abs ( value ) / 2.f ) * 2 );
-                matDiffAmpl.at<char> ( row, col ) = nJumpAmplitude;
-            }
-        }
-        if ( bColWithPosJump && bColWithNegJump )
-            vecColsWithJump.push_back ( col );
-    }
-    
-    for ( auto col : vecColsWithJump ) {
-        cv::Mat matSignOfCol = cv::Mat ( matDiffSign, cv::Range::all(), cv::Range(col, col+1) ).clone();
-        char *ptrSignOfCol = matSignOfCol.ptr<char>(0);
-        cv::Mat matAmplOfCol = cv::Mat ( matDiffAmpl, cv::Range::all(), cv::Range(col, col+1) ).clone();
-        char *ptrAmplOfCol = matAmplOfCol.ptr<char>(0);
-        
-        for ( int kk = 0; kk < 2; ++ kk ) {
-            std::vector<int> vecJumpRow, vecJumpSpan, vecJumpIdxNeedToHandle;
-            vecJumpRow.reserve ( 20 );
-            for( int row = 0; row < ROWS; ++ row ) {
-                if( ptrSignOfCol[row] != 0 )
-                    vecJumpRow.push_back ( row );
-            }
-            if( vecJumpRow.size () < 2 )
-                continue;
-            vecJumpSpan.reserve ( vecJumpRow.size () - 1 );
-            for( size_t i = 1; i < vecJumpRow.size (); ++ i )
-                vecJumpSpan.push_back ( vecJumpRow[i] - vecJumpRow[i - 1] );
-            auto vecSortedJumpSpanIdx = CalcUtils::sort_index_value<int> ( vecJumpSpan );
-            for( int i = 0; i < ToInt32 ( vecJumpSpan.size () ); ++i ) {
-                if( vecJumpSpan[i] < nJumpSpanY )
-                    vecJumpIdxNeedToHandle.push_back ( i );
-            }
+                for (size_t jj = 0; jj < vecJumpIdxNeedToHandle.size (); ++jj) {
+                    auto nStart = vecJumpCol[vecSortedJumpSpanIdx[jj]];
+                    auto nEnd = vecJumpCol[vecSortedJumpSpanIdx[jj] + 1];
+                    char chSignFirst = ptrSignOfRow[nStart];        //The index is hard to understand. Use the sorted span index to find the original column.
+                    char chSignSecond = ptrSignOfRow[nEnd];
 
-            for ( size_t jj = 0; jj < vecJumpIdxNeedToHandle.size(); ++ jj ) {
-                auto nStart = vecJumpRow [ vecSortedJumpSpanIdx [ jj ] ];
-                auto nEnd =   vecJumpRow [ vecSortedJumpSpanIdx [ jj ] + 1 ];
-                char chSignFirst  = ptrSignOfCol [ nStart ];        //The index is hard to understand. Use the sorted span index to find the original column.
-                char chSignSecond = ptrSignOfCol [ nEnd ];
+                    char chAmplFirst = ptrAmplOfRow[nStart];
+                    char chAmplSecond = ptrAmplOfRow[nEnd];
+                    char chTurnAmpl = std::min ( chAmplFirst, chAmplSecond ) / 2;
+                    if (chSignFirst * chSignSecond == -1) { //it is a pair
+                        char chAmplNew = chAmplFirst - 2 * chTurnAmpl;
+                        ptrAmplOfRow[nStart] = chAmplNew;
+                        if (chAmplNew <= 0)
+                            ptrSignOfRow[nStart] = 0;  // Remove the sign of jump flag.
 
-                char chAmplFirst  = ptrAmplOfCol [ nStart ];
-                char chAmplSecond = ptrAmplOfCol [ nEnd ];
-                char chTurnAmpl = std::min ( chAmplFirst, chAmplSecond ) / 2;
-                if ( chSignFirst * chSignSecond == -1 ) { //it is a pair
-                    char chAmplNew = chAmplFirst - 2 * chTurnAmpl;
-                    ptrAmplOfCol [ nStart ] = chAmplNew;
-                    if ( chAmplNew <= 0 )
-                        ptrSignOfCol [ nStart ] = 0;  // Remove the sign of jump flag.
+                        chAmplNew = chAmplSecond - 2 * chTurnAmpl;
+                        ptrAmplOfRow[nEnd] = chAmplNew;
+                        if (chAmplNew <= 0)
+                            ptrSignOfRow[nEnd] = 0;
 
-                    chAmplNew = chAmplSecond - 2 * chTurnAmpl;
-                    ptrAmplOfCol [ nEnd ] = chAmplNew;
-                    if ( chAmplNew <= 0 )
-                        ptrSignOfCol [ nEnd ] = 0;
-
-                    auto startValue = matPhase.at<DATA_TYPE> ( nStart, col );
-                    for ( int row = nStart + 1; row <= nEnd; ++ row ) {
-                        auto &value = matPhase.at<DATA_TYPE>(row, col);
-                        value -= chSignFirst * ONE_CYCLE * chTurnAmpl;
-                        if ( chSignFirst > 0 && value < startValue ) { //Jump up, need to roll down, but can not over roll
-                            value = startValue;
-                        }else if ( chSignFirst < 0 && value > startValue ) { //Jump down, need to roll up
-                            value = startValue;
-                        }else {
-                            auto i = value;
+                        auto startValue = matPhase.at<DATA_TYPE> ( row, nStart );
+                        for (int col = nStart + 1; col <= nEnd; ++col) {
+                            auto &value = matPhase.at<DATA_TYPE> ( row, col );
+                            value -= chSignFirst * ONE_CYCLE * chTurnAmpl;
+                            if (chSignFirst > 0 && value < startValue)  { //Jump up, need to roll down, but can not over roll
+                                value = startValue;
+                            }
+                            else if (chSignFirst < 0 && value > startValue) { //Jump down, need to roll up
+                                value = startValue;
+                            }
+                            else {
+                                auto i = value;
+                            }
                         }
                     }
                 }
             }
         }
+
+        TimeLog::GetInstance()->addTimeLog( "phaseCorrection in x direction.", stopWatch.Span() );
+    }    
+
+    // Y direction
+    if ( nJumpSpanY > 0 ) {
+        cv::Mat matPhaseDiff = CalcUtils::diff ( matPhase, 1, 1 );
+#ifdef _DEBUG
+        auto vecVecPhase = CalcUtils::matToVector<float> ( matPhase );
+        auto vecVecPhaseDiff = CalcUtils::matToVector<float> ( matPhaseDiff );
+#endif
+        cv::Mat matDiffSign = cv::Mat::zeros ( ROWS, COLS, CV_8SC1 );
+        cv::Mat matDiffAmpl = cv::Mat::zeros ( ROWS, COLS, CV_8SC1 );
+        std::vector<int> vecColsWithJump;
+        for (int col = 0; col < matPhaseDiff.cols; ++col) {
+            bool bColWithPosJump = false, bColWithNegJump = false;
+            for (int row = 0; row < matPhaseDiff.rows; ++row) {
+                auto value = matPhaseDiff.at<DATA_TYPE> ( row, col );
+                if (value > ONE_HALF_CYCLE) {
+                    matDiffSign.at<char> ( row, col ) = 1;
+                    bColWithPosJump = true;
+                }
+                else if (value < -ONE_HALF_CYCLE) {
+                    matDiffSign.at<char> ( row, col ) = -1;
+                    bColWithNegJump = true;
+                }
+
+                if (std::abs ( value ) > ONE_HALF_CYCLE) {
+                    char nJumpAmplitude = static_cast<char> (std::ceil ( std::abs ( value ) / 2.f ) * 2);
+                    matDiffAmpl.at<char> ( row, col ) = nJumpAmplitude;
+                }
+            }
+            if (bColWithPosJump && bColWithNegJump)
+                vecColsWithJump.push_back ( col );
+        }
+
+        for (auto col : vecColsWithJump) {
+            cv::Mat matSignOfCol = cv::Mat ( matDiffSign, cv::Range::all (), cv::Range ( col, col + 1 ) ).clone ();
+            char *ptrSignOfCol = matSignOfCol.ptr<char> ( 0 );
+            cv::Mat matAmplOfCol = cv::Mat ( matDiffAmpl, cv::Range::all (), cv::Range ( col, col + 1 ) ).clone ();
+            char *ptrAmplOfCol = matAmplOfCol.ptr<char> ( 0 );
+
+            for (int kk = 0; kk < 2; ++kk) {
+                std::vector<int> vecJumpRow, vecJumpSpan, vecJumpIdxNeedToHandle;
+                vecJumpRow.reserve ( 20 );
+                for (int row = 0; row < ROWS; ++row) {
+                    if (ptrSignOfCol[row] != 0)
+                        vecJumpRow.push_back ( row );
+                }
+                if (vecJumpRow.size () < 2)
+                    continue;
+                vecJumpSpan.reserve ( vecJumpRow.size () - 1 );
+                for (size_t i = 1; i < vecJumpRow.size (); ++i)
+                    vecJumpSpan.push_back ( vecJumpRow[i] - vecJumpRow[i - 1] );
+                auto vecSortedJumpSpanIdx = CalcUtils::sort_index_value<int> ( vecJumpSpan );
+                for (int i = 0; i < ToInt32 ( vecJumpSpan.size () ); ++i) {
+                    if (vecJumpSpan[i] < nJumpSpanY)
+                        vecJumpIdxNeedToHandle.push_back ( i );
+                }
+
+                for (size_t jj = 0; jj < vecJumpIdxNeedToHandle.size (); ++jj) {
+                    auto nStart = vecJumpRow[vecSortedJumpSpanIdx[jj]];
+                    auto nEnd = vecJumpRow[vecSortedJumpSpanIdx[jj] + 1];
+                    char chSignFirst = ptrSignOfCol[nStart];        //The index is hard to understand. Use the sorted span index to find the original column.
+                    char chSignSecond = ptrSignOfCol[nEnd];
+
+                    char chAmplFirst = ptrAmplOfCol[nStart];
+                    char chAmplSecond = ptrAmplOfCol[nEnd];
+                    char chTurnAmpl = std::min ( chAmplFirst, chAmplSecond ) / 2;
+                    if (chSignFirst * chSignSecond == -1) { //it is a pair
+                        char chAmplNew = chAmplFirst - 2 * chTurnAmpl;
+                        ptrAmplOfCol[nStart] = chAmplNew;
+                        if (chAmplNew <= 0)
+                            ptrSignOfCol[nStart] = 0;  // Remove the sign of jump flag.
+
+                        chAmplNew = chAmplSecond - 2 * chTurnAmpl;
+                        ptrAmplOfCol[nEnd] = chAmplNew;
+                        if (chAmplNew <= 0)
+                            ptrSignOfCol[nEnd] = 0;
+
+                        auto startValue = matPhase.at<DATA_TYPE> ( nStart, col );
+                        for (int row = nStart + 1; row <= nEnd; ++row) {
+                            auto &value = matPhase.at<DATA_TYPE> ( row, col );
+                            value -= chSignFirst * ONE_CYCLE * chTurnAmpl;
+                            if (chSignFirst > 0 && value < startValue) { //Jump up, need to roll down, but can not over roll
+                                value = startValue;
+                            }
+                            else if (chSignFirst < 0 && value > startValue) { //Jump down, need to roll up
+                                value = startValue;
+                            }
+                            else {
+                                auto i = value;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        TimeLog::GetInstance ()->addTimeLog ( "phaseCorrection in y direction.", stopWatch.Span () );
     }
-    TimeLog::GetInstance()->addTimeLog( "phaseCorrection in y direction.", stopWatch.Span() );
 }
 
 /*static*/ cv::Mat Unwrap::_drawAutoThresholdResult(const cv::Mat &matInput, const VectorOfFloat &vecRanges) {

@@ -303,6 +303,54 @@ Line slope = -0.67, intercept = 217.72
 Line coordinate: (179.97, 56.00), (96.39, 180.00)
 
 ---------------------------------------------
+AUTO LOCATE LEAD REGRESSION TEST #1 STARTING
+---------------------------------------------
+Two Line input:
+Point1 [0.00, 0.00], Point2 [10.00, 10.00]
+Point1 [0.00, 0.00], Point2 [10.00, -10.00]
+Two line angle 90.00
+
+---------------------------------------------
+AUTO LOCATE LEAD REGRESSION TEST #2 STARTING
+---------------------------------------------
+Two Line input:
+Point1 [-10.00, 1.00], Point2 [10.00, 1.00]
+Point1 [0.00, 0.00], Point2 [10.00, -10.00]
+Two line angle 135.00
+
+---------------------------------------------
+AUTO LOCATE LEAD REGRESSION TEST #3 STARTING
+---------------------------------------------
+Two Line input:
+Point1 [1.00, -10.00], Point2 [1.00, 10.00]
+Point1 [0.00, 0.00], Point2 [10.00, -10.00]
+Two line angle 135.00
+
+---------------------------------------------
+AUTO LOCATE LEAD REGRESSION TEST #4 STARTING
+---------------------------------------------
+Two Line input:
+Point1 [0.00, 0.00], Point2 [10.00, -10.00]
+Point1 [1.00, -10.00], Point2 [1.00, 10.00]
+Two line angle 135.00
+
+---------------------------------------------
+AUTO LOCATE LEAD REGRESSION TEST #5 STARTING
+---------------------------------------------
+Two Line input:
+Point1 [2.00, 0.00], Point2 [2.00, -10.00]
+Point1 [1.00, -10.00], Point2 [1.00, 10.00]
+Two line angle 0.00
+
+---------------------------------------------
+AUTO LOCATE LEAD REGRESSION TEST #6 STARTING
+---------------------------------------------
+Two Line input:
+Point1 [2.00, 0.00], Point2 [2.02, -100.00]
+Point1 [1.00, -10.00], Point2 [1.03, 10.00]
+Two line angle 0.09
+
+---------------------------------------------
 FIT PARALLEL LINE REGRESSION TEST #1 STARTING
 ---------------------------------------------
 Fit parallel line status 0
@@ -1111,7 +1159,7 @@ IntegratedK
 -0.00000 
 -0.00006 
 0.00009 
-0.68984 
+0.68983 
 -0.00829 
 0.00150 
 
@@ -1334,7 +1382,7 @@ IntegratedK
 0.00000 
 0.00008 
 -0.00012 
-0.86074 
+0.86075 
 -0.00840 
 0.00075 
 

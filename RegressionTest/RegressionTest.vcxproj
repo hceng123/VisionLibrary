@@ -200,6 +200,7 @@ FC /L $(ProjectDir)$(ProjectName)_golden.txt $(ProjectDir)$(ProjectName)_result.
     <ClCompile Include="TestInspDevice.cpp" />
     <ClCompile Include="TestInspBridge.cpp" />
     <ClCompile Include="TestLogCase.cpp" />
+    <ClCompile Include="TestMeasure.cpp" />
     <ClCompile Include="TestMisc.cpp" />
     <ClCompile Include="TestSrchTmpl.cpp" />
     <ClCompile Include="UtilityFunc.cpp" />

@@ -276,21 +276,40 @@ float CalcUtils::calcPointToContourDist(const cv::Point &ptInput, const VectorOf
     outputFile.close();
 }
 
-/*static*/ int CalcUtils::findLineCrossPoint(const PR_Line2f &line1, const PR_Line2f &line2, cv::Point2f ptResult)
-{
+/*static*/ int CalcUtils::findLineCrossPoint(const PR_Line2f &line1, const PR_Line2f &line2, cv::Point2f &ptResult) {
+    const auto Precision = std::numeric_limits<float>::epsilon();
 	float fLineSlope1 = ( line1.pt2.y - line1.pt1.y ) / ( line1.pt2.x - line1.pt1.x );
 	float fLineSlope2 = ( line2.pt2.y - line2.pt1.y ) / ( line2.pt2.x - line2.pt1.x );
 	if ( fabs ( fLineSlope1 - fLineSlope2 ) < PARALLEL_LINE_SLOPE_DIFF_LMT )	{
 		printf("No cross point for parallized lines");
 		return -1;
 	}
-	float fLineCrossWithY1 = fLineSlope1 * ( - line1.pt1.x) + line1.pt1.y;
+
+    //Line1 can be expressed as y = fLineSlope1 * x + fLineCrossWithY1
+	//Line2 can be expressed as y = fLineSlope2 * x + fLineCrossWithY2
+    float fLineCrossWithY1 = fLineSlope1 * ( - line1.pt1.x) + line1.pt1.y;
 	float fLineCrossWithY2 = fLineSlope2 * ( - line2.pt1.x) + line2.pt1.y;
 
-	//Line1 can be expressed as y = fLineSlope1 * x + fLineCrossWithY1
-	//Line2 can be expressed as y = fLineSlope2 * x + fLineCrossWithY2
-	ptResult.x = ( fLineCrossWithY2 - fLineCrossWithY1 ) / (fLineSlope1 - fLineSlope2);
-	ptResult.y = fLineSlope1 * ptResult.x + fLineCrossWithY1;
+    if ( fLineSlope1 == fLineSlope1 && fabs ( fLineSlope1 ) < 1000 &&
+         fLineSlope2 == fLineSlope2 && fabs ( fLineSlope2) < 1000 ) {
+        ptResult.x = ( fLineCrossWithY2 - fLineCrossWithY1 ) / (fLineSlope1 - fLineSlope2);
+	    ptResult.y = fLineSlope1 * ptResult.x + fLineCrossWithY1;
+    }else
+    if ( ( fLineSlope1 != fLineSlope1 || fabs ( fLineSlope1 ) > 1000 ) &&
+         ( fLineSlope2 != fLineSlope2 || fabs ( fLineSlope2 ) > 1000 ) ) {
+        //Both of the line is vertical, no cross point
+        return -1;
+    }
+    //Line1 is vertical
+    else if ( fLineSlope1 != fLineSlope1 || fabs ( fLineSlope1 ) > 1000 ) {
+        ptResult.x = line1.pt1.x;
+        ptResult.y = fLineSlope2 * ptResult.x + fLineCrossWithY2;
+    }else if ( fLineSlope2 != fLineSlope2 || fabs ( fLineSlope2 ) > 1000 ) {
+        ptResult.x = line2.pt1.x;
+        ptResult.y = fLineSlope1 * ptResult.x + fLineCrossWithY1;
+    }else {
+        return -1;
+    }	
 	return 0;
 }
 
@@ -318,7 +337,7 @@ float CalcUtils::calcPointToContourDist(const cv::Point &ptInput, const VectorOf
     float C = distanceOf2Point ( ptLine1ChoosePoint, ptLine2ChoosePoint );
     //Use the cos rules to calculate the cos of angle.
     float fCos = ( A*A + B*B - C*C ) / ( 2.f * A * B );
-    float fAngleDegree = radian2Degree ( acos ( fCos ) );
+    float fAngleDegree = ToFloat ( radian2Degree ( acos ( fCos ) ) );
     return fAngleDegree;
 }
 

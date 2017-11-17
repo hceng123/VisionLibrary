@@ -41,6 +41,11 @@ VectorOfFloat split ( const std::string &s, char delim );
 VectorOfVectorOfFloat parseData(const std::string &strContent);
 VectorOfVectorOfFloat readDataFromFile(const std::string &strFilePath);
 
+template<class T>
+void printPRLine(const PR_Line_<T> &line) {
+    std::cout << "Point1 " << line.pt1 << ", Point2 " << line.pt2 << std::endl;
+}
+
 }
 }
 #endif /*_VISION_REGRESSION_TEST_UTILITY_FUNCTION_H_*/

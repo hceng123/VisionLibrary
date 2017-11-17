@@ -36,6 +36,12 @@ void TestMerge3DHeight();
 void TestFastCalc3DHeight_1();
 
 void TestTwoLineAngle();
+void TestTwoLineAngle_1();
+void TestTwoLineAngle_2();
+void TestTwoLineAngle_3();
+void TestTwoLineAngle_4();
+void TestTwoLineAngle_5();
+
 template<class T>
 void printfMat(const cv::Mat &mat)
 {
