@@ -88,8 +88,7 @@ protected:
 	int _findBlob(const cv::Mat &mat, const cv::Mat &matRevs, PR_INSP_SURFACE_CMD *const pInspCmd, PR_INSP_SURFACE_RPY *pInspRpy );
 	int _findLine(const cv::Mat &mat, PR_INSP_SURFACE_CMD *const pInspCmd, PR_INSP_SURFACE_RPY *pInspRpy );
 	static int _mergeLines(const std::vector<PR_Line2f> &vecLines, std::vector<PR_Line2f> &vecResultLines);
-	static int _merge2Line(const PR_Line2f &line1, const PR_Line2f &line2, PR_Line2f &lineResult);
-	int _findLineCrossPoint(const PR_Line2f &line1, const PR_Line2f &line2, cv::Point2f ptResult);    
+	static int _merge2Line(const PR_Line2f &line1, const PR_Line2f &line2, PR_Line2f &lineResult); 
     static int _autoThreshold(const cv::Mat &mat, const cv::Mat &matMask = cv::Mat() );
     static bool _isContourRectShape(const VectorOfPoint &vecPoint);
     static bool _isContourRectShapeProjection(const VectorOfPoint &vecPoint);

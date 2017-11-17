@@ -118,7 +118,7 @@ static cv::Mat _drawHeightGrid(const cv::Mat &matHeight, int nGridRow, int nGrid
     return matResultImg;
 }
 
-static std::string gstrWorkingFolder("./data/HaoYu_20171114/test1/NewLens2/");
+static std::string gstrWorkingFolder("./data/HaoYu_20171114/test5/NewLens2/");
 static std::string gstrCalibResultFile = gstrWorkingFolder + "CalibPP.yml";
 static std::string gstrIntegrateCalibResultFile( gstrWorkingFolder + "IntegrateCalibResult.yml" );
 bool gbUseGamma = true;
@@ -517,7 +517,7 @@ void TestCalc3DHeight_With_NormalCalibParam() {
 }
 
 void TestCalc3DHeight_With_IntegrateCalibParam() {
-    std::string strFolder = gstrWorkingFolder + "1114194025_02/";
+    std::string strFolder = gstrWorkingFolder + "1114194353_02/";
     //std::string strFolder = "./data/0913212217_Unwrap_Not_Finish/";
     PR_CALC_3D_HEIGHT_CMD stCmd;
     PR_CALC_3D_HEIGHT_RPY stRpy;
@@ -530,7 +530,7 @@ void TestCalc3DHeight_With_IntegrateCalibParam() {
     }
     stCmd.bEnableGaussianFilter = false;
     stCmd.bReverseSeq = true;
-    stCmd.fMinAmplitude = 2;
+    stCmd.fMinAmplitude = 3;
     stCmd.bUseThinnestPattern = gbUseGamma;
 
     cv::Mat matBaseSurfaceParam;
@@ -573,7 +573,6 @@ void TestCalc3DHeight_With_IntegrateCalibParam() {
     saveMatToCsv ( stRpy.matHeight, gstrWorkingFolder + "Height.csv");
     saveMatToCsv ( stRpy.matPhase,  gstrWorkingFolder + "Phase.csv");
 
-    saveMatToMatlab ( stRpy.matHeight, gstrWorkingFolder + "Height.mat" );
     std::string strHeightFile( gstrWorkingFolder + "Height.yml" );
     fs.open(strHeightFile, cv::FileStorage::WRITE);
     if (!fs.isOpened ()) {
@@ -714,7 +713,7 @@ void TestCalc3DHeightNew() {
 }
 
 void copyVectorOfVectorToMat(const VectorOfVectorOfFloat &vecVecInput, cv::Mat &matOutput) {
-    matOutput = cv::Mat ( vecVecInput.size(), vecVecInput[0].size(), CV_32FC1 );
+    matOutput = cv::Mat ( ToInt32 ( vecVecInput.size() ), ToInt32 ( vecVecInput[0].size() ), CV_32FC1 );
     for ( int row = 0; row < matOutput.rows; ++ row )
     for ( int col = 0; col < matOutput.cols; ++ col ) {
         matOutput.at<float>(row, col) = vecVecInput[row][col];
@@ -786,7 +785,7 @@ void TestMerge3DHeight() {
     PR_MERGE_3D_HEIGHT_CMD stCmd;
     PR_MERGE_3D_HEIGHT_RPY stRpy;
 
-    std::string strWorkingFolder("./data/HaoYu_20171114/test1/");
+    std::string strWorkingFolder("./data/HaoYu_20171114/test5/");
 
     std::string strArrayHeightFile[2] = {strWorkingFolder + "newLens1/Height.yml",
                                          strWorkingFolder + "newLens2/Height.yml"};

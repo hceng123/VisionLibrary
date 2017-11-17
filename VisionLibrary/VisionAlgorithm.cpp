@@ -1447,24 +1447,6 @@ int VisionAlgorithm::_findLine(const cv::Mat &mat, PR_INSP_SURFACE_CMD *const pI
 	return 0;
 }
 
-int VisionAlgorithm::_findLineCrossPoint(const PR_Line2f &line1, const PR_Line2f &line2, cv::Point2f ptResult)
-{
-	float fLineSlope1 = ( line1.pt2.y - line1.pt1.y ) / ( line1.pt2.x - line1.pt1.x );
-	float fLineSlope2 = ( line2.pt2.y - line2.pt1.y ) / ( line2.pt2.x - line2.pt1.x );
-	if ( fabs ( fLineSlope1 - fLineSlope2 ) < PARALLEL_LINE_SLOPE_DIFF_LMT )	{
-		printf("No cross point for parallized lines");
-		return -1;
-	}
-	float fLineCrossWithY1 = fLineSlope1 * ( - line1.pt1.x) + line1.pt1.y;
-	float fLineCrossWithY2 = fLineSlope2 * ( - line2.pt1.x) + line2.pt1.y;
-
-	//Line1 can be expressed as y = fLineSlope1 * x + fLineCrossWithY1
-	//Line2 can be expressed as y = fLineSlope2 * x + fLineCrossWithY2
-	ptResult.x = ( fLineCrossWithY2 - fLineCrossWithY1 ) / (fLineSlope1 - fLineSlope2);
-	ptResult.y = fLineSlope1 * ptResult.x + fLineCrossWithY1;
-	return 0;
-}
-
 /*static*/ VisionStatus VisionAlgorithm::_writeLrnObjRecord(PR_LRN_OBJ_RPY *const pstRpy)
 {
     ObjRecordPtr ptrRecord = std::make_shared<ObjRecord>(PR_RECORD_TYPE::OBJECT);

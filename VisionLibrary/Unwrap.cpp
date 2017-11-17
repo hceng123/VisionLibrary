@@ -611,7 +611,7 @@ static inline cv::Mat calcOrder5BezierCoeff ( const cv::Mat &matU ) {
         _phaseWrapByRefer ( matGamma, matBuffer1 );
 
         if ( pstCmd->nRemoveGammaJumpSpanX > 0 || pstCmd->nRemoveGammaJumpSpanY > 0 ) {
-            phaseCorrection ( matBeta, matAvgUnderTolIndex, pstCmd->nRemoveGammaJumpSpanX, pstCmd->nRemoveGammaJumpSpanY );
+            phaseCorrection ( matGamma, matAvgUnderTolIndex, pstCmd->nRemoveGammaJumpSpanX, pstCmd->nRemoveGammaJumpSpanY );
             TimeLog::GetInstance()->addTimeLog( "phaseCorrection for gamma.", stopWatch.Span() );
         }
 
@@ -668,28 +668,28 @@ static inline cv::Mat calcOrder5BezierCoeff ( const cv::Mat &matU ) {
     }
     TimeLog::GetInstance()->addTimeLog( "Clear Nan values.", stopWatch.Span() );
 
-    removeJumpArea ( pstRpy->matHeight, 2000 );
-    TimeLog::GetInstance()->addTimeLog( "removeJumpArea.", stopWatch.Span() );
+    //removeJumpArea ( pstRpy->matHeight, 2000 );
+    //TimeLog::GetInstance()->addTimeLog( "removeJumpArea.", stopWatch.Span() );
 
-    //cv::Mat matReshape = pstRpy->matHeight.reshape ( 1, 1 );
-    //auto vecVecHeight = CalcUtils::matToVector<DATA_TYPE> ( matReshape );
-    //auto vecSortedJumpSpanIdx = CalcUtils::sort_index_value<DATA_TYPE> ( vecVecHeight[0] );
-    //int nRemoveCount = ToInt32 ( pstCmd->fRemoveLowerNoiseRatio * matReshape.rows * matReshape.cols );
-    //std::cout << "Remove lower height count " << nRemoveCount << std::endl;
-    //for ( int i = 0; i < nRemoveCount; ++ i ) {
-    //    pstRpy->matHeight.at<DATA_TYPE>( ToInt32 ( vecSortedJumpSpanIdx[i] ) ) = NAN;
-    //}
-    //TimeLog::GetInstance()->addTimeLog( "Sort and set.", stopWatch.Span() );
+    cv::Mat matReshape = pstRpy->matHeight.reshape ( 1, 1 );
+    auto vecVecHeight = CalcUtils::matToVector<DATA_TYPE> ( matReshape );
+    auto vecSortedJumpSpanIdx = CalcUtils::sort_index_value<DATA_TYPE> ( vecVecHeight[0] );
+    int nRemoveCount = ToInt32 ( pstCmd->fRemoveLowerNoiseRatio * matReshape.rows * matReshape.cols );
+    std::cout << "Remove lower height count " << nRemoveCount << std::endl;
+    for ( int i = 0; i < nRemoveCount; ++ i ) {
+        pstRpy->matHeight.at<DATA_TYPE>( ToInt32 ( vecSortedJumpSpanIdx[i] ) ) = NAN;
+    }
+    TimeLog::GetInstance()->addTimeLog( "Sort and set.", stopWatch.Span() );
 
-    //matNan = CalcUtils::getNanMask ( pstRpy->matHeight );
-    //cv::findNonZero ( matNan, vecNanPoints );
-    //for ( const auto &point : vecNanPoints ) {
-    //    if ( point.x > 0 )
-    //        pstRpy->matHeight.at<DATA_TYPE>(point) = pstRpy->matHeight.at<DATA_TYPE> ( point.y, point.x - 1 );
-    //    else if ( point.x == 0 && point.y > 0 )
-    //        pstRpy->matHeight.at<DATA_TYPE>(point) = pstRpy->matHeight.at<DATA_TYPE> ( point.y - 1, point.x  );
-    //}
-    //TimeLog::GetInstance()->addTimeLog( "Clear Nan values again.", stopWatch.Span() );
+    matNan = CalcUtils::getNanMask ( pstRpy->matHeight );
+    cv::findNonZero ( matNan, vecNanPoints );
+    for ( const auto &point : vecNanPoints ) {
+        if ( point.x > 0 )
+            pstRpy->matHeight.at<DATA_TYPE>(point) = pstRpy->matHeight.at<DATA_TYPE> ( point.y, point.x - 1 );
+        else if ( point.x == 0 && point.y > 0 )
+            pstRpy->matHeight.at<DATA_TYPE>(point) = pstRpy->matHeight.at<DATA_TYPE> ( point.y - 1, point.x  );
+    }
+    TimeLog::GetInstance()->addTimeLog( "Clear Nan values again.", stopWatch.Span() );
 
     cv::medianBlur ( pstRpy->matHeight, pstRpy->matHeight, MEDIAN_FILTER_SIZE );
     TimeLog::GetInstance()->addTimeLog( "medianBlur.", stopWatch.Span() );
@@ -1969,6 +1969,7 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
     {
     cv::Mat matPhaseDiff = CalcUtils::diff ( matPhase, 1, 2 );
 #ifdef _DEBUG
+    auto vecVecPhase = CalcUtils::matToVector<float> ( matPhase );
     auto vecVecPhaseDiff = CalcUtils::matToVector<float> ( matPhaseDiff );
 #endif
     cv::Mat matDiffSign = cv::Mat::zeros ( ROWS, COLS, CV_8SC1 );
@@ -1978,16 +1979,17 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
         bool bRowWithPosJump = false, bRowWithNegJump = false;
         for( int col = 0; col < matPhaseDiff.cols; ++ col ) {
             auto value = matPhaseDiff.at<DATA_TYPE> ( row, col );
-            if( value >  ONE_HALF_CYCLE ) {
+            if( value > ONE_HALF_CYCLE ) {
                 matDiffSign.at<char> ( row, col ) = 1;
                 bRowWithPosJump = true;
+
+                char nJumpAmplitude = static_cast<char> ( std::ceil ( std::abs ( value ) / 2.f ) * 2 );
+                matDiffAmpl.at<char> ( row, col ) = nJumpAmplitude;
             }
             else if( value < - ONE_HALF_CYCLE ) {
                 matDiffSign.at<char> ( row, col ) = -1;
                 bRowWithNegJump = true;
-            }
 
-            if( std::abs ( value ) > ONE_HALF_CYCLE ) {
                 char nJumpAmplitude = static_cast<char> ( std::ceil ( std::abs ( value ) / 2.f ) * 2 );
                 matDiffAmpl.at<char> ( row, col ) = nJumpAmplitude;
             }
@@ -2060,6 +2062,10 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
 
     // Y direction
     cv::Mat matPhaseDiff = CalcUtils::diff ( matPhase, 1, 1 );
+#ifdef _DEBUG
+    auto vecVecPhase = CalcUtils::matToVector<float> ( matPhase );
+    auto vecVecPhaseDiff = CalcUtils::matToVector<float> ( matPhaseDiff );
+#endif
     cv::Mat matDiffSign = cv::Mat::zeros ( ROWS, COLS, CV_8SC1 );
     cv::Mat matDiffAmpl = cv::Mat::zeros ( ROWS, COLS, CV_8SC1 );
     std::vector<int> vecColsWithJump;
@@ -2158,31 +2164,44 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
     return matResult;
 }
 
+void removeBlob(cv::Mat &matThreshold, cv::Mat &matBlob, float fAreaLimit ) {
+    VectorOfVectorOfPoint contours, effectiveContours;
+    cv::findContours ( matThreshold, contours, cv::RETR_LIST, cv::CHAIN_APPROX_SIMPLE );
+    for( const auto &contour : contours ) {
+        auto area = cv::contourArea ( contour );
+        if( area > fAreaLimit ) {
+            effectiveContours.push_back ( contour );
+        }
+    }
+    if( effectiveContours.size () > 0 )
+        cv::fillPoly ( matBlob, effectiveContours, cv::Scalar::all ( 0 ) );
+}
+
 /*static*/ void Unwrap::removeJumpArea(cv::Mat &matHeight, float fAreaLimit) {
     int nRepeatTimes = 0;
-    cv::Mat matNormHeight, matThreshold, matThreshold1, matBlob;
-    do {        
+    cv::Mat matNormHeight, matThresholdNeg, matBlobNeg, matThresholdPos, matBlobPos, matBlob;
+    
+    do {
+        double dLowerThreshold = 60;
+        if ( nRepeatTimes >=2 )
+            dLowerThreshold = 10;
         cv::normalize ( matHeight, matNormHeight, 0, 255, cv::NormTypes::NORM_MINMAX, CV_8UC1 );
-        cv::threshold ( matNormHeight, matThreshold, 60, 255, cv::ThresholdTypes::THRESH_BINARY_INV );
-        cv::threshold ( matNormHeight, matThreshold1, 200, 255, cv::ThresholdTypes::THRESH_BINARY );
-        cv::imwrite ( "./data/HaoYu_20171114/test1/Threhold1_" + std::to_string(nRepeatTimes) + ".png", matThreshold );
-        cv::imwrite ( "./data/HaoYu_20171114/test1/Threhold2_" + std::to_string(nRepeatTimes) + ".png", matThreshold1 );
-        matThreshold = matThreshold | matThreshold1;
+        cv::threshold ( matNormHeight, matThresholdNeg, dLowerThreshold, 255, cv::ThresholdTypes::THRESH_BINARY_INV );
+        cv::threshold ( matNormHeight, matThresholdPos, 200, 255, cv::ThresholdTypes::THRESH_BINARY );
+        cv::imwrite ( "./data/HaoYu_20171114/test5/Threhold" + std::to_string(nRepeatTimes) + "_1.png", matThresholdNeg );
+        cv::imwrite ( "./data/HaoYu_20171114/test5/Threhold" + std::to_string(nRepeatTimes) + "_2.png", matThresholdPos );
         
-        matBlob = matThreshold.clone();
-        cv::imwrite ( "./data/HaoYu_20171114/test1/Threhold3_" + std::to_string(nRepeatTimes) + ".png", matBlob );
-        VectorOfVectorOfPoint contours, effectiveContours, vecDrawContours;
-        cv::findContours ( matThreshold, contours, cv::RETR_LIST, cv::CHAIN_APPROX_SIMPLE );
-        for( const auto &contour : contours ) {
-            auto area = cv::contourArea ( contour );
-            if( area > fAreaLimit ) {
-                effectiveContours.push_back ( contour );
-            }
-        }
-        if( effectiveContours.size () > 0 )
-            cv::fillPoly ( matBlob, effectiveContours, cv::Scalar::all ( 0 ) );
-        cv::dilate ( matBlob, matBlob, cv::getStructuringElement ( cv::MorphShapes::MORPH_RECT, cv::Size ( 5, 5 ) ) );
-        cv::imwrite ( "./data/HaoYu_20171114/test1/Threhold4_" + std::to_string(nRepeatTimes) + ".png", matBlob );
+        matBlobNeg = matThresholdNeg.clone();
+        removeBlob ( matThresholdNeg, matBlobNeg, fAreaLimit );
+        cv::imwrite ( "./data/HaoYu_20171114/test5/Threhold" + std::to_string(nRepeatTimes) + "_3.png", matBlobNeg );
+
+        matBlobPos = matThresholdPos.clone();
+        removeBlob ( matThresholdPos, matBlobPos, fAreaLimit );
+        cv::imwrite ( "./data/HaoYu_20171114/test5/Threhold" + std::to_string(nRepeatTimes) + "_4.png", matBlobPos );
+
+        matBlob = matBlobNeg | matBlobPos;
+        cv::dilate ( matBlob, matBlob, cv::getStructuringElement ( cv::MorphShapes::MORPH_RECT, cv::Size ( 3, 3 ) ) );
+        cv::imwrite ( "./data/HaoYu_20171114/test5/Threhold" + std::to_string(nRepeatTimes) + "_5.png", matBlob );
         VectorOfPoint vecNanPoints;
         cv::findNonZero ( matBlob, vecNanPoints );
         std::cout << "Remove neg noise points " << vecNanPoints.size () << std::endl;
@@ -2193,7 +2212,7 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
                 matHeight.at<DATA_TYPE> ( point ) = matHeight.at<DATA_TYPE> ( point.y - 1, point.x );
         }
         ++ nRepeatTimes;
-    } while( nRepeatTimes < 2 );
+    } while( nRepeatTimes < 6 );
 }
 
 }

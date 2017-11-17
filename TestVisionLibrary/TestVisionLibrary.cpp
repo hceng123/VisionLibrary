@@ -645,7 +645,7 @@ int _tmain(int argc, _TCHAR* argv[])
     
     //TestIntegrate3DCalib();
     //TestCalc3DHeight_With_NormalCalibParam();
-    TestCalc3DHeight_With_IntegrateCalibParam();
+    //TestCalc3DHeight_With_IntegrateCalibParam();
     //TestMerge3DHeight();
 
     //TestIntegrate3DCalibHaoYu();
@@ -657,6 +657,7 @@ int _tmain(int argc, _TCHAR* argv[])
     //TestCalcPD();
 
     //TestCalcCameraMTF();
+    TestTwoLineAngle();
 
     PR_DumpTimeLog("./Vision/Time.log");
     std::cout << "Press any key to exit." << std::endl;

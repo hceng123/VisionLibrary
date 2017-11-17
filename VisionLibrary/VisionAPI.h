@@ -59,7 +59,8 @@ VisionAPI VisionStatus PR_FindEdge(const PR_FIND_EDGE_CMD *const pstCmd, PR_FIND
 VisionAPI VisionStatus PR_FitCircle(PR_FIT_CIRCLE_CMD *pstCmd, PR_FIT_CIRCLE_RPY *pstRpy);
 VisionAPI VisionStatus PR_GetErrorInfo(VisionStatus enStatus, PR_GET_ERROR_INFO_RPY *pstRpy);
 VisionAPI VisionStatus PR_Ocr(PR_OCR_CMD *pstCmd, PR_OCR_RPY *pstRpy);
-VisionAPI VisionStatus PR_PointLineDistance(PR_POINT_LINE_DISTANCE_CMD *pstCmd, PR_POINT_LINE_DISTANCE_RPY *pstRpy);
+VisionAPI VisionStatus PR_PointLineDistance(const PR_POINT_LINE_DISTANCE_CMD *const pstCmd, PR_POINT_LINE_DISTANCE_RPY *const pstRpy);
+VisionAPI VisionStatus PR_TwoLineAngle(const PR_TWO_LINE_ANGLE_CMD *const pstCmd, PR_TWO_LINE_ANGLE_RPY *const pstRpy);
 VisionAPI VisionStatus PR_ColorToGray(PR_COLOR_TO_GRAY_CMD *pstCmd, PR_COLOR_TO_GRAY_RPY *pstRpy);
 VisionAPI VisionStatus PR_Filter(PR_FILTER_CMD *pstCmd, PR_FILTER_RPY *pstRpy);
 VisionAPI VisionStatus PR_AutoThreshold(PR_AUTO_THRESHOLD_CMD *pstCmd, PR_AUTO_THRESHOLD_RPY *pstRpy);

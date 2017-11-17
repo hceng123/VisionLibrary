@@ -206,9 +206,15 @@ VisionAPI VisionStatus PR_Ocr(PR_OCR_CMD *pstCmd, PR_OCR_RPY *pstRpy)
     }
 }
 
-VisionAPI VisionStatus PR_PointLineDistance(PR_POINT_LINE_DISTANCE_CMD *pstCmd, PR_POINT_LINE_DISTANCE_RPY *pstRpy)
+VisionAPI VisionStatus PR_PointLineDistance(const PR_POINT_LINE_DISTANCE_CMD *const pstCmd, PR_POINT_LINE_DISTANCE_RPY *const pstRpy)
 {
     pstRpy->fDistance = CalcUtils::ptDisToLine ( pstCmd->ptInput, pstCmd->bReversedFit, pstCmd->fSlope, pstCmd->fIntercept );
+    return VisionStatus::OK;
+}
+
+VisionAPI VisionStatus PR_TwoLineAngle(const PR_TWO_LINE_ANGLE_CMD *const pstCmd, PR_TWO_LINE_ANGLE_RPY *const pstRpy)
+{
+    pstRpy->fAngle = CalcUtils::calc2LineAngle ( pstCmd->line1, pstCmd->line2 );
     return VisionStatus::OK;
 }
 

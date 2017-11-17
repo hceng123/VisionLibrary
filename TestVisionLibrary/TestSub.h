@@ -35,6 +35,7 @@ void TestIntegrate3DCalibHaoYu();
 void TestMerge3DHeight();
 void TestFastCalc3DHeight_1();
 
+void TestTwoLineAngle();
 template<class T>
 void printfMat(const cv::Mat &mat)
 {

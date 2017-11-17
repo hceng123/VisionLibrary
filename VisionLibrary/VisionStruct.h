@@ -422,14 +422,25 @@ struct PR_OCR_RPY {
 };
 
 struct PR_POINT_LINE_DISTANCE_CMD {
+    PR_POINT_LINE_DISTANCE_CMD() :
+        bReversedFit(false) {}
     cv::Point2f             ptInput;
-    bool                    bReversedFit;
+    bool                    bReversedFit;   // If bReversedFit is false, then the line is y = fSlope * x + fIntercept. If bReversedFit is true, then the line is x = fSlope * y + fIntercept.
     float                   fSlope;
     float                   fIntercept;
 };
 
 struct PR_POINT_LINE_DISTANCE_RPY {
     float                   fDistance;
+};
+
+struct PR_TWO_LINE_ANGLE_CMD {
+    PR_Line2f               line1;
+    PR_Line2f               line2;
+};
+
+struct PR_TWO_LINE_ANGLE_RPY {
+    float                   fAngle;
 };
 
 struct PR_RGB_RATIO {
