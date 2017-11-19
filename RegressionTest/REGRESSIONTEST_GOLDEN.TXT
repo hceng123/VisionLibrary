@@ -302,8 +302,29 @@ ReversedFit = 1
 Line slope = -0.67, intercept = 217.72
 Line coordinate: (179.97, 56.00), (96.39, 180.00)
 
+-----------------------------------------------
+POINT LINE DISTANCE REGRESSION TEST #1 STARTING
+-----------------------------------------------
+Point [0.00, 0.00]
+ReverseFit 1 Slope 0.00 Intercept 100.00
+Distance 100.00
+
+-----------------------------------------------
+POINT LINE DISTANCE REGRESSION TEST #2 STARTING
+-----------------------------------------------
+Point [0.00, 0.00]
+ReverseFit 0 Slope 0.00 Intercept 100.00
+Distance 100.00
+
+-----------------------------------------------
+POINT LINE DISTANCE REGRESSION TEST #3 STARTING
+-----------------------------------------------
+Point [0.00, 0.00]
+ReverseFit 0 Slope 1.00 Intercept 100.00
+Distance 70.71
+
 ---------------------------------------------
-AUTO LOCATE LEAD REGRESSION TEST #1 STARTING
+TWO LINE ANGLE REGRESSION TEST #1 STARTING
 ---------------------------------------------
 Two Line input:
 Point1 [0.00, 0.00], Point2 [10.00, 10.00]
@@ -311,7 +332,7 @@ Point1 [0.00, 0.00], Point2 [10.00, -10.00]
 Two line angle 90.00
 
 ---------------------------------------------
-AUTO LOCATE LEAD REGRESSION TEST #2 STARTING
+TWO LINE ANGLE REGRESSION TEST #2 STARTING
 ---------------------------------------------
 Two Line input:
 Point1 [-10.00, 1.00], Point2 [10.00, 1.00]
@@ -319,7 +340,7 @@ Point1 [0.00, 0.00], Point2 [10.00, -10.00]
 Two line angle 135.00
 
 ---------------------------------------------
-AUTO LOCATE LEAD REGRESSION TEST #3 STARTING
+TWO LINE ANGLE REGRESSION TEST #3 STARTING
 ---------------------------------------------
 Two Line input:
 Point1 [1.00, -10.00], Point2 [1.00, 10.00]
@@ -327,7 +348,7 @@ Point1 [0.00, 0.00], Point2 [10.00, -10.00]
 Two line angle 135.00
 
 ---------------------------------------------
-AUTO LOCATE LEAD REGRESSION TEST #4 STARTING
+TWO LINE ANGLE REGRESSION TEST #4 STARTING
 ---------------------------------------------
 Two Line input:
 Point1 [0.00, 0.00], Point2 [10.00, -10.00]
@@ -335,7 +356,7 @@ Point1 [1.00, -10.00], Point2 [1.00, 10.00]
 Two line angle 135.00
 
 ---------------------------------------------
-AUTO LOCATE LEAD REGRESSION TEST #5 STARTING
+TWO LINE ANGLE REGRESSION TEST #5 STARTING
 ---------------------------------------------
 Two Line input:
 Point1 [2.00, 0.00], Point2 [2.00, -10.00]
@@ -343,7 +364,7 @@ Point1 [1.00, -10.00], Point2 [1.00, 10.00]
 Two line angle 0.00
 
 ---------------------------------------------
-AUTO LOCATE LEAD REGRESSION TEST #6 STARTING
+TWO LINE ANGLE REGRESSION TEST #6 STARTING
 ---------------------------------------------
 Two Line input:
 Point1 [2.00, 0.00], Point2 [2.02, -100.00]

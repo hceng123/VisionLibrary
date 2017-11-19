@@ -662,7 +662,9 @@ int _tmain(int argc, _TCHAR* argv[])
     //TestTwoLineAngle_2();
     //TestTwoLineAngle_3();
     //TestTwoLineAngle_4();
-    TestTwoLineAngle_5();
+    //TestTwoLineAngle_5();
+
+    TestPointLineDistance_1();
 
     PR_DumpTimeLog("./Vision/Time.log");
     std::cout << "Press any key to exit." << std::endl;

@@ -86,3 +86,15 @@ void TestTwoLineAngle_5() {
     PR_TwoLineAngle ( &stCmd, &stRpy );
     std::cout << "Two line angle " << stRpy.fAngle << std::endl;
 }
+
+void TestPointLineDistance_1() {
+    PR_POINT_LINE_DISTANCE_CMD stCmd;
+    PR_POINT_LINE_DISTANCE_RPY stRpy;
+
+    stCmd.ptInput = cv::Point2f ( 0, 0 );
+    stCmd.bReversedFit = true;
+    stCmd.fSlope = 0;
+    stCmd.fIntercept = 100;
+    PR_PointLineDistance ( &stCmd, &stRpy );
+    std::cout << "Distance " << stRpy.fDistance << std::endl;
+}

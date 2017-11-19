@@ -42,6 +42,8 @@ void TestTwoLineAngle_3();
 void TestTwoLineAngle_4();
 void TestTwoLineAngle_5();
 
+void TestPointLineDistance_1();
+
 template<class T>
 void printfMat(const cv::Mat &mat)
 {
