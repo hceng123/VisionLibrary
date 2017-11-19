@@ -836,7 +836,7 @@
         <x>10</x>
         <y>100</y>
         <width>591</width>
-        <height>131</height>
+        <height>141</height>
        </rect>
       </property>
       <property name="title">
@@ -875,7 +875,7 @@
        <property name="geometry">
         <rect>
          <x>350</x>
-         <y>100</y>
+         <y>80</y>
          <width>101</width>
          <height>20</height>
         </rect>
@@ -885,7 +885,7 @@
        <property name="geometry">
         <rect>
          <x>300</x>
-         <y>100</y>
+         <y>80</y>
          <width>41</width>
          <height>20</height>
         </rect>
@@ -901,7 +901,7 @@
        <property name="geometry">
         <rect>
          <x>350</x>
-         <y>70</y>
+         <y>50</y>
          <width>101</width>
          <height>20</height>
         </rect>
@@ -911,7 +911,7 @@
        <property name="geometry">
         <rect>
          <x>300</x>
-         <y>70</y>
+         <y>50</y>
          <width>41</width>
          <height>20</height>
         </rect>
@@ -1003,6 +1003,32 @@
        </property>
        <property name="text">
         <string>Algorithm</string>
+       </property>
+      </widget>
+      <widget class="QLineEdit" name="lineEditMatchScore">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
+       <property name="geometry">
+        <rect>
+         <x>350</x>
+         <y>110</y>
+         <width>101</width>
+         <height>20</height>
+        </rect>
+       </property>
+      </widget>
+      <widget class="QLabel" name="labelScore">
+       <property name="geometry">
+        <rect>
+         <x>300</x>
+         <y>110</y>
+         <width>41</width>
+         <height>20</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Score</string>
        </property>
       </widget>
      </widget>
