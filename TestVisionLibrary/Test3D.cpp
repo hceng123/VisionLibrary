@@ -175,6 +175,7 @@ void TestCalib3DHeight_01() {
 
     stCmd.fMinAmplitude = 8.f;
     stCmd.nBlockStepCount = 5;
+  
     stCmd.fBlockStepHeight = 1.f;
     stCmd.nResultImgGridRow = 10;
     stCmd.nResultImgGridCol = 10;
