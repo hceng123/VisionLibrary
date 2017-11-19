@@ -1,5 +1,6 @@
 #include "CalcUtils.h"
 #include "spline.h"
+#include <fstream>
 
 namespace AOI
 {
@@ -265,6 +266,79 @@ float CalcUtils::calcPointToContourDist(const cv::Point &ptInput, const VectorOf
     for ( const auto xq : vecXq )
         vecResult.push_back ( s( xq ) );
     return vecResult;
+}
+
+/*static*/ void CalcUtils::saveMatToCsv(cv::Mat &matrix, std::string filename) {
+    std::ofstream outputFile(filename);
+    if ( ! outputFile.is_open() )
+        return;
+    outputFile << cv::format ( matrix, cv::Formatter::FMT_CSV ) << std::endl;
+    outputFile.close();
+}
+
+/*static*/ int CalcUtils::findLineCrossPoint(const PR_Line2f &line1, const PR_Line2f &line2, cv::Point2f &ptResult) {
+    const auto Precision = std::numeric_limits<float>::epsilon();
+	float fLineSlope1 = ( line1.pt2.y - line1.pt1.y ) / ( line1.pt2.x - line1.pt1.x );
+	float fLineSlope2 = ( line2.pt2.y - line2.pt1.y ) / ( line2.pt2.x - line2.pt1.x );
+	if ( fabs ( fLineSlope1 - fLineSlope2 ) < PARALLEL_LINE_SLOPE_DIFF_LMT )	{
+		printf("No cross point for parallized lines");
+		return -1;
+	}
+
+    //Line1 can be expressed as y = fLineSlope1 * x + fLineCrossWithY1
+	//Line2 can be expressed as y = fLineSlope2 * x + fLineCrossWithY2
+    float fLineCrossWithY1 = fLineSlope1 * ( - line1.pt1.x) + line1.pt1.y;
+	float fLineCrossWithY2 = fLineSlope2 * ( - line2.pt1.x) + line2.pt1.y;
+
+    if ( fLineSlope1 == fLineSlope1 && fabs ( fLineSlope1 ) < 1000 &&
+         fLineSlope2 == fLineSlope2 && fabs ( fLineSlope2) < 1000 ) {
+        ptResult.x = ( fLineCrossWithY2 - fLineCrossWithY1 ) / (fLineSlope1 - fLineSlope2);
+	    ptResult.y = fLineSlope1 * ptResult.x + fLineCrossWithY1;
+    }else
+    if ( ( fLineSlope1 != fLineSlope1 || fabs ( fLineSlope1 ) > 1000 ) &&
+         ( fLineSlope2 != fLineSlope2 || fabs ( fLineSlope2 ) > 1000 ) ) {
+        //Both of the line is vertical, no cross point
+        return -1;
+    }
+    //Line1 is vertical
+    else if ( fLineSlope1 != fLineSlope1 || fabs ( fLineSlope1 ) > 1000 ) {
+        ptResult.x = line1.pt1.x;
+        ptResult.y = fLineSlope2 * ptResult.x + fLineCrossWithY2;
+    }else if ( fLineSlope2 != fLineSlope2 || fabs ( fLineSlope2 ) > 1000 ) {
+        ptResult.x = line2.pt1.x;
+        ptResult.y = fLineSlope1 * ptResult.x + fLineCrossWithY1;
+    }else {
+        return -1;
+    }	
+	return 0;
+}
+
+/*static*/ float CalcUtils::calc2LineAngle(const PR_Line2f &line1, const PR_Line2f &line2) {
+    cv::Point2f ptCrossPoint;
+    //If cannot find cross point of two line, which means they are parallel, so the angle is 0.
+    if ( findLineCrossPoint ( line1, line2, ptCrossPoint ) != 0 ) {
+        return 0.f;
+    }
+
+    cv::Point ptLine1ChoosePoint = line1.pt1;
+    float A = distanceOf2Point ( ptCrossPoint, line1.pt1 );
+    if ( A < 1 ) {
+        A = distanceOf2Point ( ptCrossPoint, line1.pt2 );
+        ptLine1ChoosePoint = line1.pt2;
+    }
+
+    cv::Point ptLine2ChoosePoint = line2.pt1;
+    float B = distanceOf2Point ( ptCrossPoint, line2.pt1 );
+    if ( B < 1 ) {
+        B = distanceOf2Point ( ptCrossPoint, line2.pt2 );
+        ptLine2ChoosePoint = line2.pt2;
+    }
+
+    float C = distanceOf2Point ( ptLine1ChoosePoint, ptLine2ChoosePoint );
+    //Use the cos rules to calculate the cos of angle.
+    float fCos = ( A*A + B*B - C*C ) / ( 2.f * A * B );
+    float fAngleDegree = ToFloat ( radian2Degree ( acos ( fCos ) ) );
+    return fAngleDegree;
 }
 
 }

@@ -18,15 +18,31 @@ void TestTemplate();
 void TestInspLead();
 void TestCalib3dBase();
 void TestCalc3DHeight();
-void TestCalib3DHeight();
-void TestComb3DCalib();
+void TestCalib3DHeight_01();
+void TestCalib3DHeight_02();
+void TestCalib3DHeight_03();
+void TestIntegrate3DCalib();
+void TestCalc3DHeight_With_NormalCalibParam();
+void TestCalc3DHeight_With_IntegrateCalibParam();
+
 void TestCalcMTF();
 void TestCalcPD();
 void TestCalcCameraMTF();
-void TestIntegrate3DCalib();
+
 void TestCalc3DHeightNew();
 void TestFastCalc3DHeight();
 void TestIntegrate3DCalibHaoYu();
+void TestMerge3DHeight();
+void TestFastCalc3DHeight_1();
+
+void TestTwoLineAngle();
+void TestTwoLineAngle_1();
+void TestTwoLineAngle_2();
+void TestTwoLineAngle_3();
+void TestTwoLineAngle_4();
+void TestTwoLineAngle_5();
+
+void TestPointLineDistance_1();
 
 template<class T>
 void printfMat(const cv::Mat &mat)

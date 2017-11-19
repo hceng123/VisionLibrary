@@ -683,9 +683,8 @@ private:
     const String _strKeyRemoveHarmonicWaveK = "RemoveHarmonicWaveK";
 
     const String _strKeyStatus              = "Status";
-    const String _strKeyThickToThinStripeK  = "ThickToThinStripeK";
-    const String _strKeyBaseSurfaceParam    = "BaseSurfaceParam";
-    const String _strKeyBaseStartAvgPhase   = "BaseStartAvgPhase";
+    const String _strKeyThkToThinK          = "ThickToThinK";
+    const String _strKeyThkToThinnestK      = "ThickToThinnestK";
 };
 
 class LogCaseCalib3DHeight : public LogCase
@@ -704,42 +703,18 @@ private:
     const String _strKeyEnableGF            = "EnableGaussianFilter";
     const String _strKeyReverseSeq          = "ReverseSeq";
     const String _strKeyReverseHeight       = "ReverseHeight";
+    const String _strKeyUseThinnestPattern  = "UseThinnestPattern";
     const String _strKeyRemoveHarmonicWaveK = "RemoveHarmonicWaveK";
     const String _strKeyMinIntensityDiff    = "MinIntensityDiff";
-    const String _strKeyMinAvgIntensity     = "MinAvgIntensity";
-    const String _strKeyThickToThinStripeK  = "ThickToThinStripeK";
-    const String _strKeyBaseSurface         = "BaseSurface";
-    const String _strKeyBaseStartAvgPhase   = "BaseStartAvgPhase";
+    const String _strKeyMinAmplitude        = "MinAmplitude";
+    const String _strKeyThickToThinK        = "ThickToThinK";
+    const String _strKeyThickToThinnestK    = "ThickToThinnestK";
     const String _strKeyBlockStepCount      = "BlockStepCount";
     const String _strKeyBlockStepHeight     = "BlockStepHeight";
     const String _strKeyResultImgGridRow    = "ResultImgGridRow";
     const String _strKeyResultImgGridCol    = "ResultImgGridCol";
 
     const String _strKeyStatus              = "Status";
-};
-
-class LogCaseComb3DCalib : public LogCase
-{
-public:
-    explicit LogCaseComb3DCalib(const String &strPath, bool bReplay = false) : LogCase(strPath, bReplay) {}
-    VisionStatus WriteCmd(const PR_COMB_3D_CALIB_CMD *const pstCmd);
-    VisionStatus WriteRpy(const PR_COMB_3D_CALIB_RPY *const pstRpy);
-    virtual VisionStatus RunLogCase() override;
-    virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
-    static String StaticGetFolderPrefix();
-private:
-    const String _strInputYmlFileName       = "Input.yml";
-    const String _strResultYmlFileName      = "Result.yml";
-
-    const String _strKeyStepPhasePos        = "StepPhasePos";
-    const String _strKeyStepPhaseNeg        = "StepPhaseNeg";
-    const String _strKeyImageRows           = "ImageRows";
-    const String _strKeyImageCols           = "ImageCols";
-    const String _strKeyBlockStepHeight     = "BlockStepHeight";
-
-    const String _strKeyStatus              = "Status";
-    const String _strKeyPhaseToHeightK      = "PhaseToHeightK";
-    const String _strKeyStepPhaseDiff       = "StepPhaseDiff";
 };
 
 class LogCaseCalc3DHeight : public LogCase
@@ -756,12 +731,15 @@ private:
 
     const String _strKeyEnableGF            = "EnableGaussianFilter";
     const String _strKeyReverseSeq          = "ReverseSeq";
+    const String _strKeyUseThinnestPattern  = "UseThinnestPattern";
     const String _strKeyRemoveHarmonicWaveK = "RemoveHarmonicWaveK";
-    const String _strKeyMinIntensityDiff    = "MinIntensityDiff";
-    const String _strKeyMinAvgIntensity     = "MinAvgIntensity";
-    const String _strKeyThickToThinStripeK  = "ThickToThinStripeK";
-    const String _strKeyBaseSurface         = "BaseSurface";
-    const String _strKeyBaseStartAvgPhase   = "BaseStartAvgPhase";
+    const String _strKeyMinAmplitude        = "MinAmplitude";
+    const String _strKeyThickToThinK        = "ThickToThinK";
+    const String _strKeyThickToThinnestK    = "ThickToThinnestK";
+    const String _strKeyRmBetaJumpSpanX     = "RemoveBetaJumpSpanX";
+    const String _strKeyRmBetaJumpSpanY     = "RemoveBetaJumpSpanY";
+    const String _strKeyRmGammaJumpSpanX    = "RemoveGammaJumpSpanX";
+    const String _strKeyRmGammaJumpSpanY    = "RemoveGammaJumpSpanY";
 
     const String _strKeyStatus              = "Status";
 };

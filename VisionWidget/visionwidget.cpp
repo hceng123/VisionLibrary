@@ -394,6 +394,8 @@ void VisionWidget::on_matchTmplBtn_clicked()
         ui.lineEditObjCenter->setText( chArrCenter );
         std::string strRotation = std::to_string ( stRpy.fRotation );
         ui.lineEditObjRotation->setText(strRotation.c_str());
+        std::string strScore = std::to_string ( stRpy.fMatchScore );
+        ui.lineEditMatchScore->setText ( strScore.c_str() );
     }else {
         PR_GET_ERROR_INFO_RPY stErrStrRpy;
         PR_GetErrorInfo(enStatus, &stErrStrRpy);

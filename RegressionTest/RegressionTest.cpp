@@ -38,6 +38,16 @@ int _tmain(int argc, _TCHAR* argv[])
     *********************/
     TestFitLine();
 
+    /***************************
+    * Test Point Line Distance *
+    ****************************/
+    TestPointLineDistance();
+
+    /******************************
+    * Test Calculate 2 line angle *
+    *******************************/
+    TestTwoLineAngle();
+
     /*****************************
     * Test Fitting Parallel Line *
     *****************************/

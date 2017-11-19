@@ -139,6 +139,9 @@
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalDependencies>opencv_calib3d300.lib;opencv_core300.lib;opencv_features2d300.lib;opencv_flann300.lib;opencv_highgui300.lib;opencv_imgproc300.lib;opencv_ml300.lib;opencv_objdetect300.lib;opencv_photo300.lib;opencv_stitching300.lib;opencv_superres300.lib;opencv_ts300.lib;opencv_video300.lib;opencv_videoio300.lib;opencv_videostab300.lib;opencv_imgcodecs300.lib;opencv_xfeatures2d300.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PostBuildEvent>
+      <Command>$(OutDir)$(TargetName)$(TargetExt) -n &gt; $(ProjectDir)$(ProjectName)_result.txt</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -184,6 +187,7 @@
     <ClCompile Include="TestInspChip.cpp" />
     <ClCompile Include="TestInspLead.cpp" />
     <ClCompile Include="TestMatchTemplate.cpp" />
+    <ClCompile Include="TestMeasure.cpp" />
     <ClCompile Include="TestMTF.cpp" />
     <ClCompile Include="TestSrchObj.cpp" />
     <ClCompile Include="TestVisionLibrary.cpp" />

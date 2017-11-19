@@ -422,14 +422,25 @@ struct PR_OCR_RPY {
 };
 
 struct PR_POINT_LINE_DISTANCE_CMD {
+    PR_POINT_LINE_DISTANCE_CMD() :
+        bReversedFit(false) {}
     cv::Point2f             ptInput;
-    bool                    bReversedFit;
+    bool                    bReversedFit;   // If bReversedFit is false, then the line is y = fSlope * x + fIntercept. If bReversedFit is true, then the line is x = fSlope * y + fIntercept.
     float                   fSlope;
     float                   fIntercept;
 };
 
 struct PR_POINT_LINE_DISTANCE_RPY {
     float                   fDistance;
+};
+
+struct PR_TWO_LINE_ANGLE_CMD {
+    PR_Line2f               line1;
+    PR_Line2f               line2;
+};
+
+struct PR_TWO_LINE_ANGLE_RPY {
+    float                   fAngle;
 };
 
 struct PR_RGB_RATIO {
@@ -845,7 +856,7 @@ struct PR_GRID_AVG_GRAY_SCALE_RPY {
 
 struct PR_CALIB_3D_BASE_CMD {
     PR_CALIB_3D_BASE_CMD() : bEnableGaussianFilter(true), bReverseSeq(true), fRemoveHarmonicWaveK(0.f) {}
-    VectorOfMat             vecInputImgs;
+    VectorOfMat             vecInputImgs;           //Totally 12 images, including 4 thick, 4 thin, 4 extreme thin.
     bool                    bEnableGaussianFilter;
     bool                    bReverseSeq;            //Change the image sequence.
     float                   fRemoveHarmonicWaveK;   //The factor to remove the harmonic wave in the thick stripe. If it is 0, then this procedure will be skipped.
@@ -853,11 +864,11 @@ struct PR_CALIB_3D_BASE_CMD {
 
 struct PR_CALIB_3D_BASE_RPY {
     VisionStatus            enStatus;
-    cv::Mat                 matThickToThinStripeK;  //The factor between thick stripe and thin stripe.
-    cv::Mat                 matBaseSurfaceParam;    //The bezier parameters to form the base surface.
-    float                   fBaseStartAvgPhase;     //The average phase of the top-left corner of the thick stripe. It is used to constrain the object's phase within -pi~pi of base phase.
+    cv::Mat                 matThickToThinK;        //The factor between thick stripe and thin stripe.
+    cv::Mat                 matThickToThinnestK;    //The factor between thick stripe and thinnest stripe.
     cv::Mat                 matBaseWrappedAlpha;    //The wrapped thick stripe phase.
-    cv::Mat                 matBaseWrappedBeta;     //The wrapped think stripe phase.
+    cv::Mat                 matBaseWrappedBeta;     //The wrapped thin stripe phase.
+    cv::Mat                 matBaseWrappedGamma;    //The wrapped thinnest stripe phase.
 };
 
 struct PR_CALC_3D_BASE_CMD {
@@ -879,10 +890,13 @@ struct PR_CALIB_3D_HEIGHT_CMD {
         bEnableGaussianFilter(true),
         bReverseSeq(true),
         bReverseHeight(false),
+        bUseThinnestPattern(false),
         fRemoveHarmonicWaveK(0.f),
-        fBaseStartAvgPhase(0),
-        fMinIntensityDiff(3.f),
-        fMinAvgIntensity(1.5f),
+        fMinAmplitude(2.f),
+        nRemoveBetaJumpSpanX(25),
+        nRemoveBetaJumpSpanY(7),
+        nRemoveGammaJumpSpanX(23),
+        nRemoveGammaJumpSpanY(4),
         nBlockStepCount(4),
         fBlockStepHeight(1.f),
         nResultImgGridRow(8),
@@ -890,14 +904,21 @@ struct PR_CALIB_3D_HEIGHT_CMD {
         szMeasureWinSize(40, 40) {}
     VectorOfMat             vecInputImgs;
     bool                    bEnableGaussianFilter;
-    bool                    bReverseSeq;            //Change the image sequence.
+    bool                    bReverseSeq;            //Change the image sequence.    
     bool                    bReverseHeight;         //The calibration base is align to the top of calibration block.
+    bool                    bUseThinnestPattern;    //Choose to use the thinnest stripe pattern. Otherwise just use the normal thin stripe.
     float                   fRemoveHarmonicWaveK;   //The factor to remove the harmonic wave in the thick stripe. If it is 0, then this procedure will be skipped.
-    float                   fMinIntensityDiff;      //In a group of 4 images, if a pixel's max and min intensity less than this value, this pixel will be discarded.
-    float                   fMinAvgIntensity;       //In a group of 4 images, if a pixel's average intensity less than this value, this pixel will be discarded.
-    cv::Mat                 matThickToThinStripeK;  //The factor between thick stripe and thin stripe.
-    cv::Mat                 matBaseSurface;
-    float                   fBaseStartAvgPhase;     //The average phase of the top-left corner of the thick stripe. It is used to constrain the object's phase within -pi~pi of base phase.
+    float                   fMinAmplitude;          //In a group of 4 images, if a pixel's gray scale amplitude less than this value, this pixel will be discarded.
+    cv::Mat                 matThickToThinK;        //The factor between thick stripe and thin stripe.
+    cv::Mat                 matThickToThinnestK;    //The factor between thick stripe and thinnest stripe.
+    cv::Mat                 matBaseWrappedAlpha;    //The wrapped thick stripe phase.
+    cv::Mat                 matBaseWrappedBeta;     //The wrapped thin stripe phase.
+    cv::Mat                 matBaseWrappedGamma;    //The wrapped thin stripe phase.
+    int                     nRemoveBetaJumpSpanX;    //The phase jump span in X direction under this value in beta phase(the thin pattern) will be removed.
+    int                     nRemoveBetaJumpSpanY;    //The phase jump span in Y direction under this value in beta phase(the thin pattern) will be removed.
+    int                     nRemoveGammaJumpSpanX;   //The phase jump span in X direction under this value in gamma phase(the thinnest pattern) will be removed. It is used only when bUseThinnestPattern is true.
+    int                     nRemoveGammaJumpSpanY;   //The phase jump span in Y direction under this value in gamma phase(the thinnest pattern) will be removed. It is used only when bUseThinnestPattern is true.
+    //Below is the calibration related parameters
     Int16                   nBlockStepCount;        //How many steps on the calibration block.
     float                   fBlockStepHeight;       //The height of each step, unit mm. So the total block height is nBlockStepCount x fBlockStepHeight.
     Int32                   nResultImgGridRow;
@@ -916,25 +937,6 @@ struct PR_CALIB_3D_HEIGHT_RPY {
     cv::Mat                 matPhase;               //The unwrapped phase.
     cv::Mat                 matDivideStepResultImg; //Use auto threshold to divide each step of the phase image. This result image can show to user confirm if the auto threshold is working correctly.
     cv::Mat                 matResultImg;
-};
-
-//Combine negative and positive calibration result to a single matPhaseToHeightK.
-struct PR_COMB_3D_CALIB_CMD {
-    PR_COMB_3D_CALIB_CMD() :
-        fBlockStepHeight(1.f),
-        nImageRows(2048),
-        nImageCols(2040) {}
-    VectorOfVectorOfFloat   vecVecStepPhasePos; //The phase of 4 corners and the center of the positive calibration. The step on top of base plane.
-    VectorOfVectorOfFloat   vecVecStepPhaseNeg; //The phase of 4 corners and the center of the negative calibration. The step below the base plane.
-    int                     nImageRows;         //The rows of camera image.
-    int                     nImageCols;         //The cols of camera image.
-    float                   fBlockStepHeight;   //The height of each step, unit mm. So the total block height is nBlockStepCount x fBlockStepHeight.
-};
-
-struct PR_COMB_3D_CALIB_RPY {
-    VisionStatus            enStatus;
-    cv::Mat                 matPhaseToHeightK;  //The factor to convert phase to height.
-    VectorOfVectorOfFloat   vecVecStepPhaseDiff;
 };
 
 struct PR_INTEGRATE_3D_CALIB_CMD {
@@ -966,19 +968,31 @@ struct PR_CALC_3D_HEIGHT_CMD {
     PR_CALC_3D_HEIGHT_CMD() :
         bEnableGaussianFilter(true),
         bReverseSeq(true),
+        bUseThinnestPattern(false),
         fRemoveHarmonicWaveK(0.f),
-        fMinIntensityDiff(3.f),
-        fMinAvgIntensity(1.5f) {}
+        fMinAmplitude(2.f),
+        fPhaseShift(0.f),
+        nRemoveBetaJumpSpanX(25),
+        nRemoveBetaJumpSpanY(7),
+        nRemoveGammaJumpSpanX(23),
+        nRemoveGammaJumpSpanY(4) {}
     VectorOfMat             vecInputImgs;
     bool                    bEnableGaussianFilter;
     bool                    bReverseSeq;            //Change the image sequence.
+    bool                    bUseThinnestPattern;    //Choose to use the thinnest stripe pattern. Otherwise just use the normal thin stripe.
     float                   fRemoveHarmonicWaveK;   //The factor to remove the harmonic wave in the thick stripe. If it is 0, then this procedure will be skipped.
-    float                   fMinIntensityDiff;      //In a group of 4 images, if a pixel's max and min intensity less than this value, this pixel will be discarded.
-    float                   fMinAvgIntensity;       //In a group of 4 images, if a pixel's average intensity less than this value, this pixel will be discarded.
-    cv::Mat                 matThickToThinStripeK;  //The factor between thick stripe and thin stripe.
-    cv::Mat                 matBaseSurface;
-    float                   fBaseStartAvgPhase;     //The average phase of the top-left corner of the thick stripe. It is used to constrain the object's phase within -pi~pi of base phase.
+    float                   fMinAmplitude;          //In a group of 4 images, if a pixel's gray scale amplitude less than this value, this pixel will be discarded.
+    float                   fPhaseShift;            //Shift the phase measure range. Normal is -1~1, sometimes the H5 surface has corner over this range. So if shift is 0.1, the measure range is -0.9~1.1, so it can measure all the H5 surface.
+    cv::Mat                 matThickToThinK;        //The factor between thick stripe and thin stripe.
+    cv::Mat                 matThickToThinnestK;    //The factor between thick stripe and thinnest stripe.
+    cv::Mat                 matBaseWrappedAlpha;    //The wrapped thick stripe phase.
+    cv::Mat                 matBaseWrappedBeta;     //The wrapped thin stripe phase.
+    cv::Mat                 matBaseWrappedGamma;    //The wrapped thin stripe phase.
     cv::Mat                 matPhaseToHeightK;      //The factor to convert phase to height. This is the single group of image calibration result.
+    int                     nRemoveBetaJumpSpanX;    //The phase jump span in X direction under this value in beta phase(the thin pattern) will be removed.
+    int                     nRemoveBetaJumpSpanY;    //The phase jump span in Y direction under this value in beta phase(the thin pattern) will be removed.
+    int                     nRemoveGammaJumpSpanX;   //The phase jump span in X direction under this value in gamma phase(the thinnest pattern) will be removed. It is used only when bUseThinnestPattern is true.
+    int                     nRemoveGammaJumpSpanY;   //The phase jump span in Y direction under this value in gamma phase(the thinnest pattern) will be removed. It is used only when bUseThinnestPattern is true.
     //Below 2 parameters are result of PR_Integrate3DCalib, they are calibrated from positive, negative and H = 5mm surface phase. If these 2 parameters are used, then matPhaseToHeightK will be ignored.
     cv::Mat                 matIntegratedK;          //The 12 parameters to calculate height. They are K1~K10 and P1, P2. H = (Phase + P1*Phase^2 + P2*Phase^3) ./ (K(1)*x1.^3 + K(2)*y1.^3 + K(3)*x1.^2.*y1 + K(4)*x1.*y1.^2 + K(5)*x1.^2 + K(6)*y1.^2 + K(7)*x1.*y1 + K(8)*x1 + K(9)*y1 + K(10))
     cv::Mat                 matOrder3CurveSurface;  //The regression 3 order curve surface to convert phase to height. It is calculated by K(1)*x1.^3 + K(2)*y1.^3 + K(3)*x1.^2.*y1 + K(4)*x1.*y1.^2 + K(5)*x1.^2 + K(6)*y1.^2 + K(7)*x1.*y1 + K(8)*x1 + K(9)*y1 + K(10)
@@ -990,29 +1004,17 @@ struct PR_CALC_3D_HEIGHT_RPY {
     cv::Mat                 matHeight;
 };
 
-struct PR_FAST_CALC_3D_HEIGHT_CMD {
-    PR_FAST_CALC_3D_HEIGHT_CMD() :
-        bEnableGaussianFilter ( false ),
-        bReverseSeq ( true ),
-        fRemoveHarmonicWaveK ( 0.f ),
-        fMinAmplitude ( 1.5f ) {}
-    VectorOfMat             vecInputImgs;
-    bool                    bEnableGaussianFilter;
-    bool                    bReverseSeq;            //Change the image sequence.
-    float                   fRemoveHarmonicWaveK;   //The factor to remove the harmonic wave in the thick stripe. If it is 0, then this procedure will be skipped.
-    float                   fMinAmplitude;          //In a group of 4 images, if a pixel's gray scale amplitude less than this value, this pixel will be discarded.
-    cv::Mat                 matThickToThinStripeK;  //The factor between thick stripe and thin stripe.
-    cv::Mat                 matBaseWrappedAlpha;    //The wrapped thick stripe phase.
-    cv::Mat                 matBaseWrappedBeta;     //The wrapped think stripe phase.
-    float                   fBaseStartAvgPhase;     //The average phase of the top-left corner of the thick stripe. It is used to constrain the object's phase within -pi~pi of base phase.
-    //Below 2 parameters are result of PR_Integrate3DCalib, they are calibrated from positive, negative and H = 5mm surface phase. If these 2 parameters are used, then matPhaseToHeightK will be ignored.
-    cv::Mat                 matIntegratedK;          //The 12 parameters to calculate height. They are K1~K10 and P1, P2. H = (Phase + P1*Phase^2 + P2*Phase^3) ./ (K(1)*x1.^3 + K(2)*y1.^3 + K(3)*x1.^2.*y1 + K(4)*x1.*y1.^2 + K(5)*x1.^2 + K(6)*y1.^2 + K(7)*x1.*y1 + K(8)*x1 + K(9)*y1 + K(10))
-    cv::Mat                 matOrder3CurveSurface;  //The regression 3 order curve surface to convert phase to height. It is calculated by K(1)*x1.^3 + K(2)*y1.^3 + K(3)*x1.^2.*y1 + K(4)*x1.*y1.^2 + K(5)*x1.^2 + K(6)*y1.^2 + K(7)*x1.*y1 + K(8)*x1 + K(9)*y1 + K(10)
+struct PR_MERGE_3D_HEIGHT_CMD {
+    PR_MERGE_3D_HEIGHT_CMD() : 
+        fHeightDiffThreshold(0.2f),
+        fRemoveLowerNoiseRatio(0.001f) {}
+    VectorOfMat             vecMatHeight;
+    float                   fHeightDiffThreshold;   //The height difference threshold. Unit mm. If height difference less than it, the result height is average of the input height. If larger than it, the result height use the small height.
+    float                   fRemoveLowerNoiseRatio; //Remove the lower part of the image as noise, set to their neighbour values.
 };
 
-struct PR_FAST_CALC_3D_HEIGHT_RPY {
+struct PR_MERGE_3D_HEIGHT_RPY {
     VisionStatus            enStatus;
-    cv::Mat                 matPhase;
     cv::Mat                 matHeight;
 };
 

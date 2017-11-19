@@ -35,13 +35,14 @@ public:
     static void calib3DBase(const PR_CALIB_3D_BASE_CMD *const pstCmd, PR_CALIB_3D_BASE_RPY *const pstRpy);
     static cv::Mat calculateBaseSurface(int rows, int cols, const cv::Mat &matBaseSurfaceParam);
     static void calib3DHeight(const PR_CALIB_3D_HEIGHT_CMD *const pstCmd, PR_CALIB_3D_HEIGHT_RPY *const pstRpy);
-    static void comb3DCalib(const PR_COMB_3D_CALIB_CMD *const pstCmd, PR_COMB_3D_CALIB_RPY *const pstRpy);
     static void integrate3DCalib(const PR_INTEGRATE_3D_CALIB_CMD *const pstCmd, PR_INTEGRATE_3D_CALIB_RPY *const pstRpy);
     static void calc3DHeight(const PR_CALC_3D_HEIGHT_CMD *const pstCmd, PR_CALC_3D_HEIGHT_RPY *const pstRpy);
-    static void fastCalc3DHeight(const PR_FAST_CALC_3D_HEIGHT_CMD *const pstCmd, PR_FAST_CALC_3D_HEIGHT_RPY *pstRpy);
+    static void merge3DHeight(const PR_MERGE_3D_HEIGHT_CMD *const pstCmd, PR_MERGE_3D_HEIGHT_RPY *const pstRpy);
     static void calc3DHeightDiff(const PR_CALC_3D_HEIGHT_DIFF_CMD *const pstCmd, PR_CALC_3D_HEIGHT_DIFF_RPY *const pstRpy);
     static void calcMTF(const PR_CALC_MTF_CMD *const pstCmd, PR_CALC_MTF_RPY *const pstRpy);
     static void calcPD(const PR_CALC_PD_CMD *const pstCmd, PR_CALC_PD_RPY *const pstRpy);
+    static void phaseCorrection(cv::Mat &matPhase, const cv::Mat &matIdxNan, int nJumpSpanX, int nJumpSpanY);   //Put it to public to include it in regression test.
+    static void removeJumpArea(cv::Mat &matHeight, float fAreaLimit);
 private:
     static cv::Mat _getResidualPoint(const cv::Mat &matPhaseDx, const cv::Mat &matPhaseDy, cv::Mat &matPosPole, cv::Mat &matNegPole);
     static VectorOfPoint _selectLonePole(ListOfPoint &listPoint, int width, int height, size_t nLonePoneCount );
@@ -57,8 +58,8 @@ private:
     static cv::Mat _drawHeightGrid(const cv::Mat &matHeight, int nGridRow, int nGridCol, const cv::Size &szMeasureWinSize);
     static void _drawStar(cv::Mat &matInOut, cv::Point ptPosition, int nSize );
     static cv::Mat _calcHeightFromPhase(const cv::Mat &matPhase, const cv::Mat &matHtt, const cv::Mat &matK);
-    static cv::Mat _calcHeightFromPhaseBuffer(const cv::Mat &matPhase, const cv::Mat &matHtt, const cv::Mat &matK, cv::Mat &matBuffer1, cv::Mat &matBuffer2 );
-
+    static cv::Mat _calcHeightFromPhaseBuffer(const cv::Mat &matPhase, const cv::Mat &matHtt, const cv::Mat &matK, cv::Mat &matBuffer1, cv::Mat &matBuffer2 );    
+    static cv::Mat _drawAutoThresholdResult(const cv::Mat &matInput, const VectorOfFloat &vecRanges);
     static inline void _phaseWrap(cv::Mat &matPhase) {
         CStopWatch stopWatch;
         cv::Mat matNn = matPhase / ONE_CYCLE + 0.5;
@@ -73,9 +74,9 @@ private:
         TimeLog::GetInstance()->addTimeLog( "_phaseWrap multiply and subtract takes.", stopWatch.Span() );
     }
 
-    static inline void _phaseWrapBuffer(cv::Mat &matPhase, cv::Mat &matBuffer) {
+    static inline void _phaseWrapBuffer(cv::Mat &matPhase, cv::Mat &matBuffer, float fShift = 0.f) {
         CStopWatch stopWatch;
-        matBuffer = matPhase / ONE_CYCLE + 0.5;
+        matBuffer = matPhase / ONE_CYCLE + 0.5 - fShift;
         TimeLog::GetInstance()->addTimeLog( "_phaseWrap Divide and add.", stopWatch.Span() );
 
         CalcUtils::floorByRef<DATA_TYPE> ( matBuffer );
@@ -104,6 +105,7 @@ private:
     static const int ERODE_WIN_SIZE =           31;
     static const int PHASE_SNOOP_WIN_SIZE =     10;
     static const int CALIB_HEIGHT_MIN_SIZE =    200;
+    static const int MEDIAN_FILTER_SIZE =       5;
 
     static const float GAUSSIAN_FILTER_SIGMA;
     static const float ONE_HALF_CYCLE;

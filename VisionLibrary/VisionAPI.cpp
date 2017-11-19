@@ -206,9 +206,16 @@ VisionAPI VisionStatus PR_Ocr(PR_OCR_CMD *pstCmd, PR_OCR_RPY *pstRpy)
     }
 }
 
-VisionAPI VisionStatus PR_PointLineDistance(PR_POINT_LINE_DISTANCE_CMD *pstCmd, PR_POINT_LINE_DISTANCE_RPY *pstRpy)
+VisionAPI VisionStatus PR_PointLineDistance(const PR_POINT_LINE_DISTANCE_CMD *const pstCmd, PR_POINT_LINE_DISTANCE_RPY *const pstRpy)
 {
     pstRpy->fDistance = CalcUtils::ptDisToLine ( pstCmd->ptInput, pstCmd->bReversedFit, pstCmd->fSlope, pstCmd->fIntercept );
+    pstRpy->fDistance = fabs ( pstRpy->fDistance );
+    return VisionStatus::OK;
+}
+
+VisionAPI VisionStatus PR_TwoLineAngle(const PR_TWO_LINE_ANGLE_CMD *const pstCmd, PR_TWO_LINE_ANGLE_RPY *const pstRpy)
+{
+    pstRpy->fAngle = CalcUtils::calc2LineAngle ( pstCmd->line1, pstCmd->line2 );
     return VisionStatus::OK;
 }
 
@@ -387,13 +394,6 @@ PR_FUNCTION_ENTRY
 PR_FUNCTION_EXIT
 }
 
-VisionAPI VisionStatus PR_Comb3DCalib(const PR_COMB_3D_CALIB_CMD *const pstCmd, PR_COMB_3D_CALIB_RPY *const pstRpy)
-{
-PR_FUNCTION_ENTRY
-    return VisionAlgorithm::comb3DCalib  ( pstCmd, pstRpy );
-PR_FUNCTION_EXIT
-}
-
 VisionAPI VisionStatus PR_Integrate3DCalib(const PR_INTEGRATE_3D_CALIB_CMD *const pstCmd, PR_INTEGRATE_3D_CALIB_RPY *const pstRpy)
 {
 PR_FUNCTION_ENTRY
@@ -408,10 +408,10 @@ PR_FUNCTION_ENTRY
 PR_FUNCTION_EXIT
 }
 
-VisionAPI VisionStatus PR_FastCalc3DHeight(const PR_FAST_CALC_3D_HEIGHT_CMD *const pstCmd, PR_FAST_CALC_3D_HEIGHT_RPY *pstRpy)
+VisionAPI VisionStatus PR_Merge3DHeight(const PR_MERGE_3D_HEIGHT_CMD *const pstCmd, PR_MERGE_3D_HEIGHT_RPY *const pstRpy)
 {
 PR_FUNCTION_ENTRY
-    return VisionAlgorithm::fastCalc3DHeight  ( pstCmd, pstRpy );
+    return VisionAlgorithm::merge3DHeight  ( pstCmd, pstRpy );
 PR_FUNCTION_EXIT
 }
 

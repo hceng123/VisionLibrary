@@ -468,7 +468,7 @@ void TestCaliper_1() {
     stCmd.rectRotatedROI.center = cv::Point (85, 121 );
     stCmd.rectRotatedROI.size = cv::Size(100, 30);
     stCmd.rectRotatedROI.angle = 110;
-    stCmd.enAlgorithm = PR_CALIPER_ALGORITHM::SECTION_AVG_GUASSIAN_DIFF;
+    stCmd.enAlgorithm = PR_CALIPER_ALGORITHM::SECTION_AVG_GAUSSIAN_DIFF;
     stCmd.enDetectDir = PR_CALIPER_DIR::AUTO;
     stCmd.bCheckLinerity = true;
     stCmd.fPointMaxOffset = 5;
@@ -491,7 +491,7 @@ void TestCaliper_2() {
     stCmd.rectRotatedROI.center = cv::Point (171, 34 );
     stCmd.rectRotatedROI.size = cv::Size(200, 30);
     stCmd.rectRotatedROI.angle = 20;
-    stCmd.enAlgorithm = PR_CALIPER_ALGORITHM::SECTION_AVG_GUASSIAN_DIFF;
+    stCmd.enAlgorithm = PR_CALIPER_ALGORITHM::SECTION_AVG_GAUSSIAN_DIFF;
     stCmd.enDetectDir = PR_CALIPER_DIR::AUTO;
     stCmd.bCheckLinerity = true;
     stCmd.fPointMaxOffset = 5;
@@ -635,13 +635,20 @@ int _tmain(int argc, _TCHAR* argv[])
     //TestSrchDie();
 
     //TestCalib3dBase();
-    TestCalib3DHeight();
-    //TestComb3DCalib();
+  
+    //TestCalib3DHeight_01();
+    //TestCalib3DHeight_02();
+    //TestCalib3DHeight_03();
     //TestCalc3DHeight();
     //for ( int i = 0; i < 10; ++ i )
     //    TestFastCalc3DHeight();
-
+    //TestFastCalc3DHeight_1();
+    
     //TestIntegrate3DCalib();
+    //TestCalc3DHeight_With_NormalCalibParam();
+    //TestCalc3DHeight_With_IntegrateCalibParam();
+    TestMerge3DHeight();
+
     //TestIntegrate3DCalibHaoYu();
     //TestCalc3DHeightNew();
 
@@ -651,6 +658,14 @@ int _tmain(int argc, _TCHAR* argv[])
     //TestCalcPD();
 
     //TestCalcCameraMTF();
+    //TestTwoLineAngle();
+    //TestTwoLineAngle_1();
+    //TestTwoLineAngle_2();
+    //TestTwoLineAngle_3();
+    //TestTwoLineAngle_4();
+    //TestTwoLineAngle_5();
+
+    //TestPointLineDistance_1();
 
     PR_DumpTimeLog("./Vision/Time.log");
     std::cout << "Press any key to exit." << std::endl;

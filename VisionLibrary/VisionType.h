@@ -120,6 +120,11 @@ enum class PR_CALIPER_DIR {
     AUTO,
 };
 
+enum class PR_CALIPER_ALGORITHM {
+    PROJECTION,
+    SECTION_AVG_GAUSSIAN_DIFF,
+};
+
 enum class PR_FILL_HOLE_METHOD {
     CONTOUR,
     MORPHOLOGY,
@@ -157,11 +162,6 @@ enum class PR_INSP_CHIP_MODE {
     RNET,
     CAE,
     CIRCULAR,
-};
-
-enum class PR_CALIPER_ALGORITHM {
-    PROJECTION,
-    SECTION_AVG_GUASSIAN_DIFF,
 };
 
 enum class PR_IMG_SEGMENT_METHOD {

@@ -1,5 +1,6 @@
 #include "Fitting.h"
 #include "CalcUtils.h"
+#include "Unwrap.h"
 #include <iostream>
 #include <numeric>
 
@@ -325,6 +326,27 @@ static void TestCalcUtilsRepeat() {
     printfMat<float> ( matResult );
 }
 
+static void TestPhaseCorrection() {
+    std::cout << std::endl << "------------------------------------------------";
+    std::cout << std::endl << "UNWRAP PHASE CORRECTION TEST #1 STARTING";
+    std::cout << std::endl << "------------------------------------------------";
+    std::cout << std::endl;
+
+    VectorOfVectorOfFloat vecVecPhase = {
+        {0.1f, 5.0f, 5.3f, 2.f, 0.0f},
+        {-0.1f, 1.1f, 1.3f, 2.f, 0.5f},
+        {1.2f, 1.1f, 1.3f, 2.f, 8.5f},
+        {1.3f, 0.1f, 0.1f, 2.f, -5.5f},
+        {0.2f, 1.1f, 1.3f, 2.f, 0.5f},
+    };
+    cv::Mat matPhase = CalcUtils::vectorToMat<float> ( vecVecPhase );
+    std::cout << "Phase Correction input: " << std::endl;
+    printfMat<float>(matPhase);
+    Unwrap::phaseCorrection ( matPhase, cv::Mat(), 5, 5 );
+    std::cout << "Phase Correction result: " << std::endl;
+    printfMat<float>(matPhase);
+}
+
 void InternalTest() {
     TestCalcUtilsCumSum();
     TestCalcUtilsInternals();
@@ -335,6 +357,7 @@ void InternalTest() {
     TestCalcUtilsFloor();
     TestCalcUtilsInterp1();
     TestCalcUtilsRepeat();
+    TestPhaseCorrection();
 }
 
 }
