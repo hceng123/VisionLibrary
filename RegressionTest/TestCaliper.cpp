@@ -121,7 +121,7 @@ void TestCaliperSectionAvgGuassianDiff() {
     cv::Rect rectROI = cv::Rect(304, 732, 208, 532);
     stCmd.rectRotatedROI.center = cv::Point ( rectROI.x + rectROI.width / 2, rectROI.y + rectROI.height / 2 );
     stCmd.rectRotatedROI.size = rectROI.size();
-    stCmd.enAlgorithm = PR_CALIPER_ALGORITHM::SECTION_AVG_GUASSIAN_DIFF;
+    stCmd.enAlgorithm = PR_CALIPER_ALGORITHM::SECTION_AVG_GAUSSIAN_DIFF;
     stCmd.enDetectDir = PR_CALIPER_DIR::MAX_TO_MIN;
     stCmd.bCheckLinerity = true;
     stCmd.fPointMaxOffset = 5;
@@ -191,7 +191,7 @@ void TestCaliperRoatedROI() {
     stCmd.rectRotatedROI.center = cv::Point (85, 121 );
     stCmd.rectRotatedROI.size = cv::Size(100, 30);
     stCmd.rectRotatedROI.angle = -70;
-    stCmd.enAlgorithm = PR_CALIPER_ALGORITHM::SECTION_AVG_GUASSIAN_DIFF;
+    stCmd.enAlgorithm = PR_CALIPER_ALGORITHM::SECTION_AVG_GAUSSIAN_DIFF;
     stCmd.enDetectDir = PR_CALIPER_DIR::AUTO;
     stCmd.bCheckLinerity = true;
     stCmd.fPointMaxOffset = 5;
@@ -229,7 +229,7 @@ void TestCaliperRoatedROI() {
     stCmd.rectRotatedROI.center = cv::Point (368, 54);
     stCmd.rectRotatedROI.size = cv::Size(200, 30);
     stCmd.rectRotatedROI.angle = 20;
-    stCmd.enAlgorithm = PR_CALIPER_ALGORITHM::SECTION_AVG_GUASSIAN_DIFF;
+    stCmd.enAlgorithm = PR_CALIPER_ALGORITHM::SECTION_AVG_GAUSSIAN_DIFF;
     stCmd.enDetectDir = PR_CALIPER_DIR::AUTO;
     stCmd.bCheckLinerity = true;
     stCmd.fPointMaxOffset = 5;
@@ -269,7 +269,7 @@ void TestCaliperRoatedROI() {
     stCmd.rectRotatedROI.center = cv::Point2f (420.80f, 268.00f );
     stCmd.rectRotatedROI.size = cv::Size(330, 185);
     stCmd.rectRotatedROI.angle = -12;
-    stCmd.enAlgorithm = PR_CALIPER_ALGORITHM::SECTION_AVG_GUASSIAN_DIFF;
+    stCmd.enAlgorithm = PR_CALIPER_ALGORITHM::SECTION_AVG_GAUSSIAN_DIFF;
     stCmd.enDetectDir = PR_CALIPER_DIR::AUTO;
     stCmd.bCheckLinerity = true;
     stCmd.fPointMaxOffset = 5;
