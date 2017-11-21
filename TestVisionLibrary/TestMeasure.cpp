@@ -78,10 +78,10 @@ void TestTwoLineAngle_5() {
     PR_TWO_LINE_ANGLE_RPY stRpy;    
 
     stCmd.line1.pt1 = cv::Point2f ( 2, 0 );
-    stCmd.line1.pt2 = cv::Point2f ( 2.02, -100 );
+    stCmd.line1.pt2 = cv::Point2f ( 2.02f, -100 );
 
     stCmd.line2.pt1 = cv::Point2f ( 1, -10 );
-    stCmd.line2.pt2 = cv::Point2f ( 1.03,  10 );
+    stCmd.line2.pt2 = cv::Point2f ( 1.03f,  10 );
 
     PR_TwoLineAngle ( &stCmd, &stRpy );
     std::cout << "Two line angle " << stRpy.fAngle << std::endl;
