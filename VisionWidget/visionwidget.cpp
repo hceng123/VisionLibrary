@@ -352,7 +352,9 @@ void VisionWidget::on_btnLrnTemplate_clicked() {
     stCmd.enAlgorithm = PR_MATCH_TMPL_ALGORITHM::SQUARE_DIFF;
     if ( ui.cbMatchTmplAlgorithm->currentIndex() == 1 )
         stCmd.enAlgorithm = PR_MATCH_TMPL_ALGORITHM::HIERARCHICAL_EDGE;
-    
+    else if ( ui.cbMatchTmplAlgorithm->currentIndex() == 2 )
+        stCmd.enAlgorithm = PR_MATCH_TMPL_ALGORITHM::HIERARCHICAL_AREA;
+
     if ( VisionStatus::OK == PR_LrnTmpl ( &stCmd, &stRpy) ) {
         _nTmplRecordId = stRpy.nRecordId;        
         drawTmplImage ( stRpy.matTmpl );
@@ -383,6 +385,8 @@ void VisionWidget::on_matchTmplBtn_clicked()
     stCmd.enAlgorithm = PR_MATCH_TMPL_ALGORITHM::SQUARE_DIFF;
     if ( ui.cbMatchTmplAlgorithm->currentIndex() == 1 )
         stCmd.enAlgorithm = PR_MATCH_TMPL_ALGORITHM::HIERARCHICAL_EDGE;
+    else if ( ui.cbMatchTmplAlgorithm->currentIndex() == 2 )
+        stCmd.enAlgorithm = PR_MATCH_TMPL_ALGORITHM::HIERARCHICAL_AREA;
 
     PR_MATCH_TEMPLATE_RPY stRpy;
     VisionStatus enStatus = PR_MatchTmpl( &stCmd, &stRpy );
