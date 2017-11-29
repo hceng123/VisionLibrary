@@ -925,7 +925,7 @@
         <rect>
          <x>70</x>
          <y>80</y>
-         <width>91</width>
+         <width>101</width>
          <height>22</height>
         </rect>
        </property>
@@ -974,7 +974,7 @@
         <rect>
          <x>70</x>
          <y>30</y>
-         <width>91</width>
+         <width>101</width>
          <height>22</height>
         </rect>
        </property>
@@ -989,6 +989,11 @@
        <item>
         <property name="text">
          <string>Hierarchical Edge</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>Hierarchical Area</string>
         </property>
        </item>
       </widget>

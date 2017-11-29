@@ -268,7 +268,7 @@ float CalcUtils::calcPointToContourDist(const cv::Point &ptInput, const VectorOf
     return vecResult;
 }
 
-/*static*/ void CalcUtils::saveMatToCsv(cv::Mat &matrix, std::string filename) {
+/*static*/ void CalcUtils::saveMatToCsv(const cv::Mat &matrix, std::string filename) {
     std::ofstream outputFile(filename);
     if ( ! outputFile.is_open() )
         return;

@@ -555,7 +555,9 @@ static inline cv::Mat calcOrder5BezierCoeff ( const cv::Mat &matU ) {
         if ( fAmplitudeSquare < fMinimumAlpitudeSquare )
             matAvgUnderTolIndex.at<uchar>(i) = 1;
         matAlpha.at<float>(i) = vecVecAtan2Table[x + PR_MAX_GRAY_LEVEL ][y + PR_MAX_GRAY_LEVEL];
-    }    
+    }
+
+    _fitHoleInNanMask ( matAvgUnderTolIndex, cv::Size(10, 10), 2 );
 
     ptrData0 = vecConvertedImgs[4].ptr<uchar>(0);
     ptrData1 = vecConvertedImgs[5].ptr<uchar>(0);
@@ -612,6 +614,7 @@ static inline cv::Mat calcOrder5BezierCoeff ( const cv::Mat &matU ) {
 
         if ( pstCmd->nRemoveGammaJumpSpanX > 0 || pstCmd->nRemoveGammaJumpSpanY > 0 ) {
             phaseCorrection ( matGamma, matAvgUnderTolIndex, pstCmd->nRemoveGammaJumpSpanX, pstCmd->nRemoveGammaJumpSpanY );
+            phaseCorrection ( matGamma, matAvgUnderTolIndex, pstCmd->nRemoveGammaJumpSpanX, pstCmd->nRemoveGammaJumpSpanY );
             TimeLog::GetInstance()->addTimeLog( "phaseCorrection for gamma.", stopWatch.Span() );
         }
 
@@ -658,7 +661,7 @@ static inline cv::Mat calcOrder5BezierCoeff ( const cv::Mat &matU ) {
 
     VectorOfPoint vecNanPoints;
     cv::Mat matNan = CalcUtils::getNanMask ( pstRpy->matHeight );
-    cv::dilate ( matNan, matNan, cv::getStructuringElement ( cv::MORPH_RECT, cv::Size ( MEDIAN_FILTER_SIZE, MEDIAN_FILTER_SIZE ) ) );
+    cv::dilate ( matNan, matNan, cv::getStructuringElement ( cv::MORPH_RECT, cv::Size ( MEDIAN_FILTER_SIZE * 2, MEDIAN_FILTER_SIZE * 2 ) ) );
     cv::findNonZero ( matNan, vecNanPoints );
     for ( const auto &point : vecNanPoints ) {
         if ( point.x > 0 )
@@ -671,25 +674,25 @@ static inline cv::Mat calcOrder5BezierCoeff ( const cv::Mat &matU ) {
     //removeJumpArea ( pstRpy->matHeight, 2000 );
     //TimeLog::GetInstance()->addTimeLog( "removeJumpArea.", stopWatch.Span() );
 
-    cv::Mat matReshape = pstRpy->matHeight.reshape ( 1, 1 );
-    auto vecVecHeight = CalcUtils::matToVector<DATA_TYPE> ( matReshape );
-    auto vecSortedJumpSpanIdx = CalcUtils::sort_index_value<DATA_TYPE> ( vecVecHeight[0] );
-    int nRemoveCount = ToInt32 ( pstCmd->fRemoveLowerNoiseRatio * matReshape.rows * matReshape.cols );
-    std::cout << "Remove lower height count " << nRemoveCount << std::endl;
-    for ( int i = 0; i < nRemoveCount; ++ i ) {
-        pstRpy->matHeight.at<DATA_TYPE>( ToInt32 ( vecSortedJumpSpanIdx[i] ) ) = NAN;
-    }
-    TimeLog::GetInstance()->addTimeLog( "Sort and set.", stopWatch.Span() );
+    //cv::Mat matReshape = pstRpy->matHeight.reshape ( 1, 1 );
+    //auto vecVecHeight = CalcUtils::matToVector<DATA_TYPE> ( matReshape );
+    //auto vecSortedJumpSpanIdx = CalcUtils::sort_index_value<DATA_TYPE> ( vecVecHeight[0] );
+    //int nRemoveCount = ToInt32 ( pstCmd->fRemoveLowerNoiseRatio * matReshape.rows * matReshape.cols );
+    //std::cout << "Remove lower height count " << nRemoveCount << std::endl;
+    //for ( int i = 0; i < nRemoveCount; ++ i ) {
+    //    pstRpy->matHeight.at<DATA_TYPE>( ToInt32 ( vecSortedJumpSpanIdx[i] ) ) = NAN;
+    //}
+    //TimeLog::GetInstance()->addTimeLog( "Sort and set.", stopWatch.Span() );
 
-    matNan = CalcUtils::getNanMask ( pstRpy->matHeight );
-    cv::findNonZero ( matNan, vecNanPoints );
-    for ( const auto &point : vecNanPoints ) {
-        if ( point.x > 0 )
-            pstRpy->matHeight.at<DATA_TYPE>(point) = pstRpy->matHeight.at<DATA_TYPE> ( point.y, point.x - 1 );
-        else if ( point.x == 0 && point.y > 0 )
-            pstRpy->matHeight.at<DATA_TYPE>(point) = pstRpy->matHeight.at<DATA_TYPE> ( point.y - 1, point.x );
-    }
-    TimeLog::GetInstance()->addTimeLog( "Clear Nan values again.", stopWatch.Span() );
+    //matNan = CalcUtils::getNanMask ( pstRpy->matHeight );
+    //cv::findNonZero ( matNan, vecNanPoints );
+    //for ( const auto &point : vecNanPoints ) {
+    //    if ( point.x > 0 )
+    //        pstRpy->matHeight.at<DATA_TYPE>(point) = pstRpy->matHeight.at<DATA_TYPE> ( point.y, point.x - 1 );
+    //    else if ( point.x == 0 && point.y > 0 )
+    //        pstRpy->matHeight.at<DATA_TYPE>(point) = pstRpy->matHeight.at<DATA_TYPE> ( point.y - 1, point.x );
+    //}
+    //TimeLog::GetInstance()->addTimeLog( "Clear Nan values again.", stopWatch.Span() );
 
     cv::medianBlur ( pstRpy->matHeight, pstRpy->matHeight, MEDIAN_FILTER_SIZE );
     TimeLog::GetInstance()->addTimeLog( "medianBlur.", stopWatch.Span() );
@@ -2067,6 +2070,7 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
     if ( nJumpSpanY > 0 ) {
         cv::Mat matPhaseDiff = CalcUtils::diff ( matPhase, 1, 1 );
 #ifdef _DEBUG
+        CalcUtils::saveMatToCsv ( matPhase, "./data/HaoYu_20171114/test5/NewLens2/BeforePhaseCorrectionY.csv");
         auto vecVecPhase = CalcUtils::matToVector<float> ( matPhase );
         auto vecVecPhaseDiff = CalcUtils::matToVector<float> ( matPhaseDiff );
 #endif
@@ -2220,6 +2224,12 @@ void removeBlob(cv::Mat &matThreshold, cv::Mat &matBlob, float fAreaLimit ) {
         }
         ++ nRepeatTimes;
     } while( nRepeatTimes < 6 );
+}
+
+/*static*/ void Unwrap::_fitHoleInNanMask(cv::Mat &matMask, const cv::Size &szMorphKernel, Int16 nMorphIteration) {
+    cv::Mat matKernal = cv::getStructuringElement ( cv::MorphShapes::MORPH_ELLIPSE, szMorphKernel );
+    cv::MorphTypes morphType = cv::MORPH_CLOSE;
+    cv::morphologyEx ( matMask, matMask, morphType, matKernal, cv::Point(-1, -1), nMorphIteration );
 }
 
 }

@@ -118,7 +118,7 @@ static cv::Mat _drawHeightGrid(const cv::Mat &matHeight, int nGridRow, int nGrid
     return matResultImg;
 }
 
-static std::string gstrWorkingFolder("./data/HaoYu_20171114/test5/NewLens2/");
+static std::string gstrWorkingFolder("./data/HaoYu_20171114/test1/NewLens2/");
 static std::string gstrCalibResultFile = gstrWorkingFolder + "CalibPP.yml";
 static std::string gstrIntegrateCalibResultFile( gstrWorkingFolder + "IntegrateCalibResult.yml" );
 bool gbUseGamma = true;
@@ -518,7 +518,7 @@ void TestCalc3DHeight_With_NormalCalibParam() {
 }
 
 void TestCalc3DHeight_With_IntegrateCalibParam() {
-    std::string strFolder = gstrWorkingFolder + "1114194353_02/";
+    std::string strFolder = gstrWorkingFolder + "1114194025_02/";
     //std::string strFolder = "./data/0913212217_Unwrap_Not_Finish/";
     PR_CALC_3D_HEIGHT_CMD stCmd;
     PR_CALC_3D_HEIGHT_RPY stRpy;
@@ -531,8 +531,10 @@ void TestCalc3DHeight_With_IntegrateCalibParam() {
     }
     stCmd.bEnableGaussianFilter = false;
     stCmd.bReverseSeq = true;
-    stCmd.fMinAmplitude = 3;
+    stCmd.fMinAmplitude = 8;
     stCmd.bUseThinnestPattern = gbUseGamma;
+    stCmd.nRemoveGammaJumpSpanX = 23;
+    stCmd.nRemoveGammaJumpSpanY = 20;
 
     cv::Mat matBaseSurfaceParam;
 
@@ -570,6 +572,10 @@ void TestCalc3DHeight_With_IntegrateCalibParam() {
     cv::imwrite ( gstrWorkingFolder + "PR_Calc3DHeight_HeightGridImg_IntegrateCalibParam.png", matHeightResultImg );
     cv::Mat matPhaseResultImg = _drawHeightGrid ( stRpy.matPhase, 9, 9 );
     cv::imwrite ( gstrWorkingFolder + "PR_Calc3DHeight_PhaseGridImg_IntegrateCalibParam.png", matPhaseResultImg );
+
+    cv::Mat matNonNan = stRpy.matHeight == stRpy.matHeight;
+    cv::Mat matNan = 255 - matNonNan;
+    cv::imwrite ( gstrWorkingFolder + "PR_Calc3DHeight_NanMask.png", matNan );
 
     saveMatToCsv ( stRpy.matHeight, gstrWorkingFolder + "Height.csv");
     saveMatToCsv ( stRpy.matPhase,  gstrWorkingFolder + "Phase.csv");
@@ -786,7 +792,7 @@ void TestMerge3DHeight() {
     PR_MERGE_3D_HEIGHT_CMD stCmd;
     PR_MERGE_3D_HEIGHT_RPY stRpy;
 
-    std::string strWorkingFolder("./data/HaoYu_20171114/test5/");
+    std::string strWorkingFolder("./data/HaoYu_20171114/test1/");
 
     std::string strArrayHeightFile[2] = {strWorkingFolder + "newLens1/Height.yml",
                                          strWorkingFolder + "newLens2/Height.yml"};

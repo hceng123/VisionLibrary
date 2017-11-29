@@ -60,6 +60,7 @@ private:
     static cv::Mat _calcHeightFromPhase(const cv::Mat &matPhase, const cv::Mat &matHtt, const cv::Mat &matK);
     static cv::Mat _calcHeightFromPhaseBuffer(const cv::Mat &matPhase, const cv::Mat &matHtt, const cv::Mat &matK, cv::Mat &matBuffer1, cv::Mat &matBuffer2 );    
     static cv::Mat _drawAutoThresholdResult(const cv::Mat &matInput, const VectorOfFloat &vecRanges);
+    static void _fitHoleInNanMask(cv::Mat &matMask, const cv::Size &szMorphKernel, Int16 nMorphIteration);
     static inline void _phaseWrap(cv::Mat &matPhase) {
         CStopWatch stopWatch;
         cv::Mat matNn = matPhase / ONE_CYCLE + 0.5;
