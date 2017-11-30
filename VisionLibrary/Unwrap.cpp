@@ -1973,13 +1973,14 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
     {
         cv::Mat matPhaseDiff = CalcUtils::diff ( matPhase, 1, 2 );
 #ifdef _DEBUG
+        //CalcUtils::saveMatToCsv ( matPhase, "./data/HaoYu_20171114/test1/NewLens2/BeforePhaseCorrectionX.csv");
         auto vecVecPhase = CalcUtils::matToVector<float> ( matPhase );
         auto vecVecPhaseDiff = CalcUtils::matToVector<float> ( matPhaseDiff );
 #endif
         cv::Mat matDiffSign = cv::Mat::zeros ( ROWS, COLS, CV_8SC1 );
         cv::Mat matDiffAmpl = cv::Mat::zeros ( ROWS, COLS, CV_8SC1 );
         std::vector<int> vecRowsWithJump;
-        for (int row = 0; row < matPhaseDiff.rows; ++row) {
+        for (int row = 0; row < matPhaseDiff.rows; ++ row) {
             bool bRowWithPosJump = false, bRowWithNegJump = false;
             for (int col = 0; col < matPhaseDiff.cols; ++col) {
                 auto value = matPhaseDiff.at<DATA_TYPE> ( row, col );
@@ -2006,7 +2007,7 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
             char *ptrSignOfRow = matDiffSign.ptr<char> ( row );
             char *ptrAmplOfRow = matDiffAmpl.ptr<char> ( row );
 
-            for (int kk = 0; kk < 2; ++kk) {
+            for ( int kk = 0; kk < 2; ++ kk ) {
                 std::vector<int> vecJumpCol, vecJumpSpan, vecJumpIdxNeedToHandle;
                 vecJumpCol.reserve ( 20 );
                 for (int col = 0; col < COLS; ++col) {
@@ -2016,7 +2017,7 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
                 if (vecJumpCol.size () < 2)
                     continue;
                 vecJumpSpan.reserve ( vecJumpCol.size () - 1 );
-                for (size_t i = 1; i < vecJumpCol.size (); ++i)
+                for (size_t i = 1; i < vecJumpCol.size (); ++ i)
                     vecJumpSpan.push_back ( vecJumpCol[i] - vecJumpCol[i - 1] );
                 auto vecSortedJumpSpanIdx = CalcUtils::sort_index_value<int> ( vecJumpSpan );
                 for (int i = 0; i < ToInt32 ( vecJumpSpan.size () ); ++i) {
@@ -2024,7 +2025,7 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
                         vecJumpIdxNeedToHandle.push_back ( i );
                 }
 
-                for (size_t jj = 0; jj < vecJumpIdxNeedToHandle.size (); ++jj) {
+                for (size_t jj = 0; jj < vecJumpIdxNeedToHandle.size (); ++ jj) {
                     auto nStart = vecJumpCol[vecSortedJumpSpanIdx[jj]];
                     auto nEnd = vecJumpCol[vecSortedJumpSpanIdx[jj] + 1];
                     char chSignFirst = ptrSignOfRow[nStart];        //The index is hard to understand. Use the sorted span index to find the original column.
@@ -2045,7 +2046,7 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
                             ptrSignOfRow[nEnd] = 0;
 
                         auto startValue = matPhase.at<DATA_TYPE> ( row, nStart );
-                        for (int col = nStart + 1; col <= nEnd; ++col) {
+                        for (int col = nStart + 1; col <= nEnd; ++ col) {
                             auto &value = matPhase.at<DATA_TYPE> ( row, col );
                             value -= chSignFirst * ONE_CYCLE * chTurnAmpl;
                             if (chSignFirst > 0 && value < startValue)  { //Jump up, need to roll down, but can not over roll
@@ -2070,14 +2071,14 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
     if ( nJumpSpanY > 0 ) {
         cv::Mat matPhaseDiff = CalcUtils::diff ( matPhase, 1, 1 );
 #ifdef _DEBUG
-        CalcUtils::saveMatToCsv ( matPhase, "./data/HaoYu_20171114/test5/NewLens2/BeforePhaseCorrectionY.csv");
+        //CalcUtils::saveMatToCsv ( matPhase, "./data/HaoYu_20171114/test5/NewLens2/BeforePhaseCorrectionY.csv");
         auto vecVecPhase = CalcUtils::matToVector<float> ( matPhase );
         auto vecVecPhaseDiff = CalcUtils::matToVector<float> ( matPhaseDiff );
 #endif
         cv::Mat matDiffSign = cv::Mat::zeros ( ROWS, COLS, CV_8SC1 );
         cv::Mat matDiffAmpl = cv::Mat::zeros ( ROWS, COLS, CV_8SC1 );
         std::vector<int> vecColsWithJump;
-        for (int col = 0; col < matPhaseDiff.cols; ++col) {
+        for (int col = 0; col < matPhaseDiff.cols; ++ col) {
             bool bColWithPosJump = false, bColWithNegJump = false;
             for (int row = 0; row < matPhaseDiff.rows; ++row) {
                 auto value = matPhaseDiff.at<DATA_TYPE> ( row, col );
@@ -2099,13 +2100,14 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
                 vecColsWithJump.push_back ( col );
         }
 
-        for (auto col : vecColsWithJump) {
+        for ( auto col : vecColsWithJump) {
             cv::Mat matSignOfCol = cv::Mat ( matDiffSign, cv::Range::all (), cv::Range ( col, col + 1 ) ).clone ();
             char *ptrSignOfCol = matSignOfCol.ptr<char> ( 0 );
             cv::Mat matAmplOfCol = cv::Mat ( matDiffAmpl, cv::Range::all (), cv::Range ( col, col + 1 ) ).clone ();
             char *ptrAmplOfCol = matAmplOfCol.ptr<char> ( 0 );
 
-            for (int kk = 0; kk < 2; ++kk) {
+            //Every column run 2 times, first time remove small jump, second time remove big jump. 2 pass can remove big jump with small jump inside.
+            for ( int kk = 0; kk < 2; ++ kk ) {
                 std::vector<int> vecJumpRow, vecJumpSpan, vecJumpIdxNeedToHandle;
                 vecJumpRow.reserve ( 20 );
                 for (int row = 0; row < ROWS; ++row) {
@@ -2115,7 +2117,7 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
                 if (vecJumpRow.size () < 2)
                     continue;
                 vecJumpSpan.reserve ( vecJumpRow.size () - 1 );
-                for (size_t i = 1; i < vecJumpRow.size (); ++i)
+                for (size_t i = 1; i < vecJumpRow.size (); ++ i)
                     vecJumpSpan.push_back ( vecJumpRow[i] - vecJumpRow[i - 1] );
                 auto vecSortedJumpSpanIdx = CalcUtils::sort_index_value<int> ( vecJumpSpan );
                 for (int i = 0; i < ToInt32 ( vecJumpSpan.size () ); ++i) {
@@ -2123,7 +2125,7 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
                         vecJumpIdxNeedToHandle.push_back ( i );
                 }
 
-                for (size_t jj = 0; jj < vecJumpIdxNeedToHandle.size (); ++jj) {
+                for (size_t jj = 0; jj < vecJumpIdxNeedToHandle.size (); ++ jj) {
                     auto nStart = vecJumpRow[vecSortedJumpSpanIdx[jj]];
                     auto nEnd = vecJumpRow[vecSortedJumpSpanIdx[jj] + 1];
                     char chSignFirst = ptrSignOfCol[nStart];        //The index is hard to understand. Use the sorted span index to find the original column.

@@ -29,7 +29,6 @@ void TestCalcMTF();
 void TestCalcPD();
 void TestCalcCameraMTF();
 
-void TestCalc3DHeightNew();
 void TestFastCalc3DHeight();
 void TestIntegrate3DCalibHaoYu();
 void TestMerge3DHeight();
