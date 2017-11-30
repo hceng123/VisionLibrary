@@ -614,6 +614,7 @@ static inline cv::Mat calcOrder5BezierCoeff ( const cv::Mat &matU ) {
 
         if ( pstCmd->nRemoveGammaJumpSpanX > 0 || pstCmd->nRemoveGammaJumpSpanY > 0 ) {
             phaseCorrection ( matGamma, matAvgUnderTolIndex, pstCmd->nRemoveGammaJumpSpanX, pstCmd->nRemoveGammaJumpSpanY );
+            //Run 2 times, first time remove small jump, second time remove big jump. 2 pass can remove big jump with small jump on its edge.
             phaseCorrection ( matGamma, matAvgUnderTolIndex, pstCmd->nRemoveGammaJumpSpanX, pstCmd->nRemoveGammaJumpSpanY );
             TimeLog::GetInstance()->addTimeLog( "phaseCorrection for gamma.", stopWatch.Span() );
         }
@@ -2106,7 +2107,6 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
             cv::Mat matAmplOfCol = cv::Mat ( matDiffAmpl, cv::Range::all (), cv::Range ( col, col + 1 ) ).clone ();
             char *ptrAmplOfCol = matAmplOfCol.ptr<char> ( 0 );
 
-            //Every column run 2 times, first time remove small jump, second time remove big jump. 2 pass can remove big jump with small jump inside.
             for ( int kk = 0; kk < 2; ++ kk ) {
                 std::vector<int> vecJumpRow, vecJumpSpan, vecJumpIdxNeedToHandle;
                 vecJumpRow.reserve ( 20 );
