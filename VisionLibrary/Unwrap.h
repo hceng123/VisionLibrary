@@ -84,9 +84,26 @@ private:
 
         TimeLog::GetInstance()->addTimeLog( "_phaseWrap floor takes.", stopWatch.Span() );
 
-        matPhase = matPhase - matBuffer * ONE_CYCLE;
+        matBuffer = matPhase - matBuffer * ONE_CYCLE;
 
         TimeLog::GetInstance()->addTimeLog( "_phaseWrap multiply and subtract takes.", stopWatch.Span() );
+        float fSum = 0.f, fCount = 0.f;
+        for ( int row = 0; row < matBuffer.rows; row += 20 )
+        for ( int col = 0; col < matBuffer.cols; col += 20 ) {
+            float value = matBuffer.at<DATA_TYPE>(row, col);
+            if ( value == value ) {
+                fSum += value;
+                ++ fCount;
+            }                
+        }
+        float fMean = fSum / fCount;
+
+        matBuffer = matPhase / ONE_CYCLE + 0.5 - fShift - fMean / 2.f;
+        CalcUtils::floorByRef<DATA_TYPE> ( matBuffer );
+
+        TimeLog::GetInstance()->addTimeLog( "_phaseWrap floor takes.", stopWatch.Span() );
+
+        matPhase = matPhase - matBuffer * ONE_CYCLE;
     }
 
     static inline void _phaseWrapByRefer(cv::Mat &matPhase, cv::Mat &matRef) {

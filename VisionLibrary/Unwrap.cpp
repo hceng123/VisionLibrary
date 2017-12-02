@@ -383,9 +383,9 @@ inline std::vector<size_t> sort_indexes(const std::vector<T> &v) {
     cv::Mat matFittedBeta  = matFittedAlpha * pstRpy->matThickToThinK.at<DATA_TYPE>(0) + pstRpy->matThickToThinK.at<DATA_TYPE>(1); //pBeta = K1(1) * pAlpha + K1(2)
     _phaseWrap ( matFittedAlpha );
     pstRpy->matBaseWrappedAlpha = matFittedAlpha;
-     _phaseWrap ( matFittedBeta );
+    _phaseWrap ( matFittedBeta );
     pstRpy->matBaseWrappedBeta = matFittedBeta;
-     _phaseWrap ( matFittedGamma );
+    _phaseWrap ( matFittedGamma );
     pstRpy->matBaseWrappedGamma = matFittedGamma;
     pstRpy->enStatus = VisionStatus::OK;
 }

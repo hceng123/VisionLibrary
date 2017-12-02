@@ -398,7 +398,7 @@ void TestCalib3DHeight_3() {
     TestCalib3DHeightSub ( 7, 1, false, strParentPath, "0920235040_lefttop",     false, 5, matThickToThinK, matThickToThinnestK, matBaseWrappedAlpha, matBaseWrappedBeta, matBaseWrappedGamma );
     TestCalib3DHeightSub ( 8, 2, false, strParentPath, "0920235128_rightbottom", false, 5, matThickToThinK, matThickToThinnestK, matBaseWrappedAlpha, matBaseWrappedBeta, matBaseWrappedGamma );
     TestCalib3DHeightSub ( 9, 3, false, strParentPath, "0920235405_negitive",    true,  3, matThickToThinK, matThickToThinnestK, matBaseWrappedAlpha, matBaseWrappedBeta, matBaseWrappedGamma );
-    TestCalcTopSurface3DHeightSub (3, false, strParentPath, "0921202157_H5mm",          matThickToThinK, matThickToThinnestK, matBaseWrappedAlpha, matBaseWrappedBeta, matBaseWrappedGamma, 0.1f );
+    TestCalcTopSurface3DHeightSub (3, false, strParentPath, "0921202157_H5mm",             matThickToThinK, matThickToThinnestK, matBaseWrappedAlpha, matBaseWrappedBeta, matBaseWrappedGamma, 0.1f );
     TestIntegrate3DCalibSub ( 3, strParentPath );
 }
 
@@ -420,10 +420,10 @@ void TestCalib3DHeight_4() {
     fs.release();
 
     bool bUseGamma = true;
-    TestCalib3DHeightSub ( 10, 1, bUseGamma, strParentPath, "0920235040_lefttop",     false, 5, matThickToThinK, matThickToThinnestK, matBaseWrappedAlpha, matBaseWrappedBeta, matBaseWrappedGamma );
-    TestCalib3DHeightSub ( 11, 2, bUseGamma, strParentPath, "0920235128_rightbottom", false, 5, matThickToThinK, matThickToThinnestK, matBaseWrappedAlpha, matBaseWrappedBeta, matBaseWrappedGamma );
-    TestCalib3DHeightSub ( 12, 3, bUseGamma, strParentPath, "0920235405_negitive",    true,  3, matThickToThinK, matThickToThinnestK, matBaseWrappedAlpha, matBaseWrappedBeta, matBaseWrappedGamma );
-    TestCalcTopSurface3DHeightSub ( 4, false, strParentPath, "0921202157_H5mm",          matThickToThinK, matThickToThinnestK, matBaseWrappedAlpha, matBaseWrappedBeta, matBaseWrappedGamma, 0.1f );
+    TestCalib3DHeightSub ( 10, 1, bUseGamma, strParentPath,  "0920235040_lefttop",     false, 5, matThickToThinK, matThickToThinnestK, matBaseWrappedAlpha, matBaseWrappedBeta, matBaseWrappedGamma );
+    TestCalib3DHeightSub ( 11, 2, bUseGamma, strParentPath,  "0920235128_rightbottom", false, 5, matThickToThinK, matThickToThinnestK, matBaseWrappedAlpha, matBaseWrappedBeta, matBaseWrappedGamma );
+    TestCalib3DHeightSub ( 12, 3, bUseGamma, strParentPath,  "0920235405_negitive",    true,  3, matThickToThinK, matThickToThinnestK, matBaseWrappedAlpha, matBaseWrappedBeta, matBaseWrappedGamma );
+    TestCalcTopSurface3DHeightSub ( 4, false, strParentPath, "0921202157_H5mm",                  matThickToThinK, matThickToThinnestK, matBaseWrappedAlpha, matBaseWrappedBeta, matBaseWrappedGamma, 0.1f );
     TestIntegrate3DCalibSub ( 4, strParentPath );
 }
 
