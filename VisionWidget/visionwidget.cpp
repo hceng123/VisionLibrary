@@ -171,6 +171,43 @@ void VisionWidget::on_fitCircleBtn_clicked()
     }
 }
 
+void VisionWidget::on_detectCircleBtn_clicked() {
+    if ( _sourceImagePath.empty() ) {
+        QMessageBox::information(this, "Vision Widget", "Please select an image first!", "Quit");
+        return;
+    }
+
+    ui.visionView->setState ( VisionView::VISION_VIEW_STATE::TEST_VISION_LIBRARY );
+    ui.visionView->applyIntermediateResult();
+
+    cv::Mat matInputImg = ui.visionView->getMat();
+    cv::Rect rectROI = ui.visionView->getSelectedWindow();
+    cv::Mat matGray;
+    cv::cvtColor ( matInputImg, matGray, CV_BGR2GRAY );
+    cv::Mat matROI ( matGray, rectROI );
+
+    std::vector<cv::Vec3f> circles;
+    double dMinDist = ui.lineEditDetectCircleMinDist->text().toDouble();
+    double dCannyThreshold = ui.lineEditDetectCircleCannyThreshold->text().toDouble();
+    double dAccumulatorThreshold = ui.lineEditDetectCircleAccumlatorThreshold->text().toDouble();
+    int nMinRadius = ui.lineEditDetectCircleMinRadius->text().toInt();
+    int nMaxRadius = ui.lineEditDetectCircleMaxRadius->text().toInt();
+    cv::HoughCircles ( matROI, circles, CV_HOUGH_GRADIENT, 1, dMinDist, dCannyThreshold,
+        dAccumulatorThreshold, nMinRadius, nMaxRadius );
+    cv::Mat matResultImage = matInputImg.clone();
+    for( size_t i = 0; i < circles.size(); ++ i )
+    {
+         cv::Point center(cvRound(circles[i][0]) + rectROI.x, cvRound(circles[i][1]) + rectROI.y);
+         int radius = cvRound(circles[i][2]);
+
+         //Draw the center of circle.
+         cv::circle( matResultImage, center, 3, Scalar(0,255,0), -1, 8, 0 );
+         // draw the circle outline
+         cv::circle( matResultImage, center, radius, Scalar(0,0,255), 2, 8, 0 );
+    }
+    ui.visionView->setMat ( VisionView::DISPLAY_SOURCE::RESULT, matResultImage );
+}
+
 void VisionWidget::on_calcRoundnessBtn_clicked()
 {
     if ( _sourceImagePath.empty() ) {
