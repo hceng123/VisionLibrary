@@ -249,7 +249,7 @@
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>70</y>
+        <y>160</y>
         <width>590</width>
         <height>51</height>
        </rect>
@@ -386,7 +386,7 @@
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>190</y>
+        <y>280</y>
         <width>590</width>
         <height>51</height>
        </rect>
@@ -503,7 +503,7 @@
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>250</y>
+        <y>340</y>
         <width>590</width>
         <height>51</height>
        </rect>
@@ -620,7 +620,7 @@
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>130</y>
+        <y>220</y>
         <width>590</width>
         <height>51</height>
        </rect>
@@ -712,6 +712,177 @@
          <string>Section Avg Guassian Diff</string>
         </property>
        </item>
+      </widget>
+     </widget>
+     <widget class="QGroupBox" name="groupBoxDetectCircle">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>70</y>
+        <width>590</width>
+        <height>81</height>
+       </rect>
+      </property>
+      <property name="title">
+       <string>Detect Circle</string>
+      </property>
+      <widget class="QPushButton" name="detectCircleBtn">
+       <property name="geometry">
+        <rect>
+         <x>500</x>
+         <y>20</y>
+         <width>80</width>
+         <height>23</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Detect Cicle</string>
+       </property>
+      </widget>
+      <widget class="QLineEdit" name="lineEditDetectCircleMinDist">
+       <property name="geometry">
+        <rect>
+         <x>130</x>
+         <y>20</y>
+         <width>41</width>
+         <height>20</height>
+        </rect>
+       </property>
+       <property name="inputMethodHints">
+        <set>Qt::ImhDigitsOnly</set>
+       </property>
+       <property name="text">
+        <string>20</string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="labelDectCircleMinDist">
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>20</y>
+         <width>91</width>
+         <height>16</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Min Circle Distance</string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="labelDetectCircleCannyThreshold">
+       <property name="geometry">
+        <rect>
+         <x>180</x>
+         <y>20</y>
+         <width>111</width>
+         <height>16</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Canny Edge Threshold</string>
+       </property>
+      </widget>
+      <widget class="QLineEdit" name="lineEditDetectCircleCannyThreshold">
+       <property name="geometry">
+        <rect>
+         <x>300</x>
+         <y>20</y>
+         <width>41</width>
+         <height>20</height>
+        </rect>
+       </property>
+       <property name="inputMethodHints">
+        <set>Qt::ImhDigitsOnly</set>
+       </property>
+       <property name="text">
+        <string>200</string>
+       </property>
+      </widget>
+      <widget class="QLineEdit" name="lineEditDetectCircleAccumlatorThreshold">
+       <property name="geometry">
+        <rect>
+         <x>130</x>
+         <y>50</y>
+         <width>41</width>
+         <height>20</height>
+        </rect>
+       </property>
+       <property name="inputMethodHints">
+        <set>Qt::ImhDigitsOnly</set>
+       </property>
+       <property name="text">
+        <string>100</string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="labelDetectCircleAccumlatorThreshold">
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>50</y>
+         <width>111</width>
+         <height>16</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Accumulator Threshold</string>
+       </property>
+      </widget>
+      <widget class="QLineEdit" name="lineEditDetectCircleMinRadius">
+       <property name="geometry">
+        <rect>
+         <x>240</x>
+         <y>50</y>
+         <width>41</width>
+         <height>20</height>
+        </rect>
+       </property>
+       <property name="inputMethodHints">
+        <set>Qt::ImhDigitsOnly</set>
+       </property>
+       <property name="text">
+        <string>10</string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="labelDetectCircleMinRadius">
+       <property name="geometry">
+        <rect>
+         <x>180</x>
+         <y>50</y>
+         <width>61</width>
+         <height>16</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Min Radius</string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="labelDetectCircleMaxRadius">
+       <property name="geometry">
+        <rect>
+         <x>300</x>
+         <y>50</y>
+         <width>61</width>
+         <height>16</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Max Radius</string>
+       </property>
+      </widget>
+      <widget class="QLineEdit" name="lineEditDetectCircleMaxRadius">
+       <property name="geometry">
+        <rect>
+         <x>360</x>
+         <y>50</y>
+         <width>41</width>
+         <height>20</height>
+        </rect>
+       </property>
+       <property name="inputMethodHints">
+        <set>Qt::ImhDigitsOnly</set>
+       </property>
+       <property name="text">
+        <string>500</string>
+       </property>
       </widget>
      </widget>
     </widget>
