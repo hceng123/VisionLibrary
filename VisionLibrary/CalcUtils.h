@@ -193,6 +193,7 @@ public:
         }
         vecValue.reserve ( nSize );
         _tp value = start;
+        end += interval / 2.f;  //Add some margin to prevent 0.999 <= 1.000 problem.
         if ( interval > 0 ) {
             while ( value <= end ) {
                 vecValue.push_back ( value );

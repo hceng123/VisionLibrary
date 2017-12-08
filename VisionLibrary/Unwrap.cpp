@@ -352,7 +352,7 @@ inline std::vector<size_t> sort_indexes(const std::vector<T> &v) {
     if ( fabs ( pstCmd->fRemoveHarmonicWaveK ) > 1e-5 )
         matAlpha = matAlpha + CalcUtils::sin<DATA_TYPE>(4.f * matAlpha) * pstCmd->fRemoveHarmonicWaveK;
 
-    cv::Mat matAlphaReshape = matAlpha.reshape ( 1, 1 );    
+    cv::Mat matAlphaReshape = matAlpha.reshape ( 1, 1 );
     cv::Mat matXX = matAlphaReshape.clone();
     cv::Mat matOne = cv::Mat::ones(1, matAlpha.rows * matAlpha.cols, CV_32FC1);
     matXX.push_back ( matOne );

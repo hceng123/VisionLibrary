@@ -118,13 +118,14 @@ static cv::Mat _drawHeightGrid(const cv::Mat &matHeight, int nGridRow, int nGrid
     return matResultImg;
 }
 
-static std::string gstrWorkingFolder("./data/HaoYu_20171114/test5/NewLens2/");
+static std::string gstrWorkingFolder("./data/HaoYu_20171208/");
+//static std::string gstrWorkingFolder("./data/HaoYu_20171208/");
 static std::string gstrCalibResultFile = gstrWorkingFolder + "CalibPP.yml";
 static std::string gstrIntegrateCalibResultFile( gstrWorkingFolder + "IntegrateCalibResult.yml" );
 bool gbUseGamma = true;
 const int IMAGE_COUNT = 12;
 void TestCalib3dBase() {
-    std::string strFolder = gstrWorkingFolder + "1114193238_base/";
+    std::string strFolder = gstrWorkingFolder + "1208201217_base/";
     PR_CALIB_3D_BASE_CMD stCmd;
     PR_CALIB_3D_BASE_RPY stRpy;
     for ( int i = 1; i <= IMAGE_COUNT; ++ i ) {

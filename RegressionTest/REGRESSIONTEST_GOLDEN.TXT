@@ -33,6 +33,7 @@ INTERVALS RESULT:
 0.70 
 0.80 
 0.90 
+1.00 
 
 ------------------------------------------
 CALCUTILS INTERVALS TEST #2 STARTING
@@ -49,6 +50,7 @@ INTERVALS RESULT:
 -0.70 
 -0.80 
 -0.90 
+-1.00 
 
 ------------------------------------------
 CALCUTILS INTERVALS TEST #3 STARTING
