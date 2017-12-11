@@ -219,6 +219,13 @@ VisionAPI VisionStatus PR_TwoLineAngle(const PR_TWO_LINE_ANGLE_CMD *const pstCmd
     return VisionStatus::OK;
 }
 
+VisionAPI VisionStatus PR_ParallelLineDist(const PR_PARALLEL_LINE_DIST_CMD *const pstCmd, PR_PARALLEL_LINE_DIST_RPY *const pstRpy)
+{
+PR_FUNCTION_ENTRY
+    return VisionAlgorithm::fitParallelLine(pstCmd, pstRpy);
+PR_FUNCTION_EXIT
+}
+
 VisionAPI VisionStatus PR_ColorToGray(PR_COLOR_TO_GRAY_CMD *pstCmd, PR_COLOR_TO_GRAY_RPY *pstRpy)
 {
 PR_FUNCTION_ENTRY

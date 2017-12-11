@@ -567,8 +567,33 @@ void TestCaliper_3() {
     std::cout << "PR_Caliper status: " << ToInt32 ( stRpy.enStatus ) << std::endl;
 }
 
+template<typename _tp>
+static cv::Mat intervals ( _tp start, _tp interval, _tp end ) {
+    std::vector<_tp> vecValue;
+    int nSize = ToInt32 ( (end - start) / interval );
+    vecValue.reserve ( nSize );
+    _tp value = start;
+    //end += interval / 2.f;  //Add some margin to prevent 0.999 <= 1.000 problem.
+    if (interval > 0) {
+        while (value <= end) {
+            vecValue.push_back ( value );
+            value += interval;
+        }
+    }
+    else {
+        while (value >= end) {
+            vecValue.push_back ( value );
+            value += interval;
+        }
+    }
+    //cv::Mat matResult ( vecValue ); //This have problem, because matResult share the memory with vecValue, after leave this function, the memory already released.
+    return cv::Mat ( vecValue ).clone ();
+}
+
 int _tmain(int argc, _TCHAR* argv[])
 {
+    auto matResult = intervals<float>(0, 0.1f, 1.f);
+
     cv::Mat matNan (3, 3, CV_32FC1, NAN );
     cv::Mat matCmpResult = cv::Mat ( matNan == matNan );
     int nCount = cv::countNonZero ( matNan );
@@ -634,7 +659,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
     //TestSrchDie();
 
-    TestCalib3dBase();
+    //TestCalib3dBase();
   
     //TestCalib3DHeight_01();
     //TestCalib3DHeight_02();
@@ -666,6 +691,9 @@ int _tmain(int argc, _TCHAR* argv[])
     //TestTwoLineAngle_5();
 
     //TestPointLineDistance_1();
+    //TestParallelLineDistance_1();
+    //TestParallelLineDistance_2();
+    TestParallelLineDistance_3();
 
     PR_DumpTimeLog("./Vision/Time.log");
     std::cout << "Press any key to exit." << std::endl;

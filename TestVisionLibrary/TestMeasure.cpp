@@ -98,3 +98,51 @@ void TestPointLineDistance_1() {
     PR_PointLineDistance ( &stCmd, &stRpy );
     std::cout << "Distance " << stRpy.fDistance << std::endl;
 }
+
+void TestParallelLineDistance_1() {
+    PR_PARALLEL_LINE_DIST_CMD stCmd;
+    PR_PARALLEL_LINE_DIST_RPY stRpy;
+
+    stCmd.line1.pt1 = cv::Point2f ( 2, 0 );
+    stCmd.line1.pt2 = cv::Point2f ( 2.02f, -100 );
+
+    stCmd.line2.pt1 = cv::Point2f ( 1, -10 );
+    stCmd.line2.pt2 = cv::Point2f ( 1.03f,  10 );
+
+    PR_ParallelLineDist ( &stCmd, &stRpy );
+    std::cout << "PR_ParallelLineDist status " << ToInt32 ( stRpy.enStatus ) << std::endl;
+    if ( VisionStatus::OK == stRpy.enStatus )
+        std::cout << "Distance " << stRpy.fDistance << std::endl;
+}
+
+void TestParallelLineDistance_2() {
+    PR_PARALLEL_LINE_DIST_CMD stCmd;
+    PR_PARALLEL_LINE_DIST_RPY stRpy;
+
+    stCmd.line1.pt1 = cv::Point2f ( 0, 0 );
+    stCmd.line1.pt2 = cv::Point2f ( 10, 10 );
+
+    stCmd.line2.pt1 = cv::Point2f ( 10, 0 );
+    stCmd.line2.pt2 = cv::Point2f ( 20,  10 );
+
+    PR_ParallelLineDist ( &stCmd, &stRpy );
+    std::cout << "PR_ParallelLineDist status " << ToInt32 ( stRpy.enStatus ) << std::endl;
+    if ( VisionStatus::OK == stRpy.enStatus )
+        std::cout << "Distance " << stRpy.fDistance << std::endl;
+}
+
+void TestParallelLineDistance_3() {
+    PR_PARALLEL_LINE_DIST_CMD stCmd;
+    PR_PARALLEL_LINE_DIST_RPY stRpy;
+
+    stCmd.line1.pt1 = cv::Point2f ( 0, 0 );
+    stCmd.line1.pt2 = cv::Point2f ( 0, 10 );
+
+    stCmd.line2.pt1 = cv::Point2f ( 0, 0 );
+    stCmd.line2.pt2 = cv::Point2f ( 10, 0 );
+
+    PR_ParallelLineDist ( &stCmd, &stRpy );
+    std::cout << "PR_ParallelLineDist status " << ToInt32 ( stRpy.enStatus ) << std::endl;
+    if ( VisionStatus::OK == stRpy.enStatus )
+        std::cout << "Distance " << stRpy.fDistance << std::endl;
+}

@@ -118,14 +118,14 @@ static cv::Mat _drawHeightGrid(const cv::Mat &matHeight, int nGridRow, int nGrid
     return matResultImg;
 }
 
-static std::string gstrWorkingFolder("./data/HaoYu_20171208/");
+static std::string gstrWorkingFolder("./data/HaoYu_20171208_2/newLens1/");
 //static std::string gstrWorkingFolder("./data/HaoYu_20171208/");
 static std::string gstrCalibResultFile = gstrWorkingFolder + "CalibPP.yml";
 static std::string gstrIntegrateCalibResultFile( gstrWorkingFolder + "IntegrateCalibResult.yml" );
 bool gbUseGamma = true;
 const int IMAGE_COUNT = 12;
 void TestCalib3dBase() {
-    std::string strFolder = gstrWorkingFolder + "1208201217_base/";
+    std::string strFolder = gstrWorkingFolder + "1208213400_base2/";
     PR_CALIB_3D_BASE_CMD stCmd;
     PR_CALIB_3D_BASE_RPY stRpy;
     for ( int i = 1; i <= IMAGE_COUNT; ++ i ) {
@@ -519,7 +519,7 @@ void TestCalc3DHeight_With_NormalCalibParam() {
 }
 
 void TestCalc3DHeight_With_IntegrateCalibParam() {
-    std::string strFolder = gstrWorkingFolder + "1114194353_02/";
+    std::string strFolder = gstrWorkingFolder + "1208214502_1/";
     //std::string strFolder = "./data/0913212217_Unwrap_Not_Finish/";
     PR_CALC_3D_HEIGHT_CMD stCmd;
     PR_CALC_3D_HEIGHT_RPY stRpy;
@@ -697,47 +697,11 @@ static cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY, const
     return matResult;
 }
 
-template<typename _tp>
-static cv::Mat intervals ( _tp start, _tp interval, _tp end ) {
-    std::vector<_tp> vecValue;
-    int nSize = ToInt32 ( (end - start) / interval );
-    if (nSize <= 0) {
-        static std::string msg = std::string ( __FUNCTION__ ) + " input paramters are invalid.";
-        throw std::exception ( msg.c_str () );
-    }
-    vecValue.reserve ( nSize );
-    _tp value = start;
-    if (interval > 0) {
-        while (value <= end) {
-            vecValue.push_back ( value );
-            value += interval;
-        }
-    }
-    else {
-        while (value >= end) {
-            vecValue.push_back ( value );
-            value += interval;
-        }
-    }
-    //cv::Mat matResult ( vecValue ); //This have problem, because matResult share the memory with vecValue, after leave this function, the memory already released.
-    return cv::Mat ( vecValue ).clone ();
-}
-
-template<typename _tp>
-static void meshgrid ( _tp xStart, _tp xInterval, _tp xEnd, _tp yStart, _tp yInterval, _tp yEnd, cv::Mat &matX, cv::Mat &matY ) {
-    cv::Mat matCol = intervals<_tp> ( xStart, xInterval, xEnd );
-    matCol = matCol.reshape ( 1, 1 );
-
-    cv::Mat matRow = intervals<_tp> ( yStart, yInterval, yEnd );
-    matX = cv::repeat ( matCol, matRow.rows, 1 );
-    matY = cv::repeat ( matRow, 1, matCol.cols );
-}
-
 void TestMerge3DHeight() {
     PR_MERGE_3D_HEIGHT_CMD stCmd;
     PR_MERGE_3D_HEIGHT_RPY stRpy;
 
-    std::string strWorkingFolder("./data/HaoYu_20171114/test5/");
+    std::string strWorkingFolder("./data/HaoYu_20171208_2/");
 
     std::string strArrayHeightFile[2] = {strWorkingFolder + "newLens1/Height.yml",
                                          strWorkingFolder + "newLens2/Height.yml"};

@@ -6250,5 +6250,34 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     return pstRpy->enStatus;
 }
 
+/*static*/ VisionStatus VisionAlgorithm::fitParallelLine(const PR_PARALLEL_LINE_DIST_CMD *const pstCmd, PR_PARALLEL_LINE_DIST_RPY *const pstRpy) {
+    bool bReverseFit = fabs ( pstCmd->line1.pt2.y - pstCmd->line1.pt1.y ) > ( pstCmd->line1.pt2.x - pstCmd->line1.pt1.x );
+    float fLineSlope1 = -10.f, fLineSlope2 = 10.f;
+    float fIntercept1 = 0.f, fIntercept2 = 0.f;
+    if ( bReverseFit ) {
+        fLineSlope1 = (pstCmd->line1.pt2.x - pstCmd->line1.pt1.x) / (pstCmd->line1.pt2.y - pstCmd->line1.pt1.y);
+        fIntercept1 = pstCmd->line1.pt1.x - fLineSlope1 * pstCmd->line1.pt1.y;
+        fLineSlope2 = (pstCmd->line2.pt2.x - pstCmd->line2.pt1.x) / (pstCmd->line2.pt2.y - pstCmd->line2.pt1.y);
+        fIntercept2 = pstCmd->line2.pt1.x - fLineSlope1 * pstCmd->line2.pt1.y;
+    }else {
+        fLineSlope1 = (pstCmd->line1.pt2.y - pstCmd->line1.pt1.y) / (pstCmd->line1.pt2.x - pstCmd->line1.pt1.x);
+        fIntercept1 = pstCmd->line1.pt1.y - fLineSlope1 * pstCmd->line1.pt1.x;
+        fLineSlope2 = (pstCmd->line2.pt2.y - pstCmd->line2.pt1.y) / (pstCmd->line2.pt2.x - pstCmd->line2.pt1.x);
+        fIntercept2 = pstCmd->line2.pt1.y - fLineSlope1 * pstCmd->line2.pt1.x;
+    }
+    
+    if ( fabs ( fLineSlope1 - fLineSlope2 ) > PARALLEL_LINE_SLOPE_DIFF_LMT ) {
+        char chArrMsg[1000];
+        _snprintf( chArrMsg, sizeof( chArrMsg ), "The input two lines are not parallel. Line 1 slope %f, line 2 slope %f", fLineSlope1, fLineSlope2 );
+        WriteLog(chArrMsg);
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+		return pstRpy->enStatus;
+	}
+
+    pstRpy->fDistance = CalcUtils::ptDisToLine ( pstCmd->line2.pt1, bReverseFit, fLineSlope1, fIntercept1 );
+    pstRpy->enStatus = VisionStatus::OK;
+    return pstRpy->enStatus;
+}
+
 }
 }

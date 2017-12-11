@@ -162,5 +162,58 @@ void TestPointLineDistance() {
     std::cout << "Distance " << stRpy.fDistance << std::endl;
 }
 
+void TestParallelLineDistanceSub(const PR_PARALLEL_LINE_DIST_CMD &stCmd, PR_PARALLEL_LINE_DIST_RPY &stRpy) {
+    std::cout << "Two Line input:" << std::endl;
+    printPRLine ( stCmd.line1 );
+    printPRLine ( stCmd.line2 );
+
+    PR_ParallelLineDist ( &stCmd, &stRpy );
+    std::cout << "PR_ParallelLineDist status " << ToInt32 ( stRpy.enStatus ) << std::endl;
+    if ( VisionStatus::OK == stRpy.enStatus )
+        std::cout << "Distance " << stRpy.fDistance << std::endl;
+}
+
+void TestParallelLineDistance() {
+    PR_PARALLEL_LINE_DIST_CMD stCmd;
+    PR_PARALLEL_LINE_DIST_RPY stRpy;
+
+    std::cout << std::endl << "-----------------------------------------------";
+    std::cout << std::endl << "POINT LINE DISTANCE REGRESSION TEST #1 STARTING";
+    std::cout << std::endl << "-----------------------------------------------";
+    std::cout << std::endl;
+
+    stCmd.line1.pt1 = cv::Point2f ( 2, 0 );
+    stCmd.line1.pt2 = cv::Point2f ( 2.02f, -100 );
+
+    stCmd.line2.pt1 = cv::Point2f ( 1, -10 );
+    stCmd.line2.pt2 = cv::Point2f ( 1.03f,  10 );
+
+    TestParallelLineDistanceSub ( stCmd, stRpy );
+
+    std::cout << std::endl << "-----------------------------------------------";
+    std::cout << std::endl << "POINT LINE DISTANCE REGRESSION TEST #2 STARTING";
+    std::cout << std::endl << "-----------------------------------------------";
+    std::cout << std::endl;
+    stCmd.line1.pt1 = cv::Point2f ( 0, 0 );
+    stCmd.line1.pt2 = cv::Point2f ( 10, 10 );
+
+    stCmd.line2.pt1 = cv::Point2f ( 10, 0 );
+    stCmd.line2.pt2 = cv::Point2f ( 20,  10 );
+
+    TestParallelLineDistanceSub ( stCmd, stRpy );
+
+    std::cout << std::endl << "-----------------------------------------------";
+    std::cout << std::endl << "POINT LINE DISTANCE REGRESSION TEST #3 STARTING";
+    std::cout << std::endl << "-----------------------------------------------";
+    std::cout << std::endl;
+    stCmd.line1.pt1 = cv::Point2f ( 0, 0 );
+    stCmd.line1.pt2 = cv::Point2f ( 0, 10 );
+
+    stCmd.line2.pt1 = cv::Point2f ( 0, 0 );
+    stCmd.line2.pt2 = cv::Point2f ( 10, 0 );
+
+    TestParallelLineDistanceSub ( stCmd, stRpy );
+}
+
 }
 }

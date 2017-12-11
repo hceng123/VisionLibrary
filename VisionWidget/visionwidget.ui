@@ -810,7 +810,7 @@
         <set>Qt::ImhDigitsOnly</set>
        </property>
        <property name="text">
-        <string>100</string>
+        <string>30</string>
        </property>
       </widget>
       <widget class="QLabel" name="labelDetectCircleAccumlatorThreshold">

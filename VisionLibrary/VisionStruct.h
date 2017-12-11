@@ -443,6 +443,16 @@ struct PR_TWO_LINE_ANGLE_RPY {
     float                   fAngle;
 };
 
+struct PR_PARALLEL_LINE_DIST_CMD {
+    PR_Line2f               line1;
+    PR_Line2f               line2;
+};
+
+struct PR_PARALLEL_LINE_DIST_RPY {
+    VisionStatus            enStatus;
+    float                   fDistance;
+};
+
 struct PR_RGB_RATIO {
     PR_RGB_RATIO() : fRatioR(0.299f), fRatioG(0.587f), fRatioB(0.114f) {}
     PR_RGB_RATIO(float fRatioR, float fRatioG, float fRatioB ) : fRatioR(fRatioR), fRatioG(fRatioG), fRatioB(fRatioB)   {}

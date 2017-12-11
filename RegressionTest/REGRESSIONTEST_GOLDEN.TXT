@@ -373,6 +373,32 @@ Point1 [2.00, 0.00], Point2 [2.02, -100.00]
 Point1 [1.00, -10.00], Point2 [1.03, 10.00]
 Two line angle 0.09
 
+-----------------------------------------------
+POINT LINE DISTANCE REGRESSION TEST #1 STARTING
+-----------------------------------------------
+Two Line input:
+Point1 [2.00, 0.00], Point2 [2.02, -100.00]
+Point1 [1.00, -10.00], Point2 [1.03, 10.00]
+PR_ParallelLineDist status 0
+Distance -1.00
+
+-----------------------------------------------
+POINT LINE DISTANCE REGRESSION TEST #2 STARTING
+-----------------------------------------------
+Two Line input:
+Point1 [0.00, 0.00], Point2 [10.00, 10.00]
+Point1 [10.00, 0.00], Point2 [20.00, 10.00]
+PR_ParallelLineDist status 0
+Distance -7.07
+
+-----------------------------------------------
+POINT LINE DISTANCE REGRESSION TEST #3 STARTING
+-----------------------------------------------
+Two Line input:
+Point1 [0.00, 0.00], Point2 [0.00, 10.00]
+Point1 [0.00, 0.00], Point2 [10.00, 0.00]
+PR_ParallelLineDist status 2
+
 ---------------------------------------------
 FIT PARALLEL LINE REGRESSION TEST #1 STARTING
 ---------------------------------------------
