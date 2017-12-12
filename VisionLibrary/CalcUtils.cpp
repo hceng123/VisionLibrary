@@ -309,7 +309,7 @@ float CalcUtils::calcPointToContourDist(const cv::Point &ptInput, const VectorOf
         ptResult.y = fLineSlope1 * ptResult.x + fLineCrossWithY1;
     }else {
         return -1;
-    }	
+    }
 	return 0;
 }
 
