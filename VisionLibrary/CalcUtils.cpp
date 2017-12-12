@@ -110,7 +110,7 @@ namespace Vision
     B.at<float>(1, 0) = -fIntercept2;
 
     cv::Mat matResultImg;
-    if ( cv::solve(A, B, matResultImg ) )   {
+    if ( cv::solve(A, B, matResultImg ) ) {
         ptResult.x = matResultImg.at<float>(0, 0);
         ptResult.y = matResultImg.at<float>(1, 0);
     }
