@@ -58,6 +58,11 @@ int _tmain(int argc, _TCHAR* argv[])
     *******************************/
     TestParallelLineDistance();
 
+    /**************************
+    * Test Cross Section Area *
+    ***************************/
+    TestCrossSectionArea();
+
     /*****************************
     * Test Fitting Parallel Line *
     *****************************/

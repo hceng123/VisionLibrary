@@ -465,6 +465,7 @@ struct PR_PARALLEL_LINE_DIST_RPY {
 
 //Introduction of cross section: https://en.wikipedia.org/wiki/Cross_section_(geometry)
 struct PR_CROSS_SECTION_AREA_CMD {
+    PR_CROSS_SECTION_AREA_CMD() : bClosed(false) {}
     VectorOfPoint2f         vecContourPoints;
     bool                    bClosed;    //The contour is closed
 };

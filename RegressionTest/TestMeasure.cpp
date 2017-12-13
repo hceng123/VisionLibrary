@@ -306,5 +306,25 @@ void TestParallelLineDistance() {
     TestParallelLineDistanceSub ( stCmd, stRpy );
 }
 
+void TestCrossSectionArea() {
+    PR_CROSS_SECTION_AREA_CMD stCmd;
+    PR_CROSS_SECTION_AREA_RPY stRpy;
+
+    std::cout << std::endl << "----------------------------------------------";
+    std::cout << std::endl << "CROSS SECTION AREA REGRESSION TEST #1 STARTING";
+    std::cout << std::endl << "----------------------------------------------";
+    std::cout << std::endl;
+
+    stCmd.vecContourPoints.emplace_back ( 10.f, 10.f );
+    stCmd.vecContourPoints.emplace_back ( 20.f, 20.f );
+    stCmd.vecContourPoints.emplace_back ( 30.f, 10.f );
+    stCmd.bClosed = false;
+
+    PR_CrossSectionArea ( &stCmd, &stRpy );
+    std::cout << "PR_CrossSectionArea status " << ToInt32 ( stRpy.enStatus ) << std::endl;
+    if ( VisionStatus::OK == stRpy.enStatus )
+        std::cout << "Distance " << stRpy.fArea << std::endl;
+}
+
 }
 }
