@@ -97,10 +97,10 @@ namespace Vision
     return line;
 }
 
-/*static*/ cv::Point2f CalcUtils::lineIntersect(float fSlope1, float fIntercept1, float fSlope2, float fIntercept2) {
+/*static*/ int CalcUtils::lineIntersect ( float fSlope1, float fIntercept1, float fSlope2, float fIntercept2, cv::Point2f &point ) {
     cv::Point2f ptResult;
     if ( fabs ( fSlope1 - fSlope2 ) < 0.0001 )
-        return ptResult;
+        return -1;
     cv::Mat A(2, 2, CV_32FC1);
     cv::Mat B(2, 1, CV_32FC1);
     A.at<float>(0, 0) = fSlope1; A.at<float>(0, 1) = -1.f;
@@ -113,8 +113,29 @@ namespace Vision
     if ( cv::solve(A, B, matResultImg ) ) {
         ptResult.x = matResultImg.at<float>(0, 0);
         ptResult.y = matResultImg.at<float>(1, 0);
+        return 0;
     }
-    return ptResult;
+    return -1;
+}
+
+/*static*/ int CalcUtils::lineIntersect ( const PR_Line2f &line1, const PR_Line2f &line2, cv::Point2f &point ) {
+    float fSlope1, fIntercept1, fSlope2, fIntercept2;
+    lineSlopeIntercept ( line1, fSlope1, fIntercept1 );
+    lineSlopeIntercept ( line2, fSlope2, fIntercept2 );
+    if ( fSlope1 < 1000 && fSlope2 < 1000 )
+        return lineIntersect ( fSlope1, fIntercept1, fSlope2, fIntercept2, point );
+    //Both lines are vertical
+    else if ( ( fSlope1 != fSlope1 || fSlope1 > 1000 ) && ( fSlope2 != fSlope2 || fSlope2 > 1000 ) ) {
+        return -1;
+    }else if ( fSlope1 != fSlope1 || fSlope1 > 1000 ) {
+        point.x =  ( line1.pt1.x + line1.pt2.x ) / 2;
+        point.y = fSlope2 * point.x + fIntercept2;
+    }else if ( fSlope2 != fSlope2 || fSlope2 > 1000 ) {
+        point.x =  ( line2.pt1.x + line2.pt2.x ) / 2;
+        point.y = fSlope1 * point.x + fIntercept1;
+    }else
+        assert (0);
+    return 0;
 }
 
 /*static*/ float CalcUtils::lineSlope(const PR_Line2f &line) {
@@ -278,6 +299,7 @@ float CalcUtils::calcPointToContourDist(const cv::Point &ptInput, const VectorOf
 
 /*static*/ int CalcUtils::findLineCrossPoint(const PR_Line2f &line1, const PR_Line2f &line2, cv::Point2f &ptResult) {
     const auto Precision = std::numeric_limits<float>::epsilon();
+    const auto VerticalLineSlopeThreshold = 100.f;  //If the slope the line large than this value, consider it is vertical.
 	float fLineSlope1 = ( line1.pt2.y - line1.pt1.y ) / ( line1.pt2.x - line1.pt1.x );
 	float fLineSlope2 = ( line2.pt2.y - line2.pt1.y ) / ( line2.pt2.x - line2.pt1.x );
 	if ( fabs ( fLineSlope1 - fLineSlope2 ) < PARALLEL_LINE_SLOPE_DIFF_LMT )	{
@@ -290,21 +312,21 @@ float CalcUtils::calcPointToContourDist(const cv::Point &ptInput, const VectorOf
     float fLineCrossWithY1 = fLineSlope1 * ( - line1.pt1.x) + line1.pt1.y;
 	float fLineCrossWithY2 = fLineSlope2 * ( - line2.pt1.x) + line2.pt1.y;
 
-    if ( fLineSlope1 == fLineSlope1 && fabs ( fLineSlope1 ) < 1000 &&
-         fLineSlope2 == fLineSlope2 && fabs ( fLineSlope2) < 1000 ) {
+    if ( fLineSlope1 == fLineSlope1 && fabs ( fLineSlope1 ) < VerticalLineSlopeThreshold &&
+         fLineSlope2 == fLineSlope2 && fabs ( fLineSlope2 ) < VerticalLineSlopeThreshold ) {
         ptResult.x = ( fLineCrossWithY2 - fLineCrossWithY1 ) / (fLineSlope1 - fLineSlope2);
 	    ptResult.y = fLineSlope1 * ptResult.x + fLineCrossWithY1;
     }else
-    if ( ( fLineSlope1 != fLineSlope1 || fabs ( fLineSlope1 ) > 1000 ) &&
-         ( fLineSlope2 != fLineSlope2 || fabs ( fLineSlope2 ) > 1000 ) ) {
+    if ( ( fLineSlope1 != fLineSlope1 || fabs ( fLineSlope1 ) > VerticalLineSlopeThreshold ) &&
+         ( fLineSlope2 != fLineSlope2 || fabs ( fLineSlope2 ) > VerticalLineSlopeThreshold ) ) {
         //Both of the line is vertical, no cross point
         return -1;
     }
     //Line1 is vertical
-    else if ( fLineSlope1 != fLineSlope1 || fabs ( fLineSlope1 ) > 1000 ) {
+    else if ( fLineSlope1 != fLineSlope1 || fabs ( fLineSlope1 ) > VerticalLineSlopeThreshold ) {
         ptResult.x = line1.pt1.x;
         ptResult.y = fLineSlope2 * ptResult.x + fLineCrossWithY2;
-    }else if ( fLineSlope2 != fLineSlope2 || fabs ( fLineSlope2 ) > 1000 ) {
+    }else if ( fLineSlope2 != fLineSlope2 || fabs ( fLineSlope2 ) > VerticalLineSlopeThreshold ) {
         ptResult.x = line2.pt1.x;
         ptResult.y = fLineSlope1 * ptResult.x + fLineCrossWithY1;
     }else {

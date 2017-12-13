@@ -46,6 +46,9 @@ void TestParallelLineDistance_1();
 void TestParallelLineDistance_2();
 void TestParallelLineDistance_3();
 
+void TestLineIntersect();
+void TestCrossSectionArea();
+
 template<class T>
 void printfMat(const cv::Mat &mat)
 {

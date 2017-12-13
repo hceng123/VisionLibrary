@@ -693,7 +693,11 @@ int _tmain(int argc, _TCHAR* argv[])
     //TestPointLineDistance_1();
     //TestParallelLineDistance_1();
     //TestParallelLineDistance_2();
-    TestParallelLineDistance_3();
+    //TestParallelLineDistance_3();
+
+    //TestLineIntersect();
+
+    TestCrossSectionArea();
 
     PR_DumpTimeLog("./Vision/Time.log");
     std::cout << "Press any key to exit." << std::endl;

@@ -371,7 +371,59 @@ TWO LINE ANGLE REGRESSION TEST #6 STARTING
 Two Line input:
 Point1 [2.00, 0.00], Point2 [2.02, -100.00]
 Point1 [1.00, -10.00], Point2 [1.03, 10.00]
-Two line angle 0.09
+Two line angle 0.00
+
+----------------------------------------------
+TWO LINE INTERSECT REGRESSION TEST #1 STARTING
+----------------------------------------------
+Two Line input:
+Point1 [0.00, 0.00], Point2 [10.00, 10.00]
+Point1 [0.00, 0.00], Point2 [10.00, -10.00]
+PR_TwoLineIntersect status 0
+Intersect Point [0.00, 0.00]
+
+----------------------------------------------
+TWO LINE INTERSECT REGRESSION TEST #2 STARTING
+----------------------------------------------
+Two Line input:
+Point1 [-10.00, 1.00], Point2 [10.00, 1.00]
+Point1 [0.00, 0.00], Point2 [10.00, -10.00]
+PR_TwoLineIntersect status 0
+Intersect Point [-1.00, 1.00]
+
+----------------------------------------------
+TWO LINE INTERSECT REGRESSION TEST #3 STARTING
+----------------------------------------------
+Two Line input:
+Point1 [1.00, -10.00], Point2 [1.00, 10.00]
+Point1 [0.00, 0.00], Point2 [10.00, -10.00]
+PR_TwoLineIntersect status 0
+Intersect Point [1.00, -1.00]
+
+----------------------------------------------
+TWO LINE INTERSECT REGRESSION TEST #4 STARTING
+----------------------------------------------
+Two Line input:
+Point1 [0.00, 0.00], Point2 [10.00, -10.00]
+Point1 [1.00, -10.00], Point2 [1.00, 10.00]
+PR_TwoLineIntersect status 0
+Intersect Point [1.00, -1.00]
+
+----------------------------------------------
+TWO LINE INTERSECT REGRESSION TEST #5 STARTING
+----------------------------------------------
+Two Line input:
+Point1 [2.00, 0.00], Point2 [2.00, -10.00]
+Point1 [1.00, -10.00], Point2 [1.00, 10.00]
+PR_TwoLineIntersect status 2
+
+----------------------------------------------
+TWO LINE INTERSECT REGRESSION TEST #6 STARTING
+----------------------------------------------
+Two Line input:
+Point1 [2.00, 0.00], Point2 [2.02, -100.00]
+Point1 [1.00, -10.00], Point2 [1.03, 10.00]
+PR_TwoLineIntersect status 2
 
 -----------------------------------------------
 POINT LINE DISTANCE REGRESSION TEST #1 STARTING

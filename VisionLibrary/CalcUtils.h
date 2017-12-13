@@ -372,7 +372,8 @@ public:
     static float ptDisToLine ( const cv::Point2f &ptInput, bool bReversedFit, float fSlope, float fIntercept );
     static PR_Line2f calcEndPointOfLine ( const VectorOfPoint &vecPoint, bool bReversedFit, float fSlope, float fIntercept );
     static PR_Line2f calcEndPointOfLine ( const ListOfPoint &listPoint, bool bReversedFit, float fSlope, float fIntercept );
-    static cv::Point2f lineIntersect ( float fSlope1, float fIntercept1, float fSlope2, float fIntercept2 );
+    static int lineIntersect ( float fSlope1, float fIntercept1, float fSlope2, float fIntercept2, cv::Point2f &point );
+    static int lineIntersect ( const PR_Line2f &line1, const PR_Line2f &line2, cv::Point2f &point );
     static float lineSlope ( const PR_Line2f &line );
     static void lineSlopeIntercept ( const PR_Line2f &line, float &fSlope, float &fIntercept );
     static VectorOfPoint getCornerOfRotatedRect ( const cv::RotatedRect &rotatedRect );

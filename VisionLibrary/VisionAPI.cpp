@@ -219,10 +219,28 @@ VisionAPI VisionStatus PR_TwoLineAngle(const PR_TWO_LINE_ANGLE_CMD *const pstCmd
     return VisionStatus::OK;
 }
 
+VisionAPI VisionStatus PR_TwoLineIntersect(const PR_TWO_LINE_INTERSECT_CMD *const pstCmd, PR_TWO_LINE_INTERSECT_RPY *const pstRpy)
+{
+    int nResult = CalcUtils::findLineCrossPoint ( pstCmd->line1, pstCmd->line2, pstRpy->ptIntersect );
+    pstRpy->enStatus = VisionStatus::OK;
+    if ( nResult != 0 ) {
+        WriteLog("Cannot find intersect point for parallel lines");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+    }
+    return pstRpy->enStatus;
+}
+
 VisionAPI VisionStatus PR_ParallelLineDist(const PR_PARALLEL_LINE_DIST_CMD *const pstCmd, PR_PARALLEL_LINE_DIST_RPY *const pstRpy)
 {
 PR_FUNCTION_ENTRY
-    return VisionAlgorithm::fitParallelLine(pstCmd, pstRpy);
+    return VisionAlgorithm::parallelLineDist(pstCmd, pstRpy);
+PR_FUNCTION_EXIT
+}
+
+VisionAPI VisionStatus PR_CrossSectionArea(const PR_CROSS_SECTION_AREA_CMD *const pstCmd, PR_CROSS_SECTION_AREA_RPY *const pstRpy)
+{
+PR_FUNCTION_ENTRY
+    return VisionAlgorithm::crossSectionArea(pstCmd, pstRpy);
 PR_FUNCTION_EXIT
 }
 

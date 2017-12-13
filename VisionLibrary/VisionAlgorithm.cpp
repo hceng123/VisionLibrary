@@ -6250,7 +6250,7 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     return pstRpy->enStatus;
 }
 
-/*static*/ VisionStatus VisionAlgorithm::fitParallelLine(const PR_PARALLEL_LINE_DIST_CMD *const pstCmd, PR_PARALLEL_LINE_DIST_RPY *const pstRpy) {
+/*static*/ VisionStatus VisionAlgorithm::parallelLineDist(const PR_PARALLEL_LINE_DIST_CMD *const pstCmd, PR_PARALLEL_LINE_DIST_RPY *const pstRpy) {
     bool bReverseFit = fabs ( pstCmd->line1.pt2.y - pstCmd->line1.pt1.y ) > ( pstCmd->line1.pt2.x - pstCmd->line1.pt1.x );
     float fLineSlope1 = -10.f, fLineSlope2 = 10.f;
     float fIntercept1 = 0.f, fIntercept2 = 0.f;
@@ -6275,6 +6275,26 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
 	}
 
     pstRpy->fDistance = CalcUtils::ptDisToLine ( pstCmd->line2.pt1, bReverseFit, fLineSlope1, fIntercept1 );
+    pstRpy->enStatus = VisionStatus::OK;
+    return pstRpy->enStatus;
+}
+
+/*static*/ VisionStatus VisionAlgorithm::crossSectionArea(const PR_CROSS_SECTION_AREA_CMD *const pstCmd, PR_CROSS_SECTION_AREA_RPY *const pstRpy) {
+    auto contour = pstCmd->vecContourPoints;
+    if ( ! pstCmd->bClosed ) {
+        float nMinX = std::numeric_limits<float>::max ();
+        float nMaxX = std::numeric_limits<float>::min ();
+        for( const auto &point : contour ) {
+            if( point.x > nMaxX )
+                nMaxX = point.x;
+            if( point.x < nMinX )
+                nMinX = point.x;
+        }
+        contour.emplace_back ( nMaxX, 0.f );
+        contour.emplace_back ( nMinX, 0.f );
+    }
+
+    pstRpy->fArea = cv::contourArea ( contour );
     pstRpy->enStatus = VisionStatus::OK;
     return pstRpy->enStatus;
 }

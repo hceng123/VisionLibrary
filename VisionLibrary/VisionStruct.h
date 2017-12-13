@@ -270,7 +270,7 @@ struct PR_FIT_LINE_CMD {
 };
 
 struct PR_FIT_LINE_RPY {
-    VisionStatus            enStatus;    
+    VisionStatus            enStatus;
     bool                    bReversedFit;   //If it is true, then the result is x = fSlope * y + fIntercept. Otherwise the line is y = fSlope * x + fIntercept.
     float                   fSlope;
     float                   fIntercept;
@@ -440,7 +440,17 @@ struct PR_TWO_LINE_ANGLE_CMD {
 };
 
 struct PR_TWO_LINE_ANGLE_RPY {
-    float                   fAngle;
+    float                   fAngle;    
+};
+
+struct PR_TWO_LINE_INTERSECT_CMD {
+    PR_Line2f               line1;
+    PR_Line2f               line2;
+};
+
+struct PR_TWO_LINE_INTERSECT_RPY {
+    VisionStatus            enStatus;
+    cv::Point2f             ptIntersect;    //The intersect point of two lines.
 };
 
 struct PR_PARALLEL_LINE_DIST_CMD {
@@ -451,6 +461,17 @@ struct PR_PARALLEL_LINE_DIST_CMD {
 struct PR_PARALLEL_LINE_DIST_RPY {
     VisionStatus            enStatus;
     float                   fDistance;
+};
+
+//Introduction of cross section: https://en.wikipedia.org/wiki/Cross_section_(geometry)
+struct PR_CROSS_SECTION_AREA_CMD {
+    VectorOfPoint2f         vecContourPoints;
+    bool                    bClosed;    //The contour is closed
+};
+
+struct PR_CROSS_SECTION_AREA_RPY {
+    VisionStatus            enStatus;
+    float                   fArea;
 };
 
 struct PR_RGB_RATIO {

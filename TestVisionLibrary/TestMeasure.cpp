@@ -147,10 +147,9 @@ void TestParallelLineDistance_3() {
         std::cout << "Distance " << stRpy.fDistance << std::endl;
 }
 
-cv::Point2f lineIntersect(float fSlope1, float fIntercept1, float fSlope2, float fIntercept2) {
-    cv::Point2f ptResult;
+int lineIntersect(float fSlope1, float fIntercept1, float fSlope2, float fIntercept2, cv::Point2f &point) {
     if ( fabs ( fSlope1 - fSlope2 ) < 0.0001 )
-        return ptResult;
+        return -1;
     cv::Mat A(2, 2, CV_32FC1);
     cv::Mat B(2, 1, CV_32FC1);
     A.at<float>(0, 0) = fSlope1; A.at<float>(0, 1) = -1.f;
@@ -161,10 +160,11 @@ cv::Point2f lineIntersect(float fSlope1, float fIntercept1, float fSlope2, float
 
     cv::Mat matResultImg;
     if ( cv::solve(A, B, matResultImg ) ) {
-        ptResult.x = matResultImg.at<float>(0, 0);
-        ptResult.y = matResultImg.at<float>(1, 0);
+        point.x = matResultImg.at<float>(0, 0);
+        point.y = matResultImg.at<float>(1, 0);
+        return 0;
     }
-    return ptResult;
+    return -1;
 }
 
 void lineSlopeIntercept(const PR_Line2f &line, float &fSlope, float &fIntercept) {
@@ -172,13 +172,60 @@ void lineSlopeIntercept(const PR_Line2f &line, float &fSlope, float &fIntercept)
     fIntercept = line.pt2.y  - fSlope * line.pt2.x;
 }
 
-cv::Point2f lineIntersect ( const PR_Line2f &line1, const PR_Line2f &line2 ) {
+int lineIntersect ( const PR_Line2f &line1, const PR_Line2f &line2, cv::Point2f &point ) {
     float fSlope1, fIntercept1, fSlope2, fIntercept2;
     lineSlopeIntercept ( line1, fSlope1, fIntercept1 );
     lineSlopeIntercept ( line2, fSlope2, fIntercept2 );
-    return lineIntersect ( fSlope1, fIntercept1, fSlope2, fIntercept2 );
+    if ( fSlope1 < 1000 && fSlope2 < 1000 )
+        return lineIntersect ( fSlope1, fIntercept1, fSlope2, fIntercept2, point );
+    //Both lines are vertical
+    else if ( ( fSlope1 != fSlope1 || fSlope1 > 1000 ) && ( fSlope2 != fSlope2 || fSlope2 > 1000 ) ) {
+        return -1;
+    }else if ( fSlope1 != fSlope1 || fSlope1 > 1000 ) {
+        point.x =  ( line1.pt1.x + line1.pt2.x ) / 2;
+        point.y = fSlope2 * point.x + fIntercept2;
+    }else if ( fSlope2 != fSlope2 || fSlope2 > 1000 ) {
+        point.x =  ( line2.pt1.x + line2.pt2.x ) / 2;
+        point.y = fSlope1 * point.x + fIntercept1;
+    }else
+        assert (0);
+    return 0;
+}
+
+void TestLineIntersect() {
+    PR_TWO_LINE_INTERSECT_CMD stCmd;
+    PR_TWO_LINE_INTERSECT_RPY stRpy;
+
+    stCmd.line1.pt1 = cv::Point2f ( 2, 0 );
+    stCmd.line1.pt2 = cv::Point2f ( 2.02f, -100 );
+
+    stCmd.line2.pt1 = cv::Point2f ( 1, -10 );
+    stCmd.line2.pt2 = cv::Point2f ( 1.03f,  10 );
+
+    PR_TwoLineIntersect ( &stCmd, &stRpy );
 }
 
 void CalcCornerRadius(const cv::Mat &matInput, const cv::Rect &rectROI, const PR_Line2f &line1, const PR_Line2f &line2, float &fRadius, cv::Point &ptCenter ) {
+
+}
+
+void TestCrossSectionArea() {
+    VectorOfPoint2f contour;
+    contour.emplace_back ( 10.f, 10.f );
+    contour.emplace_back ( 20.f, 20.f );
+    contour.emplace_back ( 30.f, 10.f );
+
+    float nMinX = std::numeric_limits<float>::max();
+    float nMaxX = std::numeric_limits<float>::min();
+    for ( const auto &point : contour ) {
+        if ( point.x > nMaxX )
+            nMaxX = point.x;
+        if ( point.x < nMinX )
+            nMinX = point.x;
+    }
+    contour.emplace_back ( nMaxX, 0.f );
+    contour.emplace_back ( nMinX, 0.f );
+    double dArea = cv::contourArea ( contour );
+    std::cout << "Area " << dArea << std::endl;
 
 }
