@@ -221,7 +221,7 @@ VisionAPI VisionStatus PR_TwoLineAngle(const PR_TWO_LINE_ANGLE_CMD *const pstCmd
 
 VisionAPI VisionStatus PR_TwoLineIntersect(const PR_TWO_LINE_INTERSECT_CMD *const pstCmd, PR_TWO_LINE_INTERSECT_RPY *const pstRpy)
 {
-    int nResult = CalcUtils::findLineCrossPoint ( pstCmd->line1, pstCmd->line2, pstRpy->ptIntersect );
+    int nResult = CalcUtils::twoLineIntersect ( pstCmd->line1, pstCmd->line2, pstRpy->ptIntersect );
     pstRpy->enStatus = VisionStatus::OK;
     if ( nResult != 0 ) {
         WriteLog("Cannot find intersect point for parallel lines");

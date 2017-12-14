@@ -451,6 +451,12 @@ Point1 [0.00, 0.00], Point2 [0.00, 10.00]
 Point1 [0.00, 0.00], Point2 [10.00, 0.00]
 PR_ParallelLineDist status 2
 
+----------------------------------------------
+CROSS SECTION AREA REGRESSION TEST #1 STARTING
+----------------------------------------------
+PR_CrossSectionArea status 0
+Distance 300.00
+
 ---------------------------------------------
 FIT PARALLEL LINE REGRESSION TEST #1 STARTING
 ---------------------------------------------

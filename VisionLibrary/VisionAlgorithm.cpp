@@ -4033,7 +4033,7 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
             cv::drawContours ( matDisplay, contours, index, _constGreenScalar );
         showImage("Find contour result", matDisplay );
     }
-        
+
     double dTotalContourArea = 0.;
     double dTotalRectArea = 0.;
     for ( const auto &contour : contours ) {
@@ -4096,7 +4096,7 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
                 rect.y += pstCmd->rectSrchWindow.y;
                 cv::rectangle ( pstRpy->matResultImg, rect, _constRedScalar, 2);
                 continue;
-            }   
+            }
 
             rect.x += pstCmd->rectSrchWindow.x;
             rect.y += pstCmd->rectSrchWindow.y;
@@ -4417,7 +4417,7 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     int nMaxRansacTime = 20;
     float fFitTolerance = 4;
     auto fitCircleResult = _fitCircleRansac ( maxContour, fFitTolerance, nMaxRansacTime, maxContour.size() / 2 );
-    auto vecLeftOverPoints = _findPointsOverCircleTol ( maxContour, fitCircleResult, fFitTolerance );    
+    auto vecLeftOverPoints = _findPointsOverCircleTol ( maxContour, fitCircleResult, fFitTolerance );
     float fSlope = 0.f, fIntercept = 0.f;
     PR_Line2f stLine;
     _fitLineRansac ( vecLeftOverPoints, fFitTolerance, nMaxRansacTime, vecLeftOverPoints.size() / 2, false, fSlope, fIntercept, stLine );
@@ -4790,7 +4790,7 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     int EDGE_MIN_DIFF = matRow.cols / 3;
     nEdgePos = -1;
     for (int index = nStart; index < nEnd - EDGE_SIZE; ++index) {
-        int nDiff = matRow.at<int> ( 0, index + EDGE_SIZE ) - matRow.at<int> ( 0, index );       
+        int nDiff = matRow.at<int> ( 0, index + EDGE_SIZE ) - matRow.at<int> ( 0, index );
         if (nDiff > EDGE_MIN_DIFF)
             nEdgePos = index + EDGE_SIZE / 2;
     }
@@ -4858,7 +4858,7 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     pstRpy->enStatus = VisionStatus::OK;
     for ( auto &point : maxContour ) {
         point.x += rectROI.x;
-        point.y += rectROI.y;       
+        point.y += rectROI.y;
     }
     VectorOfVectorOfPoint vevVecPoint;
     vevVecPoint.push_back ( maxContour );
@@ -6153,7 +6153,7 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     float nff = 20.f;
     VectorOfDouble vecA;
     vecA.reserve ( ToInt32 ( nff) );
-    for ( float f1 = f11; f1 <= f12; f1 += ( f12 - f11 ) / 20 ) {     
+    for ( float f1 = f11; f1 <= f12; f1 += ( f12 - f11 ) / 20 ) {
         cv::Mat matXX1 =   CalcUtils::sin<double>( matTt1 * 2 * CV_PI * f1 );
         matXX1.push_back ( CalcUtils::cos<double>( matTt1 * 2 * CV_PI * f1 ) );
         matXX1.push_back ( cv::Mat (cv::Mat::ones ( 1, matXX1.cols, CV_64FC1 ) ) );
@@ -6271,8 +6271,8 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
         _snprintf( chArrMsg, sizeof( chArrMsg ), "The input two lines are not parallel. Line 1 slope %f, line 2 slope %f", fLineSlope1, fLineSlope2 );
         WriteLog(chArrMsg);
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
-		return pstRpy->enStatus;
-	}
+        return pstRpy->enStatus;
+    }
 
     pstRpy->fDistance = CalcUtils::ptDisToLine ( pstCmd->line2.pt1, bReverseFit, fLineSlope1, fIntercept1 );
     pstRpy->enStatus = VisionStatus::OK;
@@ -6294,7 +6294,7 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
         contour.emplace_back ( nMinX, 0.f );
     }
 
-    pstRpy->fArea = cv::contourArea ( contour );
+    pstRpy->fArea = ToFloat ( cv::contourArea ( contour ) );
     pstRpy->enStatus = VisionStatus::OK;
     return pstRpy->enStatus;
 }

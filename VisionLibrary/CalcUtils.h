@@ -372,8 +372,6 @@ public:
     static float ptDisToLine ( const cv::Point2f &ptInput, bool bReversedFit, float fSlope, float fIntercept );
     static PR_Line2f calcEndPointOfLine ( const VectorOfPoint &vecPoint, bool bReversedFit, float fSlope, float fIntercept );
     static PR_Line2f calcEndPointOfLine ( const ListOfPoint &listPoint, bool bReversedFit, float fSlope, float fIntercept );
-    static int lineIntersect ( float fSlope1, float fIntercept1, float fSlope2, float fIntercept2, cv::Point2f &point );
-    static int lineIntersect ( const PR_Line2f &line1, const PR_Line2f &line2, cv::Point2f &point );
     static float lineSlope ( const PR_Line2f &line );
     static void lineSlopeIntercept ( const PR_Line2f &line, float &fSlope, float &fIntercept );
     static VectorOfPoint getCornerOfRotatedRect ( const cv::RotatedRect &rotatedRect );
@@ -389,7 +387,7 @@ public:
     static float calcFrequency(const cv::Mat &matInput);
     static VectorOfDouble interp1(const VectorOfDouble &vecX, const VectorOfDouble &vecV, const VectorOfDouble &vecXq, bool bSpine = false );
     static void saveMatToCsv(const cv::Mat &matrix, std::string filename);
-    static int findLineCrossPoint(const PR_Line2f &line1, const PR_Line2f &line2, cv::Point2f &ptResult);
+    static int twoLineIntersect(const PR_Line2f &line1, const PR_Line2f &line2, cv::Point2f &ptResult);
     static float calc2LineAngle(const PR_Line2f &line1, const PR_Line2f &line2);
 };
 

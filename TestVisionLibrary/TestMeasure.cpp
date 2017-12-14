@@ -147,51 +147,6 @@ void TestParallelLineDistance_3() {
         std::cout << "Distance " << stRpy.fDistance << std::endl;
 }
 
-int lineIntersect(float fSlope1, float fIntercept1, float fSlope2, float fIntercept2, cv::Point2f &point) {
-    if ( fabs ( fSlope1 - fSlope2 ) < 0.0001 )
-        return -1;
-    cv::Mat A(2, 2, CV_32FC1);
-    cv::Mat B(2, 1, CV_32FC1);
-    A.at<float>(0, 0) = fSlope1; A.at<float>(0, 1) = -1.f;
-    A.at<float>(1, 0) = fSlope2; A.at<float>(1, 1) = -1.f;
-
-    B.at<float>(0, 0) = -fIntercept1;
-    B.at<float>(1, 0) = -fIntercept2;
-
-    cv::Mat matResultImg;
-    if ( cv::solve(A, B, matResultImg ) ) {
-        point.x = matResultImg.at<float>(0, 0);
-        point.y = matResultImg.at<float>(1, 0);
-        return 0;
-    }
-    return -1;
-}
-
-void lineSlopeIntercept(const PR_Line2f &line, float &fSlope, float &fIntercept) {
-    fSlope = ( line.pt2.y - line.pt1.y ) / ( line.pt2.x - line.pt1.x );
-    fIntercept = line.pt2.y  - fSlope * line.pt2.x;
-}
-
-int lineIntersect ( const PR_Line2f &line1, const PR_Line2f &line2, cv::Point2f &point ) {
-    float fSlope1, fIntercept1, fSlope2, fIntercept2;
-    lineSlopeIntercept ( line1, fSlope1, fIntercept1 );
-    lineSlopeIntercept ( line2, fSlope2, fIntercept2 );
-    if ( fSlope1 < 1000 && fSlope2 < 1000 )
-        return lineIntersect ( fSlope1, fIntercept1, fSlope2, fIntercept2, point );
-    //Both lines are vertical
-    else if ( ( fSlope1 != fSlope1 || fSlope1 > 1000 ) && ( fSlope2 != fSlope2 || fSlope2 > 1000 ) ) {
-        return -1;
-    }else if ( fSlope1 != fSlope1 || fSlope1 > 1000 ) {
-        point.x =  ( line1.pt1.x + line1.pt2.x ) / 2;
-        point.y = fSlope2 * point.x + fIntercept2;
-    }else if ( fSlope2 != fSlope2 || fSlope2 > 1000 ) {
-        point.x =  ( line2.pt1.x + line2.pt2.x ) / 2;
-        point.y = fSlope1 * point.x + fIntercept1;
-    }else
-        assert (0);
-    return 0;
-}
-
 void TestLineIntersect() {
     PR_TWO_LINE_INTERSECT_CMD stCmd;
     PR_TWO_LINE_INTERSECT_RPY stRpy;
