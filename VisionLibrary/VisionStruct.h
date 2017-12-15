@@ -383,8 +383,9 @@ struct PR_FIND_EDGE_RPY {
     cv::Mat                 matResultImg;
 };
 
+//The PR_FitCircle command suitable to fit the circle after use Canny or Sobel edge detector find the rough circle.
 struct PR_FIT_CIRCLE_CMD {
-    cv::Mat                 matInputImg;    
+    cv::Mat                 matInputImg;
     cv::Mat                 matMask;
     cv::Rect                rectROI;
     PR_FIT_METHOD           enMethod;
@@ -399,6 +400,22 @@ struct PR_FIT_CIRCLE_CMD {
 };
 
 struct PR_FIT_CIRCLE_RPY {
+    VisionStatus            enStatus;
+    cv::Point2f             ptCircleCtr;
+    float                   fRadius;
+    cv::Mat                 matResultImg;
+};
+
+struct PR_DETECT_CIRCLE_CMD {
+    cv::Mat                 matInputImg;
+    cv::Point2f             ptExpectedCircleCtr;
+    float                   fMinSrchRadius;
+    float                   fMaxSrchRadius;
+    float                   fStartSrchAngle;
+    float                   fEndSrchAngle;
+};
+
+struct PR_DETECT_CIRCLE_RPY {
     VisionStatus            enStatus;
     cv::Point2f             ptCircleCtr;
     float                   fRadius;

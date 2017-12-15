@@ -2113,7 +2113,7 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
         pstRpy->stLine.pt2 = CalcUtils::warpPoint<double> ( matWarpBack, pstRpy->stLine.pt2 );
         pstRpy->bReversedFit = false;
         CalcUtils::lineSlopeIntercept ( pstRpy->stLine, pstRpy->fSlope, pstRpy->fIntercept );
-    }  
+    }
 
     pstRpy->bAngleCheckPass = true;
     pstRpy->fAngle = ToFloat ( CalcUtils::calcSlopeDegree<float> ( pstRpy->stLine.pt1, pstRpy->stLine.pt2 ) );
@@ -2706,7 +2706,7 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     return pstRpy->enStatus;
 }
 
-/*static*/ VisionStatus VisionAlgorithm::fitCircle(PR_FIT_CIRCLE_CMD *pstCmd, PR_FIT_CIRCLE_RPY *pstRpy, bool bReplay /*= false*/ ) {
+/*static*/ VisionStatus VisionAlgorithm::fitCircle(const PR_FIT_CIRCLE_CMD *const pstCmd, PR_FIT_CIRCLE_RPY *const pstRpy, bool bReplay /*= false*/ ) {
     assert ( pstCmd != nullptr && pstRpy != nullptr );    
 
     if (pstCmd->matInputImg.empty()) {
@@ -2781,7 +2781,7 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     }
 
     VectorOfPoint vecPoints;
-    cv::findNonZero( matThreshold, vecPoints);
+    cv::findNonZero( matThreshold, vecPoints );
     cv::RotatedRect fitResult;
 
     if ( vecPoints.size() < 3 ) {
@@ -2946,6 +2946,21 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
         ++ nIteratorNum;
     }
     return rotatedRect;
+}
+
+/*static*/ VisionStatus VisionAlgorithm::detectCircle(const PR_DETECT_CIRCLE_CMD *const pstCmd, PR_DETECT_CIRCLE_RPY *const pstRpy, bool bReplay /*= false*/) {
+    if ( pstCmd->fMaxSrchRadius < pstCmd->fMinSrchRadius ) {
+        char chArrMsg[1000];
+        _snprintf( chArrMsg, sizeof( chArrMsg ), "The max search radius %f is smaller than the min search radius %f.",
+            pstCmd->fMaxSrchRadius, pstCmd->fMinSrchRadius );
+        WriteLog(chArrMsg);
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+
+    pstRpy->enStatus = VisionStatus::OK;
+    return pstRpy->enStatus;
 }
 
 /*static*/ VisionStatus VisionAlgorithm::ocr(PR_OCR_CMD *pstCmd, PR_OCR_RPY *pstRpy, bool bReplay /*= false*/) {    

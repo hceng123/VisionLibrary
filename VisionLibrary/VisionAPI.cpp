@@ -163,28 +163,35 @@ PR_FUNCTION_EXIT
 VisionAPI VisionStatus  PR_FitParallelLine(const PR_FIT_PARALLEL_LINE_CMD *const pstCmd, PR_FIT_PARALLEL_LINE_RPY *const pstRpy)
 {
 PR_FUNCTION_ENTRY
-        return VisionAlgorithm::fitParallelLine ( pstCmd, pstRpy );
+    return VisionAlgorithm::fitParallelLine ( pstCmd, pstRpy );
 PR_FUNCTION_EXIT
 }
 
 VisionAPI VisionStatus  PR_FitRect(PR_FIT_RECT_CMD *pstCmd, PR_FIT_RECT_RPY *pstRpy)
 {
 PR_FUNCTION_ENTRY
-        return VisionAlgorithm::fitRect ( pstCmd, pstRpy );
+    return VisionAlgorithm::fitRect ( pstCmd, pstRpy );
 PR_FUNCTION_EXIT
 }
 
 VisionAPI VisionStatus  PR_FindEdge(const PR_FIND_EDGE_CMD *const pstCmd, PR_FIND_EDGE_RPY *const pstRpy)
 {
 PR_FUNCTION_ENTRY
-        return VisionAlgorithm::findEdge ( pstCmd, pstRpy );
+    return VisionAlgorithm::findEdge ( pstCmd, pstRpy );
 PR_FUNCTION_EXIT
 }
 
-VisionStatus  PR_FitCircle(PR_FIT_CIRCLE_CMD *pstCmd, PR_FIT_CIRCLE_RPY *pstRpy)
+VisionStatus  PR_FitCircle(const PR_FIT_CIRCLE_CMD *const pstCmd, PR_FIT_CIRCLE_RPY *const pstRpy)
 {
 PR_FUNCTION_ENTRY
-        return VisionAlgorithm::fitCircle ( pstCmd, pstRpy );
+    return VisionAlgorithm::fitCircle ( pstCmd, pstRpy );
+PR_FUNCTION_EXIT
+}
+
+VisionAPI VisionStatus PR_DetectCircle(const PR_DETECT_CIRCLE_CMD *const pstCmd, PR_DETECT_CIRCLE_RPY *const pstRpy)
+{
+PR_FUNCTION_ENTRY
+    return VisionAlgorithm::detectCircle ( pstCmd, pstRpy );
 PR_FUNCTION_EXIT
 }
 

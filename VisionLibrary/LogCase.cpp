@@ -252,7 +252,7 @@ VisionStatus LogCaseSrchObj::RunLogCase() {
     return "FitCircle";
 }
 
-VisionStatus LogCaseFitCircle::WriteCmd(PR_FIT_CIRCLE_CMD *pstCmd) {
+VisionStatus LogCaseFitCircle::WriteCmd(const PR_FIT_CIRCLE_CMD *const pstCmd) {
     if ( !_bReplay )    {
         _strLogCasePath = _generateLogCaseName(GetFolderPrefix());
         bfs::path dir(_strLogCasePath);
@@ -277,7 +277,7 @@ VisionStatus LogCaseFitCircle::WriteCmd(PR_FIT_CIRCLE_CMD *pstCmd) {
     return VisionStatus::OK;
 }
 
-VisionStatus LogCaseFitCircle::WriteRpy(PR_FIT_CIRCLE_RPY *pstRpy) {
+VisionStatus LogCaseFitCircle::WriteRpy(const PR_FIT_CIRCLE_RPY *const pstRpy) {
     CSimpleIni ini(false, false, false);
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile( cmdRpyFilePath.c_str() );
