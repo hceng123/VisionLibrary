@@ -1500,6 +1500,9 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
     if (LogCaseFitCircle::StaticGetFolderPrefix() == strFolderPrefix)
         return std::make_unique <LogCaseFitCircle>( strLocalPath, true );
 
+    if (LogCaseDetectCircle::StaticGetFolderPrefix() == strFolderPrefix)
+        return std::make_unique <LogCaseDetectCircle>( strLocalPath, true );
+
     if (LogCaseFitLine::StaticGetFolderPrefix() == strFolderPrefix)
         return std::make_unique<LogCaseFitLine>( strLocalPath, true );
 
@@ -2973,6 +2976,15 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
         return pstRpy->enStatus;
     }
 
+    if ( pstCmd->fMinSrchRadius <= 0.f ) {
+        WriteLog("The search radius should be positive value.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    MARK_FUNCTION_START_TIME;
+    SETUP_LOGCASE(LogCaseDetectCircle);
+
     cv::Mat matGray = pstCmd->matInputImg;
     if ( pstCmd->matInputImg.channels() == 3 )
         cv::cvtColor ( pstCmd->matInputImg, matGray, CV_BGR2GRAY );
@@ -3006,13 +3018,21 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
         rotatedRectROI.size.width = CHECK_ROI_WIDTH;
         rotatedRectROI.size.height = CHECK_ROI_HEIGHT;
 
-        VectorOfVectorOfPoint vevVecPoints;
-        vevVecPoints.push_back ( CalcUtils::getCornerOfRotatedRect ( rotatedRectROI ) );
-        cv::polylines( pstRpy->matResultImg, vevVecPoints, true, _constCyanScalar, 2 );
+        if ( ! isAutoMode() ) {
+            VectorOfVectorOfPoint vevVecPoints;
+            vevVecPoints.push_back ( CalcUtils::getCornerOfRotatedRect ( rotatedRectROI ) );
+            cv::polylines ( pstRpy->matResultImg, vevVecPoints, true, _constCyanScalar, 2 );
+        }
 
         cv::Mat matROI;
         _extractRotatedROI ( matGray, rotatedRectROI, matROI );
-        int nJumpPos = _findMaxDiffPosInX ( matROI, matGuassinKernel, PR_CALIPER_DIR::MIN_TO_MAX );
+        PR_CALIPER_DIR enDir = PR_CALIPER_DIR::MIN_TO_MAX;
+        if ( PR_OBJECT_ATTRIBUTE::BRIGHT == pstCmd->enObjAttribute )
+            enDir = PR_CALIPER_DIR::MAX_TO_MIN;
+        else if ( PR_OBJECT_ATTRIBUTE::DARK == pstCmd->enObjAttribute )
+            enDir = PR_CALIPER_DIR::MIN_TO_MAX;
+
+        int nJumpPos = _findMaxDiffPosInX ( matROI, matGuassinKernel, enDir );
 
         cv::Point2f ptFindPos;
         ptFindPos.x = pstCmd->ptExpectedCircleCtr.x + ( nJumpPos + pstCmd->fMinSrchRadius ) * fCos;
@@ -3023,6 +3043,12 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     auto fitResult = _fitCircleIterate ( vecPoint, pstCmd->enRmNoiseMethod, pstCmd->fErrTol );
     pstRpy->ptCircleCtr = fitResult.center;
     pstRpy->fRadius = fitResult.size.width / 2.f;
+    if ( pstRpy->fRadius > 0.f )
+        pstRpy->enStatus = VisionStatus::OK;
+    else {
+        WriteLog("Too much noise to fit the circle in detectCircle.");
+        pstRpy->enStatus = VisionStatus::TOO_MUCH_NOISE_TO_FIT;
+    }
 
     if ( ! isAutoMode() ) {
         for ( const auto &point : vecPoint ) {
@@ -3030,7 +3056,9 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
         }
         cv::circle ( pstRpy->matResultImg, pstRpy->ptCircleCtr, ToInt32 ( pstRpy->fRadius ), _constGreenScalar, 1 );
     }
-    pstRpy->enStatus = VisionStatus::OK;
+    
+    FINISH_LOGCASE;
+    MARK_FUNCTION_END_TIME;
     return pstRpy->enStatus;
 }
 
@@ -3409,7 +3437,7 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     }
     pstRpy->fRoundness = ToFloat ( CalcUtils::calcStdDeviation<float>( vecDistance ) );
     pstRpy->matResultImg = pstCmd->matInputImg.clone();
-	cv::circle ( pstRpy->matResultImg, pstRpy->ptCircleCtr, (int)pstRpy->fDiameter / 2, _constBlueScalar, 2);
+	cv::circle ( pstRpy->matResultImg, pstRpy->ptCircleCtr, (int)pstRpy->fDiameter / 2, _constBlueScalar, 2 );
 
     pstRpy->enStatus = VisionStatus::OK;
     FINISH_LOGCASE;

@@ -126,6 +126,31 @@ private:
     const String _strKeyRadius          = "Radius";
 };
 
+class LogCaseDetectCircle : public LogCase
+{
+public:
+    explicit LogCaseDetectCircle(const String &strPath, bool bReplay = false) : LogCase(strPath, bReplay) {}
+    VisionStatus WriteCmd(const PR_DETECT_CIRCLE_CMD *const pstCmd);
+    VisionStatus WriteRpy(const PR_DETECT_CIRCLE_RPY *const pstRpy);
+    virtual VisionStatus RunLogCase() override;
+    virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
+    static String StaticGetFolderPrefix();
+private:    
+    const String _strKeyObjAttribute    = "ObjAttribute";
+    const String _strKeyExpCircleCtr    = "ExpectedCircleCtr";
+    const String _strKeyMinSrchRadius   = "MinSrchRadius";
+    const String _strKeyMaxSrchRadius   = "MaxSrchRadius";
+    const String _strKeyStartSrchAngle  = "StartSrchAngle";
+    const String _strKeyEndSrchAngle    = "EndSrchAngle";
+    const String _strKeyRmNoiseMethod   = "RmNoiseMethod";
+    const String _strKeyErrorTol        = "ErrorTolerance";
+    
+
+    const String _strKeyStatus          = "Status";
+    const String _strKeyResultCtr       = "ResultCtr";
+    const String _strKeyRadius          = "Radius";
+};
+
 class LogCaseInspCircle : public LogCase
 {
 public:

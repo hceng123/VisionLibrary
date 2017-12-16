@@ -186,9 +186,12 @@ void TestCrossSectionArea() {
 
 void TestDetectCircle() {
     PR_DETECT_CIRCLE_CMD stCmd;
-    PR_DETECT_CIRCLE_RPY stRpy;
+    PR_DETECT_CIRCLE_RPY stRpy;   
 
-    stCmd.matInputImg = cv::imread ("./data/CaliperImage.bmp", cv::IMREAD_COLOR );
+    stCmd.matInputImg = cv::imread ("./data/CaliperImage.bmp", cv::IMREAD_GRAYSCALE );
+    //cv::Mat matImage = 255 - stCmd.matInputImg;
+    //cv::imwrite ("./data/CaliperImageReverse.png", matImage );
+    stCmd.enObjAttribute = PR_OBJECT_ATTRIBUTE::DARK;
     stCmd.fMinSrchRadius = 120;
     stCmd.fMaxSrchRadius = 280;
     stCmd.fStartSrchAngle = -165;

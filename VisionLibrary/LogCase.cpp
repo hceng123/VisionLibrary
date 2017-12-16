@@ -320,8 +320,73 @@ VisionStatus LogCaseFitCircle::RunLogCase() {
     return enStatus;
 }
 
-/*static*/ String LogCaseInspCircle::StaticGetFolderPrefix()
-{
+/*static*/ String LogCaseDetectCircle::StaticGetFolderPrefix() {
+    return "DetectCircle";
+}
+
+VisionStatus LogCaseDetectCircle::WriteCmd(const PR_DETECT_CIRCLE_CMD *const pstCmd) {
+    if ( !_bReplay )    {
+        _strLogCasePath = _generateLogCaseName(GetFolderPrefix());
+        bfs::path dir(_strLogCasePath);
+        bfs::create_directories(dir);
+    }
+
+    CSimpleIni ini(false, false, false);
+    auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
+    ini.LoadFile( cmdRpyFilePath.c_str() );
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyObjAttribute.c_str(), ToInt32(pstCmd->enObjAttribute) );
+    ini.SetValue(_CMD_SECTION.c_str(), _strKeyExpCircleCtr.c_str(), _formatCoordinate ( pstCmd->ptExpectedCircleCtr ).c_str() );
+    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyMinSrchRadius.c_str(), pstCmd->fMinSrchRadius );
+    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyMaxSrchRadius.c_str(), pstCmd->fMaxSrchRadius );
+    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyStartSrchAngle.c_str(), pstCmd->fStartSrchAngle );
+    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyEndSrchAngle.c_str(), pstCmd->fEndSrchAngle );    
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyRmNoiseMethod.c_str(), static_cast<long>(pstCmd->enRmNoiseMethod) );
+    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyErrorTol.c_str(), pstCmd->fErrTol );
+    ini.SaveFile( cmdRpyFilePath.c_str() );
+    cv::imwrite( _strLogCasePath + _IMAGE_NAME, pstCmd->matInputImg );
+    return VisionStatus::OK;
+}
+
+VisionStatus LogCaseDetectCircle::WriteRpy(const PR_DETECT_CIRCLE_RPY *const pstRpy) {
+    CSimpleIni ini(false, false, false);
+    auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
+    ini.LoadFile( cmdRpyFilePath.c_str() );
+    ini.SetLongValue  (_RPY_SECTION.c_str(), _strKeyStatus.c_str(), ToInt32( pstRpy->enStatus ) );
+    ini.SetValue(_RPY_SECTION.c_str(), _strKeyResultCtr.c_str(), _formatCoordinate(pstRpy->ptCircleCtr).c_str() );    
+    ini.SetDoubleValue(_RPY_SECTION.c_str(), _strKeyRadius.c_str(), pstRpy->fRadius );
+    ini.SaveFile( cmdRpyFilePath.c_str() );
+    if ( ! pstRpy->matResultImg.empty() )
+        cv::imwrite( _strLogCasePath + _RESULT_IMAGE_NAME, pstRpy->matResultImg );
+    _zip();
+    return VisionStatus::OK;
+}
+
+VisionStatus LogCaseDetectCircle::RunLogCase() {
+    PR_DETECT_CIRCLE_CMD stCmd;
+    PR_DETECT_CIRCLE_RPY stRpy;
+    VisionStatus enStatus;
+
+    CSimpleIni ini(false, false, false);
+    auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
+    ini.LoadFile( cmdRpyFilePath.c_str() );
+    stCmd.matInputImg = cv::imread( _strLogCasePath + _IMAGE_NAME );
+
+    stCmd.enObjAttribute = static_cast<PR_OBJECT_ATTRIBUTE> ( ini.GetLongValue ( _CMD_SECTION.c_str(), _strKeyObjAttribute.c_str(), 0 ) );
+    stCmd.ptExpectedCircleCtr = _parseCoordinate ( ini.GetValue(_CMD_SECTION.c_str(), _strKeyExpCircleCtr.c_str(), _DEFAULT_COORD.c_str() ) );
+    stCmd.fMinSrchRadius = ToFloat ( ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyMinSrchRadius.c_str(), 0. ) );
+    stCmd.fMaxSrchRadius = ToFloat ( ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyMaxSrchRadius.c_str(), 0. ) );
+    stCmd.fStartSrchAngle = ToFloat ( ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyStartSrchAngle.c_str(), 0. ) );
+    stCmd.fEndSrchAngle = ToFloat ( ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyEndSrchAngle.c_str(), 0. ) );
+    stCmd.enRmNoiseMethod = static_cast<PR_RM_FIT_NOISE_METHOD> ( ini.GetLongValue ( _CMD_SECTION.c_str(), _strKeyRmNoiseMethod.c_str(), 0 ) );
+    stCmd.fErrTol = (float)ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyErrorTol.c_str(), 0 );
+    
+    enStatus = VisionAlgorithm::detectCircle( &stCmd, &stRpy, true );
+
+    WriteRpy( &stRpy );
+    return enStatus;
+}
+
+/*static*/ String LogCaseInspCircle::StaticGetFolderPrefix() {
     return "InspCircle";
 }
 

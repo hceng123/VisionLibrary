@@ -305,7 +305,7 @@ struct PR_CALIPER_CMD {
     cv::Mat                 matMask;
     cv::RotatedRect         rectRotatedROI;
     PR_CALIPER_ALGORITHM    enAlgorithm;
-    PR_CALIPER_DIR          enDetectDir;
+    PR_CALIPER_DIR          enDetectDir;    //The explaination can be find in definition of PR_CALIPER_DIR.
     bool                    bCheckLinerity;
     float                   fPointMaxOffset;
     float                   fMinLinerity;
@@ -408,7 +408,7 @@ struct PR_FIT_CIRCLE_RPY {
 
 struct PR_DETECT_CIRCLE_CMD {
     cv::Mat                 matInputImg;
-    PR_OBJECT_ATTRIBUTE     enAttribute;
+    PR_OBJECT_ATTRIBUTE     enObjAttribute;
     cv::Point2f             ptExpectedCircleCtr;
     float                   fMinSrchRadius;
     float                   fMaxSrchRadius;
@@ -575,6 +575,7 @@ struct PR_DETECT_EDGE_RPY {
     cv::Mat                 matResultImg;
 };
 
+//It use the basic circle fitting and check the fitted circle.
 struct PR_INSP_CIRCLE_CMD {
     cv::Mat                 matInputImg;
     cv::Mat                 matMask;
