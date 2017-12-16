@@ -215,6 +215,7 @@ protected:
 
     static const cv::Scalar _constRedScalar;
     static const cv::Scalar _constBlueScalar;
+    static const cv::Scalar _constCyanScalar;
     static const cv::Scalar _constGreenScalar;
     static const cv::Scalar _constYellowScalar;
     static OcrTesseractPtr  _ptrOcrTesseract;

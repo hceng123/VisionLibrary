@@ -715,11 +715,11 @@ CALIPER ROTATED ROI REGRESSION TEST #1 STARTING
 -----------------------------------------------
 Caliper status 0
 ReversedFit = 0
-Line slope = -2.25, intercept = 315.48
-Line coordinate: (65.91, 167.26), (103.79, 82.08)
+Line slope = -2.24, intercept = 311.80
+Line coordinate: (64.80, 166.86), (105.30, 76.25)
 Linerity  = 100.00
 Linerity check pass: 1
-Angle  = -66.02
+Angle  = -65.91
 Angle check pass: 1
 
 -----------------------------------------------
@@ -751,8 +751,8 @@ CALIPER ROTATED ROI REGRESSION TEST #5 STARTING
 -----------------------------------------------
 Caliper status 0
 ReversedFit = 0
-Line slope = -0.21, intercept = 355.15
-Line coordinate: (284.78, 295.66), (581.38, 233.70)
+Line slope = -0.21, intercept = 354.13
+Line coordinate: (284.57, 294.68), (581.17, 232.72)
 Linerity  = 100.00
 Linerity check pass: 1
 Angle  = -11.80

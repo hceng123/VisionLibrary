@@ -67,9 +67,9 @@ enum class PR_FIDUCIAL_MARK_TYPE {
 };
 
 enum class PR_RM_FIT_NOISE_METHOD {
-    ABSOLUTE_ERR,
-    POSITIVE_ERR,
-    NEGATIVE_ERR,
+    ABSOLUTE_ERR,   //Remove the point with absolute error over the error tolerance.
+    POSITIVE_ERR,   //Remove the point with positive error over the error tolerance. If it is circle, remove the standalone outter points of the fitted circle.
+    NEGATIVE_ERR,   //Remove the point with negative error over the error tolerance. If it is circle, remove the standalone innter points of the fitted circle.
 };
 
 enum class PR_EDGE_DIRECTION {

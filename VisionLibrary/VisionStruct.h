@@ -390,11 +390,11 @@ struct PR_FIT_CIRCLE_CMD {
     cv::Rect                rectROI;
     PR_FIT_METHOD           enMethod;
     PR_RM_FIT_NOISE_METHOD  enRmNoiseMethod;
+    float                   fErrTol;
     bool                    bPreprocessed;
     bool                    bAutoThreshold;
     Int32                   nThreshold;
     PR_OBJECT_ATTRIBUTE     enAttribute;
-    float                   fErrTol;
     int                     nMaxRansacTime;             //Only used when fitting method is ransac.
     int                     nNumOfPtToFinishRansac;     //Only used when fitting method is ransac.
 };
@@ -408,11 +408,14 @@ struct PR_FIT_CIRCLE_RPY {
 
 struct PR_DETECT_CIRCLE_CMD {
     cv::Mat                 matInputImg;
+    PR_OBJECT_ATTRIBUTE     enAttribute;
     cv::Point2f             ptExpectedCircleCtr;
     float                   fMinSrchRadius;
     float                   fMaxSrchRadius;
     float                   fStartSrchAngle;
     float                   fEndSrchAngle;
+    PR_RM_FIT_NOISE_METHOD  enRmNoiseMethod;
+    float                   fErrTol;
 };
 
 struct PR_DETECT_CIRCLE_RPY {

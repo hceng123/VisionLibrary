@@ -363,7 +363,6 @@ public:
         std::vector<T> vClone ( v );
         for( size_t i = 0; i < idx.size (); ++i )
             v[i] = vClone[idx[i]];
-
         return idx;
     }
 

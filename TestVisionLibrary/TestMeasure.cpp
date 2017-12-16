@@ -182,5 +182,21 @@ void TestCrossSectionArea() {
     contour.emplace_back ( nMinX, 0.f );
     double dArea = cv::contourArea ( contour );
     std::cout << "Area " << dArea << std::endl;
+}
 
+void TestDetectCircle() {
+    PR_DETECT_CIRCLE_CMD stCmd;
+    PR_DETECT_CIRCLE_RPY stRpy;
+
+    stCmd.matInputImg = cv::imread ("./data/CaliperImage.bmp", cv::IMREAD_COLOR );
+    stCmd.fMinSrchRadius = 120;
+    stCmd.fMaxSrchRadius = 280;
+    stCmd.fStartSrchAngle = -165;
+    stCmd.fEndSrchAngle = -15;
+    stCmd.ptExpectedCircleCtr = cv::Point(620, 650);
+    stCmd.enRmNoiseMethod = PR_RM_FIT_NOISE_METHOD::NEGATIVE_ERR;
+    stCmd.fErrTol = 1;
+
+    PR_DetectCircle ( &stCmd, &stRpy );
+    cv::imwrite ("./data/DetectCircleResult.png", stRpy.matResultImg );
 }

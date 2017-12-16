@@ -52,6 +52,7 @@ if ( ! bReplay )    {   \
 /*static*/ OcrTesseractPtr VisionAlgorithm::_ptrOcrTesseract;
 /*static*/ const cv::Scalar VisionAlgorithm::_constRedScalar    (0,   0,   255 );
 /*static*/ const cv::Scalar VisionAlgorithm::_constBlueScalar   (255, 0,   0   );
+/*static*/ const cv::Scalar VisionAlgorithm::_constCyanScalar   (255, 255, 0   );
 /*static*/ const cv::Scalar VisionAlgorithm::_constGreenScalar  (0,   255, 0   );
 /*static*/ const cv::Scalar VisionAlgorithm::_constYellowScalar (0,   255, 255 );
 /*static*/ const String VisionAlgorithm::_strRecordLogPrefix   = "tmplDir.";
@@ -2037,7 +2038,7 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
     SETUP_LOGCASE(LogCaseCaliper);   
 
     cv::Mat matROI;
-    cv::Rect2f rectNewROI ( pstCmd->rectRotatedROI.center.x -  pstCmd->rectRotatedROI.size.width / 2.f, pstCmd->rectRotatedROI.center.y -  pstCmd->rectRotatedROI.size.height / 2.f,
+    cv::Rect2f rectNewROI ( pstCmd->rectRotatedROI.center.x - pstCmd->rectRotatedROI.size.width / 2.f, pstCmd->rectRotatedROI.center.y -  pstCmd->rectRotatedROI.size.height / 2.f,
         pstCmd->rectRotatedROI.size.width, pstCmd->rectRotatedROI.size.height );
     pstRpy->enStatus = _extractRotatedROI ( pstCmd->matInputImg, pstCmd->rectRotatedROI, matROI );
     if ( pstRpy->enStatus != VisionStatus::OK )
@@ -2138,7 +2139,7 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
     return pstRpy->enStatus;
 }
 
-/*static*/ VisionStatus VisionAlgorithm::_extractRotatedROI(const cv::Mat &matInputImg, const cv::RotatedRect &rectRotatedROI, cv::Mat &matROI ) {
+/*static*/ VisionStatus VisionAlgorithm::_extractRotatedROI ( const cv::Mat &matInputImg, const cv::RotatedRect &rectRotatedROI, cv::Mat &matROI ) {
     if ( fabs ( rectRotatedROI.angle ) < 0.1 ) {
         cv::Rect rectBounding ( ToInt32 ( rectRotatedROI.center.x - rectRotatedROI.size.width / 2.f ), ToInt32 ( rectRotatedROI.center.y - rectRotatedROI.size.height / 2.f ),
             ToInt32 ( rectRotatedROI.size.width ), ToInt32 ( rectRotatedROI.size.height ) );
@@ -2155,7 +2156,13 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
         matROI = cv::Mat ( matInputImg, rectBounding );
         return VisionStatus::OK;
     }
-    auto rectBounding = rectRotatedROI.boundingRect();
+    //In below warpAffine function, dst(x,y) = src(M11 * x + M12 * y + M13, M21 * x + M22 * y + M23);
+    //If the rotation is big, if not enlarge the fetch ROI, than some of the position in dst will not exit in src ROI
+    //So the image will be black.
+    auto newSize = std::max ( rectRotatedROI.size.width, rectRotatedROI.size.height );
+    auto rectRotatedROINew ( rectRotatedROI );
+    rectRotatedROINew.size = cv::Size2f ( newSize, newSize );
+    auto rectBounding = rectRotatedROINew.boundingRect();
     if ( rectBounding.x < 0 ) rectBounding.x = 0;
     if ( rectBounding.y < 0 ) rectBounding.y = 0;
     if ( ( rectBounding.x + rectBounding.width ) > matInputImg.cols )
@@ -2164,13 +2171,13 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
         rectBounding.height = matInputImg.rows - rectBounding.y;
 
     cv::Mat matBoundingROI ( matInputImg, rectBounding );
-    cv::Point2f ptNewCenter ( rectRotatedROI.center.x - rectBounding.x, rectRotatedROI.center.y - rectBounding.y ); 
-    cv::Mat matWarp = cv::getRotationMatrix2D ( ptNewCenter, rectRotatedROI.angle, 1. );
+    cv::Point2f ptNewCenter ( rectRotatedROINew.center.x - rectBounding.x, rectRotatedROINew.center.y - rectBounding.y );
+    cv::Mat matWarp = cv::getRotationMatrix2D ( ptNewCenter, rectRotatedROINew.angle, 1. );
     auto vecVec = CalcUtils::matToVector<double>(matWarp);
     auto rectWarppedPoly = CalcUtils::warpRect<double>( matWarp, rectBounding );
     auto rectWarppedPolyBounding = cv::boundingRect ( rectWarppedPoly );
     cv::Mat matWarpResult;
-    cv::warpAffine( matBoundingROI, matWarpResult, matWarp, rectWarppedPolyBounding.size() );
+    cv::warpAffine ( matBoundingROI, matWarpResult, matWarp, rectWarppedPolyBounding.size() );
     cv::Rect2f rectSubROI( ptNewCenter.x - rectRotatedROI.size.width / 2.f, ptNewCenter.y - rectRotatedROI.size.height / 2.f,
         rectRotatedROI.size.width, rectRotatedROI.size.height );
     if ( rectSubROI.x < 0 ) rectSubROI.x = 0;
@@ -2184,7 +2191,8 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
         showImage("Bouding ROI", matBoundingROI );
         showImage("Warpped ROI", matWarpResult );
         showImage("Result ROI", matROI );
-    }    
+    }
+
     return VisionStatus::OK;
 }
 
@@ -2924,8 +2932,7 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
 //method 1 : Exclude all the points out of positive error tolerance and inside the negative error tolerance.
 //method 2 : Exclude all the points out of positive error tolerance.
 //method 3 : Exclude all the points inside the negative error tolerance.
-/*static*/ cv::RotatedRect VisionAlgorithm::_fitCircleIterate(const VectorOfPoint &vecPoints, PR_RM_FIT_NOISE_METHOD method, float tolerance)
-{
+/*static*/ cv::RotatedRect VisionAlgorithm::_fitCircleIterate(const VectorOfPoint &vecPoints, PR_RM_FIT_NOISE_METHOD method, float tolerance) {
     cv::RotatedRect rotatedRect;
     if (vecPoints.size() < 3)
         return rotatedRect;
@@ -2949,6 +2956,14 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
 }
 
 /*static*/ VisionStatus VisionAlgorithm::detectCircle(const PR_DETECT_CIRCLE_CMD *const pstCmd, PR_DETECT_CIRCLE_RPY *const pstRpy, bool bReplay /*= false*/) {
+    assert ( pstCmd != nullptr && pstRpy != nullptr );
+
+    if (pstCmd->matInputImg.empty()) {
+        WriteLog("Input image is empty.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
     if ( pstCmd->fMaxSrchRadius < pstCmd->fMinSrchRadius ) {
         char chArrMsg[1000];
         _snprintf( chArrMsg, sizeof( chArrMsg ), "The max search radius %f is smaller than the min search radius %f.",
@@ -2958,12 +2973,68 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
         return pstRpy->enStatus;
     }
 
+    cv::Mat matGray = pstCmd->matInputImg;
+    if ( pstCmd->matInputImg.channels() == 3 )
+        cv::cvtColor ( pstCmd->matInputImg, matGray, CV_BGR2GRAY );
 
+    const int DIVIDE_SECTION = 20;
+    const float CHECK_ROI_HEIGHT = 30;
+    const float CHECK_ROI_WIDTH  = pstCmd->fMaxSrchRadius - pstCmd->fMinSrchRadius;
+    const int GUASSIAN_DIFF_WIDTH = 2;
+    const float GUASSIAN_KERNEL_SSQ = 1.f;
+    cv::Mat matGuassinKernel = CalcUtils::generateGuassinDiffKernel ( GUASSIAN_DIFF_WIDTH, GUASSIAN_KERNEL_SSQ );
+    float fAngleInterval =  ( pstCmd->fEndSrchAngle - pstCmd->fStartSrchAngle ) / DIVIDE_SECTION;
+    float fMiddleOfSrchRadius = ( pstCmd->fMaxSrchRadius + pstCmd->fMinSrchRadius ) / 2.f;
+
+    if ( ! isAutoMode() ) {
+        cv::cvtColor ( matGray, pstRpy->matResultImg, CV_GRAY2BGR );
+    }
+
+    VectorOfPoint vecPoint;
+    for ( int i = 0; i < DIVIDE_SECTION; ++ i ) {
+        float fAngle = pstCmd->fStartSrchAngle + i * fAngleInterval;
+        float fCos = ToFloat ( cos ( CalcUtils::degree2Radian ( fAngle ) ) );
+        float fSin = ToFloat ( sin ( CalcUtils::degree2Radian ( fAngle ) ) );
+        cv::Point2f ptROICtr;
+        //The opencv defined angle is reversed as the standard defined angle.
+
+        ptROICtr.x = pstCmd->ptExpectedCircleCtr.x + fMiddleOfSrchRadius * fCos;
+        ptROICtr.y = pstCmd->ptExpectedCircleCtr.y + fMiddleOfSrchRadius * fSin;
+        cv::RotatedRect rotatedRectROI;
+        rotatedRectROI.angle = fAngle;
+        rotatedRectROI.center = ptROICtr;
+        rotatedRectROI.size.width = CHECK_ROI_WIDTH;
+        rotatedRectROI.size.height = CHECK_ROI_HEIGHT;
+
+        VectorOfVectorOfPoint vevVecPoints;
+        vevVecPoints.push_back ( CalcUtils::getCornerOfRotatedRect ( rotatedRectROI ) );
+        cv::polylines( pstRpy->matResultImg, vevVecPoints, true, _constCyanScalar, 2 );
+
+        cv::Mat matROI;
+        _extractRotatedROI ( matGray, rotatedRectROI, matROI );
+        int nJumpPos = _findMaxDiffPosInX ( matROI, matGuassinKernel, PR_CALIPER_DIR::MIN_TO_MAX );
+
+        cv::Point2f ptFindPos;
+        ptFindPos.x = pstCmd->ptExpectedCircleCtr.x + ( nJumpPos + pstCmd->fMinSrchRadius ) * fCos;
+        ptFindPos.y = pstCmd->ptExpectedCircleCtr.y + ( nJumpPos + pstCmd->fMinSrchRadius ) * fSin;
+        vecPoint.push_back ( ptFindPos );
+    }
+
+    auto fitResult = _fitCircleIterate ( vecPoint, pstCmd->enRmNoiseMethod, pstCmd->fErrTol );
+    pstRpy->ptCircleCtr = fitResult.center;
+    pstRpy->fRadius = fitResult.size.width / 2.f;
+
+    if ( ! isAutoMode() ) {
+        for ( const auto &point : vecPoint ) {
+            cv::circle ( pstRpy->matResultImg, point, 3, _constCyanScalar, 2 );
+        }
+        cv::circle ( pstRpy->matResultImg, pstRpy->ptCircleCtr, ToInt32 ( pstRpy->fRadius ), _constGreenScalar, 1 );
+    }
     pstRpy->enStatus = VisionStatus::OK;
     return pstRpy->enStatus;
 }
 
-/*static*/ VisionStatus VisionAlgorithm::ocr(PR_OCR_CMD *pstCmd, PR_OCR_RPY *pstRpy, bool bReplay /*= false*/) {    
+/*static*/ VisionStatus VisionAlgorithm::ocr(PR_OCR_CMD *pstCmd, PR_OCR_RPY *pstRpy, bool bReplay /*= false*/) {
     assert ( pstCmd != nullptr && pstRpy != nullptr );
 
     if (pstCmd->matInputImg.empty()) {
@@ -2975,7 +3046,7 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     if (pstCmd->rectROI.x < 0 || pstCmd->rectROI.y < 0 ||
         pstCmd->rectROI.width <= 0 || pstCmd->rectROI.height <= 0 ||
         ( pstCmd->rectROI.x + pstCmd->rectROI.width ) > pstCmd->matInputImg.cols ||
-        ( pstCmd->rectROI.y + pstCmd->rectROI.height ) > pstCmd->matInputImg.rows )    {
+        ( pstCmd->rectROI.y + pstCmd->rectROI.height ) > pstCmd->matInputImg.rows ) {
         char chArrMsg[1000];
         _snprintf( chArrMsg, sizeof( chArrMsg ), "The input ROI rect (%d, %d, %d, %d) is invalid.",
             pstCmd->rectROI.x, pstCmd->rectROI.y, pstCmd->rectROI.width, pstCmd->rectROI.height );

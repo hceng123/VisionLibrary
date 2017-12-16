@@ -609,7 +609,7 @@ int _tmain(int argc, _TCHAR* argv[])
     auto fFloorResult = std::floor ( fTest );
 
     PR_Init();
-    PR_SetDebugMode ( PR_DEBUG_MODE::DISABLED );
+    PR_SetDebugMode ( PR_DEBUG_MODE::DISABLED);
 
     //TestTemplate();
     //TestInspDevice();
@@ -697,7 +697,9 @@ int _tmain(int argc, _TCHAR* argv[])
 
     //TestLineIntersect();
 
-    TestCrossSectionArea();
+    //TestCrossSectionArea();
+
+    TestDetectCircle();
 
     PR_DumpTimeLog("./Vision/Time.log");
     std::cout << "Press any key to exit." << std::endl;
