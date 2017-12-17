@@ -58,7 +58,7 @@ public:
         IDLE,
         SET_CIRCLE_CTR,
         SET_CIRCLE_INNER_RADIUS,
-        SET_CIRCLE_OUTTER_RADIUS,
+        SET_CIRCLE_OUTER_RADIUS,
         SET_MULTIPLE_WINDOW,
         SET_LINE,
         PICK_COLOR,
@@ -98,7 +98,7 @@ public:
     bool isDisplayResultImage() const;
     bool isDisplayGrayScale() const;
     void setCurrentSrchWindowIndex(int nIndex);
-    void getFitCircleRange(cv::Point &ptCtr, float &fInnterRadius, float &fOutterRadius) const;
+    void getFitCircleRange(cv::Point &ptCtr, float &fInnerRadius, float &fOuterRadius) const;
     void setImageDisplayMode(bool bDisplayGrayScale, bool bDisplayBinary);
     void setRGBRatio(float fRatioR, float fRatioG, float fRatioB);
     void getRGBRatio(float &fRatioR, float &fRatioG, float &fRatioB);
@@ -153,7 +153,7 @@ private:
     cv::Rect                        _rectSelectedWindow;
     cv::Point                       _ptCircleCtr;
     float                           _fInnerRangeRadius;
-    float                           _fOutterRangeRadius;
+    float                           _fOuterRangeRadius;
     int                             _nCurrentSrchWindowIndex;
     std::vector<cv::Rect>           _vecRectSrchWindow;
     PR_Line                         _lineOfIntensityCheck;

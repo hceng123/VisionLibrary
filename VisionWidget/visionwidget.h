@@ -22,9 +22,10 @@ private slots:
     void on_selectImageBtn_clicked();
     void on_checkBoxByerFormat_clicked(bool checked);
 	void on_fitCircleBtn_clicked();
+    void on_houghCircleBtn_clicked();
     void on_detectCircleBtn_clicked();
     void on_calcRoundnessBtn_clicked();
-    void on_fitLineBtn_clicked();    
+    void on_fitLineBtn_clicked();
     void on_btnCaliper_clicked();
     void on_fitParallelLineBtn_clicked();
     void on_fitRectBtn_clicked();

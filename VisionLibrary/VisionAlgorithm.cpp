@@ -2982,6 +2982,15 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
         return pstRpy->enStatus;
     }
 
+    if ( fabs ( pstCmd->fEndSrchAngle - pstCmd->fStartSrchAngle ) < 10 ) {
+        char chArrMsg[1000];
+        _snprintf( chArrMsg, sizeof( chArrMsg ), "The search angle range [%f, %f] is too small.",
+            pstCmd->fStartSrchAngle, pstCmd->fEndSrchAngle );
+        WriteLog(chArrMsg);
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
     MARK_FUNCTION_START_TIME;
     SETUP_LOGCASE(LogCaseDetectCircle);
 
@@ -3021,7 +3030,7 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
         if ( ! isAutoMode() ) {
             VectorOfVectorOfPoint vevVecPoints;
             vevVecPoints.push_back ( CalcUtils::getCornerOfRotatedRect ( rotatedRectROI ) );
-            cv::polylines ( pstRpy->matResultImg, vevVecPoints, true, _constCyanScalar, 2 );
+            cv::polylines ( pstRpy->matResultImg, vevVecPoints, true, _constCyanScalar, 1 );
         }
 
         cv::Mat matROI;
@@ -3052,9 +3061,11 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
 
     if ( ! isAutoMode() ) {
         for ( const auto &point : vecPoint ) {
-            cv::circle ( pstRpy->matResultImg, point, 3, _constCyanScalar, 2 );
+            cv::circle ( pstRpy->matResultImg, point, 3, _constBlueScalar, 2 );
         }
-        cv::circle ( pstRpy->matResultImg, pstRpy->ptCircleCtr, ToInt32 ( pstRpy->fRadius ), _constGreenScalar, 1 );
+
+        if ( VisionStatus::OK == pstRpy->enStatus )
+            cv::circle ( pstRpy->matResultImg, pstRpy->ptCircleCtr, ToInt32 ( pstRpy->fRadius ), _constGreenScalar, 1 );
     }
     
     FINISH_LOGCASE;
