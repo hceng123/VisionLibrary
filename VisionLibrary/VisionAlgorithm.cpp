@@ -2810,7 +2810,7 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     }
     
     if ( PR_FIT_METHOD::RANSAC == pstCmd->enMethod )
-        fitResult = _fitCircleRansac ( vecPoints, pstCmd->fErrTol, pstCmd->nMaxRansacTime, vecPoints.size() / 2 );
+        fitResult = Fitting::fitCircleRansac ( vecPoints, pstCmd->fErrTol, pstCmd->nMaxRansacTime, vecPoints.size() / 2 );
     else if (PR_FIT_METHOD::LEAST_SQUARE == pstCmd->enMethod)
         fitResult = Fitting::fitCircle ( vecPoints );
     else if ( PR_FIT_METHOD::LEAST_SQUARE_REFINE == pstCmd->enMethod  )
@@ -2834,48 +2834,6 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     return pstRpy->enStatus;
 }
 
-/* The ransac algorithm is from paper "Random Sample Consensus: A Paradigm for Model Fitting with Apphcatlons to Image Analysis and Automated Cartography".
-*  Given a model that requires a minimum of n data points to instantiate
-* its free parameters, and a set of data points P such that the number of
-* points in P is greater than n, randomly select a subset S1 of
-* n data points from P and instantiate the model. Use the instantiated
-* model M1 to determine the subset S1* of points in P that are within
-* some error tolerance of M1. The set S1* is called the consensus set of
-* S1.
-* If g (S1*) is greater than some threshold t, which is a function of the
-* estimate of the number of gross errors in P, use S1* to compute
-* (possibly using least squares) a new model M1* and return.
-* If g (S1*) is less than t, randomly select a new subset S2 and repeat the
-* above process. If, after some predetermined number of trials, no
-* consensus set with t or more members has been found, either solve the
-* model with the largest consensus set found, or terminate in failure. */
-/*static*/ cv::RotatedRect VisionAlgorithm::_fitCircleRansac(const VectorOfPoint &vecPoints, float tolerance, int maxRansacTime, size_t numOfPtToFinish)
-{   
-    cv::RotatedRect fitResult;
-    if (vecPoints.size() < 3)
-        return fitResult;
-
-    int nRansacTime = 0;
-    const int RANSAC_CIRCLE_POINT = 3;
-    size_t nMaxConsentNum = 0;
-
-    while ( nRansacTime < maxRansacTime ) {
-        VectorOfPoint vecSelectedPoints = _randomSelectPoints ( vecPoints, RANSAC_CIRCLE_POINT );
-        cv::RotatedRect rectReult = Fitting::fitCircle ( vecSelectedPoints );
-        vecSelectedPoints = _findPointsInCircleTol ( vecPoints, rectReult, tolerance );
-
-        if ( vecSelectedPoints.size() >= numOfPtToFinish )
-           return Fitting::fitCircle ( vecSelectedPoints );
-        
-        if ( vecSelectedPoints.size() > nMaxConsentNum ) {
-            fitResult = Fitting::fitCircle ( vecSelectedPoints );
-            nMaxConsentNum = vecSelectedPoints.size();
-        }
-        ++ nRansacTime;
-    }
-    return fitResult;
-}
-
 /*static*/ VectorOfPoint VisionAlgorithm::_randomSelectPoints(const VectorOfPoint &vecPoints, int numOfPtToSelect) {
     std::set<int> setResult;
     VectorOfPoint vecResultPoints;
@@ -2890,18 +2848,6 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     for ( auto index : setResult )
         vecResultPoints.push_back ( vecPoints[index] );
     return vecResultPoints;
-}
-
-/*static*/ VectorOfPoint VisionAlgorithm::_findPointsInCircleTol( const VectorOfPoint &vecPoints, const cv::RotatedRect &rotatedRect, float tolerance ) {
-    VectorOfPoint vecResult;
-    for ( const auto &point : vecPoints ) {
-        auto disToCtr = sqrt( ( point.x - rotatedRect.center.x) * (point.x - rotatedRect.center.x) + ( point.y - rotatedRect.center.y) * ( point.y - rotatedRect.center.y ) );
-        auto err = disToCtr - rotatedRect.size.width / 2;
-        if ( fabs ( err ) < tolerance ) {
-            vecResult.push_back(point);
-        }
-    }
-    return vecResult;
 }
 
 /*static*/ VectorOfPoint VisionAlgorithm::_findPointsOverCircleTol( const VectorOfPoint &vecPoints, const cv::RotatedRect &rotatedRect, float tolerance ) {
@@ -4541,7 +4487,7 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
    
     int nMaxRansacTime = 20;
     float fFitTolerance = 4;
-    auto fitCircleResult = _fitCircleRansac ( maxContour, fFitTolerance, nMaxRansacTime, maxContour.size() / 2 );
+    auto fitCircleResult = Fitting::fitCircleRansac ( maxContour, fFitTolerance, nMaxRansacTime, maxContour.size() / 2 );
     auto vecLeftOverPoints = _findPointsOverCircleTol ( maxContour, fitCircleResult, fFitTolerance );
     float fSlope = 0.f, fIntercept = 0.f;
     PR_Line2f stLine;
@@ -4956,7 +4902,7 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     
     int nMaxRansacTime = 20;
     float fFitTolerance = 4;
-    auto fitCircleResult = _fitCircleRansac ( maxContour, fFitTolerance, nMaxRansacTime, maxContour.size() / 2 );
+    auto fitCircleResult = Fitting::fitCircleRansac ( maxContour, fFitTolerance, nMaxRansacTime, maxContour.size() / 2 );
     auto vecLeftOverPoints = _findPointsOverCircleTol ( maxContour, fitCircleResult, fFitTolerance );    
     float fSlope = 0.f, fIntercept = 0.f;
     PR_Line2f stLine;
@@ -5036,7 +4982,7 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
 
     int nMaxRansacTime = 20;
     float fFitTolerance = 4;
-    auto fitCircleResult = _fitCircleRansac ( maxContour, fFitTolerance, nMaxRansacTime, maxContour.size() / 2 );
+    auto fitCircleResult = Fitting::fitCircleRansac ( maxContour, fFitTolerance, nMaxRansacTime, maxContour.size() / 2 );
 
     if ( PR_DEBUG_MODE::SHOW_IMAGE == Config::GetInstance()->getDebugMode() ) {
         cv::Mat matDisplay;
@@ -5045,7 +4991,7 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
         showImage ( "inspChipCircularMode", matDisplay );
     }
 
-    auto vecInTolPoints = _findPointsInCircleTol ( maxContour, fitCircleResult, fFitTolerance );
+    auto vecInTolPoints = Fitting::findPointsInCircleTol ( maxContour, fitCircleResult, fFitTolerance );
     if ( vecInTolPoints.size() < maxContour.size() / 2 ) {
         pstRpy->enStatus = VisionStatus::CAN_NOT_FIND_CIRCULAR_CHIP;
         return pstRpy->enStatus;

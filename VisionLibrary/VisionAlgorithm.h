@@ -139,9 +139,6 @@ protected:
                                        float                   &fSlope,
                                        float                   &fIntercept,
                                        PR_Line2f               &stLine);
-
-    static cv::RotatedRect _fitCircleRansac(const VectorOfPoint &vecPoints, float tolerance, int maxRansacTime, size_t nFinishThreshold);
-    static VectorOfPoint _findPointsInCircleTol( const VectorOfPoint &vecPoints, const cv::RotatedRect &rotatedRect, float tolerance );
     static VectorOfPoint _findPointsOverCircleTol( const VectorOfPoint &vecPoints, const cv::RotatedRect &rotatedRect, float tolerance );
     static std::vector<ListOfPoint::const_iterator> _findPointsOverCircleTol( const ListOfPoint &listPoint, const cv::RotatedRect &rotatedRect, PR_RM_FIT_NOISE_METHOD enMethod, float tolerance );
     static cv::RotatedRect _fitCircleIterate(const VectorOfPoint &vecPoints, PR_RM_FIT_NOISE_METHOD method, float tolerance);
