@@ -24,6 +24,7 @@ using VectorOfPoint3f = std::vector<cv::Point3f>;
 using VectorOfVectorOfPoint2f = std::vector<VectorOfPoint2f>;
 using VectorOfRect = std::vector<cv::Rect>;
 using ListOfPoint = std::list<cv::Point>;
+using ListOfPoint2f = std::list<cv::Point2f>;
 using VectorOfListOfPoint = std::vector<ListOfPoint>;
 using VectorOfSize2f = std::vector<cv::Size2f>;
 using VectorOfMat = std::vector<cv::Mat>;

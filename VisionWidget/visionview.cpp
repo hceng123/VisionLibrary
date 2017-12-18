@@ -113,7 +113,9 @@ void VisionView::mouseReleaseEvent(QMouseEvent *event)
             _applyMask();
             _drawDisplay();
         }else if ( VISION_VIEW_STATE::TEST_VISION_LIBRARY == _enState && TEST_VISION_STATE::SET_CIRCLE_CTR == _enTestVisionState ) {
-            _ptCircleCtr = cv::Point ( event->pos().x(), event->pos().y() );   
+            _ptCircleCtr = cv::Point ( event->pos().x(), event->pos().y() );
+            _ptCircleCtr.x -= _szDisplayCenterOffset.width;
+            _ptCircleCtr.y -= _szDisplayCenterOffset.height;
             _drawDisplay();
         }else if ( VISION_VIEW_STATE::MOVE == _enState )    {
             setCursor(Qt::OpenHandCursor);
@@ -182,10 +184,12 @@ void VisionView::mouseMoveEvent(QMouseEvent *event)
 
                 _drawDisplay ();
             }
-            else if ( TEST_VISION_STATE::SET_CIRCLE_INNER_RADIUS == _enTestVisionState )
-                _fInnerRangeRadius = distanceOf2Point (cv::Point( point.x(), point.y()), _ptCircleCtr);
-            else if ( TEST_VISION_STATE::SET_CIRCLE_OUTER_RADIUS == _enTestVisionState )   {
-                float fRadius = distanceOf2Point (cv::Point( point.x(), point.y()), _ptCircleCtr);
+            else if ( TEST_VISION_STATE::SET_CIRCLE_INNER_RADIUS == _enTestVisionState ) {
+                cv::Point ptReal( point.x() - _szDisplayCenterOffset.width, point.y() - _szDisplayCenterOffset.height );
+                _fInnerRangeRadius = distanceOf2Point ( ptReal, _ptCircleCtr );
+            }else if ( TEST_VISION_STATE::SET_CIRCLE_OUTER_RADIUS == _enTestVisionState )   {
+                cv::Point ptReal( point.x() - _szDisplayCenterOffset.width, point.y() - _szDisplayCenterOffset.height );
+                float fRadius = distanceOf2Point ( ptReal, _ptCircleCtr);
                 if ( fRadius > _fInnerRangeRadius )
                     _fOuterRangeRadius = fRadius;
             }else if ( TEST_VISION_STATE::SET_MULTIPLE_WINDOW == _enTestVisionState )  {
@@ -304,12 +308,16 @@ void VisionView::_drawTestVisionLibrary(cv::Mat &mat)
         TEST_VISION_STATE::SET_CIRCLE_INNER_RADIUS == _enTestVisionState ||
         TEST_VISION_STATE::SET_CIRCLE_OUTER_RADIUS == _enTestVisionState )
     {
-        if ( _ptCircleCtr.x > 0 && _ptCircleCtr.y > 0 )
-        cv::circle ( mat, _ptCircleCtr, 2, cv::Scalar ( 0, 255, 0 ), 2 );
-        if ( _fInnerRangeRadius > 2 )
-            cv::circle ( mat, _ptCircleCtr, _fInnerRangeRadius, cv::Scalar ( 0, 255, 0 ), 1 );
-        if ( _fOuterRangeRadius > _fInnerRangeRadius )
-            cv::circle ( mat, _ptCircleCtr, _fOuterRangeRadius, cv::Scalar ( 0, 255, 0 ), 1 );
+        if ( abs ( _ptCircleCtr.x ) > 0 && abs ( _ptCircleCtr.y ) > 0 ) {
+            cv::Point ptDrawCtr = _ptCircleCtr;
+            ptDrawCtr.x += _szDisplayCenterOffset.width;
+            ptDrawCtr.y += _szDisplayCenterOffset.height;
+            cv::circle ( mat, ptDrawCtr, 2, cv::Scalar ( 0, 255, 0 ), 2 );
+            if( _fInnerRangeRadius > 2 )
+                cv::circle ( mat, ptDrawCtr, _fInnerRangeRadius, cv::Scalar ( 0, 255, 0 ), 1 );
+            if( _fOuterRangeRadius > _fInnerRangeRadius )
+                cv::circle ( mat, ptDrawCtr, _fOuterRangeRadius, cv::Scalar ( 0, 255, 0 ), 1 );
+        }
     }else if ( TEST_VISION_STATE::SET_MULTIPLE_WINDOW == _enTestVisionState )
     {
         for ( const auto &rect : _vecRectSrchWindow ) {
