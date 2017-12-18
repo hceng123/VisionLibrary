@@ -74,6 +74,63 @@ public:
         return rotatedRect;
     }
 
+    template<typename T>
+    static T randomSelectPoints ( const T &vecPoints, int numOfPtToSelect ) {
+        std::set<int> setResult;
+        VectorOfPoint vecResultPoints;
+
+        if ( ToInt32 ( vecPoints.size () ) < numOfPtToSelect)
+            return vecResultPoints;
+
+        while ( ToInt32 ( setResult.size () ) < numOfPtToSelect) {
+            int nValue = std::rand () % vecPoints.size ();
+            setResult.insert ( nValue );
+        }
+        for (auto index : setResult)
+            vecResultPoints.push_back ( vecPoints[index] );
+        return vecResultPoints;
+    }
+
+    template<typename T>
+    static T findPointsInCircleTol ( const T &vecPoints, const cv::RotatedRect &rotatedRect, float tolerance ) {
+        T vecResult;
+        for (const auto &point : vecPoints) {
+            auto disToCtr = sqrt ( (point.x - rotatedRect.center.x) * (point.x - rotatedRect.center.x) + (point.y - rotatedRect.center.y) * (point.y - rotatedRect.center.y) );
+            auto err = disToCtr - rotatedRect.size.width / 2;
+            if (fabs ( err ) < tolerance) {
+                vecResult.push_back ( point );
+            }
+        }
+        return vecResult;
+    }
+
+    template<typename T>
+    static cv::RotatedRect fitCircleRansac ( const T &vecPoints, float tolerance, int maxRansacTime, size_t numOfPtToFinish ) {
+        cv::RotatedRect fitResult;
+        if (vecPoints.size () < 3)
+            return fitResult;
+
+        int nRansacTime = 0;
+        const int RANSAC_CIRCLE_POINT = 3;
+        size_t nMaxConsentNum = 0;
+
+        while (nRansacTime < maxRansacTime) {
+            VectorOfPoint vecSelectedPoints = randomSelectPoints ( vecPoints, RANSAC_CIRCLE_POINT );
+            cv::RotatedRect rectReult = Fitting::fitCircle ( vecSelectedPoints );
+            vecSelectedPoints = _findPointsInCircleTol ( vecPoints, rectReult, tolerance );
+
+            if (vecSelectedPoints.size () >= numOfPtToFinish)
+                return Fitting::fitCircle ( vecSelectedPoints );
+
+            if (vecSelectedPoints.size () > nMaxConsentNum) {
+                fitResult = Fitting::fitCircle ( vecSelectedPoints );
+                nMaxConsentNum = vecSelectedPoints.size ();
+            }
+            ++ nRansacTime;
+        }
+        return fitResult;
+    }
+
     static void fitLine(const VectorOfPoint &vecPoints, float &fSlope, float &fIntercept, bool reverseFit = false);
     static void fitLine(const ListOfPoint &listPoint, float &fSlope, float &fIntercept, bool reverseFit = false);
     static void fitParallelLine(const VectorOfPoint &vecPoints1,

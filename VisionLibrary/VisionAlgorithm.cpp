@@ -2894,10 +2894,10 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
 
 /*static*/ VectorOfPoint VisionAlgorithm::_findPointsInCircleTol( const VectorOfPoint &vecPoints, const cv::RotatedRect &rotatedRect, float tolerance ) {
     VectorOfPoint vecResult;
-    for ( const auto &point : vecPoints )  {
+    for ( const auto &point : vecPoints ) {
         auto disToCtr = sqrt( ( point.x - rotatedRect.center.x) * (point.x - rotatedRect.center.x) + ( point.y - rotatedRect.center.y) * ( point.y - rotatedRect.center.y ) );
         auto err = disToCtr - rotatedRect.size.width / 2;
-        if ( fabs ( err ) < tolerance )  {
+        if ( fabs ( err ) < tolerance ) {
             vecResult.push_back(point);
         }
     }
