@@ -115,8 +115,6 @@ protected:
                                                      const float            fIntercept,
                                                      PR_RM_FIT_NOISE_METHOD method,
                                                      float                  tolerance);
-    static VectorOfPoint _randomSelectPoints(const VectorOfPoint &vecPoints, int numOfPtToSelect);
-
     static VectorOfPoint _findPointInLineTol(const VectorOfPoint   &vecPoint,
                                              bool                   bReversedFit,
                                              const float            fSlope,
@@ -140,8 +138,6 @@ protected:
                                        float                   &fIntercept,
                                        PR_Line2f               &stLine);
     static VectorOfPoint _findPointsOverCircleTol( const VectorOfPoint &vecPoints, const cv::RotatedRect &rotatedRect, float tolerance );
-    static std::vector<ListOfPoint::const_iterator> _findPointsOverCircleTol( const ListOfPoint &listPoint, const cv::RotatedRect &rotatedRect, PR_RM_FIT_NOISE_METHOD enMethod, float tolerance );
-    static cv::RotatedRect _fitCircleIterate(const VectorOfPoint &vecPoints, PR_RM_FIT_NOISE_METHOD method, float tolerance);
     static VisionStatus _fillHoleByContour(const cv::Mat &matInputImg, cv::Mat &matOutput, PR_OBJECT_ATTRIBUTE enAttribute);
     static VisionStatus _fillHoleByMorph(const cv::Mat      &matInputImg,
                                          cv::Mat            &matOutput,

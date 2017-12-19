@@ -77,7 +77,7 @@ public:
     template<typename T>
     static T randomSelectPoints ( const T &vecPoints, int numOfPtToSelect ) {
         std::set<int> setResult;
-        VectorOfPoint vecResultPoints;
+        T vecResultPoints;
 
         if ( ToInt32 ( vecPoints.size () ) < numOfPtToSelect)
             return vecResultPoints;
@@ -86,6 +86,7 @@ public:
             int nValue = std::rand () % vecPoints.size ();
             setResult.insert ( nValue );
         }
+
         for (auto index : setResult)
             vecResultPoints.push_back ( vecPoints[index] );
         return vecResultPoints;
@@ -146,11 +147,12 @@ public:
         return fitResult;
     }
 
-    template<typename T, >
-    static std::vector<ListOfPoint::const_iterator> findPointsOverCircleTol( const ListOfPoint &listPoint, const cv::RotatedRect &rotatedRect, PR_RM_FIT_NOISE_METHOD enMethod, float tolerance )
+    template<typename Iter>
+    static std::vector<Iter> findPointsIterOverCircleTol( Iter itBegin, Iter itEnd, const cv::RotatedRect &rotatedRect, PR_RM_FIT_NOISE_METHOD enMethod, float tolerance )
     {
-        std::vector<ListOfPoint::const_iterator> vecResult;
-        for (ListOfPoint::const_iterator it = listPoint.begin (); it != listPoint.end (); ++ it) {
+        std::vector<Iter> vecResult;
+        //std::vector<ListOfPoint::const_iterator> vecResult;
+        for ( auto it = itBegin; it != itEnd; ++ it) {
             cv::Point2f point = *it;
             auto disToCtr = sqrt ( (point.x - rotatedRect.center.x) * (point.x - rotatedRect.center.x) + (point.y - rotatedRect.center.y) * (point.y - rotatedRect.center.y) );
             auto err = disToCtr - rotatedRect.size.width / 2;
@@ -168,7 +170,7 @@ public:
     //method 2 : Exclude all the points out of positive error tolerance.
     //method 3 : Exclude all the points inside the negative error tolerance.
     template<typename T>
-    static cv::RotatedRect VisionAlgorithm::fitCircleIterate ( const T &vecPoints, PR_RM_FIT_NOISE_METHOD method, float tolerance ) {
+    static cv::RotatedRect fitCircleIterate ( const T &vecPoints, PR_RM_FIT_NOISE_METHOD method, float tolerance ) {
         cv::RotatedRect rotatedRect;
         if (vecPoints.size () < 3)
             return rotatedRect;
@@ -179,44 +181,149 @@ public:
 
         rotatedRect = fitCircle ( listPoint );
 
-        std::vector<ListOfPoint::const_iterator> overTolPoints = _findPointsOverCircleTol ( listPoint, rotatedRect, method, tolerance );
+        std::vector<ListOfPoint::const_iterator> overTolPoints = findPointsIterOverCircleTol ( listPoint.cbegin(), listPoint.cend(), rotatedRect, method, tolerance );
         int nIteratorNum = 1;
         while (!overTolPoints.empty () && nIteratorNum < 20) {
             for (const auto &it : overTolPoints)
                 listPoint.erase ( it );
-            rotatedRect = Fitting::fitCircle ( listPoint );
-            overTolPoints = _findPointsOverCircleTol ( listPoint, rotatedRect, method, tolerance );
-            ++nIteratorNum;
+            rotatedRect = fitCircle ( listPoint );
+            overTolPoints = findPointsIterOverCircleTol ( listPoint.cbegin(), listPoint.cend(), rotatedRect, method, tolerance );
+            ++ nIteratorNum;
         }
         return rotatedRect;
     }
 
-    static void fitLine(const VectorOfPoint &vecPoints, float &fSlope, float &fIntercept, bool reverseFit = false);
-    static void fitLine(const ListOfPoint &listPoint, float &fSlope, float &fIntercept, bool reverseFit = false);
-    static void fitParallelLine(const VectorOfPoint &vecPoints1,
-                                const VectorOfPoint &vecPoints2,
-                                float               &fSlope,
-                                float               &fIntercept1,
-                                float               &fIntercept2,
-                                bool                 reverseFit = false);
-    static void fitParallelLine(const ListOfPoint &listPoints1,
-                                const ListOfPoint &listPoints2,
-                                float             &fSlope,
-                                float             &fIntercept1,
-                                float             &fIntercept2,
-                                bool               reverseFit = false);
-    static void fitRect(VectorOfVectorOfPoint &vecVecPoint, 
+    //The equation is from http://hotmath.com/hotmath_help/topics/line-of-best-fit.html
+    template<typename T>
+    static void fitLine ( const T &vecPoints, float &fSlope, float &fIntercept, bool reverseFit = false ) {
+        if( vecPoints.size () < 2 )
+            return;
+
+        double Sx = 0., Sy = 0., Sx2 = 0., Sy2 = 0., Sxy = 0.;
+        for( const auto &point : vecPoints )   {
+            Sx += point.x;
+            Sy += point.y;
+            Sx2 += point.x * point.x;
+            Sy2 += point.y * point.y;
+            Sxy += point.x * point.y;
+        }
+        size_t n = vecPoints.size ();
+        if( reverseFit )   {
+            fSlope = static_cast<float>((n * Sxy - Sx * Sy) / (n * Sy2 - Sy * Sy));
+            fIntercept = static_cast<float>((Sx * Sy2 - Sy * Sxy) / (n * Sy2 - Sy * Sy));
+        } else {
+            fSlope = static_cast<float>((n * Sxy - Sx * Sy) / (n * Sx2 - Sx * Sx));
+            fIntercept = static_cast<float>((Sy * Sx2 - Sx * Sxy) / (n * Sx2 - Sx * Sx));
+        }
+    }
+
+    template<typename T>
+    static void fitParallelLine ( const T &listPoints1,
+                                  const T &listPoints2,
+                                  float   &fSlope,
+                                  float   &fIntercept1,
+                                  float   &fIntercept2,
+                                  bool     reverseFit )
+    {
+        if( listPoints1.size () < 2 || listPoints2.size () < 2 )
+            return;
+
+        auto totalDataCount = static_cast<int>(listPoints1.size () + listPoints2.size ());
+        auto dataCount1 = listPoints1.size ();
+        cv::Mat B ( totalDataCount, 1, CV_32FC1 );
+        cv::Mat A = cv::Mat::zeros ( totalDataCount, 3, CV_32FC1 );
+        ListOfPoint::const_iterator it1 = listPoints1.begin ();
+        ListOfPoint::const_iterator it2 = listPoints2.begin ();
+        for( int i = 0; i < totalDataCount; ++i )  {
+            if( i < ToInt32 ( listPoints1.size () ) ) {
+                if( reverseFit )
+                    A.at<float> ( i, 0 ) = ToFloat ( (*it1).y );
+                else
+                    A.at<float> ( i, 0 ) = ToFloat ( (*it1).x );
+
+                A.at<float> ( i, 1 ) = 1.f;
+                if( reverseFit )
+                    B.at<float> ( i, 0 ) = ToFloat ( (*it1).x );
+                else
+                    B.at<float> ( i, 0 ) = ToFloat ( (*it1).y );
+
+                ++ it1;
+            }else {
+                if( reverseFit )
+                    A.at<float> ( i, 0 ) = ToFloat ( (*it2).y );
+                else
+                    A.at<float> ( i, 0 ) = ToFloat ( (*it2).x );
+                A.at<float> ( i, 2 ) = 1.f;
+                if( reverseFit )
+                    B.at<float> ( i, 0 ) = ToFloat ( (*it2).x );
+                else
+                    B.at<float> ( i, 0 ) = ToFloat ( (*it2).y );
+
+                ++ it2;
+            }
+        }
+
+        cv::Mat matResultImg;
+        bool bResult = cv::solve ( A, B, matResultImg, cv::DECOMP_SVD );
+
+        fSlope = matResultImg.at<float> ( 0, 0 );
+        fIntercept1 = matResultImg.at<float> ( 1, 0 );
+        fIntercept2 = matResultImg.at<float> ( 2, 0 );
+    }
+
+    template<typename T>
+    static void fitRect(T &vecListPoint,
                         float                 &fSlope1, 
-                        float                 &fSlope2, 
+                        float                 &fSlope2,
                         std::vector<float>    &vecIntercept,
                         bool                   bLineOneReversedFit,
-                        bool                   bLineTwoReversedFit);
-    static void fitRect(VectorOfListOfPoint &vecListPoint, 
-                        float               &fSlope1, 
-                        float               &fSlope2, 
-                        std::vector<float>  &vecIntercept,
-                        bool                 bLineOneReversedFit,
-                        bool                 bLineTwoReversedFit);
+                        bool                   bLineTwoReversedFit)
+    {
+        assert ( vecListPoint.size () == 4 );  //The input should has 4 lines
+        vecIntercept.clear ();
+        auto totalRows = 0;
+        for( const auto &vectorPoint : vecListPoint )
+            totalRows += ToInt32 ( vectorPoint.size () );
+        cv::Mat A = cv::Mat::zeros ( totalRows, 5, CV_32FC1 );
+        cv::Mat B = cv::Mat::zeros ( totalRows, 1, CV_32FC1 );
+
+        int index = 0;
+        for( int i = 0; i < ToInt32 ( vecListPoint.size () ); ++i )
+        {
+            ListOfPoint listPoint = vecListPoint[i];
+            for( const auto &point : listPoint )
+            {
+                A.at<float> ( index, i + 1 ) = 1.f;
+                if( i < 2 ) {
+                    if( bLineOneReversedFit )   {
+                        A.at<float> ( index, 0 ) = ToFloat ( point.y );
+                        B.at<float> ( index, 0 ) = ToFloat ( point.x );
+                    } else
+                    {
+                        A.at<float> ( index, 0 ) = ToFloat ( point.x );
+                        B.at<float> ( index, 0 ) = ToFloat ( point.y );
+                    }
+                }else {
+                    if( bLineOneReversedFit )   {
+                        A.at<float> ( index, 0 ) = ToFloat ( -point.x );
+                        B.at<float> ( index, 0 ) = ToFloat ( point.y );
+                    } else {
+                        A.at<float> ( index, 0 ) = ToFloat ( -point.y );
+                        B.at<float> ( index, 0 ) = ToFloat ( point.x );
+                    }
+                }
+                ++ index;
+            }
+        }
+
+        cv::Mat matResultImg;
+        bool bResult = cv::solve ( A, B, matResultImg, cv::DECOMP_QR );
+
+        fSlope1 = matResultImg.at<float> ( 0, 0 );
+        fSlope2 = -fSlope1;
+        for( int i = 0; i < 4; ++i )
+            vecIntercept.push_back ( matResultImg.at < float > ( i + 1, 0 ) );
+    }
 };
 
 }
