@@ -942,7 +942,7 @@
       <widget class="QLabel" name="labelDetectCircleEndSrchAngle">
        <property name="geometry">
         <rect>
-         <x>330</x>
+         <x>320</x>
          <y>20</y>
          <width>91</width>
          <height>16</height>
@@ -1069,6 +1069,64 @@
        </property>
        <property name="text">
         <string>Attribute</string>
+       </property>
+      </widget>
+      <widget class="QLineEdit" name="lineEditDetectCircleCaliperCount">
+       <property name="geometry">
+        <rect>
+         <x>390</x>
+         <y>50</y>
+         <width>41</width>
+         <height>20</height>
+        </rect>
+       </property>
+       <property name="inputMethodHints">
+        <set>Qt::ImhDigitsOnly</set>
+       </property>
+       <property name="text">
+        <string>20</string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="labelDetectCircleCaliperCount">
+       <property name="geometry">
+        <rect>
+         <x>320</x>
+         <y>50</y>
+         <width>71</width>
+         <height>16</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Caliper Count</string>
+       </property>
+      </widget>
+      <widget class="QLineEdit" name="lineEditDetectCircleCaliperWidth">
+       <property name="geometry">
+        <rect>
+         <x>520</x>
+         <y>50</y>
+         <width>41</width>
+         <height>20</height>
+        </rect>
+       </property>
+       <property name="inputMethodHints">
+        <set>Qt::ImhDigitsOnly</set>
+       </property>
+       <property name="text">
+        <string>30</string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="labelDetectCircleCaliperWidth">
+       <property name="geometry">
+        <rect>
+         <x>440</x>
+         <y>50</y>
+         <width>71</width>
+         <height>16</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Caliper Width</string>
        </property>
       </widget>
      </widget>

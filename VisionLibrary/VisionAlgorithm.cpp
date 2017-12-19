@@ -2857,6 +2857,22 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
         return pstRpy->enStatus;
     }
 
+    if ( pstCmd->nCaliperCount < 3 ) {
+        char chArrMsg[1000];
+        _snprintf( chArrMsg, sizeof( chArrMsg ), "The caliper count %d is less than 3.", pstCmd->nCaliperCount );
+        WriteLog(chArrMsg);
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    if ( pstCmd->fCaliperWidth < 3 ) {
+        char chArrMsg[1000];
+        _snprintf( chArrMsg, sizeof( chArrMsg ), "The caliper width %f is less than 3.", pstCmd->fCaliperWidth );
+        WriteLog(chArrMsg);
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
     MARK_FUNCTION_START_TIME;
     SETUP_LOGCASE(LogCaseDetectCircle);
 
@@ -2864,26 +2880,24 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     if ( pstCmd->matInputImg.channels() == 3 )
         cv::cvtColor ( pstCmd->matInputImg, matGray, CV_BGR2GRAY );
 
-    const int DIVIDE_SECTION = 20;
-    const float CHECK_ROI_HEIGHT = 30;
+    const float CHECK_ROI_HEIGHT = pstCmd->fCaliperWidth;
     const float CHECK_ROI_WIDTH  = pstCmd->fMaxSrchRadius - pstCmd->fMinSrchRadius;
     const int GUASSIAN_DIFF_WIDTH = 2;
     const float GUASSIAN_KERNEL_SSQ = 1.f;
     cv::Mat matGuassinKernel = CalcUtils::generateGuassinDiffKernel ( GUASSIAN_DIFF_WIDTH, GUASSIAN_KERNEL_SSQ );
-    float fAngleInterval =  ( pstCmd->fEndSrchAngle - pstCmd->fStartSrchAngle ) / DIVIDE_SECTION;
+    float fAngleInterval =  ( pstCmd->fEndSrchAngle - pstCmd->fStartSrchAngle ) / pstCmd->nCaliperCount;
     float fMiddleOfSrchRadius = ( pstCmd->fMaxSrchRadius + pstCmd->fMinSrchRadius ) / 2.f;
 
     if ( ! isAutoMode() )
         cv::cvtColor ( matGray, pstRpy->matResultImg, CV_GRAY2BGR );
 
     VectorOfPoint vecPoint;
-    for ( int i = 0; i < DIVIDE_SECTION; ++ i ) {
-        float fAngle = pstCmd->fStartSrchAngle + i * fAngleInterval;
+    for ( int i = 0; i < pstCmd->nCaliperCount; ++ i ) {
+        float fAngle = pstCmd->fStartSrchAngle + i * fAngleInterval + fAngleInterval / 2.f;
         float fCos = ToFloat ( cos ( CalcUtils::degree2Radian ( fAngle ) ) );
         float fSin = ToFloat ( sin ( CalcUtils::degree2Radian ( fAngle ) ) );
-        cv::Point2f ptROICtr;
-        //The opencv defined angle is reversed as the standard defined angle.
 
+        cv::Point2f ptROICtr;
         ptROICtr.x = pstCmd->ptExpectedCircleCtr.x + fMiddleOfSrchRadius * fCos;
         ptROICtr.y = pstCmd->ptExpectedCircleCtr.y + fMiddleOfSrchRadius * fSin;
         cv::RotatedRect rotatedRectROI;

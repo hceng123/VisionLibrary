@@ -407,7 +407,13 @@ struct PR_FIT_CIRCLE_RPY {
     cv::Mat                 matResultImg;
 };
 
+//Use caliper method to find the circle.
 struct PR_DETECT_CIRCLE_CMD {
+    PR_DETECT_CIRCLE_CMD() :
+        fStartSrchAngle(0.f),
+        fEndSrchAngle(0.f),
+        nCaliperCount(20),
+        fCaliperWidth(30.f) {}
     cv::Mat                 matInputImg;
     PR_OBJECT_ATTRIBUTE     enObjAttribute;
     cv::Point2f             ptExpectedCircleCtr;
@@ -415,6 +421,8 @@ struct PR_DETECT_CIRCLE_CMD {
     float                   fMaxSrchRadius;
     float                   fStartSrchAngle;
     float                   fEndSrchAngle;
+    int                     nCaliperCount;      //How many caliper will be used to detect circle.
+    float                   fCaliperWidth;      //The width of caliper
     PR_RM_FIT_NOISE_METHOD  enRmNoiseMethod;
     float                   fErrTol;
 };
@@ -423,6 +431,21 @@ struct PR_DETECT_CIRCLE_RPY {
     VisionStatus            enStatus;
     cv::Point2f             ptCircleCtr;
     float                   fRadius;
+    cv::Mat                 matResultImg;
+};
+
+//It use the basic circle fitting and check the fitted circle.
+struct PR_INSP_CIRCLE_CMD {
+    cv::Mat                 matInputImg;
+    cv::Mat                 matMask;
+    cv::Rect                rectROI;
+};
+
+struct PR_INSP_CIRCLE_RPY {
+    VisionStatus            enStatus;
+    float                   fRoundness;
+    cv::Point2f             ptCircleCtr;
+    float                   fDiameter;
     cv::Mat                 matResultImg;
 };
 
@@ -573,21 +596,6 @@ struct PR_DETECT_EDGE_CMD {
 
 struct PR_DETECT_EDGE_RPY {
     VisionStatus            enStatus;
-    cv::Mat                 matResultImg;
-};
-
-//It use the basic circle fitting and check the fitted circle.
-struct PR_INSP_CIRCLE_CMD {
-    cv::Mat                 matInputImg;
-    cv::Mat                 matMask;
-    cv::Rect                rectROI;
-};
-
-struct PR_INSP_CIRCLE_RPY {
-    VisionStatus            enStatus;
-    float                   fRoundness;
-    cv::Point2f             ptCircleCtr;
-    float                   fDiameter;
     cv::Mat                 matResultImg;
 };
 
