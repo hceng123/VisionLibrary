@@ -144,7 +144,8 @@ private:
     const String _strKeyEndSrchAngle    = "EndSrchAngle";
     const String _strKeyRmNoiseMethod   = "RmNoiseMethod";
     const String _strKeyErrorTol        = "ErrorTolerance";
-    
+    const String _strKeyCaliperCount    = "CaliperCount";
+    const String _strKeyCaliperWidth    = "CaliperWidth";
 
     const String _strKeyStatus          = "Status";
     const String _strKeyResultCtr       = "ResultCtr";

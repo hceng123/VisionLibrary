@@ -419,10 +419,10 @@ struct PR_DETECT_CIRCLE_CMD {
     cv::Point2f             ptExpectedCircleCtr;
     float                   fMinSrchRadius;
     float                   fMaxSrchRadius;
-    float                   fStartSrchAngle;
-    float                   fEndSrchAngle;
+    float                   fStartSrchAngle;    //Start search angle, unit is degree, clockwise is positive, anticlockwise is negative.
+    float                   fEndSrchAngle;      //End search angle, unit is degree, clockwise is positive, anticlockwise is negative.
     int                     nCaliperCount;      //How many caliper will be used to detect circle.
-    float                   fCaliperWidth;      //The width of caliper
+    float                   fCaliperWidth;      //The width of caliper.
     PR_RM_FIT_NOISE_METHOD  enRmNoiseMethod;
     float                   fErrTol;
 };

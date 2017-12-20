@@ -195,6 +195,13 @@ PR_FUNCTION_ENTRY
 PR_FUNCTION_EXIT
 }
 
+VisionAPI VisionStatus PR_InspCircle(const PR_INSP_CIRCLE_CMD *const pstCmd, PR_INSP_CIRCLE_RPY *const pstRpy)
+{
+PR_FUNCTION_ENTRY
+    return VisionAlgorithm::inspCircle ( pstCmd, pstRpy );
+PR_FUNCTION_EXIT
+}
+
 VisionAPI VisionStatus PR_GetErrorInfo(VisionStatus enStatus, PR_GET_ERROR_INFO_RPY *pstRpy)
 {
     return GetErrorInfo(enStatus, pstRpy);
@@ -283,13 +290,6 @@ VisionAPI VisionStatus PR_DetectEdge(PR_DETECT_EDGE_CMD *pstCmd, PR_DETECT_EDGE_
 {
 PR_FUNCTION_ENTRY
     return VisionAlgorithm::detectEdge( pstCmd, pstRpy );
-PR_FUNCTION_EXIT
-}
-
-VisionAPI VisionStatus PR_InspCircle(PR_INSP_CIRCLE_CMD *pstCmd, PR_INSP_CIRCLE_RPY *pstRpy)
-{
-PR_FUNCTION_ENTRY
-    return VisionAlgorithm::inspCircle( pstCmd, pstRpy );
 PR_FUNCTION_EXIT
 }
 

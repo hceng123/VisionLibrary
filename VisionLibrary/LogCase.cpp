@@ -253,7 +253,7 @@ VisionStatus LogCaseSrchObj::RunLogCase() {
 }
 
 VisionStatus LogCaseFitCircle::WriteCmd(const PR_FIT_CIRCLE_CMD *const pstCmd) {
-    if ( !_bReplay )    {
+    if ( !_bReplay ) {
         _strLogCasePath = _generateLogCaseName(GetFolderPrefix());
         bfs::path dir(_strLogCasePath);
         bfs::create_directories(dir);
@@ -262,7 +262,7 @@ VisionStatus LogCaseFitCircle::WriteCmd(const PR_FIT_CIRCLE_CMD *const pstCmd) {
     CSimpleIni ini(false, false, false);
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile( cmdRpyFilePath.c_str() );
-    ini.SetValue(_CMD_SECTION.c_str(),     _strKeyROI.c_str(), _formatRect(pstCmd->rectROI).c_str());
+    ini.SetValue(_CMD_SECTION.c_str(), _strKeyROI.c_str(), _formatRect(pstCmd->rectROI).c_str());
     ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyMethod.c_str(), static_cast<long>(pstCmd->enMethod) );
     ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyRmNoiseMethod.c_str(), static_cast<long>(pstCmd->enRmNoiseMethod) );
     ini.SetBoolValue( _CMD_SECTION.c_str(), _strKeyPreprocessed.c_str(), pstCmd->bPreprocessed);
@@ -325,7 +325,7 @@ VisionStatus LogCaseFitCircle::RunLogCase() {
 }
 
 VisionStatus LogCaseDetectCircle::WriteCmd(const PR_DETECT_CIRCLE_CMD *const pstCmd) {
-    if ( !_bReplay )    {
+    if ( !_bReplay ) {
         _strLogCasePath = _generateLogCaseName(GetFolderPrefix());
         bfs::path dir(_strLogCasePath);
         bfs::create_directories(dir);
@@ -339,9 +339,11 @@ VisionStatus LogCaseDetectCircle::WriteCmd(const PR_DETECT_CIRCLE_CMD *const pst
     ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyMinSrchRadius.c_str(), pstCmd->fMinSrchRadius );
     ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyMaxSrchRadius.c_str(), pstCmd->fMaxSrchRadius );
     ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyStartSrchAngle.c_str(), pstCmd->fStartSrchAngle );
-    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyEndSrchAngle.c_str(), pstCmd->fEndSrchAngle );    
+    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyEndSrchAngle.c_str(), pstCmd->fEndSrchAngle );
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyCaliperCount.c_str(), pstCmd->nCaliperCount );
+    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyCaliperWidth.c_str(), pstCmd->fCaliperWidth );
     ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyRmNoiseMethod.c_str(), static_cast<long>(pstCmd->enRmNoiseMethod) );
-    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyErrorTol.c_str(), pstCmd->fErrTol );
+    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyErrorTol.c_str(), pstCmd->fErrTol );    
     ini.SaveFile( cmdRpyFilePath.c_str() );
     cv::imwrite( _strLogCasePath + _IMAGE_NAME, pstCmd->matInputImg );
     return VisionStatus::OK;
@@ -377,6 +379,8 @@ VisionStatus LogCaseDetectCircle::RunLogCase() {
     stCmd.fMaxSrchRadius = ToFloat ( ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyMaxSrchRadius.c_str(), 0. ) );
     stCmd.fStartSrchAngle = ToFloat ( ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyStartSrchAngle.c_str(), 0. ) );
     stCmd.fEndSrchAngle = ToFloat ( ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyEndSrchAngle.c_str(), 0. ) );
+    stCmd.nCaliperCount = ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyCaliperCount.c_str(), 20 );
+    stCmd.fCaliperWidth = ToFloat ( ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyCaliperWidth.c_str(), 30. ) );
     stCmd.enRmNoiseMethod = static_cast<PR_RM_FIT_NOISE_METHOD> ( ini.GetLongValue ( _CMD_SECTION.c_str(), _strKeyRmNoiseMethod.c_str(), 0 ) );
     stCmd.fErrTol = (float)ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyErrorTol.c_str(), 0 );
     
@@ -392,7 +396,7 @@ VisionStatus LogCaseDetectCircle::RunLogCase() {
 
 VisionStatus LogCaseInspCircle::WriteCmd(const PR_INSP_CIRCLE_CMD *const pstCmd)
 {
-    if ( !_bReplay )    {
+    if ( !_bReplay ) {
         _strLogCasePath = _generateLogCaseName(GetFolderPrefix());
         bfs::path dir(_strLogCasePath);
         bfs::create_directories(dir);

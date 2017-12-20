@@ -2952,6 +2952,94 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     return pstRpy->enStatus;
 }
 
+/*static*/ VisionStatus VisionAlgorithm::inspCircle(const PR_INSP_CIRCLE_CMD *const pstCmd, PR_INSP_CIRCLE_RPY *const pstRpy, bool bReplay /*= false*/ ) {
+    assert(pstCmd != nullptr && pstRpy != nullptr);
+    char chArrMsg[1000];
+
+    if (pstCmd->matInputImg.empty()) {
+        WriteLog("Input image is empty");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    pstRpy->enStatus = _checkInputROI ( pstCmd->rectROI, pstCmd->matInputImg, AT );
+    if ( VisionStatus::OK != pstRpy->enStatus ) return pstRpy->enStatus;
+
+    if ( ! pstCmd->matMask.empty() ) {
+        if ( pstCmd->matMask.rows != pstCmd->matInputImg.rows || pstCmd->matMask.cols != pstCmd->matInputImg.cols ) {
+            _snprintf(chArrMsg, sizeof(chArrMsg), "The mask size ( %d, %d ) not match with input image size ( %d, %d )",
+                pstCmd->matMask.cols, pstCmd->matMask.rows, pstCmd->matInputImg.cols, pstCmd->matInputImg.rows);
+            WriteLog(chArrMsg);
+            pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+            return pstRpy->enStatus;
+        }
+
+        if ( pstCmd->matMask.channels() != 1 )  {
+            WriteLog("The mask must be gray image!");
+            pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+            return pstRpy->enStatus;
+        }
+    }
+
+    MARK_FUNCTION_START_TIME;
+    SETUP_LOGCASE(LogCaseInspCircle);
+
+    cv::Mat matROI ( pstCmd->matInputImg, pstCmd->rectROI ); 
+    cv::Mat matGray;
+
+    if ( pstCmd->matInputImg.channels() > 1 )
+        cv::cvtColor ( matROI, matGray, CV_BGR2GRAY );
+    else
+        matGray = matROI.clone();
+
+    if ( PR_DEBUG_MODE::SHOW_IMAGE == Config::GetInstance()->getDebugMode())
+        showImage("Before mask out ROI image", matGray );
+
+    if ( ! pstCmd->matMask.empty() ) {
+        cv::Mat matROIMask(pstCmd->matMask, pstCmd->rectROI);
+        matROIMask = cv::Scalar(255) - matROIMask;
+        matGray.setTo(cv::Scalar(0), matROIMask);
+    }
+
+    if ( PR_DEBUG_MODE::SHOW_IMAGE == Config::GetInstance()->getDebugMode() )
+        showImage("mask out ROI image", matGray );
+
+    VectorOfPoint vecPoints;
+    cv::findNonZero( matGray, vecPoints);   
+
+    if ( vecPoints.size() < 3 ) {
+        WriteLog("Not enough points to fit circle");
+        pstRpy->enStatus = VisionStatus::NOT_ENOUGH_POINTS_TO_FIT;
+        FINISH_LOGCASE;
+        return pstRpy->enStatus;
+    }
+    
+    cv::RotatedRect fitResult = Fitting::fitCircle ( vecPoints );
+
+    if ( fitResult.center.x <= 0 || fitResult.center.y <= 0 || fitResult.size.width <= 0 ) {
+        WriteLog("Failed to fit circle");
+        pstRpy->enStatus = VisionStatus::FAIL_TO_FIT_CIRCLE;
+        FINISH_LOGCASE;
+        return pstRpy->enStatus;
+    }
+	pstRpy->ptCircleCtr = fitResult.center + cv::Point2f ( ToFloat ( pstCmd->rectROI.x ), ToFloat ( pstCmd->rectROI.y ) );
+    pstRpy->fDiameter = ( fitResult.size.width + fitResult.size.height ) / 2;
+    
+    std::vector<float> vecDistance;
+    for ( const auto &point : vecPoints )   {
+        cv::Point2f pt2f(point);
+        vecDistance.push_back ( CalcUtils::distanceOf2Point<float> ( pt2f, fitResult.center ) - pstRpy->fDiameter / 2 );
+    }
+    pstRpy->fRoundness = ToFloat ( CalcUtils::calcStdDeviation<float>( vecDistance ) );
+    pstRpy->matResultImg = pstCmd->matInputImg.clone();
+	cv::circle ( pstRpy->matResultImg, pstRpy->ptCircleCtr, (int)pstRpy->fDiameter / 2, _constBlueScalar, 2 );
+
+    pstRpy->enStatus = VisionStatus::OK;
+    FINISH_LOGCASE;
+    MARK_FUNCTION_END_TIME;
+    return pstRpy->enStatus;
+}
+
 /*static*/ VisionStatus VisionAlgorithm::ocr(PR_OCR_CMD *pstCmd, PR_OCR_RPY *pstRpy, bool bReplay /*= false*/) {
     assert ( pstCmd != nullptr && pstRpy != nullptr );
 
@@ -3197,94 +3285,6 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
 
     pstRpy->enStatus = VisionStatus::OK;
 
-    FINISH_LOGCASE;
-    MARK_FUNCTION_END_TIME;
-    return pstRpy->enStatus;
-}
-
-/*static*/ VisionStatus VisionAlgorithm::inspCircle(const PR_INSP_CIRCLE_CMD *const pstCmd, PR_INSP_CIRCLE_RPY *const pstRpy, bool bReplay /*= false*/ ) {
-    assert(pstCmd != nullptr && pstRpy != nullptr);
-    char chArrMsg[1000];
-
-    if (pstCmd->matInputImg.empty()) {
-        WriteLog("Input image is empty");
-        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
-        return pstRpy->enStatus;
-    }
-
-    pstRpy->enStatus = _checkInputROI ( pstCmd->rectROI, pstCmd->matInputImg, AT );
-    if ( VisionStatus::OK != pstRpy->enStatus ) return pstRpy->enStatus;
-
-    if ( ! pstCmd->matMask.empty() ) {
-        if ( pstCmd->matMask.rows != pstCmd->matInputImg.rows || pstCmd->matMask.cols != pstCmd->matInputImg.cols ) {
-            _snprintf(chArrMsg, sizeof(chArrMsg), "The mask size ( %d, %d ) not match with input image size ( %d, %d )",
-                pstCmd->matMask.cols, pstCmd->matMask.rows, pstCmd->matInputImg.cols, pstCmd->matInputImg.rows);
-            WriteLog(chArrMsg);
-            pstRpy->enStatus = VisionStatus::INVALID_PARAM;
-            return pstRpy->enStatus;
-        }
-
-        if ( pstCmd->matMask.channels() != 1 )  {
-            WriteLog("The mask must be gray image!");
-            pstRpy->enStatus = VisionStatus::INVALID_PARAM;
-            return pstRpy->enStatus;
-        }
-    }
-
-    MARK_FUNCTION_START_TIME;
-    SETUP_LOGCASE(LogCaseInspCircle);
-
-    cv::Mat matROI ( pstCmd->matInputImg, pstCmd->rectROI ); 
-    cv::Mat matGray;
-
-    if ( pstCmd->matInputImg.channels() > 1 )
-        cv::cvtColor ( matROI, matGray, CV_BGR2GRAY );
-    else
-        matGray = matROI.clone();
-
-    if ( PR_DEBUG_MODE::SHOW_IMAGE == Config::GetInstance()->getDebugMode())
-        showImage("Before mask out ROI image", matGray );
-
-    if ( ! pstCmd->matMask.empty() ) {
-        cv::Mat matROIMask(pstCmd->matMask, pstCmd->rectROI);
-        matROIMask = cv::Scalar(255) - matROIMask;
-        matGray.setTo(cv::Scalar(0), matROIMask);
-    }
-
-    if ( PR_DEBUG_MODE::SHOW_IMAGE == Config::GetInstance()->getDebugMode() )
-        showImage("mask out ROI image", matGray );
-
-    VectorOfPoint vecPoints;
-    cv::findNonZero( matGray, vecPoints);   
-
-    if ( vecPoints.size() < 3 ) {
-        WriteLog("Not enough points to fit circle");
-        pstRpy->enStatus = VisionStatus::NOT_ENOUGH_POINTS_TO_FIT;
-        FINISH_LOGCASE;
-        return pstRpy->enStatus;
-    }
-    
-    cv::RotatedRect fitResult = Fitting::fitCircle ( vecPoints );
-
-    if ( fitResult.center.x <= 0 || fitResult.center.y <= 0 || fitResult.size.width <= 0 ) {
-        WriteLog("Failed to fit circle");
-        pstRpy->enStatus = VisionStatus::FAIL_TO_FIT_CIRCLE;
-        FINISH_LOGCASE;
-        return pstRpy->enStatus;
-    }
-	pstRpy->ptCircleCtr = fitResult.center + cv::Point2f ( ToFloat ( pstCmd->rectROI.x ), ToFloat ( pstCmd->rectROI.y ) );
-    pstRpy->fDiameter = ( fitResult.size.width + fitResult.size.height ) / 2;
-    
-    std::vector<float> vecDistance;
-    for ( const auto &point : vecPoints )   {
-        cv::Point2f pt2f(point);
-        vecDistance.push_back ( CalcUtils::distanceOf2Point<float> ( pt2f, fitResult.center ) - pstRpy->fDiameter / 2 );
-    }
-    pstRpy->fRoundness = ToFloat ( CalcUtils::calcStdDeviation<float>( vecDistance ) );
-    pstRpy->matResultImg = pstCmd->matInputImg.clone();
-	cv::circle ( pstRpy->matResultImg, pstRpy->ptCircleCtr, (int)pstRpy->fDiameter / 2, _constBlueScalar, 2 );
-
-    pstRpy->enStatus = VisionStatus::OK;
     FINISH_LOGCASE;
     MARK_FUNCTION_END_TIME;
     return pstRpy->enStatus;
