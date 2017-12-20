@@ -177,7 +177,7 @@ protected:
     static VisionStatus _caliperByProjection(const cv::Mat &matGray, const cv::Mat &matROIMask, const cv::Rect &rectROI, PR_CALIPER_DIR enDetectDir, VectorOfPoint &vecFitPoint, PR_CALIPER_RPY *const pstRpy);
     static int _findMaxDiffPosInX( const cv::Mat &matInput, const cv::Mat &matGuassianDiffKernel, PR_CALIPER_DIR enDirection );
     static int _findMaxDiffPosInY( const cv::Mat &matInput, const cv::Mat &matGuassianDiffKernel, PR_CALIPER_DIR enDirection );
-    static VisionStatus _caliperBySectionAvgGussianDiff(const cv::Mat &matInputImg, const cv::Mat &matROIMask, const cv::Rect &rectROI, PR_CALIPER_DIR enDirection, VectorOfPoint &vecFitPoint, PR_CALIPER_RPY *const pstRpy);
+    static VisionStatus _caliperBySectionAvgGussianDiff(const cv::Mat &matInputImg, const cv::Mat &matROIMask, const cv::Rect &rectROI, PR_CALIPER_DIR enDirection, Int32 nCaliperCount, float fCaliperWidth, VectorOfPoint &vecFitPoint, PR_CALIPER_RPY *const pstRpy);
     static VisionStatus _extractRotatedROI(const cv::Mat &matInputImg, const cv::RotatedRect &rectRotatedROI, cv::Mat &matROI );
     static VisionStatus _calcCaliperDirection(const cv::Mat &matROIImg, bool bReverseFit, PR_CALIPER_DIR &enDirection );
     static VisionStatus _writeContourRecord(PR_LRN_CONTOUR_RPY *const pstRpy, const cv::Mat &matTmpl, const cv::Mat &matContour, const VectorOfVectorOfPoint &vecContours);

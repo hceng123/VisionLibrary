@@ -2013,6 +2013,24 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
         }
     }
 
+    if ( PR_CALIPER_ALGORITHM::SECTION_AVG_GAUSSIAN_DIFF == pstCmd->enAlgorithm ) {
+        if (pstCmd->nCaliperCount < 2) {
+            char chArrMsg[1000];
+            _snprintf ( chArrMsg, sizeof ( chArrMsg ), "The line caliper count %d is less than 2.", pstCmd->nCaliperCount );
+            WriteLog ( chArrMsg );
+            pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+            return pstRpy->enStatus;
+        }
+
+        if (pstCmd->fCaliperWidth < 3) {
+            char chArrMsg[1000];
+            _snprintf ( chArrMsg, sizeof ( chArrMsg ), "The caliper width %f is less than 3.", pstCmd->fCaliperWidth );
+            WriteLog ( chArrMsg );
+            pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+            return pstRpy->enStatus;
+        }
+    }
+
     if ( pstCmd->bCheckLinerity && ( pstCmd->fPointMaxOffset <= 0.f || pstCmd->fMinLinerity <= 0.f ) ) {
         char chArrMsg [ 1000 ];
         _snprintf(chArrMsg, sizeof(chArrMsg), "Linerity check parameter is invalid. PointMaxOffset = %.2f, MinLinerity = %.2f",
@@ -2045,7 +2063,8 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
     if ( pstCmd->enAlgorithm == PR_CALIPER_ALGORITHM::PROJECTION )
         _caliperByProjection ( matGray, matROIMask, rectNewROI, pstCmd->enDetectDir, vecFitPoint, pstRpy );
     else if ( pstCmd->enAlgorithm == PR_CALIPER_ALGORITHM::SECTION_AVG_GAUSSIAN_DIFF )
-        _caliperBySectionAvgGussianDiff ( matGray, matROIMask, rectNewROI, pstCmd->enDetectDir, vecFitPoint, pstRpy );
+        _caliperBySectionAvgGussianDiff ( matGray, matROIMask, rectNewROI, pstCmd->enDetectDir, 
+            pstCmd->nCaliperCount, pstCmd->fCaliperWidth, vecFitPoint, pstRpy );
     else {
         WriteLog("The caliper algorithm is invalid");
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
@@ -2196,9 +2215,9 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
     auto sumOfLeftTop = cv::sum ( matLeftTop )[0];
     auto sumOfRightBottom = cv::sum ( matRightBottom )[0];
     if ( sumOfLeftTop < sumOfRightBottom )
-        enDirection = PR_CALIPER_DIR::MIN_TO_MAX;
+        enDirection = PR_CALIPER_DIR::DARK_TO_BRIGHT;
     else
-        enDirection = PR_CALIPER_DIR::MAX_TO_MIN;
+        enDirection = PR_CALIPER_DIR::BRIGHT_TO_DARK;
     return VisionStatus::OK;
 }
 
@@ -2256,7 +2275,7 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
     }
 
     auto initialLinePos = 0;
-    if ( PR_CALIPER_DIR::MIN_TO_MAX == enDetectDir )
+    if ( PR_CALIPER_DIR::DARK_TO_BRIGHT == enDetectDir )
         initialLinePos = vecIndexCanFormLine[0];
     else
         initialLinePos = vecIndexCanFormLine.back();
@@ -2280,7 +2299,7 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
     //Find the extreme point on each row or column.
     for ( const auto &vecPointTmp : vecVecPoint ) {
         if ( ! vecPointTmp.empty() ) {
-            auto point = PR_CALIPER_DIR::MIN_TO_MAX == enDetectDir ? vecPointTmp.front() : vecPointTmp.back();
+            auto point = PR_CALIPER_DIR::DARK_TO_BRIGHT == enDetectDir ? vecPointTmp.front() : vecPointTmp.back();
             if ( pstRpy->bReversedFit ) {
                 if (point.x != initialLinePos - rs && point.x != initialLinePos - rs)
                     vecFitPoint.push_back ( point + cv::Point ( rectROI.x, rectROI.y ) );
@@ -2307,7 +2326,7 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
     double minValue = 0., maxValue = 0.;
     cv::Point ptMin, ptMax;
     cv::minMaxLoc ( matGuassianDiffResult, &minValue, &maxValue, &ptMin, &ptMax );
-    if ( PR_CALIPER_DIR::MIN_TO_MAX == enDirection )
+    if ( PR_CALIPER_DIR::DARK_TO_BRIGHT == enDirection )
         return ptMin.x;
     return ptMax.x;
 }
@@ -2321,13 +2340,13 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
     double minValue = 0., maxValue = 0.;
     cv::Point ptMin, ptMax;
     cv::minMaxLoc ( matGuassianDiffResult, &minValue, &maxValue, &ptMin, &ptMax );
-    if ( PR_CALIPER_DIR::MIN_TO_MAX == enDirection )
+    if ( PR_CALIPER_DIR::DARK_TO_BRIGHT == enDirection )
         return ptMin.y;
     return ptMax.y;
 }
 
-VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &matInputImg, const cv::Mat &matROIMask, const cv::Rect &rectROI, PR_CALIPER_DIR enDirection, VectorOfPoint &vecFitPoint, PR_CALIPER_RPY *const pstRpy) {
-    const int DIVIDE_SECTION = 20;
+//The cognex method of find line.
+VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &matInputImg, const cv::Mat &matROIMask, const cv::Rect &rectROI, PR_CALIPER_DIR enDirection, Int32 nCaliperCount, float fCaliperWidth, VectorOfPoint &vecFitPoint, PR_CALIPER_RPY *const pstRpy) {
     const int GUASSIAN_DIFF_WIDTH = 2;
     const float GUASSIAN_KERNEL_SSQ = 1.f;
     if ( matInputImg.rows > matInputImg.cols )
@@ -2343,44 +2362,38 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     cv::Mat matGuassinKernel = CalcUtils::generateGuassinDiffKernel ( GUASSIAN_DIFF_WIDTH, GUASSIAN_KERNEL_SSQ );
 
     if ( pstRpy->bReversedFit ) {
-        auto nInterval = ToInt32 (ToFloat ( matInputImg.rows ) / ToFloat ( DIVIDE_SECTION ) + 0.5f );
-        int nCurrentProcessedPos = 0;
-        while ( nCurrentProcessedPos < matInputImg.rows ) {
-            int nROISize = ( nCurrentProcessedPos + nInterval ) < matInputImg.rows ? nInterval : matInputImg.rows - nCurrentProcessedPos;
-            cv::Mat matSubROI ( matInputImg, cv::Rect ( 0, nCurrentProcessedPos, COLS, nROISize ) );
+        auto fInterval = ToFloat ( ROWS ) / ToFloat ( nCaliperCount );        
+        for ( int nCaliperNo = 0; nCaliperNo < nCaliperCount; ++ nCaliperNo ) {
+            int nCurrentProcessedPos = ToInt32 ( fInterval * nCaliperNo + fInterval / 2.f );
+            int nROISizeBegin = nCurrentProcessedPos - ToInt32 ( fCaliperWidth / 2.f );
+            if ( nROISizeBegin < 0 ) nROISizeBegin = 0;
+            int nROISizeEnd   = nCurrentProcessedPos + ToInt32 ( fCaliperWidth / 2.f );
+            if ( nROISizeEnd > matInputImg.rows ) nROISizeEnd = ROWS;
+            cv::Mat matSubROI ( matInputImg, cv::Rect ( 0, nROISizeBegin, COLS, nROISizeEnd - nROISizeBegin ) );
             int nJumpPos = _findMaxDiffPosInX ( matSubROI, matGuassinKernel, enDirection );
-            if ( nJumpPos > 0 ) {
-                if ( nCurrentProcessedPos == 0 )
-                    vecFitPoint.emplace_back ( nJumpPos, nCurrentProcessedPos );
-                else if ( ( nCurrentProcessedPos + nInterval ) >= matInputImg.rows )
-                    vecFitPoint.emplace_back ( nJumpPos, matInputImg.rows - 1 );
-                else
-                    vecFitPoint.push_back ( cv::Point ( nJumpPos, ToInt32 ( nCurrentProcessedPos + nInterval / 2.f + 0.5f ) ) );
-
-                if ( ! matROIMask.empty() && matROIMask.at<uchar>(vecFitPoint.back()) == 0 )
-                    vecFitPoint.pop_back();
+            if ( nJumpPos > 0 ) {                
+                vecFitPoint.emplace_back (nJumpPos, nCurrentProcessedPos );
+                if (!matROIMask.empty () && matROIMask.at<uchar> ( vecFitPoint.back () ) == 0)
+                    vecFitPoint.pop_back ();
             }
-            nCurrentProcessedPos += nInterval;
         }
     }else {
         cv::transpose ( matGuassinKernel, matGuassinKernel );
-        int nInterval = ToInt32 ( ToFloat ( matInputImg.cols ) / ToFloat ( DIVIDE_SECTION ) + 0.5f );
+        auto fInterval = ToFloat ( COLS ) / ToFloat ( nCaliperCount );  
         int nCurrentProcessedPos = 0;
-        while ( nCurrentProcessedPos < matInputImg.cols ) {
-            int nROISize = ( nCurrentProcessedPos + nInterval ) < matInputImg.cols ? nInterval : matInputImg.cols - nCurrentProcessedPos;
-            cv::Mat matSubROI ( matInputImg, cv::Rect ( nCurrentProcessedPos, 0, nROISize , ROWS ) );
+        for ( int nCaliperNo = 0; nCaliperNo < nCaliperCount; ++ nCaliperNo ) {
+            int nCurrentProcessedPos = ToInt32 ( fInterval * nCaliperNo + fInterval / 2.f );
+            int nROISizeBegin = nCurrentProcessedPos - ToInt32 ( fCaliperWidth / 2.f );
+            if ( nROISizeBegin < 0 ) nROISizeBegin = 0;
+            int nROISizeEnd   = nCurrentProcessedPos + ToInt32 ( fCaliperWidth / 2.f );
+            if ( nROISizeEnd > matInputImg.cols ) nROISizeEnd = COLS;
+            cv::Mat matSubROI ( matInputImg, cv::Rect ( nROISizeBegin, 0, nROISizeEnd - nROISizeBegin, ROWS ) );
             int nJumpPos = _findMaxDiffPosInY ( matSubROI, matGuassinKernel, enDirection );
-            if ( nJumpPos > 0 ) {
-                if ( nCurrentProcessedPos == 0 )
-                    vecFitPoint.emplace_back ( nCurrentProcessedPos, nJumpPos );
-                else if ( ( nCurrentProcessedPos + nInterval ) >= matInputImg.cols )
-                    vecFitPoint.emplace_back (  matInputImg.cols - 1, nJumpPos );
-                else
-                    vecFitPoint.emplace_back ( ToInt32 ( nCurrentProcessedPos + nInterval / 2.f + 0.5f ), nJumpPos );
+            if ( nJumpPos > 0 ) {               
+                vecFitPoint.emplace_back ( nCurrentProcessedPos, nJumpPos );
                 if ( ! matROIMask.empty() && matROIMask.at<uchar>(vecFitPoint.back()) == 0 )
                     vecFitPoint.pop_back();
             }
-            nCurrentProcessedPos += nInterval;
         }
     }
 
@@ -2859,7 +2872,7 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
 
     if ( pstCmd->nCaliperCount < 3 ) {
         char chArrMsg[1000];
-        _snprintf( chArrMsg, sizeof( chArrMsg ), "The caliper count %d is less than 3.", pstCmd->nCaliperCount );
+        _snprintf( chArrMsg, sizeof( chArrMsg ), "The circle caliper count %d is less than 3.", pstCmd->nCaliperCount );
         WriteLog(chArrMsg);
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return pstRpy->enStatus;
@@ -2867,7 +2880,7 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
 
     if ( pstCmd->fCaliperWidth < 3 ) {
         char chArrMsg[1000];
-        _snprintf( chArrMsg, sizeof( chArrMsg ), "The caliper width %f is less than 3.", pstCmd->fCaliperWidth );
+        _snprintf( chArrMsg, sizeof( chArrMsg ), "The circle caliper width %f is less than 3.", pstCmd->fCaliperWidth );
         WriteLog(chArrMsg);
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return pstRpy->enStatus;
@@ -2914,11 +2927,11 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
 
         cv::Mat matROI;
         _extractRotatedROI ( matGray, rotatedRectROI, matROI );
-        PR_CALIPER_DIR enDir = PR_CALIPER_DIR::MIN_TO_MAX;
+        PR_CALIPER_DIR enDir = PR_CALIPER_DIR::DARK_TO_BRIGHT;
         if ( PR_OBJECT_ATTRIBUTE::BRIGHT == pstCmd->enObjAttribute )
-            enDir = PR_CALIPER_DIR::MAX_TO_MIN;
+            enDir = PR_CALIPER_DIR::BRIGHT_TO_DARK;
         else if ( PR_OBJECT_ATTRIBUTE::DARK == pstCmd->enObjAttribute )
-            enDir = PR_CALIPER_DIR::MIN_TO_MAX;
+            enDir = PR_CALIPER_DIR::DARK_TO_BRIGHT;
 
         int nJumpPos = _findMaxDiffPosInX ( matROI, matGuassinKernel, enDir );
 

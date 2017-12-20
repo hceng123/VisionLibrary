@@ -672,11 +672,11 @@ CALIPER GUASSIAN DIFF REGRESSION TEST #1 STARTING
 -------------------------------------------------
 Caliper status 0
 ReversedFit = 1
-Line slope = 0.01, intercept = 415.80
-Line coordinate: (425.55, 732.00), (432.63, 1263.00)
+Line slope = 0.01, intercept = 416.19
+Line coordinate: (425.83, 745.00), (432.37, 1250.00)
 Linerity  = 100.00
 Linerity check pass: 1
-Angle  = 89.24
+Angle  = 89.26
 Angle check pass: 1
 
 -------------------------------------------------
@@ -684,11 +684,11 @@ CALIPER GUASSIAN DIFF REGRESSION TEST #2 STARTING
 -------------------------------------------------
 Caliper status 0
 ReversedFit = 1
-Line slope = 0.02, intercept = 763.09
-Line coordinate: (781.25, 744.00), (796.65, 1375.00)
+Line slope = 0.02, intercept = 773.48
+Line coordinate: (786.14, 759.00), (796.16, 1360.00)
 Linerity  = 100.00
 Linerity check pass: 1
-Angle  = 88.60
+Angle  = 89.04
 Angle check pass: 1
 
 -------------------------------------------------
@@ -696,11 +696,11 @@ CALIPER GUASSIAN DIFF REGRESSION TEST #3 STARTING
 -------------------------------------------------
 Caliper status 0
 ReversedFit = 0
-Line slope = -0.01, intercept = 1327.45
-Line coordinate: (998.00, 1318.62), (1213.00, 1316.72)
+Line slope = -0.01, intercept = 1324.62
+Line coordinate: (1003.00, 1318.42), (1218.00, 1317.08)
 Linerity  = 100.00
 Linerity check pass: 1
-Angle  = -0.51
+Angle  = -0.35
 Angle check pass: 1
 
 -------------------------------------------------
@@ -708,11 +708,11 @@ CALIPER GUASSIAN DIFF REGRESSION TEST #4 STARTING
 -------------------------------------------------
 Caliper status 0
 ReversedFit = 0
-Line slope = -0.01, intercept = 1870.49
-Line coordinate: (952.00, 1860.78), (1139.00, 1858.87)
-Linerity  = 95.24
+Line slope = -0.02, intercept = 1876.61
+Line coordinate: (956.00, 1861.79), (1135.00, 1859.01)
+Linerity  = 100.00
 Linerity check pass: 1
-Angle  = -0.58
+Angle  = -0.89
 Angle check pass: 1
 
 -----------------------------------------------
@@ -720,11 +720,11 @@ CALIPER ROTATED ROI REGRESSION TEST #1 STARTING
 -----------------------------------------------
 Caliper status 0
 ReversedFit = 0
-Line slope = -2.24, intercept = 311.80
-Line coordinate: (64.80, 166.86), (105.30, 76.25)
+Line slope = -2.27, intercept = 313.24
+Line coordinate: (65.39, 164.94), (103.80, 77.83)
 Linerity  = 100.00
 Linerity check pass: 1
-Angle  = -65.91
+Angle  = -66.21
 Angle check pass: 1
 
 -----------------------------------------------
@@ -756,12 +756,19 @@ CALIPER ROTATED ROI REGRESSION TEST #5 STARTING
 -----------------------------------------------
 Caliper status 0
 ReversedFit = 0
-Line slope = -0.21, intercept = 354.13
-Line coordinate: (284.57, 294.68), (581.17, 232.72)
+Line slope = -0.21, intercept = 354.43
+Line coordinate: (282.62, 295.12), (573.29, 234.11)
 Linerity  = 100.00
 Linerity check pass: 1
-Angle  = -11.80
+Angle  = -11.85
 Angle check pass: 1
+
+-------------------------------------------------
+CALIPER DETECT CIRCLE REGRESSION TEST #1 STARTING
+-------------------------------------------------
+Detect circle status 0
+Radius = 95.11
+Circle center: (130.71, 128.69)
 
 ---------------------------------------------
 CALIBRATE CAMERA REGRESSION TEST #1 STARTING

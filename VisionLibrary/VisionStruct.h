@@ -296,6 +296,8 @@ struct PR_FIT_LINE_RPY {
 struct PR_CALIPER_CMD {
     PR_CALIPER_CMD() :
         enAlgorithm         ( PR_CALIPER_ALGORITHM::PROJECTION ),
+        nCaliperCount       (20),
+        fCaliperWidth       (30.f),
         bCheckLinerity      (false),
         fPointMaxOffset     (0.f),
         fMinLinerity        (0.f),
@@ -306,7 +308,9 @@ struct PR_CALIPER_CMD {
     cv::Mat                 matMask;
     cv::RotatedRect         rectRotatedROI;
     PR_CALIPER_ALGORITHM    enAlgorithm;
-    PR_CALIPER_DIR          enDetectDir;    //The explaination can be find in definition of PR_CALIPER_DIR.
+    PR_CALIPER_DIR          enDetectDir;        //The explaination can be find in definition of PR_CALIPER_DIR.
+    Int32                   nCaliperCount;      //How many caliper will be used to find line. It is used when the PR_CALIPER_ALGORITHM is SECTION_AVG_GAUSSIAN_DIFF.
+    float                   fCaliperWidth;      //The width of caliper. . It is used when the PR_CALIPER_ALGORITHM is SECTION_AVG_GAUSSIAN_DIFF.
     bool                    bCheckLinerity;
     float                   fPointMaxOffset;
     float                   fMinLinerity;
@@ -421,7 +425,7 @@ struct PR_DETECT_CIRCLE_CMD {
     float                   fMaxSrchRadius;
     float                   fStartSrchAngle;    //Start search angle, unit is degree, clockwise is positive, anticlockwise is negative.
     float                   fEndSrchAngle;      //End search angle, unit is degree, clockwise is positive, anticlockwise is negative.
-    int                     nCaliperCount;      //How many caliper will be used to detect circle.
+    Int32                   nCaliperCount;      //How many caliper will be used to detect circle.
     float                   fCaliperWidth;      //The width of caliper.
     PR_RM_FIT_NOISE_METHOD  enRmNoiseMethod;
     float                   fErrTol;

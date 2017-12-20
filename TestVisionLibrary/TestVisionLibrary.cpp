@@ -446,7 +446,7 @@ void TestCaliper() {
     cv::Rect rectROI(546, 320, 300, 100 );
     stCmd.rectRotatedROI.center = cv::Point ( rectROI.x + rectROI.width / 2, rectROI.y + rectROI.height / 2 );
     stCmd.rectRotatedROI.size = rectROI.size();
-    stCmd.enDetectDir = PR_CALIPER_DIR::MIN_TO_MAX;
+    stCmd.enDetectDir = PR_CALIPER_DIR::DARK_TO_BRIGHT;
     stCmd.bCheckLinerity = true;
     stCmd.fPointMaxOffset = 5;
     stCmd.fMinLinerity = 60.;

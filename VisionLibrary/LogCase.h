@@ -209,6 +209,8 @@ private:
     const String _strKeyRoiSize         = "RoiSize";
     const String _strKeyRoiAngle        = "RoiAngle";
     const String _strKeyAlgorithm       = "Algorithm";
+    const String _strKeyCaliperCount    = "CaliperCount";
+    const String _strKeyCaliperWidth    = "CaliperWidth";
     const String _strKeyDir             = "Direction";
     const String _strKeyCheckLinerity   = "CheckLinerity";
     const String _strKeyPointMaxOffset  = "PointMaxOffset";
