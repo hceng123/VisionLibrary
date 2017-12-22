@@ -1485,8 +1485,8 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
     if (LogCaseFitCircle::StaticGetFolderPrefix() == strFolderPrefix)
         return std::make_unique <LogCaseFitCircle>( strLocalPath, true );
 
-    if (LogCaseDetectCircle::StaticGetFolderPrefix() == strFolderPrefix)
-        return std::make_unique <LogCaseDetectCircle>( strLocalPath, true );
+    if (LogCaseFindCircle::StaticGetFolderPrefix() == strFolderPrefix)
+        return std::make_unique <LogCaseFindCircle>( strLocalPath, true );
 
     if (LogCaseFitLine::StaticGetFolderPrefix() == strFolderPrefix)
         return std::make_unique<LogCaseFitLine>( strLocalPath, true );
@@ -2837,7 +2837,7 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     return vecResult;
 }
 
-/*static*/ VisionStatus VisionAlgorithm::detectCircle(const PR_DETECT_CIRCLE_CMD *const pstCmd, PR_DETECT_CIRCLE_RPY *const pstRpy, bool bReplay /*= false*/) {
+/*static*/ VisionStatus VisionAlgorithm::findCircle(const PR_FIND_CIRCLE_CMD *const pstCmd, PR_FIND_CIRCLE_RPY *const pstRpy, bool bReplay /*= false*/) {
     assert ( pstCmd != nullptr && pstRpy != nullptr );
 
     if (pstCmd->matInputImg.empty()) {
@@ -2887,7 +2887,7 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     }
 
     MARK_FUNCTION_START_TIME;
-    SETUP_LOGCASE(LogCaseDetectCircle);
+    SETUP_LOGCASE(LogCaseFindCircle);
 
     cv::Mat matGray = pstCmd->matInputImg;
     if ( pstCmd->matInputImg.channels() == 3 )
@@ -2947,7 +2947,7 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     if ( pstRpy->fRadius > 0.f )
         pstRpy->enStatus = VisionStatus::OK;
     else {
-        WriteLog("Too much noise to fit the circle in detectCircle.");
+        WriteLog("Too much noise to fit the circle in findCircle.");
         pstRpy->enStatus = VisionStatus::TOO_MUCH_NOISE_TO_FIT;
     }
 

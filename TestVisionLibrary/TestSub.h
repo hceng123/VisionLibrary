@@ -48,7 +48,7 @@ void TestParallelLineDistance_3();
 
 void TestLineIntersect();
 void TestCrossSectionArea();
-void TestDetectCircle();
+void TestFindCircle();
 
 template<class T>
 void printfMat(const cv::Mat &mat)

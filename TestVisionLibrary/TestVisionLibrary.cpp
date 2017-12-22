@@ -699,7 +699,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
     //TestCrossSectionArea();
 
-    TestDetectCircle();
+    TestFindCircle();
 
     PR_DumpTimeLog("./Vision/Time.log");
     std::cout << "Press any key to exit." << std::endl;

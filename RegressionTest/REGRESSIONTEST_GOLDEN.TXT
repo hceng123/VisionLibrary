@@ -764,7 +764,7 @@ Angle  = -11.85
 Angle check pass: 1
 
 -------------------------------------------------
-CALIPER DETECT CIRCLE REGRESSION TEST #1 STARTING
+CALIPER FIND CIRCLE REGRESSION TEST #1 STARTING
 -------------------------------------------------
 Detect circle status 0
 Radius = 95.11

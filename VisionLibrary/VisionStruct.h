@@ -412,8 +412,8 @@ struct PR_FIT_CIRCLE_RPY {
 };
 
 //Use caliper method to find the circle.
-struct PR_DETECT_CIRCLE_CMD {
-    PR_DETECT_CIRCLE_CMD() :
+struct PR_FIND_CIRCLE_CMD {
+    PR_FIND_CIRCLE_CMD() :
         fStartSrchAngle(0.f),
         fEndSrchAngle(0.f),
         nCaliperCount(20),
@@ -431,7 +431,7 @@ struct PR_DETECT_CIRCLE_CMD {
     float                   fErrTol;
 };
 
-struct PR_DETECT_CIRCLE_RPY {
+struct PR_FIND_CIRCLE_RPY {
     VisionStatus            enStatus;
     cv::Point2f             ptCircleCtr;
     float                   fRadius;

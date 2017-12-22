@@ -126,12 +126,12 @@ private:
     const String _strKeyRadius          = "Radius";
 };
 
-class LogCaseDetectCircle : public LogCase
+class LogCaseFindCircle : public LogCase
 {
 public:
-    explicit LogCaseDetectCircle(const String &strPath, bool bReplay = false) : LogCase(strPath, bReplay) {}
-    VisionStatus WriteCmd(const PR_DETECT_CIRCLE_CMD *const pstCmd);
-    VisionStatus WriteRpy(const PR_DETECT_CIRCLE_RPY *const pstRpy);
+    explicit LogCaseFindCircle(const String &strPath, bool bReplay = false) : LogCase(strPath, bReplay) {}
+    VisionStatus WriteCmd(const PR_FIND_CIRCLE_CMD *const pstCmd);
+    VisionStatus WriteRpy(const PR_FIND_CIRCLE_RPY *const pstRpy);
     virtual VisionStatus RunLogCase() override;
     virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
     static String StaticGetFolderPrefix();

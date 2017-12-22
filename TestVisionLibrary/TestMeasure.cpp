@@ -184,9 +184,9 @@ void TestCrossSectionArea() {
     std::cout << "Area " << dArea << std::endl;
 }
 
-void TestDetectCircle() {
-    PR_DETECT_CIRCLE_CMD stCmd;
-    PR_DETECT_CIRCLE_RPY stRpy;   
+void TestFindCircle() {
+    PR_FIND_CIRCLE_CMD stCmd;
+    PR_FIND_CIRCLE_RPY stRpy;   
 
     stCmd.matInputImg = cv::imread ("./data/CaliperImage.bmp", cv::IMREAD_GRAYSCALE );
     //cv::Mat matImage = 255 - stCmd.matInputImg;
@@ -200,6 +200,6 @@ void TestDetectCircle() {
     stCmd.enRmNoiseMethod = PR_RM_FIT_NOISE_METHOD::NEGATIVE_ERR;
     stCmd.fErrTol = 1;
 
-    PR_DetectCircle ( &stCmd, &stRpy );
+    PR_FindCircle ( &stCmd, &stRpy );
     cv::imwrite ("./data/DetectCircleResult.png", stRpy.matResultImg );
 }

@@ -276,7 +276,7 @@ void TestCaliperRoatedROI() {
     PrintRpy(stRpy);
 }
 
-static void PrintDetectCircleRpy(const PR_DETECT_CIRCLE_RPY &stRpy)    {
+static void PrintDetectCircleRpy(const PR_FIND_CIRCLE_RPY &stRpy)    {
     char chArrMsg[100];
     std::cout << "Detect circle status " << ToInt32 ( stRpy.enStatus ) << std::endl;
     std::cout << std::fixed << std::setprecision ( 2 ) << "Radius = " << stRpy.fRadius << std::endl;
@@ -284,12 +284,12 @@ static void PrintDetectCircleRpy(const PR_DETECT_CIRCLE_RPY &stRpy)    {
     std::cout << "Circle center: " << chArrMsg << std::endl;
 };
 
-void TestDetectCircle() {
-    PR_DETECT_CIRCLE_CMD stCmd;
-    PR_DETECT_CIRCLE_RPY stRpy;   
+void TestFindCircle() {
+    PR_FIND_CIRCLE_CMD stCmd;
+    PR_FIND_CIRCLE_RPY stRpy;
 
     std::cout << std::endl << "-------------------------------------------------";
-    std::cout << std::endl << "CALIPER DETECT CIRCLE REGRESSION TEST #1 STARTING";
+    std::cout << std::endl << "CALIPER FIND CIRCLE REGRESSION TEST #1 STARTING";
     std::cout << std::endl << "-------------------------------------------------";
     std::cout << std::endl;
 
@@ -305,7 +305,7 @@ void TestDetectCircle() {
     stCmd.enRmNoiseMethod = PR_RM_FIT_NOISE_METHOD::ABSOLUTE_ERR;
     stCmd.fErrTol = 1;
 
-    PR_DetectCircle ( &stCmd, &stRpy );
+    PR_FindCircle ( &stCmd, &stRpy );
     PrintDetectCircleRpy ( stRpy );
 }
 
@@ -313,7 +313,7 @@ void TestCaliper() {
     TestCaliperProjection();
     TestCaliperSectionAvgGuassianDiff();
     TestCaliperRoatedROI();
-    TestDetectCircle();
+    TestFindCircle();
 }
 
 }

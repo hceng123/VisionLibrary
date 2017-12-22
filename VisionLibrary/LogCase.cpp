@@ -320,11 +320,11 @@ VisionStatus LogCaseFitCircle::RunLogCase() {
     return enStatus;
 }
 
-/*static*/ String LogCaseDetectCircle::StaticGetFolderPrefix() {
-    return "DetectCircle";
+/*static*/ String LogCaseFindCircle::StaticGetFolderPrefix() {
+    return "FindCircle";
 }
 
-VisionStatus LogCaseDetectCircle::WriteCmd(const PR_DETECT_CIRCLE_CMD *const pstCmd) {
+VisionStatus LogCaseFindCircle::WriteCmd(const PR_FIND_CIRCLE_CMD *const pstCmd) {
     if ( !_bReplay ) {
         _strLogCasePath = _generateLogCaseName(GetFolderPrefix());
         bfs::path dir(_strLogCasePath);
@@ -349,7 +349,7 @@ VisionStatus LogCaseDetectCircle::WriteCmd(const PR_DETECT_CIRCLE_CMD *const pst
     return VisionStatus::OK;
 }
 
-VisionStatus LogCaseDetectCircle::WriteRpy(const PR_DETECT_CIRCLE_RPY *const pstRpy) {
+VisionStatus LogCaseFindCircle::WriteRpy(const PR_FIND_CIRCLE_RPY *const pstRpy) {
     CSimpleIni ini(false, false, false);
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile( cmdRpyFilePath.c_str() );
@@ -363,9 +363,9 @@ VisionStatus LogCaseDetectCircle::WriteRpy(const PR_DETECT_CIRCLE_RPY *const pst
     return VisionStatus::OK;
 }
 
-VisionStatus LogCaseDetectCircle::RunLogCase() {
-    PR_DETECT_CIRCLE_CMD stCmd;
-    PR_DETECT_CIRCLE_RPY stRpy;
+VisionStatus LogCaseFindCircle::RunLogCase() {
+    PR_FIND_CIRCLE_CMD stCmd;
+    PR_FIND_CIRCLE_RPY stRpy;
     VisionStatus enStatus;
 
     CSimpleIni ini(false, false, false);
@@ -384,7 +384,7 @@ VisionStatus LogCaseDetectCircle::RunLogCase() {
     stCmd.enRmNoiseMethod = static_cast<PR_RM_FIT_NOISE_METHOD> ( ini.GetLongValue ( _CMD_SECTION.c_str(), _strKeyRmNoiseMethod.c_str(), 0 ) );
     stCmd.fErrTol = (float)ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyErrorTol.c_str(), 0 );
     
-    enStatus = VisionAlgorithm::detectCircle( &stCmd, &stRpy, true );
+    enStatus = VisionAlgorithm::findCircle( &stCmd, &stRpy, true );
 
     WriteRpy( &stRpy );
     return enStatus;
