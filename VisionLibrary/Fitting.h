@@ -131,7 +131,7 @@ public:
         size_t nMaxConsentNum = 0;
 
         while (nRansacTime < maxRansacTime) {
-            VectorOfPoint vecSelectedPoints = randomSelectPoints ( vecPoints, RANSAC_CIRCLE_POINT );
+            auto vecSelectedPoints = randomSelectPoints ( vecPoints, RANSAC_CIRCLE_POINT );
             cv::RotatedRect rectReult = Fitting::fitCircle ( vecSelectedPoints );
             vecSelectedPoints = findPointsInCircleTol ( vecPoints, rectReult, tolerance );
 
@@ -215,6 +215,112 @@ public:
             fSlope = static_cast<float>((n * Sxy - Sx * Sy) / (n * Sx2 - Sx * Sx));
             fIntercept = static_cast<float>((Sy * Sx2 - Sx * Sxy) / (n * Sx2 - Sx * Sx));
         }
+    }
+
+    template<typename T>
+    static void fitLineRansac(const T  &vecPoints,
+                              float     fTolerance,
+                            int                  nMaxRansacTime,
+                            size_t               nFinishThreshold,
+                            bool                 bReversedFit,
+                            float               &fSlope,
+                            float               &fIntercept,
+                            PR_Line2f           &stLine )
+    {
+        int nRansacTime = 0;
+        const int LINE_RANSAC_POINT = 2;
+        size_t nMaxConsentNum = 0;
+
+        while (nRansacTime < nMaxRansacTime) {
+            auto vecSelectedPoints = randomSelectPoints ( vecPoints, LINE_RANSAC_POINT );
+            Fitting::fitLine ( vecSelectedPoints, fSlope, fIntercept, bReversedFit );
+            vecSelectedPoints = findPointInLineTol ( vecPoints, bReversedFit, fSlope, fIntercept, fTolerance );
+
+            if ( vecSelectedPoints.size () >= nFinishThreshold ) {
+                Fitting::fitLine ( vecSelectedPoints, fSlope, fIntercept, bReversedFit );
+                stLine = CalcUtils::calcEndPointOfLine ( vecSelectedPoints, bReversedFit, fSlope, fIntercept );
+                return;
+            }
+
+            if (vecSelectedPoints.size () > nMaxConsentNum) {
+                Fitting::fitLine ( vecSelectedPoints, fSlope, fIntercept, bReversedFit );
+                stLine = CalcUtils::calcEndPointOfLine ( vecSelectedPoints, bReversedFit, fSlope, fIntercept );
+                nMaxConsentNum = vecSelectedPoints.size ();
+            }
+            ++nRansacTime;
+        }
+    }
+
+    template<typename T>
+    static VisionStatus fitLineRefine(const T                &vecPoints,
+                                      PR_RM_FIT_NOISE_METHOD  enRmNoiseMethod,
+                                      float                   fTolerance,
+                                      bool                    bReversedFit,
+                                      float                  &fSlope,
+                                      float                  &fIntercept,
+                                      PR_Line2f              &stLine )
+    {
+        ListOfPoint2f listPoint;
+        for (const auto &point : vecPoints)
+            listPoint.push_back ( point );
+
+        int nIteratorNum = 0;
+        std::vector<ListOfPoint2f::const_iterator> vecOverTolIter;
+        do {
+            for (const auto &it : vecOverTolIter)
+                listPoint.erase ( it );
+
+            Fitting::fitLine ( listPoint, fSlope, fIntercept, bReversedFit );
+            vecOverTolIter = findPointIterOverLineTol ( listPoint.cbegin(), listPoint.cend(), bReversedFit, fSlope, fIntercept, enRmNoiseMethod, fTolerance );
+        } while (!vecOverTolIter.empty () && nIteratorNum < 20);
+
+        if ( listPoint.size () < 2 )
+            return VisionStatus::TOO_MUCH_NOISE_TO_FIT;
+
+        stLine = CalcUtils::calcEndPointOfLine ( listPoint, bReversedFit, fSlope, fIntercept );
+        return VisionStatus::OK;
+    }
+
+    template<typename T>
+    static T findPointInLineTol(const T &   vecPoint,
+                                bool        bReversedFit,
+                                const float fSlope,
+                                const float fIntercept,
+                                float       fTolerance )
+    {
+        T vecPointInTol;
+        for (const auto &point : vecPoint) {
+            auto disToLine = CalcUtils::ptDisToLine ( point, bReversedFit, fSlope, fIntercept );
+            if (fabs ( disToLine ) <= fTolerance)
+                vecPointInTol.push_back ( point );
+        }
+        return vecPointInTol;
+    }
+
+    template<typename T>
+    static std::vector<T> findPointIterOverLineTol( T                        begin,
+                                                    T                        end,
+                                                    bool                     bReversedFit,
+                                                    const float              fSlope,
+                                                    const float              fIntercept,
+                                                    PR_RM_FIT_NOISE_METHOD   method,
+                                                    float                    tolerance )
+    {
+        std::vector<T> vecResult;
+        for (auto it = begin; it != end; ++it)  {
+            cv::Point2f point = *it;
+            auto disToLine = CalcUtils::ptDisToLine ( point, bReversedFit, fSlope, fIntercept );
+            if (PR_RM_FIT_NOISE_METHOD::ABSOLUTE_ERR == method && fabs ( disToLine ) > tolerance)  {
+                vecResult.push_back ( it );
+            }
+            else if (PR_RM_FIT_NOISE_METHOD::POSITIVE_ERR == method && disToLine > tolerance) {
+                vecResult.push_back ( it );
+            }
+            else if (PR_RM_FIT_NOISE_METHOD::NEGATIVE_ERR == method && disToLine < -tolerance) {
+                vecResult.push_back ( it );
+            }
+        }
+        return vecResult;
     }
 
     template<typename T>

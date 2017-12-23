@@ -256,7 +256,10 @@ struct PR_SRCH_FIDUCIAL_MARK_RPY {
 
 //Fit line is for accurately fit line in the preprocessed image, the line should be obvious compared to the background.
 struct PR_FIT_LINE_CMD {
-    PR_FIT_LINE_CMD() : enMethod ( PR_FIT_METHOD::LEAST_SQUARE_REFINE ), bPreprocessed ( false ), nMaxRansacTime(20) {}
+    PR_FIT_LINE_CMD() : 
+        enMethod        ( PR_FIT_METHOD::LEAST_SQUARE_REFINE ),
+        bPreprocessed   ( false ),
+        nMaxRansacTime  (20) {}
     cv::Mat                 matInputImg;
     cv::Mat                 matMask;
     cv::Rect                rectROI;
@@ -277,6 +280,30 @@ struct PR_FIT_LINE_RPY {
     float                   fIntercept;
     PR_Line2f               stLine;
     cv::Mat                 matResultImg;
+};
+
+struct PR_FIT_LINE_BY_POINT_CMD {
+    PR_FIT_LINE_BY_POINT_CMD() : 
+        enMethod        ( PR_FIT_METHOD::LEAST_SQUARE_REFINE ),
+        bPreprocessed   ( false ),
+        nMaxRansacTime  (20) {}
+    VectorOfPoint2f         vecPoints;
+    PR_FIT_METHOD           enMethod;
+    bool                    bPreprocessed;
+    Int32                   nThreshold;
+    PR_OBJECT_ATTRIBUTE     enAttribute;
+    PR_RM_FIT_NOISE_METHOD  enRmNoiseMethod;
+    float                   fErrTol;
+    int                     nMaxRansacTime;             //Only used when fitting method is ransac.
+    int                     nNumOfPtToFinishRansac;     //Only used when fitting method is ransac.
+};
+
+struct PR_FIT_LINE_BY_POINT_RPY {
+    VisionStatus            enStatus;
+    bool                    bReversedFit;   //If it is true, then the result is x = fSlope * y + fIntercept. Otherwise the line is y = fSlope * x + fIntercept.
+    float                   fSlope;
+    float                   fIntercept;
+    PR_Line2f               stLine;
 };
 
 // Detect line is find the lines in the image.
@@ -411,6 +438,26 @@ struct PR_FIT_CIRCLE_RPY {
     cv::Mat                 matResultImg;
 };
 
+//The PR_FitCircle command suitable to fit the circle after use Canny or Sobel edge detector find the rough circle.
+struct PR_FIT_CIRCLE_BY_POINT_CMD {
+    VectorOfPoint2f         vecPoints;
+    PR_FIT_METHOD           enMethod;
+    PR_RM_FIT_NOISE_METHOD  enRmNoiseMethod;
+    float                   fErrTol;
+    bool                    bPreprocessed;
+    bool                    bAutoThreshold;
+    Int32                   nThreshold;
+    PR_OBJECT_ATTRIBUTE     enAttribute;
+    int                     nMaxRansacTime;             //Only used when fitting method is ransac.
+    int                     nNumOfPtToFinishRansac;     //Only used when fitting method is ransac.
+};
+
+struct PR_FIT_CIRCLE_BY_POINT_RPY {
+    VisionStatus            enStatus;
+    cv::Point2f             ptCircleCtr;
+    float                   fRadius;
+};
+
 //Use caliper method to find the circle.
 struct PR_FIND_CIRCLE_CMD {
     PR_FIND_CIRCLE_CMD() :
@@ -488,7 +535,7 @@ struct PR_TWO_LINE_ANGLE_CMD {
 };
 
 struct PR_TWO_LINE_ANGLE_RPY {
-    float                   fAngle;    
+    float                   fAngle;
 };
 
 struct PR_TWO_LINE_INTERSECT_CMD {

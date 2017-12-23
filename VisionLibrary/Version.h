@@ -13,9 +13,12 @@
  *
  * Copyright (c) 2016-2016, Xiao Shengguang.  All rights reserved.
  ****************************************************************************/
+//2017-12-20 (XSG) Add PR_FindCircle function.
+//2017-12-23 (XSG) Add PR_FitLineByPoint and PR_FitCircleByPoint functions.
+#define AOI_VISION_VERSION          "1.00.18"
 
 //2017-12-08 (XSG) Fix interval didn't return correct range size problem.
-#define AOI_VISION_VERSION          "1.00.17"
+//#define AOI_VISION_VERSION          "1.00.17"
 
 //2017-12-02 (XSG) Auto offset the phase measure range.
 //#define AOI_VISION_VERSION          "1.00.16"

@@ -1785,8 +1785,7 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
     return vecResult;
 }
 
-/*static*/ VisionStatus VisionAlgorithm::fitLine(const PR_FIT_LINE_CMD *const pstCmd, PR_FIT_LINE_RPY *const pstRpy, bool bReplay /*= false*/ )
-{
+/*static*/ VisionStatus VisionAlgorithm::fitLine(const PR_FIT_LINE_CMD *const pstCmd, PR_FIT_LINE_RPY *const pstRpy, bool bReplay /*= false*/ ) {
     assert ( pstCmd != nullptr && pstRpy != nullptr );
     char chArrMsg[1000];
 
@@ -1796,16 +1795,8 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
         return pstRpy->enStatus;
     }
     
-    if (pstCmd->rectROI.x < 0 || pstCmd->rectROI.y < 0 ||
-        pstCmd->rectROI.width <= 0 || pstCmd->rectROI.height <= 0 ||
-        ( pstCmd->rectROI.x + pstCmd->rectROI.width ) > pstCmd->matInputImg.cols ||
-        ( pstCmd->rectROI.y + pstCmd->rectROI.height ) > pstCmd->matInputImg.rows ) {
-        _snprintf( chArrMsg, sizeof( chArrMsg ), "The ROI rect (%d, %d, %d, %d) is invalid",
-            pstCmd->rectROI.x, pstCmd->rectROI.y, pstCmd->rectROI.width, pstCmd->rectROI.height );
-        WriteLog(chArrMsg);
-        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
-        return pstRpy->enStatus;
-    }
+    pstRpy->enStatus = _checkInputROI ( pstCmd->rectROI, pstCmd->matInputImg, AT );
+    if ( VisionStatus::OK != pstRpy->enStatus ) return pstRpy->enStatus;
 
     if ( ! pstCmd->matMask.empty() ) {
         if ( pstCmd->matMask.rows != pstCmd->matInputImg.rows || pstCmd->matMask.cols != pstCmd->matInputImg.cols ) {
@@ -1884,9 +1875,9 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
         pstRpy->bReversedFit = true;
 
     if ( PR_FIT_METHOD::RANSAC == pstCmd->enMethod ) {
-        _fitLineRansac ( vecPoints, pstCmd->fErrTol, pstCmd->nMaxRansacTime, pstCmd->nNumOfPtToFinishRansac, pstRpy->bReversedFit, pstRpy->fSlope, pstRpy->fIntercept, pstRpy->stLine );
+        Fitting::fitLineRansac ( vecPoints, pstCmd->fErrTol, pstCmd->nMaxRansacTime, pstCmd->nNumOfPtToFinishRansac, pstRpy->bReversedFit, pstRpy->fSlope, pstRpy->fIntercept, pstRpy->stLine );
     }else if ( PR_FIT_METHOD::LEAST_SQUARE_REFINE == pstCmd->enMethod ) {
-        pstRpy->enStatus = _fitLineRefine ( vecPoints, pstCmd->enRmNoiseMethod, pstCmd->fErrTol, pstRpy->bReversedFit, pstRpy->fSlope, pstRpy->fIntercept, pstRpy->stLine );
+        pstRpy->enStatus = Fitting::fitLineRefine ( vecPoints, pstCmd->enRmNoiseMethod, pstCmd->fErrTol, pstRpy->bReversedFit, pstRpy->fSlope, pstRpy->fIntercept, pstRpy->stLine );
         if ( VisionStatus::OK != pstRpy->enStatus ) {
             FINISH_LOGCASE;
             return pstRpy->enStatus;
@@ -1900,7 +1891,53 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
     cv::line ( pstRpy->matResultImg, pstRpy->stLine.pt1, pstRpy->stLine.pt2, cv::Scalar(255,0,0), 2 );
     pstRpy->enStatus = VisionStatus::OK;
 
-    FINISH_LOGCASE;    
+    FINISH_LOGCASE;
+    MARK_FUNCTION_END_TIME;
+    return pstRpy->enStatus;
+}
+
+/*static*/ VisionStatus VisionAlgorithm::fitLineByPoint(const PR_FIT_LINE_BY_POINT_CMD *const pstCmd, PR_FIT_LINE_BY_POINT_RPY *const pstRpy, bool bReplay /*= false*/) {
+    assert ( pstCmd != nullptr && pstRpy != nullptr );
+
+    if ( pstCmd->vecPoints.size() < 2 ) {
+        WriteLog("The count of input points is less than 2.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    if ( pstCmd->vecPoints.size() > PR_FIT_LINE_MAX_POINT_COUNT ) {
+        char chArrMsg[1000];
+        _snprintf ( chArrMsg, sizeof(chArrMsg), "The count input points %d is more than limit 10000.", pstCmd->vecPoints.size() );
+        WriteLog(chArrMsg);
+        pstRpy->enStatus = VisionStatus::TOO_MUCH_NOISE_TO_FIT;
+        return pstRpy->enStatus;
+    }
+
+    MARK_FUNCTION_START_TIME;
+
+    VectorOfFloat vecX, vecY;
+    for ( auto &point : pstCmd->vecPoints ) {
+        vecX.push_back ( point.x );
+        vecY.push_back ( point.y );
+    }
+
+    //For y = kx + b, the k is the slope, when it is very large, the error is quite big, so change
+    //to get the x = k1 + b1, and get the k = 1 / k1, b = -b1 / k1. Then the result is more accurate.
+    pstRpy->bReversedFit = false;
+    if ( CalcUtils::calcStdDeviation ( vecY ) > CalcUtils::calcStdDeviation ( vecX ) )
+        pstRpy->bReversedFit = true;
+
+    if ( PR_FIT_METHOD::RANSAC == pstCmd->enMethod ) {
+        Fitting::fitLineRansac ( pstCmd->vecPoints, pstCmd->fErrTol, pstCmd->nMaxRansacTime, pstCmd->nNumOfPtToFinishRansac, pstRpy->bReversedFit, pstRpy->fSlope, pstRpy->fIntercept, pstRpy->stLine );
+    }else if ( PR_FIT_METHOD::LEAST_SQUARE_REFINE == pstCmd->enMethod ) {
+        pstRpy->enStatus = Fitting::fitLineRefine ( pstCmd->vecPoints, pstCmd->enRmNoiseMethod, pstCmd->fErrTol, pstRpy->bReversedFit, pstRpy->fSlope, pstRpy->fIntercept, pstRpy->stLine );
+    }else if ( PR_FIT_METHOD::LEAST_SQUARE == pstCmd->enMethod ) {
+        Fitting::fitLine ( pstCmd->vecPoints, pstRpy->fSlope, pstRpy->fIntercept, pstRpy->bReversedFit );
+        pstRpy->stLine = CalcUtils::calcEndPointOfLine ( pstCmd->vecPoints, pstRpy->bReversedFit, pstRpy->fSlope, pstRpy->fIntercept );
+    }
+    
+    pstRpy->enStatus = VisionStatus::OK;
+
     MARK_FUNCTION_END_TIME;
     return pstRpy->enStatus;
 }
@@ -2822,6 +2859,52 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     cv::circle ( pstRpy->matResultImg, pstRpy->ptCircleCtr, (int)pstRpy->fRadius, _constBlueScalar, 2);
 
     FINISH_LOGCASE;
+    MARK_FUNCTION_END_TIME;
+    return pstRpy->enStatus;
+}
+
+/*static*/ VisionStatus VisionAlgorithm::fitCircleByPoint(const PR_FIT_CIRCLE_BY_POINT_CMD *const pstCmd, PR_FIT_CIRCLE_BY_POINT_RPY *const pstRpy, bool bReplay /*= false*/) {
+    assert ( pstCmd != nullptr && pstRpy != nullptr );
+
+    if (PR_FIT_METHOD::RANSAC == pstCmd->enMethod && (1000 <= pstCmd->nMaxRansacTime || pstCmd->nMaxRansacTime <= 0)) {
+        char chArrMsg [ 1000 ];
+        _snprintf(chArrMsg, sizeof(chArrMsg), "Max Ransac time %d is invalid.", pstCmd->nMaxRansacTime);
+        WriteLog(chArrMsg);
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    if ( pstCmd->vecPoints.size() < 3 ) {
+        WriteLog("Not enough points to fit circle");
+        pstRpy->enStatus = VisionStatus::NOT_ENOUGH_POINTS_TO_FIT;
+        return pstRpy->enStatus;
+    }
+
+    if ( pstCmd->vecPoints.size() > PR_FIT_CIRCLE_MAX_POINT ) {
+        WriteLog("Too much points to fit circle");
+        pstRpy->enStatus = VisionStatus::TOO_MUCH_NOISE_TO_FIT;
+        return pstRpy->enStatus;
+    }
+
+    MARK_FUNCTION_START_TIME;
+
+    cv::RotatedRect fitResult;
+    if ( PR_FIT_METHOD::RANSAC == pstCmd->enMethod )
+        fitResult = Fitting::fitCircleRansac ( pstCmd->vecPoints, pstCmd->fErrTol, pstCmd->nMaxRansacTime, pstCmd->vecPoints.size() / 2 );
+    else if (PR_FIT_METHOD::LEAST_SQUARE == pstCmd->enMethod)
+        fitResult = Fitting::fitCircle ( pstCmd->vecPoints );
+    else if ( PR_FIT_METHOD::LEAST_SQUARE_REFINE == pstCmd->enMethod  )
+        fitResult = Fitting::fitCircleIterate ( pstCmd->vecPoints, pstCmd->enRmNoiseMethod, pstCmd->fErrTol );
+
+    if ( fitResult.size.width <= 0 ) {
+        WriteLog("Failed to fit circle");
+        pstRpy->enStatus = VisionStatus::FAIL_TO_FIT_CIRCLE;
+        return pstRpy->enStatus;
+    }
+    pstRpy->ptCircleCtr = fitResult.center;
+    pstRpy->fRadius = fitResult.size.width / 2;
+    pstRpy->enStatus = VisionStatus::OK;
+
     MARK_FUNCTION_END_TIME;
     return pstRpy->enStatus;
 }
