@@ -31,6 +31,9 @@ void Test3D();
 void TestCalcCameraMTF();
 void TestPointLineDistance();
 void TestTwoLineAngle();
+void TestTwoLineIntersect();
+void TestParallelLineDistance();
+void TestCrossSectionArea();
 
 }
 }

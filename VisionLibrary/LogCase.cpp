@@ -252,8 +252,8 @@ VisionStatus LogCaseSrchObj::RunLogCase() {
     return "FitCircle";
 }
 
-VisionStatus LogCaseFitCircle::WriteCmd(PR_FIT_CIRCLE_CMD *pstCmd) {
-    if ( !_bReplay )    {
+VisionStatus LogCaseFitCircle::WriteCmd(const PR_FIT_CIRCLE_CMD *const pstCmd) {
+    if ( !_bReplay ) {
         _strLogCasePath = _generateLogCaseName(GetFolderPrefix());
         bfs::path dir(_strLogCasePath);
         bfs::create_directories(dir);
@@ -262,7 +262,7 @@ VisionStatus LogCaseFitCircle::WriteCmd(PR_FIT_CIRCLE_CMD *pstCmd) {
     CSimpleIni ini(false, false, false);
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile( cmdRpyFilePath.c_str() );
-    ini.SetValue(_CMD_SECTION.c_str(),     _strKeyROI.c_str(), _formatRect(pstCmd->rectROI).c_str());
+    ini.SetValue(_CMD_SECTION.c_str(), _strKeyROI.c_str(), _formatRect(pstCmd->rectROI).c_str());
     ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyMethod.c_str(), static_cast<long>(pstCmd->enMethod) );
     ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyRmNoiseMethod.c_str(), static_cast<long>(pstCmd->enRmNoiseMethod) );
     ini.SetBoolValue( _CMD_SECTION.c_str(), _strKeyPreprocessed.c_str(), pstCmd->bPreprocessed);
@@ -277,7 +277,7 @@ VisionStatus LogCaseFitCircle::WriteCmd(PR_FIT_CIRCLE_CMD *pstCmd) {
     return VisionStatus::OK;
 }
 
-VisionStatus LogCaseFitCircle::WriteRpy(PR_FIT_CIRCLE_RPY *pstRpy) {
+VisionStatus LogCaseFitCircle::WriteRpy(const PR_FIT_CIRCLE_RPY *const pstRpy) {
     CSimpleIni ini(false, false, false);
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile( cmdRpyFilePath.c_str() );
@@ -320,14 +320,83 @@ VisionStatus LogCaseFitCircle::RunLogCase() {
     return enStatus;
 }
 
-/*static*/ String LogCaseInspCircle::StaticGetFolderPrefix()
-{
+/*static*/ String LogCaseFindCircle::StaticGetFolderPrefix() {
+    return "FindCircle";
+}
+
+VisionStatus LogCaseFindCircle::WriteCmd(const PR_FIND_CIRCLE_CMD *const pstCmd) {
+    if ( !_bReplay ) {
+        _strLogCasePath = _generateLogCaseName(GetFolderPrefix());
+        bfs::path dir(_strLogCasePath);
+        bfs::create_directories(dir);
+    }
+
+    CSimpleIni ini(false, false, false);
+    auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
+    ini.LoadFile( cmdRpyFilePath.c_str() );
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyObjAttribute.c_str(), ToInt32(pstCmd->enObjAttribute) );
+    ini.SetValue(_CMD_SECTION.c_str(), _strKeyExpCircleCtr.c_str(), _formatCoordinate ( pstCmd->ptExpectedCircleCtr ).c_str() );
+    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyMinSrchRadius.c_str(), pstCmd->fMinSrchRadius );
+    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyMaxSrchRadius.c_str(), pstCmd->fMaxSrchRadius );
+    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyStartSrchAngle.c_str(), pstCmd->fStartSrchAngle );
+    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyEndSrchAngle.c_str(), pstCmd->fEndSrchAngle );
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyCaliperCount.c_str(), pstCmd->nCaliperCount );
+    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyCaliperWidth.c_str(), pstCmd->fCaliperWidth );
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyRmNoiseMethod.c_str(), static_cast<long>(pstCmd->enRmNoiseMethod) );
+    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyErrorTol.c_str(), pstCmd->fErrTol );    
+    ini.SaveFile( cmdRpyFilePath.c_str() );
+    cv::imwrite( _strLogCasePath + _IMAGE_NAME, pstCmd->matInputImg );
+    return VisionStatus::OK;
+}
+
+VisionStatus LogCaseFindCircle::WriteRpy(const PR_FIND_CIRCLE_RPY *const pstRpy) {
+    CSimpleIni ini(false, false, false);
+    auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
+    ini.LoadFile( cmdRpyFilePath.c_str() );
+    ini.SetLongValue  (_RPY_SECTION.c_str(), _strKeyStatus.c_str(), ToInt32( pstRpy->enStatus ) );
+    ini.SetValue(_RPY_SECTION.c_str(), _strKeyResultCtr.c_str(), _formatCoordinate(pstRpy->ptCircleCtr).c_str() );    
+    ini.SetDoubleValue(_RPY_SECTION.c_str(), _strKeyRadius.c_str(), pstRpy->fRadius );
+    ini.SaveFile( cmdRpyFilePath.c_str() );
+    if ( ! pstRpy->matResultImg.empty() )
+        cv::imwrite( _strLogCasePath + _RESULT_IMAGE_NAME, pstRpy->matResultImg );
+    _zip();
+    return VisionStatus::OK;
+}
+
+VisionStatus LogCaseFindCircle::RunLogCase() {
+    PR_FIND_CIRCLE_CMD stCmd;
+    PR_FIND_CIRCLE_RPY stRpy;
+    VisionStatus enStatus;
+
+    CSimpleIni ini(false, false, false);
+    auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
+    ini.LoadFile( cmdRpyFilePath.c_str() );
+    stCmd.matInputImg = cv::imread( _strLogCasePath + _IMAGE_NAME );
+
+    stCmd.enObjAttribute = static_cast<PR_OBJECT_ATTRIBUTE> ( ini.GetLongValue ( _CMD_SECTION.c_str(), _strKeyObjAttribute.c_str(), 0 ) );
+    stCmd.ptExpectedCircleCtr = _parseCoordinate ( ini.GetValue(_CMD_SECTION.c_str(), _strKeyExpCircleCtr.c_str(), _DEFAULT_COORD.c_str() ) );
+    stCmd.fMinSrchRadius = ToFloat ( ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyMinSrchRadius.c_str(), 0. ) );
+    stCmd.fMaxSrchRadius = ToFloat ( ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyMaxSrchRadius.c_str(), 0. ) );
+    stCmd.fStartSrchAngle = ToFloat ( ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyStartSrchAngle.c_str(), 0. ) );
+    stCmd.fEndSrchAngle = ToFloat ( ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyEndSrchAngle.c_str(), 0. ) );
+    stCmd.nCaliperCount = ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyCaliperCount.c_str(), 20 );
+    stCmd.fCaliperWidth = ToFloat ( ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyCaliperWidth.c_str(), 30. ) );
+    stCmd.enRmNoiseMethod = static_cast<PR_RM_FIT_NOISE_METHOD> ( ini.GetLongValue ( _CMD_SECTION.c_str(), _strKeyRmNoiseMethod.c_str(), 0 ) );
+    stCmd.fErrTol = (float)ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyErrorTol.c_str(), 0 );
+    
+    enStatus = VisionAlgorithm::findCircle( &stCmd, &stRpy, true );
+
+    WriteRpy( &stRpy );
+    return enStatus;
+}
+
+/*static*/ String LogCaseInspCircle::StaticGetFolderPrefix() {
     return "InspCircle";
 }
 
 VisionStatus LogCaseInspCircle::WriteCmd(const PR_INSP_CIRCLE_CMD *const pstCmd)
 {
-    if ( !_bReplay )    {
+    if ( !_bReplay ) {
         _strLogCasePath = _generateLogCaseName(GetFolderPrefix());
         bfs::path dir(_strLogCasePath);
         bfs::create_directories(dir);
@@ -474,6 +543,8 @@ VisionStatus LogCaseCaliper::WriteCmd(const PR_CALIPER_CMD *const pstCmd) {
     ini.SetValue(_CMD_SECTION.c_str(), _strKeyRoiSize.c_str(), _formatSize(pstCmd->rectRotatedROI.size).c_str() );
     ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyRoiAngle.c_str(), pstCmd->rectRotatedROI.angle );
     ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyAlgorithm.c_str(), ToInt32( pstCmd->enAlgorithm ) );
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyCaliperCount.c_str(), pstCmd->nCaliperCount );
+    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyCaliperWidth.c_str(), pstCmd->fCaliperWidth );
     ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyDir.c_str(), ToInt32( pstCmd->enDetectDir ) );
     ini.SetBoolValue(_CMD_SECTION.c_str(), _strKeyCheckLinerity.c_str(), pstCmd->bCheckLinerity);
     ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyPointMaxOffset.c_str(), pstCmd->fPointMaxOffset );
@@ -526,6 +597,8 @@ VisionStatus LogCaseCaliper::RunLogCase() {
     stCmd.rectRotatedROI.size = _parseSize ( ini.GetValue(_CMD_SECTION.c_str(), _strKeyRoiSize.c_str(), _DEFAULT_SIZE.c_str() ) );
     stCmd.rectRotatedROI.angle = ToFloat ( ini.GetDoubleValue ( _CMD_SECTION.c_str(), _strKeyRoiAngle.c_str(), 0. ) );
     stCmd.enAlgorithm = static_cast<PR_CALIPER_ALGORITHM>(ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyAlgorithm.c_str(), 0 ) );
+    stCmd.nCaliperCount = ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyCaliperCount.c_str(), 20 );
+    stCmd.fCaliperWidth = ToFloat ( ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyCaliperWidth.c_str(), 30. ) );
     stCmd.enDetectDir = static_cast<PR_CALIPER_DIR>(ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyDir.c_str(), 0 ) );
     stCmd.bCheckLinerity = ini.GetBoolValue(_CMD_SECTION.c_str(), _strKeyCheckLinerity.c_str(), false );
     stCmd.fPointMaxOffset = ToFloat ( ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyPointMaxOffset.c_str(), 0. ) );

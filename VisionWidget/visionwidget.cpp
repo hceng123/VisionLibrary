@@ -171,6 +171,126 @@ void VisionWidget::on_fitCircleBtn_clicked()
     }
 }
 
+void VisionWidget::on_houghCircleBtn_clicked() {
+    if ( _sourceImagePath.empty() ) {
+        QMessageBox::information(this, "Vision Widget", "Please select an image first!", "Quit");
+        return;
+    }
+
+    ui.visionView->setState ( VisionView::VISION_VIEW_STATE::TEST_VISION_LIBRARY );
+    ui.visionView->applyIntermediateResult();
+
+    cv::Mat matInputImg = ui.visionView->getMat();
+    cv::Rect rectROI = ui.visionView->getSelectedWindow();
+    cv::Mat matGray;
+    cv::cvtColor ( matInputImg, matGray, CV_BGR2GRAY );
+    cv::Mat matROI ( matGray, rectROI );
+
+    std::vector<cv::Vec3f> circles;
+    double dMinDist = ui.lineEditHoughCircleMinDist->text().toDouble();
+    double dCannyThreshold = ui.lineEditHoughCircleCannyThreshold->text().toDouble();
+    double dAccumulatorThreshold = ui.lineEditHoughCircleAccumlatorThreshold->text().toDouble();
+    int nMinRadius = ui.lineEditHoughCircleMinRadius->text().toInt();
+    int nMaxRadius = ui.lineEditHoughCircleMaxRadius->text().toInt();
+    cv::HoughCircles ( matROI, circles, CV_HOUGH_GRADIENT, 1, dMinDist, dCannyThreshold,
+        dAccumulatorThreshold, nMinRadius, nMaxRadius );
+    cv::Mat matResultImage = matInputImg.clone();
+    for( size_t i = 0; i < circles.size(); ++ i )
+    {
+         cv::Point center(cvRound(circles[i][0]) + rectROI.x, cvRound(circles[i][1]) + rectROI.y);
+         int radius = cvRound(circles[i][2]);
+
+         //Draw the center of circle.
+         cv::circle( matResultImage, center, 3, Scalar(0,255,0), -1, 8, 0 );
+         // draw the circle outline
+         cv::circle( matResultImage, center, radius, Scalar(0,0,255), 2, 8, 0 );
+    }
+    ui.visionView->setMat ( VisionView::DISPLAY_SOURCE::RESULT, matResultImage );
+}
+
+void VisionWidget::on_detectCircleBtn_clicked() {
+    if ( _sourceImagePath.empty() ) {
+        QMessageBox::information(this, "Vision Widget", "Please select an image first!", "Quit");
+        return;
+    }
+
+    ui.visionView->setState ( VisionView::VISION_VIEW_STATE::TEST_VISION_LIBRARY );
+    ui.visionView->applyIntermediateResult();
+
+    QRect rect = qApp->activeWindow()->geometry();
+	std::unique_ptr<MessageBoxDialog> pMessageBox = std::make_unique<MessageBoxDialog>();
+    pMessageBox->setGeometry(rect.x() + 800, rect.y() + 300, pMessageBox->size().width(), pMessageBox->size().height());
+    pMessageBox->setWindowTitle("Detect Circle");
+	pMessageBox->SetMessageText1("Please input the expected circle center");
+    pMessageBox->SetMessageText2("Press and drag the left mouse buttont to input");
+	pMessageBox->setWindowFlags(Qt::WindowStaysOnTopHint);
+	pMessageBox->show();
+	pMessageBox->raise();
+	pMessageBox->activateWindow();
+    ui.visionView->setTestVisionState(VisionView::TEST_VISION_STATE::SET_CIRCLE_CTR);
+	int iReturn = pMessageBox->exec();
+    if ( iReturn != QDialog::Accepted ) {
+        ui.visionView->setTestVisionState(VisionView::TEST_VISION_STATE::IDLE);
+        return;
+    }
+
+    pMessageBox->SetMessageText1("Please input the min search radius");
+    pMessageBox->SetMessageText2("Press and drag the left mouse buttont to input");
+	pMessageBox->setWindowFlags(Qt::WindowStaysOnTopHint);
+	pMessageBox->show();
+	pMessageBox->raise();
+	pMessageBox->activateWindow();
+    ui.visionView->setTestVisionState(VisionView::TEST_VISION_STATE::SET_CIRCLE_INNER_RADIUS);
+
+	iReturn = pMessageBox->exec();
+    if ( iReturn != QDialog::Accepted ) {
+        ui.visionView->setTestVisionState(VisionView::TEST_VISION_STATE::IDLE);
+        return;
+    }
+
+    pMessageBox->SetMessageText1("Please input the max search radius");
+    pMessageBox->SetMessageText2("Press and drag the left mouse buttont to input");
+	pMessageBox->setWindowFlags(Qt::WindowStaysOnTopHint);
+	pMessageBox->show();
+	pMessageBox->raise();
+	pMessageBox->activateWindow();
+    ui.visionView->setTestVisionState(VisionView::TEST_VISION_STATE::SET_CIRCLE_OUTER_RADIUS);
+
+	iReturn = pMessageBox->exec();
+    if ( iReturn != QDialog::Accepted ) {
+        ui.visionView->setTestVisionState(VisionView::TEST_VISION_STATE::IDLE);
+        return;
+    }
+
+    cv::Point ptCtr;
+    float fInnerRadius, fOuterRadius;
+    ui.visionView->getFitCircleRange(ptCtr, fInnerRadius, fOuterRadius);
+
+    PR_FIND_CIRCLE_CMD stCmd;
+    PR_FIND_CIRCLE_RPY stRpy;
+
+    stCmd.matInputImg = ui.visionView->getMat();
+    stCmd.enObjAttribute = static_cast<PR_OBJECT_ATTRIBUTE> ( ui.comboBoxDetectCircleAttribute->currentIndex() );
+    stCmd.enRmNoiseMethod = static_cast<PR_RM_FIT_NOISE_METHOD> ( ui.comboBoxDetectCircleFitDirection->currentIndex() );
+    stCmd.ptExpectedCircleCtr = ptCtr;
+    stCmd.fMinSrchRadius = fInnerRadius;
+    stCmd.fMaxSrchRadius = fOuterRadius;
+    stCmd.fStartSrchAngle = ui.lineEditDetectCircleStartSrchAngle->text().toFloat();
+    stCmd.fEndSrchAngle = ui.lineEditDetectCircleEndSrchAngle->text().toFloat();
+    stCmd.fErrTol = ui.lineEditDetectCircleErrTol->text().toFloat();
+    stCmd.nCaliperCount = ui.lineEditDetectCircleCaliperCount->text().toInt();
+    stCmd.fCaliperWidth = ui.lineEditDetectCircleCaliperWidth->text().toFloat();
+    
+    PR_FindCircle ( &stCmd, &stRpy );
+    if ( stRpy.enStatus == VisionStatus::OK ) {
+        ui.visionView->setMat ( VisionView::DISPLAY_SOURCE::RESULT, stRpy.matResultImg );
+    }else {
+        PR_GET_ERROR_INFO_RPY stErrStrRpy;
+        PR_GetErrorInfo(stRpy.enStatus, &stErrStrRpy);
+        QMessageBox::critical(nullptr, "Detect Circle", stErrStrRpy.achErrorStr, "Quit");
+    }
+}
+
 void VisionWidget::on_calcRoundnessBtn_clicked()
 {
     if ( _sourceImagePath.empty() ) {

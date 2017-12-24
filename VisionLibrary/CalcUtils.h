@@ -193,6 +193,7 @@ public:
         }
         vecValue.reserve ( nSize );
         _tp value = start;
+        end += interval / 2.f;  //Add some margin to prevent 0.999 <= 1.000 problem.
         if ( interval > 0 ) {
             while ( value <= end ) {
                 vecValue.push_back ( value );
@@ -362,16 +363,38 @@ public:
         std::vector<T> vClone ( v );
         for( size_t i = 0; i < idx.size (); ++i )
             v[i] = vClone[idx[i]];
-
         return idx;
+    }
+
+    template<typename T>
+    static PR_Line2f calcEndPointOfLine ( const T &vecPoint, bool bReversedFit, float fSlope, float fIntercept ) {
+        float fMinX = 10000.f, fMinY = 10000.f, fMaxX = -10000.f, fMaxY = -10000.f;
+        for (const auto &point : vecPoint)    {
+            cv::Point2f pt2f ( point );
+            if (pt2f.x < fMinX) fMinX = pt2f.x;
+            if (pt2f.x > fMaxX) fMaxX = pt2f.x;
+            if (pt2f.y < fMinY) fMinY = pt2f.y;
+            if (pt2f.y > fMaxY) fMaxY = pt2f.y;
+        }
+        PR_Line2f line;
+        if (bReversedFit) {
+            line.pt1.y = fMinY;
+            line.pt1.x = line.pt1.y * fSlope + fIntercept;
+            line.pt2.y = fMaxY;
+            line.pt2.x = line.pt2.y * fSlope + fIntercept;
+        }
+        else {
+            line.pt1.x = fMinX;
+            line.pt1.y = fSlope * line.pt1.x + fIntercept;
+            line.pt2.x = fMaxX;
+            line.pt2.y = fSlope * line.pt2.x + fIntercept;
+        }
+        return line;
     }
 
     static double radian2Degree ( double dRadian );
     static double degree2Radian ( double dDegree );
     static float ptDisToLine ( const cv::Point2f &ptInput, bool bReversedFit, float fSlope, float fIntercept );
-    static PR_Line2f calcEndPointOfLine ( const VectorOfPoint &vecPoint, bool bReversedFit, float fSlope, float fIntercept );
-    static PR_Line2f calcEndPointOfLine ( const ListOfPoint &listPoint, bool bReversedFit, float fSlope, float fIntercept );
-    static cv::Point2f lineIntersect ( float fSlope1, float fIntercept1, float fSlope2, float fIntercept2 );
     static float lineSlope ( const PR_Line2f &line );
     static void lineSlopeIntercept ( const PR_Line2f &line, float &fSlope, float &fIntercept );
     static VectorOfPoint getCornerOfRotatedRect ( const cv::RotatedRect &rotatedRect );
@@ -387,7 +410,7 @@ public:
     static float calcFrequency(const cv::Mat &matInput);
     static VectorOfDouble interp1(const VectorOfDouble &vecX, const VectorOfDouble &vecV, const VectorOfDouble &vecXq, bool bSpine = false );
     static void saveMatToCsv(const cv::Mat &matrix, std::string filename);
-    static int findLineCrossPoint(const PR_Line2f &line1, const PR_Line2f &line2, cv::Point2f &ptResult);
+    static int twoLineIntersect(const PR_Line2f &line1, const PR_Line2f &line2, cv::Point2f &ptResult);
     static float calc2LineAngle(const PR_Line2f &line1, const PR_Line2f &line2);
 };
 

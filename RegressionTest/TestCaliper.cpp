@@ -27,10 +27,7 @@ static void PrintRpy ( const PR_CALIPER_RPY &stRpy ) {
     }
 };
 
-void TestCaliperSectionAvgGuassianDiff();
-void TestCaliperRoatedROI();
-
-void TestCaliper() {
+void TestCaliperProjection() {
     PR_CALIPER_CMD stCmd;
     PR_CALIPER_RPY stRpy;    
 
@@ -43,7 +40,7 @@ void TestCaliper() {
     cv::Rect rectROI = cv::Rect(1216, 802, 142, 332);
     stCmd.rectRotatedROI.center = cv::Point ( rectROI.x + rectROI.width / 2, rectROI.y + rectROI.height / 2 );
     stCmd.rectRotatedROI.size = rectROI.size();
-    stCmd.enDetectDir = PR_CALIPER_DIR::MAX_TO_MIN;
+    stCmd.enDetectDir = PR_CALIPER_DIR::BRIGHT_TO_DARK;
     stCmd.bCheckLinerity = true;
     stCmd.fPointMaxOffset = 5;
     stCmd.fMinLinerity = 60.;
@@ -63,7 +60,7 @@ void TestCaliper() {
     rectROI = cv::Rect(928, 1276, 270, 120);
     stCmd.rectRotatedROI.center = cv::Point ( rectROI.x + rectROI.width / 2, rectROI.y + rectROI.height / 2 );
     stCmd.rectRotatedROI.size = rectROI.size();
-    stCmd.enDetectDir = PR_CALIPER_DIR::MIN_TO_MAX;
+    stCmd.enDetectDir = PR_CALIPER_DIR::DARK_TO_BRIGHT;
     stCmd.fExpectedAngle = 0;
     
     PR_Caliper ( &stCmd, &stRpy );
@@ -78,7 +75,7 @@ void TestCaliper() {
     rectROI = cv::Rect(1496, 1576, 228, 88);
     stCmd.rectRotatedROI.center = cv::Point ( rectROI.x + rectROI.width / 2, rectROI.y + rectROI.height / 2 );
     stCmd.rectRotatedROI.size = rectROI.size();
-    stCmd.enDetectDir = PR_CALIPER_DIR::MAX_TO_MIN;
+    stCmd.enDetectDir = PR_CALIPER_DIR::BRIGHT_TO_DARK;
     stCmd.fExpectedAngle = 0;
     
     PR_Caliper ( &stCmd, &stRpy );
@@ -93,7 +90,7 @@ void TestCaliper() {
     rectROI = cv::Rect(1591, 970, 51, 90);
     stCmd.rectRotatedROI.center = cv::Point ( rectROI.x + rectROI.width / 2, rectROI.y + rectROI.height / 2 );
     stCmd.rectRotatedROI.size = rectROI.size();
-    stCmd.enDetectDir = PR_CALIPER_DIR::MAX_TO_MIN;
+    stCmd.enDetectDir = PR_CALIPER_DIR::BRIGHT_TO_DARK;
     stCmd.bCheckLinerity = true;
     stCmd.fPointMaxOffset = 5;
     stCmd.fMinLinerity = 60.;
@@ -103,9 +100,6 @@ void TestCaliper() {
 
     PR_Caliper ( &stCmd, &stRpy );
     PrintRpy(stRpy);
-
-    TestCaliperSectionAvgGuassianDiff();
-    TestCaliperRoatedROI();
 }
 
 void TestCaliperSectionAvgGuassianDiff() {
@@ -122,7 +116,7 @@ void TestCaliperSectionAvgGuassianDiff() {
     stCmd.rectRotatedROI.center = cv::Point ( rectROI.x + rectROI.width / 2, rectROI.y + rectROI.height / 2 );
     stCmd.rectRotatedROI.size = rectROI.size();
     stCmd.enAlgorithm = PR_CALIPER_ALGORITHM::SECTION_AVG_GAUSSIAN_DIFF;
-    stCmd.enDetectDir = PR_CALIPER_DIR::MAX_TO_MIN;
+    stCmd.enDetectDir = PR_CALIPER_DIR::BRIGHT_TO_DARK;
     stCmd.bCheckLinerity = true;
     stCmd.fPointMaxOffset = 5;
     stCmd.fMinLinerity = 60.;
@@ -141,7 +135,7 @@ void TestCaliperSectionAvgGuassianDiff() {
     rectROI = cv::Rect(728, 744, 164, 632);
     stCmd.rectRotatedROI.center = cv::Point ( rectROI.x + rectROI.width / 2, rectROI.y + rectROI.height / 2 );
     stCmd.rectRotatedROI.size = rectROI.size();
-    stCmd.enDetectDir = PR_CALIPER_DIR::MIN_TO_MAX;
+    stCmd.enDetectDir = PR_CALIPER_DIR::DARK_TO_BRIGHT;
     stCmd.fExpectedAngle = 90;
     
     PR_Caliper ( &stCmd, &stRpy );
@@ -156,7 +150,7 @@ void TestCaliperSectionAvgGuassianDiff() {
     rectROI = cv::Rect(998, 1298, 226, 68);
     stCmd.rectRotatedROI.center = cv::Point ( rectROI.x + rectROI.width / 2, rectROI.y + rectROI.height / 2 );
     stCmd.rectRotatedROI.size = rectROI.size();
-    stCmd.enDetectDir = PR_CALIPER_DIR::MAX_TO_MIN;
+    stCmd.enDetectDir = PR_CALIPER_DIR::BRIGHT_TO_DARK;
     stCmd.fExpectedAngle = 0;
     
     PR_Caliper ( &stCmd, &stRpy );
@@ -171,7 +165,7 @@ void TestCaliperSectionAvgGuassianDiff() {
     rectROI = cv::Rect(952, 1820, 188, 70);
     stCmd.rectRotatedROI.center = cv::Point ( rectROI.x + rectROI.width / 2, rectROI.y + rectROI.height / 2 );
     stCmd.rectRotatedROI.size = rectROI.size();
-    stCmd.enDetectDir = PR_CALIPER_DIR::MIN_TO_MAX;
+    stCmd.enDetectDir = PR_CALIPER_DIR::DARK_TO_BRIGHT;
     stCmd.fExpectedAngle = 0;
 
     PR_Caliper ( &stCmd, &stRpy );
@@ -280,6 +274,46 @@ void TestCaliperRoatedROI() {
     
     PR_Caliper ( &stCmd, &stRpy );
     PrintRpy(stRpy);
+}
+
+static void PrintDetectCircleRpy(const PR_FIND_CIRCLE_RPY &stRpy)    {
+    char chArrMsg[100];
+    std::cout << "Detect circle status " << ToInt32 ( stRpy.enStatus ) << std::endl;
+    std::cout << std::fixed << std::setprecision ( 2 ) << "Radius = " << stRpy.fRadius << std::endl;
+    _snprintf ( chArrMsg, sizeof ( chArrMsg ), "(%.2f, %.2f)", stRpy.ptCircleCtr.x, stRpy.ptCircleCtr.y );
+    std::cout << "Circle center: " << chArrMsg << std::endl;
+};
+
+void TestFindCircle() {
+    PR_FIND_CIRCLE_CMD stCmd;
+    PR_FIND_CIRCLE_RPY stRpy;
+
+    std::cout << std::endl << "-------------------------------------------------";
+    std::cout << std::endl << "CALIPER FIND CIRCLE REGRESSION TEST #1 STARTING";
+    std::cout << std::endl << "-------------------------------------------------";
+    std::cout << std::endl;
+
+    stCmd.matInputImg = cv::imread ("./data/RoundContourInsp.png", cv::IMREAD_GRAYSCALE );
+    stCmd.enObjAttribute = PR_OBJECT_ATTRIBUTE::BRIGHT;
+    stCmd.fMinSrchRadius = 78.f;
+    stCmd.fMaxSrchRadius = 110.f;
+    stCmd.fStartSrchAngle = 50.f;
+    stCmd.fEndSrchAngle = -230.f;
+    stCmd.ptExpectedCircleCtr = cv::Point(130, 123);
+    stCmd.nCaliperCount = 20;
+    stCmd.fCaliperWidth = 20.f;
+    stCmd.enRmNoiseMethod = PR_RM_FIT_NOISE_METHOD::ABSOLUTE_ERR;
+    stCmd.fErrTol = 1;
+
+    PR_FindCircle ( &stCmd, &stRpy );
+    PrintDetectCircleRpy ( stRpy );
+}
+
+void TestCaliper() {
+    TestCaliperProjection();
+    TestCaliperSectionAvgGuassianDiff();
+    TestCaliperRoatedROI();
+    TestFindCircle();
 }
 
 }

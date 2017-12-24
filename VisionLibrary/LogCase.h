@@ -105,8 +105,8 @@ class LogCaseFitCircle : public LogCase
 {
 public:
     explicit LogCaseFitCircle(const String &strPath, bool bReplay = false) : LogCase(strPath, bReplay) {}
-    VisionStatus WriteCmd(PR_FIT_CIRCLE_CMD *pstCmd);
-    VisionStatus WriteRpy(PR_FIT_CIRCLE_RPY *pstRpy);
+    VisionStatus WriteCmd(const PR_FIT_CIRCLE_CMD *const pstCmd);
+    VisionStatus WriteRpy(const PR_FIT_CIRCLE_RPY *const pstRpy);
     virtual VisionStatus RunLogCase() override;
     virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
     static String StaticGetFolderPrefix();
@@ -120,6 +120,32 @@ private:
     const String _strKeyThreshold       = "Threshold";
     const String _strKeyAttribute       = "Attribute";
     
+
+    const String _strKeyStatus          = "Status";
+    const String _strKeyResultCtr       = "ResultCtr";
+    const String _strKeyRadius          = "Radius";
+};
+
+class LogCaseFindCircle : public LogCase
+{
+public:
+    explicit LogCaseFindCircle(const String &strPath, bool bReplay = false) : LogCase(strPath, bReplay) {}
+    VisionStatus WriteCmd(const PR_FIND_CIRCLE_CMD *const pstCmd);
+    VisionStatus WriteRpy(const PR_FIND_CIRCLE_RPY *const pstRpy);
+    virtual VisionStatus RunLogCase() override;
+    virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
+    static String StaticGetFolderPrefix();
+private:    
+    const String _strKeyObjAttribute    = "ObjAttribute";
+    const String _strKeyExpCircleCtr    = "ExpectedCircleCtr";
+    const String _strKeyMinSrchRadius   = "MinSrchRadius";
+    const String _strKeyMaxSrchRadius   = "MaxSrchRadius";
+    const String _strKeyStartSrchAngle  = "StartSrchAngle";
+    const String _strKeyEndSrchAngle    = "EndSrchAngle";
+    const String _strKeyRmNoiseMethod   = "RmNoiseMethod";
+    const String _strKeyErrorTol        = "ErrorTolerance";
+    const String _strKeyCaliperCount    = "CaliperCount";
+    const String _strKeyCaliperWidth    = "CaliperWidth";
 
     const String _strKeyStatus          = "Status";
     const String _strKeyResultCtr       = "ResultCtr";
@@ -183,6 +209,8 @@ private:
     const String _strKeyRoiSize         = "RoiSize";
     const String _strKeyRoiAngle        = "RoiAngle";
     const String _strKeyAlgorithm       = "Algorithm";
+    const String _strKeyCaliperCount    = "CaliperCount";
+    const String _strKeyCaliperWidth    = "CaliperWidth";
     const String _strKeyDir             = "Direction";
     const String _strKeyCheckLinerity   = "CheckLinerity";
     const String _strKeyPointMaxOffset  = "PointMaxOffset";

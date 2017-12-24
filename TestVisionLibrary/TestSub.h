@@ -29,7 +29,6 @@ void TestCalcMTF();
 void TestCalcPD();
 void TestCalcCameraMTF();
 
-void TestCalc3DHeightNew();
 void TestFastCalc3DHeight();
 void TestIntegrate3DCalibHaoYu();
 void TestMerge3DHeight();
@@ -43,6 +42,13 @@ void TestTwoLineAngle_4();
 void TestTwoLineAngle_5();
 
 void TestPointLineDistance_1();
+void TestParallelLineDistance_1();
+void TestParallelLineDistance_2();
+void TestParallelLineDistance_3();
+
+void TestLineIntersect();
+void TestCrossSectionArea();
+void TestFindCircle();
 
 template<class T>
 void printfMat(const cv::Mat &mat)

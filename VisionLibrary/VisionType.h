@@ -67,9 +67,9 @@ enum class PR_FIDUCIAL_MARK_TYPE {
 };
 
 enum class PR_RM_FIT_NOISE_METHOD {
-    ABSOLUTE_ERR,
-    POSITIVE_ERR,
-    NEGATIVE_ERR,
+    ABSOLUTE_ERR,   //Remove the point with absolute error over the error tolerance.
+    POSITIVE_ERR,   //Remove the point with positive error over the error tolerance. If it is circle, remove the standalone outter points of the fitted circle.
+    NEGATIVE_ERR,   //Remove the point with negative error over the error tolerance. If it is circle, remove the standalone innter points of the fitted circle.
 };
 
 enum class PR_EDGE_DIRECTION {
@@ -110,13 +110,12 @@ enum class PR_COMPARE_TYPE {
     LARGER,
 };
 
-//If the dark part coordinate is larger than bright part, then choose MAX_TO_MIN mode.
-//In other words, dark part on the right, then use MAX_TO_MIN mode.
-//If dark part on the left, then use MIN_TO_MAX.
-//The direction means the direction from dark to bright.
+//If the dark part coordinate is larger than bright part, then choose BRIGHT_TO_DARK mode.
+//In other words, dark part on the right, then use BRIGHT_TO_DARK mode.
+//If dark part on the left, then use DARK_TO_BRIGHT.
 enum class PR_CALIPER_DIR {
-    MIN_TO_MAX,
-    MAX_TO_MIN,
+    DARK_TO_BRIGHT,
+    BRIGHT_TO_DARK,
     AUTO,
 };
 

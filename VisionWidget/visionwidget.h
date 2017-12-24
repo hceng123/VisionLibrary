@@ -22,6 +22,8 @@ private slots:
     void on_selectImageBtn_clicked();
     void on_checkBoxByerFormat_clicked(bool checked);
 	void on_fitCircleBtn_clicked();
+    void on_houghCircleBtn_clicked();
+    void on_detectCircleBtn_clicked();
     void on_calcRoundnessBtn_clicked();
     void on_fitLineBtn_clicked();
     void on_btnCaliper_clicked();
@@ -42,7 +44,7 @@ private slots:
     void on_btnAutoLocateLead_clicked();
     void on_btnInspLead_clicked();
     void on_btnGridAvgGrayScale_clicked();
-    void on_btnCameraMTF_clicked();
+    void on_btnCameraMTF_clicked();    
 protected:
     bool checkDisplayImage();
     void drawTmplImage(const cv::Mat &matTmpl);

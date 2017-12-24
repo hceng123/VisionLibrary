@@ -48,6 +48,21 @@ int _tmain(int argc, _TCHAR* argv[])
     *******************************/
     TestTwoLineAngle();
 
+    /**********************************
+    * Test Calculate 2 line intersect *
+    **********************************/
+    TestTwoLineIntersect();
+
+    /******************************
+    * Test Parallel line distance *
+    *******************************/
+    TestParallelLineDistance();
+
+    /**************************
+    * Test Cross Section Area *
+    ***************************/
+    TestCrossSectionArea();
+
     /*****************************
     * Test Fitting Parallel Line *
     *****************************/

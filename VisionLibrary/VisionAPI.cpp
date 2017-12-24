@@ -153,6 +153,13 @@ PR_FUNCTION_ENTRY
 PR_FUNCTION_EXIT
 }
 
+VisionAPI VisionStatus PR_FitLineByPoint(const PR_FIT_LINE_BY_POINT_CMD *const pstCmd, PR_FIT_LINE_BY_POINT_RPY *const pstRpy)
+{
+PR_FUNCTION_ENTRY
+    return VisionAlgorithm::fitLineByPoint ( pstCmd, pstRpy );
+PR_FUNCTION_EXIT
+}
+
 VisionAPI VisionStatus  PR_Caliper(const PR_CALIPER_CMD *const pstCmd, PR_CALIPER_RPY *const pstRpy)
 {
 PR_FUNCTION_ENTRY
@@ -163,28 +170,49 @@ PR_FUNCTION_EXIT
 VisionAPI VisionStatus  PR_FitParallelLine(const PR_FIT_PARALLEL_LINE_CMD *const pstCmd, PR_FIT_PARALLEL_LINE_RPY *const pstRpy)
 {
 PR_FUNCTION_ENTRY
-        return VisionAlgorithm::fitParallelLine ( pstCmd, pstRpy );
+    return VisionAlgorithm::fitParallelLine ( pstCmd, pstRpy );
 PR_FUNCTION_EXIT
 }
 
 VisionAPI VisionStatus  PR_FitRect(PR_FIT_RECT_CMD *pstCmd, PR_FIT_RECT_RPY *pstRpy)
 {
 PR_FUNCTION_ENTRY
-        return VisionAlgorithm::fitRect ( pstCmd, pstRpy );
+    return VisionAlgorithm::fitRect ( pstCmd, pstRpy );
 PR_FUNCTION_EXIT
 }
 
 VisionAPI VisionStatus  PR_FindEdge(const PR_FIND_EDGE_CMD *const pstCmd, PR_FIND_EDGE_RPY *const pstRpy)
 {
 PR_FUNCTION_ENTRY
-        return VisionAlgorithm::findEdge ( pstCmd, pstRpy );
+    return VisionAlgorithm::findEdge ( pstCmd, pstRpy );
 PR_FUNCTION_EXIT
 }
 
-VisionStatus  PR_FitCircle(PR_FIT_CIRCLE_CMD *pstCmd, PR_FIT_CIRCLE_RPY *pstRpy)
+VisionStatus  PR_FitCircle(const PR_FIT_CIRCLE_CMD *const pstCmd, PR_FIT_CIRCLE_RPY *const pstRpy)
 {
 PR_FUNCTION_ENTRY
-        return VisionAlgorithm::fitCircle ( pstCmd, pstRpy );
+    return VisionAlgorithm::fitCircle ( pstCmd, pstRpy );
+PR_FUNCTION_EXIT
+}
+
+VisionAPI VisionStatus PR_FitCircleByPoint(const PR_FIT_CIRCLE_BY_POINT_CMD *const pstCmd, PR_FIT_CIRCLE_BY_POINT_RPY *const pstRpy)
+{
+PR_FUNCTION_ENTRY
+    return VisionAlgorithm::fitCircleByPoint ( pstCmd, pstRpy );
+PR_FUNCTION_EXIT
+}
+
+VisionAPI VisionStatus PR_FindCircle(const PR_FIND_CIRCLE_CMD *const pstCmd, PR_FIND_CIRCLE_RPY *const pstRpy)
+{
+PR_FUNCTION_ENTRY
+    return VisionAlgorithm::findCircle ( pstCmd, pstRpy );
+PR_FUNCTION_EXIT
+}
+
+VisionAPI VisionStatus PR_InspCircle(const PR_INSP_CIRCLE_CMD *const pstCmd, PR_INSP_CIRCLE_RPY *const pstRpy)
+{
+PR_FUNCTION_ENTRY
+    return VisionAlgorithm::inspCircle ( pstCmd, pstRpy );
 PR_FUNCTION_EXIT
 }
 
@@ -219,6 +247,31 @@ VisionAPI VisionStatus PR_TwoLineAngle(const PR_TWO_LINE_ANGLE_CMD *const pstCmd
     return VisionStatus::OK;
 }
 
+VisionAPI VisionStatus PR_TwoLineIntersect(const PR_TWO_LINE_INTERSECT_CMD *const pstCmd, PR_TWO_LINE_INTERSECT_RPY *const pstRpy)
+{
+    int nResult = CalcUtils::twoLineIntersect ( pstCmd->line1, pstCmd->line2, pstRpy->ptIntersect );
+    pstRpy->enStatus = VisionStatus::OK;
+    if ( nResult != 0 ) {
+        WriteLog("Cannot find intersect point for parallel lines");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+    }
+    return pstRpy->enStatus;
+}
+
+VisionAPI VisionStatus PR_ParallelLineDist(const PR_PARALLEL_LINE_DIST_CMD *const pstCmd, PR_PARALLEL_LINE_DIST_RPY *const pstRpy)
+{
+PR_FUNCTION_ENTRY
+    return VisionAlgorithm::parallelLineDist(pstCmd, pstRpy);
+PR_FUNCTION_EXIT
+}
+
+VisionAPI VisionStatus PR_CrossSectionArea(const PR_CROSS_SECTION_AREA_CMD *const pstCmd, PR_CROSS_SECTION_AREA_RPY *const pstRpy)
+{
+PR_FUNCTION_ENTRY
+    return VisionAlgorithm::crossSectionArea(pstCmd, pstRpy);
+PR_FUNCTION_EXIT
+}
+
 VisionAPI VisionStatus PR_ColorToGray(PR_COLOR_TO_GRAY_CMD *pstCmd, PR_COLOR_TO_GRAY_RPY *pstRpy)
 {
 PR_FUNCTION_ENTRY
@@ -251,13 +304,6 @@ VisionAPI VisionStatus PR_DetectEdge(PR_DETECT_EDGE_CMD *pstCmd, PR_DETECT_EDGE_
 {
 PR_FUNCTION_ENTRY
     return VisionAlgorithm::detectEdge( pstCmd, pstRpy );
-PR_FUNCTION_EXIT
-}
-
-VisionAPI VisionStatus PR_InspCircle(PR_INSP_CIRCLE_CMD *pstCmd, PR_INSP_CIRCLE_RPY *pstRpy)
-{
-PR_FUNCTION_ENTRY
-    return VisionAlgorithm::inspCircle( pstCmd, pstRpy );
 PR_FUNCTION_EXIT
 }
 

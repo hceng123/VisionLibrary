@@ -24,6 +24,7 @@ using VectorOfPoint3f = std::vector<cv::Point3f>;
 using VectorOfVectorOfPoint2f = std::vector<VectorOfPoint2f>;
 using VectorOfRect = std::vector<cv::Rect>;
 using ListOfPoint = std::list<cv::Point>;
+using ListOfPoint2f = std::list<cv::Point2f>;
 using VectorOfListOfPoint = std::vector<ListOfPoint>;
 using VectorOfSize2f = std::vector<cv::Size2f>;
 using VectorOfMat = std::vector<cv::Mat>;
@@ -255,7 +256,10 @@ struct PR_SRCH_FIDUCIAL_MARK_RPY {
 
 //Fit line is for accurately fit line in the preprocessed image, the line should be obvious compared to the background.
 struct PR_FIT_LINE_CMD {
-    PR_FIT_LINE_CMD() : enMethod ( PR_FIT_METHOD::LEAST_SQUARE_REFINE ), bPreprocessed ( false ), nMaxRansacTime(20) {}
+    PR_FIT_LINE_CMD() : 
+        enMethod        ( PR_FIT_METHOD::LEAST_SQUARE_REFINE ),
+        bPreprocessed   ( false ),
+        nMaxRansacTime  (20) {}
     cv::Mat                 matInputImg;
     cv::Mat                 matMask;
     cv::Rect                rectROI;
@@ -270,12 +274,36 @@ struct PR_FIT_LINE_CMD {
 };
 
 struct PR_FIT_LINE_RPY {
-    VisionStatus            enStatus;    
+    VisionStatus            enStatus;
     bool                    bReversedFit;   //If it is true, then the result is x = fSlope * y + fIntercept. Otherwise the line is y = fSlope * x + fIntercept.
     float                   fSlope;
     float                   fIntercept;
     PR_Line2f               stLine;
     cv::Mat                 matResultImg;
+};
+
+struct PR_FIT_LINE_BY_POINT_CMD {
+    PR_FIT_LINE_BY_POINT_CMD() : 
+        enMethod        ( PR_FIT_METHOD::LEAST_SQUARE_REFINE ),
+        bPreprocessed   ( false ),
+        nMaxRansacTime  (20) {}
+    VectorOfPoint2f         vecPoints;
+    PR_FIT_METHOD           enMethod;
+    bool                    bPreprocessed;
+    Int32                   nThreshold;
+    PR_OBJECT_ATTRIBUTE     enAttribute;
+    PR_RM_FIT_NOISE_METHOD  enRmNoiseMethod;
+    float                   fErrTol;
+    int                     nMaxRansacTime;             //Only used when fitting method is ransac.
+    int                     nNumOfPtToFinishRansac;     //Only used when fitting method is ransac.
+};
+
+struct PR_FIT_LINE_BY_POINT_RPY {
+    VisionStatus            enStatus;
+    bool                    bReversedFit;   //If it is true, then the result is x = fSlope * y + fIntercept. Otherwise the line is y = fSlope * x + fIntercept.
+    float                   fSlope;
+    float                   fIntercept;
+    PR_Line2f               stLine;
 };
 
 // Detect line is find the lines in the image.
@@ -295,6 +323,8 @@ struct PR_FIT_LINE_RPY {
 struct PR_CALIPER_CMD {
     PR_CALIPER_CMD() :
         enAlgorithm         ( PR_CALIPER_ALGORITHM::PROJECTION ),
+        nCaliperCount       (20),
+        fCaliperWidth       (30.f),
         bCheckLinerity      (false),
         fPointMaxOffset     (0.f),
         fMinLinerity        (0.f),
@@ -305,7 +335,9 @@ struct PR_CALIPER_CMD {
     cv::Mat                 matMask;
     cv::RotatedRect         rectRotatedROI;
     PR_CALIPER_ALGORITHM    enAlgorithm;
-    PR_CALIPER_DIR          enDetectDir;
+    PR_CALIPER_DIR          enDetectDir;        //The explaination can be find in definition of PR_CALIPER_DIR.
+    Int32                   nCaliperCount;      //How many caliper will be used to find line. It is used when the PR_CALIPER_ALGORITHM is SECTION_AVG_GAUSSIAN_DIFF.
+    float                   fCaliperWidth;      //The width of caliper. . It is used when the PR_CALIPER_ALGORITHM is SECTION_AVG_GAUSSIAN_DIFF.
     bool                    bCheckLinerity;
     float                   fPointMaxOffset;
     float                   fMinLinerity;
@@ -383,17 +415,18 @@ struct PR_FIND_EDGE_RPY {
     cv::Mat                 matResultImg;
 };
 
+//The PR_FitCircle command suitable to fit the circle after use Canny or Sobel edge detector find the rough circle.
 struct PR_FIT_CIRCLE_CMD {
-    cv::Mat                 matInputImg;    
+    cv::Mat                 matInputImg;
     cv::Mat                 matMask;
     cv::Rect                rectROI;
     PR_FIT_METHOD           enMethod;
     PR_RM_FIT_NOISE_METHOD  enRmNoiseMethod;
+    float                   fErrTol;
     bool                    bPreprocessed;
     bool                    bAutoThreshold;
     Int32                   nThreshold;
     PR_OBJECT_ATTRIBUTE     enAttribute;
-    float                   fErrTol;
     int                     nMaxRansacTime;             //Only used when fitting method is ransac.
     int                     nNumOfPtToFinishRansac;     //Only used when fitting method is ransac.
 };
@@ -402,6 +435,68 @@ struct PR_FIT_CIRCLE_RPY {
     VisionStatus            enStatus;
     cv::Point2f             ptCircleCtr;
     float                   fRadius;
+    cv::Mat                 matResultImg;
+};
+
+//The PR_FitCircle command suitable to fit the circle after use Canny or Sobel edge detector find the rough circle.
+struct PR_FIT_CIRCLE_BY_POINT_CMD {
+    VectorOfPoint2f         vecPoints;
+    PR_FIT_METHOD           enMethod;
+    PR_RM_FIT_NOISE_METHOD  enRmNoiseMethod;
+    float                   fErrTol;
+    bool                    bPreprocessed;
+    bool                    bAutoThreshold;
+    Int32                   nThreshold;
+    PR_OBJECT_ATTRIBUTE     enAttribute;
+    int                     nMaxRansacTime;             //Only used when fitting method is ransac.
+    int                     nNumOfPtToFinishRansac;     //Only used when fitting method is ransac.
+};
+
+struct PR_FIT_CIRCLE_BY_POINT_RPY {
+    VisionStatus            enStatus;
+    cv::Point2f             ptCircleCtr;
+    float                   fRadius;
+};
+
+//Use caliper method to find the circle.
+struct PR_FIND_CIRCLE_CMD {
+    PR_FIND_CIRCLE_CMD() :
+        fStartSrchAngle(0.f),
+        fEndSrchAngle(0.f),
+        nCaliperCount(20),
+        fCaliperWidth(30.f) {}
+    cv::Mat                 matInputImg;
+    PR_OBJECT_ATTRIBUTE     enObjAttribute;
+    cv::Point2f             ptExpectedCircleCtr;
+    float                   fMinSrchRadius;
+    float                   fMaxSrchRadius;
+    float                   fStartSrchAngle;    //Start search angle, unit is degree, clockwise is positive, anticlockwise is negative.
+    float                   fEndSrchAngle;      //End search angle, unit is degree, clockwise is positive, anticlockwise is negative.
+    Int32                   nCaliperCount;      //How many caliper will be used to detect circle.
+    float                   fCaliperWidth;      //The width of caliper.
+    PR_RM_FIT_NOISE_METHOD  enRmNoiseMethod;
+    float                   fErrTol;
+};
+
+struct PR_FIND_CIRCLE_RPY {
+    VisionStatus            enStatus;
+    cv::Point2f             ptCircleCtr;
+    float                   fRadius;
+    cv::Mat                 matResultImg;
+};
+
+//It use the basic circle fitting and check the fitted circle.
+struct PR_INSP_CIRCLE_CMD {
+    cv::Mat                 matInputImg;
+    cv::Mat                 matMask;
+    cv::Rect                rectROI;
+};
+
+struct PR_INSP_CIRCLE_RPY {
+    VisionStatus            enStatus;
+    float                   fRoundness;
+    cv::Point2f             ptCircleCtr;
+    float                   fDiameter;
     cv::Mat                 matResultImg;
 };
 
@@ -441,6 +536,38 @@ struct PR_TWO_LINE_ANGLE_CMD {
 
 struct PR_TWO_LINE_ANGLE_RPY {
     float                   fAngle;
+};
+
+struct PR_TWO_LINE_INTERSECT_CMD {
+    PR_Line2f               line1;
+    PR_Line2f               line2;
+};
+
+struct PR_TWO_LINE_INTERSECT_RPY {
+    VisionStatus            enStatus;
+    cv::Point2f             ptIntersect;    //The intersect point of two lines.
+};
+
+struct PR_PARALLEL_LINE_DIST_CMD {
+    PR_Line2f               line1;
+    PR_Line2f               line2;
+};
+
+struct PR_PARALLEL_LINE_DIST_RPY {
+    VisionStatus            enStatus;
+    float                   fDistance;
+};
+
+//Introduction of cross section: https://en.wikipedia.org/wiki/Cross_section_(geometry)
+struct PR_CROSS_SECTION_AREA_CMD {
+    PR_CROSS_SECTION_AREA_CMD() : bClosed(false) {}
+    VectorOfPoint2f         vecContourPoints;
+    bool                    bClosed;    //The contour is closed
+};
+
+struct PR_CROSS_SECTION_AREA_RPY {
+    VisionStatus            enStatus;
+    float                   fArea;
 };
 
 struct PR_RGB_RATIO {
@@ -520,20 +647,6 @@ struct PR_DETECT_EDGE_CMD {
 
 struct PR_DETECT_EDGE_RPY {
     VisionStatus            enStatus;
-    cv::Mat                 matResultImg;
-};
-
-struct PR_INSP_CIRCLE_CMD {
-    cv::Mat                 matInputImg;
-    cv::Mat                 matMask;
-    cv::Rect                rectROI;
-};
-
-struct PR_INSP_CIRCLE_RPY {
-    VisionStatus            enStatus;
-    float                   fRoundness;
-    cv::Point2f             ptCircleCtr;
-    float                   fDiameter;
     cv::Mat                 matResultImg;
 };
 
@@ -892,7 +1005,7 @@ struct PR_CALIB_3D_HEIGHT_CMD {
         bReverseHeight(false),
         bUseThinnestPattern(false),
         fRemoveHarmonicWaveK(0.f),
-        fMinAmplitude(2.f),
+        fMinAmplitude(5.f),
         nRemoveBetaJumpSpanX(25),
         nRemoveBetaJumpSpanY(7),
         nRemoveGammaJumpSpanX(23),
@@ -970,7 +1083,7 @@ struct PR_CALC_3D_HEIGHT_CMD {
         bReverseSeq(true),
         bUseThinnestPattern(false),
         fRemoveHarmonicWaveK(0.f),
-        fMinAmplitude(2.f),
+        fMinAmplitude(5.f),
         fPhaseShift(0.f),
         nRemoveBetaJumpSpanX(25),
         nRemoveBetaJumpSpanY(7),

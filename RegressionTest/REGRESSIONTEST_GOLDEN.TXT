@@ -33,6 +33,7 @@ INTERVALS RESULT:
 0.70 
 0.80 
 0.90 
+1.00 
 
 ------------------------------------------
 CALCUTILS INTERVALS TEST #2 STARTING
@@ -49,6 +50,7 @@ INTERVALS RESULT:
 -0.70 
 -0.80 
 -0.90 
+-1.00 
 
 ------------------------------------------
 CALCUTILS INTERVALS TEST #3 STARTING
@@ -214,6 +216,11 @@ Phase Correction result:
 -0.10 0.10 0.10 0.10 0.50 
 0.20 1.10 1.30 2.00 0.50 
 
+------------------------------------------------
+FIT CIRCLE TEST #1 STARTING
+------------------------------------------------
+Fit circle center [633.767, 1217.6], Radius 89.4707
+
 ------------------------------------------
 INSPECT DEVICE REGRESSION TEST #1 STARTING
 ------------------------------------------
@@ -369,7 +376,91 @@ TWO LINE ANGLE REGRESSION TEST #6 STARTING
 Two Line input:
 Point1 [2.00, 0.00], Point2 [2.02, -100.00]
 Point1 [1.00, -10.00], Point2 [1.03, 10.00]
-Two line angle 0.09
+Two line angle 0.00
+
+----------------------------------------------
+TWO LINE INTERSECT REGRESSION TEST #1 STARTING
+----------------------------------------------
+Two Line input:
+Point1 [0.00, 0.00], Point2 [10.00, 10.00]
+Point1 [0.00, 0.00], Point2 [10.00, -10.00]
+PR_TwoLineIntersect status 0
+Intersect Point [0.00, 0.00]
+
+----------------------------------------------
+TWO LINE INTERSECT REGRESSION TEST #2 STARTING
+----------------------------------------------
+Two Line input:
+Point1 [-10.00, 1.00], Point2 [10.00, 1.00]
+Point1 [0.00, 0.00], Point2 [10.00, -10.00]
+PR_TwoLineIntersect status 0
+Intersect Point [-1.00, 1.00]
+
+----------------------------------------------
+TWO LINE INTERSECT REGRESSION TEST #3 STARTING
+----------------------------------------------
+Two Line input:
+Point1 [1.00, -10.00], Point2 [1.00, 10.00]
+Point1 [0.00, 0.00], Point2 [10.00, -10.00]
+PR_TwoLineIntersect status 0
+Intersect Point [1.00, -1.00]
+
+----------------------------------------------
+TWO LINE INTERSECT REGRESSION TEST #4 STARTING
+----------------------------------------------
+Two Line input:
+Point1 [0.00, 0.00], Point2 [10.00, -10.00]
+Point1 [1.00, -10.00], Point2 [1.00, 10.00]
+PR_TwoLineIntersect status 0
+Intersect Point [1.00, -1.00]
+
+----------------------------------------------
+TWO LINE INTERSECT REGRESSION TEST #5 STARTING
+----------------------------------------------
+Two Line input:
+Point1 [2.00, 0.00], Point2 [2.00, -10.00]
+Point1 [1.00, -10.00], Point2 [1.00, 10.00]
+PR_TwoLineIntersect status 2
+
+----------------------------------------------
+TWO LINE INTERSECT REGRESSION TEST #6 STARTING
+----------------------------------------------
+Two Line input:
+Point1 [2.00, 0.00], Point2 [2.02, -100.00]
+Point1 [1.00, -10.00], Point2 [1.03, 10.00]
+PR_TwoLineIntersect status 2
+
+-----------------------------------------------
+POINT LINE DISTANCE REGRESSION TEST #1 STARTING
+-----------------------------------------------
+Two Line input:
+Point1 [2.00, 0.00], Point2 [2.02, -100.00]
+Point1 [1.00, -10.00], Point2 [1.03, 10.00]
+PR_ParallelLineDist status 0
+Distance -1.00
+
+-----------------------------------------------
+POINT LINE DISTANCE REGRESSION TEST #2 STARTING
+-----------------------------------------------
+Two Line input:
+Point1 [0.00, 0.00], Point2 [10.00, 10.00]
+Point1 [10.00, 0.00], Point2 [20.00, 10.00]
+PR_ParallelLineDist status 0
+Distance -7.07
+
+-----------------------------------------------
+POINT LINE DISTANCE REGRESSION TEST #3 STARTING
+-----------------------------------------------
+Two Line input:
+Point1 [0.00, 0.00], Point2 [0.00, 10.00]
+Point1 [0.00, 0.00], Point2 [10.00, 0.00]
+PR_ParallelLineDist status 2
+
+----------------------------------------------
+CROSS SECTION AREA REGRESSION TEST #1 STARTING
+----------------------------------------------
+PR_CrossSectionArea status 0
+Distance 300.00
 
 ---------------------------------------------
 FIT PARALLEL LINE REGRESSION TEST #1 STARTING
@@ -581,11 +672,11 @@ CALIPER GUASSIAN DIFF REGRESSION TEST #1 STARTING
 -------------------------------------------------
 Caliper status 0
 ReversedFit = 1
-Line slope = 0.01, intercept = 415.80
-Line coordinate: (425.55, 732.00), (432.63, 1263.00)
+Line slope = 0.01, intercept = 416.19
+Line coordinate: (425.83, 745.00), (432.37, 1250.00)
 Linerity  = 100.00
 Linerity check pass: 1
-Angle  = 89.24
+Angle  = 89.26
 Angle check pass: 1
 
 -------------------------------------------------
@@ -593,11 +684,11 @@ CALIPER GUASSIAN DIFF REGRESSION TEST #2 STARTING
 -------------------------------------------------
 Caliper status 0
 ReversedFit = 1
-Line slope = 0.02, intercept = 763.09
-Line coordinate: (781.25, 744.00), (796.65, 1375.00)
+Line slope = 0.02, intercept = 773.48
+Line coordinate: (786.14, 759.00), (796.16, 1360.00)
 Linerity  = 100.00
 Linerity check pass: 1
-Angle  = 88.60
+Angle  = 89.04
 Angle check pass: 1
 
 -------------------------------------------------
@@ -605,11 +696,11 @@ CALIPER GUASSIAN DIFF REGRESSION TEST #3 STARTING
 -------------------------------------------------
 Caliper status 0
 ReversedFit = 0
-Line slope = -0.01, intercept = 1327.45
-Line coordinate: (998.00, 1318.62), (1213.00, 1316.72)
+Line slope = -0.01, intercept = 1324.62
+Line coordinate: (1003.00, 1318.42), (1218.00, 1317.08)
 Linerity  = 100.00
 Linerity check pass: 1
-Angle  = -0.51
+Angle  = -0.35
 Angle check pass: 1
 
 -------------------------------------------------
@@ -617,11 +708,11 @@ CALIPER GUASSIAN DIFF REGRESSION TEST #4 STARTING
 -------------------------------------------------
 Caliper status 0
 ReversedFit = 0
-Line slope = -0.01, intercept = 1870.49
-Line coordinate: (952.00, 1860.78), (1139.00, 1858.87)
-Linerity  = 95.24
+Line slope = -0.02, intercept = 1876.61
+Line coordinate: (956.00, 1861.79), (1135.00, 1859.01)
+Linerity  = 100.00
 Linerity check pass: 1
-Angle  = -0.58
+Angle  = -0.89
 Angle check pass: 1
 
 -----------------------------------------------
@@ -629,11 +720,11 @@ CALIPER ROTATED ROI REGRESSION TEST #1 STARTING
 -----------------------------------------------
 Caliper status 0
 ReversedFit = 0
-Line slope = -2.25, intercept = 315.48
-Line coordinate: (65.91, 167.26), (103.79, 82.08)
+Line slope = -2.27, intercept = 313.24
+Line coordinate: (65.39, 164.94), (103.80, 77.83)
 Linerity  = 100.00
 Linerity check pass: 1
-Angle  = -66.02
+Angle  = -66.21
 Angle check pass: 1
 
 -----------------------------------------------
@@ -665,12 +756,19 @@ CALIPER ROTATED ROI REGRESSION TEST #5 STARTING
 -----------------------------------------------
 Caliper status 0
 ReversedFit = 0
-Line slope = -0.21, intercept = 355.15
-Line coordinate: (284.78, 295.66), (581.38, 233.70)
+Line slope = -0.21, intercept = 354.43
+Line coordinate: (282.62, 295.12), (573.29, 234.11)
 Linerity  = 100.00
 Linerity check pass: 1
-Angle  = -11.80
+Angle  = -11.85
 Angle check pass: 1
+
+-------------------------------------------------
+CALIPER FIND CIRCLE REGRESSION TEST #1 STARTING
+-------------------------------------------------
+Detect circle status 0
+Radius = 95.11
+Circle center: (130.71, 128.69)
 
 ---------------------------------------------
 CALIBRATE CAMERA REGRESSION TEST #1 STARTING
@@ -1180,8 +1278,8 @@ IntegratedK
 -0.00000 
 -0.00006 
 0.00009 
-0.68983 
--0.00829 
+0.68984 
+-0.00828 
 0.00150 
 
 ---------------------------------------------
@@ -1204,7 +1302,7 @@ PhaseToHeightK:
 -0.0 
 0.9 
 Fetched StepPhase: 
--0.00 0.00 0.00 -0.00 -0.00 
+0.00 0.00 0.00 -0.00 -0.00 
 0.85 0.89 1.06 0.64 0.82 
 1.69 1.75 2.10 1.27 1.62 
 2.52 2.62 3.14 1.90 2.43 
@@ -1213,7 +1311,7 @@ Fetched StepPhase:
 Step-Phase slope: 
 0.84 0.88 1.05 0.64 0.81 
 StepPhaseDiff: 
--0.00 0.00 0.00 -0.00 -0.00 
+0.00 0.00 0.00 -0.00 -0.00 
 0.01 0.01 0.01 0.01 0.01 
 -0.00 -0.00 -0.00 0.00 0.00 
 -0.01 -0.01 -0.01 -0.00 -0.01 

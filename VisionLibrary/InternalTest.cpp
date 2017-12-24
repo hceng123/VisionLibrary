@@ -347,6 +347,38 @@ static void TestPhaseCorrection() {
     printfMat<float>(matPhase);
 }
 
+static void TestFitCircle() {
+    std::cout << std::endl << "------------------------------------------------";
+    std::cout << std::endl << "FIT CIRCLE TEST #1 STARTING";
+    std::cout << std::endl << "------------------------------------------------";
+    std::cout << std::endl;
+
+    VectorOfPoint vecPoints;
+    vecPoints.emplace_back(636, 1308);
+    vecPoints.emplace_back(629, 1307);
+    vecPoints.emplace_back(621, 1307);
+    vecPoints.emplace_back(615, 1304);
+    vecPoints.emplace_back(608, 1302);
+    vecPoints.emplace_back(601, 1300);
+    vecPoints.emplace_back(594, 1298);
+    vecPoints.emplace_back(587, 1294);
+    vecPoints.emplace_back(581, 1290);
+    vecPoints.emplace_back(576, 1286);
+    vecPoints.emplace_back(570, 1281);
+    vecPoints.emplace_back(565, 1275);
+    vecPoints.emplace_back(561, 1270);
+    vecPoints.emplace_back(557, 1264);
+    vecPoints.emplace_back(553, 1257);
+    vecPoints.emplace_back(550, 1251);
+    vecPoints.emplace_back(549, 1243);
+    vecPoints.emplace_back(547, 1236);
+    vecPoints.emplace_back(545, 1229);
+    vecPoints.emplace_back(544, 1222);
+
+    auto fitResult = Fitting::fitCircle ( vecPoints );
+    std::cout << "Fit circle center " << fitResult.center << ", Radius " << fitResult.size.width / 2.f << std::endl;
+}
+
 void InternalTest() {
     TestCalcUtilsCumSum();
     TestCalcUtilsInternals();
@@ -358,6 +390,7 @@ void InternalTest() {
     TestCalcUtilsInterp1();
     TestCalcUtilsRepeat();
     TestPhaseCorrection();
+    TestFitCircle();
 }
 
 }
