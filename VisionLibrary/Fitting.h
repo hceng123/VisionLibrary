@@ -75,6 +75,24 @@ public:
     }
 
     template<typename T>
+    void fitParallelCircle ( const T &vecPoints1, const T &vecPoints2, cv::Point2f &ptCenter, float &fRadius1, float &fRadius2 ) {
+        auto vecCombine ( vecPoints1 );
+        vecCombine.insert ( vecCombine.end (), vecPoints2.begin (), vecPoints2.end () );
+        auto fitTotal = fitCircle ( vecCombine );
+        ptCenter = fitTotal.center;
+
+        double rSqureSum = 0.f;
+        for (const auto &point : vecPoints1)
+            rSqureSum += sqrt ( (point.x - ptCenter.x) * (point.x - ptCenter.x) + (point.y - ptCenter.y) * (point.y - ptCenter.y) );
+        fRadius1 = static_cast<float>( rSqureSum / vecPoints1.size () );
+
+        rSqureSum = 0.f;
+        for (const auto &point : vecPoints2)
+            rSqureSum += sqrt ( (point.x - fitTotal.center.x) * (point.x - fitTotal.center.x) + (point.y - fitTotal.center.y) * (point.y - fitTotal.center.y) );
+        fRadius2 = static_cast<float>(rSqureSum / vecPoints2.size ());
+    }
+
+    template<typename T>
     static T randomSelectPoints ( const T &vecPoints, int numOfPtToSelect ) {
         std::set<int> setResult;
         T vecResultPoints;

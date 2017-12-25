@@ -2978,9 +2978,7 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
 
     const float CHECK_ROI_HEIGHT = pstCmd->fCaliperWidth;
     const float CHECK_ROI_WIDTH  = pstCmd->fMaxSrchRadius - pstCmd->fMinSrchRadius;
-    const int GUASSIAN_DIFF_WIDTH = 2;
-    const float GUASSIAN_KERNEL_SSQ = 1.f;
-    cv::Mat matGuassinKernel = CalcUtils::generateGuassinDiffKernel ( GUASSIAN_DIFF_WIDTH, GUASSIAN_KERNEL_SSQ );
+    cv::Mat matGuassinKernel = CalcUtils::generateGuassinDiffKernel ( pstCmd->nDiffFilterHalfW, pstCmd->fDiffFilterSigma );
     float fAngleInterval =  ( pstCmd->fEndSrchAngle - pstCmd->fStartSrchAngle ) / pstCmd->nCaliperCount;
     float fMiddleOfSrchRadius = ( pstCmd->fMaxSrchRadius + pstCmd->fMinSrchRadius ) / 2.f;
 

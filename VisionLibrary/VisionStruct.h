@@ -458,22 +458,30 @@ struct PR_FIT_CIRCLE_BY_POINT_RPY {
     float                   fRadius;
 };
 
-//Use caliper method to find the circle.
+//Use caliper method to find the circle. Caliper introduction https://drive.google.com/open?id=16hrbMJ6gwkz2ErD12aIYPw5oAkq9y045
 struct PR_FIND_CIRCLE_CMD {
     PR_FIND_CIRCLE_CMD() :
-        fStartSrchAngle(0.f),
-        fEndSrchAngle(0.f),
-        nCaliperCount(20),
-        fCaliperWidth(30.f) {}
+        bFindCirclePair (false),
+        fStartSrchAngle (0.f),
+        fEndSrchAngle   (0.f),
+        nCaliperCount   (20),
+        fCaliperWidth   (30.f),
+        nDiffFilterHalfW(2),
+        fDiffFilterSigma(1.f),
+        nEdgeThreshold  (50) {}
     cv::Mat                 matInputImg;
     PR_OBJECT_ATTRIBUTE     enObjAttribute;
     cv::Point2f             ptExpectedCircleCtr;
+    bool                    bFindCirclePair;    //Find two circles with the same center at the same time.
     float                   fMinSrchRadius;
     float                   fMaxSrchRadius;
     float                   fStartSrchAngle;    //Start search angle, unit is degree, clockwise is positive, anticlockwise is negative.
     float                   fEndSrchAngle;      //End search angle, unit is degree, clockwise is positive, anticlockwise is negative.
     Int32                   nCaliperCount;      //How many caliper will be used to detect circle.
     float                   fCaliperWidth;      //The width of caliper.
+    int                     nDiffFilterHalfW;   //The half width of gaussian diff filter. Details is in caliper tool document.
+    float                   fDiffFilterSigma;   //The Sigma of gaussian diff filter. Sigma is the standard deviation.
+    int                     nEdgeThreshold;     //The gray scale difference threshold of the edge. Over this threshold consider as an edge candidate.
     PR_RM_FIT_NOISE_METHOD  enRmNoiseMethod;
     float                   fErrTol;
 };
