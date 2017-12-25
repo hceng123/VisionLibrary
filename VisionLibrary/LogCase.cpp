@@ -334,7 +334,7 @@ VisionStatus LogCaseFindCircle::WriteCmd(const PR_FIND_CIRCLE_CMD *const pstCmd)
     CSimpleIni ini(false, false, false);
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile( cmdRpyFilePath.c_str() );
-    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyObjAttribute.c_str(), ToInt32(pstCmd->enObjAttribute) );
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyInnerAttribute.c_str(), ToInt32(pstCmd->enInnerAttribute) );
     ini.SetValue(_CMD_SECTION.c_str(), _strKeyExpCircleCtr.c_str(), _formatCoordinate ( pstCmd->ptExpectedCircleCtr ).c_str() );
     ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyMinSrchRadius.c_str(), pstCmd->fMinSrchRadius );
     ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyMaxSrchRadius.c_str(), pstCmd->fMaxSrchRadius );
@@ -344,6 +344,8 @@ VisionStatus LogCaseFindCircle::WriteCmd(const PR_FIND_CIRCLE_CMD *const pstCmd)
     ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyCaliperWidth.c_str(), pstCmd->fCaliperWidth );
     ini.SaveFile( cmdRpyFilePath.c_str() );
     cv::imwrite( _strLogCasePath + _IMAGE_NAME, pstCmd->matInputImg );
+    if ( ! pstCmd->matMask.empty() )
+        cv::imwrite( _strLogCasePath + _MASK_NAME,  pstCmd->matMask );
     return VisionStatus::OK;
 }
 
@@ -370,8 +372,11 @@ VisionStatus LogCaseFindCircle::RunLogCase() {
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile( cmdRpyFilePath.c_str() );
     stCmd.matInputImg = cv::imread( _strLogCasePath + _IMAGE_NAME );
+    String strMaskPath = _strLogCasePath + _MASK_NAME;
+    if ( FileUtils::Exists ( strMaskPath ) )
+        stCmd.matMask = cv::imread( strMaskPath, cv::IMREAD_GRAYSCALE );
 
-    stCmd.enObjAttribute = static_cast<PR_OBJECT_ATTRIBUTE> ( ini.GetLongValue ( _CMD_SECTION.c_str(), _strKeyObjAttribute.c_str(), 0 ) );
+    stCmd.enInnerAttribute = static_cast<PR_OBJECT_ATTRIBUTE> ( ini.GetLongValue ( _CMD_SECTION.c_str(), _strKeyInnerAttribute.c_str(), 0 ) );
     stCmd.ptExpectedCircleCtr = _parseCoordinate ( ini.GetValue(_CMD_SECTION.c_str(), _strKeyExpCircleCtr.c_str(), _DEFAULT_COORD.c_str() ) );
     stCmd.fMinSrchRadius = ToFloat ( ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyMinSrchRadius.c_str(), 0. ) );
     stCmd.fMaxSrchRadius = ToFloat ( ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyMaxSrchRadius.c_str(), 0. ) );

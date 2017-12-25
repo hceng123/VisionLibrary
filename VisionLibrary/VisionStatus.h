@@ -54,8 +54,7 @@ enum class VisionStatus
     CAN_NOT_FIND_CAE_LINE,      //Can not find the line of capacitor
     CAN_NOT_FIND_SQUARE_EDGE,
     CAN_NOT_FIND_CIRCULAR_CHIP,
-    CAN_NOT_FIND_CHIP_BODY,
-    CALIPER_CAN_NOT_FIND_LINE,
+    CAN_NOT_FIND_CHIP_BODY,    
     
     //Learn and inspect contour status
     CAN_NOT_FIND_CONTOUR,
@@ -76,6 +75,10 @@ enum class VisionStatus
     //Camera MTF
     CAN_NOT_FIND_MTF_PATTERN            = 150,
     MTF_PATTERN_TOO_SMALL               = 151,
+
+    //Caliper errors
+    CALIPER_CAN_NOT_FIND_LINE           = 200,
+    CALIPER_NOT_ENOUGH_EDGE_POINTS      = 201,
 };
 
 }

@@ -136,7 +136,7 @@ public:
     virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
     static String StaticGetFolderPrefix();
 private:    
-    const String _strKeyObjAttribute    = "ObjAttribute";
+    const String _strKeyInnerAttribute  = "InnerAttribute";
     const String _strKeyExpCircleCtr    = "ExpectedCircleCtr";
     const String _strKeyMinSrchRadius   = "MinSrchRadius";
     const String _strKeyMaxSrchRadius   = "MaxSrchRadius";
@@ -146,10 +146,16 @@ private:
     const String _strKeyErrorTol        = "ErrorTolerance";
     const String _strKeyCaliperCount    = "CaliperCount";
     const String _strKeyCaliperWidth    = "CaliperWidth";
+    const String _strKeyDiffFilterHalfW = "DiffFilterHalfW";
+    const String _strKeyDiffFilterSigma = "DiffFilterSigma";
+    const String _strKeyEdgeThreshold   = "EdgeThreshold";
+    const String _strKeySelectEdge      = "SelectEdge";
+    const String _strKeyRmStrayPtRatio  = "RmStrayPtRatio";
 
     const String _strKeyStatus          = "Status";
     const String _strKeyResultCtr       = "ResultCtr";
     const String _strKeyRadius          = "Radius";
+    const String _strKeyRadius2         = "Radius2";
 };
 
 class LogCaseInspCircle : public LogCase

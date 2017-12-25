@@ -270,7 +270,8 @@ void VisionWidget::on_detectCircleBtn_clicked() {
     PR_FIND_CIRCLE_RPY stRpy;
 
     stCmd.matInputImg = ui.visionView->getMat();
-    stCmd.enObjAttribute = static_cast<PR_OBJECT_ATTRIBUTE> ( ui.comboBoxDetectCircleAttribute->currentIndex() );
+    stCmd.matMask = ui.visionView->getMask();
+    stCmd.enInnerAttribute = static_cast<PR_OBJECT_ATTRIBUTE> ( ui.comboBoxDetectCircleAttribute->currentIndex() );
     stCmd.bFindCirclePair = static_cast<bool> ( ui.comboBoxDetectCircleFindPair->currentIndex() );
     stCmd.ptExpectedCircleCtr = ptCtr;
     stCmd.fMinSrchRadius = fInnerRadius;

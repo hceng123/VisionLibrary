@@ -473,7 +473,7 @@ struct PR_FIND_CIRCLE_CMD {
         fRmStrayPointRatio (0.2f) {}
     cv::Mat                 matInputImg;
     cv::Mat                 matMask;
-    PR_OBJECT_ATTRIBUTE     enObjAttribute;
+    PR_OBJECT_ATTRIBUTE     enInnerAttribute;   //The inner circle attribute, is it darker or brighter than outside.
     cv::Point2f             ptExpectedCircleCtr;
     bool                    bFindCirclePair;    //Find two circles with the same center at the same time.
     float                   fMinSrchRadius;
