@@ -271,15 +271,16 @@ void VisionWidget::on_detectCircleBtn_clicked() {
 
     stCmd.matInputImg = ui.visionView->getMat();
     stCmd.enObjAttribute = static_cast<PR_OBJECT_ATTRIBUTE> ( ui.comboBoxDetectCircleAttribute->currentIndex() );
-    stCmd.enRmNoiseMethod = static_cast<PR_RM_FIT_NOISE_METHOD> ( ui.comboBoxDetectCircleFitDirection->currentIndex() );
+    stCmd.bFindCirclePair = static_cast<bool> ( ui.comboBoxDetectCircleFindPair->currentIndex() );
     stCmd.ptExpectedCircleCtr = ptCtr;
     stCmd.fMinSrchRadius = fInnerRadius;
     stCmd.fMaxSrchRadius = fOuterRadius;
     stCmd.fStartSrchAngle = ui.lineEditDetectCircleStartSrchAngle->text().toFloat();
     stCmd.fEndSrchAngle = ui.lineEditDetectCircleEndSrchAngle->text().toFloat();
-    stCmd.fErrTol = ui.lineEditDetectCircleErrTol->text().toFloat();
+    //stCmd.fErrTol = ui.lineEditDetectCircleErrTol->text().toFloat();
     stCmd.nCaliperCount = ui.lineEditDetectCircleCaliperCount->text().toInt();
     stCmd.fCaliperWidth = ui.lineEditDetectCircleCaliperWidth->text().toFloat();
+    stCmd.fRmStrayPointRatio = ui.lineEditDetectCircleRmStrayRatio->text().toFloat();
     
     PR_FindCircle ( &stCmd, &stRpy );
     if ( stRpy.enStatus == VisionStatus::OK ) {

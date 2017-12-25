@@ -468,8 +468,11 @@ struct PR_FIND_CIRCLE_CMD {
         fCaliperWidth   (30.f),
         nDiffFilterHalfW(2),
         fDiffFilterSigma(1.f),
-        nEdgeThreshold  (50) {}
+        nEdgeThreshold  (50),
+        enSelectEdge    (PR_CALIPER_SELECT_EDGE::MAX_EDGE),
+        fRmStrayPointRatio (0.2f) {}
     cv::Mat                 matInputImg;
+    cv::Mat                 matMask;
     PR_OBJECT_ATTRIBUTE     enObjAttribute;
     cv::Point2f             ptExpectedCircleCtr;
     bool                    bFindCirclePair;    //Find two circles with the same center at the same time.
@@ -482,14 +485,15 @@ struct PR_FIND_CIRCLE_CMD {
     int                     nDiffFilterHalfW;   //The half width of gaussian diff filter. Details is in caliper tool document.
     float                   fDiffFilterSigma;   //The Sigma of gaussian diff filter. Sigma is the standard deviation.
     int                     nEdgeThreshold;     //The gray scale difference threshold of the edge. Over this threshold consider as an edge candidate.
-    PR_RM_FIT_NOISE_METHOD  enRmNoiseMethod;
-    float                   fErrTol;
+    PR_CALIPER_SELECT_EDGE  enSelectEdge;
+    float                   fRmStrayPointRatio; //The ratio to remove the stray point(Fit for one time, then remove the points with largest error and fit again).
 };
 
 struct PR_FIND_CIRCLE_RPY {
     VisionStatus            enStatus;
     cv::Point2f             ptCircleCtr;
     float                   fRadius;
+    float                   fRadius2;
     cv::Mat                 matResultImg;
 };
 

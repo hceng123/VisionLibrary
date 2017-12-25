@@ -968,7 +968,7 @@
         <string>360</string>
        </property>
       </widget>
-      <widget class="QComboBox" name="comboBoxDetectCircleFitDirection">
+      <widget class="QComboBox" name="comboBoxDetectCircleFindPair">
        <property name="geometry">
         <rect>
          <x>90</x>
@@ -982,21 +982,16 @@
        </property>
        <item>
         <property name="text">
-         <string>Middle</string>
+         <string>No</string>
         </property>
        </item>
        <item>
         <property name="text">
-         <string>Inner</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>Outer</string>
+         <string>Yes</string>
         </property>
        </item>
       </widget>
-      <widget class="QLabel" name="labeDetectCircleFitDirection">
+      <widget class="QLabel" name="labeDetectCircleFindPair">
        <property name="geometry">
         <rect>
          <x>20</x>
@@ -1009,7 +1004,7 @@
         <string>Fit Direction</string>
        </property>
       </widget>
-      <widget class="QLineEdit" name="lineEditDetectCircleErrTol">
+      <widget class="QLineEdit" name="lineEditDetectCircleRmStrayRatio">
        <property name="geometry">
         <rect>
          <x>270</x>
@@ -1022,7 +1017,7 @@
         <set>Qt::ImhDigitsOnly</set>
        </property>
        <property name="text">
-        <string>1</string>
+        <string>0.2</string>
        </property>
       </widget>
       <widget class="QLabel" name="labelDetectCircleErrTol">
@@ -1035,7 +1030,7 @@
         </rect>
        </property>
        <property name="text">
-        <string>Error Tolerance</string>
+        <string>Rm Stray Ratio</string>
        </property>
       </widget>
       <widget class="QComboBox" name="comboBoxDetectCircleAttribute">

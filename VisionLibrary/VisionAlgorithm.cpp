@@ -2354,12 +2354,55 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
     return pstRpy->enStatus;
 }
 
+/*static*/ bool VisionAlgorithm::_findEdgePosInX( const cv::Mat &matInput, const cv::Mat &matGuassianDiffKernel, PR_CALIPER_DIR enDirection, PR_CALIPER_SELECT_EDGE enSelectEdge, int nEdgeThreshold, bool bFindPair, int &nPos1, int &nPos2 ) {
+    cv::Mat matAverage;
+    cv::reduce ( matInput, matAverage, 0, cv::ReduceTypes::REDUCE_AVG );
+    bool bFound = false;
+    cv::Mat matGuassianDiffResult;   
+    CalcUtils::filter2D_Conv ( matAverage, matGuassianDiffResult, CV_32F, matGuassianDiffKernel );
+    if ( PR_CALIPER_SELECT_EDGE::MAX_EDGE == enSelectEdge ) {
+        double minValue = 0., maxValue = 0.;
+        cv::Point ptMin, ptMax;
+        cv::minMaxLoc ( matGuassianDiffResult, &minValue, &maxValue, &ptMin, &ptMax );
+        if ( bFindPair && fabs ( minValue ) > nEdgeThreshold && fabs ( maxValue ) > nEdgeThreshold ) {
+            if( PR_CALIPER_DIR::DARK_TO_BRIGHT == enDirection  ) {
+                nPos1 = ptMin.x;
+                nPos2 = ptMax.x;
+            }else {
+                nPos1 = ptMax.x;
+                nPos2 = ptMin.x;
+            }
+            bFound = true;
+        }else {
+            if( PR_CALIPER_DIR::DARK_TO_BRIGHT == enDirection && -minValue > nEdgeThreshold  ) {
+                nPos1 = ptMin.x;
+                bFound = true;
+            }else if ( PR_CALIPER_DIR::BRIGHT_TO_DARK == enDirection && maxValue > nEdgeThreshold ){
+                nPos1 = ptMax.x;
+                bFound = true;
+            }            
+        }
+    }else {
+        for ( int col = 0; col < matGuassianDiffResult.cols; ++ col ) {
+            auto value = matGuassianDiffResult.at<float> ( col );
+            if ( PR_CALIPER_DIR::DARK_TO_BRIGHT == enDirection && -value > nEdgeThreshold ) {
+                nPos1 = col;
+                bFound = true;
+            }else if ( PR_CALIPER_DIR::BRIGHT_TO_DARK == enDirection && value > nEdgeThreshold ) {
+                nPos1 = col;
+                bFound = true;
+            }
+        }
+    }
+    return bFound = true;
+}
+
 /*static*/ int VisionAlgorithm::_findMaxDiffPosInX( const cv::Mat &matInput, const cv::Mat &matGuassianDiffKernel, PR_CALIPER_DIR enDirection ) {
     cv::Mat matAverage;
     cv::reduce ( matInput, matAverage, 0, cv::ReduceTypes::REDUCE_AVG );
-
     cv::Mat matGuassianDiffResult;   
     CalcUtils::filter2D_Conv ( matAverage, matGuassianDiffResult, CV_32F, matGuassianDiffKernel );
+
     double minValue = 0., maxValue = 0.;
     cv::Point ptMin, ptMax;
     cv::minMaxLoc ( matGuassianDiffResult, &minValue, &maxValue, &ptMin, &ptMax );
@@ -2969,6 +3012,14 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
         return pstRpy->enStatus;
     }
 
+    if ( pstCmd->fRmStrayPointRatio < 0.f || pstCmd->fRmStrayPointRatio > 0.9 ) {
+        char chArrMsg[1000];
+        _snprintf( chArrMsg, sizeof( chArrMsg ), "The remove stray point ratio %f is invalid.", pstCmd->fRmStrayPointRatio );
+        WriteLog(chArrMsg);
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
     MARK_FUNCTION_START_TIME;
     SETUP_LOGCASE(LogCaseFindCircle);
 
@@ -2985,7 +3036,7 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     if ( ! isAutoMode() )
         cv::cvtColor ( matGray, pstRpy->matResultImg, CV_GRAY2BGR );
 
-    VectorOfPoint vecPoint;
+    VectorOfPoint2f vecPoints, vecPoints2;
     for ( int i = 0; i < pstCmd->nCaliperCount; ++ i ) {
         float fAngle = pstCmd->fStartSrchAngle + i * fAngleInterval + fAngleInterval / 2.f;
         float fCos = ToFloat ( cos ( CalcUtils::degree2Radian ( fAngle ) ) );
@@ -3014,33 +3065,57 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
         else if ( PR_OBJECT_ATTRIBUTE::DARK == pstCmd->enObjAttribute )
             enDir = PR_CALIPER_DIR::DARK_TO_BRIGHT;
 
-        int nJumpPos = _findMaxDiffPosInX ( matROI, matGuassinKernel, enDir );
+        int nEdgePos1, nEdgePos2;
+        bool bResult = _findEdgePosInX ( matROI, matGuassinKernel, enDir, pstCmd->enSelectEdge, pstCmd->nEdgeThreshold, pstCmd->bFindCirclePair, nEdgePos1, nEdgePos2 );
 
-        cv::Point2f ptFindPos;
-        ptFindPos.x = pstCmd->ptExpectedCircleCtr.x + ( nJumpPos + pstCmd->fMinSrchRadius ) * fCos;
-        ptFindPos.y = pstCmd->ptExpectedCircleCtr.y + ( nJumpPos + pstCmd->fMinSrchRadius ) * fSin;
-        vecPoint.push_back ( ptFindPos );
+        if ( bResult ) {
+            cv::Point2f ptFindPos;
+            ptFindPos.x = pstCmd->ptExpectedCircleCtr.x + ( nEdgePos1 + pstCmd->fMinSrchRadius ) * fCos;
+            ptFindPos.y = pstCmd->ptExpectedCircleCtr.y + ( nEdgePos1 + pstCmd->fMinSrchRadius ) * fSin;
+            vecPoints.push_back ( ptFindPos );
+            if ( pstCmd->bFindCirclePair ) {
+                ptFindPos.x = pstCmd->ptExpectedCircleCtr.x + ( nEdgePos2 + pstCmd->fMinSrchRadius ) * fCos;
+                ptFindPos.y = pstCmd->ptExpectedCircleCtr.y + ( nEdgePos2 + pstCmd->fMinSrchRadius ) * fSin;
+                vecPoints2.push_back ( ptFindPos );
+            }
+        }
     }
 
-    auto fitResult = Fitting::fitCircleIterate ( vecPoint, pstCmd->enRmNoiseMethod, pstCmd->fErrTol );
-    pstRpy->ptCircleCtr = fitResult.center;
-    pstRpy->fRadius = fitResult.size.width / 2.f;
-    if ( pstRpy->fRadius > 0.f )
+    if ( pstCmd->bFindCirclePair ) {
+        Fitting::fitParallelCircle ( vecPoints, vecPoints2, pstRpy->ptCircleCtr, pstRpy->fRadius, pstRpy->fRadius2 );
         pstRpy->enStatus = VisionStatus::OK;
-    else {
-        WriteLog("Too much noise to fit the circle in findCircle.");
-        pstRpy->enStatus = VisionStatus::TOO_MUCH_NOISE_TO_FIT;
+    }else {
+        auto fitResult = Fitting::fitCircleRemoveStray ( vecPoints, pstCmd->fRmStrayPointRatio );
+        pstRpy->ptCircleCtr = fitResult.center;
+        pstRpy->fRadius = fitResult.size.width / 2.f;
+        if( pstRpy->fRadius > 0.f )
+            pstRpy->enStatus = VisionStatus::OK;
+        else {
+            WriteLog ( "Too much noise to fit the circle in findCircle." );
+            pstRpy->enStatus = VisionStatus::TOO_MUCH_NOISE_TO_FIT;
+        }
     }
 
     if ( ! isAutoMode() ) {
-        for ( const auto &point : vecPoint ) {
+        for ( const auto &point : vecPoints ) {
             cv::circle ( pstRpy->matResultImg, point, 3, _constBlueScalar, 2 );
         }
 
-        if ( VisionStatus::OK == pstRpy->enStatus )
+        if ( pstCmd->bFindCirclePair ) {
+            for ( const auto &point : vecPoints2 ) {
+                cv::circle ( pstRpy->matResultImg, point, 3, _constBlueScalar, 2 );
+            }
+        }
+
+        cv::circle( pstRpy->matResultImg, pstCmd->ptExpectedCircleCtr, 3, _constRedScalar, 1 );
+        cv::circle( pstRpy->matResultImg, pstRpy->ptCircleCtr, 3, _constGreenScalar, 1 );
+
+        if ( VisionStatus::OK == pstRpy->enStatus ) {
             cv::circle ( pstRpy->matResultImg, pstRpy->ptCircleCtr, ToInt32 ( pstRpy->fRadius ), _constGreenScalar, 1 );
+            if ( pstCmd->bFindCirclePair )
+                cv::circle ( pstRpy->matResultImg, pstRpy->ptCircleCtr, ToInt32 ( pstRpy->fRadius2 ), _constGreenScalar, 1 );
+        }
     }
-    
     FINISH_LOGCASE;
     MARK_FUNCTION_END_TIME;
     return pstRpy->enStatus;

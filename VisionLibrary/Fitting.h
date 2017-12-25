@@ -75,7 +75,7 @@ public:
     }
 
     template<typename T>
-    void fitParallelCircle ( const T &vecPoints1, const T &vecPoints2, cv::Point2f &ptCenter, float &fRadius1, float &fRadius2 ) {
+    static void fitParallelCircle ( const T &vecPoints1, const T &vecPoints2, cv::Point2f &ptCenter, float &fRadius1, float &fRadius2 ) {
         auto vecCombine ( vecPoints1 );
         vecCombine.insert ( vecCombine.end (), vecPoints2.begin (), vecPoints2.end () );
         auto fitTotal = fitCircle ( vecCombine );
@@ -89,7 +89,7 @@ public:
         rSqureSum = 0.f;
         for (const auto &point : vecPoints2)
             rSqureSum += sqrt ( (point.x - fitTotal.center.x) * (point.x - fitTotal.center.x) + (point.y - fitTotal.center.y) * (point.y - fitTotal.center.y) );
-        fRadius2 = static_cast<float>(rSqureSum / vecPoints2.size ());
+        fRadius2 = static_cast<float> ( rSqureSum / vecPoints2.size () );
     }
 
     template<typename T>
@@ -207,6 +207,33 @@ public:
             rotatedRect = fitCircle ( listPoint );
             overTolPoints = findPointsIterOverCircleTol ( listPoint.cbegin(), listPoint.cend(), rotatedRect, method, tolerance );
             ++ nIteratorNum;
+        }
+        return rotatedRect;
+    }
+
+    template<typename T>
+    static cv::RotatedRect fitCircleRemoveStray ( const T &vecPoints, float fRmStrayPointRatio ) {
+        cv::RotatedRect rotatedRect;
+        if (vecPoints.size () < 3)
+            return rotatedRect;
+
+        rotatedRect = fitCircle ( vecPoints );
+
+        if ( fRmStrayPointRatio > 0 ) {
+            int nPointsToKeep = ToInt32 ( vecPoints.size() * ( 1.f - fRmStrayPointRatio ) );
+            VectorOfFloat vecDistance;
+            vecDistance.reserve ( vecPoints.size() );
+            for ( const auto &point : vecPoints ) {
+                float fDistance = CalcUtils::distanceOf2Point ( point, rotatedRect.center );
+                vecDistance.push_back ( fDistance );
+            }
+            auto vecIndex = CalcUtils::sort_index ( vecDistance );
+            T vecKeepPoints;
+            vecKeepPoints.reserve ( nPointsToKeep );
+            for ( int i = 0; i < nPointsToKeep; ++ i ) {
+                vecKeepPoints.push_back ( vecPoints[i] );
+            }
+            rotatedRect = fitCircle ( vecKeepPoints );  //Fit again use the left over points
         }
         return rotatedRect;
     }
