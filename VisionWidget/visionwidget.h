@@ -23,7 +23,7 @@ private slots:
     void on_checkBoxByerFormat_clicked(bool checked);
 	void on_fitCircleBtn_clicked();
     void on_houghCircleBtn_clicked();
-    void on_detectCircleBtn_clicked();
+    void on_findCircleBtn_clicked();
     void on_calcRoundnessBtn_clicked();
     void on_fitLineBtn_clicked();
     void on_btnCaliper_clicked();

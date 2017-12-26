@@ -208,7 +208,7 @@ void VisionWidget::on_houghCircleBtn_clicked() {
     ui.visionView->setMat ( VisionView::DISPLAY_SOURCE::RESULT, matResultImage );
 }
 
-void VisionWidget::on_detectCircleBtn_clicked() {
+void VisionWidget::on_findCircleBtn_clicked() {
     if ( _sourceImagePath.empty() ) {
         QMessageBox::information(this, "Vision Widget", "Please select an image first!", "Quit");
         return;
@@ -220,7 +220,7 @@ void VisionWidget::on_detectCircleBtn_clicked() {
     QRect rect = qApp->activeWindow()->geometry();
 	std::unique_ptr<MessageBoxDialog> pMessageBox = std::make_unique<MessageBoxDialog>();
     pMessageBox->setGeometry(rect.x() + 800, rect.y() + 300, pMessageBox->size().width(), pMessageBox->size().height());
-    pMessageBox->setWindowTitle("Detect Circle");
+    pMessageBox->setWindowTitle("Find Circle");
 	pMessageBox->SetMessageText1("Please input the expected circle center");
     pMessageBox->SetMessageText2("Press and drag the left mouse buttont to input");
 	pMessageBox->setWindowFlags(Qt::WindowStaysOnTopHint);
@@ -289,7 +289,7 @@ void VisionWidget::on_detectCircleBtn_clicked() {
     }else {
         PR_GET_ERROR_INFO_RPY stErrStrRpy;
         PR_GetErrorInfo(stRpy.enStatus, &stErrStrRpy);
-        QMessageBox::critical(nullptr, "Detect Circle", stErrStrRpy.achErrorStr, "Quit");
+        QMessageBox::critical(nullptr, "Find Circle", stErrStrRpy.achErrorStr, "Quit");
     }
 }
 

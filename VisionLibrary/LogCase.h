@@ -138,6 +138,7 @@ public:
 private:    
     const String _strKeyInnerAttribute  = "InnerAttribute";
     const String _strKeyExpCircleCtr    = "ExpectedCircleCtr";
+    const String _strKeyFindCirclePair  = "FindCirclePair";
     const String _strKeyMinSrchRadius   = "MinSrchRadius";
     const String _strKeyMaxSrchRadius   = "MaxSrchRadius";
     const String _strKeyStartSrchAngle  = "StartSrchAngle";

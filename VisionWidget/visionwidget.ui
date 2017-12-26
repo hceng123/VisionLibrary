@@ -895,9 +895,9 @@
        </rect>
       </property>
       <property name="title">
-       <string>Detect Circle</string>
+       <string>Find Circle</string>
       </property>
-      <widget class="QPushButton" name="detectCircleBtn">
+      <widget class="QPushButton" name="findCircleBtn">
        <property name="geometry">
         <rect>
          <x>500</x>
@@ -907,7 +907,7 @@
         </rect>
        </property>
        <property name="text">
-        <string>Detect Cicle</string>
+        <string>Find Cicle</string>
        </property>
       </widget>
       <widget class="QLineEdit" name="lineEditDetectCircleStartSrchAngle">
@@ -994,14 +994,14 @@
       <widget class="QLabel" name="labeDetectCircleFindPair">
        <property name="geometry">
         <rect>
-         <x>20</x>
+         <x>10</x>
          <y>50</y>
          <width>71</width>
          <height>16</height>
         </rect>
        </property>
        <property name="text">
-        <string>Fit Direction</string>
+        <string>Find Pair</string>
        </property>
       </widget>
       <widget class="QLineEdit" name="lineEditDetectCircleRmStrayRatio">
@@ -1056,14 +1056,14 @@
       <widget class="QLabel" name="labelDetectCircleAttribute">
        <property name="geometry">
         <rect>
-         <x>20</x>
+         <x>10</x>
          <y>20</y>
-         <width>47</width>
-         <height>13</height>
+         <width>71</width>
+         <height>16</height>
         </rect>
        </property>
        <property name="text">
-        <string>Attribute</string>
+        <string>Inner Attribute</string>
        </property>
       </widget>
       <widget class="QLineEdit" name="lineEditDetectCircleCaliperCount">

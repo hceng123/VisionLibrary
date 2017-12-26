@@ -276,12 +276,20 @@ void TestCaliperRoatedROI() {
     PrintRpy(stRpy);
 }
 
-static void PrintDetectCircleRpy(const PR_FIND_CIRCLE_RPY &stRpy)    {
+static void PrintFindCircleRpy(const PR_FIND_CIRCLE_RPY &stRpy)    {
     char chArrMsg[100];
-    std::cout << "Detect circle status " << ToInt32 ( stRpy.enStatus ) << std::endl;
-    std::cout << std::fixed << std::setprecision ( 2 ) << "Radius = " << stRpy.fRadius << std::endl;
+    std::cout << "Find circle status " << ToInt32 ( stRpy.enStatus ) << std::endl;
+    if ( VisionStatus::OK != stRpy.enStatus ) {
+        PR_GET_ERROR_INFO_RPY stErrorInfo;
+        PR_GetErrorInfo ( stRpy.enStatus, &stErrorInfo );
+        std::cout << "Error message " << stErrorInfo.achErrorStr << std::endl;
+        return;
+    }
+        
     _snprintf ( chArrMsg, sizeof ( chArrMsg ), "(%.2f, %.2f)", stRpy.ptCircleCtr.x, stRpy.ptCircleCtr.y );
     std::cout << "Circle center: " << chArrMsg << std::endl;
+    std::cout << std::fixed << std::setprecision ( 2 ) << "Radius = " << stRpy.fRadius << std::endl;
+    std::cout << std::fixed << std::setprecision ( 2 ) << "Radius2 = " << stRpy.fRadius2 << std::endl;
 };
 
 void TestFindCircle() {
@@ -294,19 +302,59 @@ void TestFindCircle() {
     std::cout << std::endl;
 
     stCmd.matInputImg = cv::imread ("./data/RoundContourInsp.png", cv::IMREAD_GRAYSCALE );
-    stCmd.enObjAttribute = PR_OBJECT_ATTRIBUTE::BRIGHT;
+    stCmd.ptExpectedCircleCtr = cv::Point(130, 123);
+    stCmd.enInnerAttribute = PR_OBJECT_ATTRIBUTE::BRIGHT;
+    stCmd.bFindCirclePair = false;
     stCmd.fMinSrchRadius = 78.f;
     stCmd.fMaxSrchRadius = 110.f;
     stCmd.fStartSrchAngle = 50.f;
-    stCmd.fEndSrchAngle = -230.f;
-    stCmd.ptExpectedCircleCtr = cv::Point(130, 123);
+    stCmd.fEndSrchAngle = -230.f;    
     stCmd.nCaliperCount = 20;
     stCmd.fCaliperWidth = 20.f;
-    stCmd.enRmNoiseMethod = PR_RM_FIT_NOISE_METHOD::ABSOLUTE_ERR;
-    stCmd.fErrTol = 1;
 
     PR_FindCircle ( &stCmd, &stRpy );
-    PrintDetectCircleRpy ( stRpy );
+    PrintFindCircleRpy ( stRpy );
+
+    std::cout << std::endl << "-------------------------------------------------";
+    std::cout << std::endl << "CALIPER FIND CIRCLE REGRESSION TEST #2 STARTING";
+    std::cout << std::endl << "-------------------------------------------------";
+    std::cout << std::endl;
+
+    stCmd.matInputImg = cv::imread ("./data/RoundContourInsp.png", cv::IMREAD_GRAYSCALE );
+    stCmd.bFindCirclePair = true;
+    stCmd.enInnerAttribute = PR_OBJECT_ATTRIBUTE::DARK;    
+    stCmd.ptExpectedCircleCtr = cv::Point(129, 127);
+    stCmd.fMinSrchRadius = 38;
+    stCmd.fMaxSrchRadius = 114;
+    stCmd.fStartSrchAngle = 50.f;
+    stCmd.fEndSrchAngle = -230.f;    
+    stCmd.nCaliperCount = 20;
+    stCmd.fCaliperWidth = 20.f;
+    stCmd.fRmStrayPointRatio = 0.2f;
+
+    PR_FindCircle ( &stCmd, &stRpy );
+    PrintFindCircleRpy ( stRpy );
+
+    std::cout << std::endl << "-------------------------------------------------";
+    std::cout << std::endl << "CALIPER FIND CIRCLE REGRESSION TEST #3 STARTING";
+    std::cout << std::endl << "-------------------------------------------------";
+    std::cout << std::endl;
+
+    stCmd.matInputImg = cv::imread ("./data/RoundContourInsp.png", cv::IMREAD_GRAYSCALE );
+    //Test mask out all the points, the result should fail.
+    stCmd.matMask = cv::Mat::zeros ( stCmd.matInputImg.size(), CV_8UC1 );
+    stCmd.enInnerAttribute = PR_OBJECT_ATTRIBUTE::DARK;
+    stCmd.ptExpectedCircleCtr = cv::Point(129, 127);
+    stCmd.fMinSrchRadius = 38;
+    stCmd.fMaxSrchRadius = 114;
+    stCmd.fStartSrchAngle = 50.f;
+    stCmd.fEndSrchAngle = -230.f;    
+    stCmd.nCaliperCount = 20;
+    stCmd.fCaliperWidth = 20.f;
+    stCmd.fRmStrayPointRatio = 0.2f;
+
+    PR_FindCircle ( &stCmd, &stRpy );
+    PrintFindCircleRpy ( stRpy );
 }
 
 void TestCaliper() {

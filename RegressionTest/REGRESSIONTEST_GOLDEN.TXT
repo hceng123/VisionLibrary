@@ -742,14 +742,14 @@ Angle check pass: 1
 -----------------------------------------------
 CALIPER ROTATED ROI REGRESSION TEST #3 STARTING
 -----------------------------------------------
-Caliper status 32
-Error Msg: Caliper can not find the line.
+Caliper status 200
+Error Msg: Caliper cannot find the line.
 
 -----------------------------------------------
 CALIPER ROTATED ROI REGRESSION TEST #4 STARTING
 -----------------------------------------------
-Caliper status 32
-Error Msg: Caliper can not find the line.
+Caliper status 200
+Error Msg: Caliper cannot find the line.
 
 -----------------------------------------------
 CALIPER ROTATED ROI REGRESSION TEST #5 STARTING
@@ -766,9 +766,24 @@ Angle check pass: 1
 -------------------------------------------------
 CALIPER FIND CIRCLE REGRESSION TEST #1 STARTING
 -------------------------------------------------
-Detect circle status 0
-Radius = 95.11
-Circle center: (130.71, 128.69)
+Find circle status 0
+Circle center: (130.30, 127.24)
+Radius = 95.20
+Radius2 = 0.00
+
+-------------------------------------------------
+CALIPER FIND CIRCLE REGRESSION TEST #2 STARTING
+-------------------------------------------------
+Find circle status 0
+Circle center: (130.61, 131.16)
+Radius = 51.60
+Radius2 = 96.26
+
+-------------------------------------------------
+CALIPER FIND CIRCLE REGRESSION TEST #3 STARTING
+-------------------------------------------------
+Find circle status 201
+Error message Caliper cannot enough edge points.
 
 ---------------------------------------------
 CALIBRATE CAMERA REGRESSION TEST #1 STARTING
@@ -1045,7 +1060,7 @@ Result threshold: 152
 Number of contour: 2
 Inspect contour status: 0
 Number of defects: 0
-Inspect contour status: 34
+Inspect contour status: 33
 Number of defects: 2
 
 ---------------------------------------------
@@ -1056,7 +1071,7 @@ Result threshold: 134
 Number of contour: 2
 Inspect contour status: 0
 Number of defects: 0
-Inspect contour status: 34
+Inspect contour status: 33
 Number of defects: 2
 
 ---------------------------------------------

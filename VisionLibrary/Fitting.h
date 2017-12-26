@@ -221,21 +221,59 @@ public:
 
         if ( fRmStrayPointRatio > 0 ) {
             int nPointsToKeep = ToInt32 ( vecPoints.size() * ( 1.f - fRmStrayPointRatio ) );
-            VectorOfFloat vecDistance;
-            vecDistance.reserve ( vecPoints.size() );
+            VectorOfFloat vecRadiusDiff;
+            vecRadiusDiff.reserve ( vecPoints.size() );
             for ( const auto &point : vecPoints ) {
-                float fDistance = CalcUtils::distanceOf2Point ( point, rotatedRect.center );
-                vecDistance.push_back ( fDistance );
+                float fRadiusDiff = fabs ( CalcUtils::distanceOf2Point ( point, rotatedRect.center ) - rotatedRect.size.width / 2.f );
+                vecRadiusDiff.push_back ( fRadiusDiff );
             }
-            auto vecIndex = CalcUtils::sort_index ( vecDistance );
+            auto vecIndex = CalcUtils::sort_index ( vecRadiusDiff );
             T vecKeepPoints;
             vecKeepPoints.reserve ( nPointsToKeep );
             for ( int i = 0; i < nPointsToKeep; ++ i ) {
-                vecKeepPoints.push_back ( vecPoints[i] );
+                vecKeepPoints.push_back ( vecPoints[ vecIndex[i] ] );
             }
             rotatedRect = fitCircle ( vecKeepPoints );  //Fit again use the left over points
         }
         return rotatedRect;
+    }
+
+    template<typename T>
+    static void fitParallelCircleRemoveStray ( const T &vecPoints1, const T &vecPoints2, T &vecKeepPoints1, T &vecKeepPoints2, cv::Point2f &ptCenter, float &fRadius1, float &fRadius2, float fRmStrayPointRatio ) {
+        fitParallelCircle ( vecPoints1, vecPoints2, ptCenter, fRadius1, fRadius2 );
+        if ( fRmStrayPointRatio > 0 ) {
+            {
+                int nPointsToKeep = ToInt32 ( vecPoints1.size () * (1.f - fRmStrayPointRatio) );
+                VectorOfFloat vecRadiusDiff;
+                vecRadiusDiff.reserve ( vecPoints1.size () );
+                for( const auto &point : vecPoints1 ) {
+                    float fRadiusDiff = fabs ( CalcUtils::distanceOf2Point ( point, ptCenter ) - fRadius1 );
+                    vecRadiusDiff.push_back ( fRadiusDiff );
+                }
+                auto vecIndex = CalcUtils::sort_index ( vecRadiusDiff );
+                vecKeepPoints1.reserve ( nPointsToKeep );
+                for( int i = 0; i < nPointsToKeep; ++ i ) {
+                    vecKeepPoints1.push_back ( vecPoints1[ vecIndex[i] ] );
+                }
+            }
+
+            {
+                int nPointsToKeep = ToInt32 ( vecPoints2.size () * (1.f - fRmStrayPointRatio) );
+                VectorOfFloat vecRadiusDiff;
+                vecRadiusDiff.reserve ( vecPoints2.size () );
+                for( const auto &point : vecPoints2 ) {
+                    float fRadiusDiff = fabs ( CalcUtils::distanceOf2Point ( point, ptCenter ) - fRadius2 );
+                    vecRadiusDiff.push_back ( fRadiusDiff );
+                }
+                auto vecIndex = CalcUtils::sort_index ( vecRadiusDiff );
+
+                vecKeepPoints2.reserve ( nPointsToKeep );
+                for( int i = 0; i < nPointsToKeep; ++ i ) {
+                    vecKeepPoints2.push_back ( vecPoints2[ vecIndex[i] ] );
+                }
+            }
+            fitParallelCircle ( vecKeepPoints1, vecKeepPoints2, ptCenter, fRadius1, fRadius2 );
+        }
     }
 
     //The equation is from http://hotmath.com/hotmath_help/topics/line-of-best-fit.html

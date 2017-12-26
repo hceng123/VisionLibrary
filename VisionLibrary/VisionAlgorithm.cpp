@@ -2969,6 +2969,10 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
 /*static*/ VisionStatus VisionAlgorithm::findCircle(const PR_FIND_CIRCLE_CMD *const pstCmd, PR_FIND_CIRCLE_RPY *const pstRpy, bool bReplay /*= false*/) {
     assert ( pstCmd != nullptr && pstRpy != nullptr );
 
+    //Initialize reply first.
+    pstRpy->fRadius = 0.f;
+    pstRpy->fRadius2 = 0.f;
+
     if (pstCmd->matInputImg.empty()) {
         WriteLog("Input image is empty.");
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
@@ -3030,7 +3034,7 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     }
 
     MARK_FUNCTION_START_TIME;
-    SETUP_LOGCASE(LogCaseFindCircle);
+    SETUP_LOGCASE(LogCaseFindCircle);   
 
     cv::Mat matGray = pstCmd->matInputImg;
     if ( pstCmd->matInputImg.channels() == 3 )
@@ -3045,7 +3049,7 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     if ( ! isAutoMode() )
         cv::cvtColor ( matGray, pstRpy->matResultImg, CV_GRAY2BGR );
 
-    VectorOfPoint2f vecPoints, vecPoints2;
+    VectorOfPoint2f vecPoints, vecPoints2, vecKeepPoints1, vecKeepPoints2;
     for ( int i = 0; i < pstCmd->nCaliperCount; ++ i ) {
         float fAngle = pstCmd->fStartSrchAngle + i * fAngleInterval + fAngleInterval / 2.f;
         float fCos = ToFloat ( cos ( CalcUtils::degree2Radian ( fAngle ) ) );
@@ -3096,14 +3100,18 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
                 if ( ! bMaskedOut )
                     vecPoints2.push_back ( ptFindPos );
             }
-        }
-        
+        }        
     }
 
     if ( vecPoints.size() > 3 ) {
         if ( pstCmd->bFindCirclePair ) {
-            Fitting::fitParallelCircle ( vecPoints, vecPoints2, pstRpy->ptCircleCtr, pstRpy->fRadius, pstRpy->fRadius2 );
-            pstRpy->enStatus = VisionStatus::OK;
+            if ( vecPoints2.size() < 3 ) {
+                WriteLog ( "Find circle caliper cannot find enough edge points, please check the input parameter and image." );
+                pstRpy->enStatus = VisionStatus::CALIPER_NOT_ENOUGH_EDGE_POINTS;
+            }else {
+                Fitting::fitParallelCircleRemoveStray ( vecPoints, vecPoints2, vecKeepPoints1, vecKeepPoints2, pstRpy->ptCircleCtr, pstRpy->fRadius, pstRpy->fRadius2, pstCmd->fRmStrayPointRatio );
+                pstRpy->enStatus = VisionStatus::OK;
+            }
         }else {
             auto fitResult = Fitting::fitCircleRemoveStray ( vecPoints, pstCmd->fRmStrayPointRatio );
             pstRpy->ptCircleCtr = fitResult.center;
@@ -3121,14 +3129,18 @@ VisionStatus VisionAlgorithm::_caliperBySectionAvgGussianDiff(const cv::Mat &mat
     }
 
     if ( ! isAutoMode() ) {
-        for ( const auto &point : vecPoints ) {
+        for ( const auto &point : vecPoints )
             cv::circle ( pstRpy->matResultImg, point, 3, _constBlueScalar, 2 );
-        }
+
+        for ( const auto &point : vecKeepPoints1 )
+            cv::circle ( pstRpy->matResultImg, point, 3, _constGreenScalar, 2 );
 
         if ( pstCmd->bFindCirclePair ) {
-            for ( const auto &point : vecPoints2 ) {
+            for ( const auto &point : vecPoints2 )
                 cv::circle ( pstRpy->matResultImg, point, 3, _constBlueScalar, 2 );
-            }
+
+            for ( const auto &point : vecKeepPoints2 )
+                cv::circle ( pstRpy->matResultImg, point, 3, _constGreenScalar, 2 );
         }
 
         cv::circle( pstRpy->matResultImg, pstCmd->ptExpectedCircleCtr, 3, _constRedScalar, 1 );
