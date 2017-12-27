@@ -8,7 +8,7 @@ namespace AOI
 namespace Vision
 {
 
-static void PrintRpy ( const PR_FIND_LINE_RPY &stRpy ) {
+static void PrintFindLineRpy ( const PR_FIND_LINE_RPY &stRpy ) {
     char chArrMsg[100];
     std::cout << "Find line status " << ToInt32 ( stRpy.enStatus ) << std::endl;
     if (VisionStatus::OK == stRpy.enStatus) {
@@ -50,7 +50,7 @@ void TestFindLineByProjection() {
     stCmd.fAngleDiffTolerance = 5;
     
     PR_FindLine ( &stCmd, &stRpy );
-    PrintRpy(stRpy);
+    PrintFindLineRpy(stRpy);
 
     std::cout << std::endl << "---------------------------------------------------";
     std::cout << std::endl << "FIND LINE BY PROJECTION REGRESSION TEST #2 STARTING";
@@ -65,7 +65,7 @@ void TestFindLineByProjection() {
     stCmd.fExpectedAngle = 0;
     
     PR_FindLine ( &stCmd, &stRpy );
-    PrintRpy(stRpy);
+    PrintFindLineRpy(stRpy);
 
     std::cout << std::endl << "---------------------------------------------------";
     std::cout << std::endl << "FIND LINE BY PROJECTION REGRESSION TEST #3 STARTING";
@@ -80,7 +80,7 @@ void TestFindLineByProjection() {
     stCmd.fExpectedAngle = 0;
     
     PR_FindLine ( &stCmd, &stRpy );
-    PrintRpy(stRpy);
+    PrintFindLineRpy(stRpy);
 
     std::cout << std::endl << "---------------------------------------------------";
     std::cout << std::endl << "FIND LINE BY PROJECTION REGRESSION TEST #4 STARTING";
@@ -100,7 +100,7 @@ void TestFindLineByProjection() {
     stCmd.fAngleDiffTolerance = 5;
 
     PR_FindLine ( &stCmd, &stRpy );
-    PrintRpy(stRpy);
+    PrintFindLineRpy(stRpy);
 }
 
 void TestFindLineByCaliper() {
@@ -126,7 +126,7 @@ void TestFindLineByCaliper() {
     stCmd.fAngleDiffTolerance = 5;
     
     PR_FindLine ( &stCmd, &stRpy );
-    PrintRpy(stRpy);
+    PrintFindLineRpy(stRpy);
 
     std::cout << std::endl << "------------------------------------------------";
     std::cout << std::endl << "FIND LINE BY CALIPER REGRESSION TEST #2 STARTING";
@@ -140,7 +140,7 @@ void TestFindLineByCaliper() {
     stCmd.fExpectedAngle = 90;
     
     PR_FindLine ( &stCmd, &stRpy );
-    PrintRpy(stRpy);
+    PrintFindLineRpy(stRpy);
 
     std::cout << std::endl << "------------------------------------------------";
     std::cout << std::endl << "FIND LINE BY CALIPER REGRESSION TEST #3 STARTING";
@@ -151,11 +151,11 @@ void TestFindLineByCaliper() {
     rectROI = cv::Rect(998, 1298, 226, 68);
     stCmd.rectRotatedROI.center = cv::Point ( rectROI.x + rectROI.width / 2, rectROI.y + rectROI.height / 2 );
     stCmd.rectRotatedROI.size = rectROI.size();
-    stCmd.enDetectDir = PR_CALIPER_DIR::BRIGHT_TO_DARK;
+    stCmd.enDetectDir = PR_CALIPER_DIR::DARK_TO_BRIGHT;
     stCmd.fExpectedAngle = 0;
     
     PR_FindLine ( &stCmd, &stRpy );
-    PrintRpy(stRpy);
+    PrintFindLineRpy(stRpy);
 
     std::cout << std::endl << "------------------------------------------------";
     std::cout << std::endl << "FIND LINE BY CALIPER REGRESSION TEST #4 STARTING";
@@ -166,11 +166,11 @@ void TestFindLineByCaliper() {
     rectROI = cv::Rect(952, 1820, 188, 70);
     stCmd.rectRotatedROI.center = cv::Point ( rectROI.x + rectROI.width / 2, rectROI.y + rectROI.height / 2 );
     stCmd.rectRotatedROI.size = rectROI.size();
-    stCmd.enDetectDir = PR_CALIPER_DIR::DARK_TO_BRIGHT;
+    stCmd.enDetectDir = PR_CALIPER_DIR::BRIGHT_TO_DARK;
     stCmd.fExpectedAngle = 0;
 
     PR_FindLine ( &stCmd, &stRpy );
-    PrintRpy(stRpy);
+    PrintFindLineRpy(stRpy);
 }
 
 void TestCaliperRoatedROI() {
@@ -196,7 +196,7 @@ void TestCaliperRoatedROI() {
     stCmd.fAngleDiffTolerance = 5;
     
     PR_FindLine ( &stCmd, &stRpy );
-    PrintRpy(stRpy);
+    PrintFindLineRpy(stRpy);
 
     std::cout << std::endl << "------------------------------------------------------------";
     std::cout << std::endl << "FIND LINE BY CALIPER ROTATED ROI REGRESSION TEST #2 STARTING";
@@ -215,7 +215,7 @@ void TestCaliperRoatedROI() {
     stCmd.fExpectedAngle = 20;
     stCmd.fAngleDiffTolerance = 5;
     PR_FindLine ( &stCmd, &stRpy );
-    PrintRpy(stRpy);
+    PrintFindLineRpy(stRpy);
 
     std::cout << std::endl << "------------------------------------------------------------";
     std::cout << std::endl << "FIND LINE BY CALIPER ROTATED ROI REGRESSION TEST #3 STARTING";
@@ -234,7 +234,7 @@ void TestCaliperRoatedROI() {
     stCmd.fAngleDiffTolerance = 5;
     
     PR_FindLine ( &stCmd, &stRpy );
-    PrintRpy(stRpy);
+    PrintFindLineRpy(stRpy);
 
     std::cout << std::endl << "------------------------------------------------------------";
     std::cout << std::endl << "FIND LINE BY CALIPER ROTATED ROI REGRESSION TEST #4 STARTING";
@@ -253,7 +253,7 @@ void TestCaliperRoatedROI() {
     stCmd.fAngleDiffTolerance = 5;
     
     PR_FindLine ( &stCmd, &stRpy );
-    PrintRpy(stRpy);
+    PrintFindLineRpy(stRpy);
 
     std::cout << std::endl << "------------------------------------------------------------";
     std::cout << std::endl << "FIND LINE BY CALIPER ROTATED ROI REGRESSION TEST #5 STARTING";
@@ -274,7 +274,7 @@ void TestCaliperRoatedROI() {
     stCmd.fAngleDiffTolerance = 5;
     
     PR_FindLine ( &stCmd, &stRpy );
-    PrintRpy(stRpy);
+    PrintFindLineRpy(stRpy);
 }
 
 static void PrintFindCircleRpy(const PR_FIND_CIRCLE_RPY &stRpy)    {

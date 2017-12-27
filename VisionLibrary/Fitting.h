@@ -301,14 +301,14 @@ public:
     }
 
     template<typename T>
-    static void fitLineRansac(const T  &vecPoints,
-                              float     fTolerance,
-                            int                  nMaxRansacTime,
-                            size_t               nFinishThreshold,
-                            bool                 bReversedFit,
-                            float               &fSlope,
-                            float               &fIntercept,
-                            PR_Line2f           &stLine )
+    static void fitLineRansac(const T      &vecPoints,
+                              float         fTolerance,
+                              int           nMaxRansacTime,
+                              size_t        nFinishThreshold,
+                              bool          bReversedFit,
+                              float        &fSlope,
+                              float        &fIntercept,
+                              PR_Line2f    &stLine )
     {
         int nRansacTime = 0;
         const int LINE_RANSAC_POINT = 2;
@@ -330,7 +330,7 @@ public:
                 stLine = CalcUtils::calcEndPointOfLine ( vecSelectedPoints, bReversedFit, fSlope, fIntercept );
                 nMaxConsentNum = vecSelectedPoints.size ();
             }
-            ++nRansacTime;
+            ++ nRansacTime;
         }
     }
 
@@ -362,6 +362,33 @@ public:
 
         stLine = CalcUtils::calcEndPointOfLine ( listPoint, bReversedFit, fSlope, fIntercept );
         return VisionStatus::OK;
+    }
+
+    template<typename T>
+    static T fitLineRemoveStray(const T               &vecPoints,
+                                bool                   bReversedFit,
+                                float                  fRmStrayPointRatio,
+                                float                  &fSlope,
+                                float                  &fIntercept )
+    {
+        Fitting::fitLine ( vecPoints, fSlope, fIntercept, bReversedFit );
+        if ( fRmStrayPointRatio > 0.f ) {
+            T vecKeepPoints;
+            VectorOfFloat vecDistance;
+            vecDistance.reserve ( vecPoints.size() );
+        
+            for ( const auto &point : vecPoints ) {
+                auto distance = fabs ( CalcUtils::ptDisToLine ( point, bReversedFit, fSlope, fIntercept ) );
+                vecDistance.push_back ( distance );
+            }
+            auto vecIndex = CalcUtils::sort_index ( vecDistance );
+            int nPointsToKeep = ToInt32 ( vecPoints.size() * ( 1.f - fRmStrayPointRatio ) );
+            for ( int i = 0; i < nPointsToKeep; ++ i )
+                vecKeepPoints.push_back ( vecPoints[ vecIndex[i] ] );
+            Fitting::fitLine ( vecKeepPoints, fSlope, fIntercept, bReversedFit );
+            return vecKeepPoints;
+        }
+        return vecPoints;
     }
 
     template<typename T>

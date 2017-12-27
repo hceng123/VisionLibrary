@@ -8,6 +8,7 @@
 #include "opencv2/imgproc.hpp"
 #include <ctime>
 #include <iostream>
+#include <iomanip>
 #include "TestSub.h"
 
 using namespace AOI::Vision;
@@ -437,6 +438,25 @@ void TestFitCircle()
 	cv::waitKey(0);
 }
 
+static void PrintFindLineRpy ( const PR_FIND_LINE_RPY &stRpy ) {
+    char chArrMsg[100];
+    std::cout << "Find line status " << ToInt32 ( stRpy.enStatus ) << std::endl;
+    if (VisionStatus::OK == stRpy.enStatus) {
+        std::cout << "ReversedFit = " << stRpy.bReversedFit << std::endl;
+        std::cout << std::fixed << std::setprecision ( 2 ) << "Line slope = " << stRpy.fSlope << ", intercept = " << stRpy.fIntercept << std::endl;
+        _snprintf ( chArrMsg, sizeof ( chArrMsg ), "(%.2f, %.2f), (%.2f, %.2f)", stRpy.stLine.pt1.x, stRpy.stLine.pt1.y, stRpy.stLine.pt2.x, stRpy.stLine.pt2.y );
+        std::cout << "Line coordinate: " << chArrMsg << std::endl;
+        std::cout << std::fixed << std::setprecision ( 2 ) << "Linerity  = " << stRpy.fLinerity << std::endl;
+        std::cout << "Linerity check pass: " << stRpy.bLinerityCheckPass << std::endl;
+        std::cout << std::fixed << std::setprecision ( 2 ) << "Angle  = " << stRpy.fAngle << std::endl;
+        std::cout << "Angle check pass: " << stRpy.bAngleCheckPass << std::endl;
+    }else {
+        PR_GET_ERROR_INFO_RPY stErrRpy;
+        PR_GetErrorInfo(stRpy.enStatus, &stErrRpy);
+        std::cout << "Error Msg: " << stErrRpy.achErrorStr << std::endl;
+    }
+};
+
 void TestCaliper() {
     PR_FIND_LINE_CMD stCmd;
     PR_FIND_LINE_RPY stRpy;
@@ -447,7 +467,7 @@ void TestCaliper() {
     cv::Rect rectROI(998, 1298, 226, 68);
     stCmd.rectRotatedROI.center = cv::Point ( rectROI.x + rectROI.width / 2, rectROI.y + rectROI.height / 2 );
     stCmd.rectRotatedROI.size = rectROI.size();
-    stCmd.enDetectDir = PR_CALIPER_DIR::BRIGHT_TO_DARK;
+    stCmd.enDetectDir = PR_CALIPER_DIR::DARK_TO_BRIGHT;
     stCmd.bCheckLinerity = true;
     stCmd.fPointMaxOffset = 5;
     stCmd.fMinLinerity = 60.;
@@ -456,7 +476,7 @@ void TestCaliper() {
     stCmd.fAngleDiffTolerance = 5;
     
     PR_FindLine ( &stCmd, &stRpy );
-    std::cout << "PR_FindLine status: " << ToInt32 ( stRpy.enStatus ) << std::endl;
+    PrintFindLineRpy ( stRpy );
 }
 
 void TestCaliper_1() {

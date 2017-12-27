@@ -3,6 +3,7 @@
 #include "Unwrap.h"
 #include <iostream>
 #include <numeric>
+#include <iomanip>
 
 namespace AOI
 {
@@ -81,7 +82,8 @@ static void TestCalcUtilsInternals() {
         std::cout << std::endl;
         start = 0.f; interval = 0.1f; end = 1.f;
         auto matResult = CalcUtils::intervals<float>(start, interval, end);
-        std::cout << "INPUT: start = " << start << "interval = " << interval << " end = " << end << std::endl;
+        std::cout << std::fixed << std::setprecision ( 2 ) << std::endl;
+        std::cout << "INPUT: start = " << start << " interval = " << interval << " end = " << end << std::endl;
         std::cout << "INTERVALS RESULT: " << std::endl;
         printfMat<float> ( matResult );
     }

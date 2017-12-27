@@ -622,7 +622,7 @@ Auto threshold result: 40 90 137 176
 ---------------------------------------------------
 FIND LINE BY PROJECTION REGRESSION TEST #1 STARTING
 ---------------------------------------------------
-Caliper status 0
+Find line status 0
 ReversedFit = 1
 Line slope = -0.01, intercept = 1309.80
 Line coordinate: (1305.10, 802.00), (1303.15, 1133.00)
@@ -634,7 +634,7 @@ Angle check pass: 1
 ---------------------------------------------------
 FIND LINE BY PROJECTION REGRESSION TEST #2 STARTING
 ---------------------------------------------------
-Caliper status 0
+Find line status 0
 ReversedFit = 0
 Line slope = 0.05, intercept = 1260.71
 Line coordinate: (928.00, 1306.48), (1197.00, 1319.74)
@@ -646,7 +646,7 @@ Angle check pass: 1
 ---------------------------------------------------
 FIND LINE BY PROJECTION REGRESSION TEST #3 STARTING
 ---------------------------------------------------
-Caliper status 0
+Find line status 0
 ReversedFit = 0
 Line slope = -0.04, intercept = 1678.87
 Line coordinate: (1496.00, 1626.21), (1723.00, 1618.21)
@@ -658,7 +658,7 @@ Angle check pass: 1
 ---------------------------------------------------
 FIND LINE BY PROJECTION REGRESSION TEST #4 STARTING
 ---------------------------------------------------
-Caliper status 0
+Find line status 0
 ReversedFit = 1
 Line slope = 0.30, intercept = 1319.96
 Line coordinate: (1607.71, 970.00), (1634.11, 1059.00)
@@ -670,7 +670,7 @@ Angle check pass: 0
 ------------------------------------------------
 FIND LINE BY CALIPER REGRESSION TEST #1 STARTING
 ------------------------------------------------
-Caliper status 0
+Find line status 0
 ReversedFit = 1
 Line slope = 0.01, intercept = 415.62
 Line coordinate: (425.66, 747.00), (432.45, 1252.00)
@@ -682,7 +682,7 @@ Angle check pass: 1
 ------------------------------------------------
 FIND LINE BY CALIPER REGRESSION TEST #2 STARTING
 ------------------------------------------------
-Caliper status 0
+Find line status 0
 ReversedFit = 1
 Line slope = 0.01, intercept = 775.85
 Line coordinate: (788.16, 853.00), (795.00, 1327.00)
@@ -691,10 +691,10 @@ Linerity check pass: 1
 Angle  = 89.17
 Angle check pass: 1
 
--------------------------------------------------
-CALIPER GUASSIAN DIFF REGRESSION TEST #3 STARTING
--------------------------------------------------
-Caliper status 0
+------------------------------------------------
+FIND LINE BY CALIPER REGRESSION TEST #3 STARTING
+------------------------------------------------
+Find line status 0
 ReversedFit = 0
 Line slope = -0.01, intercept = 1324.62
 Line coordinate: (1003.00, 1318.42), (1218.00, 1317.08)
@@ -703,10 +703,10 @@ Linerity check pass: 1
 Angle  = -0.35
 Angle check pass: 1
 
--------------------------------------------------
-CALIPER GUASSIAN DIFF REGRESSION TEST #4 STARTING
--------------------------------------------------
-Caliper status 0
+------------------------------------------------
+FIND LINE BY CALIPER REGRESSION TEST #4 STARTING
+------------------------------------------------
+Find line status 0
 ReversedFit = 0
 Line slope = -0.02, intercept = 1876.61
 Line coordinate: (956.00, 1861.79), (1135.00, 1859.01)
@@ -739,10 +739,10 @@ Linerity check pass: 1
 Angle  = 23.79
 Angle check pass: 1
 
------------------------------------------------
-CALIPER ROTATED ROI REGRESSION TEST #3 STARTING
------------------------------------------------
-Caliper status 200
+------------------------------------------------------------
+FIND LINE BY CALIPER ROTATED ROI REGRESSION TEST #3 STARTING
+------------------------------------------------------------
+Find line status 200
 Error Msg: Caliper cannot find the line.
 
 -----------------------------------------------
@@ -751,10 +751,10 @@ CALIPER ROTATED ROI REGRESSION TEST #4 STARTING
 Caliper status 200
 Error Msg: Caliper cannot find the line.
 
------------------------------------------------
-CALIPER ROTATED ROI REGRESSION TEST #5 STARTING
------------------------------------------------
-Caliper status 0
+------------------------------------------------------------
+FIND LINE BY CALIPER ROTATED ROI REGRESSION TEST #5 STARTING
+------------------------------------------------------------
+Find line status 0
 ReversedFit = 0
 Line slope = -0.21, intercept = 354.43
 Line coordinate: (282.62, 295.12), (573.29, 234.11)

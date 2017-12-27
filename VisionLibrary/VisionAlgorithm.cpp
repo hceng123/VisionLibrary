@@ -2111,11 +2111,6 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
         return pstRpy->enStatus;
     }
 
-    if ( pstRpy->enStatus != VisionStatus::OK ) {
-        FINISH_LOGCASE;
-        return pstRpy->enStatus;
-    }
-
     VectorOfVectorOfPoint vecRotoatedSubRects;
     if ( fabs ( pstCmd->rectRotatedROI.angle ) > 0.1 ) {
         cv::Mat matWarpBack = cv::getRotationMatrix2D ( pstCmd->rectRotatedROI.center, -pstCmd->rectRotatedROI.angle, 1. );
@@ -2128,6 +2123,34 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
         for ( const auto &rect : vecSubRects )
             vecRotoatedSubRects.push_back ( CalcUtils::warpRect<double> ( matWarpBack, rect ) );
     }
+
+    //Draw the result image.
+    if ( ! isAutoMode() ) {
+        if ( pstCmd->matInputImg.channels() > 1 )
+            pstRpy->matResultImg = pstCmd->matInputImg.clone();
+        else
+            cv::cvtColor ( pstCmd->matInputImg, pstRpy->matResultImg, CV_GRAY2BGR );
+        cv::line( pstRpy->matResultImg, pstRpy->stLine.pt1, pstRpy->stLine.pt2, _constGreenScalar, 2 );
+        if ( pstCmd->bFindPair )
+            cv::line( pstRpy->matResultImg, pstRpy->stLine2.pt1, pstRpy->stLine2.pt2, _constGreenScalar, 2 );
+
+        if ( fabs ( pstCmd->rectRotatedROI.angle ) > 0.1 )
+            cv::polylines ( pstRpy->matResultImg, vecRotoatedSubRects, true, _constCyanScalar, 1 );
+        else {
+            for ( const auto &rect : vecSubRects )
+                cv::rectangle ( pstRpy->matResultImg, rect, _constCyanScalar, 1 );
+        }
+        for ( const auto &point : vecFitPoint1 )
+            cv::circle ( pstRpy->matResultImg, point, 3, _constBlueScalar, 1 );
+
+        for ( const auto &point : vecFitPoint2 )
+            cv::circle ( pstRpy->matResultImg, point, 3, _constBlueScalar, 1 );
+    }
+
+    if ( pstRpy->enStatus != VisionStatus::OK ) {
+        FINISH_LOGCASE;
+        return pstRpy->enStatus;
+    }    
 
     std::vector<float> vecX, vecY;
     for ( const auto &point : vecFitPoint1 ) {
@@ -2147,8 +2170,12 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
         pstRpy->stLine2 = CalcUtils::calcEndPointOfLine ( vecFitPoint2, pstRpy->bReversedFit, pstRpy->fSlope, pstRpy->fIntercept2 );
         pstRpy->fDistance = CalcUtils::ptDisToLine ( pstRpy->stLine2.pt1, pstRpy->bReversedFit, pstRpy->fSlope, pstRpy->fIntercept );
     }else {
-        Fitting::fitLine ( vecFitPoint1, pstRpy->fSlope, pstRpy->fIntercept, pstRpy->bReversedFit );
+        auto vecPointsToKeep = Fitting::fitLineRemoveStray ( vecFitPoint1, pstRpy->bReversedFit, pstCmd->fRmStrayPointRatio, pstRpy->fSlope, pstRpy->fIntercept );
         pstRpy->stLine = CalcUtils::calcEndPointOfLine ( vecFitPoint1, pstRpy->bReversedFit, pstRpy->fSlope, pstRpy->fIntercept );
+        if ( ! isAutoMode () ) {
+            for ( const auto &point : vecPointsToKeep )
+                cv::circle ( pstRpy->matResultImg, point, 3, _constGreenScalar, 1 );
+        }
     }
     
     const int MIN_DIST_FROM_LINE_TO_ROI_EDGE = 5;
@@ -2196,32 +2223,8 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
         pstRpy->bAngleCheckPass = true;
     else
         pstRpy->bAngleCheckPass = false;
-
-    //Draw the result image.
-    if ( ! isAutoMode() ) {
-        if ( pstCmd->matInputImg.channels() > 1 )
-            pstRpy->matResultImg = pstCmd->matInputImg.clone();
-        else
-            cv::cvtColor ( pstCmd->matInputImg, pstRpy->matResultImg, CV_GRAY2BGR );
-
-        cv::line( pstRpy->matResultImg, pstRpy->stLine.pt1, pstRpy->stLine.pt2, _constGreenScalar, 2 );
-        if ( pstCmd->bFindPair )
-            cv::line( pstRpy->matResultImg, pstRpy->stLine2.pt1, pstRpy->stLine2.pt2, _constGreenScalar, 2 );
-
-        if ( fabs ( pstCmd->rectRotatedROI.angle ) > 0.1 )
-            cv::polylines ( pstRpy->matResultImg, vecRotoatedSubRects, true, _constCyanScalar, 1 );
-        else {
-            for ( const auto &rect : vecSubRects )
-                cv::rectangle ( pstRpy->matResultImg, rect, _constCyanScalar, 1 );
-        }
-        for ( const auto &point : vecFitPoint1 )
-            cv::circle ( pstRpy->matResultImg, point, 3, _constGreenScalar, 1 );
-
-        for ( const auto &point : vecFitPoint2 )
-            cv::circle ( pstRpy->matResultImg, point, 3, _constGreenScalar, 1 );
-    }
+    
     pstRpy->enStatus = VisionStatus::OK;
-
     FINISH_LOGCASE;
     MARK_FUNCTION_END_TIME;
     return pstRpy->enStatus;
@@ -2594,13 +2597,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
         }
         showImage ( "Find out point", matDisplay );
         cv::waitKey(0);
-    }
-
-    if ( vecFitPoint1.size() < 2 ) {
-        WriteLog("_findLineByCaliper can not find enough points.");
-        pstRpy->enStatus = VisionStatus::CALIPER_CAN_NOT_FIND_LINE;
-        return pstRpy->enStatus;
-    }
+    }    
 
     for ( auto &point : vecFitPoint1 ) {
         point.x += rectROI.x;
@@ -2615,6 +2612,12 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     for ( auto &rect : vecSubRects ) {
         rect.x += rectROI.x;
         rect.y += rectROI.y;
+    }
+
+    if ( vecFitPoint1.size() < 2 ) {
+        WriteLog("_findLineByCaliper can not find enough points.");
+        pstRpy->enStatus = VisionStatus::CALIPER_CAN_NOT_FIND_LINE;
+        return pstRpy->enStatus;
     }
     
     pstRpy->enStatus = VisionStatus::OK;

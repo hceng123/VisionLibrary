@@ -330,6 +330,7 @@ struct PR_FIND_LINE_CMD {
         fDiffFilterSigma    (1.f),
         nEdgeThreshold      (50),
         enSelectEdge        (PR_CALIPER_SELECT_EDGE::MAX_EDGE),
+        fRmStrayPointRatio  (0.2f),
         bCheckLinerity      (false),
         fPointMaxOffset     (0.f),
         fMinLinerity        (0.f),
@@ -348,6 +349,7 @@ struct PR_FIND_LINE_CMD {
     float                   fDiffFilterSigma;   //The Sigma of gaussian diff filter. Sigma is the standard deviation.
     int                     nEdgeThreshold;     //The gray scale difference threshold of the edge. Over this threshold consider as an edge candidate.
     PR_CALIPER_SELECT_EDGE  enSelectEdge;       //Used only when find line algorithm is caliper.
+    float                   fRmStrayPointRatio; //The ratio to remove the stray point(Fit for one time, then remove the points with largest error and fit again).
     bool                    bCheckLinerity;
     float                   fPointMaxOffset;
     float                   fMinLinerity;
