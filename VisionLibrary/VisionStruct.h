@@ -306,7 +306,7 @@ struct PR_FIT_LINE_BY_POINT_RPY {
     PR_Line2f               stLine;
 };
 
-// Detect line is find the lines in the image.
+// Find the lines in the image.
 // The cv::RotatedRect, the angle is the direction of width. Facing right is 0. Clock-Wise is positive, Anti-Clock_Wise is negtive.
 // The angle unit is degree.
 //                |   /
@@ -320,11 +320,16 @@ struct PR_FIT_LINE_BY_POINT_RPY {
 //            /   |   \
 //           /120 |    \
 
-struct PR_CALIPER_CMD {
-    PR_CALIPER_CMD() :
-        enAlgorithm         ( PR_CALIPER_ALGORITHM::PROJECTION ),
+struct PR_FIND_LINE_CMD {
+    PR_FIND_LINE_CMD() :
+        enAlgorithm         ( PR_FIND_LINE_ALGORITHM::CALIPER ),
+        bFindPair           (false),
         nCaliperCount       (20),
         fCaliperWidth       (30.f),
+        nDiffFilterHalfW    (2),
+        fDiffFilterSigma    (1.f),
+        nEdgeThreshold      (50),
+        enSelectEdge        (PR_CALIPER_SELECT_EDGE::MAX_EDGE),
         bCheckLinerity      (false),
         fPointMaxOffset     (0.f),
         fMinLinerity        (0.f),
@@ -334,10 +339,15 @@ struct PR_CALIPER_CMD {
     cv::Mat                 matInputImg;
     cv::Mat                 matMask;
     cv::RotatedRect         rectRotatedROI;
-    PR_CALIPER_ALGORITHM    enAlgorithm;
+    PR_FIND_LINE_ALGORITHM  enAlgorithm;
+    bool                    bFindPair;          //Used only when find line algorithm is caliper, if it is true, then will find a pair of lines.
     PR_CALIPER_DIR          enDetectDir;        //The explaination can be find in definition of PR_CALIPER_DIR.
-    Int32                   nCaliperCount;      //How many caliper will be used to find line. It is used when the PR_CALIPER_ALGORITHM is SECTION_AVG_GAUSSIAN_DIFF.
-    float                   fCaliperWidth;      //The width of caliper. . It is used when the PR_CALIPER_ALGORITHM is SECTION_AVG_GAUSSIAN_DIFF.
+    Int32                   nCaliperCount;      //How many calipers will be used to find line. It is used when the PR_FIND_LINE_ALGORITHM is CALIPER.
+    float                   fCaliperWidth;      //The width of caliper. It is used when the PR_FIND_LINE_ALGORITHM is CALIPER.
+    int                     nDiffFilterHalfW;   //The half width of gaussian diff filter. Details is in caliper tool document.
+    float                   fDiffFilterSigma;   //The Sigma of gaussian diff filter. Sigma is the standard deviation.
+    int                     nEdgeThreshold;     //The gray scale difference threshold of the edge. Over this threshold consider as an edge candidate.
+    PR_CALIPER_SELECT_EDGE  enSelectEdge;       //Used only when find line algorithm is caliper.
     bool                    bCheckLinerity;
     float                   fPointMaxOffset;
     float                   fMinLinerity;
@@ -346,12 +356,15 @@ struct PR_CALIPER_CMD {
     float                   fAngleDiffTolerance;
 };
 
-struct PR_CALIPER_RPY {
+struct PR_FIND_LINE_RPY {
     VisionStatus            enStatus;    
     bool                    bReversedFit;   //If it is true, then the result is x = fSlope * y + fIntercept. Otherwise the line is y = fSlope * x + fIntercept.
     float                   fSlope;
     float                   fIntercept;
     PR_Line2f               stLine;
+    float                   fIntercept2;    //When the find pair is enabled, it will return the second line intercept.
+    PR_Line2f               stLine2;        //When the find pair is enabled, it will return the second line.
+    float                   fDistance;      //When the find pair is enabled, it will return the distance of two lines.
     bool                    bLinerityCheckPass;
     float                   fLinerity;
     bool                    bAngleCheckPass;
@@ -461,15 +474,15 @@ struct PR_FIT_CIRCLE_BY_POINT_RPY {
 //Use caliper method to find the circle. Caliper introduction https://drive.google.com/open?id=16hrbMJ6gwkz2ErD12aIYPw5oAkq9y045
 struct PR_FIND_CIRCLE_CMD {
     PR_FIND_CIRCLE_CMD() :
-        bFindCirclePair (false),
-        fStartSrchAngle (0.f),
-        fEndSrchAngle   (0.f),
-        nCaliperCount   (20),
-        fCaliperWidth   (30.f),
-        nDiffFilterHalfW(2),
-        fDiffFilterSigma(1.f),
-        nEdgeThreshold  (50),
-        enSelectEdge    (PR_CALIPER_SELECT_EDGE::MAX_EDGE),
+        bFindCirclePair     (false),
+        fStartSrchAngle     (0.f),
+        fEndSrchAngle       (0.f),
+        nCaliperCount       (20),
+        fCaliperWidth       (30.f),
+        nDiffFilterHalfW    (2),
+        fDiffFilterSigma    (1.f),
+        nEdgeThreshold      (50),
+        enSelectEdge        (PR_CALIPER_SELECT_EDGE::MAX_EDGE),
         fRmStrayPointRatio (0.2f) {}
     cv::Mat                 matInputImg;
     cv::Mat                 matMask;
@@ -480,7 +493,7 @@ struct PR_FIND_CIRCLE_CMD {
     float                   fMaxSrchRadius;
     float                   fStartSrchAngle;    //Start search angle, unit is degree, clockwise is positive, anticlockwise is negative.
     float                   fEndSrchAngle;      //End search angle, unit is degree, clockwise is positive, anticlockwise is negative.
-    Int32                   nCaliperCount;      //How many caliper will be used to detect circle.
+    Int32                   nCaliperCount;      //How many calipers will be used to detect circle.
     float                   fCaliperWidth;      //The width of caliper.
     int                     nDiffFilterHalfW;   //The half width of gaussian diff filter. Details is in caliper tool document.
     float                   fDiffFilterSigma;   //The Sigma of gaussian diff filter. Sigma is the standard deviation.

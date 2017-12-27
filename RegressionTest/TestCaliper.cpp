@@ -8,9 +8,9 @@ namespace AOI
 namespace Vision
 {
 
-static void PrintRpy ( const PR_CALIPER_RPY &stRpy ) {
+static void PrintRpy ( const PR_FIND_LINE_RPY &stRpy ) {
     char chArrMsg[100];
-    std::cout << "Caliper status " << ToInt32 ( stRpy.enStatus ) << std::endl;
+    std::cout << "Find line status " << ToInt32 ( stRpy.enStatus ) << std::endl;
     if (VisionStatus::OK == stRpy.enStatus) {
         std::cout << "ReversedFit = " << stRpy.bReversedFit << std::endl;
         std::cout << std::fixed << std::setprecision ( 2 ) << "Line slope = " << stRpy.fSlope << ", intercept = " << stRpy.fIntercept << std::endl;
@@ -27,13 +27,14 @@ static void PrintRpy ( const PR_CALIPER_RPY &stRpy ) {
     }
 };
 
-void TestCaliperProjection() {
-    PR_CALIPER_CMD stCmd;
-    PR_CALIPER_RPY stRpy;    
+void TestFindLineByProjection() {
+    PR_FIND_LINE_CMD stCmd;
+    PR_FIND_LINE_RPY stRpy;
+    stCmd.enAlgorithm = PR_FIND_LINE_ALGORITHM::PROJECTION;
 
-    std::cout << std::endl << "---------------------------------------------";
-    std::cout << std::endl << "CALIPER REGRESSION TEST #1 STARTING";
-    std::cout << std::endl << "---------------------------------------------";
+    std::cout << std::endl << "---------------------------------------------------";
+    std::cout << std::endl << "FIND LINE BY PROJECTION REGRESSION TEST #1 STARTING";
+    std::cout << std::endl << "---------------------------------------------------";
     std::cout << std::endl;
 
     stCmd.matInputImg = cv::imread("./data/F1-5-1_Threshold.png");
@@ -48,12 +49,12 @@ void TestCaliperProjection() {
     stCmd.fExpectedAngle = 90;
     stCmd.fAngleDiffTolerance = 5;
     
-    PR_Caliper ( &stCmd, &stRpy );
+    PR_FindLine ( &stCmd, &stRpy );
     PrintRpy(stRpy);
 
-    std::cout << std::endl << "---------------------------------------------";
-    std::cout << std::endl << "CALIPER REGRESSION TEST #2 STARTING";
-    std::cout << std::endl << "---------------------------------------------";
+    std::cout << std::endl << "---------------------------------------------------";
+    std::cout << std::endl << "FIND LINE BY PROJECTION REGRESSION TEST #2 STARTING";
+    std::cout << std::endl << "---------------------------------------------------";
     std::cout << std::endl;
 
     stCmd.matInputImg = cv::imread("./data/F1-5-1_Threshold.png");
@@ -63,12 +64,12 @@ void TestCaliperProjection() {
     stCmd.enDetectDir = PR_CALIPER_DIR::DARK_TO_BRIGHT;
     stCmd.fExpectedAngle = 0;
     
-    PR_Caliper ( &stCmd, &stRpy );
+    PR_FindLine ( &stCmd, &stRpy );
     PrintRpy(stRpy);
 
-    std::cout << std::endl << "---------------------------------------------";
-    std::cout << std::endl << "CALIPER REGRESSION TEST #3 STARTING";
-    std::cout << std::endl << "---------------------------------------------";
+    std::cout << std::endl << "---------------------------------------------------";
+    std::cout << std::endl << "FIND LINE BY PROJECTION REGRESSION TEST #3 STARTING";
+    std::cout << std::endl << "---------------------------------------------------";
     std::cout << std::endl;
 
     stCmd.matInputImg = cv::imread("./data/F1-5-1_Threshold.png");
@@ -78,12 +79,12 @@ void TestCaliperProjection() {
     stCmd.enDetectDir = PR_CALIPER_DIR::BRIGHT_TO_DARK;
     stCmd.fExpectedAngle = 0;
     
-    PR_Caliper ( &stCmd, &stRpy );
+    PR_FindLine ( &stCmd, &stRpy );
     PrintRpy(stRpy);
 
-    std::cout << std::endl << "---------------------------------------------";
-    std::cout << std::endl << "CALIPER REGRESSION TEST #4 STARTING";
-    std::cout << std::endl << "---------------------------------------------";
+    std::cout << std::endl << "---------------------------------------------------";
+    std::cout << std::endl << "FIND LINE BY PROJECTION REGRESSION TEST #4 STARTING";
+    std::cout << std::endl << "---------------------------------------------------";
     std::cout << std::endl;
 
     stCmd.matInputImg = cv::imread("./data/F1-5-1_Threshold.png");
@@ -98,24 +99,24 @@ void TestCaliperProjection() {
     stCmd.fExpectedAngle = 90;
     stCmd.fAngleDiffTolerance = 5;
 
-    PR_Caliper ( &stCmd, &stRpy );
+    PR_FindLine ( &stCmd, &stRpy );
     PrintRpy(stRpy);
 }
 
-void TestCaliperSectionAvgGuassianDiff() {
-    PR_CALIPER_CMD stCmd;
-    PR_CALIPER_RPY stRpy;    
+void TestFindLineByCaliper() {
+    PR_FIND_LINE_CMD stCmd;
+    PR_FIND_LINE_RPY stRpy;    
 
-    std::cout << std::endl << "-------------------------------------------------";
-    std::cout << std::endl << "CALIPER GUASSIAN DIFF REGRESSION TEST #1 STARTING";
-    std::cout << std::endl << "-------------------------------------------------";
+    std::cout << std::endl << "------------------------------------------------";
+    std::cout << std::endl << "FIND LINE BY CALIPER REGRESSION TEST #1 STARTING";
+    std::cout << std::endl << "------------------------------------------------";
     std::cout << std::endl;
 
     stCmd.matInputImg = cv::imread("./data/CognexEdge.png");
     cv::Rect rectROI = cv::Rect(304, 732, 208, 532);
     stCmd.rectRotatedROI.center = cv::Point ( rectROI.x + rectROI.width / 2, rectROI.y + rectROI.height / 2 );
     stCmd.rectRotatedROI.size = rectROI.size();
-    stCmd.enAlgorithm = PR_CALIPER_ALGORITHM::SECTION_AVG_GAUSSIAN_DIFF;
+    stCmd.enAlgorithm = PR_FIND_LINE_ALGORITHM::CALIPER;
     stCmd.enDetectDir = PR_CALIPER_DIR::BRIGHT_TO_DARK;
     stCmd.bCheckLinerity = true;
     stCmd.fPointMaxOffset = 5;
@@ -124,12 +125,12 @@ void TestCaliperSectionAvgGuassianDiff() {
     stCmd.fExpectedAngle = 90;
     stCmd.fAngleDiffTolerance = 5;
     
-    PR_Caliper ( &stCmd, &stRpy );
+    PR_FindLine ( &stCmd, &stRpy );
     PrintRpy(stRpy);
 
-    std::cout << std::endl << "-------------------------------------------------";
-    std::cout << std::endl << "CALIPER GUASSIAN DIFF REGRESSION TEST #2 STARTING";
-    std::cout << std::endl << "-------------------------------------------------";
+    std::cout << std::endl << "------------------------------------------------";
+    std::cout << std::endl << "FIND LINE BY CALIPER REGRESSION TEST #2 STARTING";
+    std::cout << std::endl << "------------------------------------------------";
     std::cout << std::endl;
 
     rectROI = cv::Rect(728, 744, 164, 632);
@@ -138,12 +139,12 @@ void TestCaliperSectionAvgGuassianDiff() {
     stCmd.enDetectDir = PR_CALIPER_DIR::DARK_TO_BRIGHT;
     stCmd.fExpectedAngle = 90;
     
-    PR_Caliper ( &stCmd, &stRpy );
+    PR_FindLine ( &stCmd, &stRpy );
     PrintRpy(stRpy);
 
-    std::cout << std::endl << "-------------------------------------------------";
-    std::cout << std::endl << "CALIPER GUASSIAN DIFF REGRESSION TEST #3 STARTING";
-    std::cout << std::endl << "-------------------------------------------------";
+    std::cout << std::endl << "------------------------------------------------";
+    std::cout << std::endl << "FIND LINE BY CALIPER REGRESSION TEST #3 STARTING";
+    std::cout << std::endl << "------------------------------------------------";
     std::cout << std::endl;
 
     stCmd.matInputImg = cv::imread("./data/F1-5-1_Threshold.png");
@@ -153,12 +154,12 @@ void TestCaliperSectionAvgGuassianDiff() {
     stCmd.enDetectDir = PR_CALIPER_DIR::BRIGHT_TO_DARK;
     stCmd.fExpectedAngle = 0;
     
-    PR_Caliper ( &stCmd, &stRpy );
+    PR_FindLine ( &stCmd, &stRpy );
     PrintRpy(stRpy);
 
-    std::cout << std::endl << "-------------------------------------------------";
-    std::cout << std::endl << "CALIPER GUASSIAN DIFF REGRESSION TEST #4 STARTING";
-    std::cout << std::endl << "-------------------------------------------------";
+    std::cout << std::endl << "------------------------------------------------";
+    std::cout << std::endl << "FIND LINE BY CALIPER REGRESSION TEST #4 STARTING";
+    std::cout << std::endl << "------------------------------------------------";
     std::cout << std::endl;
 
     stCmd.matInputImg = cv::imread("./data/F1-5-1_Threshold.png");
@@ -168,24 +169,24 @@ void TestCaliperSectionAvgGuassianDiff() {
     stCmd.enDetectDir = PR_CALIPER_DIR::DARK_TO_BRIGHT;
     stCmd.fExpectedAngle = 0;
 
-    PR_Caliper ( &stCmd, &stRpy );
+    PR_FindLine ( &stCmd, &stRpy );
     PrintRpy(stRpy);
 }
 
 void TestCaliperRoatedROI() {
-    PR_CALIPER_CMD stCmd;
-    PR_CALIPER_RPY stRpy;    
+    PR_FIND_LINE_CMD stCmd;
+    PR_FIND_LINE_RPY stRpy;    
 
-    std::cout << std::endl << "-----------------------------------------------";
-    std::cout << std::endl << "CALIPER ROTATED ROI REGRESSION TEST #1 STARTING";
-    std::cout << std::endl << "-----------------------------------------------";
+    std::cout << std::endl << "------------------------------------------------------------";
+    std::cout << std::endl << "FIND LINE BY CALIPER ROTATED ROI REGRESSION TEST #1 STARTING";
+    std::cout << std::endl << "------------------------------------------------------------";
     std::cout << std::endl;
 
     stCmd.matInputImg = cv::imread("./data/TestRotatedCaliper.png");
     stCmd.rectRotatedROI.center = cv::Point (85, 121 );
     stCmd.rectRotatedROI.size = cv::Size(100, 30);
     stCmd.rectRotatedROI.angle = -70;
-    stCmd.enAlgorithm = PR_CALIPER_ALGORITHM::SECTION_AVG_GAUSSIAN_DIFF;
+    stCmd.enAlgorithm = PR_FIND_LINE_ALGORITHM::CALIPER;
     stCmd.enDetectDir = PR_CALIPER_DIR::AUTO;
     stCmd.bCheckLinerity = true;
     stCmd.fPointMaxOffset = 5;
@@ -194,18 +195,18 @@ void TestCaliperRoatedROI() {
     stCmd.fExpectedAngle = -70;
     stCmd.fAngleDiffTolerance = 5;
     
-    PR_Caliper ( &stCmd, &stRpy );
+    PR_FindLine ( &stCmd, &stRpy );
     PrintRpy(stRpy);
 
-    std::cout << std::endl << "-----------------------------------------------";
-    std::cout << std::endl << "CALIPER ROTATED ROI REGRESSION TEST #2 STARTING";
-    std::cout << std::endl << "-----------------------------------------------";
+    std::cout << std::endl << "------------------------------------------------------------";
+    std::cout << std::endl << "FIND LINE BY CALIPER ROTATED ROI REGRESSION TEST #2 STARTING";
+    std::cout << std::endl << "------------------------------------------------------------";
     std::cout << std::endl;
 
     stCmd.rectRotatedROI.center = cv::Point (171, 34 );
     stCmd.rectRotatedROI.size = cv::Size(200, 30);
     stCmd.rectRotatedROI.angle = 20;
-    stCmd.enAlgorithm = PR_CALIPER_ALGORITHM::PROJECTION;
+    stCmd.enAlgorithm = PR_FIND_LINE_ALGORITHM::PROJECTION;
     stCmd.enDetectDir = PR_CALIPER_DIR::AUTO;
     stCmd.bCheckLinerity = true;
     stCmd.fPointMaxOffset = 5;
@@ -213,17 +214,17 @@ void TestCaliperRoatedROI() {
     stCmd.bCheckAngle = true;
     stCmd.fExpectedAngle = 20;
     stCmd.fAngleDiffTolerance = 5;
-    PR_Caliper ( &stCmd, &stRpy );
+    PR_FindLine ( &stCmd, &stRpy );
     PrintRpy(stRpy);
 
-    std::cout << std::endl << "-----------------------------------------------";
-    std::cout << std::endl << "CALIPER ROTATED ROI REGRESSION TEST #3 STARTING";
-    std::cout << std::endl << "-----------------------------------------------";
+    std::cout << std::endl << "------------------------------------------------------------";
+    std::cout << std::endl << "FIND LINE BY CALIPER ROTATED ROI REGRESSION TEST #3 STARTING";
+    std::cout << std::endl << "------------------------------------------------------------";
     std::cout << std::endl;
     stCmd.rectRotatedROI.center = cv::Point (368, 54);
     stCmd.rectRotatedROI.size = cv::Size(200, 30);
     stCmd.rectRotatedROI.angle = 20;
-    stCmd.enAlgorithm = PR_CALIPER_ALGORITHM::SECTION_AVG_GAUSSIAN_DIFF;
+    stCmd.enAlgorithm = PR_FIND_LINE_ALGORITHM::CALIPER;
     stCmd.enDetectDir = PR_CALIPER_DIR::AUTO;
     stCmd.bCheckLinerity = true;
     stCmd.fPointMaxOffset = 5;
@@ -232,17 +233,17 @@ void TestCaliperRoatedROI() {
     stCmd.fExpectedAngle = 90;
     stCmd.fAngleDiffTolerance = 5;
     
-    PR_Caliper ( &stCmd, &stRpy );
+    PR_FindLine ( &stCmd, &stRpy );
     PrintRpy(stRpy);
 
-    std::cout << std::endl << "-----------------------------------------------";
-    std::cout << std::endl << "CALIPER ROTATED ROI REGRESSION TEST #4 STARTING";
-    std::cout << std::endl << "-----------------------------------------------";
+    std::cout << std::endl << "------------------------------------------------------------";
+    std::cout << std::endl << "FIND LINE BY CALIPER ROTATED ROI REGRESSION TEST #4 STARTING";
+    std::cout << std::endl << "------------------------------------------------------------";
     std::cout << std::endl;
     stCmd.rectRotatedROI.center = cv::Point (200, 167 );
     stCmd.rectRotatedROI.size = cv::Size(200, 30);
     stCmd.rectRotatedROI.angle = 20;
-    stCmd.enAlgorithm = PR_CALIPER_ALGORITHM::PROJECTION;
+    stCmd.enAlgorithm = PR_FIND_LINE_ALGORITHM::PROJECTION;
     stCmd.enDetectDir = PR_CALIPER_DIR::AUTO;
     stCmd.bCheckLinerity = true;
     stCmd.fPointMaxOffset = 5;
@@ -251,19 +252,19 @@ void TestCaliperRoatedROI() {
     stCmd.fExpectedAngle = 90;
     stCmd.fAngleDiffTolerance = 5;
     
-    PR_Caliper ( &stCmd, &stRpy );
+    PR_FindLine ( &stCmd, &stRpy );
     PrintRpy(stRpy);
 
-    std::cout << std::endl << "-----------------------------------------------";
-    std::cout << std::endl << "CALIPER ROTATED ROI REGRESSION TEST #5 STARTING";
-    std::cout << std::endl << "-----------------------------------------------";
+    std::cout << std::endl << "------------------------------------------------------------";
+    std::cout << std::endl << "FIND LINE BY CALIPER ROTATED ROI REGRESSION TEST #5 STARTING";
+    std::cout << std::endl << "------------------------------------------------------------";
     std::cout << std::endl;
     stCmd.matInputImg = cv::imread("./data/FindAngle_1.png");
     stCmd.matMask = cv::imread("./data/FindAngle_1_Mask.png", cv::IMREAD_GRAYSCALE);
     stCmd.rectRotatedROI.center = cv::Point2f (420.80f, 268.00f );
     stCmd.rectRotatedROI.size = cv::Size(330, 185);
     stCmd.rectRotatedROI.angle = -12;
-    stCmd.enAlgorithm = PR_CALIPER_ALGORITHM::SECTION_AVG_GAUSSIAN_DIFF;
+    stCmd.enAlgorithm = PR_FIND_LINE_ALGORITHM::CALIPER;
     stCmd.enDetectDir = PR_CALIPER_DIR::AUTO;
     stCmd.bCheckLinerity = true;
     stCmd.fPointMaxOffset = 5;
@@ -272,7 +273,7 @@ void TestCaliperRoatedROI() {
     stCmd.fExpectedAngle = -12;
     stCmd.fAngleDiffTolerance = 5;
     
-    PR_Caliper ( &stCmd, &stRpy );
+    PR_FindLine ( &stCmd, &stRpy );
     PrintRpy(stRpy);
 }
 
@@ -358,8 +359,8 @@ void TestFindCircle() {
 }
 
 void TestCaliper() {
-    TestCaliperProjection();
-    TestCaliperSectionAvgGuassianDiff();
+    TestFindLineByProjection();
+    TestFindLineByCaliper();
     TestCaliperRoatedROI();
     TestFindCircle();
 }

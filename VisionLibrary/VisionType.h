@@ -119,9 +119,9 @@ enum class PR_CALIPER_DIR {
     AUTO,
 };
 
-enum class PR_CALIPER_ALGORITHM {
+enum class PR_FIND_LINE_ALGORITHM {
     PROJECTION,
-    SECTION_AVG_GAUSSIAN_DIFF,
+    CALIPER,
 };
 
 enum class PR_CALIPER_SELECT_EDGE {

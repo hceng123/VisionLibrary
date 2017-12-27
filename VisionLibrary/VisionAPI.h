@@ -16,6 +16,7 @@ namespace Vision
 {
 VisionAPI void         PR_GetVersion(PR_VERSION_INFO *pstVersionInfo);
 VisionAPI VisionStatus PR_Init();
+VisionAPI void         PR_EnableAutoMode(bool bEnableAutoMode);
 VisionAPI void         PR_SetDebugMode(PR_DEBUG_MODE enDebugMode);
 VisionAPI VisionStatus PR_RunLogCase(const std::string &strPath);
 VisionAPI void         PR_DumpTimeLog(const std::string &strPath);
@@ -41,7 +42,7 @@ Example:
 @param pstCmd pointer of input command.
 @param pstRpy pointer of reply.
 */
-VisionAPI VisionStatus PR_Caliper(const PR_CALIPER_CMD *const pstCmd, PR_CALIPER_RPY *const pstRpy);
+VisionAPI VisionStatus PR_FindLine(const PR_FIND_LINE_CMD *const pstCmd, PR_FIND_LINE_RPY *const pstRpy);
 VisionAPI VisionStatus PR_FitParallelLine(const PR_FIT_PARALLEL_LINE_CMD *const pstCmd, PR_FIT_PARALLEL_LINE_RPY *const pstRpy);
 VisionAPI VisionStatus PR_FitRect(PR_FIT_RECT_CMD *pstCmd, PR_FIT_RECT_RPY *pstRpy);
 

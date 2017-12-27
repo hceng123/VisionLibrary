@@ -191,14 +191,12 @@ void TestFindCircle() {
     stCmd.matInputImg = cv::imread ("./data/CaliperImage.bmp", cv::IMREAD_GRAYSCALE );
     //cv::Mat matImage = 255 - stCmd.matInputImg;
     //cv::imwrite ("./data/CaliperImageReverse.png", matImage );
-    stCmd.enObjAttribute = PR_OBJECT_ATTRIBUTE::DARK;
+    stCmd.enInnerAttribute = PR_OBJECT_ATTRIBUTE::DARK;
     stCmd.fMinSrchRadius = 120;
     stCmd.fMaxSrchRadius = 280;
     stCmd.fStartSrchAngle = -165;
     stCmd.fEndSrchAngle = -15;
     stCmd.ptExpectedCircleCtr = cv::Point(620, 650);
-    stCmd.enRmNoiseMethod = PR_RM_FIT_NOISE_METHOD::NEGATIVE_ERR;
-    stCmd.fErrTol = 1;
 
     PR_FindCircle ( &stCmd, &stRpy );
     cv::imwrite ("./data/DetectCircleResult.png", stRpy.matResultImg );

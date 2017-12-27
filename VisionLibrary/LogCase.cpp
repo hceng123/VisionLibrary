@@ -360,7 +360,7 @@ VisionStatus LogCaseFindCircle::WriteRpy(const PR_FIND_CIRCLE_RPY *const pstRpy)
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile( cmdRpyFilePath.c_str() );
     ini.SetLongValue  (_RPY_SECTION.c_str(), _strKeyStatus.c_str(), ToInt32( pstRpy->enStatus ) );
-    ini.SetValue(_RPY_SECTION.c_str(), _strKeyResultCtr.c_str(), _formatCoordinate(pstRpy->ptCircleCtr).c_str() );    
+    ini.SetValue(_RPY_SECTION.c_str(), _strKeyResultCtr.c_str(), _formatCoordinate(pstRpy->ptCircleCtr).c_str() );
     ini.SetDoubleValue(_RPY_SECTION.c_str(), _strKeyRadius.c_str(), pstRpy->fRadius );
     ini.SaveFile( cmdRpyFilePath.c_str() );
     if ( ! pstRpy->matResultImg.empty() )
@@ -538,11 +538,11 @@ VisionStatus LogCaseFitLine::RunLogCase() {
     return enStatus;
 }
 
-/*static*/ String LogCaseCaliper::StaticGetFolderPrefix() {
-    return "Caliper";
+/*static*/ String LogCaseFindLine::StaticGetFolderPrefix() {
+    return "FindLine";
 }
 
-VisionStatus LogCaseCaliper::WriteCmd(const PR_CALIPER_CMD *const pstCmd) {
+VisionStatus LogCaseFindLine::WriteCmd(const PR_FIND_LINE_CMD *const pstCmd) {
     if ( !_bReplay )    {
         _strLogCasePath = _generateLogCaseName(GetFolderPrefix());
         bfs::path dir(_strLogCasePath);
@@ -573,7 +573,7 @@ VisionStatus LogCaseCaliper::WriteCmd(const PR_CALIPER_CMD *const pstCmd) {
     return VisionStatus::OK;
 }
 
-VisionStatus LogCaseCaliper::WriteRpy(const PR_CALIPER_RPY *const pstRpy) {
+VisionStatus LogCaseFindLine::WriteRpy(const PR_FIND_LINE_RPY *const pstRpy) {
     CSimpleIni ini(false, false, false);
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile( cmdRpyFilePath.c_str() );
@@ -594,8 +594,8 @@ VisionStatus LogCaseCaliper::WriteRpy(const PR_CALIPER_RPY *const pstRpy) {
     return VisionStatus::OK;
 }
 
-VisionStatus LogCaseCaliper::RunLogCase() {
-    PR_CALIPER_CMD stCmd;
+VisionStatus LogCaseFindLine::RunLogCase() {
+    PR_FIND_LINE_CMD stCmd;
     VisionStatus enStatus;
     
     stCmd.matInputImg = cv::imread( _strLogCasePath + _IMAGE_NAME );
@@ -609,7 +609,7 @@ VisionStatus LogCaseCaliper::RunLogCase() {
     stCmd.rectRotatedROI.center = _parseCoordinate ( ini.GetValue(_CMD_SECTION.c_str(), _strKeyRoiCenter.c_str(), _DEFAULT_COORD.c_str() ) );
     stCmd.rectRotatedROI.size = _parseSize ( ini.GetValue(_CMD_SECTION.c_str(), _strKeyRoiSize.c_str(), _DEFAULT_SIZE.c_str() ) );
     stCmd.rectRotatedROI.angle = ToFloat ( ini.GetDoubleValue ( _CMD_SECTION.c_str(), _strKeyRoiAngle.c_str(), 0. ) );
-    stCmd.enAlgorithm = static_cast<PR_CALIPER_ALGORITHM>(ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyAlgorithm.c_str(), 0 ) );
+    stCmd.enAlgorithm = static_cast<PR_FIND_LINE_ALGORITHM>(ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyAlgorithm.c_str(), 0 ) );
     stCmd.nCaliperCount = ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyCaliperCount.c_str(), 20 );
     stCmd.fCaliperWidth = ToFloat ( ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyCaliperWidth.c_str(), 30. ) );
     stCmd.enDetectDir = static_cast<PR_CALIPER_DIR>(ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyDir.c_str(), 0 ) );
@@ -620,8 +620,8 @@ VisionStatus LogCaseCaliper::RunLogCase() {
     stCmd.fExpectedAngle = ToFloat ( ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyExpectedAngle.c_str(), 0. ) );
     stCmd.fAngleDiffTolerance = ToFloat ( ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyAngleDiffTol.c_str(), 0. ) );
 
-    PR_CALIPER_RPY stRpy;
-    enStatus = VisionAlgorithm::caliper(&stCmd, &stRpy, true);
+    PR_FIND_LINE_RPY stRpy;
+    enStatus = VisionAlgorithm::findLine(&stCmd, &stRpy, true);
 
     WriteRpy( &stRpy );
     return enStatus;

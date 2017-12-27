@@ -386,7 +386,7 @@
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>380</y>
+        <y>420</y>
         <width>590</width>
         <height>51</height>
        </rect>
@@ -503,7 +503,7 @@
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>440</y>
+        <y>480</y>
         <width>590</width>
         <height>51</height>
        </rect>
@@ -616,19 +616,19 @@
        </property>
       </widget>
      </widget>
-     <widget class="QGroupBox" name="groupBoxCaliper">
+     <widget class="QGroupBox" name="groupBoxFindLine">
       <property name="geometry">
        <rect>
         <x>10</x>
         <y>320</y>
         <width>590</width>
-        <height>51</height>
+        <height>91</height>
        </rect>
       </property>
       <property name="title">
-       <string>Caliper</string>
+       <string>Find Line</string>
       </property>
-      <widget class="QPushButton" name="btnCaliper">
+      <widget class="QPushButton" name="btnFindLine">
        <property name="geometry">
         <rect>
          <x>500</x>
@@ -638,10 +638,10 @@
         </rect>
        </property>
        <property name="text">
-        <string>Caliper</string>
+        <string>Find Line</string>
        </property>
       </widget>
-      <widget class="QComboBox" name="comboBoxCaliperDirection">
+      <widget class="QComboBox" name="comboBoxFindLineDirection">
        <property name="geometry">
         <rect>
          <x>60</x>
@@ -655,16 +655,16 @@
        </property>
        <item>
         <property name="text">
-         <string>Min to Max</string>
+         <string>Dark To Bright</string>
         </property>
        </item>
        <item>
         <property name="text">
-         <string>Max to Min</string>
+         <string>Bright To Dark</string>
         </property>
        </item>
       </widget>
-      <widget class="QLabel" name="labelDetectLineDirection">
+      <widget class="QLabel" name="labelFindLineDirection">
        <property name="geometry">
         <rect>
          <x>10</x>
@@ -677,7 +677,7 @@
         <string>Direction</string>
        </property>
       </widget>
-      <widget class="QLabel" name="labelCaliperAlgorithm">
+      <widget class="QLabel" name="labelFindLineAlgorithm">
        <property name="geometry">
         <rect>
          <x>160</x>
@@ -690,17 +690,17 @@
         <string>Algorithm</string>
        </property>
       </widget>
-      <widget class="QComboBox" name="comboBoxCaliperAlgorithm">
+      <widget class="QComboBox" name="comboBoxFindLineAlgorithm">
        <property name="geometry">
         <rect>
          <x>210</x>
          <y>20</y>
-         <width>141</width>
+         <width>71</width>
          <height>22</height>
         </rect>
        </property>
        <property name="currentIndex">
-        <number>0</number>
+        <number>1</number>
        </property>
        <item>
         <property name="text">
@@ -709,9 +709,103 @@
        </item>
        <item>
         <property name="text">
-         <string>Section Avg Guassian Diff</string>
+         <string>Caliper</string>
         </property>
        </item>
+      </widget>
+      <widget class="QLineEdit" name="lineEditFindLineCaliperWidth">
+       <property name="geometry">
+        <rect>
+         <x>530</x>
+         <y>60</y>
+         <width>41</width>
+         <height>20</height>
+        </rect>
+       </property>
+       <property name="inputMethodHints">
+        <set>Qt::ImhDigitsOnly</set>
+       </property>
+       <property name="text">
+        <string>30</string>
+       </property>
+      </widget>
+      <widget class="QLineEdit" name="lineEditFindLineCaliperCount">
+       <property name="geometry">
+        <rect>
+         <x>400</x>
+         <y>60</y>
+         <width>41</width>
+         <height>20</height>
+        </rect>
+       </property>
+       <property name="inputMethodHints">
+        <set>Qt::ImhDigitsOnly</set>
+       </property>
+       <property name="text">
+        <string>20</string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="labelFindLineCaliperCount">
+       <property name="geometry">
+        <rect>
+         <x>330</x>
+         <y>60</y>
+         <width>71</width>
+         <height>16</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Caliper Count</string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="labelFindLineCaliperWidth">
+       <property name="geometry">
+        <rect>
+         <x>450</x>
+         <y>60</y>
+         <width>71</width>
+         <height>16</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Caliper Width</string>
+       </property>
+      </widget>
+      <widget class="QComboBox" name="comboBoxFindLineFindPair">
+       <property name="geometry">
+        <rect>
+         <x>60</x>
+         <y>60</y>
+         <width>71</width>
+         <height>22</height>
+        </rect>
+       </property>
+       <property name="currentIndex">
+        <number>0</number>
+       </property>
+       <item>
+        <property name="text">
+         <string>No</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>Yes</string>
+        </property>
+       </item>
+      </widget>
+      <widget class="QLabel" name="labeFindLineFindPair">
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>60</y>
+         <width>51</width>
+         <height>16</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Find Pair</string>
+       </property>
       </widget>
      </widget>
      <widget class="QGroupBox" name="groupBoxHoughCircle">

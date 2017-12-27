@@ -202,12 +202,12 @@ private:
     const String _strKeyPoint2          = "Point2";
 };
 
-class LogCaseCaliper : public LogCase
+class LogCaseFindLine : public LogCase
 {
 public:
-    explicit LogCaseCaliper(const String &strPath, bool bReplay = false) : LogCase(strPath, bReplay) {}
-    VisionStatus WriteCmd(const PR_CALIPER_CMD *const pstCmd);
-    VisionStatus WriteRpy(const PR_CALIPER_RPY *const pstRpy);
+    explicit LogCaseFindLine(const String &strPath, bool bReplay = false) : LogCase(strPath, bReplay) {}
+    VisionStatus WriteCmd(const PR_FIND_LINE_CMD *const pstCmd);
+    VisionStatus WriteRpy(const PR_FIND_LINE_RPY *const pstRpy);
     virtual VisionStatus RunLogCase() override;
     virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
     static String StaticGetFolderPrefix();

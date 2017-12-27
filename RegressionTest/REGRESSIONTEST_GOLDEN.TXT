@@ -619,9 +619,9 @@ Test with threshold number 4
 Auto threshold status: 0
 Auto threshold result: 40 90 137 176 
 
----------------------------------------------
-CALIPER REGRESSION TEST #1 STARTING
----------------------------------------------
+---------------------------------------------------
+FIND LINE BY PROJECTION REGRESSION TEST #1 STARTING
+---------------------------------------------------
 Caliper status 0
 ReversedFit = 1
 Line slope = -0.01, intercept = 1309.80
@@ -631,9 +631,9 @@ Linerity check pass: 1
 Angle  = 90.34
 Angle check pass: 1
 
----------------------------------------------
-CALIPER REGRESSION TEST #2 STARTING
----------------------------------------------
+---------------------------------------------------
+FIND LINE BY PROJECTION REGRESSION TEST #2 STARTING
+---------------------------------------------------
 Caliper status 0
 ReversedFit = 0
 Line slope = 0.05, intercept = 1260.71
@@ -643,9 +643,9 @@ Linerity check pass: 1
 Angle  = 2.82
 Angle check pass: 1
 
----------------------------------------------
-CALIPER REGRESSION TEST #3 STARTING
----------------------------------------------
+---------------------------------------------------
+FIND LINE BY PROJECTION REGRESSION TEST #3 STARTING
+---------------------------------------------------
 Caliper status 0
 ReversedFit = 0
 Line slope = -0.04, intercept = 1678.87
@@ -655,9 +655,9 @@ Linerity check pass: 1
 Angle  = -2.02
 Angle check pass: 1
 
----------------------------------------------
-CALIPER REGRESSION TEST #4 STARTING
----------------------------------------------
+---------------------------------------------------
+FIND LINE BY PROJECTION REGRESSION TEST #4 STARTING
+---------------------------------------------------
 Caliper status 0
 ReversedFit = 1
 Line slope = 0.30, intercept = 1319.96
@@ -667,28 +667,28 @@ Linerity check pass: 1
 Angle  = 73.48
 Angle check pass: 0
 
--------------------------------------------------
-CALIPER GUASSIAN DIFF REGRESSION TEST #1 STARTING
--------------------------------------------------
+------------------------------------------------
+FIND LINE BY CALIPER REGRESSION TEST #1 STARTING
+------------------------------------------------
 Caliper status 0
 ReversedFit = 1
-Line slope = 0.01, intercept = 416.19
-Line coordinate: (425.83, 745.00), (432.37, 1250.00)
+Line slope = 0.01, intercept = 415.62
+Line coordinate: (425.66, 747.00), (432.45, 1252.00)
 Linerity  = 100.00
 Linerity check pass: 1
-Angle  = 89.26
+Angle  = 89.23
 Angle check pass: 1
 
--------------------------------------------------
-CALIPER GUASSIAN DIFF REGRESSION TEST #2 STARTING
--------------------------------------------------
+------------------------------------------------
+FIND LINE BY CALIPER REGRESSION TEST #2 STARTING
+------------------------------------------------
 Caliper status 0
 ReversedFit = 1
-Line slope = 0.02, intercept = 773.48
-Line coordinate: (786.14, 759.00), (796.16, 1360.00)
+Line slope = 0.01, intercept = 775.85
+Line coordinate: (788.16, 853.00), (795.00, 1327.00)
 Linerity  = 100.00
 Linerity check pass: 1
-Angle  = 89.04
+Angle  = 89.17
 Angle check pass: 1
 
 -------------------------------------------------
@@ -715,9 +715,9 @@ Linerity check pass: 1
 Angle  = -0.89
 Angle check pass: 1
 
------------------------------------------------
-CALIPER ROTATED ROI REGRESSION TEST #1 STARTING
------------------------------------------------
+------------------------------------------------------------
+FIND LINE BY CALIPER ROTATED ROI REGRESSION TEST #1 STARTING
+------------------------------------------------------------
 Caliper status 0
 ReversedFit = 0
 Line slope = -2.27, intercept = 313.24

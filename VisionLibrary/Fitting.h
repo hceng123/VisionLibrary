@@ -421,36 +421,65 @@ public:
         auto dataCount1 = listPoints1.size ();
         cv::Mat B ( totalDataCount, 1, CV_32FC1 );
         cv::Mat A = cv::Mat::zeros ( totalDataCount, 3, CV_32FC1 );
-        ListOfPoint::const_iterator it1 = listPoints1.begin ();
-        ListOfPoint::const_iterator it2 = listPoints2.begin ();
-        for( int i = 0; i < totalDataCount; ++i )  {
-            if( i < ToInt32 ( listPoints1.size () ) ) {
-                if( reverseFit )
-                    A.at<float> ( i, 0 ) = ToFloat ( (*it1).y );
-                else
-                    A.at<float> ( i, 0 ) = ToFloat ( (*it1).x );
+        int i = 0;
+        for ( const auto &point : listPoints1 ) {
+            if( reverseFit )
+                A.at<float> ( i, 0 ) = ToFloat ( point.y );
+            else
+                A.at<float> ( i, 0 ) = ToFloat ( point.x );
 
-                A.at<float> ( i, 1 ) = 1.f;
-                if( reverseFit )
-                    B.at<float> ( i, 0 ) = ToFloat ( (*it1).x );
-                else
-                    B.at<float> ( i, 0 ) = ToFloat ( (*it1).y );
+            A.at<float> ( i, 1 ) = 1.f;
+            if( reverseFit )
+                B.at<float> ( i, 0 ) = ToFloat ( point.x );
+            else
+                B.at<float> ( i, 0 ) = ToFloat ( point.y );
 
-                ++ it1;
-            }else {
-                if( reverseFit )
-                    A.at<float> ( i, 0 ) = ToFloat ( (*it2).y );
-                else
-                    A.at<float> ( i, 0 ) = ToFloat ( (*it2).x );
-                A.at<float> ( i, 2 ) = 1.f;
-                if( reverseFit )
-                    B.at<float> ( i, 0 ) = ToFloat ( (*it2).x );
-                else
-                    B.at<float> ( i, 0 ) = ToFloat ( (*it2).y );
-
-                ++ it2;
-            }
+            ++ i;
         }
+
+        for ( const auto &point : listPoints2 ) {
+            if( reverseFit )
+                A.at<float> ( i, 0 ) = ToFloat ( point.y );
+            else
+                A.at<float> ( i, 0 ) = ToFloat ( point.x );
+            A.at<float> ( i, 2 ) = 1.f;
+            if( reverseFit )
+                B.at<float> ( i, 0 ) = ToFloat ( point.x );
+            else
+                B.at<float> ( i, 0 ) = ToFloat ( point.y );
+
+            ++ i;
+        }
+        //ListOfPoint::const_iterator it1 = listPoints1.begin ();
+        //ListOfPoint::const_iterator it2 = listPoints2.begin ();
+        //for( int i = 0; i < totalDataCount; ++i )  {
+        //    if( i < ToInt32 ( listPoints1.size () ) ) {
+        //        if( reverseFit )
+        //            A.at<float> ( i, 0 ) = ToFloat ( (*it1).y );
+        //        else
+        //            A.at<float> ( i, 0 ) = ToFloat ( (*it1).x );
+
+        //        A.at<float> ( i, 1 ) = 1.f;
+        //        if( reverseFit )
+        //            B.at<float> ( i, 0 ) = ToFloat ( (*it1).x );
+        //        else
+        //            B.at<float> ( i, 0 ) = ToFloat ( (*it1).y );
+
+        //        ++ it1;
+        //    }else {
+        //        if( reverseFit )
+        //            A.at<float> ( i, 0 ) = ToFloat ( (*it2).y );
+        //        else
+        //            A.at<float> ( i, 0 ) = ToFloat ( (*it2).x );
+        //        A.at<float> ( i, 2 ) = 1.f;
+        //        if( reverseFit )
+        //            B.at<float> ( i, 0 ) = ToFloat ( (*it2).x );
+        //        else
+        //            B.at<float> ( i, 0 ) = ToFloat ( (*it2).y );
+
+        //        ++ it2;
+        //    }
+        //}
 
         cv::Mat matResultImg;
         bool bResult = cv::solve ( A, B, matResultImg, cv::DECOMP_SVD );

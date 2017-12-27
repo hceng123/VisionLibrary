@@ -352,7 +352,7 @@ void VisionWidget::on_fitLineBtn_clicked()
     }
 }
 
-void VisionWidget::on_btnCaliper_clicked() {
+void VisionWidget::on_btnFindLine_clicked() {
     if ( _sourceImagePath.empty() ) {
         QMessageBox::information(this, "Vision Widget", "Please select an image first!", "Quit");
         return;
@@ -361,23 +361,26 @@ void VisionWidget::on_btnCaliper_clicked() {
     ui.visionView->setState ( VisionView::VISION_VIEW_STATE::TEST_VISION_LIBRARY );
     ui.visionView->applyIntermediateResult();
 
-    PR_CALIPER_CMD stCmd;
+    PR_FIND_LINE_CMD stCmd;
     stCmd.matInputImg = ui.visionView->getMat();
     stCmd.matMask = ui.visionView->getMask();
     auto rectROI = ui.visionView->getSelectedWindow();
     stCmd.rectRotatedROI.center = cv::Point ( rectROI.x + rectROI.width / 2, rectROI.y + rectROI.height / 2 );
     stCmd.rectRotatedROI.size = rectROI.size();
-    stCmd.enDetectDir = static_cast<PR_CALIPER_DIR> ( ui.comboBoxCaliperDirection->currentIndex() );
-    stCmd.enAlgorithm = static_cast<PR_CALIPER_ALGORITHM> ( ui.comboBoxCaliperAlgorithm->currentIndex() );
+    stCmd.enDetectDir = static_cast<PR_CALIPER_DIR> ( ui.comboBoxFindLineDirection->currentIndex() );
+    stCmd.enAlgorithm = static_cast<PR_FIND_LINE_ALGORITHM> ( ui.comboBoxFindLineAlgorithm->currentIndex() );
+    stCmd.nCaliperCount = ui.lineEditFindLineCaliperCount->text().toInt();
+    stCmd.fCaliperWidth = ui.lineEditFindLineCaliperWidth->text().toFloat();
+    stCmd.bFindPair = static_cast<bool> ( ui.comboBoxFindLineFindPair->currentIndex() );
 
-    PR_CALIPER_RPY stRpy;
-	VisionStatus enStatus = PR_Caliper(&stCmd, &stRpy);
+    PR_FIND_LINE_RPY stRpy;
+	VisionStatus enStatus = PR_FindLine(&stCmd, &stRpy);
 	if (VisionStatus::OK == enStatus)	{
 		ui.visionView->setMat ( VisionView::DISPLAY_SOURCE::RESULT, stRpy.matResultImg );
     }else {
         PR_GET_ERROR_INFO_RPY stErrStrRpy;
         PR_GetErrorInfo(enStatus, &stErrStrRpy);
-        QMessageBox::critical(nullptr, "Caliper", stErrStrRpy.achErrorStr, "Quit");
+        QMessageBox::critical(nullptr, "Find Line", stErrStrRpy.achErrorStr, "Quit");
         ui.lineEditObjCenter->clear();
         ui.lineEditObjRotation->clear();
     }
