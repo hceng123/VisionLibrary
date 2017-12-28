@@ -75,6 +75,24 @@ public:
     }
 
     template<typename T>
+    static void fitParallelCircle ( const T &vecPoints1, const T &vecPoints2, cv::Point2f &ptCenter, float &fRadius1, float &fRadius2 ) {
+        auto vecCombine ( vecPoints1 );
+        vecCombine.insert ( vecCombine.end (), vecPoints2.begin (), vecPoints2.end () );
+        auto fitTotal = fitCircle ( vecCombine );
+        ptCenter = fitTotal.center;
+
+        double rSqureSum = 0.f;
+        for (const auto &point : vecPoints1)
+            rSqureSum += sqrt ( (point.x - ptCenter.x) * (point.x - ptCenter.x) + (point.y - ptCenter.y) * (point.y - ptCenter.y) );
+        fRadius1 = static_cast<float>( rSqureSum / vecPoints1.size () );
+
+        rSqureSum = 0.f;
+        for (const auto &point : vecPoints2)
+            rSqureSum += sqrt ( (point.x - fitTotal.center.x) * (point.x - fitTotal.center.x) + (point.y - fitTotal.center.y) * (point.y - fitTotal.center.y) );
+        fRadius2 = static_cast<float> ( rSqureSum / vecPoints2.size () );
+    }
+
+    template<typename T>
     static T randomSelectPoints ( const T &vecPoints, int numOfPtToSelect ) {
         std::set<int> setResult;
         T vecResultPoints;
@@ -193,6 +211,71 @@ public:
         return rotatedRect;
     }
 
+    template<typename T>
+    static cv::RotatedRect fitCircleRemoveStray ( const T &vecPoints, float fRmStrayPointRatio ) {
+        cv::RotatedRect rotatedRect;
+        if (vecPoints.size () < 3)
+            return rotatedRect;
+
+        rotatedRect = fitCircle ( vecPoints );
+
+        if ( fRmStrayPointRatio > 0 ) {
+            int nPointsToKeep = ToInt32 ( vecPoints.size() * ( 1.f - fRmStrayPointRatio ) );
+            VectorOfFloat vecRadiusDiff;
+            vecRadiusDiff.reserve ( vecPoints.size() );
+            for ( const auto &point : vecPoints ) {
+                float fRadiusDiff = fabs ( CalcUtils::distanceOf2Point ( point, rotatedRect.center ) - rotatedRect.size.width / 2.f );
+                vecRadiusDiff.push_back ( fRadiusDiff );
+            }
+            auto vecIndex = CalcUtils::sort_index ( vecRadiusDiff );
+            T vecKeepPoints;
+            vecKeepPoints.reserve ( nPointsToKeep );
+            for ( int i = 0; i < nPointsToKeep; ++ i ) {
+                vecKeepPoints.push_back ( vecPoints[ vecIndex[i] ] );
+            }
+            rotatedRect = fitCircle ( vecKeepPoints );  //Fit again use the left over points
+        }
+        return rotatedRect;
+    }
+
+    template<typename T>
+    static void fitParallelCircleRemoveStray ( const T &vecPoints1, const T &vecPoints2, T &vecKeepPoints1, T &vecKeepPoints2, cv::Point2f &ptCenter, float &fRadius1, float &fRadius2, float fRmStrayPointRatio ) {
+        fitParallelCircle ( vecPoints1, vecPoints2, ptCenter, fRadius1, fRadius2 );
+        if ( fRmStrayPointRatio > 0 ) {
+            {
+                int nPointsToKeep = ToInt32 ( vecPoints1.size () * (1.f - fRmStrayPointRatio) );
+                VectorOfFloat vecRadiusDiff;
+                vecRadiusDiff.reserve ( vecPoints1.size () );
+                for( const auto &point : vecPoints1 ) {
+                    float fRadiusDiff = fabs ( CalcUtils::distanceOf2Point ( point, ptCenter ) - fRadius1 );
+                    vecRadiusDiff.push_back ( fRadiusDiff );
+                }
+                auto vecIndex = CalcUtils::sort_index ( vecRadiusDiff );
+                vecKeepPoints1.reserve ( nPointsToKeep );
+                for( int i = 0; i < nPointsToKeep; ++ i ) {
+                    vecKeepPoints1.push_back ( vecPoints1[ vecIndex[i] ] );
+                }
+            }
+
+            {
+                int nPointsToKeep = ToInt32 ( vecPoints2.size () * (1.f - fRmStrayPointRatio) );
+                VectorOfFloat vecRadiusDiff;
+                vecRadiusDiff.reserve ( vecPoints2.size () );
+                for( const auto &point : vecPoints2 ) {
+                    float fRadiusDiff = fabs ( CalcUtils::distanceOf2Point ( point, ptCenter ) - fRadius2 );
+                    vecRadiusDiff.push_back ( fRadiusDiff );
+                }
+                auto vecIndex = CalcUtils::sort_index ( vecRadiusDiff );
+
+                vecKeepPoints2.reserve ( nPointsToKeep );
+                for( int i = 0; i < nPointsToKeep; ++ i ) {
+                    vecKeepPoints2.push_back ( vecPoints2[ vecIndex[i] ] );
+                }
+            }
+            fitParallelCircle ( vecKeepPoints1, vecKeepPoints2, ptCenter, fRadius1, fRadius2 );
+        }
+    }
+
     //The equation is from http://hotmath.com/hotmath_help/topics/line-of-best-fit.html
     template<typename T>
     static void fitLine ( const T &vecPoints, float &fSlope, float &fIntercept, bool reverseFit = false ) {
@@ -218,14 +301,14 @@ public:
     }
 
     template<typename T>
-    static void fitLineRansac(const T  &vecPoints,
-                              float     fTolerance,
-                            int                  nMaxRansacTime,
-                            size_t               nFinishThreshold,
-                            bool                 bReversedFit,
-                            float               &fSlope,
-                            float               &fIntercept,
-                            PR_Line2f           &stLine )
+    static void fitLineRansac(const T      &vecPoints,
+                              float         fTolerance,
+                              int           nMaxRansacTime,
+                              size_t        nFinishThreshold,
+                              bool          bReversedFit,
+                              float        &fSlope,
+                              float        &fIntercept,
+                              PR_Line2f    &stLine )
     {
         int nRansacTime = 0;
         const int LINE_RANSAC_POINT = 2;
@@ -247,7 +330,7 @@ public:
                 stLine = CalcUtils::calcEndPointOfLine ( vecSelectedPoints, bReversedFit, fSlope, fIntercept );
                 nMaxConsentNum = vecSelectedPoints.size ();
             }
-            ++nRansacTime;
+            ++ nRansacTime;
         }
     }
 
@@ -279,6 +362,33 @@ public:
 
         stLine = CalcUtils::calcEndPointOfLine ( listPoint, bReversedFit, fSlope, fIntercept );
         return VisionStatus::OK;
+    }
+
+    template<typename T>
+    static T fitLineRemoveStray(const T               &vecPoints,
+                                bool                   bReversedFit,
+                                float                  fRmStrayPointRatio,
+                                float                  &fSlope,
+                                float                  &fIntercept )
+    {
+        Fitting::fitLine ( vecPoints, fSlope, fIntercept, bReversedFit );
+        if ( fRmStrayPointRatio > 0.f ) {
+            T vecKeepPoints;
+            VectorOfFloat vecDistance;
+            vecDistance.reserve ( vecPoints.size() );
+        
+            for ( const auto &point : vecPoints ) {
+                auto distance = fabs ( CalcUtils::ptDisToLine ( point, bReversedFit, fSlope, fIntercept ) );
+                vecDistance.push_back ( distance );
+            }
+            auto vecIndex = CalcUtils::sort_index ( vecDistance );
+            int nPointsToKeep = ToInt32 ( vecPoints.size() * ( 1.f - fRmStrayPointRatio ) );
+            for ( int i = 0; i < nPointsToKeep; ++ i )
+                vecKeepPoints.push_back ( vecPoints[ vecIndex[i] ] );
+            Fitting::fitLine ( vecKeepPoints, fSlope, fIntercept, bReversedFit );
+            return vecKeepPoints;
+        }
+        return vecPoints;
     }
 
     template<typename T>
@@ -338,35 +448,34 @@ public:
         auto dataCount1 = listPoints1.size ();
         cv::Mat B ( totalDataCount, 1, CV_32FC1 );
         cv::Mat A = cv::Mat::zeros ( totalDataCount, 3, CV_32FC1 );
-        ListOfPoint::const_iterator it1 = listPoints1.begin ();
-        ListOfPoint::const_iterator it2 = listPoints2.begin ();
-        for( int i = 0; i < totalDataCount; ++i )  {
-            if( i < ToInt32 ( listPoints1.size () ) ) {
-                if( reverseFit )
-                    A.at<float> ( i, 0 ) = ToFloat ( (*it1).y );
-                else
-                    A.at<float> ( i, 0 ) = ToFloat ( (*it1).x );
+        int i = 0;
+        for ( const auto &point : listPoints1 ) {
+            if( reverseFit )
+                A.at<float> ( i, 0 ) = ToFloat ( point.y );
+            else
+                A.at<float> ( i, 0 ) = ToFloat ( point.x );
 
-                A.at<float> ( i, 1 ) = 1.f;
-                if( reverseFit )
-                    B.at<float> ( i, 0 ) = ToFloat ( (*it1).x );
-                else
-                    B.at<float> ( i, 0 ) = ToFloat ( (*it1).y );
+            A.at<float> ( i, 1 ) = 1.f;
+            if( reverseFit )
+                B.at<float> ( i, 0 ) = ToFloat ( point.x );
+            else
+                B.at<float> ( i, 0 ) = ToFloat ( point.y );
 
-                ++ it1;
-            }else {
-                if( reverseFit )
-                    A.at<float> ( i, 0 ) = ToFloat ( (*it2).y );
-                else
-                    A.at<float> ( i, 0 ) = ToFloat ( (*it2).x );
-                A.at<float> ( i, 2 ) = 1.f;
-                if( reverseFit )
-                    B.at<float> ( i, 0 ) = ToFloat ( (*it2).x );
-                else
-                    B.at<float> ( i, 0 ) = ToFloat ( (*it2).y );
+            ++ i;
+        }
 
-                ++ it2;
-            }
+        for ( const auto &point : listPoints2 ) {
+            if( reverseFit )
+                A.at<float> ( i, 0 ) = ToFloat ( point.y );
+            else
+                A.at<float> ( i, 0 ) = ToFloat ( point.x );
+            A.at<float> ( i, 2 ) = 1.f;
+            if( reverseFit )
+                B.at<float> ( i, 0 ) = ToFloat ( point.x );
+            else
+                B.at<float> ( i, 0 ) = ToFloat ( point.y );
+
+            ++ i;
         }
 
         cv::Mat matResultImg;

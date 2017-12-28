@@ -136,8 +136,9 @@ public:
     virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
     static String StaticGetFolderPrefix();
 private:    
-    const String _strKeyObjAttribute    = "ObjAttribute";
+    const String _strKeyInnerAttribute  = "InnerAttribute";
     const String _strKeyExpCircleCtr    = "ExpectedCircleCtr";
+    const String _strKeyFindCirclePair  = "FindCirclePair";
     const String _strKeyMinSrchRadius   = "MinSrchRadius";
     const String _strKeyMaxSrchRadius   = "MaxSrchRadius";
     const String _strKeyStartSrchAngle  = "StartSrchAngle";
@@ -146,10 +147,16 @@ private:
     const String _strKeyErrorTol        = "ErrorTolerance";
     const String _strKeyCaliperCount    = "CaliperCount";
     const String _strKeyCaliperWidth    = "CaliperWidth";
+    const String _strKeyDiffFilterHalfW = "DiffFilterHalfW";
+    const String _strKeyDiffFilterSigma = "DiffFilterSigma";
+    const String _strKeyEdgeThreshold   = "EdgeThreshold";
+    const String _strKeySelectEdge      = "SelectEdge";
+    const String _strKeyRmStrayPtRatio  = "RmStrayPtRatio";
 
     const String _strKeyStatus          = "Status";
     const String _strKeyResultCtr       = "ResultCtr";
     const String _strKeyRadius          = "Radius";
+    const String _strKeyRadius2         = "Radius2";
 };
 
 class LogCaseInspCircle : public LogCase
@@ -195,12 +202,12 @@ private:
     const String _strKeyPoint2          = "Point2";
 };
 
-class LogCaseCaliper : public LogCase
+class LogCaseFindLine : public LogCase
 {
 public:
-    explicit LogCaseCaliper(const String &strPath, bool bReplay = false) : LogCase(strPath, bReplay) {}
-    VisionStatus WriteCmd(const PR_CALIPER_CMD *const pstCmd);
-    VisionStatus WriteRpy(const PR_CALIPER_RPY *const pstRpy);
+    explicit LogCaseFindLine(const String &strPath, bool bReplay = false) : LogCase(strPath, bReplay) {}
+    VisionStatus WriteCmd(const PR_FIND_LINE_CMD *const pstCmd);
+    VisionStatus WriteRpy(const PR_FIND_LINE_RPY *const pstRpy);
     virtual VisionStatus RunLogCase() override;
     virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
     static String StaticGetFolderPrefix();
@@ -209,8 +216,14 @@ private:
     const String _strKeyRoiSize         = "RoiSize";
     const String _strKeyRoiAngle        = "RoiAngle";
     const String _strKeyAlgorithm       = "Algorithm";
+    const String _strKeyFindPair        = "FindPair";
     const String _strKeyCaliperCount    = "CaliperCount";
     const String _strKeyCaliperWidth    = "CaliperWidth";
+    const String _strKeyDiffFilterHalfW = "DiffFilterHalfW";
+    const String _strKeyDiffFilterSigma = "DiffFilterSigma";
+    const String _strKeyEdgeThreshold   = "EdgeThreshold";
+    const String _strKeySelectEdge      = "SelectEdge";
+    const String _strKeyRmStrayPtRatio  = "RmStrayPtRatio";
     const String _strKeyDir             = "Direction";
     const String _strKeyCheckLinerity   = "CheckLinerity";
     const String _strKeyPointMaxOffset  = "PointMaxOffset";
@@ -223,8 +236,12 @@ private:
     const String _strKeyReversedFit     = "ReversedFit";
     const String _strKeySlope           = "Slope";
     const String _strKeyIntercept       = "Intercept";
-    const String _strKeyPoint1          = "Point1";
-    const String _strKeyPoint2          = "Point2";
+    const String _strKeyLine1Point1     = "Line1Point1";
+    const String _strKeyLine1Point2     = "Line1Point2";
+    const String _strKeyIntercept2      = "Intercept2";
+    const String _strKeyLine2Point1     = "Line2Point1";
+    const String _strKeyLine2Point2     = "Line2Point2";
+    const String _strKeyDistance        = "Distance";
     const String _strKeyLinerityPass    = "LinerityPass";
     const String _strKeyLinerity        = "Linerity";
     const String _strKeyAngleCheckPass  = "AngleCheckPass";

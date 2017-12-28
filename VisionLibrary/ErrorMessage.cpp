@@ -113,27 +113,23 @@ VisionStatus GetErrorInfo(VisionStatus enStatus, PR_GET_ERROR_INFO_RPY *pstRpy)
         pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::INSP_STATUS;
         break;
     case VisionStatus::CAN_NOT_FIND_CAE_LINE:
-        _snprintf(pstRpy->achErrorStr, PR_MAX_ERR_STR_LEN, "Can not find the line of CAE.");
+        _snprintf(pstRpy->achErrorStr, PR_MAX_ERR_STR_LEN, "Cannot find the line of CAE.");
         pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::INSP_STATUS;
         break;
     case VisionStatus::CAN_NOT_FIND_SQUARE_EDGE:
-        _snprintf(pstRpy->achErrorStr, PR_MAX_ERR_STR_LEN, "Can not find square chip edges.");
+        _snprintf(pstRpy->achErrorStr, PR_MAX_ERR_STR_LEN, "Cannot find square chip edges.");
         pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::INSP_STATUS;
         break;
     case VisionStatus::CAN_NOT_FIND_CIRCULAR_CHIP:
-        _snprintf(pstRpy->achErrorStr, PR_MAX_ERR_STR_LEN, "Can not find circular chip.");
+        _snprintf(pstRpy->achErrorStr, PR_MAX_ERR_STR_LEN, "Cannot find circular chip.");
         pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::INSP_STATUS;
         break;
     case VisionStatus::CAN_NOT_FIND_CHIP_BODY:
-        _snprintf(pstRpy->achErrorStr, PR_MAX_ERR_STR_LEN, "Can not find chip body.");
-        pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::INSP_STATUS;
-        break;
-    case VisionStatus::CALIPER_CAN_NOT_FIND_LINE:
-        _snprintf(pstRpy->achErrorStr, PR_MAX_ERR_STR_LEN, "Caliper can not find the line.");
+        _snprintf(pstRpy->achErrorStr, PR_MAX_ERR_STR_LEN, "Cannot find chip body.");
         pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::INSP_STATUS;
         break;
     case VisionStatus::CAN_NOT_FIND_CONTOUR:
-        _snprintf(pstRpy->achErrorStr, PR_MAX_ERR_STR_LEN, "Can not find contour.");
+        _snprintf(pstRpy->achErrorStr, PR_MAX_ERR_STR_LEN, "Cannot find contour.");
         pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::INSP_STATUS;
         break;
     case VisionStatus::CONTOUR_DEFECT_REJECT:
@@ -165,11 +161,23 @@ VisionStatus GetErrorInfo(VisionStatus enStatus, PR_GET_ERROR_INFO_RPY *pstRpy)
         pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::INSP_STATUS;
         break;
     case VisionStatus::CAN_NOT_FIND_MTF_PATTERN:
-        _snprintf(pstRpy->achErrorStr, PR_MAX_ERR_STR_LEN, "Can not find MTF pattern in the given ROI.");
+        _snprintf(pstRpy->achErrorStr, PR_MAX_ERR_STR_LEN, "Cannot find MTF pattern in the given ROI.");
         pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::INSP_STATUS;
         break;
     case VisionStatus::MTF_PATTERN_TOO_SMALL:
         _snprintf(pstRpy->achErrorStr, PR_MAX_ERR_STR_LEN, "The MTF pattern is too small.");
+        pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::INSP_STATUS;
+        break;
+    case VisionStatus::CALIPER_CAN_NOT_FIND_LINE:
+        _snprintf(pstRpy->achErrorStr, PR_MAX_ERR_STR_LEN, "Caliper cannot find the line.");
+        pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::INSP_STATUS;
+        break;
+    case VisionStatus::PROJECTION_CANNOT_FIND_LINE:
+        _snprintf(pstRpy->achErrorStr, PR_MAX_ERR_STR_LEN, "Projection cannot find the line.");
+        pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::INSP_STATUS;
+        break;
+    case VisionStatus::CALIPER_NOT_ENOUGH_EDGE_POINTS:
+        _snprintf(pstRpy->achErrorStr, PR_MAX_ERR_STR_LEN, "Caliper cannot enough edge points.");
         pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::INSP_STATUS;
         break;
     default:

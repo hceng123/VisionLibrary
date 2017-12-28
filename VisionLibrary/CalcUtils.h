@@ -106,13 +106,13 @@ public:
         return cv::Point_<_Tp> ( ToFloat ( matResultImg.at<_Tp>(0, 0) ), ToFloat ( matResultImg.at<_Tp>(1, 0) ) );
     }
 
-    template<typename _Tp>
-    static inline VectorOfPoint2f warpRect(const cv::Mat &matWarp, const cv::Rect2f &rectInput) {
-        VectorOfPoint2f vecPoints;
-        vecPoints.push_back ( warpPoint<_Tp>( matWarp, rectInput.tl() ) );
-        vecPoints.push_back ( warpPoint<_Tp>( matWarp, cv::Point2f(rectInput.x + rectInput.width, rectInput.y ) ) );
-        vecPoints.push_back ( warpPoint<_Tp>( matWarp, rectInput.br() ) );
-        vecPoints.push_back ( warpPoint<_Tp>( matWarp, cv::Point2f(rectInput.x, rectInput.y + rectInput.height ) ) );
+    template<typename _MatType, typename T>
+    static inline std::vector<cv::Point_<T>> warpRect(const cv::Mat &matWarp, const cv::Rect_<T> &rectInput) {
+        std::vector<cv::Point_<T>> vecPoints;
+        vecPoints.push_back ( warpPoint<_MatType>( matWarp, rectInput.tl() ) );
+        vecPoints.push_back ( warpPoint<_MatType>( matWarp, cv::Point_<T>(rectInput.x + rectInput.width, rectInput.y ) ) );
+        vecPoints.push_back ( warpPoint<_MatType>( matWarp, rectInput.br() ) );
+        vecPoints.push_back ( warpPoint<_MatType>( matWarp, cv::Point_<T>(rectInput.x, rectInput.y + rectInput.height ) ) );
         return vecPoints;
     }
 
@@ -348,6 +348,18 @@ public:
             matTmp.setTo ( matInput.at<_tp> ( row, 0 ) );
         }
         return matResult;
+    }
+
+    template<typename T>
+    static std::vector<size_t> sort_index ( const std::vector<T> &v ) {
+        // initialize original index locations
+        std::vector<size_t> idx ( v.size () );
+        std::iota ( idx.begin (), idx.end (), 0 );
+
+        // sort indexes based on comparing values in v
+        sort ( idx.begin (), idx.end (),
+               [&v]( size_t i1, size_t i2 ) {return v[i1] < v[i2]; } );
+        return idx;
     }
 
     template<typename T>

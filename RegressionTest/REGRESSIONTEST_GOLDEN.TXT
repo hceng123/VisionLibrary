@@ -21,7 +21,7 @@ CALCUTILS CUMSUM ON DIMENSION 1 RESULT:
 ------------------------------------------
 CALCUTILS INTERVALS TEST #1 STARTING
 ------------------------------------------
-INPUT: start = 0interval = 0.1 end = 1
+INPUT: start = 0.00 interval = 0.10 end = 1.00
 INTERVALS RESULT: 
 0.00 
 0.10 
@@ -38,7 +38,7 @@ INTERVALS RESULT:
 ------------------------------------------
 CALCUTILS INTERVALS TEST #2 STARTING
 ------------------------------------------
-INPUT: start = 0 interval = -0.1 end = -1
+INPUT: start = 0.00 interval = -0.10 end = -1.00
 INTERVALS RESULT: 
 0.00 
 -0.10 
@@ -162,7 +162,7 @@ INPUT:
 0.90 -0.80 0.60 0.50 
 1.80 1.90 0.70 -1.#J 
 Largest Item Values: 
-1.9 1.8 0.9 0.8 0.7 
+1.90 1.80 0.90 0.80 0.70 
 Largest Item Index: 
 13 12 8 1 14 
 
@@ -219,7 +219,7 @@ Phase Correction result:
 ------------------------------------------------
 FIT CIRCLE TEST #1 STARTING
 ------------------------------------------------
-Fit circle center [633.767, 1217.6], Radius 89.4707
+Fit circle center [633.77, 1217.60], Radius 89.47
 
 ------------------------------------------
 INSPECT DEVICE REGRESSION TEST #1 STARTING
@@ -245,45 +245,45 @@ Run logcase result 0
 MATCH TEMPLATE REGRESSION TEST #1 STARTING
 ------------------------------------------
 Match template status 0
-Match template result 58.3325, 326.75
-Match template angle -8.7274
-Match template score 99.999
+Match template result 58.33, 326.75
+Match template angle -8.73
+Match template score 100.00
 
 ------------------------------------------
 MATCH TEMPLATE REGRESSION TEST #2 STARTING
 ------------------------------------------
 Match template status 0
-Match template result 1154.5, 727.5
-Match template angle 0
-Match template score 90.9921
+Match template result 1154.50, 727.50
+Match template angle 0.00
+Match template score 90.99
 
 ------------------------------------------
 MATCH TEMPLATE REGRESSION TEST #3 STARTING
 ------------------------------------------
 Match template status 0
-Match template result 1154.5, 727.5
-Match template angle 0
-Match template score 90.9921
+Match template result 1154.50, 727.50
+Match template angle 0.00
+Match template score 90.99
 
 ------------------------------------------
 MATCH TEMPLATE REGRESSION TEST #4 STARTING
 ------------------------------------------
 Match template status 0
-Match template result 909.5, 1169.5
-Match template angle 0
-Match template score 100
+Match template result 909.50, 1169.50
+Match template angle 0.00
+Match template score 100.00
 
 ------------------------------------------------
 SEARCH FIDUCIAL MARK REGRESSION TEST #1 STARTING
 ------------------------------------------------
 Search fiducial status 0
-Search fiducial result 1676.99, 375.282
+Search fiducial result 1676.99, 375.28
 
 ------------------------------------------------
 SEARCH FIDUCIAL MARK REGRESSION TEST #2 STARTING
 ------------------------------------------------
 Search fiducial status 0
-Search fiducial result 128.381, 193.948
+Search fiducial result 128.38, 193.95
 
 ------------------------------------------
 FIT LINE REGRESSION TEST #1 STARTING
@@ -619,156 +619,181 @@ Test with threshold number 4
 Auto threshold status: 0
 Auto threshold result: 40 90 137 176 
 
----------------------------------------------
-CALIPER REGRESSION TEST #1 STARTING
----------------------------------------------
-Caliper status 0
+---------------------------------------------------
+FIND LINE BY PROJECTION REGRESSION TEST #1 STARTING
+---------------------------------------------------
+Find line status 0
 ReversedFit = 1
-Line slope = -0.01, intercept = 1309.80
-Line coordinate: (1305.10, 802.00), (1303.15, 1133.00)
+Line slope = -0.00, intercept = 1308.35
+Line coordinate: (1304.86, 802.00), (1303.42, 1133.00)
 Linerity  = 100.00
 Linerity check pass: 1
-Angle  = 90.34
+Angle  = 90.25
 Angle check pass: 1
 
----------------------------------------------
-CALIPER REGRESSION TEST #2 STARTING
----------------------------------------------
-Caliper status 0
+---------------------------------------------------
+FIND LINE BY PROJECTION REGRESSION TEST #2 STARTING
+---------------------------------------------------
+Find line status 0
 ReversedFit = 0
-Line slope = 0.05, intercept = 1260.71
-Line coordinate: (928.00, 1306.48), (1197.00, 1319.74)
-Linerity  = 88.15
+Line slope = 0.03, intercept = 1285.16
+Line coordinate: (928.00, 1310.56), (1197.00, 1317.92)
+Linerity  = 100.00
 Linerity check pass: 1
-Angle  = 2.82
+Angle  = 1.57
 Angle check pass: 1
 
----------------------------------------------
-CALIPER REGRESSION TEST #3 STARTING
----------------------------------------------
-Caliper status 0
+---------------------------------------------------
+FIND LINE BY PROJECTION REGRESSION TEST #3 STARTING
+---------------------------------------------------
+Find line status 0
 ReversedFit = 0
-Line slope = -0.04, intercept = 1678.87
-Line coordinate: (1496.00, 1626.21), (1723.00, 1618.21)
-Linerity  = 96.93
+Line slope = -0.01, intercept = 1646.23
+Line coordinate: (1496.00, 1624.06), (1723.00, 1620.70)
+Linerity  = 96.49
 Linerity check pass: 1
-Angle  = -2.02
+Angle  = -0.85
 Angle check pass: 1
 
----------------------------------------------
-CALIPER REGRESSION TEST #4 STARTING
----------------------------------------------
-Caliper status 0
+---------------------------------------------------
+FIND LINE BY PROJECTION REGRESSION TEST #4 STARTING
+---------------------------------------------------
+Find line status 0
 ReversedFit = 1
-Line slope = 0.30, intercept = 1319.96
-Line coordinate: (1607.71, 970.00), (1634.11, 1059.00)
-Linerity  = 81.11
+Line slope = 0.29, intercept = 1322.85
+Line coordinate: (1607.30, 970.00), (1633.40, 1059.00)
+Linerity  = 78.89
 Linerity check pass: 1
-Angle  = 73.48
+Angle  = 73.66
 Angle check pass: 0
 
--------------------------------------------------
-CALIPER GUASSIAN DIFF REGRESSION TEST #1 STARTING
--------------------------------------------------
-Caliper status 0
+------------------------------------------------
+FIND LINE BY CALIPER REGRESSION TEST #1 STARTING
+------------------------------------------------
+Find line status 0
 ReversedFit = 1
-Line slope = 0.01, intercept = 416.19
-Line coordinate: (425.83, 745.00), (432.37, 1250.00)
+Line slope = 0.01, intercept = 415.96
+Line coordinate: (425.80, 747.00), (432.45, 1252.00)
 Linerity  = 100.00
 Linerity check pass: 1
-Angle  = 89.26
+Angle  = 89.25
 Angle check pass: 1
 
--------------------------------------------------
-CALIPER GUASSIAN DIFF REGRESSION TEST #2 STARTING
--------------------------------------------------
-Caliper status 0
+------------------------------------------------
+FIND LINE BY CALIPER REGRESSION TEST #2 STARTING
+------------------------------------------------
+Find line status 0
 ReversedFit = 1
-Line slope = 0.02, intercept = 773.48
-Line coordinate: (786.14, 759.00), (796.16, 1360.00)
+Line slope = 0.01, intercept = 778.16
+Line coordinate: (788.61, 853.00), (794.41, 1327.00)
 Linerity  = 100.00
 Linerity check pass: 1
-Angle  = 89.04
+Angle  = 89.30
 Angle check pass: 1
 
--------------------------------------------------
-CALIPER GUASSIAN DIFF REGRESSION TEST #3 STARTING
--------------------------------------------------
-Caliper status 0
+------------------------------------------------
+FIND LINE BY CALIPER REGRESSION TEST #3 STARTING
+------------------------------------------------
+Find line status 0
 ReversedFit = 0
-Line slope = -0.01, intercept = 1324.62
-Line coordinate: (1003.00, 1318.42), (1218.00, 1317.08)
+Line slope = -0.00, intercept = 1317.81
+Line coordinate: (1013.00, 1315.15), (1216.00, 1314.61)
 Linerity  = 100.00
 Linerity check pass: 1
-Angle  = -0.35
+Angle  = -0.15
 Angle check pass: 1
 
--------------------------------------------------
-CALIPER GUASSIAN DIFF REGRESSION TEST #4 STARTING
--------------------------------------------------
-Caliper status 0
+------------------------------------------------
+FIND LINE BY CALIPER REGRESSION TEST #4 STARTING
+------------------------------------------------
+Find line status 0
 ReversedFit = 0
-Line slope = -0.02, intercept = 1876.61
-Line coordinate: (956.00, 1861.79), (1135.00, 1859.01)
+Line slope = 0.00, intercept = 1852.91
+Line coordinate: (967.00, 1856.41), (1136.00, 1857.02)
 Linerity  = 100.00
 Linerity check pass: 1
-Angle  = -0.89
+Angle  = 0.21
 Angle check pass: 1
 
------------------------------------------------
-CALIPER ROTATED ROI REGRESSION TEST #1 STARTING
------------------------------------------------
-Caliper status 0
-ReversedFit = 0
-Line slope = -2.27, intercept = 313.24
-Line coordinate: (65.39, 164.94), (103.80, 77.83)
+------------------------------------------------------------
+FIND LINE BY CALIPER ROTATED ROI REGRESSION TEST #1 STARTING
+------------------------------------------------------------
+Find line status 0
+ReversedFit = 1
+Line slope = -0.44, intercept = 138.50
+Line coordinate: (105.15, 75.04), (70.57, 152.86)
 Linerity  = 100.00
 Linerity check pass: 1
-Angle  = -66.21
-Angle check pass: 1
+Angle  = 113.96
+Angle check pass: 0
 
------------------------------------------------
-CALIPER ROTATED ROI REGRESSION TEST #2 STARTING
------------------------------------------------
-Caliper status 0
+------------------------------------------------------------
+FIND LINE BY CALIPER ROTATED ROI REGRESSION TEST #2 STARTING
+------------------------------------------------------------
+Find line status 0
 ReversedFit = 0
-Line slope = 0.44, intercept = -40.21
-Line coordinate: (130.28, 17.23), (261.41, 75.05)
+Line slope = 0.44, intercept = -40.80
+Line coordinate: (125.55, 14.89), (261.29, 75.10)
 Linerity  = 99.31
 Linerity check pass: 1
-Angle  = 23.79
+Angle  = 23.92
 Angle check pass: 1
 
------------------------------------------------
-CALIPER ROTATED ROI REGRESSION TEST #3 STARTING
------------------------------------------------
-Caliper status 32
-Error Msg: Caliper can not find the line.
+------------------------------------------------------------
+FIND LINE BY CALIPER ROTATED ROI REGRESSION TEST #3 STARTING
+------------------------------------------------------------
+Find line status 200
+Error Msg: Caliper cannot find the line.
 
------------------------------------------------
-CALIPER ROTATED ROI REGRESSION TEST #4 STARTING
------------------------------------------------
-Caliper status 32
-Error Msg: Caliper can not find the line.
+------------------------------------------------------------
+FIND LINE BY CALIPER ROTATED ROI REGRESSION TEST #4 STARTING
+------------------------------------------------------------
+Find line status 201
+Error Msg: Projection cannot find the line.
 
------------------------------------------------
-CALIPER ROTATED ROI REGRESSION TEST #5 STARTING
------------------------------------------------
-Caliper status 0
+------------------------------------------------------------
+FIND LINE BY CALIPER ROTATED ROI REGRESSION TEST #5 STARTING
+------------------------------------------------------------
+Find line status 0
 ReversedFit = 0
-Line slope = -0.21, intercept = 354.43
-Line coordinate: (282.62, 295.12), (573.29, 234.11)
+Line slope = -0.21, intercept = 354.19
+Line coordinate: (273.86, 297.06), (580.23, 233.14)
 Linerity  = 100.00
 Linerity check pass: 1
-Angle  = -11.85
+Angle  = -11.79
 Angle check pass: 1
+
+------------------------------------------------------
+FIND LINE PAIR  BY CALIPER REGRESSION TEST #1 STARTING
+------------------------------------------------------
+Find line status 0
+ReversedFit = 0
+Line slope = 0.00, intercept = 1456.78, intercept2 = 1619.50
+Line coordinate: (1134.00, 1459.58), (1617.00, 1460.77)
+Line2 coordinate: (1134.00, 1622.29), (1617.00, 1623.48)
+Two line distance 162.71
 
 -------------------------------------------------
 CALIPER FIND CIRCLE REGRESSION TEST #1 STARTING
 -------------------------------------------------
-Detect circle status 0
-Radius = 95.11
-Circle center: (130.71, 128.69)
+Find circle status 0
+Circle center: (130.30, 127.24)
+Radius = 95.20
+Radius2 = 0.00
+
+-------------------------------------------------
+CALIPER FIND CIRCLE REGRESSION TEST #2 STARTING
+-------------------------------------------------
+Find circle status 0
+Circle center: (130.61, 131.16)
+Radius = 51.60
+Radius2 = 96.26
+
+-------------------------------------------------
+CALIPER FIND CIRCLE REGRESSION TEST #3 STARTING
+-------------------------------------------------
+Find circle status 202
+Error message Caliper cannot enough edge points.
 
 ---------------------------------------------
 CALIBRATE CAMERA REGRESSION TEST #1 STARTING
@@ -1045,7 +1070,7 @@ Result threshold: 152
 Number of contour: 2
 Inspect contour status: 0
 Number of defects: 0
-Inspect contour status: 34
+Inspect contour status: 33
 Number of defects: 2
 
 ---------------------------------------------
@@ -1056,7 +1081,7 @@ Result threshold: 134
 Number of contour: 2
 Inspect contour status: 0
 Number of defects: 0
-Inspect contour status: 34
+Inspect contour status: 33
 Number of defects: 2
 
 ---------------------------------------------

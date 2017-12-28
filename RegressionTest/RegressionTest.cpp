@@ -10,6 +10,7 @@ using namespace AOI::Vision;
 int _tmain(int argc, _TCHAR* argv[])
 {
     PR_Init();
+    PR_EnableAutoMode(true);
 
     /*****************************************
     * Test Vision Library Internal Functions *

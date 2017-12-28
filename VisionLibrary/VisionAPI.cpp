@@ -42,6 +42,11 @@ VisionAPI VisionStatus PR_Init()
     return RecordManager::getInstance()->load();
 }
 
+VisionAPI void PR_EnableAutoMode(bool bEnableAutoMode)
+{
+    VisionAlgorithm::EnableAutoMode ( bEnableAutoMode );
+}
+
 VisionAPI void _PR_InternalTest()
 {
     try {
@@ -160,10 +165,10 @@ PR_FUNCTION_ENTRY
 PR_FUNCTION_EXIT
 }
 
-VisionAPI VisionStatus  PR_Caliper(const PR_CALIPER_CMD *const pstCmd, PR_CALIPER_RPY *const pstRpy)
+VisionAPI VisionStatus  PR_FindLine(const PR_FIND_LINE_CMD *const pstCmd, PR_FIND_LINE_RPY *const pstRpy)
 {
 PR_FUNCTION_ENTRY
-    return VisionAlgorithm::caliper ( pstCmd, pstRpy );
+    return VisionAlgorithm::findLine ( pstCmd, pstRpy );
 PR_FUNCTION_EXIT
 }
 

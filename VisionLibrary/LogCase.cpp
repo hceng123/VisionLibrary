@@ -334,18 +334,24 @@ VisionStatus LogCaseFindCircle::WriteCmd(const PR_FIND_CIRCLE_CMD *const pstCmd)
     CSimpleIni ini(false, false, false);
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile( cmdRpyFilePath.c_str() );
-    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyObjAttribute.c_str(), ToInt32(pstCmd->enObjAttribute) );
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyInnerAttribute.c_str(), ToInt32(pstCmd->enInnerAttribute) );
     ini.SetValue(_CMD_SECTION.c_str(), _strKeyExpCircleCtr.c_str(), _formatCoordinate ( pstCmd->ptExpectedCircleCtr ).c_str() );
+    ini.SetBoolValue(_CMD_SECTION.c_str(), _strKeyFindCirclePair.c_str(), pstCmd->bFindCirclePair );
     ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyMinSrchRadius.c_str(), pstCmd->fMinSrchRadius );
     ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyMaxSrchRadius.c_str(), pstCmd->fMaxSrchRadius );
     ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyStartSrchAngle.c_str(), pstCmd->fStartSrchAngle );
     ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyEndSrchAngle.c_str(), pstCmd->fEndSrchAngle );
     ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyCaliperCount.c_str(), pstCmd->nCaliperCount );
     ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyCaliperWidth.c_str(), pstCmd->fCaliperWidth );
-    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyRmNoiseMethod.c_str(), static_cast<long>(pstCmd->enRmNoiseMethod) );
-    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyErrorTol.c_str(), pstCmd->fErrTol );    
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyDiffFilterHalfW.c_str(), pstCmd->nDiffFilterHalfW );
+    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyDiffFilterSigma.c_str(), pstCmd->fDiffFilterSigma );
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyEdgeThreshold.c_str(), pstCmd->nEdgeThreshold );
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeySelectEdge.c_str(), ToInt32 ( pstCmd->enSelectEdge ) );
+    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyRmStrayPtRatio.c_str(), pstCmd->fRmStrayPointRatio );
     ini.SaveFile( cmdRpyFilePath.c_str() );
     cv::imwrite( _strLogCasePath + _IMAGE_NAME, pstCmd->matInputImg );
+    if ( ! pstCmd->matMask.empty() )
+        cv::imwrite( _strLogCasePath + _MASK_NAME,  pstCmd->matMask );
     return VisionStatus::OK;
 }
 
@@ -354,7 +360,7 @@ VisionStatus LogCaseFindCircle::WriteRpy(const PR_FIND_CIRCLE_RPY *const pstRpy)
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile( cmdRpyFilePath.c_str() );
     ini.SetLongValue  (_RPY_SECTION.c_str(), _strKeyStatus.c_str(), ToInt32( pstRpy->enStatus ) );
-    ini.SetValue(_RPY_SECTION.c_str(), _strKeyResultCtr.c_str(), _formatCoordinate(pstRpy->ptCircleCtr).c_str() );    
+    ini.SetValue(_RPY_SECTION.c_str(), _strKeyResultCtr.c_str(), _formatCoordinate(pstRpy->ptCircleCtr).c_str() );
     ini.SetDoubleValue(_RPY_SECTION.c_str(), _strKeyRadius.c_str(), pstRpy->fRadius );
     ini.SaveFile( cmdRpyFilePath.c_str() );
     if ( ! pstRpy->matResultImg.empty() )
@@ -372,17 +378,24 @@ VisionStatus LogCaseFindCircle::RunLogCase() {
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile( cmdRpyFilePath.c_str() );
     stCmd.matInputImg = cv::imread( _strLogCasePath + _IMAGE_NAME );
+    String strMaskPath = _strLogCasePath + _MASK_NAME;
+    if ( FileUtils::Exists ( strMaskPath ) )
+        stCmd.matMask = cv::imread( strMaskPath, cv::IMREAD_GRAYSCALE );
 
-    stCmd.enObjAttribute = static_cast<PR_OBJECT_ATTRIBUTE> ( ini.GetLongValue ( _CMD_SECTION.c_str(), _strKeyObjAttribute.c_str(), 0 ) );
+    stCmd.enInnerAttribute = static_cast<PR_OBJECT_ATTRIBUTE> ( ini.GetLongValue ( _CMD_SECTION.c_str(), _strKeyInnerAttribute.c_str(), 0 ) );
     stCmd.ptExpectedCircleCtr = _parseCoordinate ( ini.GetValue(_CMD_SECTION.c_str(), _strKeyExpCircleCtr.c_str(), _DEFAULT_COORD.c_str() ) );
+    stCmd.bFindCirclePair = ini.GetBoolValue(_CMD_SECTION.c_str(), _strKeyFindCirclePair.c_str(), false );
     stCmd.fMinSrchRadius = ToFloat ( ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyMinSrchRadius.c_str(), 0. ) );
     stCmd.fMaxSrchRadius = ToFloat ( ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyMaxSrchRadius.c_str(), 0. ) );
     stCmd.fStartSrchAngle = ToFloat ( ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyStartSrchAngle.c_str(), 0. ) );
     stCmd.fEndSrchAngle = ToFloat ( ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyEndSrchAngle.c_str(), 0. ) );
     stCmd.nCaliperCount = ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyCaliperCount.c_str(), 20 );
     stCmd.fCaliperWidth = ToFloat ( ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyCaliperWidth.c_str(), 30. ) );
-    stCmd.enRmNoiseMethod = static_cast<PR_RM_FIT_NOISE_METHOD> ( ini.GetLongValue ( _CMD_SECTION.c_str(), _strKeyRmNoiseMethod.c_str(), 0 ) );
-    stCmd.fErrTol = (float)ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyErrorTol.c_str(), 0 );
+    stCmd.nDiffFilterHalfW = ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyDiffFilterHalfW.c_str(), 2 );
+    stCmd.fDiffFilterSigma = ToFloat ( ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyDiffFilterSigma.c_str(), 1. ) );
+    stCmd.nEdgeThreshold = ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyEdgeThreshold.c_str(), 50 );
+    stCmd.enSelectEdge = static_cast<PR_CALIPER_SELECT_EDGE> ( ini.GetLongValue(_CMD_SECTION.c_str(), _strKeySelectEdge.c_str(), 0 ) );
+    stCmd.fRmStrayPointRatio = ToFloat ( ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyRmStrayPtRatio.c_str(), 0.2 ) );
     
     enStatus = VisionAlgorithm::findCircle( &stCmd, &stRpy, true );
 
@@ -525,11 +538,11 @@ VisionStatus LogCaseFitLine::RunLogCase() {
     return enStatus;
 }
 
-/*static*/ String LogCaseCaliper::StaticGetFolderPrefix() {
-    return "Caliper";
+/*static*/ String LogCaseFindLine::StaticGetFolderPrefix() {
+    return "FindLine";
 }
 
-VisionStatus LogCaseCaliper::WriteCmd(const PR_CALIPER_CMD *const pstCmd) {
+VisionStatus LogCaseFindLine::WriteCmd(const PR_FIND_LINE_CMD *const pstCmd) {
     if ( !_bReplay )    {
         _strLogCasePath = _generateLogCaseName(GetFolderPrefix());
         bfs::path dir(_strLogCasePath);
@@ -543,9 +556,16 @@ VisionStatus LogCaseCaliper::WriteCmd(const PR_CALIPER_CMD *const pstCmd) {
     ini.SetValue(_CMD_SECTION.c_str(), _strKeyRoiSize.c_str(), _formatSize(pstCmd->rectRotatedROI.size).c_str() );
     ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyRoiAngle.c_str(), pstCmd->rectRotatedROI.angle );
     ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyAlgorithm.c_str(), ToInt32( pstCmd->enAlgorithm ) );
+    ini.SetBoolValue(_CMD_SECTION.c_str(), _strKeyFindPair.c_str(), pstCmd->bFindPair );
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyDir.c_str(), ToInt32( pstCmd->enDetectDir ) );
     ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyCaliperCount.c_str(), pstCmd->nCaliperCount );
     ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyCaliperWidth.c_str(), pstCmd->fCaliperWidth );
-    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyDir.c_str(), ToInt32( pstCmd->enDetectDir ) );
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyDiffFilterHalfW.c_str(), pstCmd->nDiffFilterHalfW );
+    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyDiffFilterSigma.c_str(), pstCmd->fDiffFilterSigma );
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyEdgeThreshold.c_str(), pstCmd->nEdgeThreshold );
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeySelectEdge.c_str(), ToInt32 ( pstCmd->enSelectEdge ) );
+    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyRmStrayPtRatio.c_str(), pstCmd->fRmStrayPointRatio );    
+
     ini.SetBoolValue(_CMD_SECTION.c_str(), _strKeyCheckLinerity.c_str(), pstCmd->bCheckLinerity);
     ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyPointMaxOffset.c_str(), pstCmd->fPointMaxOffset );
     ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyMinLinerity.c_str(), pstCmd->fMinLinerity );
@@ -560,7 +580,7 @@ VisionStatus LogCaseCaliper::WriteCmd(const PR_CALIPER_CMD *const pstCmd) {
     return VisionStatus::OK;
 }
 
-VisionStatus LogCaseCaliper::WriteRpy(const PR_CALIPER_RPY *const pstRpy) {
+VisionStatus LogCaseFindLine::WriteRpy(const PR_FIND_LINE_RPY *const pstRpy) {
     CSimpleIni ini(false, false, false);
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile( cmdRpyFilePath.c_str() );
@@ -568,8 +588,12 @@ VisionStatus LogCaseCaliper::WriteRpy(const PR_CALIPER_RPY *const pstRpy) {
     ini.SetBoolValue  (_RPY_SECTION.c_str(), _strKeyReversedFit.c_str(), pstRpy->bReversedFit );
     ini.SetDoubleValue(_RPY_SECTION.c_str(), _strKeySlope.c_str(),       pstRpy->fSlope );    
     ini.SetDoubleValue(_RPY_SECTION.c_str(), _strKeyIntercept.c_str(),   pstRpy->fIntercept );
-    ini.SetValue(_RPY_SECTION.c_str(), _strKeyPoint1.c_str(), _formatCoordinate ( pstRpy->stLine.pt1 ).c_str() );
-    ini.SetValue(_RPY_SECTION.c_str(), _strKeyPoint2.c_str(), _formatCoordinate ( pstRpy->stLine.pt2 ).c_str() );
+    ini.SetValue(_RPY_SECTION.c_str(), _strKeyLine1Point1.c_str(), _formatCoordinate ( pstRpy->stLine.pt1 ).c_str() );
+    ini.SetValue(_RPY_SECTION.c_str(), _strKeyLine1Point2.c_str(), _formatCoordinate ( pstRpy->stLine.pt2 ).c_str() );
+    ini.SetDoubleValue(_RPY_SECTION.c_str(), _strKeyIntercept2.c_str(),   pstRpy->fIntercept2 );
+    ini.SetValue(_RPY_SECTION.c_str(), _strKeyLine2Point1.c_str(), _formatCoordinate ( pstRpy->stLine2.pt1 ).c_str() );
+    ini.SetValue(_RPY_SECTION.c_str(), _strKeyLine2Point2.c_str(), _formatCoordinate ( pstRpy->stLine2.pt2 ).c_str() );
+    ini.SetDoubleValue(_RPY_SECTION.c_str(), _strKeyDistance.c_str(),   pstRpy->fDistance );
     ini.SetBoolValue  (_RPY_SECTION.c_str(), _strKeyLinerityPass.c_str(), pstRpy->bLinerityCheckPass );
     ini.SetDoubleValue(_RPY_SECTION.c_str(), _strKeyLinerity.c_str(),   pstRpy->fLinerity );
     ini.SetBoolValue  (_RPY_SECTION.c_str(), _strKeyAngleCheckPass.c_str(), pstRpy->bAngleCheckPass );
@@ -581,8 +605,8 @@ VisionStatus LogCaseCaliper::WriteRpy(const PR_CALIPER_RPY *const pstRpy) {
     return VisionStatus::OK;
 }
 
-VisionStatus LogCaseCaliper::RunLogCase() {
-    PR_CALIPER_CMD stCmd;
+VisionStatus LogCaseFindLine::RunLogCase() {
+    PR_FIND_LINE_CMD stCmd;
     VisionStatus enStatus;
     
     stCmd.matInputImg = cv::imread( _strLogCasePath + _IMAGE_NAME );
@@ -596,10 +620,17 @@ VisionStatus LogCaseCaliper::RunLogCase() {
     stCmd.rectRotatedROI.center = _parseCoordinate ( ini.GetValue(_CMD_SECTION.c_str(), _strKeyRoiCenter.c_str(), _DEFAULT_COORD.c_str() ) );
     stCmd.rectRotatedROI.size = _parseSize ( ini.GetValue(_CMD_SECTION.c_str(), _strKeyRoiSize.c_str(), _DEFAULT_SIZE.c_str() ) );
     stCmd.rectRotatedROI.angle = ToFloat ( ini.GetDoubleValue ( _CMD_SECTION.c_str(), _strKeyRoiAngle.c_str(), 0. ) );
-    stCmd.enAlgorithm = static_cast<PR_CALIPER_ALGORITHM>(ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyAlgorithm.c_str(), 0 ) );
+    stCmd.enAlgorithm = static_cast<PR_FIND_LINE_ALGORITHM>(ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyAlgorithm.c_str(), 0 ) );
+    stCmd.bFindPair = ini.GetBoolValue(_CMD_SECTION.c_str(), _strKeyFindPair.c_str(), false );
+    stCmd.enDetectDir = static_cast<PR_CALIPER_DIR>(ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyDir.c_str(), 0 ) );
     stCmd.nCaliperCount = ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyCaliperCount.c_str(), 20 );
     stCmd.fCaliperWidth = ToFloat ( ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyCaliperWidth.c_str(), 30. ) );
-    stCmd.enDetectDir = static_cast<PR_CALIPER_DIR>(ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyDir.c_str(), 0 ) );
+    stCmd.nDiffFilterHalfW = ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyDiffFilterHalfW.c_str(), 2 );
+    stCmd.fDiffFilterSigma = ToFloat ( ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyDiffFilterSigma.c_str(), 1. ) );
+    stCmd.nEdgeThreshold = ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyEdgeThreshold.c_str(), 50 );
+    stCmd.enSelectEdge = static_cast<PR_CALIPER_SELECT_EDGE> ( ini.GetLongValue(_CMD_SECTION.c_str(), _strKeySelectEdge.c_str(), 0 ) );
+    stCmd.fRmStrayPointRatio = ToFloat ( ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyRmStrayPtRatio.c_str(), 0.2 ) );
+    
     stCmd.bCheckLinerity = ini.GetBoolValue(_CMD_SECTION.c_str(), _strKeyCheckLinerity.c_str(), false );
     stCmd.fPointMaxOffset = ToFloat ( ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyPointMaxOffset.c_str(), 0. ) );
     stCmd.fMinLinerity = ToFloat ( ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyMinLinerity.c_str(), 100.f ) );
@@ -607,8 +638,8 @@ VisionStatus LogCaseCaliper::RunLogCase() {
     stCmd.fExpectedAngle = ToFloat ( ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyExpectedAngle.c_str(), 0. ) );
     stCmd.fAngleDiffTolerance = ToFloat ( ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyAngleDiffTol.c_str(), 0. ) );
 
-    PR_CALIPER_RPY stRpy;
-    enStatus = VisionAlgorithm::caliper(&stCmd, &stRpy, true);
+    PR_FIND_LINE_RPY stRpy;
+    enStatus = VisionAlgorithm::findLine(&stCmd, &stRpy, true);
 
     WriteRpy( &stRpy );
     return enStatus;
