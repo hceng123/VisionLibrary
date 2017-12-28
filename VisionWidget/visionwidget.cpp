@@ -378,6 +378,8 @@ void VisionWidget::on_btnFindLine_clicked() {
 	if (VisionStatus::OK == enStatus)	{
 		ui.visionView->setMat ( VisionView::DISPLAY_SOURCE::RESULT, stRpy.matResultImg );
     }else {
+        if ( ! stRpy.matResultImg.empty() )
+            ui.visionView->setMat ( VisionView::DISPLAY_SOURCE::RESULT, stRpy.matResultImg );
         PR_GET_ERROR_INFO_RPY stErrStrRpy;
         PR_GetErrorInfo(enStatus, &stErrStrRpy);
         QMessageBox::critical(nullptr, "Find Line", stErrStrRpy.achErrorStr, "Quit");

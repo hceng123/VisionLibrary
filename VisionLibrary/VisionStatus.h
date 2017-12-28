@@ -76,9 +76,10 @@ enum class VisionStatus
     CAN_NOT_FIND_MTF_PATTERN            = 150,
     MTF_PATTERN_TOO_SMALL               = 151,
 
-    //Caliper errors
+    //Caliper related errors
     CALIPER_CAN_NOT_FIND_LINE           = 200,
-    CALIPER_NOT_ENOUGH_EDGE_POINTS      = 201,
+    PROJECTION_CANNOT_FIND_LINE         = 201,
+    CALIPER_NOT_ENOUGH_EDGE_POINTS      = 202,
 };
 
 }

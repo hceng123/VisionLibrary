@@ -173,9 +173,9 @@ void TestFindLineByCaliper() {
     PrintFindLineRpy(stRpy);
 }
 
-void TestCaliperRoatedROI() {
+void TestFindLineRoatedROI() {
     PR_FIND_LINE_CMD stCmd;
-    PR_FIND_LINE_RPY stRpy;    
+    PR_FIND_LINE_RPY stRpy;
 
     std::cout << std::endl << "------------------------------------------------------------";
     std::cout << std::endl << "FIND LINE BY CALIPER ROTATED ROI REGRESSION TEST #1 STARTING";
@@ -277,6 +277,45 @@ void TestCaliperRoatedROI() {
     PrintFindLineRpy(stRpy);
 }
 
+void TestFindLinePair() {
+    PR_FIND_LINE_CMD stCmd;
+    PR_FIND_LINE_RPY stRpy;
+    stCmd.bFindPair = true;
+
+    std::cout << std::endl << "------------------------------------------------------";
+    std::cout << std::endl << "FIND LINE PAIR  BY CALIPER REGRESSION TEST #1 STARTING";
+    std::cout << std::endl << "------------------------------------------------------";
+    std::cout << std::endl;
+
+    stCmd.matInputImg = cv::imread("./data/F1-5-1_Threshold.png");
+    stCmd.matMask = cv::Mat::ones ( stCmd.matInputImg.size(), CV_8UC1 );
+    cv::Mat matMaskedROI(stCmd.matMask, cv::Rect (1310, 1422, 180, 252 ) );
+    matMaskedROI.setTo(0);  //Maked out the center area.
+    stCmd.rectRotatedROI.center = cv::Point2f (1393.00f, 1555.00f );
+    stCmd.rectRotatedROI.size = cv::Size(537, 209);
+    stCmd.rectRotatedROI.angle = 0;
+    stCmd.enAlgorithm = PR_FIND_LINE_ALGORITHM::CALIPER;
+    stCmd.nCaliperCount = 10;
+    stCmd.fCaliperWidth = 20;
+
+    PR_FindLine ( &stCmd, &stRpy );
+    char chArrMsg[100];
+    std::cout << "Find line status " << ToInt32 ( stRpy.enStatus ) << std::endl;
+    if (VisionStatus::OK == stRpy.enStatus) {
+        std::cout << "ReversedFit = " << stRpy.bReversedFit << std::endl;
+        std::cout << std::fixed << std::setprecision ( 2 ) << "Line slope = " << stRpy.fSlope << ", intercept = " << stRpy.fIntercept << ", intercept2 = " << stRpy.fIntercept2 << std::endl;
+        _snprintf ( chArrMsg, sizeof ( chArrMsg ), "(%.2f, %.2f), (%.2f, %.2f)", stRpy.stLine.pt1.x, stRpy.stLine.pt1.y, stRpy.stLine.pt2.x, stRpy.stLine.pt2.y );
+        std::cout << "Line coordinate: " << chArrMsg << std::endl;
+        _snprintf ( chArrMsg, sizeof ( chArrMsg ), "(%.2f, %.2f), (%.2f, %.2f)", stRpy.stLine2.pt1.x, stRpy.stLine2.pt1.y, stRpy.stLine2.pt2.x, stRpy.stLine2.pt2.y );
+        std::cout << "Line2 coordinate: " << chArrMsg << std::endl;
+        std::cout << "Two line distance " << stRpy.fDistance << std::endl;
+    }else {
+        PR_GET_ERROR_INFO_RPY stErrRpy;
+        PR_GetErrorInfo(stRpy.enStatus, &stErrRpy);
+        std::cout << "Error Msg: " << stErrRpy.achErrorStr << std::endl;
+    }
+}
+
 static void PrintFindCircleRpy(const PR_FIND_CIRCLE_RPY &stRpy)    {
     char chArrMsg[100];
     std::cout << "Find circle status " << ToInt32 ( stRpy.enStatus ) << std::endl;
@@ -361,7 +400,8 @@ void TestFindCircle() {
 void TestCaliper() {
     TestFindLineByProjection();
     TestFindLineByCaliper();
-    TestCaliperRoatedROI();
+    TestFindLineRoatedROI();
+    TestFindLinePair();
     TestFindCircle();
 }
 

@@ -468,6 +468,7 @@ void TestCaliper() {
     stCmd.rectRotatedROI.center = cv::Point ( rectROI.x + rectROI.width / 2, rectROI.y + rectROI.height / 2 );
     stCmd.rectRotatedROI.size = rectROI.size();
     stCmd.enDetectDir = PR_CALIPER_DIR::DARK_TO_BRIGHT;
+    stCmd.nCaliperCount = 5;
     stCmd.bCheckLinerity = true;
     stCmd.fPointMaxOffset = 5;
     stCmd.fMinLinerity = 60.;
@@ -661,11 +662,11 @@ int _tmain(int argc, _TCHAR* argv[])
 
     //TestAutoThreshold();
 
-    TestCaliper();
+    //TestCaliper();
     //TestCaliper_1();
     //TestCaliper_2();
     //TestCaliper_NoLine();
-    //TestCaliper_NoLine_1();
+    TestCaliper_NoLine_1();
     //TestCaliper_3();
 
     //PR_FreeAllRecord();

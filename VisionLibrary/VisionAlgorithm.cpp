@@ -2072,6 +2072,12 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
         }
     }
 
+    if ( pstCmd->bFindPair && PR_FIND_LINE_ALGORITHM::CALIPER != pstCmd->enAlgorithm ) {
+        WriteLog ( "Find line pair can only use caliper algorithm." );
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
     if ( pstCmd->bCheckLinerity && ( pstCmd->fPointMaxOffset <= 0.f || pstCmd->fMinLinerity <= 0.f ) ) {
         char chArrMsg [ 1000 ];
         _snprintf(chArrMsg, sizeof(chArrMsg), "Linerity check parameter is invalid. PointMaxOffset = %.2f, MinLinerity = %.2f",
@@ -2177,30 +2183,13 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
                 cv::circle ( pstRpy->matResultImg, point, 3, _constGreenScalar, 1 );
         }
     }
-    
-    const int MIN_DIST_FROM_LINE_TO_ROI_EDGE = 5;
-    const float HORIZONTAL_SLOPE_TOL = 0.1f;
-    if ( pstRpy->bReversedFit ) {
-        if ( pstRpy->fSlope < HORIZONTAL_SLOPE_TOL && 
-            (fabs ( pstRpy->stLine.pt1.x - rectNewROI.x ) <= MIN_DIST_FROM_LINE_TO_ROI_EDGE ||
-             fabs ( pstRpy->stLine.pt2.x - rectNewROI.x ) <= MIN_DIST_FROM_LINE_TO_ROI_EDGE ||
-             fabs ( pstRpy->stLine.pt1.x - rectNewROI.x - rectNewROI.width ) <= MIN_DIST_FROM_LINE_TO_ROI_EDGE ||
-             fabs ( pstRpy->stLine.pt2.x - rectNewROI.x - rectNewROI.width ) <= MIN_DIST_FROM_LINE_TO_ROI_EDGE ) ) {
-            pstRpy->enStatus = VisionStatus::CALIPER_CAN_NOT_FIND_LINE;
-            FINISH_LOGCASE;
-            return pstRpy->enStatus;
-        }
-    }else {
-        if ( pstRpy->fSlope < HORIZONTAL_SLOPE_TOL &&
-            (fabs ( pstRpy->stLine.pt1.y - rectNewROI.y ) <= MIN_DIST_FROM_LINE_TO_ROI_EDGE ||
-             fabs ( pstRpy->stLine.pt2.y - rectNewROI.y ) <= MIN_DIST_FROM_LINE_TO_ROI_EDGE ||
-             fabs ( pstRpy->stLine.pt1.y - rectNewROI.y - rectNewROI.height ) <= MIN_DIST_FROM_LINE_TO_ROI_EDGE ||
-             fabs ( pstRpy->stLine.pt2.y - rectNewROI.y - rectNewROI.height ) <= MIN_DIST_FROM_LINE_TO_ROI_EDGE ) ) {
-            pstRpy->enStatus = VisionStatus::CALIPER_CAN_NOT_FIND_LINE;
-            FINISH_LOGCASE;
-            return pstRpy->enStatus;
-        }
-    }
+
+    //Draw the result lines.
+    if ( ! isAutoMode() ) {
+        cv::line( pstRpy->matResultImg, pstRpy->stLine.pt1, pstRpy->stLine.pt2, _constGreenScalar, 2 );
+        if ( pstCmd->bFindPair )
+            cv::line( pstRpy->matResultImg, pstRpy->stLine2.pt1, pstRpy->stLine2.pt2, _constGreenScalar, 2 );
+    }   
 
     pstRpy->bLinerityCheckPass = false;
     if ( pstCmd->bCheckLinerity ) {
@@ -2393,6 +2382,31 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
             }
         }
     }
+
+    Fitting::fitLine ( vecFitPoint, pstRpy->fSlope, pstRpy->fIntercept, pstRpy->bReversedFit );
+    pstRpy->stLine = CalcUtils::calcEndPointOfLine ( vecFitPoint, pstRpy->bReversedFit, pstRpy->fSlope, pstRpy->fIntercept );
+
+    const int MIN_DIST_FROM_LINE_TO_ROI_EDGE = 5;
+    const float HORIZONTAL_SLOPE_TOL = 0.1f;
+    if ( pstRpy->bReversedFit ) {
+        if ( pstRpy->fSlope < HORIZONTAL_SLOPE_TOL && 
+            (fabs ( pstRpy->stLine.pt1.x - rectROI.x ) <= MIN_DIST_FROM_LINE_TO_ROI_EDGE ||
+             fabs ( pstRpy->stLine.pt2.x - rectROI.x ) <= MIN_DIST_FROM_LINE_TO_ROI_EDGE ||
+             fabs ( pstRpy->stLine.pt1.x - rectROI.x - rectROI.width ) <= MIN_DIST_FROM_LINE_TO_ROI_EDGE ||
+             fabs ( pstRpy->stLine.pt2.x - rectROI.x - rectROI.width ) <= MIN_DIST_FROM_LINE_TO_ROI_EDGE ) ) {
+            pstRpy->enStatus = VisionStatus::PROJECTION_CANNOT_FIND_LINE;
+            return pstRpy->enStatus;
+        }
+    }else {
+        if ( pstRpy->fSlope < HORIZONTAL_SLOPE_TOL &&
+            (fabs ( pstRpy->stLine.pt1.y - rectROI.y ) <= MIN_DIST_FROM_LINE_TO_ROI_EDGE ||
+             fabs ( pstRpy->stLine.pt2.y - rectROI.y ) <= MIN_DIST_FROM_LINE_TO_ROI_EDGE ||
+             fabs ( pstRpy->stLine.pt1.y - rectROI.y - rectROI.height ) <= MIN_DIST_FROM_LINE_TO_ROI_EDGE ||
+             fabs ( pstRpy->stLine.pt2.y - rectROI.y - rectROI.height ) <= MIN_DIST_FROM_LINE_TO_ROI_EDGE ) ) {
+            pstRpy->enStatus = VisionStatus::PROJECTION_CANNOT_FIND_LINE;
+            return pstRpy->enStatus;
+        }
+    }
     
     pstRpy->enStatus = VisionStatus::OK;
     return pstRpy->enStatus;
@@ -2566,6 +2580,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
         int nCurrentProcessedPos = 0;
         for ( int nCaliperNo = 0; nCaliperNo < pstCmd->nCaliperCount; ++ nCaliperNo ) {
             int nCurrentProcessedPos = ToInt32 ( fInterval * nCaliperNo + pstCmd->fCaliperWidth / 2.f );
+            if ( nCurrentProcessedPos > COLS ) break;
             int nROISizeBegin = nCurrentProcessedPos - ToInt32 ( pstCmd->fCaliperWidth / 2.f );
             if ( nROISizeBegin < 0 ) nROISizeBegin = 0;
             int nROISizeEnd   = nCurrentProcessedPos + ToInt32 ( pstCmd->fCaliperWidth / 2.f );
@@ -2587,17 +2602,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
                 }
             }
         }
-    }
-
-    if ( Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE ) {
-        cv::Mat matDisplay;
-        cv::cvtColor ( matInputImg, matDisplay, CV_GRAY2BGR );
-        for ( const auto &point : vecFitPoint1 ) {
-            cv::circle ( matDisplay, point, 4, cv::Scalar(0, 0, 255 ), 2 );
-        }
-        showImage ( "Find out point", matDisplay );
-        cv::waitKey(0);
-    }    
+    }  
 
     for ( auto &point : vecFitPoint1 ) {
         point.x += rectROI.x;

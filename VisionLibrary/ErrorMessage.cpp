@@ -172,6 +172,10 @@ VisionStatus GetErrorInfo(VisionStatus enStatus, PR_GET_ERROR_INFO_RPY *pstRpy)
         _snprintf(pstRpy->achErrorStr, PR_MAX_ERR_STR_LEN, "Caliper cannot find the line.");
         pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::INSP_STATUS;
         break;
+    case VisionStatus::PROJECTION_CANNOT_FIND_LINE:
+        _snprintf(pstRpy->achErrorStr, PR_MAX_ERR_STR_LEN, "Projection cannot find the line.");
+        pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::INSP_STATUS;
+        break;
     case VisionStatus::CALIPER_NOT_ENOUGH_EDGE_POINTS:
         _snprintf(pstRpy->achErrorStr, PR_MAX_ERR_STR_LEN, "Caliper cannot enough edge points.");
         pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::INSP_STATUS;
