@@ -50,6 +50,8 @@ void TestLineIntersect();
 void TestCrossSectionArea();
 void TestFindCircle();
 
+void TestCombineImage();
+
 template<class T>
 void printfMat(const cv::Mat &mat)
 {

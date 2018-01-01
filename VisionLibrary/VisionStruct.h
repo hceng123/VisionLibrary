@@ -1239,6 +1239,21 @@ struct PR_CALC_PD_RPY {
     VectorOfFloat           vecDistortionBottom;
 };
 
+struct PR_COMBINE_IMG_CMD {
+    VectorOfMat             vecInputImages;
+    int                     nCountOfImgPerFrame;    //The count of images in one frame.
+    int                     nCountOfFrameX;
+    int                     nCountOfFrameY;
+    int                     nOverlapX;
+    int                     nOverlapY;
+    int                     nCountOfImgPerRow;
+};
+
+struct PR_COMBINE_IMG_RPY {
+    VisionStatus            enStatus;
+    VectorOfMat             vecResultImages;
+};
+
 }
 }
 #endif /*_AOI_STRUCT_H_*/

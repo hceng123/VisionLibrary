@@ -6566,5 +6566,75 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     return pstRpy->enStatus;
 }
 
+/*static*/ VisionStatus VisionAlgorithm::combineImg(const PR_COMBINE_IMG_CMD *const pstCmd, PR_COMBINE_IMG_RPY *const pstRpy, bool bReplay /*= false*/) {
+    if ( pstCmd->nCountOfFrameX <= 0 || pstCmd->nCountOfFrameY <= 0 || pstCmd->nCountOfImgPerFrame <= 0 ) {
+        char chArrMsg[1000];
+        _snprintf( chArrMsg, sizeof( chArrMsg ), "The CountOfFrameX %d or CountOfFrameY %d or CountOfImgPerFrame %d is invalid.",
+            pstCmd->nCountOfFrameX, pstCmd->nCountOfFrameY, pstCmd->nCountOfImgPerFrame );
+        WriteLog(chArrMsg);
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    int nCountOfImgPerRowMin = ( pstCmd->nCountOfFrameX - 1 ) * pstCmd->nCountOfImgPerFrame;
+    int nCountOfImgPerRowMax = ( pstCmd->nCountOfFrameX     ) * pstCmd->nCountOfImgPerFrame;
+    if ( pstCmd->nCountOfImgPerRow <= nCountOfImgPerRowMin || pstCmd->nCountOfImgPerRow > nCountOfImgPerRowMax ) {
+        char chArrMsg[1000];
+        _snprintf( chArrMsg, sizeof( chArrMsg ), "The nCountOfImgPerRow %d is invalid, it should in range (%d, %d].",
+            pstCmd->nCountOfImgPerRow, nCountOfImgPerRowMin, nCountOfImgPerRowMax );
+        WriteLog(chArrMsg);
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    if ( pstCmd->vecInputImages.size() != pstCmd->nCountOfFrameY * pstCmd->nCountOfImgPerRow ) {
+        char chArrMsg[1000];
+        _snprintf( chArrMsg, sizeof( chArrMsg ), "The input image count %d is invalid, it should be %d.",
+            pstCmd->vecInputImages.size(), pstCmd->nCountOfFrameY * pstCmd->nCountOfImgPerRow );
+        WriteLog(chArrMsg);
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    MARK_FUNCTION_START_TIME;
+
+    auto szImage = pstCmd->vecInputImages[0].size();
+    int nResultPixCols = pstCmd->nCountOfFrameX * szImage.width  - pstCmd->nOverlapX * ( pstCmd->nCountOfFrameX - 1 );
+    int nResultPixRows = pstCmd->nCountOfFrameY * szImage.height - pstCmd->nOverlapY * ( pstCmd->nCountOfFrameY - 1 );
+
+    for (int imgNo = 0; imgNo < pstCmd->nCountOfImgPerFrame; ++ imgNo) {
+        cv::Mat matResult = cv::Mat::zeros(nResultPixRows, nResultPixCols, CV_8UC3);
+
+        for (int nRow = 0; nRow < pstCmd->nCountOfFrameY; ++ nRow)
+        //Column start from right to left.
+        for (int nCol = 0; nCol < pstCmd->nCountOfFrameX; ++ nCol)
+        {            
+            if ( ( nCol * pstCmd->nCountOfImgPerFrame + imgNo ) >= pstCmd->nCountOfImgPerRow )
+                continue;
+
+            int nImageIndex = nCol * pstCmd->nCountOfImgPerFrame + nRow * pstCmd->nCountOfImgPerRow + imgNo;
+            cv::Mat mat = pstCmd->vecInputImages[nImageIndex];
+
+            if (nCol > 0) {
+                auto autoPreviousOverlapROIX = nResultPixCols - (szImage.width * nCol - (nCol - 1) * pstCmd->nOverlapX);
+                auto autoPreviousOverlapROIY = nRow * (szImage.height - pstCmd->nOverlapY);
+                cv::Mat matPreviousFrameOverlap(matResult, cv::Rect(autoPreviousOverlapROIX, autoPreviousOverlapROIY, pstCmd->nOverlapX, szImage.height));
+                cv::Mat matCurrentFrameOvelap( mat, cv::Rect(szImage.width - pstCmd->nOverlapX, 0, pstCmd->nOverlapX, szImage.height));
+                matPreviousFrameOverlap = (matPreviousFrameOverlap + matCurrentFrameOvelap) / 2;
+            }
+
+            auto autoROIX = nResultPixCols - (szImage.width * (nCol + 1) - nCol * pstCmd->nOverlapX);
+            auto autoROIY = nRow * (szImage.height - pstCmd->nOverlapY);
+            cv::Mat matROI(matResult, cv::Rect(autoROIX, autoROIY, szImage.width, szImage.height));
+            mat.copyTo ( matROI );
+        }
+        pstRpy->vecResultImages.push_back ( matResult );
+    }
+
+    MARK_FUNCTION_END_TIME;
+    pstRpy->enStatus = VisionStatus::OK;
+    return pstRpy->enStatus;
+}
+
 }
 }

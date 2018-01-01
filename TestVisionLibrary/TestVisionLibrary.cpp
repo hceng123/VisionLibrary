@@ -666,7 +666,7 @@ int _tmain(int argc, _TCHAR* argv[])
     //TestCaliper_1();
     //TestCaliper_2();
     //TestCaliper_NoLine();
-    TestCaliper_NoLine_1();
+    //TestCaliper_NoLine_1();
     //TestCaliper_3();
 
     //PR_FreeAllRecord();
@@ -722,6 +722,8 @@ int _tmain(int argc, _TCHAR* argv[])
     //TestCrossSectionArea();
 
     //TestFindCircle();
+
+    TestCombineImage();
 
     PR_DumpTimeLog("./Vision/Time.log");
     std::cout << "Press any key to exit." << std::endl;
