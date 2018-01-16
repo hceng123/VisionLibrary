@@ -999,7 +999,7 @@ void VisionWidget::on_btnCameraMTF_clicked() {
         ui.lineEditSmallPatternRelMTFH->setText( std::to_string ( stRpy.fSmallPatternRelMtfH ).c_str() );
     }else {
         PR_GET_ERROR_INFO_RPY stErrStrRpy;
-        PR_GetErrorInfo(stRpy.enStatus, &stErrStrRpy);        
+        PR_GetErrorInfo(stRpy.enStatus, &stErrStrRpy);
         QMessageBox::critical(nullptr, "Camera MTF", stErrStrRpy.achErrorStr, "Quit");
     }
 }

@@ -243,8 +243,8 @@ struct PR_SRCH_FIDUCIAL_MARK_CMD {
     cv::Mat                 matInputImg;
     cv::Rect                rectSrchWindow;
     PR_FIDUCIAL_MARK_TYPE   enType;
-    float                   fSize;
-    float                   fMargin;
+    float                   fSize;          //The white part size of the fiducial mark.
+    float                   fMargin;        //The dark part width outside of the fiducial mark.
 };
 
 struct PR_SRCH_FIDUCIAL_MARK_RPY {
