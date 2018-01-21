@@ -1104,6 +1104,27 @@ struct PR_INTEGRATE_3D_CALIB_RPY {
     VectorOfMat             vecMatResultImg;
 };
 
+using PairHeightPhase = std::pair<float, cv::Mat>;
+using VectorPairHeightPhase = std::vector<PairHeightPhase>;
+
+struct PR_MOTOR_CALIB_3D_CMD {
+    PR_MOTOR_CALIB_3D_CMD() :
+        nResultImgGridRow(10),
+        nResultImgGridCol(10),
+        szMeasureWinSize(40, 40) {}
+    VectorPairHeightPhase   vecPairHeightPhase;
+    Int32                   nResultImgGridRow;
+    Int32                   nResultImgGridCol;
+    cv::Size                szMeasureWinSize;       //The window size in the center of grid to measure the height.
+};
+
+struct PR_MOTOR_CALIB_3D_RPY {
+    VisionStatus            enStatus;
+    cv::Mat                 matIntegratedK;         //The 12 parameters to calculate height. They are K1~K10 and P1, P2. H = (Phase + P1*Phase^2 + P2*Phase^3) ./ (K(1)*x1.^3 + K(2)*y1.^3 + K(3)*x1.^2.*y1 + K(4)*x1.*y1.^2 + K(5)*x1.^2 + K(6)*y1.^2 + K(7)*x1.*y1 + K(8)*x1 + K(9)*y1 + K(10))
+    cv::Mat                 matOrder3CurveSurface;  //The regression 3 order curve surface to convert phase to height. It is calculated by K(1)*x1.^3 + K(2)*y1.^3 + K(3)*x1.^2.*y1 + K(4)*x1.*y1.^2 + K(5)*x1.^2 + K(6)*y1.^2 + K(7)*x1.*y1 + K(8)*x1 + K(9)*y1 + K(10)
+    VectorOfMat             vecMatResultImg;
+};
+
 struct PR_CALC_3D_HEIGHT_CMD {
     PR_CALC_3D_HEIGHT_CMD() :
         bEnableGaussianFilter(true),

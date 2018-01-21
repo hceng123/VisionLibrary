@@ -51,6 +51,10 @@ void TestCrossSectionArea();
 void TestFindCircle();
 
 void TestCombineImage();
+void TestCombineImage_1();
+
+void TestMotor3DCalib();
+void TestSolve();
 
 template<class T>
 void printfMat(const cv::Mat &mat)

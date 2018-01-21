@@ -68,9 +68,9 @@ void TestCalib3dBaseSub(
     int             nCaseNo,
     const String   &strParentPath,
     const String   &strImageFolder) {
-    std::cout << std::endl << "---------------------------------------------";
+    std::cout << std::endl << "----------------------------------------------";
     std::cout << std::endl << "CALIB 3D BASE TEST #" << nCaseNo << " STARTING";
-    std::cout << std::endl << "---------------------------------------------";
+    std::cout << std::endl << "----------------------------------------------";
     std::cout << std::endl;
 
     const int IMAGE_COUNT = 12;

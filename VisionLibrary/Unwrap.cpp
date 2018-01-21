@@ -1884,7 +1884,6 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
 }
 
 /*static*/ void Unwrap::integrate3DCalib(const PR_INTEGRATE_3D_CALIB_CMD *const pstCmd, PR_INTEGRATE_3D_CALIB_RPY *const pstRpy) {
-    cv::Mat matZ1, matZ2;
     cv::Mat matX, matY;
     CalcUtils::meshgrid<DATA_TYPE> ( 1.f, 1.f, ToFloat ( pstCmd->vecCalibData[0].matPhase.cols ), 1.f, 1.f, ToFloat ( pstCmd->vecCalibData[0].matPhase.rows ), matX, matY );
     std::vector<DATA_TYPE> vecXt, vecYt, vecPhase, vecBP;
@@ -1953,6 +1952,52 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
         pstRpy->vecMatResultImg.push_back ( matHeightGridImg );
     }
     pstRpy->matIntegratedK = matK;
+    pstRpy->enStatus = VisionStatus::OK;
+}
+
+/*static*/ void Unwrap::motorCalib3D(const PR_MOTOR_CALIB_3D_CMD *const pstCmd, PR_MOTOR_CALIB_3D_RPY *const pstRpy) {
+    cv::Mat matX1, matY1, matX, matY, matXX, matXXt, matPhase, matZ2, matOnes, matSum1, matSum2;
+    CalcUtils::meshgrid<DATA_TYPE> ( 1.f, 1.f, ToFloat ( pstCmd->vecPairHeightPhase[0].second.cols ), 1.f, 1.f, ToFloat ( pstCmd->vecPairHeightPhase[0].second.rows ), matX1, matY1 );
+    const int TOTAL = ToInt32 ( matX1.total() );
+    matX = matX1.reshape ( 1, TOTAL );
+    matY = matY1.reshape ( 1, TOTAL );
+    matOnes = cv::Mat::ones ( TOTAL, 1, CV_32FC1 );
+    cv::Mat matXX1 = prepareOrder3SurfaceFit ( matX, matY );
+    for ( const auto &pairHeightPhase : pstCmd->vecPairHeightPhase ) {
+        matPhase =  pairHeightPhase.second.reshape ( 1, TOTAL );
+        matZ2 = matOnes * pairHeightPhase.first;
+        
+        matZ2 = cv::repeat ( matZ2, 1, matXX1.cols );
+        matXX = matXX1.mul ( matZ2 );
+
+        cv::Mat matPhasePow2 = matPhase.mul ( matPhase );
+        cv::Mat matPhasePow3 = matPhasePow2.mul ( matPhase );
+        cv::Mat matArray[] = {
+            matXX,
+            - matPhasePow2,
+            - matPhasePow3,
+        };
+        cv::hconcat ( matArray, 3, matXX );
+        cv::transpose ( matXX, matXXt );
+        matSum1 = matSum1 + matXXt * matXX;
+        matSum2 = matSum2 + matXXt * matPhase;
+    }
+    
+    cv::Mat matK ;
+    cv::solve ( matSum1, matSum2, matK, cv::DecompTypes::DECOMP_NORMAL );
+
+#ifdef _DEBUG
+    auto vecVecSum1 = CalcUtils::matToVector<DATA_TYPE> ( matSum1 );
+    auto vecVecSum2 = CalcUtils::matToVector<DATA_TYPE> ( matSum2 );
+    auto vecVecK = CalcUtils::matToVector<DATA_TYPE> ( matK );
+#endif
+    pstRpy->matIntegratedK = matK;
+    pstRpy->matOrder3CurveSurface = calcOrder3Surface ( matX1, matY1, matK );
+    for ( const auto &pairHeightPhase : pstCmd->vecPairHeightPhase ) {
+        cv::Mat matHeight = _calcHeightFromPhase ( pairHeightPhase.second, pstRpy->matOrder3CurveSurface, matK );
+        cv::Mat matHeightGridImg = _drawHeightGrid ( matHeight, pstCmd->nResultImgGridRow, pstCmd->nResultImgGridCol, pstCmd->szMeasureWinSize );
+        pstRpy->vecMatResultImg.push_back ( matHeightGridImg );
+    }
     pstRpy->enStatus = VisionStatus::OK;
 }
 

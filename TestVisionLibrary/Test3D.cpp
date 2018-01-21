@@ -54,6 +54,21 @@ VectorOfVectorOfFloat readDataFromFile(const std::string &strFilePath) {
     return parseData ( strContent );
 }
 
+void copyVectorOfVectorToMat(const VectorOfVectorOfFloat &vecVecInput, cv::Mat &matOutput) {
+    matOutput = cv::Mat ( ToInt32 ( vecVecInput.size() ), ToInt32 ( vecVecInput[0].size() ), CV_32FC1 );
+    for ( int row = 0; row < matOutput.rows; ++ row )
+    for ( int col = 0; col < matOutput.cols; ++ col ) {
+        matOutput.at<float>(row, col) = vecVecInput[row][col];
+    }
+}
+
+cv::Mat readMatFromCsvFile(const std::string &strFilePath) {
+    auto vecVecData = readDataFromFile ( strFilePath );
+    cv::Mat matOutput;
+    copyVectorOfVectorToMat ( vecVecData, matOutput );
+    return matOutput;
+}
+
 void saveMatToCsv(cv::Mat &matrix, std::string filename){
     std::ofstream outputFile(filename);
     outputFile << cv::format ( matrix, cv::Formatter::FMT_CSV ) << std::endl;
@@ -664,14 +679,6 @@ void TestIntegrate3DCalibHaoYu() {
     fsCalibResultData.release();
 }
 
-void copyVectorOfVectorToMat(const VectorOfVectorOfFloat &vecVecInput, cv::Mat &matOutput) {
-    matOutput = cv::Mat ( ToInt32 ( vecVecInput.size() ), ToInt32 ( vecVecInput[0].size() ), CV_32FC1 );
-    for ( int row = 0; row < matOutput.rows; ++ row )
-    for ( int col = 0; col < matOutput.cols; ++ col ) {
-        matOutput.at<float>(row, col) = vecVecInput[row][col];
-    }
-}
-
 static cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY, const cv::Mat &matK) {
     cv::Mat matXPow2 = matX.    mul ( matX );
     cv::Mat matXPow3 = matXPow2.mul ( matX );
@@ -799,4 +806,64 @@ void TestCalcPD() {
     if ( VisionStatus::OK == stRpy.enStatus ) {
         cv::imwrite("./data/CaptureRegionImg.png", stRpy.matCaptureRegionImg );
     }
+}
+
+void TestMotor3DCalib() {
+    PR_MOTOR_CALIB_3D_CMD stCmd;
+    PR_MOTOR_CALIB_3D_RPY stRpy;
+
+    std::string strDataFolder = "./data/Motor3DCalib/", strFile;
+    
+    for ( int i = 1; i <= 5; ++ i ) {
+        PairHeightPhase pairHeightPhase;
+        pairHeightPhase.first = -i;
+        strFile = strDataFolder + "HP" + std::to_string(i) + ".csv";
+        pairHeightPhase.second = readMatFromCsvFile ( strFile );
+        stCmd.vecPairHeightPhase.push_back ( pairHeightPhase );
+    }
+
+    for ( int i = 1; i <= 5; ++ i ) {
+        PairHeightPhase pairHeightPhase;
+        pairHeightPhase.first = i;
+        strFile = strDataFolder + "HN" + std::to_string(i) + ".csv";
+        pairHeightPhase.second = readMatFromCsvFile ( strFile );
+        stCmd.vecPairHeightPhase.push_back ( pairHeightPhase );
+    }
+
+    PR_MotorCalib3D ( &stCmd, &stRpy );
+    std::cout << "PR_MotorCalib3D status " << ToInt32( stRpy.enStatus ) << std::endl;
+    if ( VisionStatus::OK != stRpy.enStatus )
+        return;
+
+    int i = 1;
+    for ( const auto &matResultImg : stRpy.vecMatResultImg ) {
+        char chArrFileName[100];
+        _snprintf( chArrFileName, sizeof (chArrFileName), "ResultImg_%02d.png", i );
+        std::string strDataFile = strDataFolder + chArrFileName;
+        cv::imwrite ( strDataFile, matResultImg );
+        ++ i;
+    }
+}
+
+void TestSolve() {
+    std::string strResultFile ( "IntermediateResult.yml" );
+    cv::FileStorage fsData ( strResultFile, cv::FileStorage::READ );
+    if (!fsData.isOpened()) {
+        std::cout << "Failed to open file: " << strResultFile << std::endl;
+        return;
+    }
+
+    cv::Mat matSum1, matSum2, matK;
+    cv::FileNode fileNode = fsData["matSum1"];
+    cv::read(fileNode, matSum1, cv::Mat());
+
+    fileNode = fsData["matSum2"];
+    cv::read(fileNode, matSum2, cv::Mat());
+
+    cv::solve ( matSum1, matSum2, matK, cv::DecompTypes::DECOMP_SVD );
+    cv::Mat matEign(1, 5, CV_32FC1 );
+    cv::eigen ( matSum1, matEign );
+    printfMat<float>(matK);
+    std::cout << "Eign value: " << std::endl;
+    printfMat<float>(matEign);
 }

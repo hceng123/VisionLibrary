@@ -6138,6 +6138,21 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     return pstRpy->enStatus;
 }
 
+/*static*/ VisionStatus VisionAlgorithm::motorCalib3D(const PR_MOTOR_CALIB_3D_CMD *const pstCmd, PR_MOTOR_CALIB_3D_RPY *const pstRpy, bool bReplay /*= false*/) {
+    if ( pstCmd->vecPairHeightPhase.size() < 2 ) {
+        WriteLog("The input height count is less than 2.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    MARK_FUNCTION_START_TIME;
+
+    Unwrap::motorCalib3D ( pstCmd, pstRpy );
+
+    MARK_FUNCTION_END_TIME;
+    return pstRpy->enStatus;
+}
+
 /*static*/ VisionStatus VisionAlgorithm::calc3DHeight(const PR_CALC_3D_HEIGHT_CMD *const pstCmd, PR_CALC_3D_HEIGHT_RPY *const pstRpy, bool bReplay /*= false*/) {
     assert(pstCmd != nullptr && pstRpy != nullptr);
 
