@@ -447,7 +447,7 @@ void VisionView::_zoomPoint(cv::Point &point, float fZoomFactor)
     auto displayWidth = this->size().width();
     auto displayHeight = this->size().height();
 
-    point.x = (point.x - displayWidth / 2)  * fZoomFactor + displayWidth / 2;
+    point.x = (point.x - displayWidth  / 2) * fZoomFactor + displayWidth  / 2;
     point.y = (point.y - displayHeight / 2) * fZoomFactor + displayHeight / 2;
 }
 
@@ -456,7 +456,7 @@ void VisionView::_zoomRect(cv::Rect &rect, float fZoomFactor)
     auto displayWidth = this->size().width();
     auto displayHeight = this->size().height();
 
-    rect.x = (rect.x - displayWidth / 2)  * fZoomFactor + displayWidth / 2;
+    rect.x = (rect.x - displayWidth  / 2) * fZoomFactor + displayWidth  / 2;
     rect.y = (rect.y - displayHeight / 2) * fZoomFactor + displayHeight / 2;
     rect.width *= fZoomFactor;
     rect.height *= fZoomFactor;

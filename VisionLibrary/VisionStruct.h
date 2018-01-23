@@ -995,15 +995,15 @@ struct PR_GRID_AVG_GRAY_SCALE_RPY {
 };
 
 struct PR_CALIB_3D_BASE_CMD {
-    PR_CALIB_3D_BASE_CMD() : bEnableGaussianFilter(true), bReverseSeq(true), fRemoveHarmonicWaveK(0.f) {}
+    PR_CALIB_3D_BASE_CMD() : bEnableGaussianFilter(true), fRemoveHarmonicWaveK(0.f) {}
     VectorOfMat             vecInputImgs;           //Totally 12 images, including 4 thick, 4 thin, 4 extreme thin.
-    bool                    bEnableGaussianFilter;
-    bool                    bReverseSeq;            //Change the image sequence.
+    bool                    bEnableGaussianFilter;    
     float                   fRemoveHarmonicWaveK;   //The factor to remove the harmonic wave in the thick stripe. If it is 0, then this procedure will be skipped.
 };
 
 struct PR_CALIB_3D_BASE_RPY {
     VisionStatus            enStatus;
+    bool                    bReverseSeq;            //Change the image sequence.
     cv::Mat                 matThickToThinK;        //The factor between thick stripe and thin stripe.
     cv::Mat                 matThickToThinnestK;    //The factor between thick stripe and thinnest stripe.
     cv::Mat                 matBaseWrappedAlpha;    //The wrapped thick stripe phase.

@@ -140,7 +140,7 @@ static std::string gstrIntegrateCalibResultFile( gstrWorkingFolder + "IntegrateC
 bool gbUseGamma = true;
 const int IMAGE_COUNT = 12;
 void TestCalib3dBase() {
-    std::string strFolder = gstrWorkingFolder + "1208213400_base2/";
+    std::string strFolder = gstrWorkingFolder + "1208213334_base1/";
     PR_CALIB_3D_BASE_CMD stCmd;
     PR_CALIB_3D_BASE_RPY stRpy;
     for ( int i = 1; i <= IMAGE_COUNT; ++ i ) {
@@ -155,7 +155,6 @@ void TestCalib3dBase() {
         stCmd.vecInputImgs.push_back ( mat );
     }
     stCmd.bEnableGaussianFilter = true;
-    stCmd.bReverseSeq = true;
     stCmd.fRemoveHarmonicWaveK = 0.f;
     PR_Calib3DBase ( &stCmd, &stRpy );
     std::cout << "PR_Calib3DBase status " << ToInt32( stRpy.enStatus ) << std::endl;

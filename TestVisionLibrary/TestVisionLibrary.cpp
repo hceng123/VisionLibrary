@@ -681,7 +681,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
     //TestSrchDie();
 
-    //TestCalib3dBase();
+    TestCalib3dBase();
   
     //TestCalib3DHeight_01();
     //TestCalib3DHeight_02();
@@ -726,7 +726,7 @@ int _tmain(int argc, _TCHAR* argv[])
     //TestCombineImage();
     //TestCombineImage_1();
     //TestMotor3DCalib();
-    TestSolve();
+    //TestSolve();
 
     PR_DumpTimeLog("./Vision/Time.log");
     std::cout << "Press any key to exit." << std::endl;

@@ -85,7 +85,6 @@ void TestCalib3dBaseSub(
         stCmd.vecInputImgs.push_back ( mat );
     }
     stCmd.bEnableGaussianFilter = true;
-    stCmd.bReverseSeq = true;
     PR_Calib3DBase ( &stCmd, &stRpy );
     std::cout << "PR_Calib3DBase status " << ToInt32( stRpy.enStatus ) << std::endl;
     std::cout << "ThickToThinK: " << std::endl;
@@ -97,6 +96,7 @@ void TestCalib3dBaseSub(
     cv::FileStorage fs(strResultMatPath, cv::FileStorage::WRITE);
     if ( ! fs.isOpened() )
         return;
+    cv::write ( fs, "ReverseSeq", stRpy.bReverseSeq );
     cv::write ( fs, "K1", stRpy.matThickToThinK );
     cv::write ( fs, "K2", stRpy.matThickToThinnestK );
     cv::write ( fs, "BaseWrappedAlpha", stRpy.matBaseWrappedAlpha );
@@ -111,6 +111,7 @@ void TestCalib3DHeightSub(
     bool            bUseGamma,
     const String   &strParentPath,
     const String   &strImageFolder,
+    bool            bReverseSeq,
     bool            bReverseHeight,
     int             nBlockStepCount,
     const cv::Mat  &matThickToThinK,
@@ -135,7 +136,7 @@ void TestCalib3DHeightSub(
         stCmd.vecInputImgs.push_back ( mat );
     }
     stCmd.bEnableGaussianFilter = true;
-    stCmd.bReverseSeq = true;
+    stCmd.bReverseSeq = bReverseSeq;
     stCmd.bUseThinnestPattern = bUseGamma;
     stCmd.bReverseHeight = bReverseHeight;
     if ( stCmd.bUseThinnestPattern )
@@ -326,7 +327,11 @@ void TestCalib3DHeight_1() {
     String strCalibResultFile = strParentPath + "CalibPP.yml";
     cv::FileStorage fs ( strCalibResultFile, cv::FileStorage::READ );
     cv::Mat matThickToThinK, matThickToThinnestK, matBaseWrappedAlpha, matBaseWrappedBeta, matBaseWrappedGamma;
-    cv::FileNode fileNode = fs["K1"];
+    bool bReverseSeq = false;
+    cv::FileNode fileNode;
+    fileNode = fs["ReverseSeq"];
+    cv::read ( fileNode, bReverseSeq, false );
+    fileNode = fs["K1"];    
     cv::read ( fileNode, matThickToThinK, cv::Mat() );
     fileNode = fs["K2"];
     cv::read ( fileNode, matThickToThinnestK, cv::Mat() );
@@ -338,10 +343,10 @@ void TestCalib3DHeight_1() {
     cv::read ( fileNode, matBaseWrappedGamma, cv::Mat() );
     fs.release();
 
-    TestCalib3DHeightSub ( 1, 1, false, strParentPath, "1017001014_LT",       false, 5, matThickToThinK, matThickToThinnestK, matBaseWrappedAlpha, matBaseWrappedBeta, matBaseWrappedGamma );
-    TestCalib3DHeightSub ( 2, 2, false, strParentPath, "1017001107_RB",       false, 5, matThickToThinK, matThickToThinnestK, matBaseWrappedAlpha, matBaseWrappedBeta, matBaseWrappedGamma );
-    TestCalib3DHeightSub ( 3, 3, false, strParentPath, "1017001229_negative", true,  3, matThickToThinK, matThickToThinnestK, matBaseWrappedAlpha, matBaseWrappedBeta, matBaseWrappedGamma );
-    TestCalcTopSurface3DHeightSub (1, false, strParentPath, "1017000903_H5",            matThickToThinK, matThickToThinnestK, matBaseWrappedAlpha, matBaseWrappedBeta, matBaseWrappedGamma );
+    TestCalib3DHeightSub ( 1, 1, false, strParentPath, "1017001014_LT",       bReverseSeq, false, 5, matThickToThinK, matThickToThinnestK, matBaseWrappedAlpha, matBaseWrappedBeta, matBaseWrappedGamma );
+    TestCalib3DHeightSub ( 2, 2, false, strParentPath, "1017001107_RB",       bReverseSeq, false, 5, matThickToThinK, matThickToThinnestK, matBaseWrappedAlpha, matBaseWrappedBeta, matBaseWrappedGamma );
+    TestCalib3DHeightSub ( 3, 3, false, strParentPath, "1017001229_negative", bReverseSeq, true,  3, matThickToThinK, matThickToThinnestK, matBaseWrappedAlpha, matBaseWrappedBeta, matBaseWrappedGamma );
+    TestCalcTopSurface3DHeightSub (1, false, strParentPath, "1017000903_H5",                         matThickToThinK, matThickToThinnestK, matBaseWrappedAlpha, matBaseWrappedBeta, matBaseWrappedGamma );
     TestIntegrate3DCalibSub ( 1, strParentPath );
 }
 
@@ -350,7 +355,11 @@ void TestCalib3DHeight_2() {
     String strCalibResultFile = strParentPath + "CalibPP.yml";
     cv::FileStorage fs ( strCalibResultFile, cv::FileStorage::READ );
     cv::Mat matThickToThinK, matThickToThinnestK, matBaseWrappedAlpha, matBaseWrappedBeta, matBaseWrappedGamma;
-    cv::FileNode fileNode = fs["K1"];
+    bool bReverseSeq = false;
+    cv::FileNode fileNode;
+    fileNode = fs["ReverseSeq"];
+    cv::read ( fileNode, bReverseSeq, false );
+    fileNode = fs["K1"];
     cv::read ( fileNode, matThickToThinK, cv::Mat() );
     fileNode = fs["K2"];
     cv::read ( fileNode, matThickToThinnestK, cv::Mat() );
@@ -362,10 +371,10 @@ void TestCalib3DHeight_2() {
     cv::read ( fileNode, matBaseWrappedGamma, cv::Mat() );
     fs.release();
 
-    TestCalib3DHeightSub ( 4, 1, true, strParentPath, "1017001014_LT",       false, 5, matThickToThinK, matThickToThinnestK, matBaseWrappedAlpha, matBaseWrappedBeta, matBaseWrappedGamma );
-    TestCalib3DHeightSub ( 5, 2, true, strParentPath, "1017001107_RB",       false, 5, matThickToThinK, matThickToThinnestK, matBaseWrappedAlpha, matBaseWrappedBeta, matBaseWrappedGamma );
-    TestCalib3DHeightSub ( 6, 3, true, strParentPath, "1017001229_negative", true,  3, matThickToThinK, matThickToThinnestK, matBaseWrappedAlpha, matBaseWrappedBeta, matBaseWrappedGamma );
-    TestCalcTopSurface3DHeightSub ( 2, true, strParentPath, "1017000903_H5",           matThickToThinK, matThickToThinnestK, matBaseWrappedAlpha, matBaseWrappedBeta, matBaseWrappedGamma );
+    TestCalib3DHeightSub ( 4, 1, true, strParentPath, "1017001014_LT",       bReverseSeq, false, 5, matThickToThinK, matThickToThinnestK, matBaseWrappedAlpha, matBaseWrappedBeta, matBaseWrappedGamma );
+    TestCalib3DHeightSub ( 5, 2, true, strParentPath, "1017001107_RB",       bReverseSeq, false, 5, matThickToThinK, matThickToThinnestK, matBaseWrappedAlpha, matBaseWrappedBeta, matBaseWrappedGamma );
+    TestCalib3DHeightSub ( 6, 3, true, strParentPath, "1017001229_negative", bReverseSeq, true,  3, matThickToThinK, matThickToThinnestK, matBaseWrappedAlpha, matBaseWrappedBeta, matBaseWrappedGamma );
+    TestCalcTopSurface3DHeightSub ( 2, true, strParentPath, "1017000903_H5",                        matThickToThinK, matThickToThinnestK, matBaseWrappedAlpha, matBaseWrappedBeta, matBaseWrappedGamma );
     TestIntegrate3DCalibSub ( 2, strParentPath );
 }
 
@@ -383,7 +392,11 @@ void TestCalib3DHeight_3() {
     String strCalibResultFile = strParentPath + "CalibPP.yml";
     cv::FileStorage fs ( strCalibResultFile, cv::FileStorage::READ );
     cv::Mat matThickToThinK, matThickToThinnestK, matBaseWrappedAlpha, matBaseWrappedBeta, matBaseWrappedGamma;
-    cv::FileNode fileNode = fs["K1"];
+    bool bReverseSeq = false;
+    cv::FileNode fileNode;
+    fileNode = fs["ReverseSeq"];
+    cv::read ( fileNode, bReverseSeq, false );
+    fileNode = fs["K1"];
     cv::read ( fileNode, matThickToThinK, cv::Mat() );
     fileNode = fs["K2"];
     cv::read ( fileNode, matThickToThinnestK, cv::Mat() );
@@ -395,10 +408,10 @@ void TestCalib3DHeight_3() {
     cv::read ( fileNode, matBaseWrappedGamma, cv::Mat() );
     fs.release();
 
-    TestCalib3DHeightSub ( 7, 1, false, strParentPath, "0920235040_lefttop",     false, 5, matThickToThinK, matThickToThinnestK, matBaseWrappedAlpha, matBaseWrappedBeta, matBaseWrappedGamma );
-    TestCalib3DHeightSub ( 8, 2, false, strParentPath, "0920235128_rightbottom", false, 5, matThickToThinK, matThickToThinnestK, matBaseWrappedAlpha, matBaseWrappedBeta, matBaseWrappedGamma );
-    TestCalib3DHeightSub ( 9, 3, false, strParentPath, "0920235405_negitive",    true,  3, matThickToThinK, matThickToThinnestK, matBaseWrappedAlpha, matBaseWrappedBeta, matBaseWrappedGamma );
-    TestCalcTopSurface3DHeightSub (3, false, strParentPath, "0921202157_H5mm",             matThickToThinK, matThickToThinnestK, matBaseWrappedAlpha, matBaseWrappedBeta, matBaseWrappedGamma, 0.1f );
+    TestCalib3DHeightSub ( 7, 1, false, strParentPath, "0920235040_lefttop",     bReverseSeq, false, 5, matThickToThinK, matThickToThinnestK, matBaseWrappedAlpha, matBaseWrappedBeta, matBaseWrappedGamma );
+    TestCalib3DHeightSub ( 8, 2, false, strParentPath, "0920235128_rightbottom", bReverseSeq, false, 5, matThickToThinK, matThickToThinnestK, matBaseWrappedAlpha, matBaseWrappedBeta, matBaseWrappedGamma );
+    TestCalib3DHeightSub ( 9, 3, false, strParentPath, "0920235405_negitive",    bReverseSeq, true,  3, matThickToThinK, matThickToThinnestK, matBaseWrappedAlpha, matBaseWrappedBeta, matBaseWrappedGamma );
+    TestCalcTopSurface3DHeightSub (3, false, strParentPath, "0921202157_H5mm",                          matThickToThinK, matThickToThinnestK, matBaseWrappedAlpha, matBaseWrappedBeta, matBaseWrappedGamma, 0.1f );
     TestIntegrate3DCalibSub ( 3, strParentPath );
 }
 
@@ -407,7 +420,11 @@ void TestCalib3DHeight_4() {
     String strCalibResultFile = strParentPath + "CalibPP.yml";
     cv::FileStorage fs ( strCalibResultFile, cv::FileStorage::READ );
     cv::Mat matThickToThinK, matThickToThinnestK, matBaseWrappedAlpha, matBaseWrappedBeta, matBaseWrappedGamma;
-    cv::FileNode fileNode = fs["K1"];
+    bool bReverseSeq = false;
+    cv::FileNode fileNode;
+    fileNode = fs["ReverseSeq"];
+    cv::read ( fileNode, bReverseSeq, false );
+    fileNode = fs["K1"];
     cv::read ( fileNode, matThickToThinK, cv::Mat() );
     fileNode = fs["K2"];
     cv::read ( fileNode, matThickToThinnestK, cv::Mat() );
@@ -420,10 +437,10 @@ void TestCalib3DHeight_4() {
     fs.release();
 
     bool bUseGamma = true;
-    TestCalib3DHeightSub ( 10, 1, bUseGamma, strParentPath,  "0920235040_lefttop",     false, 5, matThickToThinK, matThickToThinnestK, matBaseWrappedAlpha, matBaseWrappedBeta, matBaseWrappedGamma );
-    TestCalib3DHeightSub ( 11, 2, bUseGamma, strParentPath,  "0920235128_rightbottom", false, 5, matThickToThinK, matThickToThinnestK, matBaseWrappedAlpha, matBaseWrappedBeta, matBaseWrappedGamma );
-    TestCalib3DHeightSub ( 12, 3, bUseGamma, strParentPath,  "0920235405_negitive",    true,  3, matThickToThinK, matThickToThinnestK, matBaseWrappedAlpha, matBaseWrappedBeta, matBaseWrappedGamma );
-    TestCalcTopSurface3DHeightSub ( 4, false, strParentPath, "0921202157_H5mm",                  matThickToThinK, matThickToThinnestK, matBaseWrappedAlpha, matBaseWrappedBeta, matBaseWrappedGamma, 0.1f );
+    TestCalib3DHeightSub ( 10, 1, bUseGamma, strParentPath,  "0920235040_lefttop",     bReverseSeq, false, 5, matThickToThinK, matThickToThinnestK, matBaseWrappedAlpha, matBaseWrappedBeta, matBaseWrappedGamma );
+    TestCalib3DHeightSub ( 11, 2, bUseGamma, strParentPath,  "0920235128_rightbottom", bReverseSeq, false, 5, matThickToThinK, matThickToThinnestK, matBaseWrappedAlpha, matBaseWrappedBeta, matBaseWrappedGamma );
+    TestCalib3DHeightSub ( 12, 3, bUseGamma, strParentPath,  "0920235405_negitive",    bReverseSeq, true,  3, matThickToThinK, matThickToThinnestK, matBaseWrappedAlpha, matBaseWrappedBeta, matBaseWrappedGamma );
+    TestCalcTopSurface3DHeightSub ( 4, false, strParentPath, "0921202157_H5mm",                               matThickToThinK, matThickToThinnestK, matBaseWrappedAlpha, matBaseWrappedBeta, matBaseWrappedGamma, 0.1f );
     TestIntegrate3DCalibSub ( 4, strParentPath );
 }
 

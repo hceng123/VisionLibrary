@@ -281,7 +281,7 @@ inline std::vector<size_t> sort_indexes(const std::vector<T> &v) {
 }
 
 /*static*/ void Unwrap::calib3DBase( const PR_CALIB_3D_BASE_CMD *const pstCmd, PR_CALIB_3D_BASE_RPY *const pstRpy ) {
-    std::vector<cv::Mat> vecConvertedImgs;
+    VectorOfMat vecConvertedImgs;
     for ( auto &mat : pstCmd->vecInputImgs ) {
         cv::Mat matConvert = mat;
         if ( mat.channels() > 1 )
@@ -289,6 +289,8 @@ inline std::vector<size_t> sort_indexes(const std::vector<T> &v) {
         matConvert.convertTo ( matConvert, CV_32FC1 );
         vecConvertedImgs.push_back ( matConvert );
     }
+
+    pstRpy->bReverseSeq = isReverseSequence ( VectorOfMat ( vecConvertedImgs.begin(), vecConvertedImgs.begin() + PR_GROUP_TEXTURE_IMG_COUNT ), pstCmd->bEnableGaussianFilter );
 
     if ( pstCmd->bEnableGaussianFilter ) {
         //Filtering can reduce residues at the expense of a loss of spatial resolution.
@@ -303,7 +305,7 @@ inline std::vector<size_t> sort_indexes(const std::vector<T> &v) {
     }
     assert ( vecConvertedImgs.size() == 4 * PR_GROUP_TEXTURE_IMG_COUNT );
 
-    if ( pstCmd->bReverseSeq ) {
+    if ( pstRpy->bReverseSeq ) {
         std::swap ( vecConvertedImgs[1], vecConvertedImgs[3] );
         std::swap ( vecConvertedImgs[5], vecConvertedImgs[7] );
         std::swap ( vecConvertedImgs[9], vecConvertedImgs[11] );
@@ -2277,6 +2279,75 @@ void removeBlob(cv::Mat &matThreshold, cv::Mat &matBlob, float fAreaLimit ) {
     cv::Mat matKernal = cv::getStructuringElement ( cv::MorphShapes::MORPH_ELLIPSE, szMorphKernel );
     cv::MorphTypes morphType = cv::MORPH_CLOSE;
     cv::morphologyEx ( matMask, matMask, morphType, matKernal, cv::Point(-1, -1), nMorphIteration );
+}
+
+/*static*/ bool Unwrap::isReverseSequence(const VectorOfMat &vecMat, bool bEnableGaussianFilter) {
+    assert ( vecMat.size() == PR_GROUP_TEXTURE_IMG_COUNT );
+
+    std::vector<cv::Mat> vecConvertedImgs;
+    for ( auto &mat : vecMat ) {
+        cv::Mat matConvert = mat;
+        if ( mat.channels() > 1 )
+            cv::cvtColor ( mat, matConvert, CV_BGR2GRAY );
+        matConvert.convertTo ( matConvert, CV_32FC1 );
+        vecConvertedImgs.push_back ( matConvert );
+    }
+
+    if ( bEnableGaussianFilter ) {
+        //Filtering can reduce residues at the expense of a loss of spatial resolution.
+        for ( int i = 0; i < PR_GROUP_TEXTURE_IMG_COUNT; ++ i )
+            cv::GaussianBlur ( vecConvertedImgs[i], vecConvertedImgs[i], cv::Size(GUASSIAN_FILTER_SIZE, GUASSIAN_FILTER_SIZE), GAUSSIAN_FILTER_SIGMA, GAUSSIAN_FILTER_SIGMA, cv::BorderTypes::BORDER_REPLICATE );
+    }
+
+    cv::Mat mat00 = vecConvertedImgs[2] - vecConvertedImgs[0];
+    cv::Mat mat01 = vecConvertedImgs[3] - vecConvertedImgs[1];
+
+
+    cv::Mat matAlpha;
+    cv::phase ( -mat00, mat01, matAlpha );
+    matAlpha = _phaseUnwrapSurface ( matAlpha );
+
+    const auto ROWS = matAlpha.rows;
+    const auto COLS = matAlpha.cols;
+
+    auto A1 = cv::mean ( cv::Mat ( matAlpha, cv::Rect ( 0, 0, CHECK_RS_WIN, CHECK_RS_WIN ) ) )[0];
+    auto A2 = cv::mean ( cv::Mat ( matAlpha, cv::Rect ( COLS - CHECK_RS_WIN, 0, CHECK_RS_WIN, CHECK_RS_WIN ) ) )[0];
+    auto A3 = cv::mean ( cv::Mat ( matAlpha, cv::Rect ( 0, ROWS - CHECK_RS_WIN, CHECK_RS_WIN, CHECK_RS_WIN ) ) )[0];
+    auto A4 = cv::mean ( cv::Mat ( matAlpha, cv::Rect ( COLS - CHECK_RS_WIN, ROWS - CHECK_RS_WIN, CHECK_RS_WIN, CHECK_RS_WIN ) ) )[0];
+
+    auto H1 = A2 - A1;
+    auto H2 = A4 - A3;
+    auto V1 = A3 - A1;
+    auto V2 = A4 - A2;
+
+    bool ReverseSeq = false;
+
+    if ( fabs ( H1 + H2 ) < fabs ( V1 + V2 ) ) {
+        if ( abs ( V1 ) > abs ( V2 ) ) {
+            if( H1 > 0 )
+                ReverseSeq = 0;
+            else
+                ReverseSeq = 1;
+        }else {
+            if( H1 > 0 )
+                ReverseSeq = 1;
+            else
+                ReverseSeq = 0;
+        }
+    }else {
+        if( fabs ( H1 ) > fabs ( H2 ) ) {
+            if( V1 > 0 )
+                ReverseSeq = 0;
+            else
+                ReverseSeq = 1;
+        }else {
+            if( V1 > 0 )
+                ReverseSeq = 1;
+            else
+                ReverseSeq = 0;
+        }
+    }
+    return ReverseSeq;
 }
 
 }
