@@ -68,6 +68,10 @@ VisionStatus GetErrorInfo(VisionStatus enStatus, PR_GET_ERROR_INFO_RPY *pstRpy)
         _snprintf(pstRpy->achErrorStr, PR_MAX_ERR_STR_LEN, "Object scale over tolerance.");
         pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::INSP_STATUS;
         break;
+    case VisionStatus::MATCH_SCORE_REJECT:
+        _snprintf(pstRpy->achErrorStr, PR_MAX_ERR_STR_LEN, "Template match score is under minimum value.");
+        pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::INSP_STATUS;
+        break;
     case VisionStatus::FIND_ELECTRODE_FAIL:
         _snprintf(pstRpy->achErrorStr, PR_MAX_ERR_STR_LEN, "Failed to find electrode of chip.");
         pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::INSP_STATUS;
@@ -92,19 +96,15 @@ VisionStatus GetErrorInfo(VisionStatus enStatus, PR_GET_ERROR_INFO_RPY *pstRpy)
         _snprintf(pstRpy->achErrorStr, PR_MAX_ERR_STR_LEN, "There are too many connected components to remove.");
         pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::INSP_STATUS;
         break;
-    case VisionStatus::PICK_PT_NOT_IN_ROI:
-        _snprintf(pstRpy->achErrorStr, PR_MAX_ERR_STR_LEN, "The pick point must in ROI.");
-        pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::INSP_STATUS;
-        break;
-    case VisionStatus::FAILED_TO_FIND_CHESS_BOARD_BLOCK_SIZE:
+    case VisionStatus::FIND_CHESS_BOARD_BLOCK_SIZE_FAIL:
         _snprintf(pstRpy->achErrorStr, PR_MAX_ERR_STR_LEN, "Failed to find chessboard block size.");
         pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::INSP_STATUS;
         break;
-    case VisionStatus::FAILED_TO_FIND_FIRST_CB_CORNER:
+    case VisionStatus::FIND_FIRST_CB_CORNER_FAIL:
         _snprintf(pstRpy->achErrorStr, PR_MAX_ERR_STR_LEN, "Failed to find first chessboard corner to calibrate camera.");
         pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::INSP_STATUS;
         break;
-    case VisionStatus::FAILED_TO_FIND_ENOUGH_CB_CORNERS:
+    case VisionStatus::NOT_FIND_ENOUGH_CB_CORNERS:
         _snprintf(pstRpy->achErrorStr, PR_MAX_ERR_STR_LEN, "Failed to find enough chessboard corners to calibrate camera.");
         pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::INSP_STATUS;
         break;

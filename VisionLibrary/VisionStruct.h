@@ -93,16 +93,18 @@ struct PR_LRN_TEMPLATE_RPY {
 
 struct PR_MATCH_TEMPLATE_CMD {
     PR_MATCH_TEMPLATE_CMD() :
-        enAlgorithm (PR_MATCH_TMPL_ALGORITHM::SQUARE_DIFF),
-        nRecordId(-1),
-        bSubPixelRefine(false),
-        enMotion (PR_OBJECT_MOTION::TRANSLATION) {}
+        enAlgorithm         (PR_MATCH_TMPL_ALGORITHM::SQUARE_DIFF),
+        nRecordId           (-1),
+        bSubPixelRefine     (false),
+        enMotion            (PR_OBJECT_MOTION::TRANSLATION),
+        fMinMatchScore      (60) {}
     cv::Mat                 matInputImg;
     PR_MATCH_TMPL_ALGORITHM enAlgorithm;
     Int32                   nRecordId;
     cv::Rect                rectSrchWindow;
     bool                    bSubPixelRefine;
     PR_OBJECT_MOTION        enMotion;
+    float                   fMinMatchScore;
 };
 
 struct PR_MATCH_TEMPLATE_RPY {
@@ -240,17 +242,23 @@ struct PR_INSP_DEVICE_RPY {
 ******************************************/
 
 struct PR_SRCH_FIDUCIAL_MARK_CMD {
+    PR_SRCH_FIDUCIAL_MARK_CMD() :
+        enType          (PR_FIDUCIAL_MARK_TYPE::SQUARE),
+        fSize           (0.f),
+        fMargin         (10.f),
+        fMinMatchScore  (60.f) {}
     cv::Mat                 matInputImg;
     cv::Rect                rectSrchWindow;
     PR_FIDUCIAL_MARK_TYPE   enType;
     float                   fSize;          //The white part size of the fiducial mark.
     float                   fMargin;        //The dark part width outside of the fiducial mark.
+    float                   fMinMatchScore;
 };
 
 struct PR_SRCH_FIDUCIAL_MARK_RPY {
     VisionStatus            enStatus;
     cv::Point2f             ptPos;
-    float                   fScore;
+    float                   fMatchScore;
     cv::Mat                 matResultImg;
 };
 
@@ -1081,9 +1089,9 @@ struct PR_CALIB_3D_HEIGHT_RPY {
 
 struct PR_INTEGRATE_3D_CALIB_CMD {
     PR_INTEGRATE_3D_CALIB_CMD() :
-        nResultImgGridRow(10),
-        nResultImgGridCol(10),
-        szMeasureWinSize(40, 40) {}
+        nResultImgGridRow   (10),
+        nResultImgGridCol   (10),
+        szMeasureWinSize    (40, 40) {}
     struct SINGLE_CALIB_DATA {
         cv::Mat             matPhase;
         cv::Mat             matDivideStepIndex;

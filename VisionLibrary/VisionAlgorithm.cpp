@@ -1104,6 +1104,9 @@ VisionStatus VisionAlgorithm::inspDevice(PR_INSP_DEVICE_CMD *pstInspDeviceCmd, P
         pstRpy->enStatus = VisionStatus::OK;
     }
 
+    if ( pstRpy->fMatchScore <= pstCmd->fMinMatchScore )
+        pstRpy->enStatus = VisionStatus::MATCH_SCORE_REJECT;
+
     if ( ! isAutoMode () ) {
         if ( pstCmd->matInputImg.channels () > 1 )
             pstRpy->matResultImg = pstCmd->matInputImg.clone();
@@ -1669,12 +1672,16 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
 
     pstRpy->ptPos.x = ptResult.x + pstCmd->rectSrchWindow.x;
     pstRpy->ptPos.y = ptResult.y + pstCmd->rectSrchWindow.y;
-    pstRpy->fScore = fCorrelation * ConstToPercentage;
+    pstRpy->fMatchScore = fCorrelation * ConstToPercentage;
 
-    pstRpy->matResultImg = pstCmd->matInputImg.clone();
-    cv::circle(pstRpy->matResultImg, pstRpy->ptPos, 2, cv::Scalar(255, 0, 0), 2);
-    cv::rectangle(pstRpy->matResultImg, cv::Rect(ToInt32(pstRpy->ptPos.x) - nTmplSize / 2, ToInt32(pstRpy->ptPos.y) - nTmplSize / 2, nTmplSize, nTmplSize), cv::Scalar(255, 0, 0), 1);
+    if ( pstRpy->fMatchScore <= pstCmd->fMinMatchScore )
+        pstRpy->enStatus = VisionStatus::MATCH_SCORE_REJECT;
 
+    if ( ! isAutoMode() ) {
+        pstRpy->matResultImg = pstCmd->matInputImg.clone();
+        cv::circle(pstRpy->matResultImg, pstRpy->ptPos, 2, cv::Scalar(255, 0, 0), 2);
+        cv::rectangle(pstRpy->matResultImg, cv::Rect(ToInt32(pstRpy->ptPos.x) - nTmplSize / 2, ToInt32(pstRpy->ptPos.y) - nTmplSize / 2, nTmplSize, nTmplSize), cv::Scalar(255, 0, 0), 1);
+    }
     pstRpy->enStatus = VisionStatus::OK;
     FINISH_LOGCASE;
     MARK_FUNCTION_END_TIME;
@@ -3725,8 +3732,8 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
 
     if ( ! pstCmd->rectROI.contains(pstCmd->ptPick) ) {
         WriteLog("The pick point must in selected ROI");
-        pstRpy->enStatus = VisionStatus::PICK_PT_NOT_IN_ROI;
-        return VisionStatus::PICK_PT_NOT_IN_ROI;
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return VisionStatus::INVALID_PARAM;
     }
 
     MARK_FUNCTION_START_TIME;
@@ -3852,7 +3859,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     }
 
     if ( ToInt32( vecCorners.size() ) < Config::GetInstance()->getMinPointsToCalibCamera() ) {
-        return VisionStatus::FAILED_TO_FIND_ENOUGH_CB_CORNERS;
+        return VisionStatus::NOT_FIND_ENOUGH_CB_CORNERS;
     }
     return VisionStatus::OK;
 }
@@ -4062,7 +4069,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     float fBlockSize = _findChessBoardBlockSize ( matGray, pstCmd->szBoardPattern );
     if ( fBlockSize <= 5 ) {
         WriteLog("Failed to find chess board block size");
-        pstRpy->enStatus = VisionStatus::FAILED_TO_FIND_CHESS_BOARD_BLOCK_SIZE;
+        pstRpy->enStatus = VisionStatus::FIND_CHESS_BOARD_BLOCK_SIZE_FAIL;
         FINISH_LOGCASE;
         return pstRpy->enStatus;
     }
@@ -4073,7 +4080,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     cv::Point2f ptFirstCorer = _findFirstChessBoardCorner ( matGray, fBlockSize );
     if ( ptFirstCorer.x <= 0 || ptFirstCorer.y <= 0 ) {
         WriteLog("Failed to find chess board first corner.");
-        pstRpy->enStatus = VisionStatus::FAILED_TO_FIND_FIRST_CB_CORNER;
+        pstRpy->enStatus = VisionStatus::FIND_FIRST_CB_CORNER_FAIL;
         FINISH_LOGCASE;
         return pstRpy->enStatus;
     }
@@ -4289,7 +4296,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     VectorOfVectorOfPoint contours, effectiveContours, vecDrawContours;
     cv::findContours ( matThreshold, contours, cv::RETR_LIST, cv::CHAIN_APPROX_SIMPLE );
     if ( contours.size() <= 0 ) {
-        pstRpy->enStatus = VisionStatus::FAILED_TO_FIND_LEAD;
+        pstRpy->enStatus = VisionStatus::AUTO_LOCATE_LEAD_FAIL;
         FINISH_LOGCASE;
         return pstRpy->enStatus;
     }
@@ -4374,7 +4381,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     }
     pstRpy->enStatus = VisionStatus::OK;
     if ( pstRpy->vecLeadLocation.empty() )
-        pstRpy->enStatus = VisionStatus::FAILED_TO_FIND_LEAD;
+        pstRpy->enStatus = VisionStatus::AUTO_LOCATE_LEAD_FAIL;
 
     FINISH_LOGCASE;
     return pstRpy->enStatus;

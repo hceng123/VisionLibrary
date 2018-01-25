@@ -225,15 +225,15 @@ Fit circle center [633.77, 1217.60], Radius 89.47
 INSPECT DEVICE REGRESSION TEST #1 STARTING
 ------------------------------------------
 Success to learn device
-Device inspection status 13
-Device inspection status 12
+Device inspection status 23
+Device inspection status 22
 
 ---------------------------------------------------------
 INSPECT DEVICE AUTO THRESHOLD REGRESSION TEST #1 STARTING
 ---------------------------------------------------------
 Success to learn device
-Device inspection status 13
-Device inspection status 12
+Device inspection status 23
+Device inspection status 22
 
 ------------------------------------------
 LOGCASE REGRESSION TEST #1 STARTING
@@ -822,7 +822,7 @@ Camera distoration coefficients:
 ---------------------------------------------
 CALIBRATE CAMERA REGRESSION TEST #4 STARTING
 ---------------------------------------------
-Calibrate camera status 23
+Calibrate camera status 30
 
 ---------------------------------------------
 CALIBRATE CAMERA REGRESSION TEST #5 STARTING
@@ -1070,7 +1070,7 @@ Result threshold: 152
 Number of contour: 2
 Inspect contour status: 0
 Number of defects: 0
-Inspect contour status: 33
+Inspect contour status: 61
 Number of defects: 2
 
 ---------------------------------------------
@@ -1081,7 +1081,7 @@ Result threshold: 134
 Number of contour: 2
 Inspect contour status: 0
 Number of defects: 0
-Inspect contour status: 33
+Inspect contour status: 61
 Number of defects: 2
 
 ----------------------------------------------
