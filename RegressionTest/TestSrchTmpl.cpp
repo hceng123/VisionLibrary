@@ -11,9 +11,11 @@ namespace Vision
 
 static void PrintMatchTmplRpy(const PR_MATCH_TEMPLATE_RPY &stRpy) {
     std::cout << "Match template status " << ToInt32(stRpy.enStatus) << std::endl;
-    std::cout << "Match template result " << stRpy.ptObjPos.x << ", " << stRpy.ptObjPos.y << std::endl;
-    std::cout << "Match template angle " << stRpy.fRotation << std::endl;
     std::cout << "Match template score " << stRpy.fMatchScore << std::endl;
+    if ( VisionStatus::OK == stRpy.enStatus ) {
+        std::cout << "Match template result " << stRpy.ptObjPos.x << ", " << stRpy.ptObjPos.y << std::endl;
+        std::cout << "Match template angle " << stRpy.fRotation << std::endl;
+    }
 }
 
 void TestTmplMatch_1()
@@ -137,16 +139,49 @@ void TestTmplMatch_4()
     PrintMatchTmplRpy ( stRpy );
 }
 
+void TestTmplMatch_5()
+{
+    std::cout << std::endl << "------------------------------------------";
+    std::cout << std::endl << "MATCH TEMPLATE REGRESSION TEST #5 STARTING";
+    std::cout << std::endl << "------------------------------------------";
+    std::cout << std::endl;
+
+    PR_LRN_TEMPLATE_CMD stLrnCmd;
+    PR_LRN_TEMPLATE_RPY stLrnRpy;
+    stLrnCmd.matInputImg = cv::imread("./data/MtfTargetTmpl.png");
+    stLrnCmd.rectROI = cv::Rect (0, 0, stLrnCmd.matInputImg.cols, stLrnCmd.matInputImg.rows );
+    stLrnCmd.enAlgorithm = PR_MATCH_TMPL_ALGORITHM::HIERARCHICAL_AREA;
+    PR_LrnTmpl ( &stLrnCmd, &stLrnRpy );
+    if ( stLrnRpy.enStatus != VisionStatus::OK ) {
+        std::cout << "Failed to learn template." << std::endl;
+        return;
+    }
+
+    PR_MATCH_TEMPLATE_CMD stCmd;
+    PR_MATCH_TEMPLATE_RPY stRpy;
+    stCmd.matInputImg = cv::imread("./data/PCB_With_CAE.png", cv::IMREAD_GRAYSCALE);
+    stCmd.rectSrchWindow = cv::Rect(0, 0, stCmd.matInputImg.cols, stCmd.matInputImg.rows );
+    stCmd.enAlgorithm = PR_MATCH_TMPL_ALGORITHM::HIERARCHICAL_AREA;
+    stCmd.nRecordId = stLrnRpy.nRecordId;
+    stCmd.enMotion = PR_OBJECT_MOTION::TRANSLATION;
+    
+    PR_MatchTmpl(&stCmd, &stRpy);
+    PrintMatchTmplRpy ( stRpy );
+}
+
 void TestTmplMatch() {
     TestTmplMatch_1();
     TestTmplMatch_2();
     TestTmplMatch_3();
     TestTmplMatch_4();
+    TestTmplMatch_5();
 }
 
 static void PrintFiducialMarkResult(const PR_SRCH_FIDUCIAL_MARK_RPY &stRpy) {
     std::cout << "Search fiducial status " << ToInt32(stRpy.enStatus) << std::endl;
-    std::cout << "Search fiducial result " << stRpy.ptPos.x << ", " << stRpy.ptPos.y << std::endl;
+    std::cout << "Match Score: " << ToInt32 ( stRpy.fMatchScore ) << std::endl;
+    if ( VisionStatus::OK == stRpy.enStatus )
+        std::cout << "Search fiducial result " << stRpy.ptPos.x << ", " << stRpy.ptPos.y << std::endl;
 }
 
 void TestSrchFiducialMark()
@@ -179,7 +214,20 @@ void TestSrchFiducialMark()
     stCmd.rectSrchWindow = cv::Rect(0, 40, 250, 250 );
 
     PR_SrchFiducialMark(&stCmd, &stRpy);
-    PrintFiducialMarkResult ( stRpy );    
+    PrintFiducialMarkResult ( stRpy );
+
+    std::cout << std::endl << "------------------------------------------------";
+    std::cout << std::endl << "SEARCH FIDUCIAL MARK REGRESSION TEST #3 STARTING";
+    std::cout << std::endl << "------------------------------------------------";
+    std::cout << std::endl;
+    stCmd.enType = PR_FIDUCIAL_MARK_TYPE::CIRCLE;
+    stCmd.fSize = 64;
+    stCmd.fMargin = 20;
+    stCmd.matInputImg = cv::imread("./data/CircleFiducialMark.png", cv::IMREAD_GRAYSCALE);
+    stCmd.rectSrchWindow = cv::Rect(126, 96, 200, 160 );
+
+    PR_SrchFiducialMark(&stCmd, &stRpy);
+    PrintFiducialMarkResult ( stRpy );
 }
 
 }
