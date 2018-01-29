@@ -1682,7 +1682,7 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
         cv::circle(pstRpy->matResultImg, pstRpy->ptPos, 2, cv::Scalar(255, 0, 0), 2);
         cv::rectangle(pstRpy->matResultImg, cv::Rect(ToInt32(pstRpy->ptPos.x) - nTmplSize / 2, ToInt32(pstRpy->ptPos.y) - nTmplSize / 2, nTmplSize, nTmplSize), cv::Scalar(255, 0, 0), 1);
     }
-    pstRpy->enStatus = VisionStatus::OK;
+
     FINISH_LOGCASE;
     MARK_FUNCTION_END_TIME;
     return pstRpy->enStatus;

@@ -245,45 +245,59 @@ Run logcase result 0
 MATCH TEMPLATE REGRESSION TEST #1 STARTING
 ------------------------------------------
 Match template status 0
+Match template score 100.00
 Match template result 58.33, 326.75
 Match template angle -8.73
-Match template score 100.00
 
 ------------------------------------------
 MATCH TEMPLATE REGRESSION TEST #2 STARTING
 ------------------------------------------
 Match template status 0
+Match template score 90.99
 Match template result 1154.50, 727.50
 Match template angle 0.00
-Match template score 90.99
 
 ------------------------------------------
 MATCH TEMPLATE REGRESSION TEST #3 STARTING
 ------------------------------------------
 Match template status 0
+Match template score 90.99
 Match template result 1154.50, 727.50
 Match template angle 0.00
-Match template score 90.99
 
 ------------------------------------------
 MATCH TEMPLATE REGRESSION TEST #4 STARTING
 ------------------------------------------
 Match template status 0
+Match template score 100.00
 Match template result 909.50, 1169.50
 Match template angle 0.00
-Match template score 100.00
+
+------------------------------------------
+MATCH TEMPLATE REGRESSION TEST #5 STARTING
+------------------------------------------
+Match template status 25
+Match template score 8.34
 
 ------------------------------------------------
 SEARCH FIDUCIAL MARK REGRESSION TEST #1 STARTING
 ------------------------------------------------
 Search fiducial status 0
+Match Score: 97
 Search fiducial result 1676.99, 375.28
 
 ------------------------------------------------
 SEARCH FIDUCIAL MARK REGRESSION TEST #2 STARTING
 ------------------------------------------------
 Search fiducial status 0
+Match Score: 96
 Search fiducial result 128.38, 193.95
+
+------------------------------------------------
+SEARCH FIDUCIAL MARK REGRESSION TEST #3 STARTING
+------------------------------------------------
+Search fiducial status 25
+Match Score: 47
 
 ------------------------------------------
 FIT LINE REGRESSION TEST #1 STARTING

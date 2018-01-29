@@ -231,7 +231,7 @@ MatchTmpl::~MatchTmpl ()
     matI.convertTo ( matFloatI, CV_32FC1 );
     cv::Scalar tmpMean, tmpStd, imgMean, imgStd;
     cv::meanStdDev ( matFloatT, tmpMean, tmpStd, matMaskT);
-    cv::meanStdDev ( matFloatI, imgMean, imgStd, matMaskI);    
+    cv::meanStdDev ( matFloatI, imgMean, imgStd, matMaskI);
 
     cv::Mat tmpSubtractedMean, imgSubtractedMean;
     cv::subtract ( matFloatT, tmpMean, tmpSubtractedMean, matMaskT );//zero-mean template
