@@ -52,6 +52,7 @@ void TestFindCircle();
 
 void TestCombineImage();
 void TestCombineImage_1();
+void TestCombineImage_2();
 
 void TestMotor3DCalib();
 void TestSolve();
