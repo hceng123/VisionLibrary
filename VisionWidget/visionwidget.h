@@ -11,6 +11,8 @@
 #include "FillHoleWidget.h"
 #include "ColorWidget.h"
 
+using namespace AOI;
+
 class VisionWidget : public QMainWindow
 {
     Q_OBJECT
@@ -61,9 +63,9 @@ private:
     std::unique_ptr<EdgeDetectWidget>   _ptrEdgeDetectWidget;
     std::unique_ptr<ColorWidget>        _ptrColorWidget;
 
-    AOI::Int32                          _nChipRecordId = -1;
-    AOI::Int32                          _nContourRecordId = -1;
-    AOI::Int32                          _nTmplRecordId = -1;
+    Vision::Int32                       _nChipRecordId = -1;
+    Vision::Int32                       _nContourRecordId = -1;
+    Vision::Int32                       _nTmplRecordId = -1;
 };
 
 #endif // VISIONWIDGET_H
