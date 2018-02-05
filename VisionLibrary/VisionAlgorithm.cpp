@@ -1642,10 +1642,19 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
         return pstRpy->enStatus;
     }
 
-    MARK_FUNCTION_START_TIME;
-    SETUP_LOGCASE(LogCaseSrchFiducial); 
-
     auto nTmplSize = ToInt32 ( pstCmd->fSize + pstCmd->fMargin * 2 );
+    if ( nTmplSize >= pstCmd->rectSrchWindow.width || nTmplSize >= pstCmd->rectSrchWindow.height ) {
+        char chArrMsg[1000];
+        _snprintf(chArrMsg, sizeof(chArrMsg), "Generated template size %d is over search window size [%d, %d].", 
+                  nTmplSize, pstCmd->rectSrchWindow.width, pstCmd->rectSrchWindow.height );
+        WriteLog(chArrMsg);
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    MARK_FUNCTION_START_TIME;
+    SETUP_LOGCASE(LogCaseSrchFiducial);    
+
     cv::Mat matTmpl = cv::Mat::zeros(nTmplSize, nTmplSize, CV_8UC1);
     if ( PR_FIDUCIAL_MARK_TYPE::SQUARE == pstCmd->enType ) {
         cv::rectangle(matTmpl,
