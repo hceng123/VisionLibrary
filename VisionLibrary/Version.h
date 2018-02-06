@@ -13,8 +13,21 @@
  *
  * Copyright (c) 2016-2016, Xiao Shengguang.  All rights reserved.
  ****************************************************************************/
+
+//2018-02-06 (XSG) Add PR_SCAN_IMAGE_DIR for PR_CombineImage function.
+#define AOI_VISION_VERSION          "1.00.23"
+
+//2018-01-25 (XSG) Add fMinMatchScore for PR_MatchTmpl and PR_SrchFiducialMark function.
+//#define AOI_VISION_VERSION          "1.00.22"
+
+//2018-01-23 (XSG) Auto calculate the ReverseSeq in PR_Calib3DBase function, the bReverseSeq changed from input to output.
+//#define AOI_VISION_VERSION          "1.00.21"
+
+//2018-01-21 (XSG) Add PR_MotorCalib3D function.
+//#define AOI_VISION_VERSION          "1.00.20"
+
 //2017-12-28 (XSG) Change PR_Caliper to PR_FindLine function.
-#define AOI_VISION_VERSION          "1.00.19"
+//#define AOI_VISION_VERSION          "1.00.19"
 
 //2017-12-20 (XSG) Add PR_FindCircle function.
 //2017-12-23 (XSG) Add PR_FitLineByPoint and PR_FitCircleByPoint functions.

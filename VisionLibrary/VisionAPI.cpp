@@ -445,6 +445,13 @@ PR_FUNCTION_ENTRY
 PR_FUNCTION_EXIT
 }
 
+VisionAPI VisionStatus PR_MotorCalib3D(const PR_MOTOR_CALIB_3D_CMD *const pstCmd, PR_MOTOR_CALIB_3D_RPY *const pstRpy)
+{
+PR_FUNCTION_ENTRY
+    return VisionAlgorithm::motorCalib3D  ( pstCmd, pstRpy );
+PR_FUNCTION_EXIT
+}
+
 VisionAPI VisionStatus PR_Integrate3DCalib(const PR_INTEGRATE_3D_CALIB_CMD *const pstCmd, PR_INTEGRATE_3D_CALIB_RPY *const pstRpy)
 {
 PR_FUNCTION_ENTRY
@@ -491,6 +498,13 @@ VisionAPI VisionStatus PR_CalcPD(const PR_CALC_PD_CMD *const pstCmd, PR_CALC_PD_
 {
 PR_FUNCTION_ENTRY
     return VisionAlgorithm::calcPD ( pstCmd, pstRpy );
+PR_FUNCTION_EXIT
+}
+
+VisionAPI VisionStatus PR_CombineImg(const PR_COMBINE_IMG_CMD *const pstCmd, PR_COMBINE_IMG_RPY *const pstRpy)
+{
+PR_FUNCTION_ENTRY
+    return VisionAlgorithm::combineImg ( pstCmd, pstRpy );
 PR_FUNCTION_EXIT
 }
 

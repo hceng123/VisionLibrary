@@ -281,7 +281,7 @@ inline std::vector<size_t> sort_indexes(const std::vector<T> &v) {
 }
 
 /*static*/ void Unwrap::calib3DBase( const PR_CALIB_3D_BASE_CMD *const pstCmd, PR_CALIB_3D_BASE_RPY *const pstRpy ) {
-    std::vector<cv::Mat> vecConvertedImgs;
+    VectorOfMat vecConvertedImgs;
     for ( auto &mat : pstCmd->vecInputImgs ) {
         cv::Mat matConvert = mat;
         if ( mat.channels() > 1 )
@@ -289,6 +289,8 @@ inline std::vector<size_t> sort_indexes(const std::vector<T> &v) {
         matConvert.convertTo ( matConvert, CV_32FC1 );
         vecConvertedImgs.push_back ( matConvert );
     }
+
+    pstRpy->bReverseSeq = isReverseSequence ( VectorOfMat ( vecConvertedImgs.begin(), vecConvertedImgs.begin() + PR_GROUP_TEXTURE_IMG_COUNT ), pstCmd->bEnableGaussianFilter );
 
     if ( pstCmd->bEnableGaussianFilter ) {
         //Filtering can reduce residues at the expense of a loss of spatial resolution.
@@ -303,7 +305,7 @@ inline std::vector<size_t> sort_indexes(const std::vector<T> &v) {
     }
     assert ( vecConvertedImgs.size() == 4 * PR_GROUP_TEXTURE_IMG_COUNT );
 
-    if ( pstCmd->bReverseSeq ) {
+    if ( pstRpy->bReverseSeq ) {
         std::swap ( vecConvertedImgs[1], vecConvertedImgs[3] );
         std::swap ( vecConvertedImgs[5], vecConvertedImgs[7] );
         std::swap ( vecConvertedImgs[9], vecConvertedImgs[11] );
@@ -1884,7 +1886,6 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
 }
 
 /*static*/ void Unwrap::integrate3DCalib(const PR_INTEGRATE_3D_CALIB_CMD *const pstCmd, PR_INTEGRATE_3D_CALIB_RPY *const pstRpy) {
-    cv::Mat matZ1, matZ2;
     cv::Mat matX, matY;
     CalcUtils::meshgrid<DATA_TYPE> ( 1.f, 1.f, ToFloat ( pstCmd->vecCalibData[0].matPhase.cols ), 1.f, 1.f, ToFloat ( pstCmd->vecCalibData[0].matPhase.rows ), matX, matY );
     std::vector<DATA_TYPE> vecXt, vecYt, vecPhase, vecBP;
@@ -1953,6 +1954,52 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
         pstRpy->vecMatResultImg.push_back ( matHeightGridImg );
     }
     pstRpy->matIntegratedK = matK;
+    pstRpy->enStatus = VisionStatus::OK;
+}
+
+/*static*/ void Unwrap::motorCalib3D(const PR_MOTOR_CALIB_3D_CMD *const pstCmd, PR_MOTOR_CALIB_3D_RPY *const pstRpy) {
+    cv::Mat matX1, matY1, matX, matY, matXX, matXXt, matPhase, matZ2, matOnes, matSum1, matSum2;
+    CalcUtils::meshgrid<DATA_TYPE> ( 1.f, 1.f, ToFloat ( pstCmd->vecPairHeightPhase[0].second.cols ), 1.f, 1.f, ToFloat ( pstCmd->vecPairHeightPhase[0].second.rows ), matX1, matY1 );
+    const int TOTAL = ToInt32 ( matX1.total() );
+    matX = matX1.reshape ( 1, TOTAL );
+    matY = matY1.reshape ( 1, TOTAL );
+    matOnes = cv::Mat::ones ( TOTAL, 1, CV_32FC1 );
+    cv::Mat matXX1 = prepareOrder3SurfaceFit ( matX, matY );
+    for ( const auto &pairHeightPhase : pstCmd->vecPairHeightPhase ) {
+        matPhase =  pairHeightPhase.second.reshape ( 1, TOTAL );
+        matZ2 = matOnes * pairHeightPhase.first;
+        
+        matZ2 = cv::repeat ( matZ2, 1, matXX1.cols );
+        matXX = matXX1.mul ( matZ2 );
+
+        cv::Mat matPhasePow2 = matPhase.mul ( matPhase );
+        cv::Mat matPhasePow3 = matPhasePow2.mul ( matPhase );
+        cv::Mat matArray[] = {
+            matXX,
+            - matPhasePow2,
+            - matPhasePow3,
+        };
+        cv::hconcat ( matArray, 3, matXX );
+        cv::transpose ( matXX, matXXt );
+        matSum1 = matSum1 + matXXt * matXX;
+        matSum2 = matSum2 + matXXt * matPhase;
+    }
+    
+    cv::Mat matK ;
+    cv::solve ( matSum1, matSum2, matK, cv::DecompTypes::DECOMP_NORMAL );
+
+#ifdef _DEBUG
+    auto vecVecSum1 = CalcUtils::matToVector<DATA_TYPE> ( matSum1 );
+    auto vecVecSum2 = CalcUtils::matToVector<DATA_TYPE> ( matSum2 );
+    auto vecVecK = CalcUtils::matToVector<DATA_TYPE> ( matK );
+#endif
+    pstRpy->matIntegratedK = matK;
+    pstRpy->matOrder3CurveSurface = calcOrder3Surface ( matX1, matY1, matK );
+    for ( const auto &pairHeightPhase : pstCmd->vecPairHeightPhase ) {
+        cv::Mat matHeight = _calcHeightFromPhase ( pairHeightPhase.second, pstRpy->matOrder3CurveSurface, matK );
+        cv::Mat matHeightGridImg = _drawHeightGrid ( matHeight, pstCmd->nResultImgGridRow, pstCmd->nResultImgGridCol, pstCmd->szMeasureWinSize );
+        pstRpy->vecMatResultImg.push_back ( matHeightGridImg );
+    }
     pstRpy->enStatus = VisionStatus::OK;
 }
 
@@ -2232,6 +2279,75 @@ void removeBlob(cv::Mat &matThreshold, cv::Mat &matBlob, float fAreaLimit ) {
     cv::Mat matKernal = cv::getStructuringElement ( cv::MorphShapes::MORPH_ELLIPSE, szMorphKernel );
     cv::MorphTypes morphType = cv::MORPH_CLOSE;
     cv::morphologyEx ( matMask, matMask, morphType, matKernal, cv::Point(-1, -1), nMorphIteration );
+}
+
+/*static*/ bool Unwrap::isReverseSequence(const VectorOfMat &vecMat, bool bEnableGaussianFilter) {
+    assert ( vecMat.size() == PR_GROUP_TEXTURE_IMG_COUNT );
+
+    std::vector<cv::Mat> vecConvertedImgs;
+    for ( auto &mat : vecMat ) {
+        cv::Mat matConvert = mat;
+        if ( mat.channels() > 1 )
+            cv::cvtColor ( mat, matConvert, CV_BGR2GRAY );
+        matConvert.convertTo ( matConvert, CV_32FC1 );
+        vecConvertedImgs.push_back ( matConvert );
+    }
+
+    if ( bEnableGaussianFilter ) {
+        //Filtering can reduce residues at the expense of a loss of spatial resolution.
+        for ( int i = 0; i < PR_GROUP_TEXTURE_IMG_COUNT; ++ i )
+            cv::GaussianBlur ( vecConvertedImgs[i], vecConvertedImgs[i], cv::Size(GUASSIAN_FILTER_SIZE, GUASSIAN_FILTER_SIZE), GAUSSIAN_FILTER_SIGMA, GAUSSIAN_FILTER_SIGMA, cv::BorderTypes::BORDER_REPLICATE );
+    }
+
+    cv::Mat mat00 = vecConvertedImgs[2] - vecConvertedImgs[0];
+    cv::Mat mat01 = vecConvertedImgs[3] - vecConvertedImgs[1];
+
+
+    cv::Mat matAlpha;
+    cv::phase ( -mat00, mat01, matAlpha );
+    matAlpha = _phaseUnwrapSurface ( matAlpha );
+
+    const auto ROWS = matAlpha.rows;
+    const auto COLS = matAlpha.cols;
+
+    auto A1 = cv::mean ( cv::Mat ( matAlpha, cv::Rect ( 0, 0, CHECK_RS_WIN, CHECK_RS_WIN ) ) )[0];
+    auto A2 = cv::mean ( cv::Mat ( matAlpha, cv::Rect ( COLS - CHECK_RS_WIN, 0, CHECK_RS_WIN, CHECK_RS_WIN ) ) )[0];
+    auto A3 = cv::mean ( cv::Mat ( matAlpha, cv::Rect ( 0, ROWS - CHECK_RS_WIN, CHECK_RS_WIN, CHECK_RS_WIN ) ) )[0];
+    auto A4 = cv::mean ( cv::Mat ( matAlpha, cv::Rect ( COLS - CHECK_RS_WIN, ROWS - CHECK_RS_WIN, CHECK_RS_WIN, CHECK_RS_WIN ) ) )[0];
+
+    auto H1 = A2 - A1;
+    auto H2 = A4 - A3;
+    auto V1 = A3 - A1;
+    auto V2 = A4 - A2;
+
+    bool ReverseSeq = false;
+
+    if ( fabs ( H1 + H2 ) < fabs ( V1 + V2 ) ) {
+        if ( abs ( V1 ) > abs ( V2 ) ) {
+            if( H1 > 0 )
+                ReverseSeq = 0;
+            else
+                ReverseSeq = 1;
+        }else {
+            if( H1 > 0 )
+                ReverseSeq = 1;
+            else
+                ReverseSeq = 0;
+        }
+    }else {
+        if( fabs ( H1 ) > fabs ( H2 ) ) {
+            if( V1 > 0 )
+                ReverseSeq = 0;
+            else
+                ReverseSeq = 1;
+        }else {
+            if( V1 > 0 )
+                ReverseSeq = 1;
+            else
+                ReverseSeq = 0;
+        }
+    }
+    return ReverseSeq;
 }
 
 }

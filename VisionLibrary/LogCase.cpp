@@ -2038,8 +2038,7 @@ VisionStatus LogCaseCalib3DBase::WriteCmd(const PR_CALIB_3D_BASE_CMD *const pstC
     CSimpleIni ini(false, false, false);
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile(cmdRpyFilePath.c_str());
-    ini.SetBoolValue(_CMD_SECTION.c_str(), _strKeyEnableGF.c_str(), pstCmd->bEnableGaussianFilter );
-    ini.SetBoolValue(_CMD_SECTION.c_str(), _strKeyReverseSeq.c_str(), pstCmd->bReverseSeq );
+    ini.SetBoolValue(_CMD_SECTION.c_str(), _strKeyEnableGF.c_str(), pstCmd->bEnableGaussianFilter );    
     ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyRemoveHarmonicWaveK.c_str(), pstCmd->fRemoveHarmonicWaveK );
     ini.SaveFile(cmdRpyFilePath.c_str());
 
@@ -2057,6 +2056,7 @@ VisionStatus LogCaseCalib3DBase::WriteRpy(const PR_CALIB_3D_BASE_RPY *const pstR
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile(cmdRpyFilePath.c_str());    
     ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyStatus.c_str(), ToInt32 ( pstRpy->enStatus ) );
+    ini.SetBoolValue(_CMD_SECTION.c_str(), _strKeyReverseSeq.c_str(), pstRpy->bReverseSeq );
 
     cv::FileStorage fs( _strLogCasePath + _strResultYmlFileName, cv::FileStorage::WRITE);
     if ( ! fs.isOpened() )
@@ -2079,7 +2079,6 @@ VisionStatus LogCaseCalib3DBase::RunLogCase() {
     ini.LoadFile(cmdRpyFilePath.c_str());
 
     stCmd.bEnableGaussianFilter = ini.GetBoolValue ( _CMD_SECTION.c_str(), _strKeyEnableGF.c_str(), false );
-    stCmd.bReverseSeq = ini.GetBoolValue ( _CMD_SECTION.c_str(), _strKeyReverseSeq.c_str(), false );
     stCmd.fRemoveHarmonicWaveK = ToFloat ( ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyRemoveHarmonicWaveK.c_str(), 0.f ) );
 
     int index = 0;

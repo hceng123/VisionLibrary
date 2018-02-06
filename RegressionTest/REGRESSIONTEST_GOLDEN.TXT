@@ -225,15 +225,15 @@ Fit circle center [633.77, 1217.60], Radius 89.47
 INSPECT DEVICE REGRESSION TEST #1 STARTING
 ------------------------------------------
 Success to learn device
-Device inspection status 13
-Device inspection status 12
+Device inspection status 23
+Device inspection status 22
 
 ---------------------------------------------------------
 INSPECT DEVICE AUTO THRESHOLD REGRESSION TEST #1 STARTING
 ---------------------------------------------------------
 Success to learn device
-Device inspection status 13
-Device inspection status 12
+Device inspection status 23
+Device inspection status 22
 
 ------------------------------------------
 LOGCASE REGRESSION TEST #1 STARTING
@@ -245,45 +245,59 @@ Run logcase result 0
 MATCH TEMPLATE REGRESSION TEST #1 STARTING
 ------------------------------------------
 Match template status 0
+Match template score 100.00
 Match template result 58.33, 326.75
 Match template angle -8.73
-Match template score 100.00
 
 ------------------------------------------
 MATCH TEMPLATE REGRESSION TEST #2 STARTING
 ------------------------------------------
 Match template status 0
+Match template score 90.99
 Match template result 1154.50, 727.50
 Match template angle 0.00
-Match template score 90.99
 
 ------------------------------------------
 MATCH TEMPLATE REGRESSION TEST #3 STARTING
 ------------------------------------------
 Match template status 0
+Match template score 90.99
 Match template result 1154.50, 727.50
 Match template angle 0.00
-Match template score 90.99
 
 ------------------------------------------
 MATCH TEMPLATE REGRESSION TEST #4 STARTING
 ------------------------------------------
 Match template status 0
+Match template score 100.00
 Match template result 909.50, 1169.50
 Match template angle 0.00
-Match template score 100.00
+
+------------------------------------------
+MATCH TEMPLATE REGRESSION TEST #5 STARTING
+------------------------------------------
+Match template status 25
+Match template score 8.34
 
 ------------------------------------------------
 SEARCH FIDUCIAL MARK REGRESSION TEST #1 STARTING
 ------------------------------------------------
 Search fiducial status 0
+Match Score: 97
 Search fiducial result 1676.99, 375.28
 
 ------------------------------------------------
 SEARCH FIDUCIAL MARK REGRESSION TEST #2 STARTING
 ------------------------------------------------
 Search fiducial status 0
+Match Score: 96
 Search fiducial result 128.38, 193.95
+
+------------------------------------------------
+SEARCH FIDUCIAL MARK REGRESSION TEST #3 STARTING
+------------------------------------------------
+Search fiducial status 25
+Match Score: 47
 
 ------------------------------------------
 FIT LINE REGRESSION TEST #1 STARTING
@@ -822,7 +836,7 @@ Camera distoration coefficients:
 ---------------------------------------------
 CALIBRATE CAMERA REGRESSION TEST #4 STARTING
 ---------------------------------------------
-Calibrate camera status 23
+Calibrate camera status 30
 
 ---------------------------------------------
 CALIBRATE CAMERA REGRESSION TEST #5 STARTING
@@ -1070,7 +1084,7 @@ Result threshold: 152
 Number of contour: 2
 Inspect contour status: 0
 Number of defects: 0
-Inspect contour status: 33
+Inspect contour status: 61
 Number of defects: 2
 
 ---------------------------------------------
@@ -1081,12 +1095,12 @@ Result threshold: 134
 Number of contour: 2
 Inspect contour status: 0
 Number of defects: 0
-Inspect contour status: 33
+Inspect contour status: 61
 Number of defects: 2
 
----------------------------------------------
+----------------------------------------------
 CALIB 3D BASE TEST #1 STARTING
----------------------------------------------
+----------------------------------------------
 PR_Calib3DBase status 0
 ThickToThinK: 
 5.0 
@@ -1307,9 +1321,9 @@ IntegratedK
 -0.00828 
 0.00150 
 
----------------------------------------------
+----------------------------------------------
 CALIB 3D BASE TEST #2 STARTING
----------------------------------------------
+----------------------------------------------
 PR_Calib3DBase status 0
 ThickToThinK: 
 5.0 

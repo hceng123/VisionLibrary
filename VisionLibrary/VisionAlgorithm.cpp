@@ -1104,6 +1104,9 @@ VisionStatus VisionAlgorithm::inspDevice(PR_INSP_DEVICE_CMD *pstInspDeviceCmd, P
         pstRpy->enStatus = VisionStatus::OK;
     }
 
+    if ( pstRpy->fMatchScore <= pstCmd->fMinMatchScore )
+        pstRpy->enStatus = VisionStatus::MATCH_SCORE_REJECT;
+
     if ( ! isAutoMode () ) {
         if ( pstCmd->matInputImg.channels () > 1 )
             pstRpy->matResultImg = pstCmd->matInputImg.clone();
@@ -1639,10 +1642,19 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
         return pstRpy->enStatus;
     }
 
-    MARK_FUNCTION_START_TIME;
-    SETUP_LOGCASE(LogCaseSrchFiducial); 
-
     auto nTmplSize = ToInt32 ( pstCmd->fSize + pstCmd->fMargin * 2 );
+    if ( nTmplSize >= pstCmd->rectSrchWindow.width || nTmplSize >= pstCmd->rectSrchWindow.height ) {
+        char chArrMsg[1000];
+        _snprintf(chArrMsg, sizeof(chArrMsg), "Generated template size %d is over search window size [%d, %d].", 
+                  nTmplSize, pstCmd->rectSrchWindow.width, pstCmd->rectSrchWindow.height );
+        WriteLog(chArrMsg);
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    MARK_FUNCTION_START_TIME;
+    SETUP_LOGCASE(LogCaseSrchFiducial);    
+
     cv::Mat matTmpl = cv::Mat::zeros(nTmplSize, nTmplSize, CV_8UC1);
     if ( PR_FIDUCIAL_MARK_TYPE::SQUARE == pstCmd->enType ) {
         cv::rectangle(matTmpl,
@@ -1669,11 +1681,16 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
 
     pstRpy->ptPos.x = ptResult.x + pstCmd->rectSrchWindow.x;
     pstRpy->ptPos.y = ptResult.y + pstCmd->rectSrchWindow.y;
-    pstRpy->fScore = fCorrelation * ConstToPercentage;
+    pstRpy->fMatchScore = fCorrelation * ConstToPercentage;
 
-    pstRpy->matResultImg = pstCmd->matInputImg.clone();
-    cv::circle(pstRpy->matResultImg, pstRpy->ptPos, 2, cv::Scalar(255, 0, 0), 2);
-    cv::rectangle(pstRpy->matResultImg, cv::Rect(ToInt32(pstRpy->ptPos.x) - nTmplSize / 2, ToInt32(pstRpy->ptPos.y) - nTmplSize / 2, nTmplSize, nTmplSize), cv::Scalar(255, 0, 0), 1);
+    if ( pstRpy->fMatchScore <= pstCmd->fMinMatchScore )
+        pstRpy->enStatus = VisionStatus::MATCH_SCORE_REJECT;
+
+    if ( ! isAutoMode() ) {
+        pstRpy->matResultImg = pstCmd->matInputImg.clone();
+        cv::circle(pstRpy->matResultImg, pstRpy->ptPos, 2, cv::Scalar(255, 0, 0), 2);
+        cv::rectangle(pstRpy->matResultImg, cv::Rect(ToInt32(pstRpy->ptPos.x) - nTmplSize / 2, ToInt32(pstRpy->ptPos.y) - nTmplSize / 2, nTmplSize, nTmplSize), cv::Scalar(255, 0, 0), 1);
+    }
 
     FINISH_LOGCASE;
     MARK_FUNCTION_END_TIME;
@@ -3724,8 +3741,8 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
 
     if ( ! pstCmd->rectROI.contains(pstCmd->ptPick) ) {
         WriteLog("The pick point must in selected ROI");
-        pstRpy->enStatus = VisionStatus::PICK_PT_NOT_IN_ROI;
-        return VisionStatus::PICK_PT_NOT_IN_ROI;
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return VisionStatus::INVALID_PARAM;
     }
 
     MARK_FUNCTION_START_TIME;
@@ -3851,7 +3868,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     }
 
     if ( ToInt32( vecCorners.size() ) < Config::GetInstance()->getMinPointsToCalibCamera() ) {
-        return VisionStatus::FAILED_TO_FIND_ENOUGH_CB_CORNERS;
+        return VisionStatus::NOT_FIND_ENOUGH_CB_CORNERS;
     }
     return VisionStatus::OK;
 }
@@ -4061,7 +4078,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     float fBlockSize = _findChessBoardBlockSize ( matGray, pstCmd->szBoardPattern );
     if ( fBlockSize <= 5 ) {
         WriteLog("Failed to find chess board block size");
-        pstRpy->enStatus = VisionStatus::FAILED_TO_FIND_CHESS_BOARD_BLOCK_SIZE;
+        pstRpy->enStatus = VisionStatus::FIND_CHESS_BOARD_BLOCK_SIZE_FAIL;
         FINISH_LOGCASE;
         return pstRpy->enStatus;
     }
@@ -4072,7 +4089,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     cv::Point2f ptFirstCorer = _findFirstChessBoardCorner ( matGray, fBlockSize );
     if ( ptFirstCorer.x <= 0 || ptFirstCorer.y <= 0 ) {
         WriteLog("Failed to find chess board first corner.");
-        pstRpy->enStatus = VisionStatus::FAILED_TO_FIND_FIRST_CB_CORNER;
+        pstRpy->enStatus = VisionStatus::FIND_FIRST_CB_CORNER_FAIL;
         FINISH_LOGCASE;
         return pstRpy->enStatus;
     }
@@ -4288,7 +4305,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     VectorOfVectorOfPoint contours, effectiveContours, vecDrawContours;
     cv::findContours ( matThreshold, contours, cv::RETR_LIST, cv::CHAIN_APPROX_SIMPLE );
     if ( contours.size() <= 0 ) {
-        pstRpy->enStatus = VisionStatus::FAILED_TO_FIND_LEAD;
+        pstRpy->enStatus = VisionStatus::AUTO_LOCATE_LEAD_FAIL;
         FINISH_LOGCASE;
         return pstRpy->enStatus;
     }
@@ -4373,7 +4390,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     }
     pstRpy->enStatus = VisionStatus::OK;
     if ( pstRpy->vecLeadLocation.empty() )
-        pstRpy->enStatus = VisionStatus::FAILED_TO_FIND_LEAD;
+        pstRpy->enStatus = VisionStatus::AUTO_LOCATE_LEAD_FAIL;
 
     FINISH_LOGCASE;
     return pstRpy->enStatus;
@@ -6137,6 +6154,21 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     return pstRpy->enStatus;
 }
 
+/*static*/ VisionStatus VisionAlgorithm::motorCalib3D(const PR_MOTOR_CALIB_3D_CMD *const pstCmd, PR_MOTOR_CALIB_3D_RPY *const pstRpy, bool bReplay /*= false*/) {
+    if ( pstCmd->vecPairHeightPhase.size() < 2 ) {
+        WriteLog("The input height count is less than 2.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    MARK_FUNCTION_START_TIME;
+
+    Unwrap::motorCalib3D ( pstCmd, pstRpy );
+
+    MARK_FUNCTION_END_TIME;
+    return pstRpy->enStatus;
+}
+
 /*static*/ VisionStatus VisionAlgorithm::calc3DHeight(const PR_CALC_3D_HEIGHT_CMD *const pstCmd, PR_CALC_3D_HEIGHT_RPY *const pstRpy, bool bReplay /*= false*/) {
     assert(pstCmd != nullptr && pstRpy != nullptr);
 
@@ -6562,6 +6594,81 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     }
 
     pstRpy->fArea = ToFloat ( cv::contourArea ( contour ) );
+    pstRpy->enStatus = VisionStatus::OK;
+    return pstRpy->enStatus;
+}
+
+/*static*/ VisionStatus VisionAlgorithm::combineImg(const PR_COMBINE_IMG_CMD *const pstCmd, PR_COMBINE_IMG_RPY *const pstRpy, bool bReplay /*= false*/) {
+    if ( pstCmd->nCountOfFrameX <= 0 || pstCmd->nCountOfFrameY <= 0 || pstCmd->nCountOfImgPerFrame <= 0 ) {
+        char chArrMsg[1000];
+        _snprintf( chArrMsg, sizeof( chArrMsg ), "The CountOfFrameX %d or CountOfFrameY %d or CountOfImgPerFrame %d is invalid.",
+            pstCmd->nCountOfFrameX, pstCmd->nCountOfFrameY, pstCmd->nCountOfImgPerFrame );
+        WriteLog(chArrMsg);
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    int nCountOfImgPerRowMin = ( pstCmd->nCountOfFrameX - 1 ) * pstCmd->nCountOfImgPerFrame;
+    int nCountOfImgPerRowMax = ( pstCmd->nCountOfFrameX     ) * pstCmd->nCountOfImgPerFrame;
+    if ( pstCmd->nCountOfImgPerRow <= nCountOfImgPerRowMin || pstCmd->nCountOfImgPerRow > nCountOfImgPerRowMax ) {
+        char chArrMsg[1000];
+        _snprintf( chArrMsg, sizeof( chArrMsg ), "The nCountOfImgPerRow %d is invalid, it should in range (%d, %d].",
+            pstCmd->nCountOfImgPerRow, nCountOfImgPerRowMin, nCountOfImgPerRowMax );
+        WriteLog(chArrMsg);
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    if ( pstCmd->vecInputImages.size() != pstCmd->nCountOfFrameY * pstCmd->nCountOfImgPerRow ) {
+        char chArrMsg[1000];
+        _snprintf( chArrMsg, sizeof( chArrMsg ), "The input image count %d is invalid, it should be %d.",
+            pstCmd->vecInputImages.size(), pstCmd->nCountOfFrameY * pstCmd->nCountOfImgPerRow );
+        WriteLog(chArrMsg);
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    MARK_FUNCTION_START_TIME;
+
+    auto szImage = pstCmd->vecInputImages[0].size();
+    int nResultPixCols = pstCmd->nCountOfFrameX * szImage.width  - pstCmd->nOverlapX * ( pstCmd->nCountOfFrameX - 1 );
+    int nResultPixRows = pstCmd->nCountOfFrameY * szImage.height - pstCmd->nOverlapY * ( pstCmd->nCountOfFrameY - 1 );
+
+    for (int imgNo = 0; imgNo < pstCmd->nCountOfImgPerFrame; ++ imgNo) {
+        cv::Mat matResult = cv::Mat::zeros(nResultPixRows, nResultPixCols, CV_8UC3);
+
+        for (int nRow = 0; nRow < pstCmd->nCountOfFrameY; ++ nRow)
+        //Column start from right to left.
+        for (int nCol = 0; nCol < pstCmd->nCountOfFrameX; ++ nCol)
+        {            
+            if ( ( nCol * pstCmd->nCountOfImgPerFrame + imgNo ) >= pstCmd->nCountOfImgPerRow )
+                continue;
+
+            int nImageIndex = nCol * pstCmd->nCountOfImgPerFrame + nRow * pstCmd->nCountOfImgPerRow + imgNo;
+            cv::Mat mat = pstCmd->vecInputImages[nImageIndex];
+
+            if (nCol > 0) {
+                auto autoPreviousOverlapROIX = nCol * (szImage.width  - pstCmd->nOverlapX);
+                if ( PR_SCAN_IMAGE_DIR::RIGHT_TO_LEFT == pstCmd->enScanDir )
+                    autoPreviousOverlapROIX = nResultPixCols - (szImage.width * nCol - (nCol - 1) * pstCmd->nOverlapX);
+                
+                auto autoPreviousOverlapROIY = nRow * (szImage.height - pstCmd->nOverlapY);
+                cv::Mat matPreviousFrameOverlap(matResult, cv::Rect(autoPreviousOverlapROIX, autoPreviousOverlapROIY, pstCmd->nOverlapX, szImage.height));
+                cv::Mat matCurrentFrameOvelap( mat, cv::Rect(szImage.width - pstCmd->nOverlapX, 0, pstCmd->nOverlapX, szImage.height));
+                matPreviousFrameOverlap = (matPreviousFrameOverlap + matCurrentFrameOvelap) / 2;
+            }
+
+            auto autoROIX = nCol * (szImage.width  - pstCmd->nOverlapX);
+            if ( PR_SCAN_IMAGE_DIR::RIGHT_TO_LEFT == pstCmd->enScanDir )
+                autoROIX = nResultPixCols - (szImage.width * (nCol + 1) - nCol * pstCmd->nOverlapX);
+            auto autoROIY = nRow * (szImage.height - pstCmd->nOverlapY);
+            cv::Mat matROI(matResult, cv::Rect(autoROIX, autoROIY, szImage.width, szImage.height));
+            mat.copyTo ( matROI );
+        }
+        pstRpy->vecResultImages.push_back ( matResult );
+    }
+
+    MARK_FUNCTION_END_TIME;
     pstRpy->enStatus = VisionStatus::OK;
     return pstRpy->enStatus;
 }

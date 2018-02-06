@@ -93,16 +93,18 @@ struct PR_LRN_TEMPLATE_RPY {
 
 struct PR_MATCH_TEMPLATE_CMD {
     PR_MATCH_TEMPLATE_CMD() :
-        enAlgorithm (PR_MATCH_TMPL_ALGORITHM::SQUARE_DIFF),
-        nRecordId(-1),
-        bSubPixelRefine(false),
-        enMotion (PR_OBJECT_MOTION::TRANSLATION) {}
+        enAlgorithm         (PR_MATCH_TMPL_ALGORITHM::SQUARE_DIFF),
+        nRecordId           (-1),
+        bSubPixelRefine     (false),
+        enMotion            (PR_OBJECT_MOTION::TRANSLATION),
+        fMinMatchScore      (60) {}
     cv::Mat                 matInputImg;
     PR_MATCH_TMPL_ALGORITHM enAlgorithm;
     Int32                   nRecordId;
     cv::Rect                rectSrchWindow;
     bool                    bSubPixelRefine;
     PR_OBJECT_MOTION        enMotion;
+    float                   fMinMatchScore;
 };
 
 struct PR_MATCH_TEMPLATE_RPY {
@@ -240,17 +242,23 @@ struct PR_INSP_DEVICE_RPY {
 ******************************************/
 
 struct PR_SRCH_FIDUCIAL_MARK_CMD {
+    PR_SRCH_FIDUCIAL_MARK_CMD() :
+        enType          (PR_FIDUCIAL_MARK_TYPE::SQUARE),
+        fSize           (0.f),
+        fMargin         (10.f),
+        fMinMatchScore  (60.f) {}
     cv::Mat                 matInputImg;
     cv::Rect                rectSrchWindow;
     PR_FIDUCIAL_MARK_TYPE   enType;
-    float                   fSize;
-    float                   fMargin;
+    float                   fSize;          //The white part size of the fiducial mark.
+    float                   fMargin;        //The dark part width outside of the fiducial mark.
+    float                   fMinMatchScore;
 };
 
 struct PR_SRCH_FIDUCIAL_MARK_RPY {
     VisionStatus            enStatus;
     cv::Point2f             ptPos;
-    float                   fScore;
+    float                   fMatchScore;
     cv::Mat                 matResultImg;
 };
 
@@ -995,15 +1003,15 @@ struct PR_GRID_AVG_GRAY_SCALE_RPY {
 };
 
 struct PR_CALIB_3D_BASE_CMD {
-    PR_CALIB_3D_BASE_CMD() : bEnableGaussianFilter(true), bReverseSeq(true), fRemoveHarmonicWaveK(0.f) {}
+    PR_CALIB_3D_BASE_CMD() : bEnableGaussianFilter(true), fRemoveHarmonicWaveK(0.f) {}
     VectorOfMat             vecInputImgs;           //Totally 12 images, including 4 thick, 4 thin, 4 extreme thin.
-    bool                    bEnableGaussianFilter;
-    bool                    bReverseSeq;            //Change the image sequence.
+    bool                    bEnableGaussianFilter;    
     float                   fRemoveHarmonicWaveK;   //The factor to remove the harmonic wave in the thick stripe. If it is 0, then this procedure will be skipped.
 };
 
 struct PR_CALIB_3D_BASE_RPY {
     VisionStatus            enStatus;
+    bool                    bReverseSeq;            //Change the image sequence.
     cv::Mat                 matThickToThinK;        //The factor between thick stripe and thin stripe.
     cv::Mat                 matThickToThinnestK;    //The factor between thick stripe and thinnest stripe.
     cv::Mat                 matBaseWrappedAlpha;    //The wrapped thick stripe phase.
@@ -1081,9 +1089,9 @@ struct PR_CALIB_3D_HEIGHT_RPY {
 
 struct PR_INTEGRATE_3D_CALIB_CMD {
     PR_INTEGRATE_3D_CALIB_CMD() :
-        nResultImgGridRow(10),
-        nResultImgGridCol(10),
-        szMeasureWinSize(40, 40) {}
+        nResultImgGridRow   (10),
+        nResultImgGridCol   (10),
+        szMeasureWinSize    (40, 40) {}
     struct SINGLE_CALIB_DATA {
         cv::Mat             matPhase;
         cv::Mat             matDivideStepIndex;
@@ -1098,6 +1106,27 @@ struct PR_INTEGRATE_3D_CALIB_CMD {
 };
 
 struct PR_INTEGRATE_3D_CALIB_RPY {
+    VisionStatus            enStatus;
+    cv::Mat                 matIntegratedK;         //The 12 parameters to calculate height. They are K1~K10 and P1, P2. H = (Phase + P1*Phase^2 + P2*Phase^3) ./ (K(1)*x1.^3 + K(2)*y1.^3 + K(3)*x1.^2.*y1 + K(4)*x1.*y1.^2 + K(5)*x1.^2 + K(6)*y1.^2 + K(7)*x1.*y1 + K(8)*x1 + K(9)*y1 + K(10))
+    cv::Mat                 matOrder3CurveSurface;  //The regression 3 order curve surface to convert phase to height. It is calculated by K(1)*x1.^3 + K(2)*y1.^3 + K(3)*x1.^2.*y1 + K(4)*x1.*y1.^2 + K(5)*x1.^2 + K(6)*y1.^2 + K(7)*x1.*y1 + K(8)*x1 + K(9)*y1 + K(10)
+    VectorOfMat             vecMatResultImg;
+};
+
+using PairHeightPhase = std::pair<float, cv::Mat>;
+using VectorPairHeightPhase = std::vector<PairHeightPhase>;
+
+struct PR_MOTOR_CALIB_3D_CMD {
+    PR_MOTOR_CALIB_3D_CMD() :
+        nResultImgGridRow(10),
+        nResultImgGridCol(10),
+        szMeasureWinSize(40, 40) {}
+    VectorPairHeightPhase   vecPairHeightPhase;
+    Int32                   nResultImgGridRow;
+    Int32                   nResultImgGridCol;
+    cv::Size                szMeasureWinSize;       //The window size in the center of grid to measure the height.
+};
+
+struct PR_MOTOR_CALIB_3D_RPY {
     VisionStatus            enStatus;
     cv::Mat                 matIntegratedK;         //The 12 parameters to calculate height. They are K1~K10 and P1, P2. H = (Phase + P1*Phase^2 + P2*Phase^3) ./ (K(1)*x1.^3 + K(2)*y1.^3 + K(3)*x1.^2.*y1 + K(4)*x1.*y1.^2 + K(5)*x1.^2 + K(6)*y1.^2 + K(7)*x1.*y1 + K(8)*x1 + K(9)*y1 + K(10))
     cv::Mat                 matOrder3CurveSurface;  //The regression 3 order curve surface to convert phase to height. It is calculated by K(1)*x1.^3 + K(2)*y1.^3 + K(3)*x1.^2.*y1 + K(4)*x1.*y1.^2 + K(5)*x1.^2 + K(6)*y1.^2 + K(7)*x1.*y1 + K(8)*x1 + K(9)*y1 + K(10)
@@ -1237,6 +1266,30 @@ struct PR_CALC_PD_RPY {
     VectorOfFloat           vecDistortionRight;
     VectorOfFloat           vecDistortionTop;
     VectorOfFloat           vecDistortionBottom;
+};
+
+struct PR_COMBINE_IMG_CMD {
+    VectorOfMat             vecInputImages;
+    int                     nCountOfImgPerFrame;    //The count of images in one frame.
+    int                     nCountOfFrameX;
+    int                     nCountOfFrameY;
+    int                     nOverlapX;
+    int                     nOverlapY;
+    int                     nCountOfImgPerRow;
+    PR_SCAN_IMAGE_DIR       enScanDir;
+    PR_COMBINE_IMG_CMD() :
+        nCountOfImgPerFrame (0),
+        nCountOfFrameX      (0),
+        nCountOfFrameY      (0),
+        nOverlapX           (0),
+        nOverlapY           (0),
+        nCountOfImgPerRow   (0),
+        enScanDir           (PR_SCAN_IMAGE_DIR::RIGHT_TO_LEFT) {}
+};
+
+struct PR_COMBINE_IMG_RPY {
+    VisionStatus            enStatus;
+    VectorOfMat             vecResultImages;
 };
 
 }

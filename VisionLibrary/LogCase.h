@@ -723,11 +723,11 @@ public:
 private:
     const String _strResultYmlFileName      = "Result.yml";
 
-    const String _strKeyEnableGF            = "EnableGaussianFilter";
-    const String _strKeyReverseSeq          = "ReverseSeq";
+    const String _strKeyEnableGF            = "EnableGaussianFilter";    
     const String _strKeyRemoveHarmonicWaveK = "RemoveHarmonicWaveK";
 
     const String _strKeyStatus              = "Status";
+    const String _strKeyReverseSeq          = "ReverseSeq";
     const String _strKeyThkToThinK          = "ThickToThinK";
     const String _strKeyThkToThinnestK      = "ThickToThinnestK";
 };

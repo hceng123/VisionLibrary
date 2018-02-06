@@ -29,44 +29,47 @@ enum class VisionStatus
     GUASSIAN_FILTER_KERNEL_INVALID,
     MEDIAN_FILTER_KERNEL_INVALID,
 
-    LEARN_OBJECT_FAIL,
-    SRCH_OBJ_FAIL,
-    OBJECT_SHIFT,
-    OBJECT_ROTATE,
-    OBJECT_SCALE_FAIL,
+    //Srch object and template match
+    LEARN_OBJECT_FAIL                   = 20,
+    SRCH_OBJ_FAIL                       = 21,
+    OBJECT_SHIFT                        = 22,
+    OBJECT_ROTATE                       = 23,
+    OBJECT_SCALE_FAIL                   = 24,
+    MATCH_SCORE_REJECT                  = 25,
+
+    //Calibrate Camera
+    FIND_CHESS_BOARD_BLOCK_SIZE_FAIL    = 30,
+    FIND_FIRST_CB_CORNER_FAIL           = 31,
+    NOT_FIND_ENOUGH_CB_CORNERS          = 32,
+    CHESSBOARD_PATTERN_NOT_CORRECT      = 33,
     
-    FIND_DEVICE_EDGE_FAIL,
-    FIND_ELECTRODE_FAIL,    
-    NOT_ENOUGH_POINTS_TO_FIT,
-    TOO_MUCH_NOISE_TO_FIT,
-    FAIL_TO_FIT_CIRCLE,
-    
-    OCR_FAIL,    
-    TOO_MUCH_CC_TO_REMOVE,
-    PICK_PT_NOT_IN_ROI,
-    FAILED_TO_FIND_CHESS_BOARD_BLOCK_SIZE,
-    FAILED_TO_FIND_FIRST_CB_CORNER,
-    FAILED_TO_FIND_ENOUGH_CB_CORNERS,
-    CHESSBOARD_PATTERN_NOT_CORRECT,
-    FAILED_TO_FIND_LEAD,
+    //Assist function fail.
+    FIND_DEVICE_EDGE_FAIL               = 40,
+    FIND_ELECTRODE_FAIL                 = 41,    
+    NOT_ENOUGH_POINTS_TO_FIT            = 42,
+    TOO_MUCH_NOISE_TO_FIT               = 43,
+    FAIL_TO_FIT_CIRCLE                  = 44,    
+    OCR_FAIL                            = 45,    
+    TOO_MUCH_CC_TO_REMOVE               = 46,    
 
     //Learn and inspect chip status
-    CAN_NOT_FIND_CAE_LINE,      //Can not find the line of capacitor
-    CAN_NOT_FIND_SQUARE_EDGE,
-    CAN_NOT_FIND_CIRCULAR_CHIP,
-    CAN_NOT_FIND_CHIP_BODY,    
+    CAN_NOT_FIND_CAE_LINE               = 50,   //Can not find the line of capacitor
+    CAN_NOT_FIND_SQUARE_EDGE            = 51,
+    CAN_NOT_FIND_CIRCULAR_CHIP          = 52,
+    CAN_NOT_FIND_CHIP_BODY              = 53,    
     
     //Learn and inspect contour status
-    CAN_NOT_FIND_CONTOUR,
-    CONTOUR_DEFECT_REJECT,
+    CAN_NOT_FIND_CONTOUR                = 60,
+    CONTOUR_DEFECT_REJECT               = 61,
 
     //Inspect hole status
-    RATIO_UNDER_LIMIT,
-    RATIO_OVER_LIMIT,
-    BLOB_COUNT_OUT_OF_RANGE,
+    RATIO_UNDER_LIMIT                   = 70,
+    RATIO_OVER_LIMIT                    = 71,
+    BLOB_COUNT_OUT_OF_RANGE             = 72,
 
     //Inspect lead status
-    NOT_FIND_LEAD,
+    NOT_FIND_LEAD                       = 80,
+    AUTO_LOCATE_LEAD_FAIL               = 81,
 
     //3D Status
     CALIB_3D_HEIGHT_SURFACE_TOO_SMALL   = 100,

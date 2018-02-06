@@ -36,13 +36,15 @@ public:
     static cv::Mat calculateBaseSurface(int rows, int cols, const cv::Mat &matBaseSurfaceParam);
     static void calib3DHeight(const PR_CALIB_3D_HEIGHT_CMD *const pstCmd, PR_CALIB_3D_HEIGHT_RPY *const pstRpy);
     static void integrate3DCalib(const PR_INTEGRATE_3D_CALIB_CMD *const pstCmd, PR_INTEGRATE_3D_CALIB_RPY *const pstRpy);
+    static void motorCalib3D(const PR_MOTOR_CALIB_3D_CMD *const pstCmd, PR_MOTOR_CALIB_3D_RPY *const pstRpy);
     static void calc3DHeight(const PR_CALC_3D_HEIGHT_CMD *const pstCmd, PR_CALC_3D_HEIGHT_RPY *const pstRpy);
-    static void merge3DHeight(const PR_MERGE_3D_HEIGHT_CMD *const pstCmd, PR_MERGE_3D_HEIGHT_RPY *const pstRpy);
+    static void merge3DHeight(const PR_MERGE_3D_HEIGHT_CMD *const pstCmd, PR_MERGE_3D_HEIGHT_RPY *const pstRpy);    
     static void calc3DHeightDiff(const PR_CALC_3D_HEIGHT_DIFF_CMD *const pstCmd, PR_CALC_3D_HEIGHT_DIFF_RPY *const pstRpy);
     static void calcMTF(const PR_CALC_MTF_CMD *const pstCmd, PR_CALC_MTF_RPY *const pstRpy);
     static void calcPD(const PR_CALC_PD_CMD *const pstCmd, PR_CALC_PD_RPY *const pstRpy);
     static void phaseCorrection(cv::Mat &matPhase, const cv::Mat &matIdxNan, int nJumpSpanX, int nJumpSpanY);   //Put it to public to include it in regression test.
     static void removeJumpArea(cv::Mat &matHeight, float fAreaLimit);
+    static bool isReverseSequence(const VectorOfMat &vecMat, bool bEnableGaussianFilter);
 private:
     static cv::Mat _getResidualPoint(const cv::Mat &matPhaseDx, const cv::Mat &matPhaseDy, cv::Mat &matPosPole, cv::Mat &matNegPole);
     static VectorOfPoint _selectLonePole(ListOfPoint &listPoint, int width, int height, size_t nLonePoneCount );
@@ -118,12 +120,13 @@ private:
         TimeLog::GetInstance()->addTimeLog( "_phaseWrapByRefer multiply and subtract takes.", stopWatch.Span() );
     }
 
-    static const int GUASSIAN_FILTER_SIZE =     11;
-    static const int BEZIER_RANK =              5;
-    static const int ERODE_WIN_SIZE =           31;
-    static const int PHASE_SNOOP_WIN_SIZE =     10;
-    static const int CALIB_HEIGHT_MIN_SIZE =    200;
-    static const int MEDIAN_FILTER_SIZE =       5;
+    static const int GUASSIAN_FILTER_SIZE   = 11;
+    static const int BEZIER_RANK            = 5;
+    static const int ERODE_WIN_SIZE         = 31;
+    static const int PHASE_SNOOP_WIN_SIZE   = 10;
+    static const int CALIB_HEIGHT_MIN_SIZE  = 200;
+    static const int MEDIAN_FILTER_SIZE     = 5;
+    static const int CHECK_RS_WIN           = 50;
 
     static const float GAUSSIAN_FILTER_SIGMA;
     static const float ONE_HALF_CYCLE;
