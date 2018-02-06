@@ -725,7 +725,8 @@ int _tmain(int argc, _TCHAR* argv[])
 
     //TestCombineImage();
     //TestCombineImage_1();
-    TestCombineImage_2();
+    //TestCombineImage_2();
+    TestCombineImage_HaoYu();
 
     //TestMotor3DCalib();
     //TestSolve();

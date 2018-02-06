@@ -1276,6 +1276,15 @@ struct PR_COMBINE_IMG_CMD {
     int                     nOverlapX;
     int                     nOverlapY;
     int                     nCountOfImgPerRow;
+    PR_SCAN_IMAGE_DIR       enScanDir;
+    PR_COMBINE_IMG_CMD() :
+        nCountOfImgPerFrame (0),
+        nCountOfFrameX      (0),
+        nCountOfFrameY      (0),
+        nOverlapX           (0),
+        nOverlapY           (0),
+        nCountOfImgPerRow   (0),
+        enScanDir           (PR_SCAN_IMAGE_DIR::RIGHT_TO_LEFT) {}
 };
 
 struct PR_COMBINE_IMG_RPY {

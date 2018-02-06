@@ -6648,14 +6648,19 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
             cv::Mat mat = pstCmd->vecInputImages[nImageIndex];
 
             if (nCol > 0) {
-                auto autoPreviousOverlapROIX = nResultPixCols - (szImage.width * nCol - (nCol - 1) * pstCmd->nOverlapX);
+                auto autoPreviousOverlapROIX = nCol * (szImage.width  - pstCmd->nOverlapX);
+                if ( PR_SCAN_IMAGE_DIR::RIGHT_TO_LEFT == pstCmd->enScanDir )
+                    autoPreviousOverlapROIX = nResultPixCols - (szImage.width * nCol - (nCol - 1) * pstCmd->nOverlapX);
+                
                 auto autoPreviousOverlapROIY = nRow * (szImage.height - pstCmd->nOverlapY);
                 cv::Mat matPreviousFrameOverlap(matResult, cv::Rect(autoPreviousOverlapROIX, autoPreviousOverlapROIY, pstCmd->nOverlapX, szImage.height));
                 cv::Mat matCurrentFrameOvelap( mat, cv::Rect(szImage.width - pstCmd->nOverlapX, 0, pstCmd->nOverlapX, szImage.height));
                 matPreviousFrameOverlap = (matPreviousFrameOverlap + matCurrentFrameOvelap) / 2;
             }
 
-            auto autoROIX = nResultPixCols - (szImage.width * (nCol + 1) - nCol * pstCmd->nOverlapX);
+            auto autoROIX = nCol * (szImage.width  - pstCmd->nOverlapX);
+            if ( PR_SCAN_IMAGE_DIR::RIGHT_TO_LEFT == pstCmd->enScanDir )
+                autoROIX = nResultPixCols - (szImage.width * (nCol + 1) - nCol * pstCmd->nOverlapX);
             auto autoROIY = nRow * (szImage.height - pstCmd->nOverlapY);
             cv::Mat matROI(matResult, cv::Rect(autoROIX, autoROIY, szImage.width, szImage.height));
             mat.copyTo ( matROI );

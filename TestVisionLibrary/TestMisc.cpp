@@ -141,3 +141,49 @@ void TestCombineImage_2() {
         ++ imgNo;
     }
 }
+
+void TestCombineImage_HaoYu() {
+    PR_COMBINE_IMG_CMD stCmd;
+    PR_COMBINE_IMG_RPY stRpy;
+    stCmd.nCountOfImgPerFrame = 5;
+    stCmd.nCountOfFrameX = 4;
+    stCmd.nCountOfFrameY = 1;
+    stCmd.nOverlapX = 277;
+    stCmd.nOverlapY = 0;
+    stCmd.nCountOfImgPerRow = 20;
+    stCmd.enScanDir = PR_SCAN_IMAGE_DIR::LEFT_TO_RIGHT;
+
+    const std::string strFolder = "D:/Data/20180206115742/";
+
+    for (int nRow = 0; nRow < stCmd.nCountOfFrameY; ++ nRow)
+    //Column start from right to left.
+    for (int nCol = 0; nCol < stCmd.nCountOfFrameX; ++ nCol)
+    for (int imgNo = 1; imgNo <= stCmd.nCountOfImgPerFrame; ++ imgNo)
+    {
+        char arrCharFileName[100];
+        _snprintf(arrCharFileName, sizeof(arrCharFileName), "I%d_%d.bmp", nCol + 1, imgNo );
+        std::string strImagePath = strFolder + std::string ( arrCharFileName );
+        cv::Mat mat = cv::imread(strImagePath, cv::IMREAD_COLOR);
+        if ( mat.empty() )
+            continue;
+        stCmd.vecInputImages.push_back( mat );
+    }
+
+    PR_CombineImg ( &stCmd, &stRpy );
+    if ( stRpy.enStatus != VisionStatus::OK ) {
+        std::cout << "Failed to combine image" << std::endl;
+        return;
+    }
+
+    double dScale = 0.5;
+    int imgNo = 0;
+    for ( const auto &mat : stRpy.vecResultImages ) {
+        char arrChFileName[100];
+        _snprintf(arrChFileName, sizeof(arrChFileName), "CombineResult_%d.bmp", imgNo);
+        std::string strResultFile = strFolder + arrChFileName;
+        cv::Mat matResize;
+        cv::resize ( mat, matResize, cv::Size(), dScale, dScale );
+        cv::imwrite(strResultFile, matResize);
+        ++ imgNo;
+    }
+}

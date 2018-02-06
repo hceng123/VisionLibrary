@@ -185,6 +185,11 @@ enum class PR_FIND_LEAD_END_METHOD {
     FIXED,
 };
 
+enum class PR_SCAN_IMAGE_DIR {
+    LEFT_TO_RIGHT,
+    RIGHT_TO_LEFT,
+};
+
 }
 }
 
