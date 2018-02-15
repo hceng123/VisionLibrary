@@ -53,3 +53,4 @@ RegressionTest/Data/FastCalc3DHeightCase
 RegressionTest/Data/HaoYu_20171017
 RegressionTest/Data/HaoYu_20170920
 *.db
+Install/VisionLibrary*

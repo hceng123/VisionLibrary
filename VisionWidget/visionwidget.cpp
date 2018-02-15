@@ -734,7 +734,7 @@ void VisionWidget::on_btnInspContour_clicked() {
     }else {
         PR_GET_ERROR_INFO_RPY stErrStrRpy;
         PR_GetErrorInfo(stRpy.enStatus, &stErrStrRpy);
-        if ( stErrStrRpy.enErrorLevel == PR_STATUS_ERROR_LEVEL::INSP_STATUS )
+        if ( stErrStrRpy.enErrorLevel == PR_STATUS_ERROR_LEVEL::PR_INSP_STATUS )
             ui.visionView->setMat ( VisionView::DISPLAY_SOURCE::RESULT, stRpy.matResultImg );
         QMessageBox::critical(nullptr, "Learn chip", stErrStrRpy.achErrorStr, "Quit");
         ui.lineEditObjCenter->clear();
@@ -765,7 +765,7 @@ void VisionWidget::on_btnInspHole_clicked() {
     }else {
         PR_GET_ERROR_INFO_RPY stErrStrRpy;
         PR_GetErrorInfo(stRpy.enStatus, &stErrStrRpy);
-        if ( stErrStrRpy.enErrorLevel == PR_STATUS_ERROR_LEVEL::INSP_STATUS )
+        if ( stErrStrRpy.enErrorLevel == PR_STATUS_ERROR_LEVEL::PR_INSP_STATUS )
             ui.visionView->setMat ( VisionView::DISPLAY_SOURCE::RESULT, stRpy.matResultImg );
         QMessageBox::critical(nullptr, "Learn chip", stErrStrRpy.achErrorStr, "Quit");
         ui.lineEditObjCenter->clear();
@@ -836,7 +836,7 @@ void VisionWidget::on_btnAutoLocateLead_clicked() {
     }else {
         PR_GET_ERROR_INFO_RPY stErrStrRpy;
         PR_GetErrorInfo(stRpy.enStatus, &stErrStrRpy);
-        if ( stErrStrRpy.enErrorLevel == PR_STATUS_ERROR_LEVEL::INSP_STATUS )
+        if ( stErrStrRpy.enErrorLevel == PR_STATUS_ERROR_LEVEL::PR_INSP_STATUS )
             ui.visionView->setMat ( VisionView::DISPLAY_SOURCE::RESULT, stRpy.matResultImg );
         QMessageBox::critical(nullptr, "Auto Locate Lead", stErrStrRpy.achErrorStr, "Quit");
         ui.lineEditObjCenter->clear();
@@ -908,7 +908,7 @@ void VisionWidget::on_btnInspLead_clicked() {
     }else {
         PR_GET_ERROR_INFO_RPY stErrStrRpy;
         PR_GetErrorInfo(stRpy.enStatus, &stErrStrRpy);
-        if ( stErrStrRpy.enErrorLevel == PR_STATUS_ERROR_LEVEL::INSP_STATUS )
+        if ( stErrStrRpy.enErrorLevel == PR_STATUS_ERROR_LEVEL::PR_INSP_STATUS )
             ui.visionView->setMat ( VisionView::DISPLAY_SOURCE::RESULT, stRpy.matResultImg );
         QMessageBox::critical(nullptr, "Inspect Lead", stErrStrRpy.achErrorStr, "Quit");
         ui.lineEditObjCenter->clear();
@@ -941,7 +941,7 @@ void VisionWidget::on_btnGridAvgGrayScale_clicked() {
     }else {
         PR_GET_ERROR_INFO_RPY stErrStrRpy;
         PR_GetErrorInfo(stRpy.enStatus, &stErrStrRpy);
-        if ( stErrStrRpy.enErrorLevel == PR_STATUS_ERROR_LEVEL::INSP_STATUS )
+        if ( stErrStrRpy.enErrorLevel == PR_STATUS_ERROR_LEVEL::PR_INSP_STATUS )
             ui.visionView->setMat ( VisionView::DISPLAY_SOURCE::RESULT, stRpy.matResultImg );
         QMessageBox::critical(nullptr, "Inspect Lead", stErrStrRpy.achErrorStr, "Quit");
     }

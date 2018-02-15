@@ -1,5 +1,5 @@
-#ifndef _AOI_STRUCT_H_
-#define _AOI_STRUCT_H_
+#ifndef _AOI_VISION_STRUCT_H_
+#define _AOI_VISION_STRUCT_H_
 
 #include "VisionType.h"
 #include "VisionStatus.h"
@@ -359,7 +359,7 @@ struct PR_FIND_LINE_CMD {
     PR_CALIPER_SELECT_EDGE  enSelectEdge;       //Used only when find line algorithm is caliper.
     float                   fRmStrayPointRatio; //The ratio to remove the stray point(Fit for one time, then remove the points with largest error and fit again).
     bool                    bCheckLinerity;
-    float                   fPointMaxOffset;
+    float                   fPointMaxOffset;    //If a point offset to the line over this tolerance, it is a unlinear point. 
     float                   fMinLinerity;
     bool                    bCheckAngle;
     float                   fExpectedAngle;
@@ -1294,4 +1294,4 @@ struct PR_COMBINE_IMG_RPY {
 
 }
 }
-#endif /*_AOI_STRUCT_H_*/
+#endif /*_AOI_VISION_STRUCT_H_*/

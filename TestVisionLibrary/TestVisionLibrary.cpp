@@ -612,6 +612,18 @@ static cv::Mat intervals ( _tp start, _tp interval, _tp end ) {
     return cv::Mat ( vecValue ).clone ();
 }
 
+void ChangeColor()
+{
+    cv::Mat matInput = cv::imread("C://Users//shenxiao//Pictures//Icons//CaliperCircle.png", cv::IMREAD_COLOR );
+    if ( matInput.empty() )
+        return;
+    cv::Mat matGray;
+    cv::cvtColor ( matInput, matGray, cv::COLOR_BGR2GRAY);
+    cv::Mat matCompare = matGray < 100;
+    matInput.setTo ( cv::Scalar (241, 152, 71), matCompare );
+    cv::imwrite ( "C://Users//shenxiao//Pictures//Icons//CaliperCircle1.png", matInput );
+}
+
 int _tmain(int argc, _TCHAR* argv[])
 {
     auto matResult = intervals<float>(0, 0.1f, 1.f);
@@ -726,7 +738,9 @@ int _tmain(int argc, _TCHAR* argv[])
     //TestCombineImage();
     //TestCombineImage_1();
     //TestCombineImage_2();
-    TestCombineImage_HaoYu();
+    //TestCombineImage_HaoYu();
+
+    ChangeColor();
 
     //TestMotor3DCalib();
     //TestSolve();
