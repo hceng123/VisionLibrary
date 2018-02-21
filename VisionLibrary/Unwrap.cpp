@@ -1917,7 +1917,7 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
         vecXt.reserve ( vecXt.size() + vecEffectPoints.size() );
         vecYt.reserve ( vecYt.size() + vecEffectPoints.size() );
         vecPhase.reserve ( vecPhase.size() + vecEffectPoints.size() );
-        vecBP.reserve ( vecBP.size() + + vecEffectPoints.size()  );
+        vecBP.reserve ( vecBP.size() + vecEffectPoints.size() );
         for (const auto &point : vecEffectPoints) {
             vecXt.push_back ( matX.at<DATA_TYPE> ( point ) );
             vecYt.push_back ( matY.at<DATA_TYPE> ( point ) );
@@ -2104,7 +2104,7 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
                                 value = startValue;
                             }
                             else {
-                                auto i = value;
+                                auto i = value; //Just for debug, no usage.
                             }
                         }
                     }
@@ -2203,7 +2203,7 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
                                 value = startValue;
                             }
                             else {
-                                auto i = value;
+                                auto i = value; //Just for debug, no usage.
                             }
                         }
                     }

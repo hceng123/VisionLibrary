@@ -2065,7 +2065,7 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
         }
 
         if ( pstCmd->matMask.channels() != 1 ) {
-            WriteLog("The mask must be gray image!");
+            WriteLog("The mask must be single channel image.");
             pstRpy->enStatus = VisionStatus::INVALID_PARAM;
             return pstRpy->enStatus;
         }
