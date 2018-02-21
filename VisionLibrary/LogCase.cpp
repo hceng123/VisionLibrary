@@ -566,9 +566,9 @@ VisionStatus LogCaseFindLine::WriteCmd(const PR_FIND_LINE_CMD *const pstCmd) {
     ini.SetLongValue(_CMD_SECTION.c_str(), _strKeySelectEdge.c_str(), ToInt32 ( pstCmd->enSelectEdge ) );
     ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyRmStrayPtRatio.c_str(), pstCmd->fRmStrayPointRatio );    
 
-    ini.SetBoolValue(_CMD_SECTION.c_str(), _strKeyCheckLinerity.c_str(), pstCmd->bCheckLinerity);
+    ini.SetBoolValue(_CMD_SECTION.c_str(), _strKeyCheckLinearity.c_str(), pstCmd->bCheckLinearity);
     ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyPointMaxOffset.c_str(), pstCmd->fPointMaxOffset );
-    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyMinLinerity.c_str(), pstCmd->fMinLinerity );
+    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyMinLinearity.c_str(), pstCmd->fMinLinearity );
     ini.SetBoolValue(_CMD_SECTION.c_str(), _strKeyCheckAngle.c_str(), pstCmd->bCheckAngle );
     ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyExpectedAngle.c_str(), pstCmd->fExpectedAngle );
     ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyAngleDiffTol.c_str(), pstCmd->fAngleDiffTolerance );
@@ -594,8 +594,8 @@ VisionStatus LogCaseFindLine::WriteRpy(const PR_FIND_LINE_RPY *const pstRpy) {
     ini.SetValue(_RPY_SECTION.c_str(), _strKeyLine2Point1.c_str(), _formatCoordinate ( pstRpy->stLine2.pt1 ).c_str() );
     ini.SetValue(_RPY_SECTION.c_str(), _strKeyLine2Point2.c_str(), _formatCoordinate ( pstRpy->stLine2.pt2 ).c_str() );
     ini.SetDoubleValue(_RPY_SECTION.c_str(), _strKeyDistance.c_str(),   pstRpy->fDistance );
-    ini.SetBoolValue  (_RPY_SECTION.c_str(), _strKeyLinerityPass.c_str(), pstRpy->bLinerityCheckPass );
-    ini.SetDoubleValue(_RPY_SECTION.c_str(), _strKeyLinerity.c_str(),   pstRpy->fLinerity );
+    ini.SetBoolValue  (_RPY_SECTION.c_str(), _strKeyLinearityPass.c_str(), pstRpy->bLinearityCheckPass );
+    ini.SetDoubleValue(_RPY_SECTION.c_str(), _strKeyLinearity.c_str(),   pstRpy->fLinearity );
     ini.SetBoolValue  (_RPY_SECTION.c_str(), _strKeyAngleCheckPass.c_str(), pstRpy->bAngleCheckPass );
     ini.SetDoubleValue(_RPY_SECTION.c_str(), _strKeyAngle.c_str(),   pstRpy->fAngle );
     ini.SaveFile( cmdRpyFilePath.c_str() );
@@ -631,9 +631,9 @@ VisionStatus LogCaseFindLine::RunLogCase() {
     stCmd.enSelectEdge = static_cast<PR_CALIPER_SELECT_EDGE> ( ini.GetLongValue(_CMD_SECTION.c_str(), _strKeySelectEdge.c_str(), 0 ) );
     stCmd.fRmStrayPointRatio = ToFloat ( ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyRmStrayPtRatio.c_str(), 0.2 ) );
     
-    stCmd.bCheckLinerity = ini.GetBoolValue(_CMD_SECTION.c_str(), _strKeyCheckLinerity.c_str(), false );
+    stCmd.bCheckLinearity = ini.GetBoolValue(_CMD_SECTION.c_str(), _strKeyCheckLinearity.c_str(), false );
     stCmd.fPointMaxOffset = ToFloat ( ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyPointMaxOffset.c_str(), 0. ) );
-    stCmd.fMinLinerity = ToFloat ( ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyMinLinerity.c_str(), 100.f ) );
+    stCmd.fMinLinearity = ToFloat ( ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyMinLinearity.c_str(), 100.f ) );
     stCmd.bCheckAngle = ini.GetBoolValue(_CMD_SECTION.c_str(), _strKeyCheckAngle.c_str(), false );
     stCmd.fExpectedAngle = ToFloat ( ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyExpectedAngle.c_str(), 0. ) );
     stCmd.fAngleDiffTolerance = ToFloat ( ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyAngleDiffTol.c_str(), 0. ) );

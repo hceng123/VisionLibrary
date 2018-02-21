@@ -2095,10 +2095,10 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
         return pstRpy->enStatus;
     }
 
-    if ( pstCmd->bCheckLinerity && ( pstCmd->fPointMaxOffset <= 0.f || pstCmd->fMinLinerity <= 0.f ) ) {
+    if ( pstCmd->bCheckLinearity && ( pstCmd->fPointMaxOffset <= 0.f || pstCmd->fMinLinearity <= 0.f ) ) {
         char chArrMsg [ 1000 ];
         _snprintf(chArrMsg, sizeof(chArrMsg), "Linerity check parameter is invalid. PointMaxOffset = %.2f, MinLinerity = %.2f",
-            pstCmd->fPointMaxOffset, pstCmd->fMinLinerity);
+            pstCmd->fPointMaxOffset, pstCmd->fMinLinearity);
         WriteLog(chArrMsg);
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return pstRpy->enStatus;
@@ -2208,19 +2208,19 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
             cv::line( pstRpy->matResultImg, pstRpy->stLine2.pt1, pstRpy->stLine2.pt2, _constGreenScalar, 2 );
     }   
 
-    pstRpy->bLinerityCheckPass = false;
-    if ( pstCmd->bCheckLinerity ) {
+    pstRpy->bLinearityCheckPass = false;
+    if ( pstCmd->bCheckLinearity ) {
         int nInTolerancePointCount = 0;
         for (const auto &point : vecFitPoint1) {
             if ( CalcUtils::ptDisToLine ( point, pstRpy->bReversedFit, pstRpy->fSlope, pstRpy->fIntercept ) < pstCmd->fPointMaxOffset )
                 ++ nInTolerancePointCount;
         }
-        pstRpy->fLinerity = nInTolerancePointCount * 100.f / vecFitPoint1.size();
-        if ( pstRpy->fLinerity >= pstCmd->fMinLinerity )
-            pstRpy->bLinerityCheckPass = true;
+        pstRpy->fLinearity = ToFloat ( nInTolerancePointCount  ) / ToFloat ( vecFitPoint1.size() );
+        if ( pstRpy->fLinearity >= pstCmd->fMinLinearity )
+            pstRpy->bLinearityCheckPass = true;
     }else {
-        pstRpy->fLinerity = 0.f;
-        pstRpy->bLinerityCheckPass = false;
+        pstRpy->fLinearity = 0.f;
+        pstRpy->bLinearityCheckPass = false;
     }
 
     pstRpy->bAngleCheckPass = true;
@@ -2296,10 +2296,10 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
 /*static*/ VisionStatus VisionAlgorithm::_calcCaliperDirection(const cv::Mat &matRoiImg, bool bReverseFit, PR_CALIPER_DIR &enDirection ) {
     cv::Mat matLeftTop, matRightBottom;
     if ( bReverseFit ) {
-        matLeftTop =     cv::Mat ( matRoiImg, cv::Rect ( 0, 0, matRoiImg.cols / 2, matRoiImg.rows ) );
+        matLeftTop     = cv::Mat ( matRoiImg, cv::Rect ( 0, 0, matRoiImg.cols / 2, matRoiImg.rows ) );
         matRightBottom = cv::Mat ( matRoiImg, cv::Rect ( matRoiImg.cols / 2, 0, matRoiImg.cols / 2, matRoiImg.rows ) );
     }else {
-        matLeftTop =     cv::Mat ( matRoiImg, cv::Rect ( 0, 0, matRoiImg.cols, matRoiImg.rows / 2 ) );
+        matLeftTop     = cv::Mat ( matRoiImg, cv::Rect ( 0, 0, matRoiImg.cols, matRoiImg.rows / 2 ) );
         matRightBottom = cv::Mat ( matRoiImg, cv::Rect ( 0, matRoiImg.rows / 2, matRoiImg.cols, matRoiImg.rows / 2 ) );
     }
     auto sumOfLeftTop = cv::sum ( matLeftTop )[0];
