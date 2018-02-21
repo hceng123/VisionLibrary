@@ -446,8 +446,8 @@ static void PrintFindLineRpy ( const PR_FIND_LINE_RPY &stRpy ) {
         std::cout << std::fixed << std::setprecision ( 2 ) << "Line slope = " << stRpy.fSlope << ", intercept = " << stRpy.fIntercept << std::endl;
         _snprintf ( chArrMsg, sizeof ( chArrMsg ), "(%.2f, %.2f), (%.2f, %.2f)", stRpy.stLine.pt1.x, stRpy.stLine.pt1.y, stRpy.stLine.pt2.x, stRpy.stLine.pt2.y );
         std::cout << "Line coordinate: " << chArrMsg << std::endl;
-        std::cout << std::fixed << std::setprecision ( 2 ) << "Linerity  = " << stRpy.fLinerity << std::endl;
-        std::cout << "Linerity check pass: " << stRpy.bLinerityCheckPass << std::endl;
+        std::cout << std::fixed << std::setprecision ( 2 ) << "Linerity  = " << stRpy.fLinearity << std::endl;
+        std::cout << "Linerity check pass: " << stRpy.bLinearityCheckPass << std::endl;
         std::cout << std::fixed << std::setprecision ( 2 ) << "Angle  = " << stRpy.fAngle << std::endl;
         std::cout << "Angle check pass: " << stRpy.bAngleCheckPass << std::endl;
     }else {
@@ -469,9 +469,9 @@ void TestCaliper() {
     stCmd.rectRotatedROI.size = rectROI.size();
     stCmd.enDetectDir = PR_CALIPER_DIR::DARK_TO_BRIGHT;
     stCmd.nCaliperCount = 5;
-    stCmd.bCheckLinerity = true;
+    stCmd.bCheckLinearity = true;
     stCmd.fPointMaxOffset = 5;
-    stCmd.fMinLinerity = 60.;
+    stCmd.fMinLinearity = 0.6f;
     stCmd.bCheckAngle = true;
     stCmd.fExpectedAngle = 90;
     stCmd.fAngleDiffTolerance = 5;
@@ -492,9 +492,9 @@ void TestCaliper_1() {
     stCmd.rectRotatedROI.angle = 110;
     stCmd.enAlgorithm = PR_FIND_LINE_ALGORITHM::CALIPER;
     stCmd.enDetectDir = PR_CALIPER_DIR::AUTO;
-    stCmd.bCheckLinerity = true;
+    stCmd.bCheckLinearity = true;
     stCmd.fPointMaxOffset = 5;
-    stCmd.fMinLinerity = 60.;
+    stCmd.fMinLinearity = 0.6f;
     stCmd.bCheckAngle = true;
     stCmd.fExpectedAngle = 90;
     stCmd.fAngleDiffTolerance = 5;
@@ -515,9 +515,9 @@ void TestCaliper_2() {
     stCmd.rectRotatedROI.angle = 20;
     stCmd.enAlgorithm = PR_FIND_LINE_ALGORITHM::CALIPER;
     stCmd.enDetectDir = PR_CALIPER_DIR::AUTO;
-    stCmd.bCheckLinerity = true;
+    stCmd.bCheckLinearity = true;
     stCmd.fPointMaxOffset = 5;
-    stCmd.fMinLinerity = 60.;
+    stCmd.fMinLinearity = 0.6f;
     stCmd.bCheckAngle = true;
     stCmd.fExpectedAngle = 90;
     stCmd.fAngleDiffTolerance = 5;
@@ -536,9 +536,9 @@ void TestCaliper_NoLine() {
     stCmd.rectRotatedROI.angle = 20;
     stCmd.enAlgorithm = PR_FIND_LINE_ALGORITHM::PROJECTION;
     stCmd.enDetectDir = PR_CALIPER_DIR::AUTO;
-    stCmd.bCheckLinerity = true;
+    stCmd.bCheckLinearity = true;
     stCmd.fPointMaxOffset = 5;
-    stCmd.fMinLinerity = 60.;
+    stCmd.fMinLinearity = 0.6f;
     stCmd.bCheckAngle = true;
     stCmd.fExpectedAngle = 90;
     stCmd.fAngleDiffTolerance = 5;
@@ -557,9 +557,9 @@ void TestCaliper_NoLine_1() {
     stCmd.rectRotatedROI.angle = 20;
     stCmd.enAlgorithm = PR_FIND_LINE_ALGORITHM::PROJECTION;
     stCmd.enDetectDir = PR_CALIPER_DIR::AUTO;
-    stCmd.bCheckLinerity = true;
+    stCmd.bCheckLinearity = true;
     stCmd.fPointMaxOffset = 5;
-    stCmd.fMinLinerity = 60.;
+    stCmd.fMinLinearity = 0.6f;
     stCmd.bCheckAngle = true;
     stCmd.fExpectedAngle = 90;
     stCmd.fAngleDiffTolerance = 5;
@@ -578,9 +578,9 @@ void TestCaliper_3() {
     stCmd.rectRotatedROI.angle = -15;
     stCmd.enAlgorithm = PR_FIND_LINE_ALGORITHM::PROJECTION;
     stCmd.enDetectDir = PR_CALIPER_DIR::AUTO;
-    stCmd.bCheckLinerity = true;
+    stCmd.bCheckLinearity = true;
     stCmd.fPointMaxOffset = 5;
-    stCmd.fMinLinerity = 60.;
+    stCmd.fMinLinearity = 0.6f;
     stCmd.bCheckAngle = true;
     stCmd.fExpectedAngle = 90;
     stCmd.fAngleDiffTolerance = 5;
@@ -610,6 +610,18 @@ static cv::Mat intervals ( _tp start, _tp interval, _tp end ) {
     }
     //cv::Mat matResult ( vecValue ); //This have problem, because matResult share the memory with vecValue, after leave this function, the memory already released.
     return cv::Mat ( vecValue ).clone ();
+}
+
+void ChangeColor()
+{
+    cv::Mat matInput = cv::imread("C://Users//shenxiao//Pictures//Icons//CaliperCircle.png", cv::IMREAD_COLOR );
+    if ( matInput.empty() )
+        return;
+    cv::Mat matGray;
+    cv::cvtColor ( matInput, matGray, cv::COLOR_BGR2GRAY);
+    cv::Mat matCompare = matGray < 100;
+    matInput.setTo ( cv::Scalar (241, 152, 71), matCompare );
+    cv::imwrite ( "C://Users//shenxiao//Pictures//Icons//CaliperCircle1.png", matInput );
 }
 
 int _tmain(int argc, _TCHAR* argv[])
@@ -726,7 +738,9 @@ int _tmain(int argc, _TCHAR* argv[])
     //TestCombineImage();
     //TestCombineImage_1();
     //TestCombineImage_2();
-    TestCombineImage_HaoYu();
+    //TestCombineImage_HaoYu();
+
+    ChangeColor();
 
     //TestMotor3DCalib();
     //TestSolve();

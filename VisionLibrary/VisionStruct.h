@@ -1,5 +1,5 @@
-#ifndef _AOI_STRUCT_H_
-#define _AOI_STRUCT_H_
+#ifndef _AOI_VISION_STRUCT_H_
+#define _AOI_VISION_STRUCT_H_
 
 #include "VisionType.h"
 #include "VisionStatus.h"
@@ -339,9 +339,9 @@ struct PR_FIND_LINE_CMD {
         nEdgeThreshold      (50),
         enSelectEdge        (PR_CALIPER_SELECT_EDGE::MAX_EDGE),
         fRmStrayPointRatio  (0.2f),
-        bCheckLinerity      (false),
+        bCheckLinearity     (false),
         fPointMaxOffset     (0.f),
-        fMinLinerity        (0.f),
+        fMinLinearity       (0.f),
         bCheckAngle         (false),
         fExpectedAngle      (0.f),
         fAngleDiffTolerance (0.f) {}
@@ -358,9 +358,9 @@ struct PR_FIND_LINE_CMD {
     int                     nEdgeThreshold;     //The gray scale difference threshold of the edge. Over this threshold consider as an edge candidate.
     PR_CALIPER_SELECT_EDGE  enSelectEdge;       //Used only when find line algorithm is caliper.
     float                   fRmStrayPointRatio; //The ratio to remove the stray point(Fit for one time, then remove the points with largest error and fit again).
-    bool                    bCheckLinerity;
-    float                   fPointMaxOffset;
-    float                   fMinLinerity;
+    bool                    bCheckLinearity;
+    float                   fPointMaxOffset;    //If a point offset to the line over this tolerance, it is a unlinear point. 
+    float                   fMinLinearity;
     bool                    bCheckAngle;
     float                   fExpectedAngle;
     float                   fAngleDiffTolerance;
@@ -375,8 +375,8 @@ struct PR_FIND_LINE_RPY {
     float                   fIntercept2;    //When the find pair is enabled, it will return the second line intercept.
     PR_Line2f               stLine2;        //When the find pair is enabled, it will return the second line.
     float                   fDistance;      //When the find pair is enabled, it will return the distance of two lines.
-    bool                    bLinerityCheckPass;
-    float                   fLinerity;
+    bool                    bLinearityCheckPass;
+    float                   fLinearity;
     bool                    bAngleCheckPass;
     float                   fAngle;
     cv::Mat                 matResultImg;
@@ -1294,4 +1294,4 @@ struct PR_COMBINE_IMG_RPY {
 
 }
 }
-#endif /*_AOI_STRUCT_H_*/
+#endif /*_AOI_VISION_STRUCT_H_*/

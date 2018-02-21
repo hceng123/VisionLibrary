@@ -16,8 +16,8 @@ static void PrintFindLineRpy ( const PR_FIND_LINE_RPY &stRpy ) {
         std::cout << std::fixed << std::setprecision ( 2 ) << "Line slope = " << stRpy.fSlope << ", intercept = " << stRpy.fIntercept << std::endl;
         _snprintf ( chArrMsg, sizeof ( chArrMsg ), "(%.2f, %.2f), (%.2f, %.2f)", stRpy.stLine.pt1.x, stRpy.stLine.pt1.y, stRpy.stLine.pt2.x, stRpy.stLine.pt2.y );
         std::cout << "Line coordinate: " << chArrMsg << std::endl;
-        std::cout << std::fixed << std::setprecision ( 2 ) << "Linerity  = " << stRpy.fLinerity << std::endl;
-        std::cout << "Linerity check pass: " << stRpy.bLinerityCheckPass << std::endl;
+        std::cout << std::fixed << std::setprecision ( 2 ) << "Linearity  = " << stRpy.fLinearity << std::endl;
+        std::cout << "Linearity check pass: " << stRpy.bLinearityCheckPass << std::endl;
         std::cout << std::fixed << std::setprecision ( 2 ) << "Angle  = " << stRpy.fAngle << std::endl;
         std::cout << "Angle check pass: " << stRpy.bAngleCheckPass << std::endl;
     }else {
@@ -42,9 +42,9 @@ void TestFindLineByProjection() {
     stCmd.rectRotatedROI.center = cv::Point ( rectROI.x + rectROI.width / 2, rectROI.y + rectROI.height / 2 );
     stCmd.rectRotatedROI.size = rectROI.size();
     stCmd.enDetectDir = PR_CALIPER_DIR::BRIGHT_TO_DARK;
-    stCmd.bCheckLinerity = true;
+    stCmd.bCheckLinearity = true;
     stCmd.fPointMaxOffset = 5;
-    stCmd.fMinLinerity = 60.;
+    stCmd.fMinLinearity = 0.6f;
     stCmd.bCheckAngle = true;
     stCmd.fExpectedAngle = 90;
     stCmd.fAngleDiffTolerance = 5;
@@ -92,9 +92,9 @@ void TestFindLineByProjection() {
     stCmd.rectRotatedROI.center = cv::Point ( rectROI.x + rectROI.width / 2, rectROI.y + rectROI.height / 2 );
     stCmd.rectRotatedROI.size = rectROI.size();
     stCmd.enDetectDir = PR_CALIPER_DIR::BRIGHT_TO_DARK;
-    stCmd.bCheckLinerity = true;
+    stCmd.bCheckLinearity = true;
     stCmd.fPointMaxOffset = 5;
-    stCmd.fMinLinerity = 60.;
+    stCmd.fMinLinearity = 0.6f;
     stCmd.bCheckAngle = true;
     stCmd.fExpectedAngle = 90;
     stCmd.fAngleDiffTolerance = 5;
@@ -118,9 +118,9 @@ void TestFindLineByCaliper() {
     stCmd.rectRotatedROI.size = rectROI.size();
     stCmd.enAlgorithm = PR_FIND_LINE_ALGORITHM::CALIPER;
     stCmd.enDetectDir = PR_CALIPER_DIR::BRIGHT_TO_DARK;
-    stCmd.bCheckLinerity = true;
+    stCmd.bCheckLinearity = true;
     stCmd.fPointMaxOffset = 5;
-    stCmd.fMinLinerity = 60.;
+    stCmd.fMinLinearity = 0.6f;
     stCmd.bCheckAngle = true;
     stCmd.fExpectedAngle = 90;
     stCmd.fAngleDiffTolerance = 5;
@@ -188,9 +188,9 @@ void TestFindLineRoatedROI() {
     stCmd.rectRotatedROI.angle = -70;
     stCmd.enAlgorithm = PR_FIND_LINE_ALGORITHM::CALIPER;
     stCmd.enDetectDir = PR_CALIPER_DIR::AUTO;
-    stCmd.bCheckLinerity = true;
+    stCmd.bCheckLinearity = true;
     stCmd.fPointMaxOffset = 5;
-    stCmd.fMinLinerity = 60.;
+    stCmd.fMinLinearity = 0.6f;
     stCmd.bCheckAngle = true;
     stCmd.fExpectedAngle = -70;
     stCmd.fAngleDiffTolerance = 5;
@@ -208,9 +208,9 @@ void TestFindLineRoatedROI() {
     stCmd.rectRotatedROI.angle = 20;
     stCmd.enAlgorithm = PR_FIND_LINE_ALGORITHM::PROJECTION;
     stCmd.enDetectDir = PR_CALIPER_DIR::AUTO;
-    stCmd.bCheckLinerity = true;
+    stCmd.bCheckLinearity = true;
     stCmd.fPointMaxOffset = 5;
-    stCmd.fMinLinerity = 60.;
+    stCmd.fMinLinearity = 0.6f;
     stCmd.bCheckAngle = true;
     stCmd.fExpectedAngle = 20;
     stCmd.fAngleDiffTolerance = 5;
@@ -226,9 +226,9 @@ void TestFindLineRoatedROI() {
     stCmd.rectRotatedROI.angle = 20;
     stCmd.enAlgorithm = PR_FIND_LINE_ALGORITHM::CALIPER;
     stCmd.enDetectDir = PR_CALIPER_DIR::AUTO;
-    stCmd.bCheckLinerity = true;
+    stCmd.bCheckLinearity = true;
     stCmd.fPointMaxOffset = 5;
-    stCmd.fMinLinerity = 60.;
+    stCmd.fMinLinearity = 0.6f;
     stCmd.bCheckAngle = true;
     stCmd.fExpectedAngle = 90;
     stCmd.fAngleDiffTolerance = 5;
@@ -245,9 +245,9 @@ void TestFindLineRoatedROI() {
     stCmd.rectRotatedROI.angle = 20;
     stCmd.enAlgorithm = PR_FIND_LINE_ALGORITHM::PROJECTION;
     stCmd.enDetectDir = PR_CALIPER_DIR::AUTO;
-    stCmd.bCheckLinerity = true;
+    stCmd.bCheckLinearity = true;
     stCmd.fPointMaxOffset = 5;
-    stCmd.fMinLinerity = 60.;
+    stCmd.fMinLinearity = 0.6f;
     stCmd.bCheckAngle = true;
     stCmd.fExpectedAngle = 90;
     stCmd.fAngleDiffTolerance = 5;
@@ -266,9 +266,9 @@ void TestFindLineRoatedROI() {
     stCmd.rectRotatedROI.angle = -12;
     stCmd.enAlgorithm = PR_FIND_LINE_ALGORITHM::CALIPER;
     stCmd.enDetectDir = PR_CALIPER_DIR::AUTO;
-    stCmd.bCheckLinerity = true;
+    stCmd.bCheckLinearity = true;
     stCmd.fPointMaxOffset = 5;
-    stCmd.fMinLinerity = 60.;
+    stCmd.fMinLinearity = 0.6f;
     stCmd.bCheckAngle = true;
     stCmd.fExpectedAngle = -12;
     stCmd.fAngleDiffTolerance = 5;

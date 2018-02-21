@@ -8,10 +8,10 @@ namespace Vision
 
 enum class PR_STATUS_ERROR_LEVEL
 {  
-    NO_ERROR,               // No error status.
-    INSP_STATUS,            // Normal inspection status.
-    LEARN_FAIL,             // Learn fail, may need to investigate or report to developer engineer.
-    FATAL_ERROR,            // Fatal error need to report to developer engineer.
+    PR_NO_ERROR,               // No error status.
+    PR_INSP_STATUS,            // Normal inspection status.
+    PR_LEARN_FAIL,             // Learn fail, may need to investigate or report to developer engineer.
+    PR_FATAL_ERROR,            // Fatal error need to report to developer engineer.
 };
 
 enum class VisionStatus

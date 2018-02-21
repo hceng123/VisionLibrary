@@ -225,9 +225,9 @@ private:
     const String _strKeySelectEdge      = "SelectEdge";
     const String _strKeyRmStrayPtRatio  = "RmStrayPtRatio";
     const String _strKeyDir             = "Direction";
-    const String _strKeyCheckLinerity   = "CheckLinerity";
+    const String _strKeyCheckLinearity  = "CheckLinearity";
     const String _strKeyPointMaxOffset  = "PointMaxOffset";
-    const String _strKeyMinLinerity     = "MinLinerity";
+    const String _strKeyMinLinearity    = "MinLinearity";
     const String _strKeyCheckAngle      = "CheckAngle";
     const String _strKeyExpectedAngle   = "ExpectedAngle";
     const String _strKeyAngleDiffTol    = "AngleDiffTol";
@@ -242,8 +242,8 @@ private:
     const String _strKeyLine2Point1     = "Line2Point1";
     const String _strKeyLine2Point2     = "Line2Point2";
     const String _strKeyDistance        = "Distance";
-    const String _strKeyLinerityPass    = "LinerityPass";
-    const String _strKeyLinerity        = "Linerity";
+    const String _strKeyLinearityPass   = "LinearityPass";
+    const String _strKeyLinearity       = "Linearity";
     const String _strKeyAngleCheckPass  = "AngleCheckPass";
     const String _strKeyAngle           = "Angle";
 };
