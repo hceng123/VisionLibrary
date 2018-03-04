@@ -4,8 +4,6 @@
 #include <string>
 #include <vector>
 
-#define SL(s) s
-
 namespace AOI
 {
 namespace Vision

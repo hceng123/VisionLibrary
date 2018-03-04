@@ -1483,7 +1483,7 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
 }
 
 /*static*/ LogCasePtr VisionAlgorithm::_createLogCaseInstance(const String &strFolderPrefix, const String &strLocalPath) {
-    if ( LogCaseLrnObj::StaticGetFolderPrefix() == strFolderPrefix ) 
+    if ( LogCaseLrnObj::StaticGetFolderPrefix() == strFolderPrefix )
         return std::make_unique<LogCaseLrnObj>( strLocalPath, true );
 
     if (LogCaseSrchObj::StaticGetFolderPrefix() == strFolderPrefix)

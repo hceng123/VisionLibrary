@@ -30,6 +30,8 @@
 
 namespace bfs = boost::filesystem;
 
+#define SL(s) s
+
 namespace AOI
 {
 namespace Vision

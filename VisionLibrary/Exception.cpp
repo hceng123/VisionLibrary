@@ -21,6 +21,8 @@
 #include "BaseDefs.h"
 #include "Exception.h"
 
+#define SL(s) s
+
 namespace AOI
 {
 namespace Vision

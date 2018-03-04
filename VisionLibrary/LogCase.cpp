@@ -576,7 +576,7 @@ VisionStatus LogCaseFindLine::WriteCmd(const PR_FIND_LINE_CMD *const pstCmd) {
 
     cv::imwrite( _strLogCasePath + _IMAGE_NAME, pstCmd->matInputImg );
     if ( ! pstCmd->matMask.empty() )
-        cv::imwrite( _strLogCasePath + _MASK_NAME,  pstCmd->matMask );
+        cv::imwrite( _strLogCasePath + _MASK_NAME, pstCmd->matMask );
     return VisionStatus::OK;
 }
 

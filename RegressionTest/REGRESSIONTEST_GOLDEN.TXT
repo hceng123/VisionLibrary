@@ -640,9 +640,9 @@ Find line status 0
 ReversedFit = 1
 Line slope = -0.00, intercept = 1308.35
 Line coordinate: (1304.86, 802.00), (1303.42, 1133.00)
-Linearity  = 1.00
+Linearity = 1.00
 Linearity check pass: 1
-Angle  = 90.25
+Angle = 90.25
 Angle check pass: 1
 
 ---------------------------------------------------
@@ -652,9 +652,9 @@ Find line status 0
 ReversedFit = 0
 Line slope = 0.03, intercept = 1285.16
 Line coordinate: (928.00, 1310.56), (1197.00, 1317.92)
-Linearity  = 1.00
+Linearity = 1.00
 Linearity check pass: 1
-Angle  = 1.57
+Angle = 1.57
 Angle check pass: 1
 
 ---------------------------------------------------
@@ -664,9 +664,9 @@ Find line status 0
 ReversedFit = 0
 Line slope = -0.01, intercept = 1646.23
 Line coordinate: (1496.00, 1624.06), (1723.00, 1620.70)
-Linearity  = 0.96
+Linearity = 0.96
 Linearity check pass: 1
-Angle  = -0.85
+Angle = -0.85
 Angle check pass: 1
 
 ---------------------------------------------------
@@ -676,9 +676,9 @@ Find line status 0
 ReversedFit = 1
 Line slope = 0.29, intercept = 1322.85
 Line coordinate: (1607.30, 970.00), (1633.40, 1059.00)
-Linearity  = 0.79
+Linearity = 0.79
 Linearity check pass: 1
-Angle  = 73.66
+Angle = 73.66
 Angle check pass: 0
 
 ------------------------------------------------
@@ -688,9 +688,9 @@ Find line status 0
 ReversedFit = 1
 Line slope = 0.01, intercept = 415.96
 Line coordinate: (425.80, 747.00), (432.45, 1252.00)
-Linearity  = 1.00
+Linearity = 1.00
 Linearity check pass: 1
-Angle  = 89.25
+Angle = 89.25
 Angle check pass: 1
 
 ------------------------------------------------
@@ -700,9 +700,9 @@ Find line status 0
 ReversedFit = 1
 Line slope = 0.01, intercept = 778.16
 Line coordinate: (788.61, 853.00), (794.41, 1327.00)
-Linearity  = 1.00
+Linearity = 1.00
 Linearity check pass: 1
-Angle  = 89.30
+Angle = 89.30
 Angle check pass: 1
 
 ------------------------------------------------
@@ -712,9 +712,9 @@ Find line status 0
 ReversedFit = 0
 Line slope = -0.00, intercept = 1317.81
 Line coordinate: (1013.00, 1315.15), (1216.00, 1314.61)
-Linearity  = 1.00
+Linearity = 1.00
 Linearity check pass: 1
-Angle  = -0.15
+Angle = -0.15
 Angle check pass: 1
 
 ------------------------------------------------
@@ -724,9 +724,9 @@ Find line status 0
 ReversedFit = 0
 Line slope = 0.00, intercept = 1852.91
 Line coordinate: (967.00, 1856.41), (1136.00, 1857.02)
-Linearity  = 1.00
+Linearity = 1.00
 Linearity check pass: 1
-Angle  = 0.21
+Angle = 0.21
 Angle check pass: 1
 
 ------------------------------------------------------------
@@ -736,9 +736,9 @@ Find line status 0
 ReversedFit = 1
 Line slope = -0.44, intercept = 138.50
 Line coordinate: (105.15, 75.04), (70.57, 152.86)
-Linearity  = 1.00
+Linearity = 1.00
 Linearity check pass: 1
-Angle  = 113.96
+Angle = 113.96
 Angle check pass: 0
 
 ------------------------------------------------------------
@@ -748,9 +748,9 @@ Find line status 0
 ReversedFit = 0
 Line slope = 0.44, intercept = -40.80
 Line coordinate: (125.55, 14.89), (261.29, 75.10)
-Linearity  = 0.99
+Linearity = 0.99
 Linearity check pass: 1
-Angle  = 23.92
+Angle = 23.92
 Angle check pass: 1
 
 ------------------------------------------------------------
@@ -772,9 +772,9 @@ Find line status 0
 ReversedFit = 0
 Line slope = -0.21, intercept = 354.19
 Line coordinate: (273.86, 297.06), (580.23, 233.14)
-Linearity  = 1.00
+Linearity = 1.00
 Linearity check pass: 1
-Angle  = -11.79
+Angle = -11.79
 Angle check pass: 1
 
 ------------------------------------------------------
