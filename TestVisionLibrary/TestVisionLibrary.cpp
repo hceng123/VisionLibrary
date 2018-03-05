@@ -740,10 +740,12 @@ int _tmain(int argc, _TCHAR* argv[])
     //TestCombineImage_2();
     //TestCombineImage_HaoYu();
 
-    ChangeColor();
+    //ChangeColor();
 
     //TestMotor3DCalib();
     //TestSolve();
+
+    TestInspPolarity_01();
 
     PR_DumpTimeLog("./Vision/Time.log");
     std::cout << "Press any key to exit." << std::endl;

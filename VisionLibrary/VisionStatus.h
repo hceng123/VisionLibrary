@@ -71,6 +71,9 @@ enum class VisionStatus
     NOT_FIND_LEAD                       = 80,
     AUTO_LOCATE_LEAD_FAIL               = 81,
 
+    //Inspect polarity status
+    POLARITY_FAIL                       = 90,
+
     //3D Status
     CALIB_3D_HEIGHT_SURFACE_TOO_SMALL   = 100,
     CALIB_3D_HEIGHT_NO_BASE_STEP        = 101,

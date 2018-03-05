@@ -15,4 +15,6 @@ void TestInspChipHead() {
     stCmd.nRecordId = -1;
     stCmd.rectSrchWindow = cv::Rect( cv::Point(1452, 1590), cv::Point(1732, 2062));
     PR_InspChip(&stCmd, &stRpy);
+
+    std::cout << "PR_InspChip Status: " << ToInt32(stRpy.enStatus) << std::endl;
 }

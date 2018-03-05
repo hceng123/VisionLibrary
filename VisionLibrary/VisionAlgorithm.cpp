@@ -5524,18 +5524,9 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return pstRpy->enStatus;
     }
-   
-    if (pstCmd->rectROI.x < 0 || pstCmd->rectROI.y < 0 ||
-        pstCmd->rectROI.width <= 0 || pstCmd->rectROI.height <= 0 ||
-        ( pstCmd->rectROI.x + pstCmd->rectROI.width ) > pstCmd->matInputImg.cols ||
-        ( pstCmd->rectROI.y + pstCmd->rectROI.height ) > pstCmd->matInputImg.rows ) {
-        char chArrMsg[1000];
-        _snprintf( chArrMsg, sizeof( chArrMsg ), "The input ROI rect (%d, %d, %d, %d) is invalid.",
-            pstCmd->rectROI.x, pstCmd->rectROI.y, pstCmd->rectROI.width, pstCmd->rectROI.height );
-        WriteLog(chArrMsg);
-        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
-        return VisionStatus::INVALID_PARAM;
-    }
+
+    pstRpy->enStatus = _checkInputROI ( pstCmd->rectROI, pstCmd->matInputImg, AT );
+    if ( VisionStatus::OK != pstRpy->enStatus ) return pstRpy->enStatus;
 
     if ( ! pstCmd->matMask.empty() ) {
         if ( pstCmd->matMask.rows != pstCmd->matInputImg.rows || pstCmd->matMask.cols != pstCmd->matInputImg.cols ) {
@@ -5945,6 +5936,80 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     else
         stLeadResult.rectLead.center.y = stLeadInput.rectSrchWindow.center.y - matROI.rows / 2 + ( nLeadEnd + nLeadStart ) / 2;    
     return enStatus;
+}
+
+/*static*/ VisionStatus VisionAlgorithm::inspPolarity(const PR_INSP_POLARITY_CMD *const pstCmd, PR_INSP_POLARITY_RPY *const pstRpy, bool bReplay /*= false*/) {
+    assert(pstCmd != nullptr && pstRpy != nullptr);    
+    if ( pstCmd->matInputImg.empty() ) {
+        WriteLog("Input image is empty.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    pstRpy->enStatus = _checkInputROI ( pstCmd->rectInspROI, pstCmd->matInputImg, AT );
+    if ( VisionStatus::OK != pstRpy->enStatus ) return pstRpy->enStatus;
+
+    pstRpy->enStatus = _checkInputROI ( pstCmd->rectCompareROI, pstCmd->matInputImg, AT );
+    if ( VisionStatus::OK != pstRpy->enStatus ) return pstRpy->enStatus;
+
+    cv::Mat matInspROI(pstCmd->matInputImg, pstCmd->rectInspROI);
+    cv::Mat matCompareROI(pstCmd->matInputImg, pstCmd->rectCompareROI);
+    cv::Mat matInspROIGray, matCompareROIGray;
+    if (matInspROI.channels() > 1) {
+        cv::cvtColor(matInspROI, matInspROIGray, CV_BGR2GRAY);
+        cv::cvtColor(matCompareROI, matCompareROIGray, CV_BGR2GRAY);
+    }else {
+        matInspROIGray = matInspROI.clone();
+        matCompareROIGray = matCompareROI.clone();
+    }
+
+    auto meanGrayScaleInspROI = ToInt32 ( cv::mean(matInspROIGray)[0] );
+    auto meanGrayScaleCompareROI = ToInt32 ( cv::mean(matCompareROIGray)[0] );
+    pstRpy->nGrayScaleDiff = meanGrayScaleInspROI - meanGrayScaleCompareROI;
+    if (pstCmd->enInspROIAttribute == PR_OBJECT_ATTRIBUTE::BRIGHT) {
+        if (pstRpy->nGrayScaleDiff >= pstCmd->nGrayScaleDiffTol)
+            pstRpy->enStatus = VisionStatus::OK;
+        else
+            pstRpy->enStatus = VisionStatus::POLARITY_FAIL;
+    }else if (pstCmd->enInspROIAttribute == PR_OBJECT_ATTRIBUTE::DARK) {
+        if ((-pstRpy->nGrayScaleDiff) >= pstCmd->nGrayScaleDiffTol)
+            pstRpy->enStatus = VisionStatus::OK;
+        else
+            pstRpy->enStatus = VisionStatus::POLARITY_FAIL;
+    }
+
+    if ( ! isAutoMode() ) {
+        if ( pstCmd->matInputImg.channels() > 1)
+            pstRpy->matResultImg = pstCmd->matInputImg.clone();
+        else
+            cv::cvtColor ( pstCmd->matInputImg, pstRpy->matResultImg, CV_GRAY2BGR );
+        cv::rectangle ( pstRpy->matResultImg, pstCmd->rectInspROI, _constBlueScalar, 2, cv::LineTypes::LINE_8 );
+        cv::rectangle ( pstRpy->matResultImg, pstCmd->rectCompareROI, _constBlueScalar, 2, cv::LineTypes::LINE_4 );
+
+        int fontFace = cv::FONT_HERSHEY_SIMPLEX;
+        double fontScale = 0.5;
+        int thickness = 2;
+        int baseline = 0;
+
+        {
+            char strGrayScale[100];
+            _snprintf ( strGrayScale, sizeof(strGrayScale), "%d", meanGrayScaleInspROI );        
+            cv::Size textSize = cv::getTextSize ( strGrayScale, fontFace, fontScale, thickness, &baseline );
+            //The height use '+' because text origin start from left-bottom.
+            cv::Point ptTextOrg ( pstCmd->rectInspROI.x + (pstCmd->rectInspROI.width - textSize.width) / 2, pstCmd->rectInspROI.y + (pstCmd->rectInspROI.height + textSize.height) / 2 );
+            cv::putText ( pstRpy->matResultImg, strGrayScale, ptTextOrg, fontFace, fontScale, _constCyanScalar, thickness );
+        }
+        
+        {
+            char strGrayScale[100];
+            _snprintf ( strGrayScale, sizeof(strGrayScale), "%d", meanGrayScaleCompareROI );        
+            cv::Size textSize = cv::getTextSize ( strGrayScale, fontFace, fontScale, thickness, &baseline );
+            //The height use '+' because text origin start from left-bottom.
+            cv::Point ptTextOrg ( pstCmd->rectCompareROI.x + (pstCmd->rectCompareROI.width - textSize.width) / 2, pstCmd->rectCompareROI.y + (pstCmd->rectCompareROI.height + textSize.height) / 2 );
+            cv::putText ( pstRpy->matResultImg, strGrayScale, ptTextOrg, fontFace, fontScale, _constCyanScalar, thickness );
+        }
+    }
+    return pstRpy->enStatus;
 }
 
 /*static*/ VisionStatus VisionAlgorithm::gridAvgGrayScale(const PR_GRID_AVG_GRAY_SCALE_CMD *const pstCmd, PR_GRID_AVG_GRAY_SCALE_RPY *const pstRpy) {
