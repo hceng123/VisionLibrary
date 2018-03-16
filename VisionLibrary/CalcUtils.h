@@ -43,8 +43,11 @@ public:
     template<typename T>
     static inline cv::Rect_<T> scaleRect(const cv::Rect_<T> &rectInput, float fScale)
     {
-        return cv::Rect_<T> (cv::Point_<T>(rectInput.x + ( 1.f - fScale ) * rectInput.width, rectInput.y + ( 1.f - fScale ) * rectInput.height ),
-            cv::Point_<T>(rectInput.x + ( 1.f + fScale ) * rectInput.width, rectInput.y + ( 1.f + fScale ) * rectInput.height ) );
+        cv::Point2f ptCtr(ToFloat(rectInput.x + rectInput.width / 2.f), ToFloat(rectInput.y + rectInput.height / 2.f));
+        float scaleWidth  = rectInput.width  * fScale;
+        float scaleHeight = rectInput.height * fScale;
+        return cv::Rect_<T>(static_cast<T>(ptCtr.x - scaleWidth / 2.f), static_cast<T>(ptCtr.y - scaleHeight / 2.f),
+            static_cast<T>(scaleWidth), static_cast<T>(scaleHeight));
     }
 
     template<typename T>

@@ -744,8 +744,9 @@ int _tmain(int argc, _TCHAR* argv[])
 
     //TestMotor3DCalib();
     //TestSolve();
+    _PR_InternalTest();
 
-    TestInspPolarity_01();
+    //TestInspPolarity_01();
 
     PR_DumpTimeLog("./Vision/Time.log");
     std::cout << "Press any key to exit." << std::endl;
