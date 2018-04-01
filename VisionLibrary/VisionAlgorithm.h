@@ -91,6 +91,7 @@ public:
     static VisionStatus parallelLineDist(const PR_PARALLEL_LINE_DIST_CMD *const pstCmd, PR_PARALLEL_LINE_DIST_RPY *const pstRpy);
     static VisionStatus crossSectionArea(const PR_CROSS_SECTION_AREA_CMD *const pstCmd, PR_CROSS_SECTION_AREA_RPY *const pstRpy);
     static VisionStatus combineImg(const PR_COMBINE_IMG_CMD *const pstCmd, PR_COMBINE_IMG_RPY *const pstRpy, bool bReplay = false);
+    static VisionStatus threshold(const PR_THRESHOLD_CMD *const pstCmd, PR_THRESHOLD_RPY *const pstRpy, bool bReplay = false);
 protected:
     static VisionStatus _checkInputROI(const cv::Rect &rect, const cv::Mat &matInputImg, const char *filename, int line);
     static LogCasePtr _createLogCaseInstance(const String &strFolderPrefix, const String &strLocalPath);

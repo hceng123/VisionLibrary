@@ -925,9 +925,14 @@ struct PR_INSP_HOLE_CMD {
         ADVANCED_CRITERIA   stAdvancedCriteria;
     };
 
+    PR_INSP_HOLE_CMD() :
+        bPreprocessedImg    (false),
+        enSegmentMethod     (PR_IMG_SEGMENT_METHOD::GRAY_SCALE_RANGE) {}
+
     cv::Mat                 matInputImg;
     cv::Mat                 matMask;
     cv::Rect                rectROI;
+    bool                    bPreprocessedImg;
     PR_IMG_SEGMENT_METHOD   enSegmentMethod;
     GRAY_SCALE_RANGE        stGrayScaleRange;   //It is used when enSegmentMethod is PR_IMG_SEGMENT_METHOD::GRAY_SCALE_RANGE.
     COLOR_RANGE             stColorRange;       //It is used when enSegmentMethod is PR_IMG_SEGMENT_METHOD::COLOR_RANGE.
@@ -1312,6 +1317,23 @@ struct PR_COMBINE_IMG_CMD {
 struct PR_COMBINE_IMG_RPY {
     VisionStatus            enStatus;
     VectorOfMat             vecResultImages;
+};
+
+struct PR_THRESHOLD_CMD {
+    PR_THRESHOLD_CMD() :
+        bDoubleThreshold    (false),
+        bInverseResult      (false) {}
+
+    cv::Mat                 matInputImg;
+    bool                    bDoubleThreshold;
+    bool                    bInverseResult;
+    Int32                   nThreshold1;
+    Int32                   nThreshold2;    
+};
+
+struct PR_THRESHOLD_RPY {
+    VisionStatus            enStatus;
+    cv::Mat                 matResultImg;
 };
 
 }

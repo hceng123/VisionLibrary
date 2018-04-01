@@ -11,12 +11,16 @@
  *   2017-09-13 (XSG) Add PR_CalcPD function to calculate system pattern distortion.
  *   2016-10-14 (XSG) Created.
  *
- * Copyright (c) 2016-2016, Xiao Shengguang.  All rights reserved.
+ * Copyright (c) 2016-2018, Xiao Shengguang.  All rights reserved.
  ****************************************************************************/
 
-//2018-02-09 (XSG) Change the PR_STATUS_ERROR_LEVEL::NO_ERROR to PR_STATUS_ERROR_LEVEL::PR_NO_ERROR to avoid macro definition
+//2018-03-31 (XSG) Add PR_Threshold function.
+//                 Add bPreprocessedImg for PR_INSP_HOLE_CMD.
+#define AOI_VISION_VERSION          "1.00.25"
+
+//2018-02-09 (XSG) Change the PR_STATUS_ERROR_LEVEL::NO_ERROR to PR_STATUS_ERROR_LEVEL::PR_NO_ERROR to avoid macro definition.
 //                 NO_ERROR make compile fail problem.
-#define AOI_VISION_VERSION          "1.00.24"
+//#define AOI_VISION_VERSION          "1.00.24"
 
 //2018-02-06 (XSG) Add PR_SCAN_IMAGE_DIR for PR_CombineImage function.
 //#define AOI_VISION_VERSION          "1.00.23"

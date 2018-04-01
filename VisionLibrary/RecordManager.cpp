@@ -61,8 +61,8 @@ VisionStatus RecordManager::free(Int32 nRecordId) {
 
 VisionStatus RecordManager::freeAllRecord() {
     _mapRecord.clear();
-    FileUtils::RemoveAll ( Config::GetInstance()->getRecordDir() );
-    WriteLog("All record is freed");
+    FileUtils::ClearFolder(Config::GetInstance()->getRecordDir());
+    WriteLog("All record is freed.");
     return VisionStatus::OK;
 }
 

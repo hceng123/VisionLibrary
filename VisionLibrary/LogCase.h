@@ -14,9 +14,11 @@ class LogCase
 {
 public:
     explicit LogCase(const String &strPath, bool bReplay = false);
+    virtual ~LogCase() = default;
+
     virtual String GetFolderPrefix() const = 0;
     virtual VisionStatus RunLogCase()  = 0;
-    static String unzip(const String &strFilePath);
+    static String unzip(const String &strFilePath);    
 protected:
     String _formatCoordinate(const cv::Point2f &pt);
     cv::Point2f _parseCoordinate(const String &strCoordinate);

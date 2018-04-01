@@ -5596,19 +5596,29 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     MARK_FUNCTION_START_TIME;
     SETUP_LOGCASE(LogCaseInspHole);
 
-    cv::Mat matROI(pstCmd->matInputImg, pstCmd->rectROI), matBlur, matSegmentResult;
-    cv::GaussianBlur(matROI, matBlur, cv::Size(5, 5), 2, 2);
+    cv::Mat matROI(pstCmd->matInputImg, pstCmd->rectROI), matSegmentResult;
 
-    if (pstCmd->enSegmentMethod == PR_IMG_SEGMENT_METHOD::GRAY_SCALE_RANGE) {
-        pstRpy->enStatus = _segmentImgByGrayScaleRange(matBlur, pstCmd->stGrayScaleRange, matSegmentResult);
-    }
-    else if (pstCmd->enSegmentMethod == PR_IMG_SEGMENT_METHOD::COLOR_RANGE) {
-        pstRpy->enStatus = _setmentImgByColorRange(matBlur, pstCmd->stColorRange, matSegmentResult);
-    }
-    else {
-        WriteLog("Unsupported image segment method.");
-        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
-        return pstRpy->enStatus;
+    if (pstCmd->bPreprocessedImg) {
+        cv::Mat matGray;
+        if (pstCmd->matInputImg.channels() > 1)
+            cv::cvtColor(matROI, matSegmentResult, CV_BGR2GRAY);
+        else
+            matSegmentResult = matROI;
+    }else {
+        cv::Mat matBlur;
+        cv::GaussianBlur(matROI, matBlur, cv::Size(5, 5), 2, 2);
+
+        if (pstCmd->enSegmentMethod == PR_IMG_SEGMENT_METHOD::GRAY_SCALE_RANGE) {
+            pstRpy->enStatus = _segmentImgByGrayScaleRange(matBlur, pstCmd->stGrayScaleRange, matSegmentResult);
+        }
+        else if (pstCmd->enSegmentMethod == PR_IMG_SEGMENT_METHOD::COLOR_RANGE) {
+            pstRpy->enStatus = _setmentImgByColorRange(matBlur, pstCmd->stColorRange, matSegmentResult);
+        }
+        else {
+            WriteLog("Unsupported image segment method.");
+            pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+            return pstRpy->enStatus;
+        }
     }
 
     if (pstRpy->enStatus != VisionStatus::OK)
@@ -6798,6 +6808,37 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     }
 
     MARK_FUNCTION_END_TIME;
+    pstRpy->enStatus = VisionStatus::OK;
+    return pstRpy->enStatus;
+}
+
+/*static*/ VisionStatus VisionAlgorithm::threshold(const PR_THRESHOLD_CMD *const pstCmd, PR_THRESHOLD_RPY *const pstRpy, bool bReplay /*= false*/) {
+    assert(pstCmd != nullptr && pstRpy != nullptr);
+
+    if (pstCmd->matInputImg.empty()) {
+        WriteLog("Input image is empty.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    cv::Mat matGray;
+    if (pstCmd->matInputImg.channels() > 1)
+        cv::cvtColor(pstCmd->matInputImg, matGray, CV_BGR2GRAY);
+    else
+        matGray = pstCmd->matInputImg;
+
+    if (pstCmd->bDoubleThreshold) {
+        cv::Mat matRange1, matRange2;
+        matRange1 = matGray >= pstCmd->nThreshold1;
+        matRange2 = matGray <= pstCmd->nThreshold2;
+        pstRpy->matResultImg = matRange1 & matRange2;
+    }else {
+        cv::threshold(matGray, pstRpy->matResultImg, pstCmd->nThreshold1, PR_MAX_GRAY_LEVEL, cv::ThresholdTypes::THRESH_BINARY);
+    }
+
+    if (pstCmd->bInverseResult)
+        pstRpy->matResultImg = PR_MAX_GRAY_LEVEL - pstRpy->matResultImg;
+
     pstRpy->enStatus = VisionStatus::OK;
     return pstRpy->enStatus;
 }

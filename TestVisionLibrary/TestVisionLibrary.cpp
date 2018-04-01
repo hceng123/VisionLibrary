@@ -744,7 +744,10 @@ int _tmain(int argc, _TCHAR* argv[])
 
     //TestMotor3DCalib();
     //TestSolve();
-    _PR_InternalTest();
+    //_PR_InternalTest();
+
+    //PR_FreeAllRecord();
+    TestPrThreshold();
 
     //TestInspPolarity_01();
 

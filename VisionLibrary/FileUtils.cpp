@@ -283,6 +283,23 @@ namespace Vision
         bfs::remove_all(dirPath);
     }
 
+    /*static*/ void FileUtils::ClearFolder(String const &directoryPathname)
+    {
+        bfs::path const dirPath(directoryPathname);
+
+        if (!bfs::exists(dirPath))
+            throw Exception::ItemNotFound(MakeMessage(FMT_NOT_FOUND, dirPath), MakeAttributes(dirPath));
+
+        std::vector<bfs::directory_entry> v; // To save the file names in a vector.
+        std::copy(bfs::directory_iterator(dirPath), bfs::directory_iterator(), std::back_inserter(v));
+
+        for (const auto& entry : v)
+        {
+            if (bfs::is_regular_file(entry.path()))
+                bfs::remove(entry.path());
+        }
+    }
+
     /*static*/void FileUtils::FileCopy(String const &fromFilePathname, String const &intoDirectoryPathname, bool const writable)
     {
         bfs::path const fromFilePath(fromFilePathname);

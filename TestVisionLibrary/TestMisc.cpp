@@ -187,3 +187,21 @@ void TestCombineImage_HaoYu() {
         ++ imgNo;
     }
 }
+
+void TestPrThreshold() {
+    PR_THRESHOLD_CMD stCmd;
+    PR_THRESHOLD_RPY stRpy;
+
+    stCmd.matInputImg = cv::imread("./data/ShiftedDevice.png");
+    stCmd.bDoubleThreshold = true;
+    stCmd.nThreshold1 = 20;
+    stCmd.nThreshold2 = 180;
+    stCmd.bInverseResult = true;
+
+    PR_Threshold(&stCmd, &stRpy);
+    if (stRpy.enStatus != VisionStatus::OK) {
+        std::cout << "Failed do threshold!" << std::endl;
+        return;
+    }
+    cv::imwrite("./data/DoubleThresholdResultInverse.png", stRpy.matResultImg);
+}
