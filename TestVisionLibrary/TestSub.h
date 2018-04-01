@@ -58,6 +58,10 @@ void TestCombineImage_HaoYu();
 void TestMotor3DCalib();
 void TestSolve();
 
+void TestInspPolarity_01();
+
+void TestPrThreshold();
+
 template<class T>
 void printfMat(const cv::Mat &mat)
 {

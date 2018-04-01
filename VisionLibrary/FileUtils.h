@@ -57,6 +57,7 @@ namespace Vision
         static void MakeDirectory(String const &directoryPathname);
         static void Remove       (String const &pathname);
         static void RemoveAll    (String const &directoryPathname);
+        static void ClearFolder  (String const &directoryPathname);
         static void FileCopy     (String const &fromPathname, String const &intoDirectoryPathname, bool const writable=true);
         static void FileDuplicate(String const &fromPathname, String const &intoDirectoryPathname);
         static void Rename       (String const &fromPathname, String const &toPathname);

@@ -16,9 +16,9 @@ static void PrintFindLineRpy ( const PR_FIND_LINE_RPY &stRpy ) {
         std::cout << std::fixed << std::setprecision ( 2 ) << "Line slope = " << stRpy.fSlope << ", intercept = " << stRpy.fIntercept << std::endl;
         _snprintf ( chArrMsg, sizeof ( chArrMsg ), "(%.2f, %.2f), (%.2f, %.2f)", stRpy.stLine.pt1.x, stRpy.stLine.pt1.y, stRpy.stLine.pt2.x, stRpy.stLine.pt2.y );
         std::cout << "Line coordinate: " << chArrMsg << std::endl;
-        std::cout << std::fixed << std::setprecision ( 2 ) << "Linearity  = " << stRpy.fLinearity << std::endl;
+        std::cout << std::fixed << std::setprecision ( 2 ) << "Linearity = " << stRpy.fLinearity << std::endl;
         std::cout << "Linearity check pass: " << stRpy.bLinearityCheckPass << std::endl;
-        std::cout << std::fixed << std::setprecision ( 2 ) << "Angle  = " << stRpy.fAngle << std::endl;
+        std::cout << std::fixed << std::setprecision ( 2 ) << "Angle = " << stRpy.fAngle << std::endl;
         std::cout << "Angle check pass: " << stRpy.bAngleCheckPass << std::endl;
     }else {
         PR_GET_ERROR_INFO_RPY stErrRpy;

@@ -68,5 +68,8 @@
     <ClCompile Include="TestMisc.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="TestInspPolarity.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

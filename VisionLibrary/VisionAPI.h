@@ -101,6 +101,7 @@ VisionAPI VisionStatus PR_LrnContour(const PR_LRN_CONTOUR_CMD *const pstCmd, PR_
 VisionAPI VisionStatus PR_InspContour(const PR_INSP_CONTOUR_CMD *const pstCmd, PR_INSP_CONTOUR_RPY *const pstRpy);
 VisionAPI VisionStatus PR_InspHole(const PR_INSP_HOLE_CMD *const pstCmd, PR_INSP_HOLE_RPY *const pstRpy);
 VisionAPI VisionStatus PR_InspLead(const PR_INSP_LEAD_CMD *const pstCmd, PR_INSP_LEAD_RPY *const pstRpy);
+VisionAPI VisionStatus PR_InspPolarity(const PR_INSP_POLARITY_CMD *const pstCmd, PR_INSP_POLARITY_RPY *const pstRpy);
 VisionAPI VisionStatus PR_GridAvgGrayScale(const PR_GRID_AVG_GRAY_SCALE_CMD *const pstCmd, PR_GRID_AVG_GRAY_SCALE_RPY *const pstRpy);
 VisionAPI VisionStatus PR_Calib3DBase(const PR_CALIB_3D_BASE_CMD *const pstCmd, PR_CALIB_3D_BASE_RPY *const pstRpy);
 VisionAPI VisionStatus PR_Calib3DHeight(const PR_CALIB_3D_HEIGHT_CMD *const pstCmd, PR_CALIB_3D_HEIGHT_RPY *const pstRpy);
@@ -113,6 +114,7 @@ VisionAPI VisionStatus PR_CalcCameraMTF(const PR_CALC_CAMERA_MTF_CMD *const pstC
 VisionAPI VisionStatus PR_CalcMTF(const PR_CALC_MTF_CMD *const pstCmd, PR_CALC_MTF_RPY *const pstRpy);
 VisionAPI VisionStatus PR_CalcPD(const PR_CALC_PD_CMD *const pstCmd, PR_CALC_PD_RPY *const pstRpy);
 VisionAPI VisionStatus PR_CombineImg(const PR_COMBINE_IMG_CMD *const pstCmd, PR_COMBINE_IMG_RPY *const pstRpy);
+VisionAPI VisionStatus PR_Threshold(const PR_THRESHOLD_CMD *const pstCmd, PR_THRESHOLD_RPY *const pstRpy);
 
 VisionAPI void         _PR_InternalTest();
 }

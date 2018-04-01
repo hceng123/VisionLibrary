@@ -46,6 +46,14 @@ static void printfVectorOfVector(const std::vector<std::vector<T>> &vecVecInput)
 	}
 }
 
+template<class T>
+static String formatRect(const cv::Rect_<T> &rect)
+{
+    std::stringstream ss;
+    ss << rect.x << ", " << rect.y << ", " << rect.width << ", " << rect.height;
+    return ss.str();
+}
+
 static void TestCalcUtilsCumSum() {    
     {
         std::cout << std::endl << "------------------------------------------";
@@ -328,6 +336,35 @@ static void TestCalcUtilsRepeat() {
     printfMat<float> ( matResult );
 }
 
+static void TestCalcUtilsScaleRect() {
+    {
+        std::cout << std::endl << "------------------------------------------------";
+        std::cout << std::endl << "CALCUTILS SCALE RECT TEST #1 STARTING";
+        std::cout << std::endl << "------------------------------------------------";
+        std::cout << std::endl;
+        cv::Rect2f rect(-5, -5, 10, 10);
+        cv::Rect2f rectBig = CalcUtils::scaleRect(rect, 2.f);
+        cv::Rect2f rectSmall = CalcUtils::scaleRect(rect, 0.5f);
+        std::cout << "Input rect " << formatRect(rect) << std::endl;
+        std::cout << "Scale 2 result " << formatRect(rectBig) << std::endl;
+        std::cout << "Scale 0.5 result " << formatRect(rectSmall) << std::endl;
+    }
+
+    {
+        std::cout << std::endl << "------------------------------------------------";
+        std::cout << std::endl << "CALCUTILS SCALE RECT TEST #2 STARTING";
+        std::cout << std::endl << "------------------------------------------------";
+        std::cout << std::endl;
+
+        cv::Rect rect(90, 90, 20, 20);
+        cv::Rect rectBig = CalcUtils::scaleRect(rect, 2.f);
+        cv::Rect rectSmall = CalcUtils::scaleRect(rect, 0.5f);
+        std::cout << "Input rect " << formatRect(rect) << std::endl;
+        std::cout << "Scale 2 result " << formatRect(rectBig) << std::endl;
+        std::cout << "Scale 0.5 result " << formatRect(rectSmall) << std::endl;
+    }
+}
+
 static void TestPhaseCorrection() {
     std::cout << std::endl << "------------------------------------------------";
     std::cout << std::endl << "UNWRAP PHASE CORRECTION TEST #1 STARTING";
@@ -391,6 +428,7 @@ void InternalTest() {
     TestCalcUtilsFloor();
     TestCalcUtilsInterp1();
     TestCalcUtilsRepeat();
+    TestCalcUtilsScaleRect();
     TestPhaseCorrection();
     TestFitCircle();
 }

@@ -67,13 +67,14 @@ public:
     static VisionStatus restoreImage(const PR_RESTORE_IMG_CMD *const pstCmd, PR_RESTORE_IMG_RPY *const pstRpy, bool bReplay = false);
     static VisionStatus calcUndistortRectifyMap(const PR_CALC_UNDISTORT_RECTIFY_MAP_CMD *const pstCmd, PR_CALC_UNDISTORT_RECTIFY_MAP_RPY *const pstRpy);
     static VisionStatus autoLocateLead(const PR_AUTO_LOCATE_LEAD_CMD *const pstCmd, PR_AUTO_LOCATE_LEAD_RPY *const pstRpy, bool bReplay = false );
-    static VisionStatus inspBridge(const PR_INSP_BRIDGE_CMD *const pstCmd, PR_INSP_BRIDGE_RPY *const pstRpy, bool bReplay = false );
-    static VisionStatus lrnChip( const PR_LRN_CHIP_CMD *const pstCmd, PR_LRN_CHIP_RPY *const pstRpy, bool bReplay = false );
-    static VisionStatus inspChip( const PR_INSP_CHIP_CMD *const pstCmd, PR_INSP_CHIP_RPY *const pstRpy, bool bReplay = false );
-    static VisionStatus lrnContour(const PR_LRN_CONTOUR_CMD *const pstCmd, PR_LRN_CONTOUR_RPY *const pstRpy, bool bReplay = false );
-    static VisionStatus inspContour(const PR_INSP_CONTOUR_CMD *const pstCmd, PR_INSP_CONTOUR_RPY *const pstRpy, bool bReplay = false );
+    static VisionStatus inspBridge(const PR_INSP_BRIDGE_CMD *const pstCmd, PR_INSP_BRIDGE_RPY *const pstRpy, bool bReplay = false);
+    static VisionStatus lrnChip( const PR_LRN_CHIP_CMD *const pstCmd, PR_LRN_CHIP_RPY *const pstRpy, bool bReplay = false);
+    static VisionStatus inspChip( const PR_INSP_CHIP_CMD *const pstCmd, PR_INSP_CHIP_RPY *const pstRpy, bool bReplay = false);
+    static VisionStatus lrnContour(const PR_LRN_CONTOUR_CMD *const pstCmd, PR_LRN_CONTOUR_RPY *const pstRpy, bool bReplay = false);
+    static VisionStatus inspContour(const PR_INSP_CONTOUR_CMD *const pstCmd, PR_INSP_CONTOUR_RPY *const pstRpy, bool bReplay = false);
     static VisionStatus inspHole(const PR_INSP_HOLE_CMD *const pstCmd, PR_INSP_HOLE_RPY *const pstRpy, bool bReplay = false);
-    static VisionStatus inspLead(const PR_INSP_LEAD_CMD *const pstCmd, PR_INSP_LEAD_RPY *const pstRpy, bool bReplay = false);    
+    static VisionStatus inspLead(const PR_INSP_LEAD_CMD *const pstCmd, PR_INSP_LEAD_RPY *const pstRpy, bool bReplay = false);
+    static VisionStatus inspPolarity(const PR_INSP_POLARITY_CMD *const pstCmd, PR_INSP_POLARITY_RPY *const pstRpy, bool bReplay = false);
     static VisionStatus gridAvgGrayScale(const PR_GRID_AVG_GRAY_SCALE_CMD *const pstCmd, PR_GRID_AVG_GRAY_SCALE_RPY *const pstRpy);
     static VisionStatus calib3DBase(const PR_CALIB_3D_BASE_CMD *const pstCmd, PR_CALIB_3D_BASE_RPY *const pstRpy, bool bReplay = false);
     static VisionStatus calc3DBase(const PR_CALC_3D_BASE_CMD *const pstCmd, PR_CALC_3D_BASE_RPY *const pstRpy, bool bReplay = false);
@@ -90,6 +91,7 @@ public:
     static VisionStatus parallelLineDist(const PR_PARALLEL_LINE_DIST_CMD *const pstCmd, PR_PARALLEL_LINE_DIST_RPY *const pstRpy);
     static VisionStatus crossSectionArea(const PR_CROSS_SECTION_AREA_CMD *const pstCmd, PR_CROSS_SECTION_AREA_RPY *const pstRpy);
     static VisionStatus combineImg(const PR_COMBINE_IMG_CMD *const pstCmd, PR_COMBINE_IMG_RPY *const pstRpy, bool bReplay = false);
+    static VisionStatus threshold(const PR_THRESHOLD_CMD *const pstCmd, PR_THRESHOLD_RPY *const pstRpy, bool bReplay = false);
 protected:
     static VisionStatus _checkInputROI(const cv::Rect &rect, const cv::Mat &matInputImg, const char *filename, int line);
     static LogCasePtr _createLogCaseInstance(const String &strFolderPrefix, const String &strLocalPath);

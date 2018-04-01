@@ -14,7 +14,8 @@ namespace Vision
 class Record
 {
 public:
-    Record(PR_RECORD_TYPE enType):_enType(enType)   {}
+    explicit Record(PR_RECORD_TYPE enType):_enType(enType) {}
+    virtual ~Record() = default;
     virtual VisionStatus load(cv::FileStorage &fileStorage, const String& strFilePath = "") = 0;
     virtual VisionStatus save(const String& strFilePath) = 0;
     virtual PR_RECORD_TYPE getType() { return _enType;};    

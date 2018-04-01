@@ -42,7 +42,7 @@ struct PR_VERSION_INFO {
 
 struct PR_LRN_OBJ_CMD {
     cv::Mat                 matInputImg;
-	PR_SRCH_OBJ_ALGORITHM   enAlgorithm;	
+	PR_SRCH_OBJ_ALGORITHM   enAlgorithm;
 	cv::Mat                 matMask;
 	cv::Rect2f              rectLrn;
 };
@@ -137,18 +137,17 @@ struct PR_INSP_SURFACE_CMD {
     PR_DefectCriteria       astDefectCriteria[MAX_NUM_OF_DEFECT_CRITERIA];
 };
 
-struct PR_Defect {
-    PR_DEFECT_TYPE      enType;
-    float               fArea;
-    float               fRadius;
-    float               fLength;
-    Int16               n16Constrast;
-};
-
 struct PR_INSP_SURFACE_RPY {
-    Int16               nStatus;
-    Int16               n16NDefect;
-    PR_Defect           astDefect[MAX_NUM_OF_DEFECT_RESULT];
+    struct PR_SURFACE_DEFECT {
+        PR_DEFECT_TYPE      enType;
+        float               fArea;
+        float               fRadius;
+        float               fLength;
+        Int16               n16Constrast;
+    };
+    Int16                   nStatus;
+    Int16                   n16NDefect;
+    PR_SURFACE_DEFECT       astDefect[MAX_NUM_OF_DEFECT_RESULT];
 };
 
 template<typename _Tp> class PR_Line_
@@ -926,9 +925,14 @@ struct PR_INSP_HOLE_CMD {
         ADVANCED_CRITERIA   stAdvancedCriteria;
     };
 
+    PR_INSP_HOLE_CMD() :
+        bPreprocessedImg    (false),
+        enSegmentMethod     (PR_IMG_SEGMENT_METHOD::GRAY_SCALE_RANGE) {}
+
     cv::Mat                 matInputImg;
     cv::Mat                 matMask;
     cv::Rect                rectROI;
+    bool                    bPreprocessedImg;
     PR_IMG_SEGMENT_METHOD   enSegmentMethod;
     GRAY_SCALE_RANGE        stGrayScaleRange;   //It is used when enSegmentMethod is PR_IMG_SEGMENT_METHOD::GRAY_SCALE_RANGE.
     COLOR_RANGE             stColorRange;       //It is used when enSegmentMethod is PR_IMG_SEGMENT_METHOD::COLOR_RANGE.
@@ -987,6 +991,29 @@ struct PR_INSP_LEAD_RPY {
 };
 /******************************************
 * End of Inspect Lead Section *
+******************************************/
+
+/******************************************
+* Inspect Polarity Section *
+******************************************/
+struct PR_INSP_POLARITY_CMD {
+    PR_INSP_POLARITY_CMD() :
+        enInspROIAttribute  (PR_OBJECT_ATTRIBUTE::BRIGHT),
+        nGrayScaleDiffTol   (50) {}
+    cv::Mat                 matInputImg;
+    cv::Rect                rectInspROI;
+    cv::Rect                rectCompareROI;
+    PR_OBJECT_ATTRIBUTE     enInspROIAttribute;
+    Int16                   nGrayScaleDiffTol;
+};
+
+struct PR_INSP_POLARITY_RPY {
+    VisionStatus            enStatus;
+    Int16                   nGrayScaleDiff;
+    cv::Mat                 matResultImg;
+};
+/******************************************
+* End of Inspect Polarity Section *
 ******************************************/
 
 struct PR_GRID_AVG_GRAY_SCALE_CMD {
@@ -1290,6 +1317,23 @@ struct PR_COMBINE_IMG_CMD {
 struct PR_COMBINE_IMG_RPY {
     VisionStatus            enStatus;
     VectorOfMat             vecResultImages;
+};
+
+struct PR_THRESHOLD_CMD {
+    PR_THRESHOLD_CMD() :
+        bDoubleThreshold    (false),
+        bInverseResult      (false) {}
+
+    cv::Mat                 matInputImg;
+    bool                    bDoubleThreshold;
+    bool                    bInverseResult;
+    Int32                   nThreshold1;
+    Int32                   nThreshold2;    
+};
+
+struct PR_THRESHOLD_RPY {
+    VisionStatus            enStatus;
+    cv::Mat                 matResultImg;
 };
 
 }

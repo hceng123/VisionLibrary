@@ -186,6 +186,7 @@
     <ClCompile Include="TestInspBridge.cpp" />
     <ClCompile Include="TestInspChip.cpp" />
     <ClCompile Include="TestInspLead.cpp" />
+    <ClCompile Include="TestInspPolarity.cpp" />
     <ClCompile Include="TestMatchTemplate.cpp" />
     <ClCompile Include="TestMeasure.cpp" />
     <ClCompile Include="TestMisc.cpp" />
