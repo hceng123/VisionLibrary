@@ -60,14 +60,9 @@ public:
 
     std::string static GetLocalTimeStr()
     {
-		char szTime[100];
-        struct tm  stTm;
-        time_t     nTimeSeconds;
+        time_t nTimeSeconds;
         time(&nTimeSeconds);
-        errno_t err = localtime_s ( &stTm, &nTimeSeconds);
-        __int64 nMilliseconds = AbsNow () - nTimeSeconds * 1000;
-        _snprintf_s ( szTime, 100, "%d-%02d-%02d %02d:%02d:%02d.%03d", stTm.tm_year + 1900, stTm.tm_mon + 1, stTm.tm_mday, stTm.tm_hour, stTm.tm_min, stTm.tm_sec, nMilliseconds );
-        return std::string(szTime);
+        return std::to_string(nTimeSeconds);
     }
 private:
 	high_resolution_clock::time_point _tpStart;

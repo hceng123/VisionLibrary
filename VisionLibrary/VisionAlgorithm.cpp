@@ -6739,6 +6739,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
 }
 
 /*static*/ VisionStatus VisionAlgorithm::combineImg(const PR_COMBINE_IMG_CMD *const pstCmd, PR_COMBINE_IMG_RPY *const pstRpy, bool bReplay /*= false*/) {
+    pstRpy->vecResultImages.clear();
     if (pstCmd->nCountOfFrameX <= 0 || pstCmd->nCountOfFrameY <= 0 || pstCmd->nCountOfImgPerFrame <= 0) {
         char chArrMsg[1000];
         _snprintf(chArrMsg, sizeof(chArrMsg), "The CountOfFrameX %d or CountOfFrameY %d or CountOfImgPerFrame %d is invalid.",
@@ -6771,14 +6772,13 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     MARK_FUNCTION_START_TIME;
 
     auto szImage = pstCmd->vecInputImages[0].size();
-    int nResultPixCols = pstCmd->nCountOfFrameX * szImage.width - pstCmd->nOverlapX * (pstCmd->nCountOfFrameX - 1);
+    int nResultPixCols = pstCmd->nCountOfFrameX * szImage.width  - pstCmd->nOverlapX * (pstCmd->nCountOfFrameX - 1);
     int nResultPixRows = pstCmd->nCountOfFrameY * szImage.height - pstCmd->nOverlapY * (pstCmd->nCountOfFrameY - 1);
 
     for (int imgNo = 0; imgNo < pstCmd->nCountOfImgPerFrame; ++ imgNo) {
-        cv::Mat matResult = cv::Mat::zeros(nResultPixRows, nResultPixCols, CV_8UC3);
+        cv::Mat matResult = cv::Mat::zeros(nResultPixRows, nResultPixCols, pstCmd->vecInputImages[0].type());
 
         for (int nRow = 0; nRow < pstCmd->nCountOfFrameY; ++ nRow)
-            //Column start from right to left.
         for (int nCol = 0; nCol < pstCmd->nCountOfFrameX; ++ nCol) {
             if ((nCol * pstCmd->nCountOfImgPerFrame + imgNo) >= pstCmd->nCountOfImgPerRow)
                 continue;

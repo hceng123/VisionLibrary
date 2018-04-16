@@ -14,9 +14,13 @@
  * Copyright (c) 2016-2018, Xiao Shengguang.  All rights reserved.
  ****************************************************************************/
 
+//2018-04-16 (XSG) Fix PR_CombineImage type not follow input image type problem.
+//                 Remove not thread safe code.
+#define AOI_VISION_VERSION          "1.00.26"
+
 //2018-03-31 (XSG) Add PR_Threshold function.
 //                 Add bPreprocessedImg for PR_INSP_HOLE_CMD.
-#define AOI_VISION_VERSION          "1.00.25"
+//#define AOI_VISION_VERSION          "1.00.25"
 
 //2018-02-09 (XSG) Change the PR_STATUS_ERROR_LEVEL::NO_ERROR to PR_STATUS_ERROR_LEVEL::PR_NO_ERROR to avoid macro definition.
 //                 NO_ERROR make compile fail problem.

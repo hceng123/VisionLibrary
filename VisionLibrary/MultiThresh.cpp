@@ -119,7 +119,7 @@ std::vector<size_t> sort_index_value(std::vector<T> &v) {
 
     // sort indexes based on comparing values in v
     sort(idx.begin(), idx.end(),
-        [&v](size_t i1, size_t i2) {return v[i1] < v[i2]; });
+        [&v](size_t i1, size_t i2) { return v[i1] < v[i2]; });
 
     std::vector<T> vClone(v);
     for (size_t i = 0; i < idx.size(); ++ i)
