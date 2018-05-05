@@ -28,6 +28,7 @@ using ListOfPoint2f = std::list<cv::Point2f>;
 using VectorOfListOfPoint = std::vector<ListOfPoint>;
 using VectorOfSize2f = std::vector<cv::Size2f>;
 using VectorOfMat = std::vector<cv::Mat>;
+using VectorOfVectorOfMat = std::vector<VectorOfMat>;
 using VectorOfFloat = std::vector<float>;
 using VectorOfVectorOfFloat = std::vector<VectorOfFloat>;
 using VectorOfDouble = std::vector<double>;

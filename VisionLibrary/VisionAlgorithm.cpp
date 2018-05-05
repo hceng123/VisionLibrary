@@ -6821,6 +6821,8 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
         return pstRpy->enStatus;
     }
 
+    MARK_FUNCTION_START_TIME;
+
     cv::Mat matGray;
     if (pstCmd->matInputImg.channels() > 1)
         cv::cvtColor(pstCmd->matInputImg, matGray, CV_BGR2GRAY);
@@ -6838,6 +6840,8 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
 
     if (pstCmd->bInverseResult)
         pstRpy->matResultImg = PR_MAX_GRAY_LEVEL - pstRpy->matResultImg;
+
+    MARK_FUNCTION_END_TIME;
 
     pstRpy->enStatus = VisionStatus::OK;
     return pstRpy->enStatus;

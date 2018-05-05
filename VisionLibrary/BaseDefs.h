@@ -32,7 +32,6 @@
 #include <utility>
 #include <vector>
 #define  BOOST_MPL_CFG_NO_PREPROCESSED_HEADERS
-#define  BOOST_MPL_LIMIT_LIST_SIZE 30
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/format.hpp>
