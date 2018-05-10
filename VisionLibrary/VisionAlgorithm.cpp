@@ -6426,6 +6426,22 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
         if (VisionStatus::OK != pstRpy->enStatus) return pstRpy->enStatus;
     }
 
+    if (1.f <= pstCmd->fEffectHRatioStart || pstCmd->fEffectHRatioStart < 0.f) {
+        char chArrMsg[1000];
+        _snprintf(chArrMsg, sizeof(chArrMsg), "The EffectHRatioStart %.2f is invalid, it should between 0 ~ 1.", pstCmd->fEffectHRatioStart);
+        WriteLog(chArrMsg);
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    if (1.f <= pstCmd->fEffectHRatioEnd || pstCmd->fEffectHRatioEnd < 0.f) {
+        char chArrMsg[1000];
+        _snprintf(chArrMsg, sizeof(chArrMsg), "The EffectHRatioEnd %.2f is invalid, it should between 0 ~ 1.", pstCmd->fEffectHRatioEnd);
+        WriteLog(chArrMsg);
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
     if (pstCmd->fEffectHRatioEnd <= pstCmd->fEffectHRatioStart) {
         char chArrMsg[1000];
         _snprintf(chArrMsg, sizeof(chArrMsg), "The EffectHRatioEnd %.2f should larger than EffectHRatioStart %.2f.",
