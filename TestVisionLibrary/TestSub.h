@@ -17,6 +17,7 @@ void TestInspChipHead();
 void TestTemplate();
 void TestInspLead();
 void TestCalib3dBase();
+void TestCalib3dBase_1();
 void TestCalc3DHeight();
 void TestCalib3DHeight_01();
 void TestCalib3DHeight_02();

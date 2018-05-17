@@ -844,6 +844,9 @@ struct PR_INSP_CHIP_RPY {
 * Inspect Contour Section *
 ******************************************/
 struct PR_LRN_CONTOUR_CMD {
+    PR_LRN_CONTOUR_CMD() :
+        bAutoThreshold  (true),
+        nThreshold      (100) {}
     cv::Mat                 matInputImg;
 	cv::Mat                 matMask;
 	cv::Rect                rectROI;
@@ -860,7 +863,14 @@ struct PR_LRN_CONTOUR_RPY {
 };
 
 struct PR_INSP_CONTOUR_CMD {
-    PR_INSP_CONTOUR_CMD() : nRecordId (0), nDefectThreshold(30), fMinDefectArea (100.f), fDefectInnerLengthTol(20), fDefectOuterLengthTol(20), fInnerMaskDepth(5), fOuterMaskDepth(5) {}
+    PR_INSP_CONTOUR_CMD() : 
+        nRecordId             (0), 
+        nDefectThreshold      (30),
+        fMinDefectArea        (100.f),
+        fDefectInnerLengthTol (20),
+        fDefectOuterLengthTol (20),
+        fInnerMaskDepth       (5),
+        fOuterMaskDepth       (5) {}
     cv::Mat                 matInputImg;
 	cv::Mat                 matMask;
 	cv::Rect                rectROI;

@@ -2306,7 +2306,6 @@ void removeBlob(cv::Mat &matThreshold, cv::Mat &matBlob, float fAreaLimit) {
     cv::Mat mat00 = vecConvertedImgs[2] - vecConvertedImgs[0];
     cv::Mat mat01 = vecConvertedImgs[3] - vecConvertedImgs[1];
 
-
     cv::Mat matAlpha;
     cv::phase(-mat00, mat01, matAlpha);
     matAlpha = _phaseUnwrapSurface(matAlpha);

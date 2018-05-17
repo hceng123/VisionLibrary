@@ -1116,6 +1116,7 @@ Number of defects: 2
 CALIB 3D BASE TEST #1 STARTING
 ----------------------------------------------
 PR_Calib3DBase status 0
+ReverseSeq: 1
 ThickToThinK: 
 5.0 
 -0.0 
@@ -1339,6 +1340,7 @@ IntegratedK
 CALIB 3D BASE TEST #2 STARTING
 ----------------------------------------------
 PR_Calib3DBase status 0
+ReverseSeq: 1
 ThickToThinK: 
 5.0 
 2.0 

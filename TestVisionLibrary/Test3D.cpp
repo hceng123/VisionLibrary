@@ -1,4 +1,4 @@
-#include "stdafx.h"
+﻿#include "stdafx.h"
 #include "../VisionLibrary/VisionAPI.h"
 #include "opencv2/highgui.hpp"
 #include <iostream>
@@ -865,4 +865,37 @@ void TestSolve() {
     printfMat<float>(matK);
     std::cout << "Eign value: " << std::endl;
     printfMat<float>(matEign);
+}
+
+void TestCalib3dBase_1() {
+    std::string strFolder = "D:/Data/DLPImage/";
+    PR_CALIB_3D_BASE_CMD stCmd;
+    PR_CALIB_3D_BASE_RPY stRpy;
+    for ( int i = 1; i <= IMAGE_COUNT; ++ i ) {
+        char chArrFileName[100];
+        _snprintf( chArrFileName, sizeof (chArrFileName), "%02d.bmp", i );
+        std::string strImageFile = strFolder + chArrFileName;
+        cv::Mat mat = cv::imread ( strImageFile, cv::IMREAD_GRAYSCALE );
+        if ( mat.empty() ) {
+            std::cout << "Failed to read image " << strImageFile << std::endl;
+            return;
+        }
+        stCmd.vecInputImgs.push_back ( mat );
+    }
+    stCmd.bEnableGaussianFilter = true;
+    stCmd.fRemoveHarmonicWaveK = 0.f;
+    PR_Calib3DBase ( &stCmd, &stRpy );
+    std::cout << "PR_Calib3DBase status " << ToInt32( stRpy.enStatus ) << std::endl;
+
+    std::string strResultMatPath = gstrCalibResultFile;
+    cv::FileStorage fs(strResultMatPath, cv::FileStorage::WRITE);
+    if ( ! fs.isOpened() )
+        return;
+
+    cv::write ( fs, "K1", stRpy.matThickToThinK );
+    cv::write ( fs, "K2", stRpy.matThickToThinnestK );
+    cv::write ( fs, "BaseWrappedAlpha", stRpy.matBaseWrappedAlpha );
+    cv::write ( fs, "BaseWrappedBeta",  stRpy.matBaseWrappedBeta );
+    cv::write ( fs, "BaseWrappedGamma", stRpy.matBaseWrappedGamma );
+    fs.release();
 }

@@ -87,6 +87,7 @@ void TestCalib3dBaseSub(
     stCmd.bEnableGaussianFilter = true;
     PR_Calib3DBase ( &stCmd, &stRpy );
     std::cout << "PR_Calib3DBase status " << ToInt32( stRpy.enStatus ) << std::endl;
+    std::cout << "ReverseSeq: " << stRpy.bReverseSeq << std::endl;
     std::cout << "ThickToThinK: " << std::endl;
     printfMat<float>(stRpy.matThickToThinK);
     std::cout << "ThickToThinnestK: " << std::endl;
