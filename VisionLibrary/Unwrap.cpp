@@ -2308,6 +2308,9 @@ void removeBlob(cv::Mat &matThreshold, cv::Mat &matBlob, float fAreaLimit) {
 
     cv::Mat matAlpha;
     cv::phase(-mat00, mat01, matAlpha);
+
+    matAlpha = matAlpha / CV_PI;
+
     matAlpha = _phaseUnwrapSurface(matAlpha);
 
     const auto ROWS = matAlpha.rows;

@@ -5300,9 +5300,10 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     }
     cv::polylines(pstRpy->matResultImg, pstRpy->vecContours, true, _constBlueScalar, 2);
 
-    FINISH_LOGCASE;
-    MARK_FUNCTION_END_TIME;
     pstRpy->enStatus = VisionStatus::OK;
+
+    FINISH_LOGCASE;
+    MARK_FUNCTION_END_TIME;    
     return pstRpy->enStatus;
 }
 

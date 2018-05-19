@@ -14,9 +14,12 @@
  * Copyright (c) 2016-2018, Xiao Shengguang.  All rights reserved.
  ****************************************************************************/
 
+//2018-05-17 (XSG) Fix PR_Calib3DBase ReverseSeq calculation not correct problem.
+#define AOI_VISION_VERSION          "1.00.27"
+
 //2018-04-16 (XSG) Fix PR_CombineImage type not follow input image type problem.
 //                 Remove not thread safe code.
-#define AOI_VISION_VERSION          "1.00.26"
+//#define AOI_VISION_VERSION          "1.00.26"
 
 //2018-03-31 (XSG) Add PR_Threshold function.
 //                 Add bPreprocessedImg for PR_INSP_HOLE_CMD.

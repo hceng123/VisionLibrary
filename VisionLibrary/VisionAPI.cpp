@@ -95,7 +95,12 @@ VisionAPI void PR_DumpTimeLog(const std::string &strPath)
 
 VisionAPI VisionStatus PR_FreeRecord(Int32 nRecordId)
 {
-    return RecordManager::getInstance()->free(nRecordId);
+    try {
+        return RecordManager::getInstance()->free(nRecordId);
+    }catch (std::exception &e) {
+        WriteLog(e.what());
+        return VisionStatus::OPENCV_EXCEPTION;
+    }
 }
 
 VisionAPI VisionStatus PR_FreeAllRecord()
@@ -103,7 +108,7 @@ VisionAPI VisionStatus PR_FreeAllRecord()
     try {
         return RecordManager::getInstance()->freeAllRecord();
     }catch (std::exception &e) {
-        WriteLog ( e.what () );
+        WriteLog(e.what());
         return VisionStatus::OPENCV_EXCEPTION;
     }
 }

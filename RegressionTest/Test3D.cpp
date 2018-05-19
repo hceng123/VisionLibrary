@@ -385,7 +385,7 @@ void TestCalib3DHeight_2() {
 void TestCalib3dBase_2() {
     String strParentPath = "./data/HaoYu_20170920/";
     String strImageFolder = "0920234214_base";
-    TestCalib3dBaseSub ( 2, strParentPath, strImageFolder );
+    TestCalib3dBaseSub(2, strParentPath, strImageFolder);
 }
 
 void TestCalib3DHeight_3() {
@@ -396,17 +396,17 @@ void TestCalib3DHeight_3() {
     bool bReverseSeq = false;
     cv::FileNode fileNode;
     fileNode = fs["ReverseSeq"];
-    cv::read ( fileNode, bReverseSeq, false );
+    cv::read(fileNode, bReverseSeq, false);
     fileNode = fs["K1"];
-    cv::read ( fileNode, matThickToThinK, cv::Mat() );
+    cv::read(fileNode, matThickToThinK, cv::Mat());
     fileNode = fs["K2"];
-    cv::read ( fileNode, matThickToThinnestK, cv::Mat() );
+    cv::read(fileNode, matThickToThinnestK, cv::Mat());
     fileNode = fs["BaseWrappedAlpha"];
-    cv::read ( fileNode, matBaseWrappedAlpha, cv::Mat() );
+    cv::read(fileNode, matBaseWrappedAlpha, cv::Mat());
     fileNode = fs["BaseWrappedBeta"];
-    cv::read ( fileNode, matBaseWrappedBeta, cv::Mat() );
+    cv::read(fileNode, matBaseWrappedBeta, cv::Mat());
     fileNode = fs["BaseWrappedGamma"];
-    cv::read ( fileNode, matBaseWrappedGamma, cv::Mat() );
+    cv::read(fileNode, matBaseWrappedGamma, cv::Mat());
     fs.release();
 
     TestCalib3DHeightSub ( 7, 1, false, strParentPath, "0920235040_lefttop",     bReverseSeq, false, 5, matThickToThinK, matThickToThinnestK, matBaseWrappedAlpha, matBaseWrappedBeta, matBaseWrappedGamma );
@@ -424,17 +424,17 @@ void TestCalib3DHeight_4() {
     bool bReverseSeq = false;
     cv::FileNode fileNode;
     fileNode = fs["ReverseSeq"];
-    cv::read ( fileNode, bReverseSeq, false );
+    cv::read(fileNode, bReverseSeq, false);
     fileNode = fs["K1"];
-    cv::read ( fileNode, matThickToThinK, cv::Mat() );
+    cv::read(fileNode, matThickToThinK, cv::Mat());
     fileNode = fs["K2"];
-    cv::read ( fileNode, matThickToThinnestK, cv::Mat() );
+    cv::read(fileNode, matThickToThinnestK, cv::Mat());
     fileNode = fs["BaseWrappedAlpha"];
-    cv::read ( fileNode, matBaseWrappedAlpha, cv::Mat() );
+    cv::read(fileNode, matBaseWrappedAlpha, cv::Mat());
     fileNode = fs["BaseWrappedBeta"];
-    cv::read ( fileNode, matBaseWrappedBeta, cv::Mat() );
+    cv::read(fileNode, matBaseWrappedBeta, cv::Mat());
     fileNode = fs["BaseWrappedGamma"];
-    cv::read ( fileNode, matBaseWrappedGamma, cv::Mat() );
+    cv::read(fileNode, matBaseWrappedGamma, cv::Mat());
     fs.release();
 
     bool bUseGamma = true;
@@ -445,6 +445,12 @@ void TestCalib3DHeight_4() {
     TestIntegrate3DCalibSub ( 4, strParentPath );
 }
 
+void TestCalib3dBase_3() {
+    String strParentPath = "./data/";
+    String strImageFolder = "DLPImage_ReverseSeqCheck";
+    TestCalib3dBaseSub(3, strParentPath, strImageFolder);
+}
+
 void Test3D() {
     TestCalib3dBase_1();
     TestCalib3DHeight_1();
@@ -453,6 +459,8 @@ void Test3D() {
     TestCalib3dBase_2();
     TestCalib3DHeight_3();
     TestCalib3DHeight_4();
+
+    TestCalib3dBase_3();
 }
 
 }

@@ -1560,6 +1560,18 @@ IntegratedK
 -0.00840 
 0.00075 
 
+----------------------------------------------
+CALIB 3D BASE TEST #3 STARTING
+----------------------------------------------
+PR_Calib3DBase status 0
+ReverseSeq: 1
+ThickToThinK: 
+6.0 
+5.0 
+ThickToThinnestK: 
+22.5 
+18.0 
+
 ---------------------------------------------
 CALC CAMERA MTF REGRESSION TEST #1 STARTING
 ---------------------------------------------
