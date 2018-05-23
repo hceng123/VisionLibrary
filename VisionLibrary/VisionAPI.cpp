@@ -493,7 +493,21 @@ PR_FUNCTION_EXIT
 VisionAPI VisionStatus PR_Calc3DHeightDiff(const PR_CALC_3D_HEIGHT_DIFF_CMD *const pstCmd, PR_CALC_3D_HEIGHT_DIFF_RPY *const pstRpy)
 {
 PR_FUNCTION_ENTRY
-    return VisionAlgorithm::calc3DHeightDiff (pstCmd, pstRpy);
+    return VisionAlgorithm::calc3DHeightDiff(pstCmd, pstRpy);
+PR_FUNCTION_EXIT
+}
+
+VisionAPI VisionStatus PR_CalcDlpOffset(const PR_CALC_DLP_OFFSET_CMD *const pstCmd, PR_CALC_DLP_OFFSET_RPY *const pstRpy)
+{
+PR_FUNCTION_ENTRY
+    return VisionAlgorithm::calcDlpOffset(pstCmd, pstRpy);
+PR_FUNCTION_EXIT
+}
+
+VisionStatus PR_CalcFrameValue(const PR_CALC_FRAME_VALUE_CMD *const pstCmd, PR_CALC_FRAME_VALUE_RPY *const pstRpy)
+{
+PR_FUNCTION_ENTRY
+    return VisionAlgorithm::calcFrameValue(pstCmd, pstRpy);
 PR_FUNCTION_EXIT
 }
 

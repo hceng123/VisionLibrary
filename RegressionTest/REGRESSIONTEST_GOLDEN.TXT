@@ -1,4 +1,20 @@
 
+------------------------------------------------
+BILINEAR INTERPOLATION TEST #1 STARTING
+------------------------------------------------
+Point [100, 0] result 40
+Point [50, 50] result 25
+Point [10, 15] result 14.2
+Point [99, 99] result 29.998
+
+------------------------------------------------
+BILINEAR INTERPOLATION TEST #2 STARTING
+------------------------------------------------
+Point [100, 0] result 20
+Point [20, 0] result 12
+Point [50, 0] result 15
+Point [70, 0] result 17
+
 ------------------------------------------
 CUMSUM REGRESSION TEST #1 STARTING
 ------------------------------------------
@@ -1571,6 +1587,32 @@ ThickToThinK:
 ThickToThinnestK: 
 22.5 
 18.0 
+
+--------------------------------------------
+CALC FRAME VALUE REGRESSION TEST #1 STARTING
+--------------------------------------------
+PR_CalcFrameValue status 0
+PR_CalcFrameValue target [60.0, 500.0] result: 14.0
+PR_CalcFrameValue status 0
+PR_CalcFrameValue target [150.0, 180.0] result: 14.7
+PR_CalcFrameValue status 0
+PR_CalcFrameValue target [500.0, 180.0] result: 19.2
+
+--------------------------------------------
+CALC FRAME VALUE REGRESSION TEST #2 STARTING
+--------------------------------------------
+PR_CalcFrameValue status 0
+PR_CalcFrameValue target [150.0, 180.0] result: 10.6
+PR_CalcFrameValue status 0
+PR_CalcFrameValue target [500.0, 180.0] result: 15.2
+
+--------------------------------------------
+CALC FRAME VALUE REGRESSION TEST #3 STARTING
+--------------------------------------------
+PR_CalcFrameValue status 0
+PR_CalcFrameValue target [150.0, 180.0] result: 14.0
+PR_CalcFrameValue status 0
+PR_CalcFrameValue target [500.0, 180.0] result: 14.0
 
 ---------------------------------------------
 CALC CAMERA MTF REGRESSION TEST #1 STARTING

@@ -806,7 +806,10 @@ struct PR_INSP_BRIDGE_RPY {
 * Chip Inspection Section *
 ******************************************/
 struct PR_LRN_CHIP_CMD {
-    PR_LRN_CHIP_CMD() : enInspMode(PR_INSP_CHIP_MODE::HEAD), bAutoThreshold(true), nThreshold(0) {}
+    PR_LRN_CHIP_CMD() : 
+        enInspMode      (PR_INSP_CHIP_MODE::HEAD),
+        bAutoThreshold  (true),
+        nThreshold      (0) {}
     cv::Mat                 matInputImg;
     cv::Rect2f              rectChip;
     PR_INSP_CHIP_MODE       enInspMode;
@@ -1241,10 +1244,37 @@ struct PR_CALC_3D_HEIGHT_DIFF_RPY {
     float                   fHeightDiff;
 };
 
-//Calculate the system optics modulation transfer function.
-//The system is from DLP->DLP Optics->Camera Optics->Camera
+// Calculate the DLP height offset, it using DLP4 as the base.
+struct PR_CALC_DLP_OFFSET_CMD {
+    cv::Mat                 matHeight1;
+    cv::Mat                 matHeight2;
+    cv::Mat                 matHeight3;
+    cv::Mat                 matHeight4;
+};
+
+struct PR_CALC_DLP_OFFSET_RPY {
+    VisionStatus            enStatus;
+    float                   fOffset1;
+    float                   fOffset2;
+    float                   fOffset3;
+    float                   fOffset4;
+};
+
+struct PR_CALC_FRAME_VALUE_CMD {
+    VectorOfVectorOfPoint2f vecVecRefFrameCenters;
+    VectorOfVectorOfFloat   vecVecRefFrameValues;
+    cv::Point2f             ptTargetFrameCenter;
+};
+
+struct PR_CALC_FRAME_VALUE_RPY {
+    VisionStatus            enStatus;
+    float                   fResult;
+};
+
+// Calculate the system optics modulation transfer function.
+// The system is from DLP->DLP Optics->Camera Optics->Camera
 struct PR_CALC_MTF_CMD {
-    PR_CALC_MTF_CMD() : fMagnitudeOfDLP ( 161 ) {}
+    PR_CALC_MTF_CMD() : fMagnitudeOfDLP(161) {}
     VectorOfMat             vecInputImgs;
     float                   fMagnitudeOfDLP;        //The setted magnitude of DLP. The captured image magnitude divide the setted maganitude is the MTF result.
 };

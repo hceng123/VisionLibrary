@@ -62,6 +62,7 @@ void TestSolve();
 void TestInspPolarity_01();
 
 void TestPrThreshold();
+void TestCalcFrameValue();
 
 template<class T>
 void printfMat(const cv::Mat &mat)

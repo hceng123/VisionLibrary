@@ -4602,7 +4602,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     cv::Rect rectChipROI = CalcUtils::resizeRect<float>(pstCmd->rectChip, pstCmd->rectChip.size() + cv::Size2f(20, 20));
     if (rectChipROI.x < 0) rectChipROI.x = 0;
     if (rectChipROI.y < 0) rectChipROI.y = 0;
-    if ((rectChipROI.x + rectChipROI.width) > pstCmd->matInputImg.cols) rectChipROI.width = pstCmd->matInputImg.cols - rectChipROI.x;
+    if ((rectChipROI.x + rectChipROI.width)  > pstCmd->matInputImg.cols) rectChipROI.width  = pstCmd->matInputImg.cols - rectChipROI.x;
     if ((rectChipROI.y + rectChipROI.height) > pstCmd->matInputImg.rows) rectChipROI.height = pstCmd->matInputImg.rows - rectChipROI.y;
     cv::Mat matROI(pstCmd->matInputImg, rectChipROI);
     cv::Mat matGray, matBlur, matThreshold;
@@ -4859,18 +4859,14 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     if (Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE)
         showImage("Threshold image", matThreshold);
 
-    if (PR_INSP_CHIP_MODE::HEAD == pstCmd->enInspMode) {
+    if (PR_INSP_CHIP_MODE::HEAD == pstCmd->enInspMode)
         _inspChipHeadMode(matThreshold, pstCmd->rectSrchWindow, pstRpy);
-    }
-    else if (PR_INSP_CHIP_MODE::BODY == pstCmd->enInspMode) {
+    else if (PR_INSP_CHIP_MODE::BODY == pstCmd->enInspMode)
         _inspChipBodyMode(matThreshold, pstCmd->rectSrchWindow, pstRpy);
-    }
-    else if (PR_INSP_CHIP_MODE::SQUARE == pstCmd->enInspMode) {
+    else if (PR_INSP_CHIP_MODE::SQUARE == pstCmd->enInspMode)
         _inspChipSquareMode(matThreshold, pstCmd->rectSrchWindow, pstRpy);
-    }
-    else if (PR_INSP_CHIP_MODE::CAE == pstCmd->enInspMode) {
+    else if (PR_INSP_CHIP_MODE::CAE == pstCmd->enInspMode)
         _inspChipCAEMode(matThreshold, pstCmd->rectSrchWindow, pstRpy);
-    }
     else if (PR_INSP_CHIP_MODE::CIRCULAR == pstCmd->enInspMode)
         _inspChipCircularMode(matThreshold, pstCmd->rectSrchWindow, pstRpy);
 
@@ -6457,6 +6453,127 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     Unwrap::calc3DHeightDiff(pstCmd, pstRpy);
 
     MARK_FUNCTION_END_TIME;
+    return pstRpy->enStatus;
+}
+
+/*static*/ VisionStatus VisionAlgorithm::calcDlpOffset(const PR_CALC_DLP_OFFSET_CMD *const pstCmd, PR_CALC_DLP_OFFSET_RPY *const pstRpy, bool bReplay /*= false*/) {
+    assert(pstCmd != nullptr && pstRpy != nullptr);
+    if (pstCmd->matHeight1.empty() || pstCmd->matHeight2.empty() || pstCmd->matHeight3.empty() || pstCmd->matHeight4.empty()) {
+        WriteLog("The input height matrix is empty.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    auto calcMean = [](const cv::Mat &matHeight) {
+        auto dMeanHeight = cv::mean(matHeight, cv::Mat(matHeight == matHeight))[0];
+        return ToFloat(dMeanHeight);
+    };
+
+    auto meanHeight1 = calcMean(pstCmd->matHeight1);
+    auto meanHeight2 = calcMean(pstCmd->matHeight2);
+    auto meanHeight3 = calcMean(pstCmd->matHeight3);
+    auto meanHeight4 = calcMean(pstCmd->matHeight4);
+
+    pstRpy->fOffset1 = meanHeight1 - meanHeight4;
+    pstRpy->fOffset2 = meanHeight2 - meanHeight4;
+    pstRpy->fOffset3 = meanHeight3 - meanHeight4;
+    pstRpy->fOffset4 = meanHeight4 - meanHeight4;
+
+    pstRpy->enStatus = VisionStatus::OK;
+    return pstRpy->enStatus;
+}
+
+/*static*/ VisionStatus VisionAlgorithm::calcFrameValue(const PR_CALC_FRAME_VALUE_CMD *const pstCmd, PR_CALC_FRAME_VALUE_RPY *const pstRpy, bool bReplay /*= false*/) {
+    assert(pstCmd != nullptr && pstRpy != nullptr);
+    if (pstCmd->vecVecRefFrameCenters.empty() || pstCmd->vecVecRefFrameCenters[0].empty()) {
+        WriteLog("The input reference frame center vector is empty.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    if (pstCmd->vecVecRefFrameValues.empty() || pstCmd->vecVecRefFrameValues[0].empty()) {
+        WriteLog("The input reference frame value vector is empty.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    if (pstCmd->vecVecRefFrameCenters.size() != pstCmd->vecVecRefFrameValues.size() || pstCmd->vecVecRefFrameCenters[0].size() != pstCmd->vecVecRefFrameValues[0].size()) {
+        WriteLog("The size of input reference frame center and value vector is not match.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    const auto ROWS = pstCmd->vecVecRefFrameCenters.size();
+    const auto COLS = pstCmd->vecVecRefFrameCenters[0].size();
+    int row = 0, col = 0;
+    if (1 == ROWS)
+        row = 0;
+    else {
+        for (; row < ROWS; ++ row)
+            if (pstCmd->ptTargetFrameCenter.y >= pstCmd->vecVecRefFrameCenters[row][0].y)
+                break;
+    }
+
+    if (1== COLS)
+        col = 0;
+    else {
+        for (; col < COLS; ++ col)
+            if (pstCmd->ptTargetFrameCenter.x <= pstCmd->vecVecRefFrameCenters[0][col].x)
+                break;
+    }
+
+    if (0 == row) {
+        if (0 == col)
+            pstRpy->fResult = pstCmd->vecVecRefFrameValues[row][col];
+        else if (COLS == col)
+            pstRpy->fResult = pstCmd->vecVecRefFrameValues[row][col - 1];
+        else {
+            pstRpy->fResult = CalcUtils::linearInterpolate(
+                pstCmd->vecVecRefFrameCenters[row][col - 1],
+                pstCmd->vecVecRefFrameValues[row][col - 1],
+                pstCmd->vecVecRefFrameCenters[row][col],
+                pstCmd->vecVecRefFrameValues[row][col],
+                pstCmd->ptTargetFrameCenter);
+        }
+    }else if (0 == col) {
+        if (ROWS == row)
+            pstRpy->fResult = pstCmd->vecVecRefFrameValues[row - 1][col];
+        else {
+            pstRpy->fResult = CalcUtils::linearInterpolate(
+                pstCmd->vecVecRefFrameCenters[row - 1][col],
+                pstCmd->vecVecRefFrameValues [row - 1][col],
+                pstCmd->vecVecRefFrameCenters[row][col],
+                pstCmd->vecVecRefFrameValues [row][col],
+                pstCmd->ptTargetFrameCenter);
+        }
+    }else if (ROWS == row) {
+        if (COLS == col)
+            pstRpy->fResult = pstCmd->vecVecRefFrameValues[row - 1][col - 1];
+        else if (0 == col)
+            pstRpy->fResult = pstCmd->vecVecRefFrameValues[row - 1][col];
+        else {
+            pstRpy->fResult = CalcUtils::linearInterpolate(
+                pstCmd->vecVecRefFrameCenters[row - 1][col - 1],
+                pstCmd->vecVecRefFrameValues [row - 1][col -1],
+                pstCmd->vecVecRefFrameCenters[row - 1][col],
+                pstCmd->vecVecRefFrameValues [row - 1][col],
+                pstCmd->ptTargetFrameCenter);
+        }
+    }else {
+        VectorOfPoint2f vecPoints;
+        VectorOfFloat vecValues;
+        vecPoints.push_back(pstCmd->vecVecRefFrameCenters[row - 1][col - 1]);
+        vecValues.push_back(pstCmd->vecVecRefFrameValues[row - 1][col - 1]);
+        vecPoints.push_back(pstCmd->vecVecRefFrameCenters[row][col - 1]);
+        vecValues.push_back(pstCmd->vecVecRefFrameValues[row][col - 1]);
+        vecPoints.push_back(pstCmd->vecVecRefFrameCenters[row][col]);
+        vecValues.push_back(pstCmd->vecVecRefFrameValues[row][col]);
+        vecPoints.push_back(pstCmd->vecVecRefFrameCenters[row - 1][col]);
+        vecValues.push_back(pstCmd->vecVecRefFrameValues[row - 1][col]);
+        pstRpy->fResult = CalcUtils::bilinearInterpolate(vecPoints, vecValues, pstCmd->ptTargetFrameCenter);
+    }
+
+    pstRpy->enStatus = VisionStatus::OK;
     return pstRpy->enStatus;
 }
 
