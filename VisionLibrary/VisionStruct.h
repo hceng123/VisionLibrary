@@ -1155,6 +1155,10 @@ struct PR_INTEGRATE_3D_CALIB_RPY {
 
 using PairHeightPhase = std::pair<float, cv::Mat>;
 using VectorPairHeightPhase = std::vector<PairHeightPhase>;
+using PairHeightCalibResult = std::pair<float, cv::Mat>;
+using VectorHeightCalibResult = std::vector<PairHeightCalibResult>;
+using PairHeightBlockHeights = std::pair<float, VectorOfFloat>;
+using VectorHeightBlockHeights = std::vector<PairHeightBlockHeights>;
 
 struct PR_MOTOR_CALIB_3D_CMD {
     PR_MOTOR_CALIB_3D_CMD() :
@@ -1172,6 +1176,8 @@ struct PR_MOTOR_CALIB_3D_RPY {
     cv::Mat                 matIntegratedK;         //The 12 parameters to calculate height. They are K1~K10 and P1, P2. H = (Phase + P1*Phase^2 + P2*Phase^3) ./ (K(1)*x1.^3 + K(2)*y1.^3 + K(3)*x1.^2.*y1 + K(4)*x1.*y1.^2 + K(5)*x1.^2 + K(6)*y1.^2 + K(7)*x1.*y1 + K(8)*x1 + K(9)*y1 + K(10))
     cv::Mat                 matOrder3CurveSurface;  //The regression 3 order curve surface to convert phase to height. It is calculated by K(1)*x1.^3 + K(2)*y1.^3 + K(3)*x1.^2.*y1 + K(4)*x1.*y1.^2 + K(5)*x1.^2 + K(6)*y1.^2 + K(7)*x1.*y1 + K(8)*x1 + K(9)*y1 + K(10)
     VectorOfMat             vecMatResultImg;
+    VectorHeightCalibResult vecHeightCalibResult;
+    VectorHeightBlockHeights vecHeightBlockHeights;
 };
 
 struct PR_CALC_3D_HEIGHT_CMD {
@@ -1188,24 +1194,24 @@ struct PR_CALC_3D_HEIGHT_CMD {
         nRemoveGammaJumpSpanY(4) {}
     VectorOfMat             vecInputImgs;
     bool                    bEnableGaussianFilter;
-    bool                    bReverseSeq;            //Change the image sequence.
-    bool                    bUseThinnestPattern;    //Choose to use the thinnest stripe pattern. Otherwise just use the normal thin stripe.
-    float                   fRemoveHarmonicWaveK;   //The factor to remove the harmonic wave in the thick stripe. If it is 0, then this procedure will be skipped.
-    float                   fMinAmplitude;          //In a group of 4 images, if a pixel's gray scale amplitude less than this value, this pixel will be discarded.
-    float                   fPhaseShift;            //Shift the phase measure range. Normal is -1~1, sometimes the H5 surface has corner over this range. So if shift is 0.1, the measure range is -0.9~1.1, so it can measure all the H5 surface.
-    cv::Mat                 matThickToThinK;        //The factor between thick stripe and thin stripe.
-    cv::Mat                 matThickToThinnestK;    //The factor between thick stripe and thinnest stripe.
-    cv::Mat                 matBaseWrappedAlpha;    //The wrapped thick stripe phase.
-    cv::Mat                 matBaseWrappedBeta;     //The wrapped thin stripe phase.
-    cv::Mat                 matBaseWrappedGamma;    //The wrapped thin stripe phase.
-    cv::Mat                 matPhaseToHeightK;      //The factor to convert phase to height. This is the single group of image calibration result.
+    bool                    bReverseSeq;             //Change the image sequence.
+    bool                    bUseThinnestPattern;     //Choose to use the thinnest stripe pattern. Otherwise just use the normal thin stripe.
+    float                   fRemoveHarmonicWaveK;    //The factor to remove the harmonic wave in the thick stripe. If it is 0, then this procedure will be skipped.
+    float                   fMinAmplitude;           //In a group of 4 images, if a pixel's gray scale amplitude less than this value, this pixel will be discarded.
+    float                   fPhaseShift;             //Shift the phase measure range. Normal is -1~1, sometimes the H5 surface has corner over this range. So if shift is 0.1, the measure range is -0.9~1.1, so it can measure all the H5 surface.
+    cv::Mat                 matThickToThinK;         //The factor between thick stripe and thin stripe.
+    cv::Mat                 matThickToThinnestK;     //The factor between thick stripe and thinnest stripe.
+    cv::Mat                 matBaseWrappedAlpha;     //The wrapped thick stripe phase.
+    cv::Mat                 matBaseWrappedBeta;      //The wrapped thin stripe phase.
+    cv::Mat                 matBaseWrappedGamma;     //The wrapped thin stripe phase.
+    cv::Mat                 matPhaseToHeightK;       //The factor to convert phase to height. This is the single group of image calibration result.
     int                     nRemoveBetaJumpSpanX;    //The phase jump span in X direction under this value in beta phase(the thin pattern) will be removed.
     int                     nRemoveBetaJumpSpanY;    //The phase jump span in Y direction under this value in beta phase(the thin pattern) will be removed.
     int                     nRemoveGammaJumpSpanX;   //The phase jump span in X direction under this value in gamma phase(the thinnest pattern) will be removed. It is used only when bUseThinnestPattern is true.
     int                     nRemoveGammaJumpSpanY;   //The phase jump span in Y direction under this value in gamma phase(the thinnest pattern) will be removed. It is used only when bUseThinnestPattern is true.
     //Below 2 parameters are result of PR_Integrate3DCalib, they are calibrated from positive, negative and H = 5mm surface phase. If these 2 parameters are used, then matPhaseToHeightK will be ignored.
     cv::Mat                 matIntegratedK;          //The 12 parameters to calculate height. They are K1~K10 and P1, P2. H = (Phase + P1*Phase^2 + P2*Phase^3) ./ (K(1)*x1.^3 + K(2)*y1.^3 + K(3)*x1.^2.*y1 + K(4)*x1.*y1.^2 + K(5)*x1.^2 + K(6)*y1.^2 + K(7)*x1.*y1 + K(8)*x1 + K(9)*y1 + K(10))
-    cv::Mat                 matOrder3CurveSurface;  //The regression 3 order curve surface to convert phase to height. It is calculated by K(1)*x1.^3 + K(2)*y1.^3 + K(3)*x1.^2.*y1 + K(4)*x1.*y1.^2 + K(5)*x1.^2 + K(6)*y1.^2 + K(7)*x1.*y1 + K(8)*x1 + K(9)*y1 + K(10)
+    cv::Mat                 matOrder3CurveSurface;   //The regression 3 order curve surface to convert phase to height. It is calculated by K(1)*x1.^3 + K(2)*y1.^3 + K(3)*x1.^2.*y1 + K(4)*x1.*y1.^2 + K(5)*x1.^2 + K(6)*y1.^2 + K(7)*x1.*y1 + K(8)*x1 + K(9)*y1 + K(10)
 };
 
 struct PR_CALC_3D_HEIGHT_RPY {

@@ -743,14 +743,14 @@ int _tmain(int argc, _TCHAR* argv[])
 
     //ChangeColor();
 
-    //TestMotor3DCalib();
+    TestMotor3DCalib();
     //TestSolve();
     //_PR_InternalTest();
 
     //PR_FreeAllRecord();
     //TestPrThreshold();
 
-    TestCalcFrameValue();
+    //TestCalcFrameValue();
 
     //TestInspPolarity_01();
 

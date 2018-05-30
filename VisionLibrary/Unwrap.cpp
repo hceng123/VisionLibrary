@@ -1425,11 +1425,13 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
         cv::Mat matRatio = pstRpy->matPhaseToHeightK.at<DATA_TYPE>(0, 0) * matX + pstRpy->matPhaseToHeightK.at<DATA_TYPE>(1, 0) * matY + pstRpy->matPhaseToHeightK.at<DATA_TYPE>(2, 0);
         cv::divide(matPhase, matRatio, matTmpPhase);
     }
-    pstRpy->matResultImg = _drawHeightGrid(matTmpPhase, pstCmd->nResultImgGridRow, pstCmd->nResultImgGridCol, pstCmd->szMeasureWinSize);
+    VectorOfFloat vecBlockHeights;
+    pstRpy->matResultImg = _drawHeightGrid(matTmpPhase, pstCmd->nResultImgGridRow, pstCmd->nResultImgGridCol, pstCmd->szMeasureWinSize, vecBlockHeights);
     pstRpy->enStatus = VisionStatus::OK;
 }
 
-/*static*/ cv::Mat Unwrap::_drawHeightGrid(const cv::Mat &matHeight, int nGridRow, int nGridCol, const cv::Size &szMeasureWinSize) {
+/*static*/ cv::Mat Unwrap::_drawHeightGrid(const cv::Mat &matHeight, int nGridRow, int nGridCol, const cv::Size &szMeasureWinSize, VectorOfFloat &vecBlockHeights) {
+    vecBlockHeights.clear();
     double dMinValue = 0, dMaxValue = 0;
     cv::Mat matMask = (matHeight == matHeight);
     cv::minMaxIdx(matHeight, &dMinValue, &dMaxValue, 0, 0, matMask);
@@ -1461,6 +1463,7 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
         cv::Mat matROI(matHeight, rectROI);
         cv::Mat matMask = (matROI == matROI);
         float fAverage = ToFloat(cv::mean(matROI, matMask)[0]);
+        vecBlockHeights.push_back(fAverage);
 
         char strAverage[100];
         _snprintf(strAverage, sizeof(strAverage), "%.4f", fAverage);
@@ -1950,12 +1953,14 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
     pstRpy->matOrder3CurveSurface = calcOrder3Surface(matX, matY, matK);
     for (const auto &stCalibData : pstCmd->vecCalibData) {
         cv::Mat matHeight = _calcHeightFromPhase(stCalibData.matPhase, pstRpy->matOrder3CurveSurface, matK);
-        cv::Mat matHeightGridImg = _drawHeightGrid(matHeight, pstCmd->nResultImgGridRow, pstCmd->nResultImgGridCol, pstCmd->szMeasureWinSize);
+        VectorOfFloat vecBlockHeights;
+        cv::Mat matHeightGridImg = _drawHeightGrid(matHeight, pstCmd->nResultImgGridRow, pstCmd->nResultImgGridCol, pstCmd->szMeasureWinSize, vecBlockHeights);
         pstRpy->vecMatResultImg.push_back(matHeightGridImg);
     }
     if (! pstCmd->matTopSurfacePhase.empty()) {
         cv::Mat matHeight = _calcHeightFromPhase(pstCmd->matTopSurfacePhase, pstRpy->matOrder3CurveSurface, matK);
-        cv::Mat matHeightGridImg = _drawHeightGrid(matHeight, pstCmd->nResultImgGridRow, pstCmd->nResultImgGridCol, pstCmd->szMeasureWinSize);
+        VectorOfFloat vecBlockHeights;
+        cv::Mat matHeightGridImg = _drawHeightGrid(matHeight, pstCmd->nResultImgGridRow, pstCmd->nResultImgGridCol, pstCmd->szMeasureWinSize, vecBlockHeights);
         pstRpy->vecMatResultImg.push_back(matHeightGridImg);
     }
     pstRpy->matIntegratedK = matK;
@@ -2000,9 +2005,14 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
 #endif
     pstRpy->matIntegratedK = matK;
     pstRpy->matOrder3CurveSurface = calcOrder3Surface(matX1, matY1, matK);
+    pstRpy->vecMatResultImg.clear();
+    pstRpy->vecHeightCalibResult.clear();
     for (const auto &pairHeightPhase : pstCmd->vecPairHeightPhase) {
         cv::Mat matHeight = _calcHeightFromPhase(pairHeightPhase.second, pstRpy->matOrder3CurveSurface, matK);
-        cv::Mat matHeightGridImg = _drawHeightGrid(matHeight, pstCmd->nResultImgGridRow, pstCmd->nResultImgGridCol, pstCmd->szMeasureWinSize);
+        pstRpy->vecHeightCalibResult.push_back(PairHeightCalibResult(pairHeightPhase.first, matHeight));
+        VectorOfFloat vecBlockHeights;
+        cv::Mat matHeightGridImg = _drawHeightGrid(matHeight, pstCmd->nResultImgGridRow, pstCmd->nResultImgGridCol, pstCmd->szMeasureWinSize, vecBlockHeights);
+        pstRpy->vecHeightBlockHeights.push_back(PairHeightBlockHeights(pairHeightPhase.first, vecBlockHeights));
         pstRpy->vecMatResultImg.push_back(matHeightGridImg);
     }
     pstRpy->enStatus = VisionStatus::OK;

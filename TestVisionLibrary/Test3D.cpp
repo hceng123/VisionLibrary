@@ -812,41 +812,41 @@ void TestMotor3DCalib() {
     PR_MOTOR_CALIB_3D_RPY stRpy;
 
     std::string strDataFolder = "./data/Motor3DCalib/", strFile;
-    
-    for ( int i = 1; i <= 5; ++ i ) {
+
+    for (int i = 1; i <= 5; ++ i) {
         PairHeightPhase pairHeightPhase;
         pairHeightPhase.first = -i;
         strFile = strDataFolder + "HP" + std::to_string(i) + ".csv";
-        pairHeightPhase.second = readMatFromCsvFile ( strFile );
-        stCmd.vecPairHeightPhase.push_back ( pairHeightPhase );
+        pairHeightPhase.second = readMatFromCsvFile(strFile);
+        stCmd.vecPairHeightPhase.push_back(pairHeightPhase);
     }
 
-    for ( int i = 1; i <= 5; ++ i ) {
+    for (int i = 1; i <= 5; ++ i) {
         PairHeightPhase pairHeightPhase;
         pairHeightPhase.first = i;
         strFile = strDataFolder + "HN" + std::to_string(i) + ".csv";
-        pairHeightPhase.second = readMatFromCsvFile ( strFile );
-        stCmd.vecPairHeightPhase.push_back ( pairHeightPhase );
+        pairHeightPhase.second = readMatFromCsvFile(strFile);
+        stCmd.vecPairHeightPhase.push_back(pairHeightPhase);
     }
 
-    PR_MotorCalib3D ( &stCmd, &stRpy );
-    std::cout << "PR_MotorCalib3D status " << ToInt32( stRpy.enStatus ) << std::endl;
-    if ( VisionStatus::OK != stRpy.enStatus )
+    PR_MotorCalib3D(&stCmd, &stRpy);
+    std::cout << "PR_MotorCalib3D status " << ToInt32(stRpy.enStatus) << std::endl;
+    if (VisionStatus::OK != stRpy.enStatus)
         return;
 
     int i = 1;
-    for ( const auto &matResultImg : stRpy.vecMatResultImg ) {
+    for (const auto &matResultImg : stRpy.vecMatResultImg) {
         char chArrFileName[100];
-        _snprintf( chArrFileName, sizeof (chArrFileName), "ResultImg_%02d.png", i );
+        _snprintf(chArrFileName, sizeof (chArrFileName), "ResultImg_%02d.png", i);
         std::string strDataFile = strDataFolder + chArrFileName;
-        cv::imwrite ( strDataFile, matResultImg );
+        cv::imwrite(strDataFile, matResultImg);
         ++ i;
     }
 }
 
 void TestSolve() {
-    std::string strResultFile ( "IntermediateResult.yml" );
-    cv::FileStorage fsData ( strResultFile, cv::FileStorage::READ );
+    std::string strResultFile("IntermediateResult.yml");
+    cv::FileStorage fsData(strResultFile, cv::FileStorage::READ);
     if (!fsData.isOpened()) {
         std::cout << "Failed to open file: " << strResultFile << std::endl;
         return;
