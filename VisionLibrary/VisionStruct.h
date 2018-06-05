@@ -1383,6 +1383,15 @@ struct PR_THRESHOLD_RPY {
     cv::Mat                 matResultImg;
 };
 
+struct PR_HEIGHT_TO_GRAY_CMD {
+    cv::Mat                 matHeight;
+};
+
+struct PR_HEIGHT_TO_GRAY_RPY {
+    VisionStatus            enStatus;
+    cv::Mat                 matGray;
+};
+
 }
 }
 #endif /*_AOI_VISION_STRUCT_H_*/

@@ -14,8 +14,11 @@
  * Copyright (c) 2016-2018, Xiao Shengguang.  All rights reserved.
  ****************************************************************************/
 
-//2018-05-25 (XSG) Return calculated height information in PR_MotorCalib3D function..
-#define AOI_VISION_VERSION          "1.00.29"
+//2018-06-05 (XSG) Add PR_CalcDlpOffset and PR_CalcFrameValue functions.
+#define AOI_VISION_VERSION          "1.00.30"
+
+//2018-05-25 (XSG) Return calculated height information in PR_MotorCalib3D function.
+//#define AOI_VISION_VERSION          "1.00.29"
 
 //2018-05-25 (XSG) Add PR_CalcDlpOffset and PR_CalcFrameValue functions.
 //#define AOI_VISION_VERSION          "1.00.28"

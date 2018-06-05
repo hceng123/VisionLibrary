@@ -743,7 +743,13 @@ int _tmain(int argc, _TCHAR* argv[])
 
     //ChangeColor();
 
-    TestMotor3DCalib();
+    //TestMotor3DCalib();
+
+    TestCalc4DLPHeight();
+    //TestCalcFrameValue_1();
+    
+    //TestQueryDlpOffset();
+
     //TestSolve();
     //_PR_InternalTest();
 

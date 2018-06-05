@@ -4658,7 +4658,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     VectorOfVectorOfPoint vecContours;
     pstRpy->enStatus = _findDeviceElectrode(matThreshold, vecPtElectrode, vecElectrodeSize, vecContours);
     if (pstRpy->enStatus != VisionStatus::OK) {
-        WriteLog("Failed to find device electrode");
+        WriteLog("Failed to find device electrode.");
         return pstRpy->enStatus;
     }
     //for ( size_t index = 0; index < PR_ELECTRODE_COUNT && index < vecElectrodeSize.size(); ++ index ) {
@@ -4883,7 +4883,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     VectorOfVectorOfPoint vecContours;
     pstRpy->enStatus = _findDeviceElectrode(matThreshold, vecPtElectrode, vecElectrodeSize, vecContours);
     if (pstRpy->enStatus != VisionStatus::OK) {
-        WriteLog("Failed to find device electrode");
+        WriteLog("Failed to find device electrode.");
         return pstRpy->enStatus;
     }
 
@@ -6469,15 +6469,22 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
         return ToFloat(dMeanHeight);
     };
 
-    auto meanHeight1 = calcMean(pstCmd->matHeight1);
-    auto meanHeight2 = calcMean(pstCmd->matHeight2);
-    auto meanHeight3 = calcMean(pstCmd->matHeight3);
-    auto meanHeight4 = calcMean(pstCmd->matHeight4);
+    cv::Mat matNan1 = CalcUtils::getNanMask(pstCmd->matHeight1);
+    cv::Mat matNan2 = CalcUtils::getNanMask(pstCmd->matHeight2);
+    cv::Mat matNan3 = CalcUtils::getNanMask(pstCmd->matHeight3);
+    cv::Mat matNan4 = CalcUtils::getNanMask(pstCmd->matHeight4);
+    cv::Mat matNanTotal = matNan1 | matNan2 | matNan3 | matNan4;
+    cv::Mat matNonNan = 255 - matNanTotal;
 
-    pstRpy->fOffset1 = meanHeight1 - meanHeight4;
-    pstRpy->fOffset2 = meanHeight2 - meanHeight4;
-    pstRpy->fOffset3 = meanHeight3 - meanHeight4;
-    pstRpy->fOffset4 = meanHeight4 - meanHeight4;
+    auto meanHeight1 = cv::mean(pstCmd->matHeight1, matNonNan)[0];
+    auto meanHeight2 = cv::mean(pstCmd->matHeight2, matNonNan)[0];
+    auto meanHeight3 = cv::mean(pstCmd->matHeight3, matNonNan)[0];
+    auto meanHeight4 = cv::mean(pstCmd->matHeight4, matNonNan)[0];
+
+    pstRpy->fOffset1 = ToFloat(meanHeight1 - meanHeight4);
+    pstRpy->fOffset2 = ToFloat(meanHeight2 - meanHeight4);
+    pstRpy->fOffset3 = ToFloat(meanHeight3 - meanHeight4);
+    pstRpy->fOffset4 = ToFloat(meanHeight4 - meanHeight4);
 
     pstRpy->enStatus = VisionStatus::OK;
     return pstRpy->enStatus;
@@ -6977,6 +6984,33 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
 
     MARK_FUNCTION_END_TIME;
 
+    pstRpy->enStatus = VisionStatus::OK;
+    return pstRpy->enStatus;
+}
+
+/*static*/ VisionStatus VisionAlgorithm::heightToGray(const PR_HEIGHT_TO_GRAY_CMD *const pstCmd, PR_HEIGHT_TO_GRAY_RPY *const pstRpy, bool bReplay /*= false*/) {
+    assert(pstCmd != nullptr && pstRpy != nullptr);
+
+    if (pstCmd->matHeight.empty()) {
+        WriteLog("Input height mat is empty.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    MARK_FUNCTION_START_TIME;
+
+    double dMinValue = 0, dMaxValue = 0;
+    cv::Mat matMask = (pstCmd->matHeight == pstCmd->matHeight);
+    cv::minMaxIdx(pstCmd->matHeight, &dMinValue, &dMaxValue, 0, 0, matMask);
+    
+    cv::Mat matNewHeight = pstCmd->matHeight - dMinValue;
+
+    float dRatio = 255.f / ToFloat( dMaxValue - dMinValue );
+    matNewHeight = matNewHeight * dRatio;
+
+    matNewHeight.convertTo(pstRpy->matGray, CV_8UC1);
+
+    MARK_FUNCTION_END_TIME;
     pstRpy->enStatus = VisionStatus::OK;
     return pstRpy->enStatus;
 }

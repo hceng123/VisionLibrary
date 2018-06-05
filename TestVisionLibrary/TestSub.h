@@ -63,6 +63,9 @@ void TestInspPolarity_01();
 
 void TestPrThreshold();
 void TestCalcFrameValue();
+void TestCalcFrameValue_1();
+void TestCalc4DLPHeight();
+void TestQueryDlpOffset();
 
 template<class T>
 void printfMat(const cv::Mat &mat)
