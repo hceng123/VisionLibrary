@@ -1003,8 +1003,8 @@ void TestCalc4DLPHeight()
     PR_CALC_3D_HEIGHT_RPY stCalcHeightRpys[4];
     for (int nStation = 1; nStation <= 4; ++ nStation)
     {
-        bool b3DDetectCaliUseThinPattern = true;
-        bool b3DDetectGaussionFilter = true;
+        bool b3DDetectCaliUseThinPattern = false;
+        bool b3DDetectGaussionFilter = false;
         //bool b3DDetectReverseSeq = System->getParam("3d_detect_reverse_seq").toBool();
         //double d3DDetectMinIntDiff = System->getParam("3d_detect_min_intensity_diff").toDouble();
         //double d3DDetectPhaseShift = System->getParam("3d_detect_phase_shift").toDouble();
@@ -1013,10 +1013,12 @@ void TestCalc4DLPHeight()
         //stCalcHeightCmds[nStation - 1].fMinAmplitude = d3DDetectMinIntDiff;
         stCalcHeightCmds[nStation - 1].bUseThinnestPattern = b3DDetectCaliUseThinPattern;
         //stCalcHeightCmds[nStation - 1].fPhaseShift = d3DDetectPhaseShift;
-        stCalcHeightCmds[nStation - 1].nRemoveBetaJumpSpanX = 0;
-        stCalcHeightCmds[nStation - 1].nRemoveBetaJumpSpanY = 0;
-        stCalcHeightCmds[nStation - 1].nRemoveGammaJumpSpanX = 0;
-        stCalcHeightCmds[nStation - 1].nRemoveGammaJumpSpanY = 0;
+        //stCalcHeightCmds[nStation - 1].nRemoveBetaJumpSpanX = 0;
+        //stCalcHeightCmds[nStation - 1].nRemoveBetaJumpSpanY = 0;
+        //stCalcHeightCmds[nStation - 1].nRemoveGammaJumpSpanX = 0;
+        //stCalcHeightCmds[nStation - 1].nRemoveGammaJumpSpanY = 0;
+
+        stCalcHeightCmds[nStation - 1].fMinAmplitude = 0;
 
         cv::Mat matBaseSurfaceParam;
 
@@ -1047,12 +1049,36 @@ void TestCalc4DLPHeight()
         fsIntegrated.release();
     }
 
+    //std::string arrStrFrameFolder[] =
+    //{
+    //    "D:/BaiduNetdiskDownload/0602163838/",
+    //    "D:/BaiduNetdiskDownload/0602163936/",
+    //    "D:/BaiduNetdiskDownload/0602163951/",
+    //    "D:/BaiduNetdiskDownload/0602164005/",
+    //};
+
+    //std::string arrStrFrameFolder[] =
+    //{
+    //    "D:/BaiduNetdiskDownload/180606/Steel_1/0606150314/",
+    //    "D:/BaiduNetdiskDownload/180606/Steel_1/0606150408/",
+    //    "D:/BaiduNetdiskDownload/180606/Steel_1/0606150421/",
+    //    "D:/BaiduNetdiskDownload/180606/Steel_1/0606150431/",
+    //};
+
+    /*std::string arrStrFrameFolder[] =
+    {
+        "D:/BaiduNetdiskDownload/180606/Steel_2/0606150705/",
+        "D:/BaiduNetdiskDownload/180606/Steel_2/0606150716/",
+        "D:/BaiduNetdiskDownload/180606/Steel_2/0606150728/",
+        "D:/BaiduNetdiskDownload/180606/Steel_2/0606150740/",
+    };*/
+
     std::string arrStrFrameFolder[] =
     {
-        "D:/BaiduNetdiskDownload/0602163838/",
-        "D:/BaiduNetdiskDownload/0602163936/",
-        "D:/BaiduNetdiskDownload/0602163951/",
-        "D:/BaiduNetdiskDownload/0602164005/",
+        "D:/BaiduNetdiskDownload/180611/0611104300/",
+        "D:/BaiduNetdiskDownload/180611/0611104356/",
+        "D:/BaiduNetdiskDownload/180611/0611104411/",
+        "D:/BaiduNetdiskDownload/180611/0611104426/",
     };
 
     int nFrameCount = sizeof(arrStrFrameFolder) / sizeof(arrStrFrameFolder[0]);
@@ -1073,7 +1099,6 @@ void TestCalc4DLPHeight()
             PR_HEIGHT_TO_GRAY_RPY stRpy;
             stCmd.matHeight = stCalcHeightRpys[nDlp].matHeight;
             PR_HeightToGray(&stCmd, &stRpy);
-
 
             //cv::imwrite(arrStrFrameFolder[nFrame] + "Dlp_" + std::to_string(nDlp + 1) + "_HeightGray.png", stRpy.matGray);            
         }

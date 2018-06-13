@@ -6464,11 +6464,6 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
         return pstRpy->enStatus;
     }
 
-    auto calcMean = [](const cv::Mat &matHeight) {
-        auto dMeanHeight = cv::mean(matHeight, cv::Mat(matHeight == matHeight))[0];
-        return ToFloat(dMeanHeight);
-    };
-
     cv::Mat matNan1 = CalcUtils::getNanMask(pstCmd->matHeight1);
     cv::Mat matNan2 = CalcUtils::getNanMask(pstCmd->matHeight2);
     cv::Mat matNan3 = CalcUtils::getNanMask(pstCmd->matHeight3);
