@@ -95,7 +95,12 @@ VisionAPI void PR_DumpTimeLog(const std::string &strPath)
 
 VisionAPI VisionStatus PR_FreeRecord(Int32 nRecordId)
 {
-    return RecordManager::getInstance()->free(nRecordId);
+    try {
+        return RecordManager::getInstance()->free(nRecordId);
+    }catch (std::exception &e) {
+        WriteLog(e.what());
+        return VisionStatus::OPENCV_EXCEPTION;
+    }
 }
 
 VisionAPI VisionStatus PR_FreeAllRecord()
@@ -103,7 +108,7 @@ VisionAPI VisionStatus PR_FreeAllRecord()
     try {
         return RecordManager::getInstance()->freeAllRecord();
     }catch (std::exception &e) {
-        WriteLog ( e.what () );
+        WriteLog(e.what());
         return VisionStatus::OPENCV_EXCEPTION;
     }
 }
@@ -488,7 +493,21 @@ PR_FUNCTION_EXIT
 VisionAPI VisionStatus PR_Calc3DHeightDiff(const PR_CALC_3D_HEIGHT_DIFF_CMD *const pstCmd, PR_CALC_3D_HEIGHT_DIFF_RPY *const pstRpy)
 {
 PR_FUNCTION_ENTRY
-    return VisionAlgorithm::calc3DHeightDiff (pstCmd, pstRpy);
+    return VisionAlgorithm::calc3DHeightDiff(pstCmd, pstRpy);
+PR_FUNCTION_EXIT
+}
+
+VisionAPI VisionStatus PR_CalcDlpOffset(const PR_CALC_DLP_OFFSET_CMD *const pstCmd, PR_CALC_DLP_OFFSET_RPY *const pstRpy)
+{
+PR_FUNCTION_ENTRY
+    return VisionAlgorithm::calcDlpOffset(pstCmd, pstRpy);
+PR_FUNCTION_EXIT
+}
+
+VisionStatus PR_CalcFrameValue(const PR_CALC_FRAME_VALUE_CMD *const pstCmd, PR_CALC_FRAME_VALUE_RPY *const pstRpy)
+{
+PR_FUNCTION_ENTRY
+    return VisionAlgorithm::calcFrameValue(pstCmd, pstRpy);
 PR_FUNCTION_EXIT
 }
 
@@ -524,6 +543,13 @@ VisionAPI VisionStatus PR_Threshold(const PR_THRESHOLD_CMD *const pstCmd, PR_THR
 {
 PR_FUNCTION_ENTRY
     return VisionAlgorithm::threshold(pstCmd, pstRpy);
+PR_FUNCTION_EXIT
+}
+
+VisionAPI VisionStatus PR_HeightToGray(const PR_HEIGHT_TO_GRAY_CMD *const pstCmd, PR_HEIGHT_TO_GRAY_RPY *const pstRpy)
+{
+PR_FUNCTION_ENTRY
+    return VisionAlgorithm::heightToGray(pstCmd, pstRpy);
 PR_FUNCTION_EXIT
 }
 

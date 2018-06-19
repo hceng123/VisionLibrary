@@ -1519,33 +1519,23 @@ VisionStatus LogCaseInspBridge::WriteCmd(const PR_INSP_BRIDGE_CMD *const pstCmd)
     CSimpleIni ini(false, false, false);
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile(cmdRpyFilePath.c_str());
-    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyInspItemCount.c_str(), ToInt32(pstCmd->vecInspItems.size()));
-    int nInspItemIndex = 0;
-    for (const auto &inspItem : pstCmd->vecInspItems) {
-        String strKeyInnerWindow = _strKeyInnerWindow + "_" + std::to_string(nInspItemIndex);
-        String strKeyOuterWindow = _strKeyOuterWindow + "_" + std::to_string(nInspItemIndex);
-        String strKeyMode = _strKeyMode + "_" + std::to_string(nInspItemIndex);
-        String strKeyDirection = _strKeyDirection + "_" + std::to_string(nInspItemIndex);
 
-        ini.SetValue(_CMD_SECTION.c_str(), strKeyInnerWindow.c_str(), _formatRect(inspItem.rectInnerWindow).c_str());
-        ini.SetValue(_CMD_SECTION.c_str(), strKeyOuterWindow.c_str(), _formatRect(inspItem.rectOuterWindow).c_str());
-        ini.SetLongValue(_CMD_SECTION.c_str(), strKeyMode.c_str(), ToInt32(inspItem.enMode));
-        if (PR_INSP_BRIDGE_MODE::OUTER == inspItem.enMode) {
-            String strDirection, strMaxLength;
-            for (const auto enDirection : inspItem.vecOuterInspDirection)
-                strDirection += std::to_string(ToInt32(enDirection)) + ", ";
-            strDirection.resize(strDirection.size() - 2);
-            ini.SetValue(_CMD_SECTION.c_str(), strKeyDirection.c_str(), strDirection.c_str());
-        }
-        else {
-            String strKeyMaxLengthX = _strKeyMaxLengthX + "_" + std::to_string(nInspItemIndex);
-            String strKeyMaxLengthY = _strKeyMaxLengthY + "_" + std::to_string(nInspItemIndex);
-            ini.SetDoubleValue(_CMD_SECTION.c_str(), strKeyMaxLengthX.c_str(), inspItem.stInnerInspCriteria.fMaxLengthX);
-            ini.SetDoubleValue(_CMD_SECTION.c_str(), strKeyMaxLengthY.c_str(), inspItem.stInnerInspCriteria.fMaxLengthY);
-        }
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyInspMode.c_str(), ToInt32(pstCmd->enInspMode));
+    ini.SetValue(_CMD_SECTION.c_str(), _strKeyROI.c_str(), _formatRect(pstCmd->rectROI).c_str());
 
-        ++ nInspItemIndex;
+    if (PR_INSP_BRIDGE_MODE::OUTER == pstCmd->enInspMode) {
+        String strDirection, strMaxLength;
+        for (const auto enDirection : pstCmd->vecOuterInspDirection)
+            strDirection += std::to_string(ToInt32(enDirection)) + ", ";
+        strDirection.resize(strDirection.size() - 2);
+        ini.SetValue(_CMD_SECTION.c_str(), _strKeyDirection.c_str(), strDirection.c_str());
+        ini.SetValue(_CMD_SECTION.c_str(), _strKeyOuterSrchWindow.c_str(), _formatRect(pstCmd->rectOuterSrchWindow).c_str());
     }
+    else {
+        ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyMaxLengthX.c_str(), pstCmd->stInnerInspCriteria.fMaxLengthX);
+        ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyMaxLengthY.c_str(), pstCmd->stInnerInspCriteria.fMaxLengthY);
+    }
+
     ini.SaveFile(cmdRpyFilePath.c_str());
 
     cv::imwrite(_strLogCasePath + _IMAGE_NAME, pstCmd->matInputImg);
@@ -1558,14 +1548,12 @@ VisionStatus LogCaseInspBridge::WriteRpy(PR_INSP_BRIDGE_RPY *const pstRpy) {
     ini.LoadFile(cmdRpyFilePath.c_str());
     ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyStatus.c_str(), ToInt32(pstRpy->enStatus));
     int nInspResultIndex = 0;
-    for (const auto &inspResult : pstRpy->vecInspResults) {
-        String strKeyWithBridge = _strKeyWithBridge + "_" + std::to_string(nInspResultIndex);
-        for (size_t nBridgeWindowIndex = 0; nBridgeWindowIndex < inspResult.vecBridgeWindow.size(); ++ nBridgeWindowIndex) {
-            String strKeyBridgeWindow = _strKeyBridgeWindow + "_" + std::to_string(nInspResultIndex) + "_" + std::to_string(nBridgeWindowIndex);
-            ini.SetValue(_RPY_SECTION.c_str(), strKeyBridgeWindow.c_str(), _formatRect(inspResult.vecBridgeWindow[nBridgeWindowIndex]).c_str());
-        }
-        ++ nInspResultIndex;
+
+    for (size_t nBridgeWindowIndex = 0; nBridgeWindowIndex < pstRpy->vecBridgeWindow.size(); ++ nBridgeWindowIndex) {
+        String strKeyBridgeWindow = _strKeyBridgeWindow + "_" + std::to_string(nBridgeWindowIndex);
+        ini.SetValue(_RPY_SECTION.c_str(), strKeyBridgeWindow.c_str(), _formatRect(pstRpy->vecBridgeWindow[nBridgeWindowIndex]).c_str());
     }
+
     ini.SaveFile(cmdRpyFilePath.c_str());
     if (! pstRpy->matResultImg.empty())
         cv::imwrite(_strLogCasePath + _RESULT_IMAGE_NAME, pstRpy->matResultImg);
@@ -1581,33 +1569,21 @@ VisionStatus LogCaseInspBridge::RunLogCase() {
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile(cmdRpyFilePath.c_str());
     stCmd.matInputImg = cv::imread(_strLogCasePath + _IMAGE_NAME, cv::IMREAD_COLOR);
-    int nInspItem = ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyInspItemCount.c_str(), 0);
-    for (int nInspItemIndex = 0; nInspItemIndex < nInspItem; ++ nInspItemIndex) {
-        String strKeyInnerWindow = _strKeyInnerWindow + "_" + std::to_string(nInspItemIndex);
-        String strKeyOuterWindow = _strKeyOuterWindow + "_" + std::to_string(nInspItemIndex);
-        String strKeyMode = _strKeyMode + "_" + std::to_string(nInspItemIndex);
+    stCmd.enInspMode = static_cast<PR_INSP_BRIDGE_MODE>(ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyInspMode.c_str(), 0));
+    stCmd.rectROI = _parseRect(ini.GetValue(_CMD_SECTION.c_str(), _strKeyROI.c_str(), _DEFAULT_RECT.c_str()));
 
-        PR_INSP_BRIDGE_CMD::INSP_ITEM inspItem;
-        inspItem.rectInnerWindow = _parseRect(ini.GetValue(_CMD_SECTION.c_str(), strKeyInnerWindow.c_str(), _DEFAULT_RECT.c_str()));
-        inspItem.rectOuterWindow = _parseRect(ini.GetValue(_CMD_SECTION.c_str(), strKeyOuterWindow.c_str(), _DEFAULT_RECT.c_str()));
-        inspItem.enMode = static_cast<PR_INSP_BRIDGE_MODE>(ini.GetLongValue(_CMD_SECTION.c_str(), strKeyMode.c_str(), 0));
-
-        if (PR_INSP_BRIDGE_MODE::OUTER == inspItem.enMode) {
-            String strKeyDirection = _strKeyDirection + "_" + std::to_string(nInspItemIndex);
-            String strDirection = ini.GetValue(_CMD_SECTION.c_str(), strKeyDirection.c_str(), "");
-            StringVector vecStrDirection = split(strDirection, ',');
-            for (size_t index = 0; index < vecStrDirection.size(); ++ index) {
-                PR_INSP_BRIDGE_DIRECTION enDirection = static_cast<PR_INSP_BRIDGE_DIRECTION> (std::atoi(vecStrDirection[index].c_str()));
-                inspItem.vecOuterInspDirection.push_back(enDirection);
-            }
+    if (PR_INSP_BRIDGE_MODE::OUTER == stCmd.enInspMode) {
+        stCmd.rectOuterSrchWindow = _parseRect(ini.GetValue(_CMD_SECTION.c_str(), _strKeyOuterSrchWindow.c_str(), _DEFAULT_RECT.c_str()));
+        String strDirection = ini.GetValue(_CMD_SECTION.c_str(), _strKeyDirection.c_str(), "");
+        StringVector vecStrDirection = split(strDirection, ',');
+        for (size_t index = 0; index < vecStrDirection.size(); ++ index) {
+            PR_INSP_BRIDGE_DIRECTION enDirection = static_cast<PR_INSP_BRIDGE_DIRECTION> (std::atoi(vecStrDirection[index].c_str()));
+            stCmd.vecOuterInspDirection.push_back(enDirection);
         }
-        else {
-            String strKeyMaxLengthX = _strKeyMaxLengthX + "_" + std::to_string(nInspItemIndex);
-            String strKeyMaxLengthY = _strKeyMaxLengthY + "_" + std::to_string(nInspItemIndex);
-            inspItem.stInnerInspCriteria.fMaxLengthX = ToFloat(ini.GetDoubleValue(_CMD_SECTION.c_str(), strKeyMaxLengthX.c_str(), 0.f));
-            inspItem.stInnerInspCriteria.fMaxLengthY = ToFloat(ini.GetDoubleValue(_CMD_SECTION.c_str(), strKeyMaxLengthY.c_str(), 0.f));
-        }
-        stCmd.vecInspItems.push_back(inspItem);
+    }
+    else {
+        stCmd.stInnerInspCriteria.fMaxLengthX = ToFloat(ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyMaxLengthX.c_str(), 0.f));
+        stCmd.stInnerInspCriteria.fMaxLengthY = ToFloat(ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyMaxLengthY.c_str(), 0.f));
     }
 
     PR_INSP_BRIDGE_RPY stRpy;

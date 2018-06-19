@@ -280,5 +280,70 @@ float CalcUtils::calcPointToContourDist(const cv::Point &ptInput, const VectorOf
     return fAngleDegree;
 }
 
+/*static*/ float CalcUtils::linearInterpolate(const cv::Point2f &pt1, float fValue1, const cv::Point2f &pt2, float fValue2, const cv::Point2f &ptToGet) {
+    float fResult = 0;
+    if (fabs(pt1.x - pt2.x) < 0.1)
+        fResult = (pt2.y - ptToGet.y) / (pt2.y - pt1.y) * fValue1 + (ptToGet.y - pt1.y) / (pt2.y - pt1.y) * fValue2;
+    else if(fabs(pt1.y - pt2.y) < 0.1)
+        fResult = (pt2.x - ptToGet.x) / (pt2.x - pt1.x) * fValue1 + (ptToGet.x - pt1.x) / (pt2.x - pt1.x) * fValue2;
+    else
+        assert(0);
+
+    return fResult;
+}
+
+// Abount bilinear interpolation in Wikipedia:
+// http://en.wikipedia.org/wiki/Bilinear_interpolation
+/*static*/ float CalcUtils::bilinearInterpolate(const VectorOfPoint2f &vecPoint, const VectorOfFloat &vecValue, const cv::Point2f &ptToGet) {
+    assert(vecPoint.size() == 4);
+    assert(vecValue.size() == 4);
+
+    for (size_t index = 0; index < vecPoint.size(); ++ index) {
+        if (distanceOf2Point(vecPoint[index], ptToGet) < 1)
+            return vecValue[index];
+    }
+
+    float x1 = vecPoint[0].x;
+    float y1 = vecPoint[0].y;
+    float x2 = vecPoint[2].x;
+    float y2 = vecPoint[2].y;
+    auto Q11 = vecValue[0];
+    auto Q12 = vecValue[1];
+    auto Q22 = vecValue[2];
+    auto Q21 = vecValue[3];
+    float fxy1 = 0, fxy2 = 0;
+    if (fabs(x2 - x1) > 0.1) {
+        fxy1 = (x2 - ptToGet.x) / (x2 - x1) * Q11 + (ptToGet.x - x1) / (x2 - x1) * Q21;
+        fxy2 = (x2 - ptToGet.x) / (x2 - x1) * Q12 + (ptToGet.x - x1) / (x2 - x1) * Q22;
+    }else {
+        fxy1 = (Q11 + Q21) / 2.f;
+        fxy2 = (Q12 + Q22) / 2.f;
+    }
+
+    if ( fabs(fxy1 - fxy2) < 0.001 || fabs(y2 - y1) < 0.1)
+        return (fxy1 + fxy2) / 2.f;
+
+    auto result = (y2 - ptToGet.y) / (y2 - y1) * fxy1 + (ptToGet.y - y1) / (y2- y1) * fxy2;
+    return result;
+}
+
+/*static*/ bool CalcUtils::isRectInRect(const cv::Rect2f &rectIn, const cv::Rect2f &rectOut) {
+    VectorOfPoint2f vecOutPoints;
+    vecOutPoints.emplace_back(rectOut.x, rectOut.y);
+    vecOutPoints.emplace_back(rectOut.x + rectOut.width, rectOut.y);
+    vecOutPoints.emplace_back(rectOut.x + rectOut.width, rectOut.y + rectOut.height);
+    vecOutPoints.emplace_back(rectOut.x, rectOut.y + rectOut.height);
+
+    VectorOfPoint2f vecInPoints;
+    vecInPoints.emplace_back(rectIn.x, rectIn.y);
+    vecInPoints.emplace_back(rectIn.x + rectIn.width, rectIn.y);
+    vecInPoints.emplace_back(rectIn.x + rectIn.width, rectIn.y + rectIn.height);
+    vecInPoints.emplace_back(rectIn.x, rectIn.y + rectIn.height);
+    for (const auto &point : vecInPoints)
+        if (cv::pointPolygonTest(vecOutPoints, point, false) < 0)
+            return false;
+    return true;
+}
+
 }
 }

@@ -643,7 +643,7 @@ int _tmain(int argc, _TCHAR* argv[])
     auto fFloorResult = std::floor ( fTest );
 
     PR_Init();
-    PR_SetDebugMode ( PR_DEBUG_MODE::LOG_ALL_CASE);
+    PR_SetDebugMode (PR_DEBUG_MODE::LOG_FAIL_CASE);
 
     //TestTemplate();
     //TestInspDevice();
@@ -670,7 +670,7 @@ int _tmain(int argc, _TCHAR* argv[])
     //TestAutoLocateLead();
 
     //TestInspBridge();
-    //TestInspBridge_1();
+    TestInspBridge_1();
 
     //TestAutoThreshold();
 
@@ -694,6 +694,7 @@ int _tmain(int argc, _TCHAR* argv[])
     //TestSrchDie();
 
     //TestCalib3dBase();
+    //TestCalib3dBase_1();
   
     //TestCalib3DHeight_01();
     //TestCalib3DHeight_02();
@@ -743,11 +744,20 @@ int _tmain(int argc, _TCHAR* argv[])
     //ChangeColor();
 
     //TestMotor3DCalib();
+
+    //TestCalc4DLPHeight();
+
+    //TestCalcFrameValue_1();
+    
+    //TestQueryDlpOffset();
+
     //TestSolve();
     //_PR_InternalTest();
 
     //PR_FreeAllRecord();
-    TestPrThreshold();
+    //TestPrThreshold();
+
+    //TestCalcFrameValue();
 
     //TestInspPolarity_01();
 

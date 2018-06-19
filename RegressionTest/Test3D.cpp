@@ -87,6 +87,7 @@ void TestCalib3dBaseSub(
     stCmd.bEnableGaussianFilter = true;
     PR_Calib3DBase ( &stCmd, &stRpy );
     std::cout << "PR_Calib3DBase status " << ToInt32( stRpy.enStatus ) << std::endl;
+    std::cout << "ReverseSeq: " << stRpy.bReverseSeq << std::endl;
     std::cout << "ThickToThinK: " << std::endl;
     printfMat<float>(stRpy.matThickToThinK);
     std::cout << "ThickToThinnestK: " << std::endl;
@@ -384,7 +385,7 @@ void TestCalib3DHeight_2() {
 void TestCalib3dBase_2() {
     String strParentPath = "./data/HaoYu_20170920/";
     String strImageFolder = "0920234214_base";
-    TestCalib3dBaseSub ( 2, strParentPath, strImageFolder );
+    TestCalib3dBaseSub(2, strParentPath, strImageFolder);
 }
 
 void TestCalib3DHeight_3() {
@@ -395,17 +396,17 @@ void TestCalib3DHeight_3() {
     bool bReverseSeq = false;
     cv::FileNode fileNode;
     fileNode = fs["ReverseSeq"];
-    cv::read ( fileNode, bReverseSeq, false );
+    cv::read(fileNode, bReverseSeq, false);
     fileNode = fs["K1"];
-    cv::read ( fileNode, matThickToThinK, cv::Mat() );
+    cv::read(fileNode, matThickToThinK, cv::Mat());
     fileNode = fs["K2"];
-    cv::read ( fileNode, matThickToThinnestK, cv::Mat() );
+    cv::read(fileNode, matThickToThinnestK, cv::Mat());
     fileNode = fs["BaseWrappedAlpha"];
-    cv::read ( fileNode, matBaseWrappedAlpha, cv::Mat() );
+    cv::read(fileNode, matBaseWrappedAlpha, cv::Mat());
     fileNode = fs["BaseWrappedBeta"];
-    cv::read ( fileNode, matBaseWrappedBeta, cv::Mat() );
+    cv::read(fileNode, matBaseWrappedBeta, cv::Mat());
     fileNode = fs["BaseWrappedGamma"];
-    cv::read ( fileNode, matBaseWrappedGamma, cv::Mat() );
+    cv::read(fileNode, matBaseWrappedGamma, cv::Mat());
     fs.release();
 
     TestCalib3DHeightSub ( 7, 1, false, strParentPath, "0920235040_lefttop",     bReverseSeq, false, 5, matThickToThinK, matThickToThinnestK, matBaseWrappedAlpha, matBaseWrappedBeta, matBaseWrappedGamma );
@@ -423,17 +424,17 @@ void TestCalib3DHeight_4() {
     bool bReverseSeq = false;
     cv::FileNode fileNode;
     fileNode = fs["ReverseSeq"];
-    cv::read ( fileNode, bReverseSeq, false );
+    cv::read(fileNode, bReverseSeq, false);
     fileNode = fs["K1"];
-    cv::read ( fileNode, matThickToThinK, cv::Mat() );
+    cv::read(fileNode, matThickToThinK, cv::Mat());
     fileNode = fs["K2"];
-    cv::read ( fileNode, matThickToThinnestK, cv::Mat() );
+    cv::read(fileNode, matThickToThinnestK, cv::Mat());
     fileNode = fs["BaseWrappedAlpha"];
-    cv::read ( fileNode, matBaseWrappedAlpha, cv::Mat() );
+    cv::read(fileNode, matBaseWrappedAlpha, cv::Mat());
     fileNode = fs["BaseWrappedBeta"];
-    cv::read ( fileNode, matBaseWrappedBeta, cv::Mat() );
+    cv::read(fileNode, matBaseWrappedBeta, cv::Mat());
     fileNode = fs["BaseWrappedGamma"];
-    cv::read ( fileNode, matBaseWrappedGamma, cv::Mat() );
+    cv::read(fileNode, matBaseWrappedGamma, cv::Mat());
     fs.release();
 
     bool bUseGamma = true;
@@ -444,6 +445,121 @@ void TestCalib3DHeight_4() {
     TestIntegrate3DCalibSub ( 4, strParentPath );
 }
 
+void TestCalib3dBase_3() {
+    String strParentPath = "./data/";
+    String strImageFolder = "DLPImage_ReverseSeqCheck";
+    TestCalib3dBaseSub(3, strParentPath, strImageFolder);
+}
+
+void PrintResult(const PR_CALC_FRAME_VALUE_CMD &stCmd, const PR_CALC_FRAME_VALUE_RPY &stRpy) {
+    std::cout << "PR_CalcFrameValue status " << ToInt32(stRpy.enStatus) << std::endl;
+    if (VisionStatus::OK == stRpy.enStatus)
+        std::cout << "PR_CalcFrameValue target " << stCmd.ptTargetFrameCenter << " result: " << stRpy.fResult << std::endl;
+}
+
+void TestCalcFrameValue_1() {
+    PR_CALC_FRAME_VALUE_CMD stCmd;
+    PR_CALC_FRAME_VALUE_RPY stRpy;
+
+    int ROWS = 5, COLS = 5;
+    float fIntervalX = 100, fIntervalY = 80;
+    for (int row = 0; row < ROWS; ++ row) {
+        VectorOfPoint2f vecPoints;
+        VectorOfFloat vecValues;
+        vecPoints.reserve(COLS);
+        vecValues.reserve(COLS);
+        for (int col = 0; col < COLS; ++ col) {
+            vecPoints.emplace_back((col + 1) * fIntervalX, 1000.f - (row + 1) * fIntervalY);
+            vecValues.push_back(row * 1.01f + col * 1.3f + 10.f);
+        }
+        stCmd.vecVecRefFrameCenters.push_back(vecPoints);
+        stCmd.vecVecRefFrameValues.push_back(vecValues);
+    }   
+    
+    std::cout << std::endl << "--------------------------------------------";
+    std::cout << std::endl << "CALC FRAME VALUE REGRESSION TEST #1 STARTING";
+    std::cout << std::endl << "--------------------------------------------";
+    std::cout << std::endl;
+
+    stCmd.ptTargetFrameCenter = cv::Point(60, 500);
+    PR_CalcFrameValue(&stCmd, &stRpy);
+    PrintResult(stCmd, stRpy);
+
+    stCmd.ptTargetFrameCenter = cv::Point(150, 180);
+    PR_CalcFrameValue(&stCmd, &stRpy);
+    PrintResult(stCmd, stRpy);
+
+    stCmd.ptTargetFrameCenter = cv::Point(500, 180);
+    PR_CalcFrameValue(&stCmd, &stRpy);
+    PrintResult(stCmd, stRpy);
+}
+
+void TestCalcFrameValue_2() {
+    PR_CALC_FRAME_VALUE_CMD stCmd;
+    PR_CALC_FRAME_VALUE_RPY stRpy;
+
+    int ROWS = 1, COLS = 5;
+    float fIntervalX = 100, fIntervalY = 80;
+    for (int row = 0; row < ROWS; ++ row) {
+        VectorOfPoint2f vecPoints;
+        VectorOfFloat vecValues;
+        vecPoints.reserve(COLS);
+        vecValues.reserve(COLS);
+        for (int col = 0; col < COLS; ++ col) {
+            vecPoints.emplace_back((col + 1) * fIntervalX, 1000.f - (row + 1) * fIntervalY);
+            vecValues.push_back(row * 1.01f + col * 1.3f + 10.f);
+        }
+        stCmd.vecVecRefFrameCenters.push_back(vecPoints);
+        stCmd.vecVecRefFrameValues.push_back(vecValues);
+    }   
+    
+    std::cout << std::endl << "--------------------------------------------";
+    std::cout << std::endl << "CALC FRAME VALUE REGRESSION TEST #2 STARTING";
+    std::cout << std::endl << "--------------------------------------------";
+    std::cout << std::endl;
+
+    stCmd.ptTargetFrameCenter = cv::Point(150, 180);
+    PR_CalcFrameValue(&stCmd, &stRpy);
+    PrintResult(stCmd, stRpy);
+
+    stCmd.ptTargetFrameCenter = cv::Point(500, 180);
+    PR_CalcFrameValue(&stCmd, &stRpy);
+    PrintResult(stCmd, stRpy);
+}
+
+void TestCalcFrameValue_3() {
+    PR_CALC_FRAME_VALUE_CMD stCmd;
+    PR_CALC_FRAME_VALUE_RPY stRpy;
+
+    int ROWS = 5, COLS = 1;
+    float fIntervalX = 100, fIntervalY = 80;
+    for (int row = 0; row < ROWS; ++ row) {
+        VectorOfPoint2f vecPoints;
+        VectorOfFloat vecValues;
+        vecPoints.reserve(COLS);
+        vecValues.reserve(COLS);
+        for (int col = 0; col < COLS; ++ col) {
+            vecPoints.emplace_back((col + 1) * fIntervalX, 1000.f - (row + 1) * fIntervalY);
+            vecValues.push_back(row * 1.01f + col * 1.3f + 10.f);
+        }
+        stCmd.vecVecRefFrameCenters.push_back(vecPoints);
+        stCmd.vecVecRefFrameValues.push_back(vecValues);
+    }   
+    
+    std::cout << std::endl << "--------------------------------------------";
+    std::cout << std::endl << "CALC FRAME VALUE REGRESSION TEST #3 STARTING";
+    std::cout << std::endl << "--------------------------------------------";
+    std::cout << std::endl;
+
+    stCmd.ptTargetFrameCenter = cv::Point(150, 180);
+    PR_CalcFrameValue(&stCmd, &stRpy);
+    PrintResult(stCmd, stRpy);
+
+    stCmd.ptTargetFrameCenter = cv::Point(500, 180);
+    PR_CalcFrameValue(&stCmd, &stRpy);
+    PrintResult(stCmd, stRpy);
+}
+
 void Test3D() {
     TestCalib3dBase_1();
     TestCalib3DHeight_1();
@@ -452,6 +568,12 @@ void Test3D() {
     TestCalib3dBase_2();
     TestCalib3DHeight_3();
     TestCalib3DHeight_4();
+
+    TestCalib3dBase_3();
+
+    TestCalcFrameValue_1();
+    TestCalcFrameValue_2();
+    TestCalcFrameValue_3();
 }
 
 }

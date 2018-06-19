@@ -14,9 +14,27 @@
  * Copyright (c) 2016-2018, Xiao Shengguang.  All rights reserved.
  ****************************************************************************/
 
+//2018-06-16 (XSG) Modify PR_InspBridge to follow the style of other inspection windows.
+#define AOI_VISION_VERSION          "1.00.32"
+
+//2018-06-07 (XSG) For rebuild the library for PR_CalcDlpOffset test.
+//#define AOI_VISION_VERSION          "1.00.31"
+
+//2018-06-05 (XSG) Add PR_CalcDlpOffset and PR_CalcFrameValue functions.
+//#define AOI_VISION_VERSION          "1.00.30"
+
+//2018-05-25 (XSG) Return calculated height information in PR_MotorCalib3D function.
+//#define AOI_VISION_VERSION          "1.00.29"
+
+//2018-05-25 (XSG) Add PR_CalcDlpOffset and PR_CalcFrameValue functions.
+//#define AOI_VISION_VERSION          "1.00.28"
+
+//2018-05-17 (XSG) Fix PR_Calib3DBase ReverseSeq calculation not correct problem.
+//#define AOI_VISION_VERSION          "1.00.27"
+
 //2018-04-16 (XSG) Fix PR_CombineImage type not follow input image type problem.
 //                 Remove not thread safe code.
-#define AOI_VISION_VERSION          "1.00.26"
+//#define AOI_VISION_VERSION          "1.00.26"
 
 //2018-03-31 (XSG) Add PR_Threshold function.
 //                 Add bPreprocessedImg for PR_INSP_HOLE_CMD.

@@ -414,11 +414,68 @@ static void TestFitCircle() {
     vecPoints.emplace_back(545, 1229);
     vecPoints.emplace_back(544, 1222);
 
-    auto fitResult = Fitting::fitCircle ( vecPoints );
+    auto fitResult = Fitting::fitCircle(vecPoints);
     std::cout << "Fit circle center " << fitResult.center << ", Radius " << fitResult.size.width / 2.f << std::endl;
 }
 
+static void TestBilinearInterpolation() {
+    {
+        VectorOfPoint2f vecPoints{cv::Point2f(0.f, 0.f), cv::Point2f(0.f, 100.f), cv::Point2f(100.f, 100.f), cv::Point2f(100.f, 0.f)};
+        VectorOfFloat vecValues{10.f, 20.f, 30.f, 40.f};
+
+        std::cout << std::endl << "------------------------------------------------";
+        std::cout << std::endl << "BILINEAR INTERPOLATION TEST #1 STARTING";
+        std::cout << std::endl << "------------------------------------------------";
+        std::cout << std::endl;
+
+        cv::Point2f ptToGet = cv::Point2f (100.f, 0.f);
+        float fResult = 0.f;
+        fResult = CalcUtils::bilinearInterpolate(vecPoints, vecValues, ptToGet);
+        std::cout << "Point " << ptToGet << " result " << fResult << std::endl;
+
+        ptToGet = cv::Point2f (50.f, 50.f);
+        fResult = CalcUtils::bilinearInterpolate(vecPoints, vecValues, ptToGet);
+        std::cout << "Point " << ptToGet << " result " << fResult << std::endl;
+
+        ptToGet = cv::Point2f (10.f, 15.f);
+        fResult = CalcUtils::bilinearInterpolate(vecPoints, vecValues, ptToGet);
+        std::cout << "Point " << ptToGet << " result " << fResult << std::endl;
+
+        ptToGet = cv::Point2f (99.f, 99.f);
+        fResult = CalcUtils::bilinearInterpolate(vecPoints, vecValues, ptToGet);
+        std::cout << "Point " << ptToGet << " result " << fResult << std::endl;
+    }
+
+     {
+        VectorOfPoint2f vecPoints{cv::Point2f(0.f, 0.f), cv::Point2f(0.f, 0.f), cv::Point2f(100.f, 0.f), cv::Point2f(100.f, 0.f)};
+        VectorOfFloat vecValues{10.f, 10.f, 20.f, 20.f};
+
+        std::cout << std::endl << "------------------------------------------------";
+        std::cout << std::endl << "BILINEAR INTERPOLATION TEST #2 STARTING";
+        std::cout << std::endl << "------------------------------------------------";
+        std::cout << std::endl;
+
+        cv::Point2f ptToGet = cv::Point2f (100.f, 0.f);
+        float fResult = 0.f;
+        fResult = CalcUtils::bilinearInterpolate(vecPoints, vecValues, ptToGet);
+        std::cout << "Point " << ptToGet << " result " << fResult << std::endl;
+
+        ptToGet = cv::Point2f (20.f, 0.f);
+        fResult = CalcUtils::bilinearInterpolate(vecPoints, vecValues, ptToGet);
+        std::cout << "Point " << ptToGet << " result " << fResult << std::endl;
+
+        ptToGet = cv::Point2f (50.f, 0.f);
+        fResult = CalcUtils::bilinearInterpolate(vecPoints, vecValues, ptToGet);
+        std::cout << "Point " << ptToGet << " result " << fResult << std::endl;
+
+        ptToGet = cv::Point2f (70.f, 0.f);
+        fResult = CalcUtils::bilinearInterpolate(vecPoints, vecValues, ptToGet);
+        std::cout << "Point " << ptToGet << " result " << fResult << std::endl;
+    }
+}
+
 void InternalTest() {
+    TestBilinearInterpolation();
     TestCalcUtilsCumSum();
     TestCalcUtilsInternals();
     TestCalcUtilsMeshGrid();

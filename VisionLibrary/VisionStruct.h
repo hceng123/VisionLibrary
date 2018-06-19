@@ -779,34 +779,29 @@ struct PR_INSP_BRIDGE_CMD {
         float                   fMaxLengthY;
     };
     using INSP_DIRECTION_VECTOR = std::vector<PR_INSP_BRIDGE_DIRECTION>;
-    struct INSP_ITEM {
-        cv::Rect                rectInnerWindow;
-        cv::Rect                rectOuterWindow;
-        PR_INSP_BRIDGE_MODE     enMode;
-        INSP_DIRECTION_VECTOR   vecOuterInspDirection;
-        INNER_INSP_CRITERIA     stInnerInspCriteria;
-    };
-    using INSP_ITEM_VECTOR = std::vector<INSP_ITEM>;
+
     cv::Mat                 matInputImg;
-    INSP_ITEM_VECTOR        vecInspItems;
+    cv::Rect                rectROI;
+    PR_INSP_BRIDGE_MODE     enInspMode;
+    INSP_DIRECTION_VECTOR   vecOuterInspDirection;
+    cv::Rect                rectOuterSrchWindow;
+    INNER_INSP_CRITERIA     stInnerInspCriteria;
 };
 
 struct PR_INSP_BRIDGE_RPY {
-    struct ITEM_RESULT {
-        bool                bWithBridge;
-        VectorOfRect        vecBridgeWindow;
-    };
-    using ITEM_RESULT_VECTOR = std::vector<ITEM_RESULT>;
     VisionStatus            enStatus;
     cv::Mat                 matResultImg;
-    ITEM_RESULT_VECTOR      vecInspResults;
+    VectorOfRect            vecBridgeWindow;
 };
 
 /******************************************
 * Chip Inspection Section *
 ******************************************/
 struct PR_LRN_CHIP_CMD {
-    PR_LRN_CHIP_CMD() : enInspMode(PR_INSP_CHIP_MODE::HEAD), bAutoThreshold(true), nThreshold(0) {}
+    PR_LRN_CHIP_CMD() : 
+        enInspMode      (PR_INSP_CHIP_MODE::HEAD),
+        bAutoThreshold  (true),
+        nThreshold      (0) {}
     cv::Mat                 matInputImg;
     cv::Rect2f              rectChip;
     PR_INSP_CHIP_MODE       enInspMode;
@@ -844,6 +839,9 @@ struct PR_INSP_CHIP_RPY {
 * Inspect Contour Section *
 ******************************************/
 struct PR_LRN_CONTOUR_CMD {
+    PR_LRN_CONTOUR_CMD() :
+        bAutoThreshold  (true),
+        nThreshold      (100) {}
     cv::Mat                 matInputImg;
 	cv::Mat                 matMask;
 	cv::Rect                rectROI;
@@ -860,7 +858,14 @@ struct PR_LRN_CONTOUR_RPY {
 };
 
 struct PR_INSP_CONTOUR_CMD {
-    PR_INSP_CONTOUR_CMD() : nRecordId (0), nDefectThreshold(30), fMinDefectArea (100.f), fDefectInnerLengthTol(20), fDefectOuterLengthTol(20), fInnerMaskDepth(5), fOuterMaskDepth(5) {}
+    PR_INSP_CONTOUR_CMD() : 
+        nRecordId             (0), 
+        nDefectThreshold      (30),
+        fMinDefectArea        (100.f),
+        fDefectInnerLengthTol (20),
+        fDefectOuterLengthTol (20),
+        fInnerMaskDepth       (5),
+        fOuterMaskDepth       (5) {}
     cv::Mat                 matInputImg;
 	cv::Mat                 matMask;
 	cv::Rect                rectROI;
@@ -1142,6 +1147,10 @@ struct PR_INTEGRATE_3D_CALIB_RPY {
 
 using PairHeightPhase = std::pair<float, cv::Mat>;
 using VectorPairHeightPhase = std::vector<PairHeightPhase>;
+using PairHeightCalibResult = std::pair<float, cv::Mat>;
+using VectorHeightCalibResult = std::vector<PairHeightCalibResult>;
+using PairHeightBlockHeights = std::pair<float, VectorOfFloat>;
+using VectorHeightBlockHeights = std::vector<PairHeightBlockHeights>;
 
 struct PR_MOTOR_CALIB_3D_CMD {
     PR_MOTOR_CALIB_3D_CMD() :
@@ -1159,6 +1168,8 @@ struct PR_MOTOR_CALIB_3D_RPY {
     cv::Mat                 matIntegratedK;         //The 12 parameters to calculate height. They are K1~K10 and P1, P2. H = (Phase + P1*Phase^2 + P2*Phase^3) ./ (K(1)*x1.^3 + K(2)*y1.^3 + K(3)*x1.^2.*y1 + K(4)*x1.*y1.^2 + K(5)*x1.^2 + K(6)*y1.^2 + K(7)*x1.*y1 + K(8)*x1 + K(9)*y1 + K(10))
     cv::Mat                 matOrder3CurveSurface;  //The regression 3 order curve surface to convert phase to height. It is calculated by K(1)*x1.^3 + K(2)*y1.^3 + K(3)*x1.^2.*y1 + K(4)*x1.*y1.^2 + K(5)*x1.^2 + K(6)*y1.^2 + K(7)*x1.*y1 + K(8)*x1 + K(9)*y1 + K(10)
     VectorOfMat             vecMatResultImg;
+    VectorHeightCalibResult vecHeightCalibResult;
+    VectorHeightBlockHeights vecHeightBlockHeights;
 };
 
 struct PR_CALC_3D_HEIGHT_CMD {
@@ -1175,24 +1186,24 @@ struct PR_CALC_3D_HEIGHT_CMD {
         nRemoveGammaJumpSpanY(4) {}
     VectorOfMat             vecInputImgs;
     bool                    bEnableGaussianFilter;
-    bool                    bReverseSeq;            //Change the image sequence.
-    bool                    bUseThinnestPattern;    //Choose to use the thinnest stripe pattern. Otherwise just use the normal thin stripe.
-    float                   fRemoveHarmonicWaveK;   //The factor to remove the harmonic wave in the thick stripe. If it is 0, then this procedure will be skipped.
-    float                   fMinAmplitude;          //In a group of 4 images, if a pixel's gray scale amplitude less than this value, this pixel will be discarded.
-    float                   fPhaseShift;            //Shift the phase measure range. Normal is -1~1, sometimes the H5 surface has corner over this range. So if shift is 0.1, the measure range is -0.9~1.1, so it can measure all the H5 surface.
-    cv::Mat                 matThickToThinK;        //The factor between thick stripe and thin stripe.
-    cv::Mat                 matThickToThinnestK;    //The factor between thick stripe and thinnest stripe.
-    cv::Mat                 matBaseWrappedAlpha;    //The wrapped thick stripe phase.
-    cv::Mat                 matBaseWrappedBeta;     //The wrapped thin stripe phase.
-    cv::Mat                 matBaseWrappedGamma;    //The wrapped thin stripe phase.
-    cv::Mat                 matPhaseToHeightK;      //The factor to convert phase to height. This is the single group of image calibration result.
+    bool                    bReverseSeq;             //Change the image sequence.
+    bool                    bUseThinnestPattern;     //Choose to use the thinnest stripe pattern. Otherwise just use the normal thin stripe.
+    float                   fRemoveHarmonicWaveK;    //The factor to remove the harmonic wave in the thick stripe. If it is 0, then this procedure will be skipped.
+    float                   fMinAmplitude;           //In a group of 4 images, if a pixel's gray scale amplitude less than this value, this pixel will be discarded.
+    float                   fPhaseShift;             //Shift the phase measure range. Normal is -1~1, sometimes the H5 surface has corner over this range. So if shift is 0.1, the measure range is -0.9~1.1, so it can measure all the H5 surface.
+    cv::Mat                 matThickToThinK;         //The factor between thick stripe and thin stripe.
+    cv::Mat                 matThickToThinnestK;     //The factor between thick stripe and thinnest stripe.
+    cv::Mat                 matBaseWrappedAlpha;     //The wrapped thick stripe phase.
+    cv::Mat                 matBaseWrappedBeta;      //The wrapped thin stripe phase.
+    cv::Mat                 matBaseWrappedGamma;     //The wrapped thin stripe phase.
+    cv::Mat                 matPhaseToHeightK;       //The factor to convert phase to height. This is the single group of image calibration result.
     int                     nRemoveBetaJumpSpanX;    //The phase jump span in X direction under this value in beta phase(the thin pattern) will be removed.
     int                     nRemoveBetaJumpSpanY;    //The phase jump span in Y direction under this value in beta phase(the thin pattern) will be removed.
     int                     nRemoveGammaJumpSpanX;   //The phase jump span in X direction under this value in gamma phase(the thinnest pattern) will be removed. It is used only when bUseThinnestPattern is true.
     int                     nRemoveGammaJumpSpanY;   //The phase jump span in Y direction under this value in gamma phase(the thinnest pattern) will be removed. It is used only when bUseThinnestPattern is true.
     //Below 2 parameters are result of PR_Integrate3DCalib, they are calibrated from positive, negative and H = 5mm surface phase. If these 2 parameters are used, then matPhaseToHeightK will be ignored.
     cv::Mat                 matIntegratedK;          //The 12 parameters to calculate height. They are K1~K10 and P1, P2. H = (Phase + P1*Phase^2 + P2*Phase^3) ./ (K(1)*x1.^3 + K(2)*y1.^3 + K(3)*x1.^2.*y1 + K(4)*x1.*y1.^2 + K(5)*x1.^2 + K(6)*y1.^2 + K(7)*x1.*y1 + K(8)*x1 + K(9)*y1 + K(10))
-    cv::Mat                 matOrder3CurveSurface;  //The regression 3 order curve surface to convert phase to height. It is calculated by K(1)*x1.^3 + K(2)*y1.^3 + K(3)*x1.^2.*y1 + K(4)*x1.*y1.^2 + K(5)*x1.^2 + K(6)*y1.^2 + K(7)*x1.*y1 + K(8)*x1 + K(9)*y1 + K(10)
+    cv::Mat                 matOrder3CurveSurface;   //The regression 3 order curve surface to convert phase to height. It is calculated by K(1)*x1.^3 + K(2)*y1.^3 + K(3)*x1.^2.*y1 + K(4)*x1.*y1.^2 + K(5)*x1.^2 + K(6)*y1.^2 + K(7)*x1.*y1 + K(8)*x1 + K(9)*y1 + K(10)
 };
 
 struct PR_CALC_3D_HEIGHT_RPY {
@@ -1231,10 +1242,37 @@ struct PR_CALC_3D_HEIGHT_DIFF_RPY {
     float                   fHeightDiff;
 };
 
-//Calculate the system optics modulation transfer function.
-//The system is from DLP->DLP Optics->Camera Optics->Camera
+// Calculate the DLP height offset, it using DLP4 as the base.
+struct PR_CALC_DLP_OFFSET_CMD {
+    cv::Mat                 matHeight1;
+    cv::Mat                 matHeight2;
+    cv::Mat                 matHeight3;
+    cv::Mat                 matHeight4;
+};
+
+struct PR_CALC_DLP_OFFSET_RPY {
+    VisionStatus            enStatus;
+    float                   fOffset1;
+    float                   fOffset2;
+    float                   fOffset3;
+    float                   fOffset4;
+};
+
+struct PR_CALC_FRAME_VALUE_CMD {
+    VectorOfVectorOfPoint2f vecVecRefFrameCenters;
+    VectorOfVectorOfFloat   vecVecRefFrameValues;
+    cv::Point2f             ptTargetFrameCenter;
+};
+
+struct PR_CALC_FRAME_VALUE_RPY {
+    VisionStatus            enStatus;
+    float                   fResult;
+};
+
+// Calculate the system optics modulation transfer function.
+// The system is from DLP->DLP Optics->Camera Optics->Camera
 struct PR_CALC_MTF_CMD {
-    PR_CALC_MTF_CMD() : fMagnitudeOfDLP ( 161 ) {}
+    PR_CALC_MTF_CMD() : fMagnitudeOfDLP(161) {}
     VectorOfMat             vecInputImgs;
     float                   fMagnitudeOfDLP;        //The setted magnitude of DLP. The captured image magnitude divide the setted maganitude is the MTF result.
 };
@@ -1335,6 +1373,15 @@ struct PR_THRESHOLD_CMD {
 struct PR_THRESHOLD_RPY {
     VisionStatus            enStatus;
     cv::Mat                 matResultImg;
+};
+
+struct PR_HEIGHT_TO_GRAY_CMD {
+    cv::Mat                 matHeight;
+};
+
+struct PR_HEIGHT_TO_GRAY_RPY {
+    VisionStatus            enStatus;
+    cv::Mat                 matGray;
 };
 
 }

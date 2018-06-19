@@ -17,6 +17,7 @@ void TestInspChipHead();
 void TestTemplate();
 void TestInspLead();
 void TestCalib3dBase();
+void TestCalib3dBase_1();
 void TestCalc3DHeight();
 void TestCalib3DHeight_01();
 void TestCalib3DHeight_02();
@@ -61,6 +62,10 @@ void TestSolve();
 void TestInspPolarity_01();
 
 void TestPrThreshold();
+void TestCalcFrameValue();
+void TestCalcFrameValue_1();
+void TestCalc4DLPHeight();
+void TestQueryDlpOffset();
 
 template<class T>
 void printfMat(const cv::Mat &mat)

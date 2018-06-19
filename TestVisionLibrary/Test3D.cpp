@@ -1,4 +1,4 @@
-#include "stdafx.h"
+﻿#include "stdafx.h"
 #include "../VisionLibrary/VisionAPI.h"
 #include "opencv2/highgui.hpp"
 #include <iostream>
@@ -812,41 +812,41 @@ void TestMotor3DCalib() {
     PR_MOTOR_CALIB_3D_RPY stRpy;
 
     std::string strDataFolder = "./data/Motor3DCalib/", strFile;
-    
-    for ( int i = 1; i <= 5; ++ i ) {
+
+    for (int i = 1; i <= 5; ++ i) {
         PairHeightPhase pairHeightPhase;
         pairHeightPhase.first = -i;
         strFile = strDataFolder + "HP" + std::to_string(i) + ".csv";
-        pairHeightPhase.second = readMatFromCsvFile ( strFile );
-        stCmd.vecPairHeightPhase.push_back ( pairHeightPhase );
+        pairHeightPhase.second = readMatFromCsvFile(strFile);
+        stCmd.vecPairHeightPhase.push_back(pairHeightPhase);
     }
 
-    for ( int i = 1; i <= 5; ++ i ) {
+    for (int i = 1; i <= 5; ++ i) {
         PairHeightPhase pairHeightPhase;
         pairHeightPhase.first = i;
         strFile = strDataFolder + "HN" + std::to_string(i) + ".csv";
-        pairHeightPhase.second = readMatFromCsvFile ( strFile );
-        stCmd.vecPairHeightPhase.push_back ( pairHeightPhase );
+        pairHeightPhase.second = readMatFromCsvFile(strFile);
+        stCmd.vecPairHeightPhase.push_back(pairHeightPhase);
     }
 
-    PR_MotorCalib3D ( &stCmd, &stRpy );
-    std::cout << "PR_MotorCalib3D status " << ToInt32( stRpy.enStatus ) << std::endl;
-    if ( VisionStatus::OK != stRpy.enStatus )
+    PR_MotorCalib3D(&stCmd, &stRpy);
+    std::cout << "PR_MotorCalib3D status " << ToInt32(stRpy.enStatus) << std::endl;
+    if (VisionStatus::OK != stRpy.enStatus)
         return;
 
     int i = 1;
-    for ( const auto &matResultImg : stRpy.vecMatResultImg ) {
+    for (const auto &matResultImg : stRpy.vecMatResultImg) {
         char chArrFileName[100];
-        _snprintf( chArrFileName, sizeof (chArrFileName), "ResultImg_%02d.png", i );
+        _snprintf(chArrFileName, sizeof (chArrFileName), "ResultImg_%02d.png", i);
         std::string strDataFile = strDataFolder + chArrFileName;
-        cv::imwrite ( strDataFile, matResultImg );
+        cv::imwrite(strDataFile, matResultImg);
         ++ i;
     }
 }
 
 void TestSolve() {
-    std::string strResultFile ( "IntermediateResult.yml" );
-    cv::FileStorage fsData ( strResultFile, cv::FileStorage::READ );
+    std::string strResultFile("IntermediateResult.yml");
+    cv::FileStorage fsData(strResultFile, cv::FileStorage::READ);
     if (!fsData.isOpened()) {
         std::cout << "Failed to open file: " << strResultFile << std::endl;
         return;
@@ -865,4 +865,337 @@ void TestSolve() {
     printfMat<float>(matK);
     std::cout << "Eign value: " << std::endl;
     printfMat<float>(matEign);
+}
+
+void TestCalib3dBase_1() {
+    std::string strFolder = "D:/Data/DLPImage/";
+    PR_CALIB_3D_BASE_CMD stCmd;
+    PR_CALIB_3D_BASE_RPY stRpy;
+    for ( int i = 1; i <= IMAGE_COUNT; ++ i ) {
+        char chArrFileName[100];
+        _snprintf( chArrFileName, sizeof (chArrFileName), "%02d.bmp", i );
+        std::string strImageFile = strFolder + chArrFileName;
+        cv::Mat mat = cv::imread ( strImageFile, cv::IMREAD_GRAYSCALE );
+        if ( mat.empty() ) {
+            std::cout << "Failed to read image " << strImageFile << std::endl;
+            return;
+        }
+        stCmd.vecInputImgs.push_back ( mat );
+    }
+    stCmd.bEnableGaussianFilter = true;
+    stCmd.fRemoveHarmonicWaveK = 0.f;
+    PR_Calib3DBase ( &stCmd, &stRpy );
+    std::cout << "PR_Calib3DBase status " << ToInt32( stRpy.enStatus ) << std::endl;
+
+    std::string strResultMatPath = gstrCalibResultFile;
+    cv::FileStorage fs(strResultMatPath, cv::FileStorage::WRITE);
+    if ( ! fs.isOpened() )
+        return;
+
+    cv::write ( fs, "K1", stRpy.matThickToThinK );
+    cv::write ( fs, "K2", stRpy.matThickToThinnestK );
+    cv::write ( fs, "BaseWrappedAlpha", stRpy.matBaseWrappedAlpha );
+    cv::write ( fs, "BaseWrappedBeta",  stRpy.matBaseWrappedBeta );
+    cv::write ( fs, "BaseWrappedGamma", stRpy.matBaseWrappedGamma );
+    fs.release();
+}
+
+void PrintResult(const PR_CALC_FRAME_VALUE_CMD &stCmd, const PR_CALC_FRAME_VALUE_RPY &stRpy) {
+    std::cout << "PR_CalcFrameValue status " << ToInt32(stRpy.enStatus) << std::endl;
+    if (VisionStatus::OK == stRpy.enStatus)
+        std::cout << "PR_CalcFrameValue target " << stCmd.ptTargetFrameCenter << " result: " << stRpy.fResult << std::endl;
+}
+
+void TestCalcFrameValue() {
+    PR_CALC_FRAME_VALUE_CMD stCmd;
+    PR_CALC_FRAME_VALUE_RPY stRpy;
+
+    int ROWS = 5, COLS = 5;
+    float fIntervalX = 100, fIntervalY = 80;
+    for (int row = 0; row < ROWS; ++ row) {
+        VectorOfPoint2f vecPoints;
+        VectorOfFloat vecValues;
+        vecPoints.reserve(COLS);
+        vecValues.reserve(COLS);
+        for (int col = 0; col < COLS; ++ col) {
+            vecPoints.emplace_back((col + 1) * fIntervalX, 1000.f - (row + 1) * fIntervalY);
+            vecValues.push_back(row * 1.01f + col * 1.3f + 10.f);
+        }
+        stCmd.vecVecRefFrameCenters.push_back(vecPoints);
+        stCmd.vecVecRefFrameValues.push_back(vecValues);
+    }   
+    
+    std::cout << std::endl << "--------------------------------------------";
+    std::cout << std::endl << "CALC FRAME VALUE REGRESSION TEST #1 STARTING";
+    std::cout << std::endl << "--------------------------------------------";
+    std::cout << std::endl;
+
+    stCmd.ptTargetFrameCenter = cv::Point(60, 500);
+    PR_CalcFrameValue(&stCmd, &stRpy);
+    PrintResult(stCmd, stRpy);
+
+    stCmd.ptTargetFrameCenter = cv::Point(150, 180);
+    PR_CalcFrameValue(&stCmd, &stRpy);
+    PrintResult(stCmd, stRpy);
+
+    stCmd.ptTargetFrameCenter = cv::Point(500, 180);
+    PR_CalcFrameValue(&stCmd, &stRpy);
+    PrintResult(stCmd, stRpy);
+}
+
+void TestCalcFrameValue_1() {
+    PR_CALC_FRAME_VALUE_CMD stCmd;
+    PR_CALC_FRAME_VALUE_RPY stRpy;
+
+    int ROWS = 1, COLS = 5;
+    float fIntervalX = 100;
+    for (int row = 0; row < ROWS; ++ row) {
+        VectorOfPoint2f vecPoints;
+        VectorOfFloat vecValues;
+        vecPoints.reserve(COLS);
+        vecValues.reserve(COLS);
+        for (int col = 0; col < COLS; ++ col) {
+            vecPoints.emplace_back((col + 1) * fIntervalX, 0.f);
+            vecValues.push_back(col * 0.01 - 0.02);
+        }
+        stCmd.vecVecRefFrameCenters.push_back(vecPoints);
+        stCmd.vecVecRefFrameValues.push_back(vecValues);
+    }   
+    
+    std::cout << std::endl << "--------------------------------------------";
+    std::cout << std::endl << "CALC FRAME VALUE REGRESSION TEST #1 STARTING";
+    std::cout << std::endl << "--------------------------------------------";
+    std::cout << std::endl;
+
+    stCmd.ptTargetFrameCenter = cv::Point(60, 0);
+    PR_CalcFrameValue(&stCmd, &stRpy);
+    PrintResult(stCmd, stRpy);
+
+    stCmd.ptTargetFrameCenter = cv::Point(150, 0);
+    PR_CalcFrameValue(&stCmd, &stRpy);
+    PrintResult(stCmd, stRpy);
+
+    stCmd.ptTargetFrameCenter = cv::Point(500, 0);
+    PR_CalcFrameValue(&stCmd, &stRpy);
+    PrintResult(stCmd, stRpy);
+}
+
+VectorOfMat ReadFrameImage(const std::string &path)
+{
+    VectorOfMat vecImages;
+    for ( int i = 1; i <= IMAGE_COUNT * 4; ++ i ) {
+        char chArrFileName[100];
+        _snprintf( chArrFileName, sizeof (chArrFileName), "%02d.bmp", i );
+        std::string strImageFile = path + chArrFileName;
+        cv::Mat mat = cv::imread ( strImageFile, cv::IMREAD_GRAYSCALE );
+        if ( mat.empty() ) {
+            std::cout << "Failed to read image " << strImageFile << std::endl;
+            return vecImages;
+        }
+        vecImages.push_back(mat);
+    }
+    return vecImages;
+}
+
+void TestCalc4DLPHeight()
+{
+    PR_CALC_3D_HEIGHT_CMD stCalcHeightCmds[4];
+    PR_CALC_3D_HEIGHT_RPY stCalcHeightRpys[4];
+    for (int nStation = 1; nStation <= 4; ++ nStation)
+    {
+        bool b3DDetectCaliUseThinPattern = false;
+        bool b3DDetectGaussionFilter = false;
+        //bool b3DDetectReverseSeq = System->getParam("3d_detect_reverse_seq").toBool();
+        //double d3DDetectMinIntDiff = System->getParam("3d_detect_min_intensity_diff").toDouble();
+        //double d3DDetectPhaseShift = System->getParam("3d_detect_phase_shift").toDouble();
+        stCalcHeightCmds[nStation - 1].bEnableGaussianFilter = b3DDetectGaussionFilter;
+        //m_stCalcHeightCmds[nStation - 1].bReverseSeq = b3DDetectReverseSeq;
+        //stCalcHeightCmds[nStation - 1].fMinAmplitude = d3DDetectMinIntDiff;
+        stCalcHeightCmds[nStation - 1].bUseThinnestPattern = b3DDetectCaliUseThinPattern;
+        //stCalcHeightCmds[nStation - 1].fPhaseShift = d3DDetectPhaseShift;
+        //stCalcHeightCmds[nStation - 1].nRemoveBetaJumpSpanX = 0;
+        //stCalcHeightCmds[nStation - 1].nRemoveBetaJumpSpanY = 0;
+        //stCalcHeightCmds[nStation - 1].nRemoveGammaJumpSpanX = 0;
+        //stCalcHeightCmds[nStation - 1].nRemoveGammaJumpSpanY = 0;
+
+        stCalcHeightCmds[nStation - 1].fMinAmplitude = 0;
+
+        cv::Mat matBaseSurfaceParam;
+
+        // read config file
+        char filePath[100];
+        _snprintf(filePath, sizeof(filePath), "./data/3D/Config/calibration3D_dlp%d.yml", nStation);
+        cv::FileStorage fs(filePath, cv::FileStorage::READ);
+        cv::FileNode fileNode = fs["K1"];
+        cv::read(fileNode, stCalcHeightCmds[nStation - 1].matThickToThinK, cv::Mat());
+        fileNode = fs["K2"];
+        cv::read(fileNode, stCalcHeightCmds[nStation - 1].matThickToThinnestK, cv::Mat());
+        fileNode = fs["BaseWrappedAlpha"];
+        cv::read(fileNode, stCalcHeightCmds[nStation - 1].matBaseWrappedAlpha, cv::Mat());
+        fileNode = fs["BaseWrappedBeta"];
+        cv::read(fileNode, stCalcHeightCmds[nStation - 1].matBaseWrappedBeta, cv::Mat());
+        fileNode = fs["BaseWrappedGamma"];
+        cv::read(fileNode, stCalcHeightCmds[nStation - 1].matBaseWrappedGamma, cv::Mat());
+        fileNode = fs["ReverseSeq"];
+        cv::read(fileNode, stCalcHeightCmds[nStation - 1].bReverseSeq, 0);
+        fs.release();
+
+        _snprintf(filePath, sizeof(filePath), "./data/3D/Config/IntegrateCalibResult%d.yml", nStation);
+        cv::FileStorage fsIntegrated(filePath, cv::FileStorage::READ);
+        cv::FileNode fileNodeIntegrated = fsIntegrated["IntegratedK"];
+        cv::read(fileNodeIntegrated, stCalcHeightCmds[nStation - 1].matIntegratedK, cv::Mat());
+        fileNodeIntegrated = fsIntegrated["Order3CurveSurface"];
+        cv::read(fileNodeIntegrated, stCalcHeightCmds[nStation - 1].matOrder3CurveSurface, cv::Mat());
+        fsIntegrated.release();
+    }
+
+    //std::string arrStrFrameFolder[] =
+    //{
+    //    "D:/BaiduNetdiskDownload/0602163838/",
+    //    "D:/BaiduNetdiskDownload/0602163936/",
+    //    "D:/BaiduNetdiskDownload/0602163951/",
+    //    "D:/BaiduNetdiskDownload/0602164005/",
+    //};
+
+    //std::string arrStrFrameFolder[] =
+    //{
+    //    "D:/BaiduNetdiskDownload/180606/Steel_1/0606150314/",
+    //    "D:/BaiduNetdiskDownload/180606/Steel_1/0606150408/",
+    //    "D:/BaiduNetdiskDownload/180606/Steel_1/0606150421/",
+    //    "D:/BaiduNetdiskDownload/180606/Steel_1/0606150431/",
+    //};
+
+    /*std::string arrStrFrameFolder[] =
+    {
+        "D:/BaiduNetdiskDownload/180606/Steel_2/0606150705/",
+        "D:/BaiduNetdiskDownload/180606/Steel_2/0606150716/",
+        "D:/BaiduNetdiskDownload/180606/Steel_2/0606150728/",
+        "D:/BaiduNetdiskDownload/180606/Steel_2/0606150740/",
+    };*/
+
+    std::string arrStrFrameFolder[] =
+    {
+        "D:/BaiduNetdiskDownload/180611/0611104300/",
+        "D:/BaiduNetdiskDownload/180611/0611104356/",
+        "D:/BaiduNetdiskDownload/180611/0611104411/",
+        "D:/BaiduNetdiskDownload/180611/0611104426/",
+    };
+
+    int nFrameCount = sizeof(arrStrFrameFolder) / sizeof(arrStrFrameFolder[0]);
+
+    std::vector<PR_CALC_DLP_OFFSET_RPY> vecDlpOffsetRpy;
+    for (int nFrame = 0; nFrame < nFrameCount; ++ nFrame) {
+        auto vecImages = ReadFrameImage(arrStrFrameFolder[nFrame]);
+        if (vecImages.empty())
+            return;
+
+        for (int nDlp = 0; nDlp < 4; ++ nDlp) {
+            stCalcHeightCmds[nDlp].vecInputImgs = VectorOfMat(vecImages.begin() + nDlp * IMAGE_COUNT, vecImages.begin() + (nDlp + 1) * IMAGE_COUNT);
+            PR_Calc3DHeight(&stCalcHeightCmds[nDlp], &stCalcHeightRpys[nDlp]);
+
+            //saveMatToCsv(stCalcHeightRpys[nDlp].matHeight, arrStrFrameFolder[nFrame] + "Dlp_" + std::to_string(nDlp + 1) + "_Height.csv");
+
+            PR_HEIGHT_TO_GRAY_CMD stCmd;
+            PR_HEIGHT_TO_GRAY_RPY stRpy;
+            stCmd.matHeight = stCalcHeightRpys[nDlp].matHeight;
+            PR_HeightToGray(&stCmd, &stRpy);
+
+            //cv::imwrite(arrStrFrameFolder[nFrame] + "Dlp_" + std::to_string(nDlp + 1) + "_HeightGray.png", stRpy.matGray);            
+        }
+
+        PR_CALC_DLP_OFFSET_CMD stCalcDlpOffsetCmd;
+        stCalcDlpOffsetCmd.matHeight1 = stCalcHeightRpys[0].matHeight;
+        stCalcDlpOffsetCmd.matHeight2 = stCalcHeightRpys[1].matHeight;
+        stCalcDlpOffsetCmd.matHeight3 = stCalcHeightRpys[2].matHeight;
+        stCalcDlpOffsetCmd.matHeight4 = stCalcHeightRpys[3].matHeight;
+        PR_CALC_DLP_OFFSET_RPY stCalcDlpOffsetRpy;
+        PR_CalcDlpOffset(&stCalcDlpOffsetCmd, &stCalcDlpOffsetRpy);
+        vecDlpOffsetRpy.push_back(stCalcDlpOffsetRpy);
+    }
+
+    std::cout << "Run here" << std::endl;
+}
+
+int assignFrames(
+        float                            left,
+        float                            top,
+        float                            right,
+        float                            bottom,
+        float                            fovWidth,
+        float                            fovHeight,
+        VectorOfVectorOfPoint2f         &vecVecFrameCtr,
+        float                           &fOverlapX,
+        float                           &fOverlapY)
+{
+    vecVecFrameCtr.clear();
+    fOverlapX = 0.f, fOverlapY = 0.f;
+
+    if (right <= left || top < bottom)
+        return -1;
+
+    int frameCountX = static_cast<int>((right - left) / fovWidth) + 1;
+    int frameCountY = static_cast<int>((top - bottom) / fovHeight) + 1;
+    
+    if (frameCountX > 1)
+        fOverlapX = (frameCountX * fovWidth - (right - left)) / (frameCountX - 1);
+    else
+        fOverlapX = 0.f;
+    if (frameCountY > 1)
+        fOverlapY = (frameCountY * fovHeight - (top - bottom)) / (frameCountY - 1);
+    else
+        fOverlapY = 0.f;
+
+    for (int row = 0; row < frameCountY; ++ row) {
+        VectorOfPoint2f vecFrameCtr;
+        for (int col = 0; col < frameCountX; ++ col) {
+            float frameCtrX = 0.f, frameCtrY = 0.f;
+            if (frameCountX > 1)
+                frameCtrX = left + (col * (fovWidth - fOverlapX) + fovWidth / 2.f);
+            else
+                frameCtrX = (right + left) / 2.f;
+
+            if (frameCountY > 1)
+                frameCtrY = top - (row * (fovHeight - fOverlapY) + fovHeight / 2.f);
+            else
+                frameCtrY = (top + bottom) / 2.f;
+            vecFrameCtr.emplace_back(frameCtrX, frameCtrY);
+        }
+        vecVecFrameCtr.push_back(vecFrameCtr);
+    }
+    return 0;
+}
+
+void TestQueryDlpOffset()
+{
+    PR_CALC_FRAME_VALUE_CMD stCmd;
+    PR_CALC_FRAME_VALUE_RPY stRpy;
+
+    float fLeft = -134.61f, fTop = 0.f, fRight = -9.71, fBottom = 0.f;
+    float fFovWidth  = 2040 * 15.89f / 1000.f;
+    float fFovHeight = 2048 * 15.89f / 1000.f;
+
+    VectorOfVectorOfPoint2f         vecVecFrameCtr;
+    float                           fOverlapX;
+    float                           fOverlapY;
+
+    assignFrames ( fLeft, fTop, fRight, fBottom, fFovWidth, fFovHeight, vecVecFrameCtr, fOverlapX, fOverlapY);
+
+    stCmd.vecVecRefFrameCenters = vecVecFrameCtr;
+    stCmd.vecVecRefFrameValues = VectorOfVectorOfFloat(1, {0.15f, 0.04f, -0.06f, -0.09f});
+
+    float fLeftFrame = vecVecFrameCtr[0].front().x;
+    float fRightFrame = vecVecFrameCtr[0].back().x;
+    VectorOfFloat vecQueryResult;
+    for ( float fQuery = fLeftFrame; fQuery < fRightFrame; ++ fQuery) {
+        stCmd.ptTargetFrameCenter.x = fQuery;
+        stCmd.ptTargetFrameCenter.y = 0;
+
+        PR_CalcFrameValue(&stCmd, &stRpy);
+        if (stRpy.enStatus != VisionStatus::OK)
+            return;
+
+        vecQueryResult.push_back(stRpy.fResult);
+    }
+    
+    std::cout << "Run to here" << std::endl;
 }

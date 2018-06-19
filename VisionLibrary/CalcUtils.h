@@ -18,6 +18,7 @@ private:
     CalcUtils(CalcUtils const &&);
     CalcUtils &operator=(CalcUtils const &);
     ~CalcUtils();
+
 public:
     template<typename T>
     static inline float distanceOf2Point(const cv::Point_<T> &pt1, const cv::Point_<T> &pt2) {
@@ -421,6 +422,9 @@ public:
     static void saveMatToCsv(const cv::Mat &matrix, std::string filename);
     static int twoLineIntersect(const PR_Line2f &line1, const PR_Line2f &line2, cv::Point2f &ptResult);
     static float calc2LineAngle(const PR_Line2f &line1, const PR_Line2f &line2);
+    static float linearInterpolate(const cv::Point2f &pt1, float fValue1, const cv::Point2f &pt2, float fValue2, const cv::Point2f &ptToGet);
+    static float bilinearInterpolate(const VectorOfPoint2f &vecPoint, const VectorOfFloat &vecValue, const cv::Point2f &ptToGet);
+    static bool isRectInRect(const cv::Rect2f &rectIn, const cv::Rect2f &rectOut);
 };
 
 }
