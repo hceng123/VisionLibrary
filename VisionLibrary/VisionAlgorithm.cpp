@@ -4389,32 +4389,30 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     return pstRpy->enStatus;
 }
 
-/*static*/ VisionStatus VisionAlgorithm::_inspBridgeItem(const cv::Mat &matGray, cv::Mat &matResultImg, const PR_INSP_BRIDGE_CMD::INSP_ITEM &inspItem, PR_INSP_BRIDGE_RPY::ITEM_RESULT &inspResult) {
-    //Initialize the result.
-    inspResult.bWithBridge = false;
-    inspResult.vecBridgeWindow.clear();
-
-    //Draw the innter window and outer window.
-    cv::rectangle(matResultImg, inspItem.rectInnerWindow, _constBlueScalar);
-    cv::rectangle(matResultImg, inspItem.rectOuterWindow, _constBlueScalar);
-
+/*static*/ void VisionAlgorithm::_inspBridgeItem(const PR_INSP_BRIDGE_CMD * const pstCmd, PR_INSP_BRIDGE_RPY * const pstRpy) {
     cv::Mat matROI, matFilter, matMask, matThreshold;
     cv::Point ptRoiTL;
-    cv::Rect rectInnerWindowNew(inspItem.rectInnerWindow.x - inspItem.rectOuterWindow.x, inspItem.rectInnerWindow.y - inspItem.rectOuterWindow.y, inspItem.rectInnerWindow.width, inspItem.rectInnerWindow.height);
-    if (PR_INSP_BRIDGE_MODE::INNER == inspItem.enMode) {
-        matROI = cv::Mat(matGray, inspItem.rectInnerWindow).clone();
-        ptRoiTL = inspItem.rectInnerWindow.tl();
+    cv::Rect rectOuterWindowNew(pstCmd->rectROI.x - pstCmd->rectOuterSrchWindow.x, pstCmd->rectROI.y - pstCmd->rectOuterSrchWindow.y, pstCmd->rectROI.width, pstCmd->rectROI.height);
+    if (PR_INSP_BRIDGE_MODE::INNER == pstCmd->enInspMode) {
+        matROI = cv::Mat(pstCmd->matInputImg, pstCmd->rectROI).clone();
+        ptRoiTL = pstCmd->rectROI.tl();
     }
     else {
-        matROI = cv::Mat(matGray, inspItem.rectOuterWindow).clone();
+        matROI = cv::Mat(pstCmd->matInputImg, pstCmd->rectOuterSrchWindow).clone();
         matMask = cv::Mat::ones(matROI.size(), CV_8UC1);
-        cv::Mat matMaskInnerWindow(matMask, rectInnerWindowNew);
-        matMaskInnerWindow.setTo(cv::Scalar(0));
-        ptRoiTL = inspItem.rectOuterWindow.tl();
-    }
-    if (PR_INSP_BRIDGE_MODE::OUTER == inspItem.enMode)
+        cv::Mat matMaskOuterWindow(matMask, rectOuterWindowNew);
+        matMaskOuterWindow.setTo(cv::Scalar(0));
         matROI.setTo(cv::Scalar(0), cv::Scalar(1) - matMask); //Set the body of the IC to pure dark.
-    cv::GaussianBlur(matROI, matFilter, cv::Size(3, 3), 1, 1);
+        ptRoiTL = pstCmd->rectOuterSrchWindow.tl();
+    }
+
+    cv::Mat matGray;
+    if (pstCmd->matInputImg.channels() > 1)
+        cv::cvtColor(matROI, matGray, CV_BGR2GRAY);
+    else
+        matGray = matROI.clone();
+
+    cv::GaussianBlur(matGray, matFilter, cv::Size(3, 3), 1, 1);
     int nThreshold = _autoThreshold(matFilter, matMask);
     if (nThreshold < Config::GetInstance()->getInspBridgeMinThreshold())
         nThreshold = Config::GetInstance()->getInspBridgeMinThreshold();
@@ -4427,66 +4425,80 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     VectorOfVectorOfPoint contours, vecDrawContours;
     cv::findContours(matThreshold, contours, cv::RETR_LIST, cv::CHAIN_APPROX_SIMPLE);
     if (contours.size() <= 0)
-        return VisionStatus::OK;
+        return;
 
-    const int MARGIN = 1;
+    const int MARGIN = 3;
     for (const auto &contour : contours) {
         cv::Rect rect = cv::boundingRect(contour);
-        if (PR_INSP_BRIDGE_MODE::INNER == inspItem.enMode) {
-            if (rect.width > inspItem.stInnerInspCriteria.fMaxLengthX || rect.height > inspItem.stInnerInspCriteria.fMaxLengthY) {
-                inspResult.bWithBridge = true;
+
+        if (PR_INSP_BRIDGE_MODE::INNER == pstCmd->enInspMode) {
+            if (rect.width > pstCmd->stInnerInspCriteria.fMaxLengthX || rect.height > pstCmd->stInnerInspCriteria.fMaxLengthY) {
+                pstRpy->enStatus = VisionStatus::BRIDGE_DEFECT;
                 cv::Rect rectResult(rect.x + ptRoiTL.x, rect.y + ptRoiTL.y, rect.width, rect.height);
-                inspResult.vecBridgeWindow.push_back(rectResult);
-                cv::rectangle(matResultImg, rectResult, _constRedScalar, 1);
+                pstRpy->vecBridgeWindow.push_back(rectResult);
             }
         }
         else {
-            for (const auto enDirection : inspItem.vecOuterInspDirection)
+            for (const auto enDirection : pstCmd->vecOuterInspDirection)
             if (PR_INSP_BRIDGE_DIRECTION::UP == enDirection) {
-                int nTolerance = inspItem.rectInnerWindow.y - inspItem.rectOuterWindow.y - MARGIN;
-                if (rect.br().y <= rectInnerWindowNew.tl().y && rect.height >= nTolerance) {
-                    inspResult.bWithBridge = true;
+                int nTolerance = pstCmd->rectROI.y - pstCmd->rectOuterSrchWindow.y - MARGIN;
+                if (rect.br().y <= rectOuterWindowNew.tl().y && rect.height >= nTolerance) {
+                    pstRpy->enStatus = VisionStatus::BRIDGE_DEFECT;
                     cv::Rect rectResult(rect.x + ptRoiTL.x, rect.y + ptRoiTL.y, rect.width, rect.height);
-                    inspResult.vecBridgeWindow.push_back(rectResult);
-                    cv::rectangle(matResultImg, rectResult, _constRedScalar, 1);
+                    pstRpy->vecBridgeWindow.push_back(rectResult);
                 }
             }
             else if (PR_INSP_BRIDGE_DIRECTION::DOWN == enDirection) {
-                int nTolerance = (inspItem.rectOuterWindow.y + inspItem.rectOuterWindow.height) - (inspItem.rectInnerWindow.y + inspItem.rectInnerWindow.height) - MARGIN;
-                if (rect.tl().y >= rectInnerWindowNew.br().y && rect.height >= nTolerance) {
-                    inspResult.bWithBridge = true;
+                int nTolerance = (pstCmd->rectOuterSrchWindow.y + pstCmd->rectOuterSrchWindow.height) - (pstCmd->rectROI.y + pstCmd->rectROI.height) - MARGIN;
+                if (rect.tl().y >= rectOuterWindowNew.br().y && rect.height >= nTolerance) {
+                    pstRpy->enStatus = VisionStatus::BRIDGE_DEFECT;
                     cv::Rect rectResult(rect.x + ptRoiTL.x, rect.y + ptRoiTL.y, rect.width, rect.height);
-                    inspResult.vecBridgeWindow.push_back(rectResult);
-                    cv::rectangle(matResultImg, rectResult, _constRedScalar, 1);
+                    pstRpy->vecBridgeWindow.push_back(rectResult);
                 }
             }
             else
             if (PR_INSP_BRIDGE_DIRECTION::LEFT == enDirection) {
-                int nTolerance = inspItem.rectInnerWindow.x - inspItem.rectOuterWindow.x - MARGIN;
-                if (rect.br().x <= rectInnerWindowNew.tl().x && rect.width >= nTolerance) {
-                    inspResult.bWithBridge = true;
+                int nTolerance = pstCmd->rectROI.x - pstCmd->rectOuterSrchWindow.x - MARGIN;
+                if (rect.br().x <= rectOuterWindowNew.tl().x && rect.width >= nTolerance) {
+                    pstRpy->enStatus = VisionStatus::BRIDGE_DEFECT;
                     cv::Rect rectResult(rect.x + ptRoiTL.x, rect.y + ptRoiTL.y, rect.width, rect.height);
-                    inspResult.vecBridgeWindow.push_back(rectResult);
-                    cv::rectangle(matResultImg, rectResult, _constRedScalar, 1);
+                    pstRpy->vecBridgeWindow.push_back(rectResult);
                 }
             }
             else
             if (PR_INSP_BRIDGE_DIRECTION::RIGHT == enDirection) {
-                int nTolerance = (inspItem.rectOuterWindow.x + inspItem.rectOuterWindow.width) - (inspItem.rectInnerWindow.x + inspItem.rectInnerWindow.width) - MARGIN;
-                if (rect.tl().x >= rectInnerWindowNew.br().x && rect.width >= nTolerance) {
-                    inspResult.bWithBridge = true;
+                int nTolerance = (pstCmd->rectOuterSrchWindow.x + pstCmd->rectOuterSrchWindow.width) - (pstCmd->rectROI.x + pstCmd->rectROI.width) - MARGIN;
+                if (rect.tl().x >= rectOuterWindowNew.br().x && rect.width >= nTolerance) {
+                    pstRpy->enStatus = VisionStatus::BRIDGE_DEFECT;
                     cv::Rect rectResult(rect.x + ptRoiTL.x, rect.y + ptRoiTL.y, rect.width, rect.height);
-                    inspResult.vecBridgeWindow.push_back(rectResult);
-                    cv::rectangle(matResultImg, rectResult, _constRedScalar, 1);
+                    pstRpy->vecBridgeWindow.push_back(rectResult);
                 }
             }
         }
     }
-    return VisionStatus::OK;
+
+    //Draw the innter window and outer window.
+    if (! isAutoMode()) {
+        if (pstCmd->matInputImg.channels() > 1)
+            pstRpy->matResultImg = pstCmd->matInputImg.clone();
+        else
+            cv::cvtColor(pstCmd->matInputImg, pstRpy->matResultImg, CV_GRAY2BGR);
+
+        cv::rectangle(pstRpy->matResultImg, pstCmd->rectROI, _constBlueScalar);
+        if (PR_INSP_BRIDGE_MODE::OUTER == pstCmd->enInspMode)
+            cv::rectangle(pstRpy->matResultImg, pstCmd->rectOuterSrchWindow, _constBlueScalar);
+        for (const auto &rectBridge : pstRpy->vecBridgeWindow)
+            cv::rectangle(pstRpy->matResultImg, rectBridge, _constRedScalar, 1);
+    }
 }
 
 /*static*/ VisionStatus VisionAlgorithm::inspBridge(const PR_INSP_BRIDGE_CMD *const pstCmd, PR_INSP_BRIDGE_RPY *const pstRpy, bool bReplay /*= false*/) {
     assert(pstCmd != nullptr && pstRpy != nullptr);
+
+    //Initialize the result.
+    pstRpy->enStatus = VisionStatus::OK;
+    pstRpy->vecBridgeWindow.clear();
+
     char chArrMsg[1000];
     if (pstCmd->matInputImg.empty()) {
         WriteLog("Input image is empty.");
@@ -4494,84 +4506,42 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
         return pstRpy->enStatus;
     }
 
-    if (pstCmd->vecInspItems.empty()) {
-        WriteLog("The inspect items is empty.");
-        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
-        return pstRpy->enStatus;
-    }
+    pstRpy->enStatus = _checkInputROI(pstCmd->rectROI, pstCmd->matInputImg, AT);
+    if (VisionStatus::OK != pstRpy->enStatus) return pstRpy->enStatus;
 
     MARK_FUNCTION_START_TIME;
     SETUP_LOGCASE(LogCaseInspBridge);
 
-    cv::Mat matGray;
-    if (pstCmd->matInputImg.channels() > 1)
-        cv::cvtColor(pstCmd->matInputImg, matGray, CV_BGR2GRAY);
-    else
-        matGray = pstCmd->matInputImg.clone();
-    cv::cvtColor(matGray, pstRpy->matResultImg, CV_GRAY2BGR);
+    if (PR_INSP_BRIDGE_MODE::OUTER == pstCmd->enInspMode) {
+        pstRpy->enStatus = _checkInputROI(pstCmd->rectOuterSrchWindow, pstCmd->matInputImg, AT);
+        if (VisionStatus::OK != pstRpy->enStatus) return pstRpy->enStatus;
 
-    int nIndexOfInspItem = 0;
-    for (const auto &inspItem : pstCmd->vecInspItems) {
-        if (PR_INSP_BRIDGE_MODE::OUTER == inspItem.enMode) {
-            auto rectROI = inspItem.rectOuterWindow;
-            if (rectROI.x < 0 || rectROI.y < 0 || rectROI.width <= 0 || rectROI.height <= 0
-                || (rectROI.x + rectROI.width) > pstCmd->matInputImg.cols || (rectROI.y + rectROI.height) > pstCmd->matInputImg.rows) {
-                _snprintf(chArrMsg, sizeof(chArrMsg), "The insect bridge outer check window (%d, %d, %d, %d) is invalid.",
-                    rectROI.x, rectROI.y, rectROI.width, rectROI.height);
-                WriteLog(chArrMsg);
-                pstRpy->enStatus = VisionStatus::INVALID_PARAM;
-                return pstRpy->enStatus;
-            }
-
-            auto rectInnterWindow = inspItem.rectInnerWindow;
-            if (!rectROI.contains(cv::Point(rectInnterWindow.x, rectInnterWindow.y)) ||
-                !rectROI.contains(cv::Point(rectInnterWindow.x + rectInnterWindow.width, rectInnterWindow.y + rectInnterWindow.height))) {
-                _snprintf(chArrMsg, sizeof(chArrMsg), "The inner check window(%d, %d, %d, %d) should inside outer check window (%d, %d, %d, %d).",
-                    rectInnterWindow.x, rectInnterWindow.y, rectInnterWindow.width, rectInnterWindow.height,
-                    rectROI.x, rectROI.y, rectROI.width, rectROI.height);
-                WriteLog(chArrMsg);
-                pstRpy->enStatus = VisionStatus::INVALID_PARAM;
-                return pstRpy->enStatus;
-            }
-
-            if (inspItem.vecOuterInspDirection.empty()) {
-                _snprintf(chArrMsg, sizeof(chArrMsg), "The outer inspection direction of inspect Item %d is empty.", nIndexOfInspItem);
-                WriteLog(chArrMsg);
-                pstRpy->enStatus = VisionStatus::INVALID_PARAM;
-                return pstRpy->enStatus;
-            }
-        }
-        else if (PR_INSP_BRIDGE_MODE::INNER == inspItem.enMode) {
-            auto rectROI = inspItem.rectInnerWindow;
-            if (rectROI.x < 0 || rectROI.y < 0 || rectROI.width <= 0 || rectROI.height <= 0
-                || (rectROI.x + rectROI.width) > pstCmd->matInputImg.cols || (rectROI.y + rectROI.height) > pstCmd->matInputImg.rows) {
-                _snprintf(chArrMsg, sizeof(chArrMsg), "The insect bridge outer check window (%d, %d, %d, %d) is invalid.",
-                    rectROI.x, rectROI.y, rectROI.width, rectROI.height);
-                WriteLog(chArrMsg);
-                pstRpy->enStatus = VisionStatus::INVALID_PARAM;
-                return pstRpy->enStatus;
-            }
-
-            if (inspItem.stInnerInspCriteria.fMaxLengthX <= 0 || inspItem.stInnerInspCriteria.fMaxLengthY <= 0) {
-                _snprintf(chArrMsg, sizeof(chArrMsg), "The inner inspection criteria (%.2f, %.2f) of inspect Item %d is empty.",
-                    inspItem.stInnerInspCriteria.fMaxLengthX, inspItem.stInnerInspCriteria.fMaxLengthY, nIndexOfInspItem);
-                WriteLog(chArrMsg);
-                pstRpy->enStatus = VisionStatus::INVALID_PARAM;
-                return pstRpy->enStatus;
-            }
-        }
-
-        PR_INSP_BRIDGE_RPY::ITEM_RESULT itemResult;
-        pstRpy->enStatus = _inspBridgeItem(matGray, pstRpy->matResultImg, inspItem, itemResult);
-        if (VisionStatus::OK != pstRpy->enStatus) {
-            FINISH_LOGCASE;
+        if (! CalcUtils::isRectInRect(pstCmd->rectROI, pstCmd->rectOuterSrchWindow)) {
+             _snprintf(chArrMsg, sizeof(chArrMsg), "The inspect bridge window of outter mode should inside the search window.");
+            WriteLog(chArrMsg);
+            pstRpy->enStatus = VisionStatus::INVALID_PARAM;
             return pstRpy->enStatus;
         }
-        pstRpy->vecInspResults.push_back(itemResult);
-        ++ nIndexOfInspItem;
+
+        if (pstCmd->vecOuterInspDirection.empty()) {
+            _snprintf(chArrMsg, sizeof(chArrMsg), "The outer inspection direction is empty.");
+            WriteLog(chArrMsg);
+            pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+            return pstRpy->enStatus;
+        }
+    }
+    else if (PR_INSP_BRIDGE_MODE::INNER == pstCmd->enInspMode) {
+        if (pstCmd->stInnerInspCriteria.fMaxLengthX <= 0 || pstCmd->stInnerInspCriteria.fMaxLengthY <= 0) {
+            _snprintf(chArrMsg, sizeof(chArrMsg), "The inner inspection criteria (%.2f, %.2f) is empty.",
+                pstCmd->stInnerInspCriteria.fMaxLengthX, pstCmd->stInnerInspCriteria.fMaxLengthY);
+            WriteLog(chArrMsg);
+            pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+            return pstRpy->enStatus;
+        }
     }
 
-    pstRpy->enStatus = VisionStatus::OK;
+    _inspBridgeItem(pstCmd, pstRpy);
+
     FINISH_LOGCASE;
     MARK_FUNCTION_END_TIME;
     return pstRpy->enStatus;

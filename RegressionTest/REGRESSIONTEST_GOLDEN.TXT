@@ -1041,21 +1041,31 @@ Lead number: 24, lead locations:
 ---------------------------------------------
 INSPECT BRIDGE REGRESSION TEST #1 STARTING
 ---------------------------------------------
-Inspect bridge status 0
-Inspect Item 0. With Bridge: 1
+Inspect bridge status 120
 Bridge window 0 : 224, 277, 14, 11
 Bridge window 1 : 249, 262, 5, 13
 Bridge window 2 : 213, 203, 8, 14
 Bridge window 3 : 228, 188, 14, 7
-Inspect Item 1. With Bridge: 0
 
 ---------------------------------------------
 INSPECT BRIDGE REGRESSION TEST #2 STARTING
 ---------------------------------------------
 Inspect bridge status 0
-Inspect Item 0. With Bridge: 0
-Inspect Item 1. With Bridge: 0
-Inspect Item 2. With Bridge: 1
+
+---------------------------------------------
+INSPECT BRIDGE REGRESSION TEST #3 STARTING
+---------------------------------------------
+Inspect bridge status 0
+
+---------------------------------------------
+INSPECT BRIDGE REGRESSION TEST #4 STARTING
+---------------------------------------------
+Inspect bridge status 0
+
+---------------------------------------------
+INSPECT BRIDGE REGRESSION TEST #5 STARTING
+---------------------------------------------
+Inspect bridge status 120
 Bridge window 0 : 1543, 2094, 17, 14
 
 ---------------------------------------------

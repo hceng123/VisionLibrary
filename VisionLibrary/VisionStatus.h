@@ -78,6 +78,9 @@ enum class VisionStatus
     CALIB_3D_HEIGHT_SURFACE_TOO_SMALL   = 100,
     CALIB_3D_HEIGHT_NO_BASE_STEP        = 101,
 
+    //Bridge status
+    BRIDGE_DEFECT                       = 120,
+
     //Camera MTF
     CAN_NOT_FIND_MTF_PATTERN            = 150,
     MTF_PATTERN_TOO_SMALL               = 151,

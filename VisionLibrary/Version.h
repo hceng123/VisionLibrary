@@ -14,8 +14,11 @@
  * Copyright (c) 2016-2018, Xiao Shengguang.  All rights reserved.
  ****************************************************************************/
 
+//2018-06-16 (XSG) Modify PR_InspBridge to follow the style of other inspection windows.
+#define AOI_VISION_VERSION          "1.00.32"
+
 //2018-06-07 (XSG) For rebuild the library for PR_CalcDlpOffset test.
-#define AOI_VISION_VERSION          "1.00.31"
+//#define AOI_VISION_VERSION          "1.00.31"
 
 //2018-06-05 (XSG) Add PR_CalcDlpOffset and PR_CalcFrameValue functions.
 //#define AOI_VISION_VERSION          "1.00.30"

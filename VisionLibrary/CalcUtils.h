@@ -424,6 +424,7 @@ public:
     static float calc2LineAngle(const PR_Line2f &line1, const PR_Line2f &line2);
     static float linearInterpolate(const cv::Point2f &pt1, float fValue1, const cv::Point2f &pt2, float fValue2, const cv::Point2f &ptToGet);
     static float bilinearInterpolate(const VectorOfPoint2f &vecPoint, const VectorOfFloat &vecValue, const cv::Point2f &ptToGet);
+    static bool isRectInRect(const cv::Rect2f &rectIn, const cv::Rect2f &rectOut);
 };
 
 }

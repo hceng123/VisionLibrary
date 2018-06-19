@@ -567,17 +567,16 @@ public:
     virtual VisionStatus RunLogCase() override;
     virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
     static String StaticGetFolderPrefix();
+
 private:
-    const String _strKeyInspItemCount   = "InspItemCount";
-    const String _strKeyMode            = "Mode";
-    const String _strKeyInnerWindow     = "InnerWindow";
-    const String _strKeyOuterWindow     = "OuterWindow";    
+    const String _strKeyInspMode        = "InspMode";
+    const String _strKeyROI             = "ROI";
+    const String _strKeyOuterSrchWindow = "OuterSrchWindow";
     const String _strKeyDirection       = "Direction";
     const String _strKeyMaxLengthX      = "MaxLengthX";
     const String _strKeyMaxLengthY      = "MaxLengthY";
 
     const String _strKeyStatus          = "Status";
-    const String _strKeyWithBridge      = "WithBridge";
     const String _strKeyBridgeWindow    = "BridgeWindow";
 };
 

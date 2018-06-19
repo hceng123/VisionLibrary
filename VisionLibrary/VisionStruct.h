@@ -779,27 +779,19 @@ struct PR_INSP_BRIDGE_CMD {
         float                   fMaxLengthY;
     };
     using INSP_DIRECTION_VECTOR = std::vector<PR_INSP_BRIDGE_DIRECTION>;
-    struct INSP_ITEM {
-        cv::Rect                rectInnerWindow;
-        cv::Rect                rectOuterWindow;
-        PR_INSP_BRIDGE_MODE     enMode;
-        INSP_DIRECTION_VECTOR   vecOuterInspDirection;
-        INNER_INSP_CRITERIA     stInnerInspCriteria;
-    };
-    using INSP_ITEM_VECTOR = std::vector<INSP_ITEM>;
+
     cv::Mat                 matInputImg;
-    INSP_ITEM_VECTOR        vecInspItems;
+    cv::Rect                rectROI;
+    PR_INSP_BRIDGE_MODE     enInspMode;
+    INSP_DIRECTION_VECTOR   vecOuterInspDirection;
+    cv::Rect                rectOuterSrchWindow;
+    INNER_INSP_CRITERIA     stInnerInspCriteria;
 };
 
 struct PR_INSP_BRIDGE_RPY {
-    struct ITEM_RESULT {
-        bool                bWithBridge;
-        VectorOfRect        vecBridgeWindow;
-    };
-    using ITEM_RESULT_VECTOR = std::vector<ITEM_RESULT>;
     VisionStatus            enStatus;
     cv::Mat                 matResultImg;
-    ITEM_RESULT_VECTOR      vecInspResults;
+    VectorOfRect            vecBridgeWindow;
 };
 
 /******************************************
