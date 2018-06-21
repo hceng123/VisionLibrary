@@ -606,7 +606,7 @@ struct PR_CROSS_SECTION_AREA_RPY {
 };
 
 struct PR_RGB_RATIO {
-    PR_RGB_RATIO() : fRatioR(0.299f), fRatioG(0.587f), fRatioB(0.114f) {}
+    PR_RGB_RATIO() : fRatioR(1.f), fRatioG(1.f), fRatioB(1.f) {}
     PR_RGB_RATIO(float fRatioR, float fRatioG, float fRatioB ) : fRatioR(fRatioR), fRatioG(fRatioG), fRatioB(fRatioB)   {}
     float                   fRatioR;
     float                   fRatioG;

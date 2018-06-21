@@ -63,15 +63,16 @@ using DeviceRecordPtr = std::shared_ptr<DeviceRecord>;
 class ChipRecord : public Record
 {
 public:
-    ChipRecord(PR_RECORD_TYPE enType) : Record(enType)   {}
+    ChipRecord(PR_RECORD_TYPE enType) : Record(enType) {}
     virtual VisionStatus load(cv::FileStorage &fileStorage, const String& strFilePath = "") override;
     virtual VisionStatus save(const String& strFilePath) override;
-    void setInspMode ( PR_INSP_CHIP_MODE enInspMode );
+    void setInspMode(PR_INSP_CHIP_MODE enInspMode);
     PR_INSP_CHIP_MODE getInspMode() const;
     void setSize(const cv::Size2f &size);
     const cv::Size2f& getSize() const;
     void setThreshold(Int16 nThreshold);
     Int16 getThreshold() const;
+
 protected:
     PR_INSP_CHIP_MODE   _enInspMode;
     cv::Size2f          _size;
@@ -99,6 +100,7 @@ class ContourRecord : public Record {
     VectorOfVectorOfPoint getContour() const;
     String getTmplFileName() const;
     String getContourFileName() const;
+
 protected:
     Int16                   _nThreshold;
     cv::Mat                 _matTmpl;

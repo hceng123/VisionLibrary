@@ -3451,9 +3451,15 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
         return pstRpy->enStatus;
     }
 
-    std::vector<float> coefficients{pstCmd->stRatio.fRatioB, pstCmd->stRatio.fRatioG, pstCmd->stRatio.fRatioR};
-    cv::Mat matCoefficients = cv::Mat(coefficients).reshape(1, 1);
-    cv::transform(pstCmd->matInputImg, pstRpy->matResultImg, matCoefficients);
+    std::vector<cv::Mat> vecChannels;
+    cv::split(pstCmd->matInputImg, vecChannels);
+
+    vecChannels[0] = vecChannels[0] * pstCmd->stRatio.fRatioB;
+    vecChannels[1] = vecChannels[1] * pstCmd->stRatio.fRatioG;
+    vecChannels[2] = vecChannels[2] * pstCmd->stRatio.fRatioR;
+
+    cv::merge(vecChannels, pstRpy->matResultImg);
+    cv::cvtColor(pstRpy->matResultImg, pstRpy->matResultImg, CV_BGR2GRAY);
 
     pstRpy->enStatus = VisionStatus::OK;
     return pstRpy->enStatus;
@@ -4765,17 +4771,8 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
         return pstRpy->enStatus;
     }
 
-    if (pstCmd->rectSrchWindow.x < 0 || pstCmd->rectSrchWindow.y < 0 ||
-        pstCmd->rectSrchWindow.width <= 0 || pstCmd->rectSrchWindow.height <= 0 ||
-        (pstCmd->rectSrchWindow.x + pstCmd->rectSrchWindow.width) > pstCmd->matInputImg.cols ||
-        (pstCmd->rectSrchWindow.y + pstCmd->rectSrchWindow.height) > pstCmd->matInputImg.rows) {
-        char chArrMsg[1000];
-        _snprintf(chArrMsg, sizeof(chArrMsg), "The input search window (%d, %d, %d, %d) is invalid",
-            pstCmd->rectSrchWindow.x, pstCmd->rectSrchWindow.y, pstCmd->rectSrchWindow.width, pstCmd->rectSrchWindow.height);
-        WriteLog(chArrMsg);
-        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
-        return pstRpy->enStatus;
-    }
+    pstRpy->enStatus = _checkInputROI(pstCmd->rectSrchWindow, pstCmd->matInputImg, AT);
+    if (VisionStatus::OK != pstRpy->enStatus) return pstRpy->enStatus;
 
     ChipRecordPtr ptrRecord = nullptr;
     if (pstCmd->nRecordId > 0) {
@@ -5011,11 +5008,11 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
 
     int nLeftX = 0, nRightX = 0, nTopY = 0, nBottomY = 0;
     bool bSuccess = true;
-    bSuccess = (bSuccess && _findDataUpEdge(matOneRow, 0, matOneRow.cols / 2, nLeftX));
-    bSuccess = (bSuccess && _findDataDownEdge(matOneRow, matOneRow.cols / 2, matOneRow.cols, nRightX));
+    bSuccess = (bSuccess && _findDataUpEdge  (matOneRow, 0,                  matOneRow.cols / 2, nLeftX));
+    bSuccess = (bSuccess && _findDataDownEdge(matOneRow, matOneRow.cols / 2, matOneRow.cols,     nRightX));
 
-    bSuccess = (bSuccess && _findDataUpEdge(matOneCol, 0, matOneCol.cols / 2, nTopY));
-    bSuccess = (bSuccess && _findDataDownEdge(matOneCol, matOneCol.cols / 2, matOneCol.cols, nBottomY));
+    bSuccess = (bSuccess && _findDataUpEdge  (matOneCol, 0,                  matOneCol.cols / 2, nTopY));
+    bSuccess = (bSuccess && _findDataDownEdge(matOneCol, matOneCol.cols / 2, matOneCol.cols,     nBottomY));
     cv::rectangle(pstRpy->matResultImg, cv::Point(rectROI.x + nLeftX, rectROI.y + nTopY),
         cv::Point(rectROI.x + nRightX, rectROI.y + nBottomY), _constGreenScalar, 2);
 
@@ -5036,14 +5033,17 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     return pstRpy->enStatus;
 }
 
+//Serch from up to down.
 /*static*/ bool VisionAlgorithm::_findDataUpEdge(const cv::Mat &matRow, int nStart, int nEnd, int &nEdgePos) {
     const int EDGE_SIZE = 30;
-    int EDGE_MIN_DIFF = matRow.cols / 3;
+    int nEdgeDiffThreshold = 50;
     nEdgePos = -1;
-    for (int index = nStart; index < nEnd - EDGE_SIZE; ++index) {
+    for (int index = nEnd - EDGE_SIZE - 1; index > nStart; -- index) {
         int nDiff = matRow.at<int>(0, index + EDGE_SIZE) - matRow.at<int>(0, index);
-        if (nDiff > EDGE_MIN_DIFF)
+        if (nDiff > nEdgeDiffThreshold) {
             nEdgePos = index + EDGE_SIZE / 2;
+            nEdgeDiffThreshold = nDiff;
+        }
     }
     if (nEdgePos < 0)
         return false;
@@ -5052,12 +5052,14 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
 
 /*static*/ bool VisionAlgorithm::_findDataDownEdge(const cv::Mat &matRow, int nStart, int nEnd, int &nEdgePos) {
     const int EDGE_SIZE = 30;
-    int EDGE_MIN_DIFF = matRow.cols / 4;
+    int nEdgeDiffThreshold = 50;
     nEdgePos = -1;
-    for (int index = nEnd - EDGE_SIZE - 1; index >= nStart; -- index) {
+    for (int index = nStart; index <= nEnd - EDGE_SIZE - 1; ++ index) {
         int nDiff = matRow.at<int>(0, index) - matRow.at<int>(0, index + EDGE_SIZE);
-        if (nDiff > EDGE_MIN_DIFF)
+        if (nDiff > nEdgeDiffThreshold) {
             nEdgePos = index + EDGE_SIZE / 2;
+            nEdgeDiffThreshold = nDiff;
+        }
     }
     if (nEdgePos < 0)
         return false;
