@@ -584,9 +584,7 @@ VisionStatus LogCaseFindLine::WriteRpy(const PR_FIND_LINE_RPY *const pstRpy) {
     ini.SetValue(_RPY_SECTION.c_str(), _strKeyLine2Point1.c_str(), _formatCoordinate(pstRpy->stLine2.pt1).c_str());
     ini.SetValue(_RPY_SECTION.c_str(), _strKeyLine2Point2.c_str(), _formatCoordinate(pstRpy->stLine2.pt2).c_str());
     ini.SetDoubleValue(_RPY_SECTION.c_str(), _strKeyDistance.c_str(), pstRpy->fDistance);
-    ini.SetBoolValue(_RPY_SECTION.c_str(), _strKeyLinearityPass.c_str(), pstRpy->bLinearityCheckPass);
     ini.SetDoubleValue(_RPY_SECTION.c_str(), _strKeyLinearity.c_str(), pstRpy->fLinearity);
-    ini.SetBoolValue(_RPY_SECTION.c_str(), _strKeyAngleCheckPass.c_str(), pstRpy->bAngleCheckPass);
     ini.SetDoubleValue(_RPY_SECTION.c_str(), _strKeyAngle.c_str(), pstRpy->fAngle);
     ini.SaveFile(cmdRpyFilePath.c_str());
     if (! pstRpy->matResultImg.empty())

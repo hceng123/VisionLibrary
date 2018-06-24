@@ -230,6 +230,16 @@ VisionStatus GetErrorInfo(VisionStatus enStatus, PR_GET_ERROR_INFO_RPY *pstRpy)
         pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::PR_INSP_STATUS;
         break;
 
+    case VisionStatus::LINE_LINEARITY_REJECT:
+        _snprintf(pstRpy->achErrorStr, PR_MAX_ERR_STR_LEN, "Line linearity is under minimum value.");
+        pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::PR_INSP_STATUS;
+        break;
+
+    case VisionStatus::LINE_ANGLE_OUT_OF_TOL:
+        _snprintf(pstRpy->achErrorStr, PR_MAX_ERR_STR_LEN, "Line angle difference is out of tolerance.");
+        pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::PR_INSP_STATUS;
+        break;
+
     default:
         _snprintf(pstRpy->achErrorStr, PR_MAX_ERR_STR_LEN, "Undefined error code!");
         pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::PR_FATAL_ERROR;

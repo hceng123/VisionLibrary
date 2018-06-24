@@ -375,9 +375,7 @@ struct PR_FIND_LINE_RPY {
     float                   fIntercept2;    //When the find pair is enabled, it will return the second line intercept.
     PR_Line2f               stLine2;        //When the find pair is enabled, it will return the second line.
     float                   fDistance;      //When the find pair is enabled, it will return the distance of two lines.
-    bool                    bLinearityCheckPass;
     float                   fLinearity;
-    bool                    bAngleCheckPass;
     float                   fAngle;
     cv::Mat                 matResultImg;
 };

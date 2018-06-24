@@ -2186,7 +2186,8 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
             cv::line(pstRpy->matResultImg, pstRpy->stLine2.pt1, pstRpy->stLine2.pt2, _constGreenScalar, 2);
     }
 
-    pstRpy->bLinearityCheckPass = false;
+    pstRpy->enStatus = VisionStatus::OK;
+
     if (pstCmd->bCheckLinearity) {
         int nInTolerancePointCount = 0;
         for (const auto &point : vecFitPoint1) {
@@ -2194,22 +2195,16 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
                 ++ nInTolerancePointCount;
         }
         pstRpy->fLinearity = ToFloat(nInTolerancePointCount) / ToFloat(vecFitPoint1.size());
-        if (pstRpy->fLinearity >= pstCmd->fMinLinearity)
-            pstRpy->bLinearityCheckPass = true;
-    }
-    else {
-        pstRpy->fLinearity = 0.f;
-        pstRpy->bLinearityCheckPass = false;
+        if (pstRpy->fLinearity < pstCmd->fMinLinearity)
+            pstRpy->enStatus = VisionStatus::LINE_LINEARITY_REJECT;
     }
 
-    pstRpy->bAngleCheckPass = true;
     pstRpy->fAngle = ToFloat(CalcUtils::calcSlopeDegree<float>(pstRpy->stLine.pt1, pstRpy->stLine.pt2));
-    if (pstCmd->bCheckAngle && fabs(pstRpy->fAngle - pstCmd->fExpectedAngle) < pstCmd->fAngleDiffTolerance)
-        pstRpy->bAngleCheckPass = true;
-    else
-        pstRpy->bAngleCheckPass = false;
-
-    pstRpy->enStatus = VisionStatus::OK;
+    if (VisionStatus::OK == pstRpy->enStatus && pstCmd->bCheckAngle) {
+        if (fabs(pstRpy->fAngle - pstCmd->fExpectedAngle) > pstCmd->fAngleDiffTolerance)
+            pstRpy->enStatus = VisionStatus::LINE_ANGLE_OUT_OF_TOL;
+    }
+    
     FINISH_LOGCASE;
     MARK_FUNCTION_END_TIME;
     return pstRpy->enStatus;
