@@ -22,7 +22,7 @@ enum class VisionStatus
     OPENCV_EXCEPTION,
     INVALID_PARAM,
     PATH_NOT_EXIST,
-    INVALID_LOGCASE,    
+    INVALID_LOGCASE,
     OPEN_FILE_FAIL,
     INVALID_RECORD_FILE,
     INVALID_RECORD_TYPE,    
@@ -89,6 +89,8 @@ enum class VisionStatus
     CALIPER_CAN_NOT_FIND_LINE           = 200,
     PROJECTION_CANNOT_FIND_LINE         = 201,
     CALIPER_NOT_ENOUGH_EDGE_POINTS      = 202,
+    LINE_LINEARITY_REJECT               = 203,
+    LINE_ANGLE_OUT_OF_TOL               = 204,
 };
 
 }

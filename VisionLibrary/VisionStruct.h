@@ -375,9 +375,7 @@ struct PR_FIND_LINE_RPY {
     float                   fIntercept2;    //When the find pair is enabled, it will return the second line intercept.
     PR_Line2f               stLine2;        //When the find pair is enabled, it will return the second line.
     float                   fDistance;      //When the find pair is enabled, it will return the distance of two lines.
-    bool                    bLinearityCheckPass;
     float                   fLinearity;
-    bool                    bAngleCheckPass;
     float                   fAngle;
     cv::Mat                 matResultImg;
 };
@@ -606,7 +604,7 @@ struct PR_CROSS_SECTION_AREA_RPY {
 };
 
 struct PR_RGB_RATIO {
-    PR_RGB_RATIO() : fRatioR(0.299f), fRatioG(0.587f), fRatioB(0.114f) {}
+    PR_RGB_RATIO() : fRatioR(1.f), fRatioG(1.f), fRatioB(1.f) {}
     PR_RGB_RATIO(float fRatioR, float fRatioG, float fRatioB ) : fRatioR(fRatioR), fRatioG(fRatioG), fRatioB(fRatioB)   {}
     float                   fRatioR;
     float                   fRatioG;

@@ -8,24 +8,25 @@ namespace AOI
 namespace Vision
 {
 
-static void PrintFindLineRpy ( const PR_FIND_LINE_RPY &stRpy ) {
+static void PrintFindLineRpy(const PR_FIND_LINE_RPY &stRpy) {
     char chArrMsg[100];
-    std::cout << "Find line status " << ToInt32 ( stRpy.enStatus ) << std::endl;
-    if (VisionStatus::OK == stRpy.enStatus) {
-        std::cout << "ReversedFit = " << stRpy.bReversedFit << std::endl;
-        std::cout << std::fixed << std::setprecision ( 2 ) << "Line slope = " << stRpy.fSlope << ", intercept = " << stRpy.fIntercept << std::endl;
-        _snprintf ( chArrMsg, sizeof ( chArrMsg ), "(%.2f, %.2f), (%.2f, %.2f)", stRpy.stLine.pt1.x, stRpy.stLine.pt1.y, stRpy.stLine.pt2.x, stRpy.stLine.pt2.y );
-        std::cout << "Line coordinate: " << chArrMsg << std::endl;
-        std::cout << std::fixed << std::setprecision ( 2 ) << "Linearity = " << stRpy.fLinearity << std::endl;
-        std::cout << "Linearity check pass: " << stRpy.bLinearityCheckPass << std::endl;
-        std::cout << std::fixed << std::setprecision ( 2 ) << "Angle = " << stRpy.fAngle << std::endl;
-        std::cout << "Angle check pass: " << stRpy.bAngleCheckPass << std::endl;
-    }else {
+    std::cout << "Find line status " << ToInt32(stRpy.enStatus) << std::endl;
+    if (VisionStatus::OK != stRpy.enStatus) {
         PR_GET_ERROR_INFO_RPY stErrRpy;
         PR_GetErrorInfo(stRpy.enStatus, &stErrRpy);
         std::cout << "Error Msg: " << stErrRpy.achErrorStr << std::endl;
+        if (PR_STATUS_ERROR_LEVEL::PR_FATAL_ERROR == stErrRpy.enErrorLevel)
+            return;
     }
+
+    std::cout << "ReversedFit = " << stRpy.bReversedFit << std::endl;
+    std::cout << std::fixed << std::setprecision(2) << "Line slope = " << stRpy.fSlope << ", intercept = " << stRpy.fIntercept << std::endl;
+    _snprintf(chArrMsg, sizeof (chArrMsg), "(%.2f, %.2f), (%.2f, %.2f)", stRpy.stLine.pt1.x, stRpy.stLine.pt1.y, stRpy.stLine.pt2.x, stRpy.stLine.pt2.y);
+    std::cout << "Line coordinate: " << chArrMsg << std::endl;
+    std::cout << std::fixed << std::setprecision(2) << "Linerity  = " << stRpy.fLinearity << std::endl;
+    std::cout << std::fixed << std::setprecision(2) << "Angle  = " << stRpy.fAngle << std::endl;
 };
+
 
 void TestFindLineByProjection() {
     PR_FIND_LINE_CMD stCmd;

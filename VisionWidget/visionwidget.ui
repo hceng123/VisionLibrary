@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1357</width>
+    <width>1377</width>
     <height>768</height>
    </rect>
   </property>
@@ -68,7 +68,7 @@
      <rect>
       <x>730</x>
       <y>60</y>
-      <width>611</width>
+      <width>641</width>
       <height>641</height>
      </rect>
     </property>
@@ -84,7 +84,7 @@
        <rect>
         <x>10</x>
         <y>10</y>
-        <width>591</width>
+        <width>611</width>
         <height>601</height>
        </rect>
       </property>
@@ -113,7 +113,7 @@
        <rect>
         <x>10</x>
         <y>10</y>
-        <width>590</width>
+        <width>611</width>
         <height>51</height>
        </rect>
       </property>
@@ -123,7 +123,7 @@
       <widget class="QPushButton" name="fitCircleBtn">
        <property name="geometry">
         <rect>
-         <x>500</x>
+         <x>520</x>
          <y>20</y>
          <width>80</width>
          <height>23</height>
@@ -136,7 +136,7 @@
       <widget class="QLineEdit" name="lineEditFitCircleErrTol">
        <property name="geometry">
         <rect>
-         <x>90</x>
+         <x>110</x>
          <y>20</y>
          <width>50</width>
          <height>20</height>
@@ -154,7 +154,7 @@
         <rect>
          <x>10</x>
          <y>20</y>
-         <width>81</width>
+         <width>91</width>
          <height>16</height>
         </rect>
        </property>
@@ -165,9 +165,9 @@
       <widget class="QComboBox" name="comboBoxFitCircleAlgorithm">
        <property name="geometry">
         <rect>
-         <x>200</x>
+         <x>230</x>
          <y>20</y>
-         <width>121</width>
+         <width>141</width>
          <height>22</height>
         </rect>
        </property>
@@ -193,9 +193,9 @@
       <widget class="QLabel" name="labelFitCircleAlgorithm">
        <property name="geometry">
         <rect>
-         <x>150</x>
+         <x>170</x>
          <y>20</y>
-         <width>51</width>
+         <width>61</width>
          <height>16</height>
         </rect>
        </property>
@@ -206,7 +206,7 @@
       <widget class="QLabel" name="labelFitCircleDirection">
        <property name="geometry">
         <rect>
-         <x>330</x>
+         <x>380</x>
          <y>20</y>
          <width>51</width>
          <height>16</height>
@@ -219,7 +219,7 @@
       <widget class="QComboBox" name="comboBoxFitCircleDirection">
        <property name="geometry">
         <rect>
-         <x>380</x>
+         <x>440</x>
          <y>20</y>
          <width>61</width>
          <height>22</height>
@@ -250,7 +250,7 @@
        <rect>
         <x>10</x>
         <y>260</y>
-        <width>590</width>
+        <width>611</width>
         <height>51</height>
        </rect>
       </property>
@@ -262,7 +262,7 @@
         <rect>
          <x>10</x>
          <y>20</y>
-         <width>81</width>
+         <width>101</width>
          <height>16</height>
         </rect>
        </property>
@@ -273,7 +273,7 @@
       <widget class="QLineEdit" name="lineEditFitLineErrTol">
        <property name="geometry">
         <rect>
-         <x>90</x>
+         <x>110</x>
          <y>20</y>
          <width>41</width>
          <height>20</height>
@@ -289,7 +289,7 @@
       <widget class="QPushButton" name="fitLineBtn">
        <property name="geometry">
         <rect>
-         <x>500</x>
+         <x>520</x>
          <y>20</y>
          <width>80</width>
          <height>23</height>
@@ -302,9 +302,9 @@
       <widget class="QComboBox" name="comboBoxFitLineAlgorithm">
        <property name="geometry">
         <rect>
-         <x>200</x>
+         <x>230</x>
          <y>20</y>
-         <width>121</width>
+         <width>141</width>
          <height>22</height>
         </rect>
        </property>
@@ -330,9 +330,9 @@
       <widget class="QLabel" name="labelFitLineAlgorithm">
        <property name="geometry">
         <rect>
-         <x>150</x>
+         <x>170</x>
          <y>20</y>
-         <width>51</width>
+         <width>61</width>
          <height>16</height>
         </rect>
        </property>
@@ -343,7 +343,7 @@
       <widget class="QComboBox" name="comboBoxFitLineDirection">
        <property name="geometry">
         <rect>
-         <x>380</x>
+         <x>440</x>
          <y>20</y>
          <width>61</width>
          <height>22</height>
@@ -371,7 +371,7 @@
       <widget class="QLabel" name="labelFitLineDirection">
        <property name="geometry">
         <rect>
-         <x>330</x>
+         <x>380</x>
          <y>20</y>
          <width>51</width>
          <height>16</height>
@@ -387,7 +387,7 @@
        <rect>
         <x>10</x>
         <y>420</y>
-        <width>590</width>
+        <width>611</width>
         <height>51</height>
        </rect>
       </property>
@@ -399,7 +399,7 @@
         <rect>
          <x>10</x>
          <y>20</y>
-         <width>81</width>
+         <width>91</width>
          <height>16</height>
         </rect>
        </property>
@@ -410,7 +410,7 @@
       <widget class="QLineEdit" name="lineEditFitParallelLineErrTol">
        <property name="geometry">
         <rect>
-         <x>90</x>
+         <x>110</x>
          <y>20</y>
          <width>41</width>
          <height>20</height>
@@ -426,7 +426,7 @@
       <widget class="QLineEdit" name="lineEditFitParallelLineThreshold">
        <property name="geometry">
         <rect>
-         <x>220</x>
+         <x>240</x>
          <y>20</y>
          <width>41</width>
          <height>20</height>
@@ -442,9 +442,9 @@
       <widget class="QLabel" name="labelFitParallelLineThreshold">
        <property name="geometry">
         <rect>
-         <x>160</x>
+         <x>170</x>
          <y>20</y>
-         <width>51</width>
+         <width>61</width>
          <height>16</height>
         </rect>
        </property>
@@ -457,7 +457,7 @@
         <rect>
          <x>500</x>
          <y>20</y>
-         <width>80</width>
+         <width>101</width>
          <height>23</height>
         </rect>
        </property>
@@ -468,10 +468,10 @@
       <widget class="QLabel" name="labelParallelLineAttribute">
        <property name="geometry">
         <rect>
-         <x>280</x>
+         <x>300</x>
          <y>20</y>
-         <width>47</width>
-         <height>13</height>
+         <width>61</width>
+         <height>16</height>
         </rect>
        </property>
        <property name="text">
@@ -481,7 +481,7 @@
       <widget class="QComboBox" name="comboBoxParallelLineAttribute">
        <property name="geometry">
         <rect>
-         <x>340</x>
+         <x>370</x>
          <y>20</y>
          <width>69</width>
          <height>22</height>
@@ -504,7 +504,7 @@
        <rect>
         <x>10</x>
         <y>480</y>
-        <width>590</width>
+        <width>611</width>
         <height>51</height>
        </rect>
       </property>
@@ -516,7 +516,7 @@
         <rect>
          <x>10</x>
          <y>20</y>
-         <width>81</width>
+         <width>91</width>
          <height>16</height>
         </rect>
        </property>
@@ -527,7 +527,7 @@
       <widget class="QLineEdit" name="lineEditFitRectErrTol">
        <property name="geometry">
         <rect>
-         <x>90</x>
+         <x>110</x>
          <y>20</y>
          <width>41</width>
          <height>20</height>
@@ -543,7 +543,7 @@
       <widget class="QLineEdit" name="lineEditFitRectThreshold">
        <property name="geometry">
         <rect>
-         <x>220</x>
+         <x>240</x>
          <y>20</y>
          <width>41</width>
          <height>20</height>
@@ -559,9 +559,9 @@
       <widget class="QLabel" name="labelFitRectThreshold">
        <property name="geometry">
         <rect>
-         <x>160</x>
+         <x>170</x>
          <y>20</y>
-         <width>51</width>
+         <width>61</width>
          <height>16</height>
         </rect>
        </property>
@@ -572,9 +572,9 @@
       <widget class="QPushButton" name="fitRectBtn">
        <property name="geometry">
         <rect>
-         <x>500</x>
+         <x>510</x>
          <y>20</y>
-         <width>80</width>
+         <width>91</width>
          <height>23</height>
         </rect>
        </property>
@@ -585,7 +585,7 @@
       <widget class="QComboBox" name="comboBoxRectAttribute">
        <property name="geometry">
         <rect>
-         <x>340</x>
+         <x>370</x>
          <y>20</y>
          <width>69</width>
          <height>22</height>
@@ -605,10 +605,10 @@
       <widget class="QLabel" name="labelRectAttribute">
        <property name="geometry">
         <rect>
-         <x>280</x>
+         <x>300</x>
          <y>20</y>
-         <width>47</width>
-         <height>13</height>
+         <width>61</width>
+         <height>16</height>
         </rect>
        </property>
        <property name="text">
@@ -621,7 +621,7 @@
        <rect>
         <x>10</x>
         <y>320</y>
-        <width>590</width>
+        <width>611</width>
         <height>91</height>
        </rect>
       </property>
@@ -631,7 +631,7 @@
       <widget class="QPushButton" name="btnFindLine">
        <property name="geometry">
         <rect>
-         <x>500</x>
+         <x>520</x>
          <y>20</y>
          <width>80</width>
          <height>23</height>
@@ -644,9 +644,9 @@
       <widget class="QComboBox" name="comboBoxFindLineDirection">
        <property name="geometry">
         <rect>
-         <x>60</x>
+         <x>70</x>
          <y>20</y>
-         <width>91</width>
+         <width>101</width>
          <height>22</height>
         </rect>
        </property>
@@ -680,9 +680,9 @@
       <widget class="QLabel" name="labelFindLineAlgorithm">
        <property name="geometry">
         <rect>
-         <x>160</x>
+         <x>180</x>
          <y>20</y>
-         <width>51</width>
+         <width>61</width>
          <height>16</height>
         </rect>
        </property>
@@ -693,7 +693,7 @@
       <widget class="QComboBox" name="comboBoxFindLineAlgorithm">
        <property name="geometry">
         <rect>
-         <x>210</x>
+         <x>240</x>
          <y>20</y>
          <width>71</width>
          <height>22</height>
@@ -716,7 +716,7 @@
       <widget class="QLineEdit" name="lineEditFindLineCaliperWidth">
        <property name="geometry">
         <rect>
-         <x>530</x>
+         <x>420</x>
          <y>60</y>
          <width>41</width>
          <height>20</height>
@@ -732,7 +732,7 @@
       <widget class="QLineEdit" name="lineEditFindLineCaliperCount">
        <property name="geometry">
         <rect>
-         <x>400</x>
+         <x>270</x>
          <y>60</y>
          <width>41</width>
          <height>20</height>
@@ -748,9 +748,9 @@
       <widget class="QLabel" name="labelFindLineCaliperCount">
        <property name="geometry">
         <rect>
-         <x>330</x>
+         <x>180</x>
          <y>60</y>
-         <width>71</width>
+         <width>91</width>
          <height>16</height>
         </rect>
        </property>
@@ -761,9 +761,9 @@
       <widget class="QLabel" name="labelFindLineCaliperWidth">
        <property name="geometry">
         <rect>
-         <x>450</x>
+         <x>330</x>
          <y>60</y>
-         <width>71</width>
+         <width>91</width>
          <height>16</height>
         </rect>
        </property>
@@ -774,7 +774,7 @@
       <widget class="QComboBox" name="comboBoxFindLineFindPair">
        <property name="geometry">
         <rect>
-         <x>60</x>
+         <x>70</x>
          <y>60</y>
          <width>71</width>
          <height>22</height>
@@ -813,7 +813,7 @@
        <rect>
         <x>10</x>
         <y>70</y>
-        <width>590</width>
+        <width>611</width>
         <height>81</height>
        </rect>
       </property>
@@ -823,7 +823,7 @@
       <widget class="QPushButton" name="houghCircleBtn">
        <property name="geometry">
         <rect>
-         <x>500</x>
+         <x>520</x>
          <y>20</y>
          <width>80</width>
          <height>23</height>
@@ -836,7 +836,7 @@
       <widget class="QLineEdit" name="lineEditHoughCircleMinDist">
        <property name="geometry">
         <rect>
-         <x>130</x>
+         <x>150</x>
          <y>20</y>
          <width>41</width>
          <height>20</height>
@@ -854,7 +854,7 @@
         <rect>
          <x>10</x>
          <y>20</y>
-         <width>91</width>
+         <width>111</width>
          <height>16</height>
         </rect>
        </property>
@@ -865,9 +865,9 @@
       <widget class="QLabel" name="labelHoughCircleCannyThreshold">
        <property name="geometry">
         <rect>
-         <x>180</x>
+         <x>200</x>
          <y>20</y>
-         <width>111</width>
+         <width>141</width>
          <height>16</height>
         </rect>
        </property>
@@ -878,7 +878,7 @@
       <widget class="QLineEdit" name="lineEditHoughCircleCannyThreshold">
        <property name="geometry">
         <rect>
-         <x>300</x>
+         <x>340</x>
          <y>20</y>
          <width>41</width>
          <height>20</height>
@@ -894,7 +894,7 @@
       <widget class="QLineEdit" name="lineEditHoughCircleAccumlatorThreshold">
        <property name="geometry">
         <rect>
-         <x>130</x>
+         <x>150</x>
          <y>50</y>
          <width>41</width>
          <height>20</height>
@@ -912,7 +912,7 @@
         <rect>
          <x>10</x>
          <y>50</y>
-         <width>111</width>
+         <width>141</width>
          <height>16</height>
         </rect>
        </property>
@@ -923,7 +923,7 @@
       <widget class="QLineEdit" name="lineEditHoughCircleMinRadius">
        <property name="geometry">
         <rect>
-         <x>240</x>
+         <x>280</x>
          <y>50</y>
          <width>41</width>
          <height>20</height>
@@ -939,9 +939,9 @@
       <widget class="QLabel" name="labelHoughCircleMinRadius">
        <property name="geometry">
         <rect>
-         <x>180</x>
+         <x>200</x>
          <y>50</y>
-         <width>61</width>
+         <width>71</width>
          <height>16</height>
         </rect>
        </property>
@@ -952,9 +952,9 @@
       <widget class="QLabel" name="labelHoughCircleMaxRadius">
        <property name="geometry">
         <rect>
-         <x>300</x>
+         <x>330</x>
          <y>50</y>
-         <width>61</width>
+         <width>71</width>
          <height>16</height>
         </rect>
        </property>
@@ -965,7 +965,7 @@
       <widget class="QLineEdit" name="lineEditHoughCircleMaxRadius">
        <property name="geometry">
         <rect>
-         <x>360</x>
+         <x>410</x>
          <y>50</y>
          <width>41</width>
          <height>20</height>
@@ -984,7 +984,7 @@
        <rect>
         <x>10</x>
         <y>160</y>
-        <width>590</width>
+        <width>611</width>
         <height>81</height>
        </rect>
       </property>
@@ -994,7 +994,7 @@
       <widget class="QPushButton" name="findCircleBtn">
        <property name="geometry">
         <rect>
-         <x>500</x>
+         <x>520</x>
          <y>20</y>
          <width>80</width>
          <height>23</height>
@@ -1007,7 +1007,7 @@
       <widget class="QLineEdit" name="lineEditDetectCircleStartSrchAngle">
        <property name="geometry">
         <rect>
-         <x>270</x>
+         <x>290</x>
          <y>20</y>
          <width>41</width>
          <height>20</height>
@@ -1023,9 +1023,9 @@
       <widget class="QLabel" name="labelDetectCircleMinRadius_3">
        <property name="geometry">
         <rect>
-         <x>170</x>
+         <x>180</x>
          <y>20</y>
-         <width>101</width>
+         <width>111</width>
          <height>16</height>
         </rect>
        </property>
@@ -1036,9 +1036,9 @@
       <widget class="QLabel" name="labelDetectCircleEndSrchAngle">
        <property name="geometry">
         <rect>
-         <x>320</x>
+         <x>340</x>
          <y>20</y>
-         <width>91</width>
+         <width>111</width>
          <height>16</height>
         </rect>
        </property>
@@ -1049,7 +1049,7 @@
       <widget class="QLineEdit" name="lineEditDetectCircleEndSrchAngle">
        <property name="geometry">
         <rect>
-         <x>420</x>
+         <x>450</x>
          <y>20</y>
          <width>41</width>
          <height>20</height>
@@ -1065,7 +1065,7 @@
       <widget class="QComboBox" name="comboBoxDetectCircleFindPair">
        <property name="geometry">
         <rect>
-         <x>90</x>
+         <x>100</x>
          <y>50</y>
          <width>71</width>
          <height>22</height>
@@ -1101,7 +1101,7 @@
       <widget class="QLineEdit" name="lineEditDetectCircleRmStrayRatio">
        <property name="geometry">
         <rect>
-         <x>270</x>
+         <x>290</x>
          <y>50</y>
          <width>41</width>
          <height>20</height>
@@ -1117,9 +1117,9 @@
       <widget class="QLabel" name="labelDetectCircleErrTol">
        <property name="geometry">
         <rect>
-         <x>170</x>
+         <x>180</x>
          <y>50</y>
-         <width>81</width>
+         <width>91</width>
          <height>16</height>
         </rect>
        </property>
@@ -1130,7 +1130,7 @@
       <widget class="QComboBox" name="comboBoxDetectCircleAttribute">
        <property name="geometry">
         <rect>
-         <x>90</x>
+         <x>100</x>
          <y>20</y>
          <width>69</width>
          <height>22</height>
@@ -1152,7 +1152,7 @@
         <rect>
          <x>10</x>
          <y>20</y>
-         <width>71</width>
+         <width>91</width>
          <height>16</height>
         </rect>
        </property>
@@ -1163,7 +1163,7 @@
       <widget class="QLineEdit" name="lineEditDetectCircleCaliperCount">
        <property name="geometry">
         <rect>
-         <x>390</x>
+         <x>420</x>
          <y>50</y>
          <width>41</width>
          <height>20</height>
@@ -1179,9 +1179,9 @@
       <widget class="QLabel" name="labelDetectCircleCaliperCount">
        <property name="geometry">
         <rect>
-         <x>320</x>
+         <x>340</x>
          <y>50</y>
-         <width>71</width>
+         <width>81</width>
          <height>16</height>
         </rect>
        </property>
@@ -1192,7 +1192,7 @@
       <widget class="QLineEdit" name="lineEditDetectCircleCaliperWidth">
        <property name="geometry">
         <rect>
-         <x>520</x>
+         <x>550</x>
          <y>50</y>
          <width>41</width>
          <height>20</height>
@@ -1208,9 +1208,9 @@
       <widget class="QLabel" name="labelDetectCircleCaliperWidth">
        <property name="geometry">
         <rect>
-         <x>440</x>
+         <x>470</x>
          <y>50</y>
-         <width>71</width>
+         <width>81</width>
          <height>16</height>
         </rect>
        </property>
@@ -1239,7 +1239,7 @@
       <widget class="QComboBox" name="comboBoxFiducialMarkShape">
        <property name="geometry">
         <rect>
-         <x>50</x>
+         <x>60</x>
          <y>30</y>
          <width>71</width>
          <height>22</height>
@@ -1262,7 +1262,7 @@
          <x>10</x>
          <y>30</y>
          <width>47</width>
-         <height>13</height>
+         <height>21</height>
         </rect>
        </property>
        <property name="text">
@@ -1324,7 +1324,7 @@
       <widget class="QLineEdit" name="lineEditFiducialMarkMargin">
        <property name="geometry">
         <rect>
-         <x>310</x>
+         <x>320</x>
          <y>30</y>
          <width>61</width>
          <height>20</height>
@@ -1350,9 +1350,9 @@
       <widget class="QPushButton" name="matchTmplBtn">
        <property name="geometry">
         <rect>
-         <x>480</x>
+         <x>470</x>
          <y>70</y>
-         <width>101</width>
+         <width>111</width>
          <height>23</height>
         </rect>
        </property>
@@ -1428,7 +1428,7 @@
       <widget class="QComboBox" name="cbMatchTmplMotion">
        <property name="geometry">
         <rect>
-         <x>70</x>
+         <x>90</x>
          <y>80</y>
          <width>101</width>
          <height>22</height>
@@ -1464,9 +1464,9 @@
       <widget class="QPushButton" name="btnLrnTemplate">
        <property name="geometry">
         <rect>
-         <x>480</x>
+         <x>470</x>
          <y>20</y>
-         <width>101</width>
+         <width>111</width>
          <height>23</height>
         </rect>
        </property>
@@ -1477,7 +1477,7 @@
       <widget class="QComboBox" name="cbMatchTmplAlgorithm">
        <property name="geometry">
         <rect>
-         <x>70</x>
+         <x>90</x>
          <y>30</y>
          <width>101</width>
          <height>22</height>
@@ -1507,7 +1507,7 @@
         <rect>
          <x>20</x>
          <y>30</y>
-         <width>51</width>
+         <width>61</width>
          <height>16</height>
         </rect>
        </property>
@@ -1564,7 +1564,7 @@
         <rect>
          <x>20</x>
          <y>20</y>
-         <width>91</width>
+         <width>101</width>
          <height>31</height>
         </rect>
        </property>
@@ -1577,7 +1577,7 @@
         <rect>
          <x>140</x>
          <y>20</y>
-         <width>61</width>
+         <width>71</width>
          <height>16</height>
         </rect>
        </property>
@@ -1591,9 +1591,9 @@
        </property>
        <property name="geometry">
         <rect>
-         <x>210</x>
+         <x>220</x>
          <y>20</y>
-         <width>91</width>
+         <width>81</width>
          <height>20</height>
         </rect>
        </property>
@@ -1603,7 +1603,7 @@
         <rect>
          <x>330</x>
          <y>20</y>
-         <width>61</width>
+         <width>71</width>
          <height>16</height>
         </rect>
        </property>
@@ -1617,7 +1617,7 @@
        </property>
        <property name="geometry">
         <rect>
-         <x>400</x>
+         <x>410</x>
          <y>20</y>
          <width>91</width>
          <height>20</height>
@@ -1630,7 +1630,7 @@
        </property>
        <property name="geometry">
         <rect>
-         <x>400</x>
+         <x>410</x>
          <y>50</y>
          <width>91</width>
          <height>20</height>
@@ -1642,7 +1642,7 @@
         <rect>
          <x>140</x>
          <y>50</y>
-         <width>61</width>
+         <width>71</width>
          <height>16</height>
         </rect>
        </property>
@@ -1655,7 +1655,7 @@
         <rect>
          <x>330</x>
          <y>50</y>
-         <width>61</width>
+         <width>71</width>
          <height>16</height>
         </rect>
        </property>
@@ -1669,9 +1669,9 @@
        </property>
        <property name="geometry">
         <rect>
-         <x>210</x>
+         <x>220</x>
          <y>50</y>
-         <width>91</width>
+         <width>81</width>
          <height>20</height>
         </rect>
        </property>
@@ -1770,7 +1770,7 @@
       <widget class="QComboBox" name="comboBoxChipInspMode">
        <property name="geometry">
         <rect>
-         <x>90</x>
+         <x>100</x>
          <y>20</y>
          <width>71</width>
          <height>22</height>
@@ -1880,7 +1880,7 @@
         <rect>
          <x>10</x>
          <y>20</y>
-         <width>91</width>
+         <width>121</width>
          <height>17</height>
         </rect>
        </property>
@@ -1891,9 +1891,9 @@
       <widget class="QLabel" name="labelFitCountEdgeThreshold">
        <property name="geometry">
         <rect>
-         <x>120</x>
+         <x>140</x>
          <y>20</y>
-         <width>51</width>
+         <width>61</width>
          <height>16</height>
         </rect>
        </property>
@@ -1904,7 +1904,7 @@
       <widget class="QLineEdit" name="lineEditFitCountEdgeThreshold">
        <property name="geometry">
         <rect>
-         <x>180</x>
+         <x>210</x>
          <y>20</y>
          <width>41</width>
          <height>20</height>
@@ -1949,7 +1949,7 @@
       <widget class="QComboBox" name="cbCountEdgeDirection">
        <property name="geometry">
         <rect>
-         <x>180</x>
+         <x>210</x>
          <y>50</y>
          <width>91</width>
          <height>22</height>
@@ -1977,9 +1977,9 @@
       <widget class="QLabel" name="labelCountEdgeDirection">
        <property name="geometry">
         <rect>
-         <x>120</x>
+         <x>140</x>
          <y>50</y>
-         <width>41</width>
+         <width>61</width>
          <height>16</height>
         </rect>
        </property>
@@ -2068,9 +2068,9 @@
       <widget class="QComboBox" name="comboBoxHoleInspMode">
        <property name="geometry">
         <rect>
-         <x>110</x>
+         <x>130</x>
          <y>50</y>
-         <width>71</width>
+         <width>91</width>
          <height>22</height>
         </rect>
        </property>
@@ -2091,7 +2091,7 @@
       <widget class="QComboBox" name="comboBoxInspHoleImgSegmentMethod">
        <property name="geometry">
         <rect>
-         <x>110</x>
+         <x>130</x>
          <y>20</y>
          <width>91</width>
          <height>22</height>
@@ -2116,7 +2116,7 @@
         <rect>
          <x>20</x>
          <y>20</y>
-         <width>81</width>
+         <width>101</width>
          <height>16</height>
         </rect>
        </property>
@@ -2127,7 +2127,7 @@
       <widget class="QLabel" name="labelInspHoleImgSegmentStart">
        <property name="geometry">
         <rect>
-         <x>210</x>
+         <x>240</x>
          <y>20</y>
          <width>31</width>
          <height>16</height>
@@ -2140,7 +2140,7 @@
       <widget class="QLineEdit" name="lineEditInspHoleImgSegmentEnd">
        <property name="geometry">
         <rect>
-         <x>310</x>
+         <x>360</x>
          <y>20</y>
          <width>31</width>
          <height>20</height>
@@ -2156,7 +2156,7 @@
       <widget class="QLabel" name="labelInspHoleImgSegmentEnd">
        <property name="geometry">
         <rect>
-         <x>290</x>
+         <x>330</x>
          <y>20</y>
          <width>21</width>
          <height>16</height>
@@ -2169,7 +2169,7 @@
       <widget class="QLineEdit" name="lineEditInspHoleImgSegmentStart">
        <property name="geometry">
         <rect>
-         <x>240</x>
+         <x>280</x>
          <y>20</y>
          <width>31</width>
          <height>20</height>
@@ -2243,7 +2243,7 @@
      <widget class="QComboBox" name="comboBoxOcrTextDirection">
       <property name="geometry">
        <rect>
-        <x>110</x>
+        <x>120</x>
         <y>10</y>
         <width>71</width>
         <height>22</height>
@@ -2293,7 +2293,7 @@
        <rect>
         <x>10</x>
         <y>20</y>
-        <width>591</width>
+        <width>621</width>
         <height>151</height>
        </rect>
       </property>
@@ -2303,9 +2303,9 @@
       <widget class="QPushButton" name="btnCalibrateCamera">
        <property name="geometry">
         <rect>
-         <x>260</x>
+         <x>270</x>
          <y>50</y>
-         <width>71</width>
+         <width>81</width>
          <height>31</height>
         </rect>
        </property>
@@ -2316,9 +2316,9 @@
       <widget class="QLabel" name="labelChessboardRows">
        <property name="geometry">
         <rect>
-         <x>20</x>
+         <x>10</x>
          <y>20</y>
-         <width>121</width>
+         <width>141</width>
          <height>16</height>
         </rect>
        </property>
@@ -2332,7 +2332,7 @@
        </property>
        <property name="geometry">
         <rect>
-         <x>150</x>
+         <x>160</x>
          <y>20</y>
          <width>91</width>
          <height>20</height>
@@ -2345,7 +2345,7 @@
       <widget class="QLabel" name="labelChessboardCols">
        <property name="geometry">
         <rect>
-         <x>20</x>
+         <x>10</x>
          <y>50</y>
          <width>141</width>
          <height>16</height>
@@ -2361,7 +2361,7 @@
        </property>
        <property name="geometry">
         <rect>
-         <x>150</x>
+         <x>160</x>
          <y>50</y>
          <width>91</width>
          <height>20</height>
@@ -2374,9 +2374,9 @@
       <widget class="QLabel" name="labelChessboardTmplDistance">
        <property name="geometry">
         <rect>
-         <x>20</x>
+         <x>10</x>
          <y>80</y>
-         <width>121</width>
+         <width>141</width>
          <height>16</height>
         </rect>
        </property>
@@ -2390,7 +2390,7 @@
        </property>
        <property name="geometry">
         <rect>
-         <x>150</x>
+         <x>160</x>
          <y>80</y>
          <width>91</width>
          <height>20</height>
@@ -2406,7 +2406,7 @@
        </property>
        <property name="geometry">
         <rect>
-         <x>440</x>
+         <x>470</x>
          <y>20</y>
          <width>91</width>
          <height>20</height>
@@ -2416,7 +2416,7 @@
       <widget class="QLabel" name="labelResolutionX">
        <property name="geometry">
         <rect>
-         <x>360</x>
+         <x>390</x>
          <y>20</y>
          <width>71</width>
          <height>16</height>
@@ -2429,7 +2429,7 @@
       <widget class="QLabel" name="labelResolutionY">
        <property name="geometry">
         <rect>
-         <x>360</x>
+         <x>390</x>
          <y>60</y>
          <width>71</width>
          <height>16</height>
@@ -2445,7 +2445,7 @@
        </property>
        <property name="geometry">
         <rect>
-         <x>440</x>
+         <x>470</x>
          <y>60</y>
          <width>91</width>
          <height>20</height>
@@ -2458,7 +2458,7 @@
        </property>
        <property name="geometry">
         <rect>
-         <x>150</x>
+         <x>160</x>
          <y>110</y>
          <width>91</width>
          <height>20</height>
@@ -2471,9 +2471,9 @@
       <widget class="QLabel" name="labelTmplMatchMinScore">
        <property name="geometry">
         <rect>
-         <x>20</x>
+         <x>10</x>
          <y>110</y>
-         <width>121</width>
+         <width>131</width>
          <height>16</height>
         </rect>
        </property>
@@ -2487,7 +2487,7 @@
        </property>
        <property name="geometry">
         <rect>
-         <x>360</x>
+         <x>390</x>
          <y>110</y>
          <width>221</width>
          <height>20</height>
@@ -2497,7 +2497,7 @@
       <widget class="QLabel" name="labelCameraDistortionCoefficient">
        <property name="geometry">
         <rect>
-         <x>280</x>
+         <x>310</x>
          <y>110</y>
          <width>61</width>
          <height>16</height>
@@ -2518,7 +2518,7 @@
        <rect>
         <x>10</x>
         <y>20</y>
-        <width>590</width>
+        <width>611</width>
         <height>51</height>
        </rect>
       </property>
@@ -2528,9 +2528,9 @@
       <widget class="QPushButton" name="btnAutoLocateLead">
        <property name="geometry">
         <rect>
-         <x>480</x>
+         <x>460</x>
          <y>20</y>
-         <width>100</width>
+         <width>141</width>
          <height>23</height>
         </rect>
        </property>
@@ -2544,7 +2544,7 @@
        <rect>
         <x>10</x>
         <y>100</y>
-        <width>590</width>
+        <width>611</width>
         <height>61</height>
        </rect>
       </property>
@@ -2554,7 +2554,7 @@
       <widget class="QPushButton" name="btnGridAvgGrayScale">
        <property name="geometry">
         <rect>
-         <x>420</x>
+         <x>440</x>
          <y>20</y>
          <width>161</width>
          <height>23</height>
@@ -2628,7 +2628,7 @@
        <rect>
         <x>10</x>
         <y>180</y>
-        <width>590</width>
+        <width>611</width>
         <height>91</height>
        </rect>
       </property>
@@ -2640,7 +2640,7 @@
         <rect>
          <x>10</x>
          <y>20</y>
-         <width>101</width>
+         <width>91</width>
          <height>23</height>
         </rect>
        </property>
@@ -2654,9 +2654,9 @@
        </property>
        <property name="geometry">
         <rect>
-         <x>210</x>
+         <x>200</x>
          <y>20</y>
-         <width>61</width>
+         <width>51</width>
          <height>20</height>
         </rect>
        </property>
@@ -2667,9 +2667,9 @@
       <widget class="QLabel" name="labelBigPatternAbsMTFV">
        <property name="geometry">
         <rect>
-         <x>130</x>
+         <x>110</x>
          <y>20</y>
-         <width>71</width>
+         <width>91</width>
          <height>16</height>
         </rect>
        </property>
@@ -2683,9 +2683,9 @@
        </property>
        <property name="geometry">
         <rect>
-         <x>210</x>
+         <x>200</x>
          <y>50</y>
-         <width>61</width>
+         <width>51</width>
          <height>20</height>
         </rect>
        </property>
@@ -2696,9 +2696,9 @@
       <widget class="QLabel" name="labelBigPatternAbsMTFH">
        <property name="geometry">
         <rect>
-         <x>130</x>
+         <x>110</x>
          <y>50</y>
-         <width>71</width>
+         <width>91</width>
          <height>16</height>
         </rect>
        </property>
@@ -2741,9 +2741,9 @@
       <widget class="QLabel" name="labelSmallPatternAbsMTFV">
        <property name="geometry">
         <rect>
-         <x>290</x>
+         <x>260</x>
          <y>20</y>
-         <width>81</width>
+         <width>101</width>
          <height>16</height>
         </rect>
        </property>
@@ -2754,9 +2754,9 @@
       <widget class="QLabel" name="labelSmallPatternAbsMTFH">
        <property name="geometry">
         <rect>
-         <x>290</x>
+         <x>260</x>
          <y>50</y>
-         <width>81</width>
+         <width>101</width>
          <height>16</height>
         </rect>
        </property>
@@ -2770,7 +2770,7 @@
        </property>
        <property name="geometry">
         <rect>
-         <x>530</x>
+         <x>550</x>
          <y>50</y>
          <width>51</width>
          <height>20</height>
@@ -2786,7 +2786,7 @@
        </property>
        <property name="geometry">
         <rect>
-         <x>530</x>
+         <x>550</x>
          <y>20</y>
          <width>51</width>
          <height>20</height>
@@ -2801,7 +2801,7 @@
         <rect>
          <x>440</x>
          <y>50</y>
-         <width>81</width>
+         <width>101</width>
          <height>16</height>
         </rect>
        </property>
@@ -2814,7 +2814,7 @@
         <rect>
          <x>440</x>
          <y>20</y>
-         <width>81</width>
+         <width>101</width>
          <height>16</height>
         </rect>
        </property>
@@ -2844,8 +2844,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1357</width>
-     <height>21</height>
+     <width>1377</width>
+     <height>26</height>
     </rect>
    </property>
   </widget>

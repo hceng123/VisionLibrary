@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>520</width>
+    <width>558</width>
     <height>84</height>
    </rect>
   </property>
@@ -18,7 +18,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>511</width>
+     <width>551</width>
      <height>81</height>
     </rect>
    </property>
@@ -60,9 +60,9 @@
    <widget class="QPushButton" name="btnAutoThreshold">
     <property name="geometry">
      <rect>
-      <x>160</x>
+      <x>190</x>
       <y>50</y>
-      <width>81</width>
+      <width>101</width>
       <height>23</height>
      </rect>
     </property>
@@ -73,7 +73,7 @@
    <widget class="QComboBox" name="cbAutoThresLevel">
     <property name="geometry">
      <rect>
-      <x>100</x>
+      <x>130</x>
       <y>50</y>
       <width>41</width>
       <height>22</height>
@@ -105,7 +105,7 @@
      <rect>
       <x>10</x>
       <y>50</y>
-      <width>91</width>
+      <width>111</width>
       <height>16</height>
      </rect>
     </property>
@@ -116,7 +116,7 @@
    <widget class="QLabel" name="labelResult">
     <property name="geometry">
      <rect>
-      <x>260</x>
+      <x>310</x>
       <y>50</y>
       <width>41</width>
       <height>16</height>
@@ -132,9 +132,9 @@
     </property>
     <property name="geometry">
      <rect>
-      <x>300</x>
+      <x>350</x>
       <y>50</y>
-      <width>91</width>
+      <width>111</width>
       <height>20</height>
      </rect>
     </property>
@@ -144,7 +144,7 @@
      <rect>
       <x>230</x>
       <y>20</y>
-      <width>111</width>
+      <width>141</width>
       <height>17</height>
      </rect>
     </property>

@@ -34,7 +34,7 @@ cv::Mat GrayScaleWidget::_convertImage()
 
     PR_COLOR_TO_GRAY_CMD stCmd;
     PR_COLOR_TO_GRAY_RPY stRpy;
-    cv::Mat matROI(mat, rectROI );
+    cv::Mat matROI(mat, rectROI);
     stCmd.matInputImg = matROI;
     stCmd.stRatio.fRatioR = ui.lineEditRRatio->text().toFloat();
     stCmd.stRatio.fRatioG = ui.lineEditGRatio->text().toFloat();
