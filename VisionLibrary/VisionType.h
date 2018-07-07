@@ -152,13 +152,6 @@ enum class PR_INSP_BRIDGE_MODE {
     OUTER,
 };
 
-enum class PR_INSP_BRIDGE_DIRECTION {
-    LEFT,
-    RIGHT,
-    UP,
-    DOWN,
-};
-
 enum class PR_INSP_CHIP_MODE {
     HEAD,
     BODY,
@@ -188,6 +181,11 @@ enum class PR_FIND_LEAD_END_METHOD {
 enum class PR_SCAN_IMAGE_DIR {
     LEFT_TO_RIGHT,
     RIGHT_TO_LEFT,
+};
+
+enum class PR_AUTO_LOCATE_LEAD_METHOD {
+    TEMPLATE_MATCH,
+    FIND_CONTOUR,
 };
 
 }

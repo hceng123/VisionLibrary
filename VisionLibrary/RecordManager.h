@@ -23,6 +23,7 @@ public:
     VisionStatus            free(Int32 nRecordId);
     VisionStatus            freeAllRecord();
     VisionStatus            load();
+
 protected:
     RecordManager() {};
     VisionStatus            _loadOneRecord(const String &strFilePath);
@@ -34,6 +35,7 @@ protected:
     MapRecord   _mapRecord;
 };
 
+#define RecordManagerInstance RecordManager::getInstance()
 }
 }
 #endif

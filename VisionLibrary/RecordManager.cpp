@@ -170,8 +170,8 @@ Int32 RecordManager::_generateRecordID() {
 
 String RecordManager::_getRecordFilePath(Int32 recordID) {
     char chArrRecordID[10];
-    _snprintf( chArrRecordID, sizeof(chArrRecordID), "%03d", recordID );
-    String strFilePath = Config::GetInstance()->getRecordDir() + String ( chArrRecordID );
+    _snprintf(chArrRecordID, sizeof(chArrRecordID), "%03d", recordID);
+    String strFilePath = Config::GetInstance()->getRecordDir() + String(chArrRecordID);
     return strFilePath;
 }
 

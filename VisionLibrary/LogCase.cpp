@@ -1575,7 +1575,7 @@ VisionStatus LogCaseInspBridge::RunLogCase() {
         String strDirection = ini.GetValue(_CMD_SECTION.c_str(), _strKeyDirection.c_str(), "");
         StringVector vecStrDirection = split(strDirection, ',');
         for (size_t index = 0; index < vecStrDirection.size(); ++ index) {
-            PR_INSP_BRIDGE_DIRECTION enDirection = static_cast<PR_INSP_BRIDGE_DIRECTION> (std::atoi(vecStrDirection[index].c_str()));
+            PR_DIRECTION enDirection = static_cast<PR_DIRECTION> (std::atoi(vecStrDirection[index].c_str()));
             stCmd.vecOuterInspDirection.push_back(enDirection);
         }
     }

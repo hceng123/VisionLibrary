@@ -74,6 +74,7 @@ public:
     static VisionStatus inspContour(const PR_INSP_CONTOUR_CMD *const pstCmd, PR_INSP_CONTOUR_RPY *const pstRpy, bool bReplay = false);
     static VisionStatus inspHole(const PR_INSP_HOLE_CMD *const pstCmd, PR_INSP_HOLE_RPY *const pstRpy, bool bReplay = false);
     static VisionStatus inspLead(const PR_INSP_LEAD_CMD *const pstCmd, PR_INSP_LEAD_RPY *const pstRpy, bool bReplay = false);
+    static VisionStatus inspLeadTmpl(const PR_INSP_LEAD_TMPL_CMD *const pstCmd, PR_INSP_LEAD_TMPL_RPY *const pstRpy, bool bReplay = false);
     static VisionStatus inspPolarity(const PR_INSP_POLARITY_CMD *const pstCmd, PR_INSP_POLARITY_RPY *const pstRpy, bool bReplay = false);
     static VisionStatus gridAvgGrayScale(const PR_GRID_AVG_GRAY_SCALE_CMD *const pstCmd, PR_GRID_AVG_GRAY_SCALE_RPY *const pstRpy);
     static VisionStatus calib3DBase(const PR_CALIB_3D_BASE_CMD *const pstCmd, PR_CALIB_3D_BASE_RPY *const pstRpy, bool bReplay = false);
@@ -211,7 +212,19 @@ protected:
                                         const PR_INSP_LEAD_CMD::LEAD_INPUT_INFO &stLeadInput,
                                         const PR_INSP_LEAD_CMD                  *pstCmd,
                                         PR_INSP_LEAD_RPY::LEAD_RESULT           &stLeadResult);
-    static VisionStatus _calcMtfByFFT(const cv::Mat &matInput, bool bHorizontalStrip, VectorOfFloat &vecMtf );
+    static VisionStatus _calcMtfByFFT(const cv::Mat &matInput, bool bHorizontalStrip, VectorOfFloat &vecMtf);
+    static VisionStatus _autoLocateLeadByTmpl(const cv::Mat &matGray, const PR_AUTO_LOCATE_LEAD_CMD *const pstCmd, PR_AUTO_LOCATE_LEAD_RPY *const pstRpy);
+    static VisionStatus _autoLocateLeadOneSide(const cv::Mat                       &matGray,
+                                               const cv::Rect                      &rectSubRegion,
+                                               const PR_DIRECTION                   enDir,
+                                               const cv::Mat                       &matPad,
+                                               const cv::Mat                       &matLead,
+                                               Int32                                nPadRecordId,
+                                               Int32                                nLeadRecordId,
+                                               const PR_AUTO_LOCATE_LEAD_CMD *const pstCmd,
+                                               PR_AUTO_LOCATE_LEAD_RPY       *const pstRpy);
+    static VisionStatus _autoLocateLeadByContour(const cv::Mat &matGray, const PR_AUTO_LOCATE_LEAD_CMD *const pstCmd, PR_AUTO_LOCATE_LEAD_RPY *const pstRpy);
+
 protected:
     static const int       _constMinHessian        = 300;
     static const int       _constOctave            = 4;

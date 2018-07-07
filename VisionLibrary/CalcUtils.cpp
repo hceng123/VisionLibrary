@@ -328,21 +328,9 @@ float CalcUtils::calcPointToContourDist(const cv::Point &ptInput, const VectorOf
 }
 
 /*static*/ bool CalcUtils::isRectInRect(const cv::Rect2f &rectIn, const cv::Rect2f &rectOut) {
-    VectorOfPoint2f vecOutPoints;
-    vecOutPoints.emplace_back(rectOut.x, rectOut.y);
-    vecOutPoints.emplace_back(rectOut.x + rectOut.width, rectOut.y);
-    vecOutPoints.emplace_back(rectOut.x + rectOut.width, rectOut.y + rectOut.height);
-    vecOutPoints.emplace_back(rectOut.x, rectOut.y + rectOut.height);
-
-    VectorOfPoint2f vecInPoints;
-    vecInPoints.emplace_back(rectIn.x, rectIn.y);
-    vecInPoints.emplace_back(rectIn.x + rectIn.width, rectIn.y);
-    vecInPoints.emplace_back(rectIn.x + rectIn.width, rectIn.y + rectIn.height);
-    vecInPoints.emplace_back(rectIn.x, rectIn.y + rectIn.height);
-    for (const auto &point : vecInPoints)
-        if (cv::pointPolygonTest(vecOutPoints, point, false) < 0)
-            return false;
-    return true;
+    if (rectOut.contains(rectIn.tl()) && rectOut.contains(rectIn.br()))
+        return true;
+    return false;
 }
 
 }

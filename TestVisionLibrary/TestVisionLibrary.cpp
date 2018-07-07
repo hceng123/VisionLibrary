@@ -643,7 +643,7 @@ int _tmain(int argc, _TCHAR* argv[])
     auto fFloorResult = std::floor ( fTest );
 
     PR_Init();
-    PR_SetDebugMode (PR_DEBUG_MODE::LOG_FAIL_CASE);
+    PR_SetDebugMode (PR_DEBUG_MODE::SHOW_IMAGE);
 
     //TestTemplate();
     //TestInspDevice();
@@ -668,9 +668,10 @@ int _tmain(int argc, _TCHAR* argv[])
     //TestRunRestoreImgLogCase();
 
     //TestAutoLocateLead();
+    TestAutoLocateLeadTmpl_1();
 
     //TestInspBridge();
-    TestInspBridge_1();
+    //TestInspBridge_1();
 
     //TestAutoThreshold();
 

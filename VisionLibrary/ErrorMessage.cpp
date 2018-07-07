@@ -185,6 +185,11 @@ VisionStatus GetErrorInfo(VisionStatus enStatus, PR_GET_ERROR_INFO_RPY *pstRpy)
         pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::PR_INSP_STATUS;
         break;
 
+    case VisionStatus::LEAD_OFFSET_OVER_LIMIT:
+         _snprintf(pstRpy->achErrorStr, PR_MAX_ERR_STR_LEN, "Lead offset over limit.");
+        pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::PR_INSP_STATUS;
+        break;
+
     case VisionStatus::POLARITY_FAIL:
         _snprintf(pstRpy->achErrorStr, PR_MAX_ERR_STR_LEN, "Polarity difference is lower than the requirement.");
         pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::PR_INSP_STATUS;

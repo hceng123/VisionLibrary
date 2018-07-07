@@ -15,7 +15,7 @@ void TestInspBridge() {
     stCmd.rectROI = cv::Rect(221, 195, 28, 82);
     stCmd.rectOuterSrchWindow = cv::Rect(212, 187, 43, 102);
     for (int i = 0; i < 4; ++ i)
-        stCmd.vecOuterInspDirection.push_back(PR_INSP_BRIDGE_DIRECTION(i));
+        stCmd.vecOuterInspDirection.push_back(PR_DIRECTION(i));
     
     PR_InspBridge(&stCmd, &stRpy);
     if (VisionStatus::OK != stRpy.enStatus) {
