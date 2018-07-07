@@ -4643,6 +4643,10 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     const int MARGIN = 3;
     for (const auto &contour : contours) {
         cv::Rect rect = cv::boundingRect(contour);
+        if (rect.area() < 25)
+            continue;
+
+        cv::Point ptCenter = CalcUtils::getContourCtr(contour);
 
         if (PR_INSP_BRIDGE_MODE::INNER == pstCmd->enInspMode) {
             if (rect.width > pstCmd->stInnerInspCriteria.fMaxLengthX || rect.height > pstCmd->stInnerInspCriteria.fMaxLengthY) {
@@ -4655,7 +4659,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
             for (const auto enDirection : pstCmd->vecOuterInspDirection)
             if (PR_DIRECTION::UP == enDirection) {
                 int nTolerance = pstCmd->rectROI.y - pstCmd->rectOuterSrchWindow.y - MARGIN;
-                if (rect.br().y <= rectOuterWindowNew.tl().y && rect.height >= nTolerance) {
+                if (ptCenter.y <= rectOuterWindowNew.tl().y && rect.height >= nTolerance) {
                     pstRpy->enStatus = VisionStatus::BRIDGE_DEFECT;
                     cv::Rect rectResult(rect.x + ptRoiTL.x, rect.y + ptRoiTL.y, rect.width, rect.height);
                     pstRpy->vecBridgeWindow.push_back(rectResult);
@@ -4663,7 +4667,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
             }
             else if (PR_DIRECTION::DOWN == enDirection) {
                 int nTolerance = (pstCmd->rectOuterSrchWindow.y + pstCmd->rectOuterSrchWindow.height) - (pstCmd->rectROI.y + pstCmd->rectROI.height) - MARGIN;
-                if (rect.tl().y >= rectOuterWindowNew.br().y && rect.height >= nTolerance) {
+                if (ptCenter.y >= rectOuterWindowNew.br().y && rect.height >= nTolerance) {
                     pstRpy->enStatus = VisionStatus::BRIDGE_DEFECT;
                     cv::Rect rectResult(rect.x + ptRoiTL.x, rect.y + ptRoiTL.y, rect.width, rect.height);
                     pstRpy->vecBridgeWindow.push_back(rectResult);
@@ -4672,7 +4676,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
             else
             if (PR_DIRECTION::LEFT == enDirection) {
                 int nTolerance = pstCmd->rectROI.x - pstCmd->rectOuterSrchWindow.x - MARGIN;
-                if (rect.br().x <= rectOuterWindowNew.tl().x && rect.width >= nTolerance) {
+                if (ptCenter.x <= rectOuterWindowNew.tl().x && rect.width >= nTolerance) {
                     pstRpy->enStatus = VisionStatus::BRIDGE_DEFECT;
                     cv::Rect rectResult(rect.x + ptRoiTL.x, rect.y + ptRoiTL.y, rect.width, rect.height);
                     pstRpy->vecBridgeWindow.push_back(rectResult);
@@ -4681,7 +4685,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
             else
             if (PR_DIRECTION::RIGHT == enDirection) {
                 int nTolerance = (pstCmd->rectOuterSrchWindow.x + pstCmd->rectOuterSrchWindow.width) - (pstCmd->rectROI.x + pstCmd->rectROI.width) - MARGIN;
-                if (rect.tl().x >= rectOuterWindowNew.br().x && rect.width >= nTolerance) {
+                if (ptCenter.x >= rectOuterWindowNew.br().x && rect.width >= nTolerance) {
                     pstRpy->enStatus = VisionStatus::BRIDGE_DEFECT;
                     cv::Rect rectResult(rect.x + ptRoiTL.x, rect.y + ptRoiTL.y, rect.width, rect.height);
                     pstRpy->vecBridgeWindow.push_back(rectResult);
