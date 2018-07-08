@@ -643,7 +643,7 @@ int _tmain(int argc, _TCHAR* argv[])
     auto fFloorResult = std::floor ( fTest );
 
     PR_Init();
-    PR_SetDebugMode (PR_DEBUG_MODE::SHOW_IMAGE);
+    PR_SetDebugMode (PR_DEBUG_MODE::LOG_ALL_CASE);
 
     //TestTemplate();
     //TestInspDevice();

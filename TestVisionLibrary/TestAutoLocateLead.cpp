@@ -59,7 +59,7 @@ void TestAutoLocateLeadTmpl_1()
     stCmd.vecSrchLeadDirections.push_back(PR_DIRECTION::UP);
     stCmd.vecSrchLeadDirections.push_back(PR_DIRECTION::DOWN);
     stCmd.vecSrchLeadDirections.push_back(PR_DIRECTION::LEFT);
-    //stCmd.vecSrchLeadDirections.push_back(PR_DIRECTION::RIGHT);
+    stCmd.vecSrchLeadDirections.push_back(PR_DIRECTION::RIGHT);
     PR_AutoLocateLead(&stCmd, &stRpy);
     std::cout << "PR_AutoLocateLead status " << ToInt32(stRpy.enStatus) << std::endl;
     cv::imwrite("./data/AutoLocateLeadResult.bmp", stRpy.matResultImg);
@@ -76,5 +76,6 @@ void TestAutoLocateLeadTmpl_1()
     stInspLeadCmd.fMaxLeadOffsetX = 5;
     stInspLeadCmd.fMaxLeadOffsetY = 5;
     PR_InspLeadTmpl(&stInspLeadCmd, &stInspLeadRpy);
-    std::cout << "PR_AutoLocateLead status " << ToInt32(stRpy.enStatus) << std::endl;
+    std::cout << "PR_InspLeadTmpl status " << ToInt32(stRpy.enStatus) << std::endl;
+    cv::imwrite("./data/InspLeadResult.bmp", stInspLeadRpy.matResultImg);
 }

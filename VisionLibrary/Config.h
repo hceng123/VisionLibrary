@@ -32,6 +32,7 @@ protected:
     String          _strOcrCharList             = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-";
     Int32           _nInspBridgeMinThreshold    = 100;
     Int32           _nMinPointsToCalibCamera    = 10;
+
 public:
     static Config*          GetInstance();
     String                  getRecordDir() const;
@@ -49,6 +50,8 @@ public:
     Int32                   getMinPointsToCalibCamera() const;
     void load();
 };
+
+#define ConfigInstance Config::GetInstance()
 
 }
 }

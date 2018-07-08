@@ -649,6 +649,7 @@ public:
     virtual VisionStatus RunLogCase() override;
     virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
     static String StaticGetFolderPrefix();
+
 private:
     const String _strKeyROI             = "ROI";
     const String _strKeyRecordId        = "RecordId";
@@ -710,6 +711,30 @@ private:
     const String _strKeyLeadWinCtr          = "LeadWinCenter";
     const String _strKeyLeadWinSize         = "LeadWinSize";
     const String _strKeyLeadWinAngle        = "LeadWinAngle";
+};
+
+class LogCaseInspLeadTmpl : public LogCase
+{
+public:
+    explicit LogCaseInspLeadTmpl(const String &strPath, bool bReplay = false) : LogCase(strPath, bReplay) {}
+    VisionStatus WriteCmd(const PR_INSP_LEAD_TMPL_CMD *const pstCmd);
+    VisionStatus WriteRpy(const PR_INSP_LEAD_TMPL_RPY *const pstRpy);
+    virtual VisionStatus RunLogCase() override;
+    virtual String GetFolderPrefix() const { return StaticGetFolderPrefix(); }
+    static String StaticGetFolderPrefix();
+
+private:
+    const String _strKeyROI             = "ROI";
+    const String _strKeyPadRecordId     = "PadRecordId";
+    const String _strKeyLeadRecordId    = "LeadRecordId";
+    const String _strKeyPadLeadDist     = "PadLeadDist";
+    const String _strKeyMaxLeadOffsetX  = "MaxLeadOffsetX";
+    const String _strKeyMaxLeadOffsetY  = "LeadMaxLeadOffsetY";
+    const String _strKeyMinMatchScore   = "MinMatchScore";
+
+    const String _strKeyStatus          = "Status";
+    const String _strLeadOffsetX        = "LeadOffsetX";
+    const String _strLeadOffsetY        = "LeadOffsetY";
 };
 
 class LogCaseCalib3DBase : public LogCase

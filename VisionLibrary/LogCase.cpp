@@ -1986,6 +1986,70 @@ VisionStatus LogCaseInspLead::RunLogCase() {
     return enStatus;
 }
 
+/*static*/ String LogCaseInspLeadTmpl::StaticGetFolderPrefix() {
+    return "InspLeadTmpl";
+}
+
+VisionStatus LogCaseInspLeadTmpl::WriteCmd(const PR_INSP_LEAD_TMPL_CMD *const pstCmd) {
+    if (!_bReplay) {
+        _strLogCasePath = _generateLogCaseName(GetFolderPrefix());
+        bfs::path dir(_strLogCasePath);
+        bfs::create_directories(dir);
+    }
+
+    CSimpleIni ini(false, false, false);
+    auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
+    ini.LoadFile(cmdRpyFilePath.c_str());
+    ini.SetValue(_CMD_SECTION.c_str(), _strKeyROI.c_str(), _formatRect(pstCmd->rectROI).c_str());
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyPadRecordId.c_str(), pstCmd->nPadRecordId);
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyLeadRecordId.c_str(), pstCmd->nLeadRecordId);
+    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyPadLeadDist.c_str(), pstCmd->fLrnedPadLeadDist);
+    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyMaxLeadOffsetX.c_str(), pstCmd->fMaxLeadOffsetX);
+    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyMaxLeadOffsetY.c_str(), pstCmd->fMaxLeadOffsetY);
+    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyMinMatchScore.c_str(), pstCmd->fMinMatchScore);
+    ini.SaveFile(cmdRpyFilePath.c_str());
+
+    cv::imwrite(_strLogCasePath + _IMAGE_NAME, pstCmd->matInputImg);
+    return VisionStatus::OK;
+}
+
+VisionStatus LogCaseInspLeadTmpl::WriteRpy(const PR_INSP_LEAD_TMPL_RPY *const pstRpy) {
+    CSimpleIni ini(false, false, false);
+    auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
+    ini.LoadFile(cmdRpyFilePath.c_str());
+    ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyStatus.c_str(), ToInt32(pstRpy->enStatus));
+    ini.SetDoubleValue(_RPY_SECTION.c_str(), _strLeadOffsetX.c_str(), pstRpy->fLeadOffsetX);
+    ini.SetDoubleValue(_RPY_SECTION.c_str(), _strLeadOffsetY.c_str(), pstRpy->fLeadOffsetY);
+    ini.SaveFile(cmdRpyFilePath.c_str());
+    if (! pstRpy->matResultImg.empty())
+        cv::imwrite(_strLogCasePath + _RESULT_IMAGE_NAME, pstRpy->matResultImg);
+    _zip();
+    return VisionStatus::OK;
+}
+
+VisionStatus LogCaseInspLeadTmpl::RunLogCase() {
+    PR_INSP_LEAD_TMPL_CMD stCmd;
+    PR_INSP_LEAD_TMPL_RPY stRpy;
+
+    CSimpleIni ini(false, false, false);
+    auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
+    ini.LoadFile(cmdRpyFilePath.c_str());
+    stCmd.matInputImg = cv::imread(_strLogCasePath + _IMAGE_NAME, cv::IMREAD_COLOR);
+
+    stCmd.rectROI = _parseRect(ini.GetValue(_CMD_SECTION.c_str(), _strKeyROI.c_str(), _DEFAULT_RECT.c_str()));
+    stCmd.nPadRecordId = ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyPadRecordId.c_str(), 0);
+    stCmd.nLeadRecordId = ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyLeadRecordId.c_str(), 0);
+    stCmd.fLrnedPadLeadDist = ToFloat(ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyPadLeadDist.c_str(), 0.));
+    stCmd.fMaxLeadOffsetX = ToFloat(ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyMaxLeadOffsetX.c_str(), 500.));
+    stCmd.fMaxLeadOffsetY = ToFloat(ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyMaxLeadOffsetY.c_str(), 500.));
+    stCmd.fMinMatchScore = ToFloat(ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyMinMatchScore.c_str(), 60.));   
+
+    VisionStatus enStatus = VisionStatus::OK;
+    enStatus = VisionAlgorithm::inspLeadTmpl(&stCmd, &stRpy, true);
+    WriteRpy(&stRpy);
+    return enStatus;
+}
+
 /*static*/ String LogCaseCalib3DBase::StaticGetFolderPrefix() {
     return "Calib3DBase";
 }

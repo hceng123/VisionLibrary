@@ -1544,6 +1544,9 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
     if (LogCaseInspLead::StaticGetFolderPrefix() == strFolderPrefix)
         return std::make_unique<LogCaseInspLead>(strLocalPath, true);
 
+    if (LogCaseInspLeadTmpl::StaticGetFolderPrefix() == strFolderPrefix)
+        return std::make_unique<LogCaseInspLeadTmpl>(strLocalPath, true);
+
     if (LogCaseCalib3DBase::StaticGetFolderPrefix() == strFolderPrefix)
         return std::make_unique<LogCaseCalib3DBase>(strLocalPath, true);
 
@@ -4301,11 +4304,12 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     
     pstRpy->enStatus = VisionStatus::OK;
 
+    int nMarginToChip = 20;
     for (auto enDir : pstCmd->vecSrchLeadDirections) {
         cv::Rect rectSubRegion;
         cv::Mat matLeadTmp, matPadTmp;        
         if (PR_DIRECTION::UP == enDir) {
-            rectSubRegion = cv::Rect(pstCmd->rectChipBody.x - pstCmd->rectSrchWindow.x, 0, pstCmd->rectChipBody.width, pstCmd->rectChipBody.y - pstCmd->rectSrchWindow.y);
+            rectSubRegion = cv::Rect(pstCmd->rectChipBody.x - pstCmd->rectSrchWindow.x, 0, pstCmd->rectChipBody.width, pstCmd->rectChipBody.y - pstCmd->rectSrchWindow.y + nMarginToChip);
             matLeadTmp = matLead;
             matPadTmp = matPad;
         }else if (PR_DIRECTION::LEFT == enDir) {
@@ -4313,18 +4317,18 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
             cv::flip(matPadTmp, matPadTmp, 0); //transpose+flip(0)=CCW
             cv::transpose(matLead, matLeadTmp);
             cv::flip(matLeadTmp, matLeadTmp, 0); //transpose+flip(0)=CCW
-            rectSubRegion = cv::Rect(0, pstCmd->rectChipBody.y - pstCmd->rectSrchWindow.y, pstCmd->rectChipBody.x - pstCmd->rectSrchWindow.x, pstCmd->rectChipBody.height);
+            rectSubRegion = cv::Rect(0, pstCmd->rectChipBody.y - pstCmd->rectSrchWindow.y, pstCmd->rectChipBody.x - pstCmd->rectSrchWindow.x + nMarginToChip, pstCmd->rectChipBody.height);
         }else if (PR_DIRECTION::DOWN == enDir) {
             cv::flip(matPad, matPadTmp, -1);    //flip(-1)=180
             cv::flip(matLead, matLeadTmp, -1);    //flip(-1)=180
-            rectSubRegion = cv::Rect(pstCmd->rectChipBody.x - pstCmd->rectSrchWindow.x, pstCmd->rectChipBody.br().y - pstCmd->rectSrchWindow.y, pstCmd->rectChipBody.width, pstCmd->rectSrchWindow.br().y - pstCmd->rectChipBody.br().y);
+            rectSubRegion = cv::Rect(pstCmd->rectChipBody.x - pstCmd->rectSrchWindow.x, pstCmd->rectChipBody.br().y - pstCmd->rectSrchWindow.y - nMarginToChip, pstCmd->rectChipBody.width, pstCmd->rectSrchWindow.br().y - pstCmd->rectChipBody.br().y + nMarginToChip);
         }else if (PR_DIRECTION::RIGHT == enDir) {
             cv::transpose(matPad, matPadTmp);
             cv::flip(matPadTmp, matPadTmp, 1); //transpose+flip(1)=CW
             
             cv::transpose(matLead, matLeadTmp);
             cv::flip(matLeadTmp, matLeadTmp, 1); //transpose+flip(1)=CW
-            rectSubRegion = cv::Rect(pstCmd->rectChipBody.br().x - pstCmd->rectSrchWindow.x, pstCmd->rectChipBody.y - pstCmd->rectSrchWindow.y, pstCmd->rectSrchWindow.br().x - pstCmd->rectChipBody.br().x, pstCmd->rectChipBody.height);
+            rectSubRegion = cv::Rect(pstCmd->rectChipBody.br().x - pstCmd->rectSrchWindow.x - nMarginToChip, pstCmd->rectChipBody.y - pstCmd->rectSrchWindow.y, pstCmd->rectSrchWindow.br().x - pstCmd->rectChipBody.br().x + nMarginToChip, pstCmd->rectChipBody.height);
         }
 
         Int32 nPadRecordId = 0, nLeadRecordId = 0;
@@ -6036,6 +6040,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     }
 
     MARK_FUNCTION_START_TIME;
+    SETUP_LOGCASE(LogCaseInspLeadTmpl);
 
     cv::Mat matROI(pstCmd->matInputImg, pstCmd->rectROI), matGrayROI;
     if (matROI.type() == CV_8UC1)
@@ -6048,6 +6053,9 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
         return pstRpy->enStatus;
     }
 
+    if (ConfigInstance->getDebugMode() == Vision::PR_DEBUG_MODE::SHOW_IMAGE)
+        showImage("ROI Image", matGrayROI);
+
     TmplRecordPtr ptrLeadRecord = std::static_pointer_cast<TmplRecord>(RecordManagerInstance->get(pstCmd->nLeadRecordId));
     if (nullptr == ptrLeadRecord) {
         char chArrMsg[100];
@@ -6057,16 +6065,21 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
         return pstRpy->enStatus;
     }
 
+    if (ConfigInstance->getDebugMode() == Vision::PR_DEBUG_MODE::SHOW_IMAGE)
+        showImage("Lead template", ptrLeadRecord->getTmpl());
+
     cv::Point2f ptLeadPos, ptPadPos;
     float fLeadRotation, fPadRotation, fLeadScore, fPadScore;
     MatchTmpl::matchTemplate(matGrayROI, ptrLeadRecord->getTmpl(), false, PR_OBJECT_MOTION::TRANSLATION, ptLeadPos, fLeadRotation, fLeadScore);
     if (fLeadScore * ConstToPercentage < pstCmd->fMinMatchScore) {
         pstRpy->enStatus = VisionStatus::NOT_FIND_LEAD;
+        FINISH_LOGCASE;
         return pstRpy->enStatus;
     }
 
+    TmplRecordPtr ptrPadRecord;
     if (pstCmd->nPadRecordId > 0) {
-        TmplRecordPtr ptrPadRecord = std::static_pointer_cast<TmplRecord>(RecordManagerInstance->get(pstCmd->nPadRecordId));
+        ptrPadRecord = std::static_pointer_cast<TmplRecord>(RecordManagerInstance->get(pstCmd->nPadRecordId));
         if (nullptr == ptrPadRecord) {
             char chArrMsg[100];
             _snprintf(chArrMsg, sizeof(chArrMsg), "Failed to get pad record ID %d in system.", pstCmd->nPadRecordId);
@@ -6074,9 +6087,14 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
             pstRpy->enStatus = VisionStatus::INVALID_PARAM;
             return pstRpy->enStatus;
         }
+
+        if (ConfigInstance->getDebugMode() == Vision::PR_DEBUG_MODE::SHOW_IMAGE)
+            showImage("Pad template", ptrPadRecord->getTmpl());
+
         MatchTmpl::matchTemplate(matGrayROI, ptrPadRecord->getTmpl(), false, PR_OBJECT_MOTION::TRANSLATION, ptPadPos, fPadRotation, fPadScore);
         if (fPadScore * ConstToPercentage < pstCmd->fMinMatchScore) {
             pstRpy->enStatus = VisionStatus::NOT_FIND_LEAD;
+            FINISH_LOGCASE;
             return pstRpy->enStatus;
         }
 
@@ -6097,6 +6115,23 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
         pstRpy->enStatus = VisionStatus::LEAD_OFFSET_OVER_LIMIT;
     }
 
+    if (! isAutoMode()) {
+        if (pstCmd->matInputImg.channels() > 1)
+            pstRpy->matResultImg = pstCmd->matInputImg.clone();
+        else
+            cv::cvtColor(pstCmd->matInputImg, pstRpy->matResultImg, CV_GRAY2BGR);
+        if (ptrPadRecord != nullptr) {
+            auto matPadTmpl = ptrPadRecord->getTmpl();
+            cv::Rect rectPad(ToInt32(pstCmd->rectROI.x + ptPadPos.x - matPadTmpl.cols / 2), ToInt32(pstCmd->rectROI.y + ptPadPos.y - matPadTmpl.rows / 2), matPadTmpl.cols, matPadTmpl.rows);
+            cv::rectangle(pstRpy->matResultImg, rectPad, _constGreenScalar, 2, cv::LineTypes::LINE_8);
+        }
+
+        auto matLeadTmpl = ptrLeadRecord->getTmpl();
+        cv::Rect rectLead(ToInt32(pstCmd->rectROI.x + ptLeadPos.x - matLeadTmpl.cols / 2), ToInt32(pstCmd->rectROI.y + ptLeadPos.y - matLeadTmpl.rows / 2), matLeadTmpl.cols, matLeadTmpl.rows);
+        cv::rectangle(pstRpy->matResultImg, rectLead, _constGreenScalar, 2, cv::LineTypes::LINE_8);
+    }
+
+    FINISH_LOGCASE;
     MARK_FUNCTION_END_TIME;    
     return pstRpy->enStatus;
 }
