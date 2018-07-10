@@ -1460,8 +1460,30 @@ VisionStatus LogCaseAutoLocateLead::WriteCmd(const PR_AUTO_LOCATE_LEAD_CMD *cons
     CSimpleIni ini(false, false, false);
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile(cmdRpyFilePath.c_str());
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyMethod.c_str(), ToInt32(pstCmd->enMethod));
     ini.SetValue(_CMD_SECTION.c_str(), _strKeySrchWindow.c_str(), _formatRect(pstCmd->rectSrchWindow).c_str());
     ini.SetValue(_CMD_SECTION.c_str(), _strKeyChipWindow.c_str(), _formatRect(pstCmd->rectChipBody).c_str());
+    ini.SetValue(_CMD_SECTION.c_str(), _strKeyPadWindow.c_str(), _formatRect(pstCmd->rectPadWindow).c_str());
+    ini.SetValue(_CMD_SECTION.c_str(), _strKeyLeadWindow.c_str(), _formatRect(pstCmd->rectLeadWindow).c_str());
+    for (auto enDir : pstCmd->vecSrchLeadDirections) {
+        switch (enDir)
+        {
+        case PR_DIRECTION::UP:
+            ini.SetBoolValue(_CMD_SECTION.c_str(), _strKeyDirUp.c_str(), true);
+            break;
+        case PR_DIRECTION::DOWN:
+            ini.SetBoolValue(_CMD_SECTION.c_str(), _strKeyDirDown.c_str(), true);
+            break;
+        case PR_DIRECTION::LEFT:
+            ini.SetBoolValue(_CMD_SECTION.c_str(), _strKeyDirLeft.c_str(), true);
+            break;
+        case PR_DIRECTION::RIGHT:
+            ini.SetBoolValue(_CMD_SECTION.c_str(), _strKeyDirRight.c_str(), true);
+            break;
+        default:
+            break;
+        }
+    }
     ini.SaveFile(cmdRpyFilePath.c_str());
 
     cv::imwrite(_strLogCasePath + _IMAGE_NAME, pstCmd->matInputImg);
@@ -1495,9 +1517,19 @@ VisionStatus LogCaseAutoLocateLead::RunLogCase() {
     ini.LoadFile(cmdRpyFilePath.c_str());
     stCmd.matInputImg = cv::imread(_strLogCasePath + _IMAGE_NAME, cv::IMREAD_COLOR);
 
+    stCmd.enMethod = static_cast<PR_AUTO_LOCATE_LEAD_METHOD>(ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyMethod.c_str(), 0));
     stCmd.rectSrchWindow = _parseRect(ini.GetValue(_CMD_SECTION.c_str(), _strKeySrchWindow.c_str(), _DEFAULT_RECT.c_str()));
     stCmd.rectChipBody = _parseRect(ini.GetValue(_CMD_SECTION.c_str(), _strKeyChipWindow.c_str(), _DEFAULT_RECT.c_str()));
-
+    stCmd.rectPadWindow = _parseRect(ini.GetValue(_CMD_SECTION.c_str(), _strKeyPadWindow.c_str(), _DEFAULT_RECT.c_str()));
+    stCmd.rectLeadWindow = _parseRect(ini.GetValue(_CMD_SECTION.c_str(), _strKeyLeadWindow.c_str(), _DEFAULT_RECT.c_str()));
+    if (ini.GetBoolValue(_CMD_SECTION.c_str(), _strKeyDirUp.c_str(), false))
+        stCmd.vecSrchLeadDirections.push_back(PR_DIRECTION::UP);
+    if (ini.GetBoolValue(_CMD_SECTION.c_str(), _strKeyDirDown.c_str(), false))
+        stCmd.vecSrchLeadDirections.push_back(PR_DIRECTION::DOWN);
+    if (ini.GetBoolValue(_CMD_SECTION.c_str(), _strKeyDirLeft.c_str(), false))
+        stCmd.vecSrchLeadDirections.push_back(PR_DIRECTION::LEFT);
+    if (ini.GetBoolValue(_CMD_SECTION.c_str(), _strKeyDirRight.c_str(), false))
+        stCmd.vecSrchLeadDirections.push_back(PR_DIRECTION::RIGHT);
     VisionStatus enStatus = VisionAlgorithm::autoLocateLead(&stCmd, &stRpy, true);
     WriteRpy(&stRpy);
     return enStatus;

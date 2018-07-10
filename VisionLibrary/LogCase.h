@@ -550,9 +550,17 @@ public:
     virtual VisionStatus RunLogCase() override;
     virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
     static String StaticGetFolderPrefix();
+
 private:
+    const String _strKeyMethod          = "Method";
     const String _strKeySrchWindow      = "SrchWindow";
     const String _strKeyChipWindow      = "ChipWindow";
+    const String _strKeyPadWindow       = "PadWindow";
+    const String _strKeyLeadWindow      = "LeadWindow";
+    const String _strKeyDirUp           = "DirUp";
+    const String _strKeyDirDown         = "DirDown";
+    const String _strKeyDirLeft         = "DirLeft";
+    const String _strKeyDirRight        = "DirRight";
 
     const String _strKeyStatus          = "Status";
     const String _strLeadLocation       = "LeadLocation_";  //End with _ because it will concatenate with lead number.

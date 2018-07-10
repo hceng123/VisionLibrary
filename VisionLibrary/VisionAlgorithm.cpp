@@ -4426,11 +4426,31 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
             rectLeadSrchArea = CalcUtils::resizeRect(rectLeadSrchArea, cv::Size(rectLeadSrchArea.width + 10, rectLeadSrchArea.height));
         else
             rectLeadSrchArea = CalcUtils::resizeRect(rectLeadSrchArea, cv::Size(rectLeadSrchArea.width, rectLeadSrchArea.height + 10));
-
+        if (rectLeadSrchArea.x < 0 || rectLeadSrchArea.y < 0 ||
+            rectLeadSrchArea.width <= 0 || rectLeadSrchArea.height <= 0 ||
+            (rectLeadSrchArea.x + rectLeadSrchArea.width)  > rectSubRegion.width ||
+            (rectLeadSrchArea.y + rectLeadSrchArea.height) > rectSubRegion.height) {
+            char chArrMsg[1000];
+            _snprintf(chArrMsg, sizeof(chArrMsg), "The lead search window (%d, %d, %d, %d) should inside sub region window (%d, %d, %d, %d).",
+                rectLeadSrchArea.x, rectLeadSrchArea.y, rectLeadSrchArea.width, rectLeadSrchArea.height,
+                0, 0, rectSubRegion.width, rectSubRegion.height);
+            WriteLog(chArrMsg);
+            pstRpy->enStatus = VisionStatus::AUTO_LOCATE_LEAD_FAIL;
+            return pstRpy->enStatus;
+        }        
         cv::Mat matLeadSrchArea(matSubRegion, rectLeadSrchArea);
         cv::Point2f ptPadPosition, ptLeadPosition;
         float fPadRotation, fLeadRotation, fPadScore, fLeadScore;
         if (! matPad.empty()) {
+            if (matPad.cols >= matLeadSrchArea.cols || matPad.rows >= matLeadSrchArea.rows) {
+                char chArrMsg[1000];
+                _snprintf(chArrMsg, sizeof(chArrMsg), "The pad template size (%d, %d) is bigger than search area size (%d, %d).",
+                    matPad.cols, matPad.rows, matLeadSrchArea.cols, matLeadSrchArea.rows);
+                WriteLog(chArrMsg);
+                pstRpy->enStatus = VisionStatus::AUTO_LOCATE_LEAD_FAIL;
+                return pstRpy->enStatus;
+            }
+
             MatchTmpl::matchTemplate(matLeadSrchArea, matPad, false, PR_OBJECT_MOTION::TRANSLATION, ptPadPosition, fPadRotation, fPadScore);
             if (fPadScore < 0.6f) {
                 char msg[1000];
@@ -4446,6 +4466,16 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
             cv::rectangle(pstRpy->matResultImg, stLeadInfo.rectPadWindow, _constGreenScalar, 1);
             stLeadInfo.nPadRecordId = nPadRecordId;
         }
+
+        if (matLead.cols >= matLeadSrchArea.cols || matLead.rows >= matLeadSrchArea.rows) {
+            char chArrMsg[1000];
+            _snprintf(chArrMsg, sizeof(chArrMsg), "The lead template size (%d, %d) is bigger than search area size (%d, %d).",
+                matLead.cols, matLead.rows, matLeadSrchArea.cols, matLeadSrchArea.rows);
+            WriteLog(chArrMsg);
+            pstRpy->enStatus = VisionStatus::AUTO_LOCATE_LEAD_FAIL;
+            return pstRpy->enStatus;
+        }
+
         MatchTmpl::matchTemplate(matLeadSrchArea, matLead, false, PR_OBJECT_MOTION::TRANSLATION, ptLeadPosition, fLeadRotation, fLeadScore);
         if (fPadScore < 0.6f) {
             char msg[1000];
