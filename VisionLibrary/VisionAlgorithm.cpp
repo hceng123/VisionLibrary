@@ -4215,6 +4215,10 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
 
 /*static*/ VisionStatus VisionAlgorithm::autoLocateLead(const PR_AUTO_LOCATE_LEAD_CMD *const pstCmd, PR_AUTO_LOCATE_LEAD_RPY *const pstRpy, bool bReplay/* = false*/) {
     assert(pstCmd != nullptr && pstRpy != nullptr);
+    pstRpy->vecLeadLocation.clear();
+    pstRpy->vecLeadInfo.clear();
+    pstRpy->vecLeadRecordId.clear();
+    pstRpy->vecPadRecordId.clear();
     
     if (pstCmd->matInputImg.empty()) {
         WriteLog("Input image is empty.");
@@ -4307,7 +4311,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     int nMarginToChip = 20;
     for (auto enDir : pstCmd->vecSrchLeadDirections) {
         cv::Rect rectSubRegion;
-        cv::Mat matLeadTmp, matPadTmp;        
+        cv::Mat matLeadTmp, matPadTmp;
         if (PR_DIRECTION::UP == enDir) {
             rectSubRegion = cv::Rect(pstCmd->rectChipBody.x - pstCmd->rectSrchWindow.x, 0, pstCmd->rectChipBody.width, pstCmd->rectChipBody.y - pstCmd->rectSrchWindow.y + nMarginToChip);
             matLeadTmp = matLead;
@@ -4372,6 +4376,24 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
                                                                 PR_AUTO_LOCATE_LEAD_RPY       *const pstRpy)
 {
     cv::Mat matSubRegion = cv::Mat(matGray, rectSubRegion);
+    if (ConfigInstance->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE)
+        showImage("Auto locate lead sub region", matSubRegion);
+
+    pstRpy->enStatus = _fillHoleByMorph(
+        matSubRegion,
+        matSubRegion,
+        PR_OBJECT_ATTRIBUTE::BRIGHT,
+        cv::MorphShapes::MORPH_ELLIPSE,
+        cv::Size(5, 5),
+        2);
+    if (VisionStatus::OK != pstRpy->enStatus) {
+        WriteLog("Failed to fill hole in _autoLocateLeadOneSide");
+        return pstRpy->enStatus;
+    }
+
+    if (ConfigInstance->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE)
+        showImage("Fill hole", matSubRegion);
+
     cv::Mat matRow;
     if (PR_DIRECTION::UP == enDir || PR_DIRECTION::DOWN == enDir)
         cv::reduce(matSubRegion, matRow, 0, cv::ReduceTypes::REDUCE_AVG);
@@ -4380,12 +4402,19 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
         cv::reduce(matSubRegion, matCol, 1, cv::ReduceTypes::REDUCE_AVG);
         cv::transpose(matCol, matRow);
     }
+
     auto vecThreshold = autoMultiLevelThreshold(matRow, cv::Mat(), 2);
     assert(vecThreshold.size() == 2);
 
-    cv::Mat matBW = matRow > vecThreshold[1];
-    matBW.convertTo(matBW, CV_32FC1);
+    cv::Mat matBW = matRow > (vecThreshold[1]);
+    cv::medianBlur(matBW, matBW, 9);
+    matBW.convertTo(matBW, CV_32FC1);    
     cv::Mat matBWDiff = CalcUtils::diff(matBW, 1, 2);
+#ifdef _DEBUG
+    auto vecRow = CalcUtils::matToVector<uchar>(matRow);
+    auto vecBW = CalcUtils::matToVector<float>(matBW);
+    auto vecBWDiff = CalcUtils::matToVector<float>(matBWDiff);
+#endif
     std::vector<int> vecIndex1, vecIndex2;
     for (int i = 0; i < matBWDiff.cols; ++i) {
         if (matBWDiff.at<float>(i) > 0)
@@ -4410,7 +4439,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
             vecSegPoint[0] = vecSegPoint[1] - (vecSegPoint[2] - vecSegPoint[1]);
         if (vecSegPoint[n] - vecSegPoint[n-1] > vecSegPoint[n-1] - vecSegPoint[n-2])
             vecSegPoint[n] = vecSegPoint[n-1] + vecSegPoint[n-1] - vecSegPoint[n-2];
-    }    
+    }
 
     VectorOfPoint2f vecLeadPositions, vecPadPositions;
     for (int i = 0; i < n; ++ i) {
@@ -4437,7 +4466,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
             WriteLog(chArrMsg);
             pstRpy->enStatus = VisionStatus::AUTO_LOCATE_LEAD_FAIL;
             return pstRpy->enStatus;
-        }        
+        }
         cv::Mat matLeadSrchArea(matSubRegion, rectLeadSrchArea);
         cv::Point2f ptPadPosition, ptLeadPosition;
         float fPadRotation, fLeadRotation, fPadScore, fLeadScore;
@@ -4584,7 +4613,6 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     double dMinAcceptRectArea = 0.4 * dAverageRectArea;
     double dMaxAcceptRectArea = 1.5 * dAverageRectArea;
 
-    pstRpy->vecLeadLocation.clear();
     for (const auto &contour : effectiveContours) {
         cv::Rect rect = cv::boundingRect(contour);
         auto contourArea = cv::contourArea(contour);

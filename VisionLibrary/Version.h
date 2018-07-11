@@ -14,8 +14,11 @@
  * Copyright (c) 2016-2018, Xiao Shengguang.  All rights reserved.
  ****************************************************************************/
 
+//2018-07-119 (XSG) Enhance PR_AutoLocateLead, add fill hole utility in it to fix dark area in lead.
+#define AOI_VISION_VERSION          "1.00.36"
+
 //2018-07-09 (XSG) Add log case for PR_AutoLocateLead.
-#define AOI_VISION_VERSION          "1.00.35"
+//#define AOI_VISION_VERSION          "1.00.35"
 
 //2018-07-03 (XSG) Enhance PR_AutoLocateLead function. Add PR_InspLeadTmpl function.
 //#define AOI_VISION_VERSION          "1.00.34"

@@ -56,10 +56,10 @@ void TestAutoLocateLeadTmpl_1()
     stCmd.rectChipBody =   cv::Rect(400, 700, 620, 620);
     stCmd.rectPadWindow = cv::Rect(440, 497, 42, 92);
     stCmd.rectLeadWindow = cv::Rect(448, 596, 100, 89);
+    stCmd.vecSrchLeadDirections.push_back(PR_DIRECTION::RIGHT);
     stCmd.vecSrchLeadDirections.push_back(PR_DIRECTION::UP);
     stCmd.vecSrchLeadDirections.push_back(PR_DIRECTION::DOWN);
     stCmd.vecSrchLeadDirections.push_back(PR_DIRECTION::LEFT);
-    stCmd.vecSrchLeadDirections.push_back(PR_DIRECTION::RIGHT);
     PR_AutoLocateLead(&stCmd, &stRpy);
     std::cout << "PR_AutoLocateLead status " << ToInt32(stRpy.enStatus) << std::endl;
     cv::imwrite("./data/AutoLocateLeadResult.bmp", stRpy.matResultImg);
