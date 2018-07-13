@@ -70,6 +70,7 @@ enum class VisionStatus
     //Inspect lead status
     NOT_FIND_LEAD                       = 80,
     AUTO_LOCATE_LEAD_FAIL               = 81,
+    LEAD_OFFSET_OVER_LIMIT              = 82,
 
     //Inspect polarity status
     POLARITY_FAIL                       = 90,

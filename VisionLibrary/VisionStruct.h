@@ -32,6 +32,7 @@ using VectorOfVectorOfMat = std::vector<VectorOfMat>;
 using VectorOfFloat = std::vector<float>;
 using VectorOfVectorOfFloat = std::vector<VectorOfFloat>;
 using VectorOfDouble = std::vector<double>;
+using VectorOfDirection = std::vector<PR_DIRECTION>;
 
 template <typename Tp> inline Int32 ToInt32(Tp param) { return static_cast<Int32>(param); }
 template <typename Tp> inline Int16 ToInt16(Tp param) { return static_cast<Int16>(param); }
@@ -758,16 +759,33 @@ struct PR_CALC_UNDISTORT_RECTIFY_MAP_RPY {
 };
 
 struct PR_AUTO_LOCATE_LEAD_CMD {
-    cv::Mat                 matInputImg;
-    cv::Rect                rectSrchWindow;
-    cv::Rect                rectChipBody;
-    PR_OBJECT_ATTRIBUTE     enLeadAttribute;
+    cv::Mat                     matInputImg;
+    PR_AUTO_LOCATE_LEAD_METHOD  enMethod;
+    cv::Rect                    rectSrchWindow;
+    cv::Rect                    rectChipBody;
+    PR_OBJECT_ATTRIBUTE         enLeadAttribute;
+    cv::Rect                    rectPadWindow;
+    cv::Rect                    rectLeadWindow;
+    VectorOfDirection           vecSrchLeadDirections;
 };
 
 struct PR_AUTO_LOCATE_LEAD_RPY {
+    struct PR_LEAD_INFO {
+        PR_DIRECTION        enDir;
+        cv::Rect            rectPadWindow;
+        cv::Rect            rectLeadWindow;
+        cv::Rect            rectSrchWindow;
+        Int32               nPadRecordId;
+        Int32               nLeadRecordId;
+    };
+    using VectorOfLeadInfo = std::vector<PR_LEAD_INFO>;
+
     VisionStatus            enStatus;
     cv::Mat                 matResultImg;
     VectorOfRect            vecLeadLocation;
+    VectorOfLeadInfo        vecLeadInfo;
+    std::vector<Int32>      vecLeadRecordId;
+    std::vector<Int32>      vecPadRecordId;
 };
 
 struct PR_INSP_BRIDGE_CMD {
@@ -776,12 +794,11 @@ struct PR_INSP_BRIDGE_CMD {
         float                   fMaxLengthX;
         float                   fMaxLengthY;
     };
-    using INSP_DIRECTION_VECTOR = std::vector<PR_INSP_BRIDGE_DIRECTION>;
 
     cv::Mat                 matInputImg;
     cv::Rect                rectROI;
     PR_INSP_BRIDGE_MODE     enInspMode;
-    INSP_DIRECTION_VECTOR   vecOuterInspDirection;
+    VectorOfDirection       vecOuterInspDirection;
     cv::Rect                rectOuterSrchWindow;
     INNER_INSP_CRITERIA     stInnerInspCriteria;
 };
@@ -992,6 +1009,29 @@ struct PR_INSP_LEAD_RPY {
     VisionStatus            enStatus;
     VECTOR_LEAD_RESULT      vecLeadResult;
     cv::Mat                 matResultImg;
+};
+
+struct PR_INSP_LEAD_TMPL_CMD {
+    PR_INSP_LEAD_TMPL_CMD() :
+        nPadRecordId        (-1),
+        nLeadRecordId       (-1),
+        fMinMatchScore      (60),
+        fLrnedPadLeadDist   (0) {}
+    cv::Mat             matInputImg;
+    cv::Rect            rectROI;
+    Int32               nPadRecordId;
+    Int32               nLeadRecordId;
+    float               fMaxLeadOffsetX;
+    float               fMaxLeadOffsetY;
+    float               fLrnedPadLeadDist;
+    float               fMinMatchScore;
+};
+
+struct PR_INSP_LEAD_TMPL_RPY {
+    VisionStatus        enStatus;
+    cv::Mat             matResultImg;
+    float               fLeadOffsetX;
+    float               fLeadOffsetY;
 };
 /******************************************
 * End of Inspect Lead Section *

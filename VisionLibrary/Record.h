@@ -18,7 +18,8 @@ public:
     virtual ~Record() = default;
     virtual VisionStatus load(cv::FileStorage &fileStorage, const String& strFilePath = "") = 0;
     virtual VisionStatus save(const String& strFilePath) = 0;
-    virtual PR_RECORD_TYPE getType() { return _enType;};    
+    virtual PR_RECORD_TYPE getType() { return _enType; };
+
 protected:
     PR_RECORD_TYPE  _enType;
     const String    _strKeyType     = "type";
@@ -37,6 +38,7 @@ public:
     const cv::Mat& getModelDescriptor() const;
     void setObjCenter(const cv::Point2f ptObjCenter);
     cv::Point2f getObjCenter() const;
+
 protected:
     cv::Point2f                 _ptObjCenter;
     VectorOfKeyPoint            _vecModelKeyPoint;
@@ -54,6 +56,7 @@ public:
     const cv::Size2f& getSize() const;
     void setElectrodeThreshold(Int16 nElectrodeThreshold);
     Int16 getElectrodeThreshold() const;
+
 protected:
     cv::Size2f          _size;
     Int16               _nElectrodeThreshold;
@@ -125,6 +128,7 @@ public:
     cv::Mat getTmpl() const;
     void setEdgeMask(const cv::Mat &matTmpl);
     cv::Mat getEdgeMask() const;
+
 protected:
     PR_MATCH_TMPL_ALGORITHM _enAlgorithm;
     cv::Mat                 _matTmpl;

@@ -597,25 +597,28 @@ void VisionView::_applyMask()
     else
         _zoomMat ( _matMaskForDisplay, matLocalMask, 1 / _fZoomFactor, false );
 
-    if ( _matMask.rows >= matLocalMask.rows && _matMask.cols >= matLocalMask.cols ) {
-        cv::Rect rectROIDst(( _matMask.cols - matLocalMask.cols) / 2 - _szConfirmedCenterOffset.width, (_matMask.rows - matLocalMask.rows) / 2 - _szConfirmedCenterOffset.height, matLocalMask.cols, matLocalMask.rows );
+    if (_matMask.rows >= matLocalMask.rows && _matMask.cols >= matLocalMask.cols) {
+        cv::Rect rectROIDst((_matMask.cols - matLocalMask.cols) / 2 - _szConfirmedCenterOffset.width, (_matMask.rows - matLocalMask.rows) / 2 - _szConfirmedCenterOffset.height, matLocalMask.cols, matLocalMask.rows);
         cv::Mat matDst(_matMask, rectROIDst);
         matLocalMask.copyTo(matDst);
-    }else if  ( _matMask.rows < matLocalMask.rows && _matMask.cols < matLocalMask.cols )  {
-        cv::Rect rectROISrc(( matLocalMask.cols - _matMask.cols ) / 2, ( matLocalMask.rows - _matMask.rows) / 2, _matMask.cols, _matMask.rows );
-        cv::Mat matSrc( matLocalMask, rectROISrc);
-        matSrc.copyTo ( _matMask );
-    }else if ( _matMask.rows > matLocalMask.rows && _matMask.cols < matLocalMask.cols )   {
-        cv::Rect rectROISrc( (matLocalMask.cols - _matMask.cols) / 2, 0, _matMask.cols, matLocalMask.rows );
+    }
+    else if (_matMask.rows < matLocalMask.rows && _matMask.cols < matLocalMask.cols)  {
+        cv::Rect rectROISrc((matLocalMask.cols - _matMask.cols) / 2, (matLocalMask.rows - _matMask.rows) / 2, _matMask.cols, _matMask.rows);
         cv::Mat matSrc(matLocalMask, rectROISrc);
-        cv::Rect rectROIDst(0, ( _matMask.rows - matLocalMask.rows ) / 2 - _szConfirmedCenterOffset.height, _matMask.cols, matLocalMask.rows );
-        cv::Mat matDst(_matDisplay, rectROIDst);
+        matSrc.copyTo(_matMask);
+    }
+    else if (_matMask.rows > matLocalMask.rows && _matMask.cols < matLocalMask.cols)   {
+        cv::Rect rectROISrc((matLocalMask.cols - _matMask.cols) / 2, 0, _matMask.cols, matLocalMask.rows);
+        cv::Mat matSrc(matLocalMask, rectROISrc);
+        cv::Rect rectROIDst(0, (_matMask.rows - matLocalMask.rows) / 2 - _szConfirmedCenterOffset.height, _matMask.cols, matLocalMask.rows);
+        cv::Mat matDst(_matMask, rectROIDst);
         matSrc.copyTo(matDst);
-    }else if ( _matMask.rows < matLocalMask.rows && _matMask.cols > matLocalMask.cols )   {
-        cv::Rect rectROISrc( 0, (matLocalMask.rows - _matMask.rows) / 2, matLocalMask.cols, _matMask.rows );
+    }
+    else if (_matMask.rows < matLocalMask.rows && _matMask.cols > matLocalMask.cols)   {
+        cv::Rect rectROISrc(0, (matLocalMask.rows - _matMask.rows) / 2, matLocalMask.cols, _matMask.rows);
         cv::Mat matSrc(matLocalMask, rectROISrc);
-        cv::Rect rectROIDst( ( _matMask.cols - matLocalMask.cols ) / 2 - _szConfirmedCenterOffset.width, 0,  matLocalMask.cols, _matMask.rows );
-        cv::Mat matDst(_matDisplay, rectROIDst);
+        cv::Rect rectROIDst((_matMask.cols - matLocalMask.cols) / 2 - _szConfirmedCenterOffset.width, 0, matLocalMask.cols, _matMask.rows);
+        cv::Mat matDst(_matMask, rectROIDst);
         matSrc.copyTo(matDst);
     }
 }
