@@ -560,5 +560,12 @@ PR_FUNCTION_ENTRY
 PR_FUNCTION_EXIT
 }
 
+VisionAPI VisionStatus PR_LrnOCV(const PR_LRN_OCV_CMD *const pstCmd, PR_LRN_OCV_RPY *const pstRpy)
+{
+PR_FUNCTION_ENTRY
+    return VisionAlgorithm::lrnOCV(pstCmd, pstRpy);
+PR_FUNCTION_EXIT
+}
+
 }
 }

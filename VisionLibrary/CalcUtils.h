@@ -425,6 +425,7 @@ public:
     static float linearInterpolate(const cv::Point2f &pt1, float fValue1, const cv::Point2f &pt2, float fValue2, const cv::Point2f &ptToGet);
     static float bilinearInterpolate(const VectorOfPoint2f &vecPoint, const VectorOfFloat &vecValue, const cv::Point2f &ptToGet);
     static bool isRectInRect(const cv::Rect2f &rectIn, const cv::Rect2f &rectOut);
+    static void adjustRectROI(cv::Rect &rect, const cv::Mat &matInput);
 };
 
 }

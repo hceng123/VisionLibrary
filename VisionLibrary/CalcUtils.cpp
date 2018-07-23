@@ -333,5 +333,13 @@ float CalcUtils::calcPointToContourDist(const cv::Point &ptInput, const VectorOf
     return false;
 }
 
+/*static*/ void CalcUtils::adjustRectROI(cv::Rect &rect, const cv::Mat &matInput) {
+    if (rect.x < 0) rect.x = 0;
+    if (rect.y < 0) rect.y = 0;
+    if ((rect.x + rect.width)  > matInput.cols) rect.width  = matInput.cols - rect.x;
+    if ((rect.y + rect.height) > matInput.rows) rect.height = matInput.rows - rect.y;
+
+}
+
 }
 }

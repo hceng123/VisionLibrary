@@ -210,6 +210,11 @@ VisionStatus GetErrorInfo(VisionStatus enStatus, PR_GET_ERROR_INFO_RPY *pstRpy)
         pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::PR_INSP_STATUS;
         break;
 
+    case VisionStatus::FAILED_TO_SPLIT_IMAGE:
+        _snprintf(pstRpy->achErrorStr, PR_MAX_ERR_STR_LEN, "Failed to split the image.");
+        pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::PR_INSP_STATUS;
+        break;
+
     case VisionStatus::CAN_NOT_FIND_MTF_PATTERN:
         _snprintf(pstRpy->achErrorStr, PR_MAX_ERR_STR_LEN, "Cannot find MTF pattern in the given ROI.");
         pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::PR_INSP_STATUS;

@@ -69,6 +69,8 @@ void TestCalcFrameValue_1();
 void TestCalc4DLPHeight();
 void TestQueryDlpOffset();
 
+void TestOCV_1();
+
 template<class T>
 void printfMat(const cv::Mat &mat)
 {

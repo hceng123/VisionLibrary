@@ -82,6 +82,9 @@ enum class VisionStatus
     //Bridge status
     BRIDGE_DEFECT                       = 120,
 
+    //OCV status
+    FAILED_TO_SPLIT_IMAGE               = 130,
+
     //Camera MTF
     CAN_NOT_FIND_MTF_PATTERN            = 150,
     MTF_PATTERN_TOO_SMALL               = 151,

@@ -235,8 +235,7 @@ String ContourRecord::getContourFileName() const {
 /******************************************
 * Template Record *
 ******************************************/
-VisionStatus TmplRecord::load(cv::FileStorage &fs, const String& strFilePath)
-{
+VisionStatus TmplRecord::load(cv::FileStorage &fs, const String& strFilePath) {
     cv::FileNode fileNode;
 
     fileNode = fs[_strKeyAlgorithm];
@@ -262,10 +261,10 @@ VisionStatus TmplRecord::save(const String& strFilePath) {
     if ( ! fs.isOpened() )
         return VisionStatus::OPEN_FILE_FAIL;
 
-    cv::write ( fs, _strKeyType, ToInt32 ( PR_RECORD_TYPE::TEMPLATE ) );
-    cv::write ( fs, _strKeyAlgorithm, ToInt32 ( _enAlgorithm ) );
-    cv::imwrite ( strFilePath + "/" + _strTmplFileName, _matTmpl );
-    if ( PR_MATCH_TMPL_ALGORITHM::HIERARCHICAL_EDGE == _enAlgorithm )
+    cv::write(fs, _strKeyType, ToInt32(PR_RECORD_TYPE::TEMPLATE));
+    cv::write(fs, _strKeyAlgorithm, ToInt32(_enAlgorithm));
+    cv::imwrite(strFilePath + "/" + _strTmplFileName, _matTmpl);
+    if (PR_MATCH_TMPL_ALGORITHM::HIERARCHICAL_EDGE == _enAlgorithm)
         cv::imwrite ( strFilePath + "/" + _strEdgeMaskName, _matEdgeMask );
     
     fs.release();
@@ -295,6 +294,65 @@ void TmplRecord::setEdgeMask(const cv::Mat &matEdgeMask) {
 cv::Mat TmplRecord::getEdgeMask() const {
     return _matEdgeMask;
 }
+
+OcvRecord::OcvRecord(
+    const cv::Mat      &matBigTmpl,
+    const VectorOfRect &vecCharRects,
+    PR_RECORD_TYPE      enType) :
+    _matBigTmpl(matBigTmpl),
+    _vecCharRects(vecCharRects),
+    Record(enType) {
+}
+
+VisionStatus OcvRecord::load(cv::FileStorage &fs, const String& strFilePath) {
+    _matBigTmpl = cv::imread(strFilePath + "/" + _strTmplFileName, cv::IMREAD_GRAYSCALE);
+    if (_matBigTmpl.empty())
+        return VisionStatus::INVALID_RECORD_FILE;
+
+    cv::FileNode fileNode;
+    fileNode = fs[_strKeyCharCount];
+    Int32 nCharCount = 0;
+    cv::read(fileNode, nCharCount, 0 );
+    for (int i = 0; i < nCharCount; ++i) {
+        std::string strKeyCharRect = _strKeyCharRect + std::to_string(i);
+        fileNode = fs[strKeyCharRect];
+        cv::Rect charRect;
+        cv::read(fileNode, charRect, cv::Rect(0, 0, 0, 0));
+        _vecCharRects.push_back(charRect);
+    }
+    return VisionStatus::OK;
+}
+
+VisionStatus OcvRecord::save(const String& strFilePath) {
+    String strParamFilePath = strFilePath + "/" + Config::GetInstance()->getRecordParamFile();
+    cv::FileStorage fs(strParamFilePath, cv::FileStorage::WRITE);
+    if ( ! fs.isOpened() )
+        return VisionStatus::OPEN_FILE_FAIL;
+
+    cv::write(fs, _strKeyType, ToInt32(_enType));
+    cv::write(fs, _strKeyCharCount, ToInt32(_vecCharRects.size()));
+    for (size_t i = 0; i < _vecCharRects.size(); ++ i) {
+        std::string strKeyCharRect = _strKeyCharRect + std::to_string(i);
+        cv::write(fs, strKeyCharRect, _vecCharRects[i]);
+    }
+    cv::imwrite(strFilePath + "/" + _strTmplFileName, _matBigTmpl);
+    
+    fs.release();
+    return VisionStatus::OK;
+}
+
+void OcvRecord::setBigTmpl(const cv::Mat &matBigTmpl) {
+    _matBigTmpl = matBigTmpl;
+}
+
+cv::Mat OcvRecord::getBigTmpl() const {
+    return _matBigTmpl;
+}
+
+VectorOfRect OcvRecord::getCharRects() const {
+    return _vecCharRects;
+}
+
 
 }
 }

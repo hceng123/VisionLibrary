@@ -777,10 +777,7 @@ VisionStatus VisionAlgorithm::lrnDevice(PR_LRN_DEVICE_CMD *pstLrnDeviceCmd, PR_L
     }
 
     cv::Rect rectDeviceROI = CalcUtils::resizeRect<float>(pstLrnDeviceCmd->rectDevice, pstLrnDeviceCmd->rectDevice.size() + cv::Size2f(20, 20));
-    if (rectDeviceROI.x < 0) rectDeviceROI.x = 0;
-    if (rectDeviceROI.y < 0) rectDeviceROI.y = 0;
-    if ((rectDeviceROI.x + rectDeviceROI.width) > pstLrnDeviceCmd->matInputImg.cols) rectDeviceROI.width = pstLrnDeviceCmd->matInputImg.cols - rectDeviceROI.x;
-    if ((rectDeviceROI.y + rectDeviceROI.height) > pstLrnDeviceCmd->matInputImg.rows) rectDeviceROI.height = pstLrnDeviceCmd->matInputImg.rows - rectDeviceROI.y;
+    CalcUtils::adjustRectROI(rectDeviceROI, pstLrnDeviceCmd->matInputImg);
 
     cv::Mat matDevice(pstLrnDeviceCmd->matInputImg, rectDeviceROI);
     cv::Mat matGray, matThreshold, matHorizontalProjection, matVerticalProjection;
@@ -7368,6 +7365,160 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
 
     MARK_FUNCTION_END_TIME;
     pstRpy->enStatus = VisionStatus::OK;
+    return pstRpy->enStatus;
+}
+
+/*static*/ VisionStatus VisionAlgorithm::lrnOCV(const PR_LRN_OCV_CMD *const pstCmd, PR_LRN_OCV_RPY *const pstRpy, bool bReplay /*= false*/) {
+    assert(pstCmd != nullptr && pstRpy != nullptr);
+
+    if (pstCmd->matInputImg.empty()) {
+        WriteLog("The input image is empty.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+    pstRpy->enStatus = _checkInputROI(pstCmd->rectROI, pstCmd->matInputImg, AT);
+    if (VisionStatus::OK != pstRpy->enStatus) return pstRpy->enStatus;
+
+    if (pstCmd->nCharCount > 50) {
+        char chArrMsg[100];
+        _snprintf(chArrMsg, sizeof(chArrMsg), "The input char count %d is bigger than limit 50.", pstCmd->nCharCount);
+        WriteLog(chArrMsg);
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    pstRpy->enStatus = VisionStatus::OK;
+
+    MARK_FUNCTION_START_TIME;
+
+    cv::Mat matROI(pstCmd->matInputImg, pstCmd->rectROI), matGray;
+    if (pstCmd->matInputImg.channels() > 1)
+        cv::cvtColor(matROI, matGray, CV_BGR2GRAY);
+    else
+        matGray = matROI;
+
+    std::vector<int> vecIndex1, vecIndex2;
+    pstRpy->enStatus = _imageSplitByMax(matGray, pstCmd->nCharCount, vecIndex1, vecIndex2);
+    if (VisionStatus::OK != pstRpy->enStatus)
+        return pstRpy->enStatus;
+
+    const int nMargin = 2;
+    auto len = std::min(vecIndex1.size(), vecIndex2.size());
+    VectorOfRect vecCharRects;
+    for (int i = 0; i < len; ++ i) {
+        if (vecIndex2[i] - vecIndex1[i] <= 0) {
+            pstRpy->enStatus = VisionStatus::FAILED_TO_SPLIT_IMAGE;
+            return pstRpy->enStatus;
+        }
+        cv::Rect rectSubRegion(vecIndex1[i], 0, vecIndex2[i] - vecIndex1[i], matGray.rows);
+        cv::Mat matSubRegion(matGray, rectSubRegion), matSubRegionT;
+        cv::transpose(matSubRegion, matSubRegionT);
+        std::vector<int> vecIndex3, vecIndex4;
+        pstRpy->enStatus = _imageSplitByMax(matSubRegionT, 1, vecIndex3, vecIndex4);
+        if (VisionStatus::OK != pstRpy->enStatus)
+            return pstRpy->enStatus;
+        if (vecIndex3.empty() || vecIndex4.empty() || vecIndex4[0] - vecIndex3[0] <= 0) {
+            pstRpy->enStatus = VisionStatus::FAILED_TO_SPLIT_IMAGE;
+            return pstRpy->enStatus;
+        }
+        cv::Rect rectChar(vecIndex1[i], vecIndex3[0], vecIndex2[i] - vecIndex1[i], vecIndex4[0] - vecIndex3[0]);
+        rectChar = CalcUtils::resizeRect(rectChar, cv::Size(rectChar.width+ nMargin * 2, rectChar.height + nMargin * 2));
+        CalcUtils::adjustRectROI(rectChar, matGray);
+        vecCharRects.push_back(rectChar);
+    }
+
+    auto ptrOcvRecord = std::make_shared<OcvRecord>(matGray, vecCharRects);
+    RecordManagerInstance->add(ptrOcvRecord, pstRpy->nRecordId);
+
+    MARK_FUNCTION_END_TIME;
+    return pstRpy->enStatus;
+}
+
+/*static*/ VisionStatus VisionAlgorithm::_imageSplitByMax(const cv::Mat &matInput, UInt16 objCount, std::vector<int> &vecIndex1, std::vector<int> &vecIndex2) {
+    cv::Mat matOneRow;
+    cv::reduce(matInput, matOneRow, 0, cv::ReduceTypes::REDUCE_MAX);
+    auto threshold = _autoThreshold(matOneRow);
+    for (int col = 0; col < matOneRow.cols - 1; ++ col) {
+        auto value = matOneRow.at<uchar>(col);
+        auto nextValue = matOneRow.at<uchar>(col + 1);
+        if (value <= threshold && nextValue > threshold)
+            vecIndex1.push_back(col);
+        else if (value > threshold && nextValue <= threshold)
+            vecIndex2.push_back(col);
+    }
+
+    double minValue = 0., maxValue = 0.;
+    cv::minMaxIdx(matOneRow, &minValue, &maxValue);
+    auto minGray = static_cast<uchar>(minValue);
+    auto maxGray = static_cast<uchar>(maxValue);
+    int nIteration = 0;
+    while (vecIndex1.size() != objCount || vecIndex2.size() != objCount) {
+        ++ nIteration;
+        if (vecIndex1.size() > objCount || vecIndex2.size() > objCount) {
+            maxGray = threshold;
+            threshold = (threshold + minGray) / 2;
+        }else {
+            minGray = threshold;
+            threshold = (threshold + maxGray) / 2;
+        }
+
+        vecIndex1.clear(); vecIndex2.clear();
+        for (int col = 0; col < matOneRow.cols - 1; ++ col) {
+            auto value = matOneRow.at<uchar>(col);
+            auto nextValue = matOneRow.at<uchar>(col + 1);
+            if (value <= threshold && nextValue > threshold)
+                vecIndex1.push_back(col);
+            else if (value > threshold && nextValue <= threshold)
+                vecIndex2.push_back(col);
+        }
+
+        if (nIteration > 10)
+            return VisionStatus::FAILED_TO_SPLIT_IMAGE;
+    }
+    return VisionStatus::OK;
+}
+
+/*static*/ VisionStatus VisionAlgorithm::ocv(const PR_OCV_CMD *const pstCmd, PR_OCV_RPY *const pstRpy, bool bReplay /*= false*/) {
+    assert(pstCmd != nullptr && pstRpy != nullptr);
+
+    if (pstCmd->matInputImg.empty()) {
+        WriteLog("The input image is empty.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+    pstRpy->enStatus = _checkInputROI(pstCmd->rectROI, pstCmd->matInputImg, AT);
+    if (VisionStatus::OK != pstRpy->enStatus) return pstRpy->enStatus;
+
+    if (pstCmd->vecRecordId.empty()) {
+        WriteLog("The input record id list is empty.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    MARK_FUNCTION_START_TIME;
+    pstRpy->enStatus = VisionStatus::OK;
+
+    cv::Mat matROI(pstCmd->matInputImg, pstCmd->rectROI), matGray;
+    if (pstCmd->matInputImg.channels() > 1)
+        cv::cvtColor(matROI, matGray, CV_BGR2GRAY);
+    else
+        matGray = matROI;
+
+    for (const auto recordId : pstCmd->vecRecordId) {
+        OcvRecordPtr ptrOcvRecord = std::static_pointer_cast<OcvRecord>(RecordManagerInstance->get(recordId));
+        if (nullptr == ptrOcvRecord) {
+            char chArrMsg[100];
+            _snprintf(chArrMsg, sizeof (chArrMsg), "Failed to get record ID %d in system.", recordId);
+            WriteLog(chArrMsg);
+            pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+            return pstRpy->enStatus;
+        }
+
+        if (ConfigInstance->getDebugMode() == Vision::PR_DEBUG_MODE::SHOW_IMAGE)
+            showImage("Ocv template", ptrOcvRecord->getBigTmpl());
+    }
+
+    MARK_FUNCTION_END_TIME;
     return pstRpy->enStatus;
 }
 

@@ -715,7 +715,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
     //TestCalcMTF();
 
-    PR_RunLogCase("./Vision/Logcase/AutoLocateLead_2018_07_11_10_14_18_277.logcase");
+    //PR_RunLogCase("./Vision/Logcase/AutoLocateLead_2018_07_11_10_14_18_277.logcase");
     //PR_RunLogCase("D:/xsg/Logcase/Calib3DBase_2017_09_10_21_13_02_836.logcase");
     //TestCalcPD();
 
@@ -762,6 +762,8 @@ int _tmain(int argc, _TCHAR* argv[])
     //TestCalcFrameValue();
 
     //TestInspPolarity_01();
+    
+    TestOCV_1();
 
     PR_DumpTimeLog("./Vision/Time.log");
     std::cout << "Press any key to exit." << std::endl;
