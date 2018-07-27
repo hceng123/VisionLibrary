@@ -7460,8 +7460,10 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
 
     std::vector<int> vecIndex1, vecIndex2;
     pstRpy->enStatus = _imageSplitByMax(matGray, pstCmd->nCharCount, vecIndex1, vecIndex2);
-    if (VisionStatus::OK != pstRpy->enStatus)
+    if (VisionStatus::OK != pstRpy->enStatus) {
+        FINISH_LOGCASE;
         return pstRpy->enStatus;
+    }
 
     const int nMargin = 2;
     auto len = std::min(vecIndex1.size(), vecIndex2.size());
@@ -7469,6 +7471,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     for (int i = 0; i < len; ++ i) {
         if (vecIndex2[i] - vecIndex1[i] <= 0) {
             pstRpy->enStatus = VisionStatus::FAILED_TO_SPLIT_IMAGE;
+            FINISH_LOGCASE;
             return pstRpy->enStatus;
         }
         cv::Rect rectSubRegion(vecIndex1[i], 0, vecIndex2[i] - vecIndex1[i], matGray.rows);
@@ -7476,10 +7479,13 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
         cv::transpose(matSubRegion, matSubRegionT);
         std::vector<int> vecIndex3, vecIndex4;
         pstRpy->enStatus = _imageSplitByMax(matSubRegionT, 1, vecIndex3, vecIndex4);
-        if (VisionStatus::OK != pstRpy->enStatus)
+        if (VisionStatus::OK != pstRpy->enStatus) {
+            FINISH_LOGCASE;
             return pstRpy->enStatus;
+        }
         if (vecIndex3.empty() || vecIndex4.empty() || vecIndex4[0] - vecIndex3[0] <= 0) {
             pstRpy->enStatus = VisionStatus::FAILED_TO_SPLIT_IMAGE;
+            FINISH_LOGCASE;
             return pstRpy->enStatus;
         }
         cv::Rect rectChar(vecIndex1[i], vecIndex3[0], vecIndex2[i] - vecIndex1[i], vecIndex4[0] - vecIndex3[0]);
@@ -7623,7 +7629,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     auto maxScoreIndex = iterMaxScore - vecCorrelation.begin();
     cv::Point ptTarget = vecResultPos[maxScoreIndex];
     auto ptrRecordPtr = vecRecordPtr[maxScoreIndex];
-    cv::Rect rectTarget(ptTarget.x - ptrRecordPtr->getBigTmpl().cols / 2, ptTarget.y - ptrRecordPtr->getBigTmpl().rows / 2, ptrRecordPtr->getBigTmpl().cols, ptrRecordPtr->getBigTmpl().rows);
+    cv::Rect rectTarget(ptTarget.x - (ptrRecordPtr->getBigTmpl().cols + 1) / 2, ptTarget.y - (ptrRecordPtr->getBigTmpl().rows + 1) / 2, ptrRecordPtr->getBigTmpl().cols, ptrRecordPtr->getBigTmpl().rows);
     cv::Mat matBigTarget(matGray, rectTarget);
     auto vecCharRects = ptrRecordPtr->getCharRects();
     const int nSrchRegionMargin = 5;

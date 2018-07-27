@@ -132,8 +132,11 @@ RecordPtr RecordManager::_createRecordPtr(Int32 recordType) {
     case PR_RECORD_TYPE::TEMPLATE:
         return std::make_shared<TmplRecord>(enRecordType);
         break;
+    case PR_RECORD_TYPE::OCV:
+        return std::make_shared<OcvRecord>(enRecordType);
+        break;
     default:
-        return nullptr;
+        assert(0);
     }
     return nullptr;
 }
