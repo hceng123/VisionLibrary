@@ -1435,14 +1435,19 @@ struct PR_LRN_OCV_RPY {
 };
 
 struct PR_OCV_CMD {
+    PR_OCV_CMD() :
+        fMinMatchScore  (60) {}
     cv::Mat                 matInputImg;
     cv::Rect                rectROI;
     std::vector<Int32>      vecRecordId;
+    float                   fMinMatchScore;
 };
 
 struct PR_OCV_RPY {
     VisionStatus            enStatus;
     cv::Mat                 matResultImg;
+    float                   fOverallScore;
+    VectorOfFloat           vecCharScore;
 };
 
 }

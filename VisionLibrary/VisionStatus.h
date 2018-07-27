@@ -84,6 +84,7 @@ enum class VisionStatus
 
     //OCV status
     FAILED_TO_SPLIT_IMAGE               = 130,
+    OCV_MATCH_SCORE_UNDER_LIMIT         = 131,
 
     //Camera MTF
     CAN_NOT_FIND_MTF_PATTERN            = 150,

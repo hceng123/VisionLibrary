@@ -643,7 +643,7 @@ int _tmain(int argc, _TCHAR* argv[])
     auto fFloorResult = std::floor ( fTest );
 
     PR_Init();
-    PR_SetDebugMode (PR_DEBUG_MODE::SHOW_IMAGE);
+    PR_SetDebugMode(PR_DEBUG_MODE::SHOW_IMAGE);
 
     //TestTemplate();
     //TestInspDevice();
@@ -668,7 +668,8 @@ int _tmain(int argc, _TCHAR* argv[])
     //TestRunRestoreImgLogCase();
 
     //TestAutoLocateLead();
-    //TestAutoLocateLeadTmpl_1();
+    TestAutoLocateLeadTmpl_1();
+    //TestAutoLocateLeadTmpl_2();
 
     //TestInspBridge();
     //TestInspBridge_1();
@@ -763,7 +764,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
     //TestInspPolarity_01();
     
-    TestOCV_1();
+    //TestOCV_1();
 
     PR_DumpTimeLog("./Vision/Time.log");
     std::cout << "Press any key to exit." << std::endl;
