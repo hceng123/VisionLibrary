@@ -34,6 +34,7 @@ void TestTwoLineAngle();
 void TestTwoLineIntersect();
 void TestParallelLineDistance();
 void TestCrossSectionArea();
+void TestOCV();
 
 }
 }

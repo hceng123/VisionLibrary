@@ -7458,8 +7458,11 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     else
         matGray = matROI;
 
+    if (ConfigInstance->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE)
+        showImage("Learn ROI image", matGray);
+
     std::vector<int> vecIndex1, vecIndex2;
-    pstRpy->enStatus = _imageSplitByMax(matGray, pstCmd->nCharCount, vecIndex1, vecIndex2);
+    pstRpy->enStatus = _imageSplitByMaxNew(matGray, pstCmd->nCharCount, vecIndex1, vecIndex2);
     if (VisionStatus::OK != pstRpy->enStatus) {
         FINISH_LOGCASE;
         return pstRpy->enStatus;
@@ -7567,6 +7570,134 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     return VisionStatus::OK;
 }
 
+/*static*/ VisionStatus VisionAlgorithm::_imageSplitByMaxNew(const cv::Mat &matInput, UInt16 objCount, std::vector<int> &vecIndex1, std::vector<int> &vecIndex2) {
+    cv::Mat matOneRow, matFilterResult;
+    cv::reduce(matInput, matOneRow, 0, cv::ReduceTypes::REDUCE_MAX);
+    matOneRow.convertTo(matOneRow, CV_32FC1);
+    cv::blur(matOneRow, matFilterResult, cv::Size(5, 1));    
+#ifdef _DEBUG
+    auto vecVecRow = CalcUtils::matToVector<float>(matOneRow);
+    auto vecVecFilter = CalcUtils::matToVector<float>(matFilterResult);
+#endif
+    matOneRow = matFilterResult;
+
+    int index1 = 0, index2 = 0;
+    for (int i = 0; i < matOneRow.cols - 1; ++ i) {
+        if (matOneRow.at<float>(i+1) > matOneRow.at<float>(i)) {
+            index1 = i;
+            break;
+        }
+    }
+
+    for(int i = matOneRow.cols - 1; i > 0; -- i) {
+        if (matOneRow.at<float>(i-1) > matOneRow.at<float>(i)) {
+            index2 = i;
+            break;
+        }
+    }
+
+    auto y1 = ToFloat(matOneRow.at<float>(index1));
+    auto y2 = ToFloat(matOneRow.at<float>(index2));
+
+    float k = (y1 - y2) / (index1 - index2);
+    float b = y1 - k * index1;
+    auto matXX = CalcUtils::intervals<float>(0, 1, matOneRow.cols - 1);
+    cv::Mat matLine = matXX * k + b;
+    cv::transpose(matLine, matLine);
+    matOneRow = matOneRow - matLine;
+    auto minGray = std::max(matOneRow.at<float>(index1), matOneRow.at<float>(index2));   
+
+    const int COMPARE_COUNT = 5;
+    if ((index2 - index1) <= 2 * COMPARE_COUNT)
+        return VisionStatus::FAILED_TO_SPLIT_IMAGE;
+
+    auto isValueLargest = [](float value, const cv::Mat &matInput) {
+        for (int i = 0; i < matInput.cols; ++ i)
+            if (value < matInput.at<float>(i))
+                return false;
+        return true;
+    };
+
+    std::vector<int> vecPeakPoints;
+    std::vector<float> vecPeakValue;
+    for (int i = index1 + COMPARE_COUNT; i <= index2 - COMPARE_COUNT; ++ i) {
+        auto value = matOneRow.at<float>(i);
+        cv::Mat matRange(matOneRow, cv::Rect(i - COMPARE_COUNT, 0, 2 * COMPARE_COUNT, 1));
+        if(isValueLargest(value, matRange)) {
+            vecPeakPoints.push_back(i);
+            vecPeakValue.push_back(value);
+        }
+    }
+    if (vecPeakValue.empty())
+        return VisionStatus::FAILED_TO_SPLIT_IMAGE;
+    auto maxGray = std::min(vecPeakValue.front(), vecPeakValue.back());
+
+    auto threshold = (minGray + maxGray) / 2;
+    for (int col = 0; col < matOneRow.cols - 1; ++ col) {
+        auto value = matOneRow.at<float>(col);
+        auto nextValue = matOneRow.at<float>(col + 1);
+        if (value <= threshold && nextValue > threshold)
+            vecIndex1.push_back(col);
+        else if (value > threshold && nextValue <= threshold)
+            vecIndex2.push_back(col);
+    }
+
+    int nIteration = 0;
+    while (vecIndex1.size() != objCount || vecIndex2.size() != objCount) {
+        ++ nIteration;
+        if (vecIndex1.size() > objCount || vecIndex2.size() > objCount) {
+            maxGray = threshold;
+            threshold = (threshold + minGray) / 2;
+        }else {
+            minGray = threshold;
+            threshold = (threshold + maxGray) / 2;
+        }
+
+        vecIndex1.clear(); vecIndex2.clear();
+        for (int col = 0; col < matOneRow.cols - 1; ++ col) {
+            auto value = matOneRow.at<float>(col);
+            auto nextValue = matOneRow.at<float>(col + 1);
+            if (value <= threshold && nextValue > threshold)
+                vecIndex1.push_back(col);
+            else if (value > threshold && nextValue <= threshold)
+                vecIndex2.push_back(col);
+        }
+
+        if (nIteration > 10) {
+            if (objCount > 1)
+                return VisionStatus::FAILED_TO_SPLIT_IMAGE;
+            else {
+                if (vecIndex1.empty())
+                    vecIndex1.push_back(0);
+                if (vecIndex2.empty())
+                    vecIndex2.push_back(matOneRow.cols - 1);
+            }
+        }            
+    }
+
+    if (vecIndex1.size() > 1) {
+        for (int i = 0; i < vecIndex1.size() - 1; ++ i) {
+            int indexTmp1 = vecIndex2[i];
+            int indexTmp2 = vecIndex1[i+1];
+            int indexMin = indexTmp1;
+            auto minValue = matOneRow.at<float>(indexMin);
+            for (int j = indexTmp1 + 1; j <= indexTmp2; ++ j) {
+                if (matOneRow.at<float>(j) < minValue) {
+                    minValue = matOneRow.at<float>(j);
+                    indexMin = j;
+                }
+            }
+            int d1 = abs(indexTmp1 - indexMin);
+            int d2 = abs(indexTmp2 - indexMin);
+            if (d1 > d2)
+                vecIndex2[i] = indexMin - d2;
+            else
+                vecIndex1[i+1] = indexMin + d1;
+        }
+    }
+    return VisionStatus::OK;
+}
+
 /*static*/ VisionStatus VisionAlgorithm::ocv(const PR_OCV_CMD *const pstCmd, PR_OCV_RPY *const pstRpy, bool bReplay /*= false*/) {
     assert(pstCmd != nullptr && pstRpy != nullptr);
 
@@ -7652,6 +7783,8 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
         auto rectCharSrchWindow = CalcUtils::resizeRect(rectChar, cv::Size(rectChar.width + nSrchRegionMargin * 2, rectChar.height + nSrchRegionMargin * 2));
         CalcUtils::adjustRectROI(rectCharSrchWindow, matBigTarget);
         cv::Mat matCharSrch(matBigTarget, rectCharSrchWindow);
+        if (ConfigInstance->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE)
+            showImage("Char Srch Image", matCharSrch);
         cv::Mat matCharTmpl(ptrRecordPtr->getBigTmpl(), rectChar);
         cv::Point2f ptPosition;
         float fRotation = 0.f, fCorrelation = 0.f;

@@ -1,41 +1,13 @@
-#include "stdafx.h"
-#include "../VisionLibrary/VisionAPI.h"
-#include "opencv2/highgui.hpp"
 #include <iostream>
-#include "TestSub.h"
+#include <iomanip>
+#include "UtilityFunc.h"
+#include "opencv2/highgui.hpp"
+#include "../VisionLibrary/VisionAPI.h"
 
-using namespace AOI::Vision;
-
-void TestOCV_1() {
-    PR_LRN_OCV_CMD stLrnCmd;
-    PR_LRN_OCV_RPY stLrnRpy;
-    stLrnCmd.matInputImg = cv::imread("./data/TestOCV.bmp");
-    stLrnCmd.rectROI = cv::Rect(2927, 1024, 180, 61);
-    stLrnCmd.nCharCount = 4;
-    
-    PR_LrnOcv(&stLrnCmd, &stLrnRpy);
-
-    std::cout << "PR_LrnOcv status " << ToInt32(stLrnRpy.enStatus) << std::endl;
-    if (stLrnRpy.enStatus != VisionStatus::OK)
-        return;
-
-    cv::imwrite("./data/LrnOcvResult.png", stLrnRpy.matResultImg);
-
-    PR_OCV_CMD stOcvCmd;
-    PR_OCV_RPY stOcvRpy;
-    stOcvCmd.matInputImg = stLrnCmd.matInputImg;
-    stOcvCmd.rectROI = cv::Rect(2909, 1321, 220, 102);
-    //stOcvCmd.rectROI = cv::Rect(2862, 1609, 231, 84);
-    stOcvCmd.vecRecordId.push_back(stLrnRpy.nRecordId);
-
-    PR_Ocv(&stOcvCmd, &stOcvRpy);
-
-    std::cout << "PR_Ocv status " << ToInt32(stOcvRpy.enStatus) << std::endl;
-    if (stLrnRpy.enStatus != VisionStatus::OK)
-        return;
-
-    cv::imwrite("./data/InspOcvResult.png", stOcvRpy.matResultImg);
-}
+namespace AOI
+{
+namespace Vision
+{
 
 void PrintOcvRpy(const PR_OCV_RPY &stRpy)
 {
@@ -47,7 +19,7 @@ void PrintOcvRpy(const PR_OCV_RPY &stRpy)
     std::cout << std::endl;
 }
 
-void TestOCV_2()
+void TestOCV_1()
 {
     std::cout << std::endl << "---------------------------------------------";
     std::cout << std::endl << "OCV REGRESSION TEST #1 STARTING";
@@ -64,7 +36,6 @@ void TestOCV_2()
     std::cout << "PR_LrnOcv status " << ToInt32(stLrnRpy.enStatus) << std::endl;
     if (stLrnRpy.enStatus != VisionStatus::OK)
         return;
-    cv::imwrite("./data/LrnOcvResult.png", stLrnRpy.matResultImg);
 
     PR_OCV_CMD stOcvCmd;
     PR_OCV_RPY stOcvRpy;
@@ -74,4 +45,12 @@ void TestOCV_2()
 
     PR_Ocv(&stOcvCmd, &stOcvRpy);
     PrintOcvRpy(stOcvRpy);
+}
+
+void TestOCV()
+{
+    TestOCV_1();
+}
+
+}
 }

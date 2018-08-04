@@ -227,6 +227,7 @@ protected:
                                                PR_AUTO_LOCATE_LEAD_RPY       *const pstRpy);
     static VisionStatus _autoLocateLeadByContour(const cv::Mat &matGray, const PR_AUTO_LOCATE_LEAD_CMD *const pstCmd, PR_AUTO_LOCATE_LEAD_RPY *const pstRpy);
     static VisionStatus _imageSplitByMax(const cv::Mat &matInput, UInt16 objCount, std::vector<int> &vecIndex1, std::vector<int> &vecIndex2);
+    static VisionStatus _imageSplitByMaxNew(const cv::Mat &matInput, UInt16 objCount, std::vector<int> &vecIndex1, std::vector<int> &vecIndex2);
 
 protected:
     static const int       _constMinHessian        = 300;

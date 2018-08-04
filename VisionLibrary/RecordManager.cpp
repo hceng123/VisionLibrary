@@ -123,6 +123,9 @@ RecordPtr RecordManager::_createRecordPtr(Int32 recordType) {
     case PR_RECORD_TYPE::OBJECT:
         return std::make_shared<ObjRecord>(enRecordType);
         break;
+    case PR_RECORD_TYPE::DEVICE:
+        return std::make_shared<DeviceRecord>(enRecordType);
+        break;
     case PR_RECORD_TYPE::CHIP:
         return std::make_shared<ChipRecord>(enRecordType);
         break;
