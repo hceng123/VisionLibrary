@@ -2448,7 +2448,7 @@ VisionStatus LogCaseLrnOcv::RunLogCase() {
     stCmd.matInputImg = cv::imread(_strLogCasePath + _IMAGE_NAME, cv::IMREAD_COLOR);
 
     stCmd.rectROI = _parseRect(ini.GetValue(_CMD_SECTION.c_str(), _strKeyROI.c_str(), _DEFAULT_RECT.c_str()));
-    stCmd.nCharCount = ToInt16(ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyCharCount.c_str(), 0)); 
+    stCmd.nCharCount = ToInt16(ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyCharCount.c_str(), 0));
 
     VisionStatus enStatus = VisionStatus::OK;
     enStatus = VisionAlgorithm::lrnOcv(&stCmd, &stRpy, true);

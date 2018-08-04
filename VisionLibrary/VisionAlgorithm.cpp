@@ -7510,8 +7510,14 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
 }
 
 /*static*/ VisionStatus VisionAlgorithm::_imageSplitByMax(const cv::Mat &matInput, UInt16 objCount, std::vector<int> &vecIndex1, std::vector<int> &vecIndex2) {
-    cv::Mat matOneRow;
+    cv::Mat matOneRow, matFilterResult;
     cv::reduce(matInput, matOneRow, 0, cv::ReduceTypes::REDUCE_MAX);
+    cv::medianBlur(matOneRow, matFilterResult, 5);
+#ifdef _DEBUG
+    auto vecVecRow = CalcUtils::matToVector<uchar>(matOneRow);
+    auto vecVecFilter = CalcUtils::matToVector<uchar>(matFilterResult);
+#endif
+    matOneRow = matFilterResult;
     auto threshold = _autoThreshold(matOneRow);
     for (int col = 0; col < matOneRow.cols - 1; ++ col) {
         auto value = matOneRow.at<uchar>(col);
@@ -7547,8 +7553,16 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
                 vecIndex2.push_back(col);
         }
 
-        if (nIteration > 10)
-            return VisionStatus::FAILED_TO_SPLIT_IMAGE;
+        if (nIteration > 10) {
+            if (objCount > 1)
+                return VisionStatus::FAILED_TO_SPLIT_IMAGE;
+            else {
+                if (vecIndex1.empty())
+                    vecIndex1.push_back(0);
+                if (vecIndex2.empty())
+                    vecIndex2.push_back(matOneRow.cols - 1);
+            }
+        }            
     }
     return VisionStatus::OK;
 }

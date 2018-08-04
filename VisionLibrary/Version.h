@@ -14,9 +14,12 @@
  * Copyright (c) 2016-2018, Xiao Shengguang.  All rights reserved.
  ****************************************************************************/
 
+//2018-08-01 (XSG) Add median filter for split image in learn OCV.
+#define AOI_VISION_VERSION          "1.00.38"
+
 //2018-07-25 (XSG) Add PR_LrnOcv and PR_Ocv functions.
 //                 PR_AutoLocateLead by template support horizontal lead as template.
-#define AOI_VISION_VERSION          "1.00.37"
+//#define AOI_VISION_VERSION          "1.00.37"
 
 //2018-07-19 (XSG) Enhance PR_AutoLocateLead, add fill hole utility in it to fix dark area in lead.
 //#define AOI_VISION_VERSION          "1.00.36"
