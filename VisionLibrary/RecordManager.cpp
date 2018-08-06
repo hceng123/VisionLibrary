@@ -43,6 +43,12 @@ VisionStatus RecordManager::add(RecordPtr pRecord, Int32 &nRecordId) {
 }
 
 RecordPtr RecordManager::get(Int32 nRecordId) {
+    if (_mapRecord.find(nRecordId) == _mapRecord.end()) {
+        String strLog = "Cannot find record id " + std::to_string(nRecordId) + ".";
+        WriteLog(strLog);
+        return nullptr;
+    }
+
     return _mapRecord[nRecordId];
 }
 

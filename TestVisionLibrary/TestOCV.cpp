@@ -66,6 +66,11 @@ void TestOCV_2()
         return;
     cv::imwrite("./data/LrnOcvResult.png", stLrnRpy.matResultImg);
 
+    PR_GET_RECORD_INFO_RPY stRecordInfo;
+    PR_GetRecordInfo(stLrnRpy.nRecordId, &stRecordInfo);
+    if (VisionStatus::OK == stRecordInfo.enStatus)
+        cv::imwrite("./data/LrnOcvRecordImage.png", stRecordInfo.matImage);
+
     PR_OCV_CMD stOcvCmd;
     PR_OCV_RPY stOcvRpy;
     stOcvCmd.matInputImg = stLrnCmd.matInputImg;
@@ -74,4 +79,5 @@ void TestOCV_2()
 
     PR_Ocv(&stOcvCmd, &stOcvRpy);
     PrintOcvRpy(stOcvRpy);
+    cv::imwrite("./data/OcvResultImage.png", stOcvRpy.matResultImg);
 }

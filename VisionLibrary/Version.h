@@ -14,8 +14,12 @@
  * Copyright (c) 2016-2018, Xiao Shengguang.  All rights reserved.
  ****************************************************************************/
 
+//2018-08-06 (XSG) Add PR_GetRecordInfo function.
+//                 Display the detailed result of OCV on result image.
+#define AOI_VISION_VERSION          "1.00.39"
+
 //2018-08-01 (XSG) Add median filter for split image in learn OCV.
-#define AOI_VISION_VERSION          "1.00.38"
+//#define AOI_VISION_VERSION          "1.00.38"
 
 //2018-07-25 (XSG) Add PR_LrnOcv and PR_Ocv functions.
 //                 PR_AutoLocateLead by template support horizontal lead as template.

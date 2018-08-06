@@ -4954,7 +4954,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
 
     pstRpy->enStatus = VisionStatus::OK;
     pstRpy->sizeDevice = pstCmd->rectChip.size();
-    _writeChipRecord(pstCmd, pstRpy);
+    _writeChipRecord(pstCmd, pstRpy, matGray);
     return pstRpy->enStatus;
 }
 
@@ -5084,11 +5084,12 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     return pstRpy->enStatus;
 }
 
-/*static*/ VisionStatus VisionAlgorithm::_writeChipRecord(const PR_LRN_CHIP_CMD *const pstCmd, PR_LRN_CHIP_RPY *const pstRpy) {
+/*static*/ VisionStatus VisionAlgorithm::_writeChipRecord(const PR_LRN_CHIP_CMD *const pstCmd, PR_LRN_CHIP_RPY *const pstRpy, const cv::Mat &matTmpl) {
     ChipRecordPtr ptrRecord = std::make_shared<ChipRecord>(PR_RECORD_TYPE::CHIP);
     ptrRecord->setThreshold(pstRpy->nThreshold);
     ptrRecord->setSize(pstRpy->sizeDevice);
     ptrRecord->setInspMode(pstCmd->enInspMode);
+    ptrRecord->setTmpl(matTmpl);
     RecordManager::getInstance()->add(ptrRecord, pstRpy->nRecordId);
     return VisionStatus::OK;
 }
@@ -7504,7 +7505,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     for (auto rectChar : vecCharRects) {
         rectChar.x += pstCmd->rectROI.x;
         rectChar.y += pstCmd->rectROI.y;
-        cv::rectangle(pstRpy->matResultImg, rectChar, _constBlueScalar, 1);
+        cv::rectangle(pstRpy->matResultImg, rectChar, _constGreenScalar, 1);
     }
 
     FINISH_LOGCASE;
@@ -7601,7 +7602,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
 
     float k = (y1 - y2) / (index1 - index2);
     float b = y1 - k * index1;
-    auto matXX = CalcUtils::intervals<float>(0, 1, matOneRow.cols - 1);
+    auto matXX = CalcUtils::intervals<float>(0.f, 1.f, ToFloat(matOneRow.cols - 1));
     cv::Mat matLine = matXX * k + b;
     cv::transpose(matLine, matLine);
     matOneRow = matOneRow - matLine;
@@ -7771,6 +7772,9 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
         return pstRpy->enStatus;
     }
 
+    if (! isAutoMode())
+        pstRpy->matResultImg = pstCmd->matInputImg.clone();
+
     auto maxScoreIndex = iterMaxScore - vecCorrelation.begin();
     cv::Point ptTarget = vecResultPos[maxScoreIndex];
     auto ptrRecordPtr = vecRecordPtr[maxScoreIndex];
@@ -7788,7 +7792,25 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
         cv::Mat matCharTmpl(ptrRecordPtr->getBigTmpl(), rectChar);
         cv::Point2f ptPosition;
         float fRotation = 0.f, fCorrelation = 0.f;
-        MatchTmpl::matchTemplate(matGray, matCharTmpl, false, PR_OBJECT_MOTION::TRANSLATION, ptPosition, fRotation, fCorrelation);
+        MatchTmpl::matchTemplate(matCharSrch, matCharTmpl, false, PR_OBJECT_MOTION::TRANSLATION, ptPosition, fRotation, fCorrelation);
+        if (!isAutoMode()) {
+            cv::Rect rectChar(ToInt32(ptPosition.x) - matCharTmpl.cols / 2, ToInt32(ptPosition.y) - matCharTmpl.rows / 2, matCharTmpl.cols, matCharTmpl.rows);
+            rectChar.x += rectCharSrchWindow.x + rectTarget.x + pstCmd->rectROI.x;
+            rectChar.y += rectCharSrchWindow.y + rectTarget.y + pstCmd->rectROI.y;
+            cv::rectangle(pstRpy->matResultImg, rectChar, _constGreenScalar, 1);
+
+            int fontFace = cv::FONT_HERSHEY_SIMPLEX;
+            double fontScale = 0.5;
+            int thickness = 1;
+            int baseline = 0;
+
+            char strCharScore[100];
+            _snprintf(strCharScore, sizeof(strCharScore), "%.1f", fCorrelation * ConstToPercentage);
+            cv::Size textSize = cv::getTextSize(strCharScore, fontFace, fontScale, thickness, &baseline);
+            //The height use '+' because text origin start from left-bottom.
+            cv::Point ptTextOrg(rectChar.x + (rectChar.width - textSize.width) / 2, rectChar.y - 5);
+            cv::putText(pstRpy->matResultImg, strCharScore, ptTextOrg, fontFace, fontScale, _constCyanScalar, thickness);
+        }
         pstRpy->vecCharScore.push_back(fCorrelation * ConstToPercentage);
         if (fCorrelation * ConstToPercentage < pstCmd->fMinMatchScore) {
             char chArrMsg[100];
@@ -7799,7 +7821,6 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     }
 
     if (! isAutoMode()) {
-        pstRpy->matResultImg = pstCmd->matInputImg.clone();
         rectTarget.x += pstCmd->rectROI.x;
         rectTarget.y += pstCmd->rectROI.y;
         cv::rectangle(pstRpy->matResultImg, rectTarget, _constBlueScalar, 1);

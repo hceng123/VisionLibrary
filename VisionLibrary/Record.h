@@ -18,11 +18,13 @@ public:
     virtual ~Record() = default;
     virtual VisionStatus load(cv::FileStorage &fileStorage, const String& strFilePath = "") = 0;
     virtual VisionStatus save(const String& strFilePath) = 0;
+    virtual cv::Mat getImage() const = 0;
     virtual PR_RECORD_TYPE getType() { return _enType; };
 
 protected:
     PR_RECORD_TYPE  _enType;
-    const String    _strKeyType     = "type";
+    const String    _strKeyType         = "type";
+    String          _strTmplFileName    = "Tmpl.png";
 };
 using RecordPtr = std::shared_ptr<Record>;
 
@@ -38,6 +40,7 @@ public:
     const cv::Mat& getModelDescriptor() const;
     void setObjCenter(const cv::Point2f ptObjCenter);
     cv::Point2f getObjCenter() const;
+    virtual cv::Mat getImage() const { return cv::Mat(); }
 
 private:
     cv::Point2f                 _ptObjCenter;
@@ -56,6 +59,7 @@ public:
     const cv::Size2f& getSize() const;
     void setElectrodeThreshold(Int16 nElectrodeThreshold);
     Int16 getElectrodeThreshold() const;
+    virtual cv::Mat getImage() const { return cv::Mat(); }
 
 private:
     cv::Size2f          _size;
@@ -75,11 +79,14 @@ public:
     const cv::Size2f& getSize() const;
     void setThreshold(Int16 nThreshold);
     Int16 getThreshold() const;
+    void setTmpl(const cv::Mat &matTmpl) { _matTmpl = matTmpl; }
+    virtual cv::Mat getImage() const { return _matTmpl; }
 
 private:
     PR_INSP_CHIP_MODE   _enInspMode;
     cv::Size2f          _size;
     Int16               _nThreshold;
+    cv::Mat             _matTmpl;
 
     String              _strKeyInspMode     = "InspMode";
     String              _strKeySize         = "Size";
@@ -104,6 +111,7 @@ public:
     VectorOfVectorOfPoint getContour() const;
     String getTmplFileName() const;
     String getContourFileName() const;
+    virtual cv::Mat getImage() const { return _matTmpl; }
 
 private:
     Int16                   _nThreshold;
@@ -112,7 +120,6 @@ private:
     VectorOfVectorOfPoint   _vecContours;
 
     String                  _strKeyThreshold    = "Threshold";
-    String                  _strTmplFileName    = "Tmpl.png";
     String                  _strContourFileName = "Contour.png";
 };
 using ContourRecordPtr = std::shared_ptr<ContourRecord>;
@@ -129,13 +136,13 @@ public:
     cv::Mat getTmpl() const;
     void setEdgeMask(const cv::Mat &matTmpl);
     cv::Mat getEdgeMask() const;
+    virtual cv::Mat getImage() const { return _matTmpl; }
 
 private:
     PR_MATCH_TMPL_ALGORITHM _enAlgorithm;
     cv::Mat                 _matTmpl;
     cv::Mat                 _matEdgeMask;
     String                  _strKeyAlgorithm    = "Algorithm";
-    String                  _strTmplFileName    = "Tmpl.png";
     String                  _strEdgeMaskName    = "EdgeMask.png";
 };
 using TmplRecordPtr = std::shared_ptr<TmplRecord>;
@@ -150,13 +157,13 @@ public:
     void setBigTmpl(const cv::Mat &matBigTmpl);
     cv::Mat getBigTmpl() const;
     VectorOfRect getCharRects() const;
+    virtual cv::Mat getImage() const { return _matBigTmpl; }
 
 private:
     cv::Mat                 _matBigTmpl;
     VectorOfRect            _vecCharRects;
     String                  _strKeyCharCount    = "CharCount";
     String                  _strKeyCharRect     = "CharRect_";
-    String                  _strTmplFileName    = "Tmpl.png";
 };
 using OcvRecordPtr = std::shared_ptr<OcvRecord>;
 

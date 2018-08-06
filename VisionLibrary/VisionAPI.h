@@ -20,8 +20,10 @@ VisionAPI void         PR_EnableAutoMode(bool bEnableAutoMode);
 VisionAPI void         PR_SetDebugMode(PR_DEBUG_MODE enDebugMode);
 VisionAPI VisionStatus PR_RunLogCase(const std::string &strPath);
 VisionAPI void         PR_DumpTimeLog(const std::string &strPath);
+VisionAPI VisionStatus PR_GetErrorInfo(VisionStatus enStatus, PR_GET_ERROR_INFO_RPY *pstRpy);
 VisionAPI VisionStatus PR_FreeRecord(Int32 nRecordId);
 VisionAPI VisionStatus PR_FreeAllRecord();
+VisionAPI VisionStatus PR_GetRecordInfo(Int32 nRecordId, PR_GET_RECORD_INFO_RPY *const pstRpy);
 VisionAPI VisionStatus PR_LrnObj(const PR_LRN_OBJ_CMD *const pstCmd, PR_LRN_OBJ_RPY *const pstRpy);
 VisionAPI VisionStatus PR_SrchObj(const PR_SRCH_OBJ_CMD *const pstCmd, PR_SRCH_OBJ_RPY *const pstRpy);
 VisionAPI VisionStatus PR_InspSurface(PR_INSP_SURFACE_CMD *const pInspCmd, PR_INSP_SURFACE_RPY *pInspRpy);
@@ -62,7 +64,6 @@ VisionAPI VisionStatus PR_FitCircle(const PR_FIT_CIRCLE_CMD *const pstCmd, PR_FI
 VisionAPI VisionStatus PR_FitCircleByPoint(const PR_FIT_CIRCLE_BY_POINT_CMD *const pstCmd, PR_FIT_CIRCLE_BY_POINT_RPY *const pstRpy);
 VisionAPI VisionStatus PR_FindCircle(const PR_FIND_CIRCLE_CMD *const pstCmd, PR_FIND_CIRCLE_RPY *const pstRpy);
 VisionAPI VisionStatus PR_InspCircle(const PR_INSP_CIRCLE_CMD *const pstCmd, PR_INSP_CIRCLE_RPY *const pstRpy);
-VisionAPI VisionStatus PR_GetErrorInfo(VisionStatus enStatus, PR_GET_ERROR_INFO_RPY *pstRpy);
 VisionAPI VisionStatus PR_Ocr(PR_OCR_CMD *pstCmd, PR_OCR_RPY *pstRpy);
 VisionAPI VisionStatus PR_PointLineDistance(const PR_POINT_LINE_DISTANCE_CMD *const pstCmd, PR_POINT_LINE_DISTANCE_RPY *const pstRpy);
 VisionAPI VisionStatus PR_TwoLineAngle(const PR_TWO_LINE_ANGLE_CMD *const pstCmd, PR_TWO_LINE_ANGLE_RPY *const pstRpy);

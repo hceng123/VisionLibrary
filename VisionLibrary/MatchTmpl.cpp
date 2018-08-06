@@ -232,8 +232,8 @@ MatchTmpl::~MatchTmpl() {
     cv::meanStdDev(matFloatI, imgMean, imgStd, matMaskI);
 
     cv::Mat tmpSubtractedMean, imgSubtractedMean;
-    cv::subtract(matFloatT, tmpMean, tmpSubtractedMean, matMaskT);//zero-mean template
-    cv::subtract(matFloatI, imgMean, imgSubtractedMean, matMaskI);//zero-mean input    
+    cv::subtract(matFloatT, tmpMean, tmpSubtractedMean, matMaskT); //zero-mean template
+    cv::subtract(matFloatI, imgMean, imgSubtractedMean, matMaskI); //zero-mean input
 
     auto nTmpComparePoints = matT.total();
     if (! matMaskT.empty())
