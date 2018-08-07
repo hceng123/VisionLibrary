@@ -55,7 +55,7 @@ void TestAutoLocateLeadTmpl_1()
     stCmd.rectSrchWindow = cv::Rect(181, 475, 1060, 1060);
     stCmd.rectChipBody =   cv::Rect(400, 700, 620, 620);
     stCmd.rectPadWindow = cv::Rect(440, 497, 42, 92);
-    stCmd.rectLeadWindow = cv::Rect(448, 596, 100, 89);
+    stCmd.rectLeadWindow = cv::Rect(448, 596, 24, 89);
     stCmd.vecSrchLeadDirections.push_back(PR_DIRECTION::RIGHT);
     stCmd.vecSrchLeadDirections.push_back(PR_DIRECTION::UP);
     stCmd.vecSrchLeadDirections.push_back(PR_DIRECTION::DOWN);
@@ -78,4 +78,38 @@ void TestAutoLocateLeadTmpl_1()
     PR_InspLeadTmpl(&stInspLeadCmd, &stInspLeadRpy);
     std::cout << "PR_InspLeadTmpl status " << ToInt32(stRpy.enStatus) << std::endl;
     cv::imwrite("./data/InspLeadResult.bmp", stInspLeadRpy.matResultImg);
+}
+
+void TestAutoLocateLeadTmpl_2()
+{
+    PR_AUTO_LOCATE_LEAD_CMD stCmd;
+    PR_AUTO_LOCATE_LEAD_RPY stRpy;
+    stCmd.matInputImg = cv::imread("./data/ScanBigImage.bmp", cv::IMREAD_COLOR);
+    stCmd.enMethod = PR_AUTO_LOCATE_LEAD_METHOD::TEMPLATE_MATCH;
+    stCmd.rectSrchWindow = cv::Rect(3409, 630, 790, 450);
+    stCmd.rectChipBody =   cv::Rect(3692, 656, 211, 375);
+    stCmd.rectPadWindow = cv::Rect(3419, 657, 147, 94);
+    stCmd.rectLeadWindow = cv::Rect(3567, 678, 121, 50);
+    //stCmd.vecSrchLeadDirections.push_back(PR_DIRECTION::RIGHT);
+    //stCmd.vecSrchLeadDirections.push_back(PR_DIRECTION::UP);
+    //stCmd.vecSrchLeadDirections.push_back(PR_DIRECTION::DOWN);
+    stCmd.vecSrchLeadDirections.push_back(PR_DIRECTION::LEFT);
+    PR_AutoLocateLead(&stCmd, &stRpy);
+    std::cout << "PR_AutoLocateLead status " << ToInt32(stRpy.enStatus) << std::endl;
+    cv::imwrite("./data/AutoLocateLeadResult_horizontal.bmp", stRpy.matResultImg);
+    if (stRpy.enStatus != VisionStatus::OK)
+        return;
+
+    PR_INSP_LEAD_TMPL_CMD stInspLeadCmd;
+    PR_INSP_LEAD_TMPL_RPY stInspLeadRpy;
+    stInspLeadCmd.matInputImg = stCmd.matInputImg;
+    stInspLeadCmd.rectROI = stRpy.vecLeadInfo[0].rectSrchWindow;
+    stInspLeadCmd.nLeadRecordId = stRpy.vecLeadInfo[0].nLeadRecordId;
+    stInspLeadCmd.nPadRecordId = stRpy.vecLeadInfo[0].nPadRecordId;
+    stInspLeadCmd.fLrnedPadLeadDist = abs((stRpy.vecLeadInfo[0].rectPadWindow.y + stRpy.vecLeadInfo[0].rectPadWindow.height / 2) - (stRpy.vecLeadInfo[0].rectLeadWindow.y + stRpy.vecLeadInfo[0].rectLeadWindow.height / 2));
+    stInspLeadCmd.fMaxLeadOffsetX = 5;
+    stInspLeadCmd.fMaxLeadOffsetY = 5;
+    PR_InspLeadTmpl(&stInspLeadCmd, &stInspLeadRpy);
+    std::cout << "PR_InspLeadTmpl status " << ToInt32(stRpy.enStatus) << std::endl;
+    cv::imwrite("./data/InspLeadResult_horizontal.bmp", stInspLeadRpy.matResultImg);
 }

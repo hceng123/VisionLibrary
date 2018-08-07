@@ -59,6 +59,7 @@ enum class PR_RECORD_TYPE {
     CONTOUR,
     TEMPLATE,
     LEAD,
+    OCV,
 };
 
 enum class PR_FIDUCIAL_MARK_TYPE {

@@ -49,6 +49,7 @@ protected:
     const String _DEFAULT_RECT      = "0, 0, 0, 0";
     const String _DEFAULT_SIZE      = "0, 0";
     const String _EXTENSION         = ".logcase";
+    const String _strKeyStatus      = "Status";
     bool         _bReplay;
 };
 using LogCasePtr = std::unique_ptr<LogCase>;
@@ -137,6 +138,7 @@ public:
     virtual VisionStatus RunLogCase() override;
     virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
     static String StaticGetFolderPrefix();
+
 private:    
     const String _strKeyInnerAttribute  = "InnerAttribute";
     const String _strKeyExpCircleCtr    = "ExpectedCircleCtr";
@@ -805,6 +807,7 @@ public:
     virtual VisionStatus RunLogCase() override;
     virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
     static String StaticGetFolderPrefix();
+
 private:
     const String _strInputYmlFileName       = "Input.yml";
 
@@ -832,19 +835,51 @@ public:
     virtual VisionStatus RunLogCase() override;
     virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
     static String StaticGetFolderPrefix();
+
 private:
     const String _strKeyVBigPatternROI      = "VBigPatternROI";
     const String _strKeyHBigPatternROI      = "HBigPatternROI";
     const String _strKeyVSmallPatternROI    = "VSmallPatternROI";
     const String _strKeyHSmallPatternROI    = "HSmallPatternROI";
 
-    const String _strKeyStatus              = "Status";
     const String _strKeyBigPatternAbsMtfV   = "BigPatternAbsMtfV";
     const String _strKeyBigPatternAbsMtfH   = "BigPatternAbsMtfH";
     const String _strKeySmallPatternAbsMtfV = "SmallPatternAbsMtfV";
     const String _strKeySmallPatternAbsMtfH = "SmallPatternAbsMtfH";
     const String _strKeySmallPatternRelMtfV = "SmallPatternRelMtfV";
     const String _strKeySmallPatternRelMtfH = "SmallPatternRelMtfH";
+};
+
+class LogCaseLrnOcv : public LogCase
+{
+public:
+    explicit LogCaseLrnOcv(const String &strPath, bool bReplay = false) : LogCase(strPath, bReplay) {}
+    VisionStatus WriteCmd(const PR_LRN_OCV_CMD *const pstCmd);
+    VisionStatus WriteRpy(const PR_LRN_OCV_RPY *const pstRpy);
+    virtual VisionStatus RunLogCase() override;
+    virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
+    static String StaticGetFolderPrefix();
+
+private:
+    const String _strKeyROI             = "ROI";
+    const String _strKeyCharCount       = "CharCount";
+};
+
+class LogCaseOcv : public LogCase
+{
+public:
+    explicit LogCaseOcv(const String &strPath, bool bReplay = false) : LogCase(strPath, bReplay) {}
+    VisionStatus WriteCmd(const PR_OCV_CMD *const pstCmd);
+    VisionStatus WriteRpy(const PR_OCV_RPY *const pstRpy);
+    virtual VisionStatus RunLogCase() override;
+    virtual String GetFolderPrefix() const { return StaticGetFolderPrefix(); }
+    static String StaticGetFolderPrefix();
+
+private:
+    const String _strKeyROI             = "ROI";
+    const String _strKeyRecordCount     = "RecordCount";
+    const String _strKeyRecordId        = "RecordId_";
+    const String _strKeyMinScore        =  "MinScore";
 };
 
 }

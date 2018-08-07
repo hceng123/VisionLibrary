@@ -43,6 +43,12 @@ VisionStatus RecordManager::add(RecordPtr pRecord, Int32 &nRecordId) {
 }
 
 RecordPtr RecordManager::get(Int32 nRecordId) {
+    if (_mapRecord.find(nRecordId) == _mapRecord.end()) {
+        String strLog = "Cannot find record id " + std::to_string(nRecordId) + ".";
+        WriteLog(strLog);
+        return nullptr;
+    }
+
     return _mapRecord[nRecordId];
 }
 
@@ -123,6 +129,9 @@ RecordPtr RecordManager::_createRecordPtr(Int32 recordType) {
     case PR_RECORD_TYPE::OBJECT:
         return std::make_shared<ObjRecord>(enRecordType);
         break;
+    case PR_RECORD_TYPE::DEVICE:
+        return std::make_shared<DeviceRecord>(enRecordType);
+        break;
     case PR_RECORD_TYPE::CHIP:
         return std::make_shared<ChipRecord>(enRecordType);
         break;
@@ -132,8 +141,11 @@ RecordPtr RecordManager::_createRecordPtr(Int32 recordType) {
     case PR_RECORD_TYPE::TEMPLATE:
         return std::make_shared<TmplRecord>(enRecordType);
         break;
+    case PR_RECORD_TYPE::OCV:
+        return std::make_shared<OcvRecord>(enRecordType);
+        break;
     default:
-        return nullptr;
+        assert(0);
     }
     return nullptr;
 }

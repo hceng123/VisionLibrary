@@ -2404,5 +2404,120 @@ VisionStatus LogCaseCalcCameraMTF::RunLogCase() {
     return enStatus;
 }
 
+/*static*/ String LogCaseLrnOcv::StaticGetFolderPrefix() {
+    return "LrnOcv";
+}
+
+VisionStatus LogCaseLrnOcv::WriteCmd(const PR_LRN_OCV_CMD *const pstCmd) {
+    if (!_bReplay) {
+        _strLogCasePath = _generateLogCaseName(GetFolderPrefix());
+        bfs::path dir(_strLogCasePath);
+        bfs::create_directories(dir);
+    }
+
+    CSimpleIni ini(false, false, false);
+    auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
+    ini.LoadFile(cmdRpyFilePath.c_str());
+    ini.SetValue(_CMD_SECTION.c_str(), _strKeyROI.c_str(), _formatRect(pstCmd->rectROI).c_str());
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyCharCount.c_str(), pstCmd->nCharCount);
+    ini.SaveFile(cmdRpyFilePath.c_str());
+
+    cv::imwrite(_strLogCasePath + _IMAGE_NAME, pstCmd->matInputImg);
+    return VisionStatus::OK;
+}
+
+VisionStatus LogCaseLrnOcv::WriteRpy(const PR_LRN_OCV_RPY *const pstRpy) {
+    CSimpleIni ini(false, false, false);
+    auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
+    ini.LoadFile(cmdRpyFilePath.c_str());
+    ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyStatus.c_str(), ToInt32(pstRpy->enStatus));
+    ini.SaveFile(cmdRpyFilePath.c_str());
+    if (! pstRpy->matResultImg.empty())
+        cv::imwrite(_strLogCasePath + _RESULT_IMAGE_NAME, pstRpy->matResultImg);
+    _zip();
+    return VisionStatus::OK;
+}
+
+VisionStatus LogCaseLrnOcv::RunLogCase() {
+    PR_LRN_OCV_CMD stCmd;
+    PR_LRN_OCV_RPY stRpy;
+
+    CSimpleIni ini(false, false, false);
+    auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
+    ini.LoadFile(cmdRpyFilePath.c_str());
+    stCmd.matInputImg = cv::imread(_strLogCasePath + _IMAGE_NAME, cv::IMREAD_COLOR);
+
+    stCmd.rectROI = _parseRect(ini.GetValue(_CMD_SECTION.c_str(), _strKeyROI.c_str(), _DEFAULT_RECT.c_str()));
+    stCmd.nCharCount = ToInt16(ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyCharCount.c_str(), 0));
+
+    VisionStatus enStatus = VisionStatus::OK;
+    enStatus = VisionAlgorithm::lrnOcv(&stCmd, &stRpy, true);
+    WriteRpy(&stRpy);
+    return enStatus;
+}
+
+/*static*/ String LogCaseOcv::StaticGetFolderPrefix() {
+    return "Ocv";
+}
+
+VisionStatus LogCaseOcv::WriteCmd(const PR_OCV_CMD *const pstCmd) {
+    if (!_bReplay) {
+        _strLogCasePath = _generateLogCaseName(GetFolderPrefix());
+        bfs::path dir(_strLogCasePath);
+        bfs::create_directories(dir);
+    }
+
+    CSimpleIni ini(false, false, false);
+    auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
+    ini.LoadFile(cmdRpyFilePath.c_str());
+    ini.SetValue(_CMD_SECTION.c_str(), _strKeyROI.c_str(), _formatRect(pstCmd->rectROI).c_str());
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyRecordCount.c_str(), ToInt32(pstCmd->vecRecordId.size()));
+    for (size_t i = 0; i < pstCmd->vecRecordId.size(); ++ i) {
+        String strKeyRecordId = _strKeyRecordId + std::to_string(i);
+        ini.SetLongValue(_CMD_SECTION.c_str(), strKeyRecordId.c_str(), pstCmd->vecRecordId[i]);
+    }
+    ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyMinScore.c_str(), pstCmd->fMinMatchScore);
+    ini.SaveFile(cmdRpyFilePath.c_str());
+
+    cv::imwrite(_strLogCasePath + _IMAGE_NAME, pstCmd->matInputImg);
+    return VisionStatus::OK;
+}
+
+VisionStatus LogCaseOcv::WriteRpy(const PR_OCV_RPY *const pstRpy) {
+    CSimpleIni ini(false, false, false);
+    auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
+    ini.LoadFile(cmdRpyFilePath.c_str());
+    ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyStatus.c_str(), ToInt32(pstRpy->enStatus));
+    ini.SaveFile(cmdRpyFilePath.c_str());
+    if (! pstRpy->matResultImg.empty())
+        cv::imwrite(_strLogCasePath + _RESULT_IMAGE_NAME, pstRpy->matResultImg);
+    _zip();
+    return VisionStatus::OK;
+}
+
+VisionStatus LogCaseOcv::RunLogCase() {
+    PR_OCV_CMD stCmd;
+    PR_OCV_RPY stRpy;
+
+    CSimpleIni ini(false, false, false);
+    auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
+    ini.LoadFile(cmdRpyFilePath.c_str());
+    stCmd.matInputImg = cv::imread(_strLogCasePath + _IMAGE_NAME, cv::IMREAD_COLOR);
+
+    stCmd.rectROI = _parseRect(ini.GetValue(_CMD_SECTION.c_str(), _strKeyROI.c_str(), _DEFAULT_RECT.c_str()));
+    auto recordCount = ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyRecordCount.c_str(), 0);
+    for (int i = 0; i < recordCount; ++ i) {
+        String strKeyRecordId = _strKeyRecordId + std::to_string(i);
+        int recordId = ini.GetLongValue(_CMD_SECTION.c_str(), strKeyRecordId.c_str(), 0);
+        stCmd.vecRecordId.push_back(recordId);
+    }
+    stCmd.fMinMatchScore = ToFloat(ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyMinScore.c_str(), 60));
+
+    VisionStatus enStatus = VisionStatus::OK;
+    enStatus = VisionAlgorithm::ocv(&stCmd, &stRpy, true);
+    WriteRpy(&stRpy);
+    return enStatus;
+}
+
 }
 }

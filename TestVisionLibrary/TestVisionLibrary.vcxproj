@@ -189,9 +189,11 @@
     <ClCompile Include="TestInspLead.cpp" />
     <ClCompile Include="TestInspPolarity.cpp" />
     <ClCompile Include="TestMatchTemplate.cpp" />
+    <ClCompile Include="TestMatchTmpl.cpp" />
     <ClCompile Include="TestMeasure.cpp" />
     <ClCompile Include="TestMisc.cpp" />
     <ClCompile Include="TestMTF.cpp" />
+    <ClCompile Include="TestOCV.cpp" />
     <ClCompile Include="TestSrchObj.cpp" />
     <ClCompile Include="TestVisionLibrary.cpp" />
   </ItemGroup>

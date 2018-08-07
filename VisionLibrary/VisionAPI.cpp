@@ -96,7 +96,7 @@ VisionAPI void PR_DumpTimeLog(const std::string &strPath)
 VisionAPI VisionStatus PR_FreeRecord(Int32 nRecordId)
 {
     try {
-        return RecordManager::getInstance()->free(nRecordId);
+        return RecordManagerInstance->free(nRecordId);
     }catch (std::exception &e) {
         WriteLog(e.what());
         return VisionStatus::OPENCV_EXCEPTION;
@@ -106,11 +106,23 @@ VisionAPI VisionStatus PR_FreeRecord(Int32 nRecordId)
 VisionAPI VisionStatus PR_FreeAllRecord()
 {
     try {
-        return RecordManager::getInstance()->freeAllRecord();
+        return RecordManagerInstance->freeAllRecord();
     }catch (std::exception &e) {
         WriteLog(e.what());
         return VisionStatus::OPENCV_EXCEPTION;
     }
+}
+
+VisionAPI VisionStatus PR_GetRecordInfo(Int32 nRecordId, PR_GET_RECORD_INFO_RPY *const pstRpy)
+{
+    auto ptrRecord = RecordManagerInstance->get(nRecordId);
+    if (nullptr == ptrRecord) {
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+    pstRpy->enStatus = VisionStatus::OK;
+    pstRpy->matImage = ptrRecord->getImage();
+    return pstRpy->enStatus;
 }
 
 VisionAPI VisionStatus PR_LrnDevice(PR_LRN_DEVICE_CMD *pstLrnDeviceCmd, PR_LRN_DEVICE_RPY *pstLrnDeivceRpy)
@@ -557,6 +569,20 @@ VisionAPI VisionStatus PR_HeightToGray(const PR_HEIGHT_TO_GRAY_CMD *const pstCmd
 {
 PR_FUNCTION_ENTRY
     return VisionAlgorithm::heightToGray(pstCmd, pstRpy);
+PR_FUNCTION_EXIT
+}
+
+VisionAPI VisionStatus PR_LrnOcv(const PR_LRN_OCV_CMD *const pstCmd, PR_LRN_OCV_RPY *const pstRpy)
+{
+PR_FUNCTION_ENTRY
+    return VisionAlgorithm::lrnOcv(pstCmd, pstRpy);
+PR_FUNCTION_EXIT
+}
+
+VisionAPI VisionStatus PR_Ocv(const PR_OCV_CMD *const pstCmd, PR_OCV_RPY *const pstRpy)
+{
+PR_FUNCTION_ENTRY
+    return VisionAlgorithm::ocv(pstCmd, pstRpy);
 PR_FUNCTION_EXIT
 }
 

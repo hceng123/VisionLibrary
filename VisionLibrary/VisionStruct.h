@@ -42,6 +42,16 @@ struct PR_VERSION_INFO {
     char                    chArrVersion[100];
 };
 
+struct PR_GET_ERROR_INFO_RPY {
+    PR_STATUS_ERROR_LEVEL	enErrorLevel;
+	char				    achErrorStr[PR_MAX_ERR_STR_LEN];
+};
+
+struct PR_GET_RECORD_INFO_RPY {
+    VisionStatus            enStatus;
+    cv::Mat                 matImage;
+};
+
 struct PR_LRN_OBJ_CMD {
     cv::Mat                 matInputImg;
 	PR_SRCH_OBJ_ALGORITHM   enAlgorithm;
@@ -83,6 +93,7 @@ struct PR_SRCH_OBJ_RPY {
 struct PR_LRN_TEMPLATE_CMD {
     PR_LRN_TEMPLATE_CMD() : enAlgorithm (PR_MATCH_TMPL_ALGORITHM::SQUARE_DIFF) {}
     cv::Mat                 matInputImg;
+    cv::Mat                 matMask;
     cv::Rect                rectROI;
     PR_MATCH_TMPL_ALGORITHM enAlgorithm;
 };
@@ -532,11 +543,6 @@ struct PR_INSP_CIRCLE_RPY {
     cv::Point2f             ptCircleCtr;
     float                   fDiameter;
     cv::Mat                 matResultImg;
-};
-
-struct PR_GET_ERROR_INFO_RPY {
-    PR_STATUS_ERROR_LEVEL	enErrorLevel;
-	char				    achErrorStr[PR_MAX_ERR_STR_LEN];
 };
 
 struct PR_OCR_CMD {
@@ -1420,6 +1426,34 @@ struct PR_HEIGHT_TO_GRAY_CMD {
 struct PR_HEIGHT_TO_GRAY_RPY {
     VisionStatus            enStatus;
     cv::Mat                 matGray;
+};
+
+struct PR_LRN_OCV_CMD {
+    cv::Mat                 matInputImg;
+    cv::Rect                rectROI;
+    UInt16                  nCharCount;
+};
+
+struct PR_LRN_OCV_RPY {
+    VisionStatus            enStatus;
+    Int32                   nRecordId;
+    cv::Mat                 matResultImg;
+};
+
+struct PR_OCV_CMD {
+    PR_OCV_CMD() :
+        fMinMatchScore  (60) {}
+    cv::Mat                 matInputImg;
+    cv::Rect                rectROI;
+    std::vector<Int32>      vecRecordId;
+    float                   fMinMatchScore;
+};
+
+struct PR_OCV_RPY {
+    VisionStatus            enStatus;
+    cv::Mat                 matResultImg;
+    float                   fOverallScore;
+    VectorOfFloat           vecCharScore;
 };
 
 }

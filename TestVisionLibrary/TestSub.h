@@ -6,6 +6,7 @@ void TestAutoLocateLead_1();
 void TestAutoLocateLead_2();
 void TestAutoLocateLead_3();
 void TestAutoLocateLeadTmpl_1();
+void TestAutoLocateLeadTmpl_2();
 
 void TestInspBridge();
 void TestInspBridge_1();
@@ -68,6 +69,11 @@ void TestCalcFrameValue();
 void TestCalcFrameValue_1();
 void TestCalc4DLPHeight();
 void TestQueryDlpOffset();
+
+void TestOCV_1();
+void TestOCV_2();
+
+void TestMatchTmpl_1();
 
 template<class T>
 void printfMat(const cv::Mat &mat)

@@ -28,25 +28,25 @@ namespace Vision
 {
 
 #define MARK_FUNCTION_START_TIME    CStopWatch      stopWatch; __int64 functionStart = stopWatch.AbsNow()
-#define MARK_FUNCTION_END_TIME      TimeLog::GetInstance()->addTimeLog( __FUNCTION__, stopWatch.AbsNow() - functionStart )
+#define MARK_FUNCTION_END_TIME      TimeLog::GetInstance()->addTimeLog(__FUNCTION__, stopWatch.AbsNow() - functionStart)
 #define AT __FILE__, __LINE__
 
 #define SETUP_LOGCASE(classname) \
 std::unique_ptr<classname> pLogCase; \
-if ( ! bReplay )    {   \
-    pLogCase = std::make_unique<classname>( Config::GetInstance()->getLogCaseDir() );    \
-    if ( PR_DEBUG_MODE::LOG_ALL_CASE == Config::GetInstance()->getDebugMode() ) \
-        pLogCase->WriteCmd ( pstCmd );  \
+if (! bReplay) {   \
+    pLogCase = std::make_unique<classname>(Config::GetInstance()->getLogCaseDir()); \
+    if (PR_DEBUG_MODE::LOG_ALL_CASE == Config::GetInstance()->getDebugMode()) \
+        pLogCase->WriteCmd (pstCmd); \
 }
 
 #define FINISH_LOGCASE \
-if ( ! bReplay )    {   \
-    if ( PR_DEBUG_MODE::LOG_FAIL_CASE == Config::GetInstance()->getDebugMode() && pstRpy->enStatus != VisionStatus::OK )    {   \
-        pLogCase->WriteCmd ( pstCmd );  \
-        pLogCase->WriteRpy ( pstRpy );  \
-    }   \
-    if ( PR_DEBUG_MODE::LOG_ALL_CASE == Config::GetInstance()->getDebugMode() ) \
-        pLogCase->WriteRpy ( pstRpy );  \
+if (! bReplay) {   \
+    if (PR_DEBUG_MODE::LOG_FAIL_CASE == Config::GetInstance()->getDebugMode() && pstRpy->enStatus != VisionStatus::OK) { \
+        pLogCase->WriteCmd(pstCmd); \
+        pLogCase->WriteRpy(pstRpy); \
+    } \
+    if (PR_DEBUG_MODE::LOG_ALL_CASE == Config::GetInstance()->getDebugMode()) \
+        pLogCase->WriteRpy(pstRpy); \
 }
 
 /*static*/ OcrTesseractPtr VisionAlgorithm::_ptrOcrTesseract;
@@ -777,10 +777,7 @@ VisionStatus VisionAlgorithm::lrnDevice(PR_LRN_DEVICE_CMD *pstLrnDeviceCmd, PR_L
     }
 
     cv::Rect rectDeviceROI = CalcUtils::resizeRect<float>(pstLrnDeviceCmd->rectDevice, pstLrnDeviceCmd->rectDevice.size() + cv::Size2f(20, 20));
-    if (rectDeviceROI.x < 0) rectDeviceROI.x = 0;
-    if (rectDeviceROI.y < 0) rectDeviceROI.y = 0;
-    if ((rectDeviceROI.x + rectDeviceROI.width) > pstLrnDeviceCmd->matInputImg.cols) rectDeviceROI.width = pstLrnDeviceCmd->matInputImg.cols - rectDeviceROI.x;
-    if ((rectDeviceROI.y + rectDeviceROI.height) > pstLrnDeviceCmd->matInputImg.rows) rectDeviceROI.height = pstLrnDeviceCmd->matInputImg.rows - rectDeviceROI.y;
+    CalcUtils::adjustRectROI(rectDeviceROI, pstLrnDeviceCmd->matInputImg);
 
     cv::Mat matDevice(pstLrnDeviceCmd->matInputImg, rectDeviceROI);
     cv::Mat matGray, matThreshold, matHorizontalProjection, matVerticalProjection;
@@ -976,6 +973,16 @@ VisionStatus VisionAlgorithm::inspDevice(PR_INSP_DEVICE_CMD *pstInspDeviceCmd, P
     pstRpy->enStatus = _checkInputROI(pstCmd->rectROI, pstCmd->matInputImg, AT);
     if (VisionStatus::OK != pstRpy->enStatus) return pstRpy->enStatus;
 
+    if (!pstCmd->matMask.empty()) {
+        if (pstCmd->matMask.cols != pstCmd->rectROI.width || pstCmd->matMask.rows != pstCmd->rectROI.height) {
+            std::stringstream ss;
+            ss << "The size of mask " << pstCmd->matMask.size() << " doesn't match with ROI size " << pstCmd->rectROI.size();
+            WriteLog(ss.str());
+            pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+            return pstRpy->enStatus;
+        }
+    }
+
     MARK_FUNCTION_START_TIME;
     SETUP_LOGCASE(LogCaseLrnTmpl);
 
@@ -985,16 +992,18 @@ VisionStatus VisionAlgorithm::inspDevice(PR_INSP_DEVICE_CMD *pstInspDeviceCmd, P
     else
         pstRpy->matTmpl = matROI.clone();
     cv::Mat matEdgeMask;
+    cv::Mat matMask = pstCmd->matMask.empty() ? pstCmd->matMask : pstCmd->matMask > 0;
     if (PR_MATCH_TMPL_ALGORITHM::HIERARCHICAL_EDGE == pstCmd->enAlgorithm) {
         cv::Mat matCanny;
         cv::Canny(pstRpy->matTmpl, matCanny, 50, 200, 3);
         cv::dilate(matCanny, matEdgeMask, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(3, 3)));
+        if (!pstCmd->matMask.empty()) {
+            cv::Mat matReverseMask = PR_MAX_GRAY_LEVEL - matMask;
+            matEdgeMask.setTo(0, matReverseMask);
+        }
     }
 
-    TmplRecordPtr ptrRecord = std::make_shared<TmplRecord>(PR_RECORD_TYPE::TEMPLATE);
-    ptrRecord->setAlgorithm(pstCmd->enAlgorithm);
-    ptrRecord->setTmpl(pstRpy->matTmpl);
-    ptrRecord->setEdgeMask(matEdgeMask);
+    TmplRecordPtr ptrRecord = std::make_shared<TmplRecord>(PR_RECORD_TYPE::TEMPLATE, pstCmd->enAlgorithm, pstRpy->matTmpl, matMask, matEdgeMask);
     RecordManager::getInstance()->add(ptrRecord, pstRpy->nRecordId);
     pstRpy->enStatus = VisionStatus::OK;
 
@@ -1065,7 +1074,7 @@ VisionStatus VisionAlgorithm::inspDevice(PR_INSP_DEVICE_CMD *pstInspDeviceCmd, P
     cv::Mat matTmpl = ptrRecord->getTmpl();
     if (PR_MATCH_TMPL_ALGORITHM::SQUARE_DIFF == pstCmd->enAlgorithm) {
         float fCorrelation;
-        pstRpy->enStatus = MatchTmpl::matchTemplate(matSrchROI, matTmpl, pstCmd->bSubPixelRefine, pstCmd->enMotion, pstRpy->ptObjPos, pstRpy->fRotation, fCorrelation);
+        pstRpy->enStatus = MatchTmpl::matchTemplate(matSrchROI, matTmpl, pstCmd->bSubPixelRefine, pstCmd->enMotion, pstRpy->ptObjPos, pstRpy->fRotation, fCorrelation, ptrRecord->getMask());
         pstRpy->ptObjPos.x += pstCmd->rectSrchWindow.x;
         pstRpy->ptObjPos.y += pstCmd->rectSrchWindow.y;
         pstRpy->fMatchScore = fCorrelation * ConstToPercentage;
@@ -1558,6 +1567,12 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
 
     if (LogCaseCalcCameraMTF::StaticGetFolderPrefix() == strFolderPrefix)
         return std::make_unique<LogCaseCalcCameraMTF>(strLocalPath, true);
+
+    if (LogCaseLrnOcv::StaticGetFolderPrefix() == strFolderPrefix)
+        return std::make_unique<LogCaseLrnOcv>(strLocalPath, true);
+
+    if (LogCaseOcv::StaticGetFolderPrefix() == strFolderPrefix)
+        return std::make_unique<LogCaseOcv>(strLocalPath, true);
 
     static String msg = strFolderPrefix + " is not handled in " + __FUNCTION__;
     throw std::exception(msg.c_str());
@@ -3189,7 +3204,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
         cv::RotatedRect rotatedRectROI;
         rotatedRectROI.angle = fAngle;
         rotatedRectROI.center = ptROICtr;
-        rotatedRectROI.size.width = CHECK_ROI_WIDTH;
+        rotatedRectROI.size.width  = CHECK_ROI_WIDTH;
         rotatedRectROI.size.height = CHECK_ROI_HEIGHT;
 
         if (! isAutoMode()) {
@@ -4305,15 +4320,61 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return pstRpy->enStatus;
     }
+
+    PR_DIRECTION enLeadDir = PR_DIRECTION::UP;
+    // Auto determine the direction of the input template lead.
+    if (pstCmd->rectPadWindow.area() > 0) {
+        cv::Point ptLeadCtr = cv::Point(pstCmd->rectLeadWindow.x + pstCmd->rectLeadWindow.width / 2, pstCmd->rectLeadWindow.y + pstCmd->rectLeadWindow.height / 2);
+        cv::Point ptPadCtr  = cv::Point(pstCmd->rectPadWindow.x  + pstCmd->rectPadWindow.width  / 2, pstCmd->rectPadWindow.y  + pstCmd->rectPadWindow.height  / 2);
+        cv::Mat matLeadTmp, matPadTmp;
+        // Lead is vertical
+        if (abs(ptPadCtr.y - ptLeadCtr.y) >abs(ptPadCtr.x - ptLeadCtr.x)) {
+            if (ptPadCtr.y < ptLeadCtr.y) {
+                enLeadDir = PR_DIRECTION::UP;
+                matLeadTmp = matLead;
+                matPadTmp = matPad;
+            }else {
+                enLeadDir = PR_DIRECTION::DOWN;
+                cv::flip(matPad, matPadTmp, -1);    //flip(-1)=180
+                cv::flip(matLead, matLeadTmp, -1);    //flip(-1)=180
+            }
+        }else {
+            if (ptPadCtr.x < ptLeadCtr.x) {
+                enLeadDir = PR_DIRECTION::LEFT;
+
+                cv::transpose(matPad, matPadTmp);
+                cv::flip(matPadTmp, matPadTmp, 1); //transpose+flip(1)=CW
+            
+                cv::transpose(matLead, matLeadTmp);
+                cv::flip(matLeadTmp, matLeadTmp, 1); //transpose+flip(1)=CW
+            }else {
+                enLeadDir = PR_DIRECTION::RIGHT;
+
+                cv::transpose(matPad, matPadTmp);
+                cv::flip(matPadTmp, matPadTmp, 0); //transpose+flip(0)=CCW
+                cv::transpose(matLead, matLeadTmp);
+                cv::flip(matLeadTmp, matLeadTmp, 0); //transpose+flip(0)=CCW
+            }
+        }
+        matLead = matLeadTmp;
+        matPad = matPadTmp;
+    }
+
+    if (ConfigInstance->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE) {
+        showImage("Pad template", matPad);
+        showImage("Lead template", matLead);
+    }
     
     pstRpy->enStatus = VisionStatus::OK;
 
-    int nMarginToChip = 20;
+    const int nMarginToChip = 20;
+    const int nEnlargeChipMargin = 10;
     for (auto enDir : pstCmd->vecSrchLeadDirections) {
         cv::Rect rectSubRegion;
         cv::Mat matLeadTmp, matPadTmp;
         if (PR_DIRECTION::UP == enDir) {
-            rectSubRegion = cv::Rect(pstCmd->rectChipBody.x - pstCmd->rectSrchWindow.x, 0, pstCmd->rectChipBody.width, pstCmd->rectChipBody.y - pstCmd->rectSrchWindow.y + nMarginToChip);
+            rectSubRegion = cv::Rect(pstCmd->rectChipBody.x - pstCmd->rectSrchWindow.x - nEnlargeChipMargin, 0, pstCmd->rectChipBody.width + nEnlargeChipMargin * 2, 
+                pstCmd->rectChipBody.y - pstCmd->rectSrchWindow.y + nMarginToChip);
             matLeadTmp = matLead;
             matPadTmp = matPad;
         }else if (PR_DIRECTION::LEFT == enDir) {
@@ -4321,19 +4382,24 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
             cv::flip(matPadTmp, matPadTmp, 0); //transpose+flip(0)=CCW
             cv::transpose(matLead, matLeadTmp);
             cv::flip(matLeadTmp, matLeadTmp, 0); //transpose+flip(0)=CCW
-            rectSubRegion = cv::Rect(0, pstCmd->rectChipBody.y - pstCmd->rectSrchWindow.y, pstCmd->rectChipBody.x - pstCmd->rectSrchWindow.x + nMarginToChip, pstCmd->rectChipBody.height);
+            rectSubRegion = cv::Rect(0, pstCmd->rectChipBody.y - pstCmd->rectSrchWindow.y - nEnlargeChipMargin, 
+                pstCmd->rectChipBody.x - pstCmd->rectSrchWindow.x, pstCmd->rectChipBody.height + nMarginToChip * 2);
         }else if (PR_DIRECTION::DOWN == enDir) {
             cv::flip(matPad, matPadTmp, -1);    //flip(-1)=180
             cv::flip(matLead, matLeadTmp, -1);    //flip(-1)=180
-            rectSubRegion = cv::Rect(pstCmd->rectChipBody.x - pstCmd->rectSrchWindow.x, pstCmd->rectChipBody.br().y - pstCmd->rectSrchWindow.y - nMarginToChip, pstCmd->rectChipBody.width, pstCmd->rectSrchWindow.br().y - pstCmd->rectChipBody.br().y + nMarginToChip);
+            rectSubRegion = cv::Rect(pstCmd->rectChipBody.x - pstCmd->rectSrchWindow.x - nEnlargeChipMargin, pstCmd->rectChipBody.br().y - pstCmd->rectSrchWindow.y - nMarginToChip,
+                pstCmd->rectChipBody.width + nEnlargeChipMargin * 2, pstCmd->rectSrchWindow.br().y - pstCmd->rectChipBody.br().y + nMarginToChip);
         }else if (PR_DIRECTION::RIGHT == enDir) {
             cv::transpose(matPad, matPadTmp);
             cv::flip(matPadTmp, matPadTmp, 1); //transpose+flip(1)=CW
             
             cv::transpose(matLead, matLeadTmp);
             cv::flip(matLeadTmp, matLeadTmp, 1); //transpose+flip(1)=CW
-            rectSubRegion = cv::Rect(pstCmd->rectChipBody.br().x - pstCmd->rectSrchWindow.x - nMarginToChip, pstCmd->rectChipBody.y - pstCmd->rectSrchWindow.y, pstCmd->rectSrchWindow.br().x - pstCmd->rectChipBody.br().x + nMarginToChip, pstCmd->rectChipBody.height);
+            rectSubRegion = cv::Rect(pstCmd->rectChipBody.br().x - pstCmd->rectSrchWindow.x - nMarginToChip, pstCmd->rectChipBody.y - pstCmd->rectSrchWindow.y - nMarginToChip,
+                pstCmd->rectSrchWindow.br().x - pstCmd->rectChipBody.br().x + nMarginToChip, pstCmd->rectChipBody.height + nMarginToChip * 2);
         }
+
+        CalcUtils::adjustRectROI(rectSubRegion, matGray);
 
         Int32 nPadRecordId = 0, nLeadRecordId = 0;
         auto ptrPadRecord = std::make_shared<TmplRecord>(PR_RECORD_TYPE::TEMPLATE);
@@ -4384,15 +4450,17 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
         matSubRegion,
         PR_OBJECT_ATTRIBUTE::BRIGHT,
         cv::MorphShapes::MORPH_ELLIPSE,
-        cv::Size(5, 5),
+        cv::Size(10, 10),
         2);
     if (VisionStatus::OK != pstRpy->enStatus) {
         WriteLog("Failed to fill hole in _autoLocateLeadOneSide");
         return pstRpy->enStatus;
     }
 
-    if (ConfigInstance->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE)
+    if (ConfigInstance->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE) {
         showImage("Fill hole", matSubRegion);
+        cv::imwrite("Fill Hole result.png", matSubRegion);
+    }
 
     cv::Mat matRow;
     if (PR_DIRECTION::UP == enDir || PR_DIRECTION::DOWN == enDir)
@@ -4455,18 +4523,19 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
             rectLeadSrchArea = CalcUtils::resizeRect(rectLeadSrchArea, cv::Size(rectLeadSrchArea.width + 10, rectLeadSrchArea.height));
         else
             rectLeadSrchArea = CalcUtils::resizeRect(rectLeadSrchArea, cv::Size(rectLeadSrchArea.width, rectLeadSrchArea.height + 10));
-        if (rectLeadSrchArea.x < 0 || rectLeadSrchArea.y < 0 ||
-            rectLeadSrchArea.width <= 0 || rectLeadSrchArea.height <= 0 ||
-            (rectLeadSrchArea.x + rectLeadSrchArea.width)  > rectSubRegion.width ||
-            (rectLeadSrchArea.y + rectLeadSrchArea.height) > rectSubRegion.height) {
-            char chArrMsg[1000];
-            _snprintf(chArrMsg, sizeof(chArrMsg), "The lead search window (%d, %d, %d, %d) should inside sub region window (%d, %d, %d, %d).",
-                rectLeadSrchArea.x, rectLeadSrchArea.y, rectLeadSrchArea.width, rectLeadSrchArea.height,
-                0, 0, rectSubRegion.width, rectSubRegion.height);
-            WriteLog(chArrMsg);
-            pstRpy->enStatus = VisionStatus::AUTO_LOCATE_LEAD_FAIL;
-            return pstRpy->enStatus;
-        }
+        CalcUtils::adjustRectROI(rectLeadSrchArea, matSubRegion);
+        //if (rectLeadSrchArea.x < 0 || rectLeadSrchArea.y < 0 ||
+        //    rectLeadSrchArea.width <= 0 || rectLeadSrchArea.height <= 0 ||
+        //    (rectLeadSrchArea.x + rectLeadSrchArea.width)  > rectSubRegion.width ||
+        //    (rectLeadSrchArea.y + rectLeadSrchArea.height) > rectSubRegion.height) {
+        //    char chArrMsg[1000];
+        //    _snprintf(chArrMsg, sizeof(chArrMsg), "The lead search window (%d, %d, %d, %d) should inside sub region window (%d, %d, %d, %d).",
+        //        rectLeadSrchArea.x, rectLeadSrchArea.y, rectLeadSrchArea.width, rectLeadSrchArea.height,
+        //        0, 0, rectSubRegion.width, rectSubRegion.height);
+        //    WriteLog(chArrMsg);
+        //    pstRpy->enStatus = VisionStatus::AUTO_LOCATE_LEAD_FAIL;
+        //    return pstRpy->enStatus;
+        //}
         cv::Mat matLeadSrchArea(matSubRegion, rectLeadSrchArea);
         cv::Point2f ptPadPosition, ptLeadPosition;
         float fPadRotation, fLeadRotation, fPadScore, fLeadScore;
@@ -4897,7 +4966,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
 
     pstRpy->enStatus = VisionStatus::OK;
     pstRpy->sizeDevice = pstCmd->rectChip.size();
-    _writeChipRecord(pstCmd, pstRpy);
+    _writeChipRecord(pstCmd, pstRpy, matGray);
     return pstRpy->enStatus;
 }
 
@@ -5027,11 +5096,12 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     return pstRpy->enStatus;
 }
 
-/*static*/ VisionStatus VisionAlgorithm::_writeChipRecord(const PR_LRN_CHIP_CMD *const pstCmd, PR_LRN_CHIP_RPY *const pstRpy) {
+/*static*/ VisionStatus VisionAlgorithm::_writeChipRecord(const PR_LRN_CHIP_CMD *const pstCmd, PR_LRN_CHIP_RPY *const pstRpy, const cv::Mat &matTmpl) {
     ChipRecordPtr ptrRecord = std::make_shared<ChipRecord>(PR_RECORD_TYPE::CHIP);
     ptrRecord->setThreshold(pstRpy->nThreshold);
     ptrRecord->setSize(pstRpy->sizeDevice);
     ptrRecord->setInspMode(pstCmd->enInspMode);
+    ptrRecord->setTmpl(matTmpl);
     RecordManager::getInstance()->add(ptrRecord, pstRpy->nRecordId);
     return VisionStatus::OK;
 }
@@ -7368,6 +7438,408 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
 
     MARK_FUNCTION_END_TIME;
     pstRpy->enStatus = VisionStatus::OK;
+    return pstRpy->enStatus;
+}
+
+/*static*/ VisionStatus VisionAlgorithm::lrnOcv(const PR_LRN_OCV_CMD *const pstCmd, PR_LRN_OCV_RPY *const pstRpy, bool bReplay /*= false*/) {
+    assert(pstCmd != nullptr && pstRpy != nullptr);
+
+    if (pstCmd->matInputImg.empty()) {
+        WriteLog("The input image is empty.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+    pstRpy->enStatus = _checkInputROI(pstCmd->rectROI, pstCmd->matInputImg, AT);
+    if (VisionStatus::OK != pstRpy->enStatus) return pstRpy->enStatus;
+
+    if (pstCmd->nCharCount > 50) {
+        char chArrMsg[100];
+        _snprintf(chArrMsg, sizeof(chArrMsg), "The input char count %d is bigger than limit 50.", pstCmd->nCharCount);
+        WriteLog(chArrMsg);
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    pstRpy->enStatus = VisionStatus::OK;
+
+    MARK_FUNCTION_START_TIME;
+    SETUP_LOGCASE(LogCaseLrnOcv);
+
+    cv::Mat matROI(pstCmd->matInputImg, pstCmd->rectROI), matGray;
+    if (pstCmd->matInputImg.channels() > 1)
+        cv::cvtColor(matROI, matGray, CV_BGR2GRAY);
+    else
+        matGray = matROI;
+
+    if (ConfigInstance->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE)
+        showImage("Learn ROI image", matGray);
+
+    std::vector<int> vecIndex1, vecIndex2;
+    pstRpy->enStatus = _imageSplitByMaxNew(matGray, pstCmd->nCharCount, vecIndex1, vecIndex2);
+    if (VisionStatus::OK != pstRpy->enStatus) {
+        FINISH_LOGCASE;
+        return pstRpy->enStatus;
+    }
+
+    const int nMargin = 2;
+    auto len = std::min(vecIndex1.size(), vecIndex2.size());
+    VectorOfRect vecCharRects;
+    for (int i = 0; i < len; ++ i) {
+        if (vecIndex2[i] - vecIndex1[i] <= 0) {
+            pstRpy->enStatus = VisionStatus::FAILED_TO_SPLIT_IMAGE;
+            FINISH_LOGCASE;
+            return pstRpy->enStatus;
+        }
+        cv::Rect rectSubRegion(vecIndex1[i], 0, vecIndex2[i] - vecIndex1[i], matGray.rows);
+        cv::Mat matSubRegion(matGray, rectSubRegion), matSubRegionT;
+        cv::transpose(matSubRegion, matSubRegionT);
+        std::vector<int> vecIndex3, vecIndex4;
+        pstRpy->enStatus = _imageSplitByMax(matSubRegionT, 1, vecIndex3, vecIndex4);
+        if (VisionStatus::OK != pstRpy->enStatus) {
+            FINISH_LOGCASE;
+            return pstRpy->enStatus;
+        }
+        if (vecIndex3.empty() || vecIndex4.empty() || vecIndex4[0] - vecIndex3[0] <= 0) {
+            pstRpy->enStatus = VisionStatus::FAILED_TO_SPLIT_IMAGE;
+            FINISH_LOGCASE;
+            return pstRpy->enStatus;
+        }
+        cv::Rect rectChar(vecIndex1[i], vecIndex3[0], vecIndex2[i] - vecIndex1[i], vecIndex4[0] - vecIndex3[0]);
+        rectChar = CalcUtils::resizeRect(rectChar, cv::Size(rectChar.width+ nMargin * 2, rectChar.height + nMargin * 2));
+        CalcUtils::adjustRectROI(rectChar, matGray);
+        vecCharRects.push_back(rectChar);
+    }
+
+    auto ptrOcvRecord = std::make_shared<OcvRecord>(matGray, vecCharRects);
+    RecordManagerInstance->add(ptrOcvRecord, pstRpy->nRecordId);
+
+    pstRpy->matResultImg = pstCmd->matInputImg.clone();
+    for (auto rectChar : vecCharRects) {
+        rectChar.x += pstCmd->rectROI.x;
+        rectChar.y += pstCmd->rectROI.y;
+        cv::rectangle(pstRpy->matResultImg, rectChar, _constGreenScalar, 1);
+    }
+
+    FINISH_LOGCASE;
+    MARK_FUNCTION_END_TIME;
+    return pstRpy->enStatus;
+}
+
+/*static*/ VisionStatus VisionAlgorithm::_imageSplitByMax(const cv::Mat &matInput, UInt16 objCount, std::vector<int> &vecIndex1, std::vector<int> &vecIndex2) {
+    cv::Mat matOneRow, matFilterResult;
+    cv::reduce(matInput, matOneRow, 0, cv::ReduceTypes::REDUCE_MAX);
+    cv::medianBlur(matOneRow, matFilterResult, 5);
+#ifdef _DEBUG
+    auto vecVecRow = CalcUtils::matToVector<uchar>(matOneRow);
+    auto vecVecFilter = CalcUtils::matToVector<uchar>(matFilterResult);
+#endif
+    matOneRow = matFilterResult;
+    auto threshold = _autoThreshold(matOneRow);
+    for (int col = 0; col < matOneRow.cols - 1; ++ col) {
+        auto value = matOneRow.at<uchar>(col);
+        auto nextValue = matOneRow.at<uchar>(col + 1);
+        if (value <= threshold && nextValue > threshold)
+            vecIndex1.push_back(col);
+        else if (value > threshold && nextValue <= threshold)
+            vecIndex2.push_back(col);
+    }
+
+    double minValue = 0., maxValue = 0.;
+    cv::minMaxIdx(matOneRow, &minValue, &maxValue);
+    auto minGray = static_cast<uchar>(minValue);
+    auto maxGray = static_cast<uchar>(maxValue);
+    int nIteration = 0;
+    while (vecIndex1.size() != objCount || vecIndex2.size() != objCount) {
+        ++ nIteration;
+        if (vecIndex1.size() > objCount || vecIndex2.size() > objCount) {
+            maxGray = threshold;
+            threshold = (threshold + minGray) / 2;
+        }else {
+            minGray = threshold;
+            threshold = (threshold + maxGray) / 2;
+        }
+
+        vecIndex1.clear(); vecIndex2.clear();
+        for (int col = 0; col < matOneRow.cols - 1; ++ col) {
+            auto value = matOneRow.at<uchar>(col);
+            auto nextValue = matOneRow.at<uchar>(col + 1);
+            if (value <= threshold && nextValue > threshold)
+                vecIndex1.push_back(col);
+            else if (value > threshold && nextValue <= threshold)
+                vecIndex2.push_back(col);
+        }
+
+        if (nIteration > 10) {
+            if (objCount > 1)
+                return VisionStatus::FAILED_TO_SPLIT_IMAGE;
+            else {
+                if (vecIndex1.empty())
+                    vecIndex1.push_back(0);
+                if (vecIndex2.empty())
+                    vecIndex2.push_back(matOneRow.cols - 1);
+            }
+        }            
+    }
+    return VisionStatus::OK;
+}
+
+/*static*/ VisionStatus VisionAlgorithm::_imageSplitByMaxNew(const cv::Mat &matInput, UInt16 objCount, std::vector<int> &vecIndex1, std::vector<int> &vecIndex2) {
+    cv::Mat matOneRow, matFilterResult;
+    cv::reduce(matInput, matOneRow, 0, cv::ReduceTypes::REDUCE_MAX);
+    matOneRow.convertTo(matOneRow, CV_32FC1);
+    cv::blur(matOneRow, matFilterResult, cv::Size(5, 1));    
+#ifdef _DEBUG
+    auto vecVecRow = CalcUtils::matToVector<float>(matOneRow);
+    auto vecVecFilter = CalcUtils::matToVector<float>(matFilterResult);
+#endif
+    matOneRow = matFilterResult;
+
+    int index1 = 0, index2 = 0;
+    for (int i = 0; i < matOneRow.cols - 1; ++ i) {
+        if (matOneRow.at<float>(i+1) > matOneRow.at<float>(i)) {
+            index1 = i;
+            break;
+        }
+    }
+
+    for(int i = matOneRow.cols - 1; i > 0; -- i) {
+        if (matOneRow.at<float>(i-1) > matOneRow.at<float>(i)) {
+            index2 = i;
+            break;
+        }
+    }
+
+    auto y1 = ToFloat(matOneRow.at<float>(index1));
+    auto y2 = ToFloat(matOneRow.at<float>(index2));
+
+    float k = (y1 - y2) / (index1 - index2);
+    float b = y1 - k * index1;
+    auto matXX = CalcUtils::intervals<float>(0.f, 1.f, ToFloat(matOneRow.cols - 1));
+    cv::Mat matLine = matXX * k + b;
+    cv::transpose(matLine, matLine);
+    matOneRow = matOneRow - matLine;
+    auto minGray = std::max(matOneRow.at<float>(index1), matOneRow.at<float>(index2));   
+
+    const int COMPARE_COUNT = 5;
+    if ((index2 - index1) <= 2 * COMPARE_COUNT)
+        return VisionStatus::FAILED_TO_SPLIT_IMAGE;
+
+    auto isValueLargest = [](float value, const cv::Mat &matInput) {
+        for (int i = 0; i < matInput.cols; ++ i)
+            if (value < matInput.at<float>(i))
+                return false;
+        return true;
+    };
+
+    std::vector<int> vecPeakPoints;
+    std::vector<float> vecPeakValue;
+    for (int i = index1 + COMPARE_COUNT; i <= index2 - COMPARE_COUNT; ++ i) {
+        auto value = matOneRow.at<float>(i);
+        cv::Mat matRange(matOneRow, cv::Rect(i - COMPARE_COUNT, 0, 2 * COMPARE_COUNT, 1));
+        if(isValueLargest(value, matRange)) {
+            vecPeakPoints.push_back(i);
+            vecPeakValue.push_back(value);
+        }
+    }
+    if (vecPeakValue.empty())
+        return VisionStatus::FAILED_TO_SPLIT_IMAGE;
+    auto maxGray = std::min(vecPeakValue.front(), vecPeakValue.back());
+
+    auto threshold = (minGray + maxGray) / 2;
+    for (int col = 0; col < matOneRow.cols - 1; ++ col) {
+        auto value = matOneRow.at<float>(col);
+        auto nextValue = matOneRow.at<float>(col + 1);
+        if (value <= threshold && nextValue > threshold)
+            vecIndex1.push_back(col);
+        else if (value > threshold && nextValue <= threshold)
+            vecIndex2.push_back(col);
+    }
+
+    int nIteration = 0;
+    while (vecIndex1.size() != objCount || vecIndex2.size() != objCount) {
+        ++ nIteration;
+        if (vecIndex1.size() > objCount || vecIndex2.size() > objCount) {
+            maxGray = threshold;
+            threshold = (threshold + minGray) / 2;
+        }else {
+            minGray = threshold;
+            threshold = (threshold + maxGray) / 2;
+        }
+
+        vecIndex1.clear(); vecIndex2.clear();
+        for (int col = 0; col < matOneRow.cols - 1; ++ col) {
+            auto value = matOneRow.at<float>(col);
+            auto nextValue = matOneRow.at<float>(col + 1);
+            if (value <= threshold && nextValue > threshold)
+                vecIndex1.push_back(col);
+            else if (value > threshold && nextValue <= threshold)
+                vecIndex2.push_back(col);
+        }
+
+        if (nIteration > 10) {
+            if (objCount > 1)
+                return VisionStatus::FAILED_TO_SPLIT_IMAGE;
+            else {
+                if (vecIndex1.empty())
+                    vecIndex1.push_back(0);
+                if (vecIndex2.empty())
+                    vecIndex2.push_back(matOneRow.cols - 1);
+            }
+        }            
+    }
+
+    if (vecIndex1.size() > 1) {
+        for (int i = 0; i < vecIndex1.size() - 1; ++ i) {
+            int indexTmp1 = vecIndex2[i];
+            int indexTmp2 = vecIndex1[i+1];
+            int indexMin = indexTmp1;
+            auto minValue = matOneRow.at<float>(indexMin);
+            for (int j = indexTmp1 + 1; j <= indexTmp2; ++ j) {
+                if (matOneRow.at<float>(j) < minValue) {
+                    minValue = matOneRow.at<float>(j);
+                    indexMin = j;
+                }
+            }
+            int d1 = abs(indexTmp1 - indexMin);
+            int d2 = abs(indexTmp2 - indexMin);
+            if (d1 > d2)
+                vecIndex2[i] = indexMin - d2;
+            else
+                vecIndex1[i+1] = indexMin + d1;
+        }
+    }
+    return VisionStatus::OK;
+}
+
+/*static*/ VisionStatus VisionAlgorithm::ocv(const PR_OCV_CMD *const pstCmd, PR_OCV_RPY *const pstRpy, bool bReplay /*= false*/) {
+    assert(pstCmd != nullptr && pstRpy != nullptr);
+
+    if (pstCmd->matInputImg.empty()) {
+        WriteLog("The input image is empty.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+    pstRpy->enStatus = _checkInputROI(pstCmd->rectROI, pstCmd->matInputImg, AT);
+    if (VisionStatus::OK != pstRpy->enStatus) return pstRpy->enStatus;
+
+    if (pstCmd->vecRecordId.empty()) {
+        WriteLog("The input record id list is empty.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    MARK_FUNCTION_START_TIME;
+    SETUP_LOGCASE(LogCaseOcv);
+
+    pstRpy->enStatus = VisionStatus::OK;
+
+    cv::Mat matROI(pstCmd->matInputImg, pstCmd->rectROI), matGray;
+    if (pstCmd->matInputImg.channels() > 1)
+        cv::cvtColor(matROI, matGray, CV_BGR2GRAY);
+    else
+        matGray = matROI;
+
+    VectorOfPoint2f vecResultPos;
+    VectorOfFloat vecCorrelation;
+    std::vector<OcvRecordPtr> vecRecordPtr;
+    for (const auto recordId : pstCmd->vecRecordId) {
+        OcvRecordPtr ptrOcvRecord = std::static_pointer_cast<OcvRecord>(RecordManagerInstance->get(recordId));
+        if (nullptr == ptrOcvRecord) {
+            char chArrMsg[100];
+            _snprintf(chArrMsg, sizeof (chArrMsg), "Failed to get record ID %d in system.", recordId);
+            WriteLog(chArrMsg);
+            pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+            return pstRpy->enStatus;
+        }
+
+        if (ConfigInstance->getDebugMode() == Vision::PR_DEBUG_MODE::SHOW_IMAGE)
+            showImage("Ocv template", ptrOcvRecord->getBigTmpl());
+
+        if (ptrOcvRecord->getBigTmpl().cols > matGray.cols || ptrOcvRecord->getBigTmpl().rows > matGray.rows) {
+            char chArrMsg[100];
+            _snprintf(chArrMsg, sizeof (chArrMsg), "The record template size (%d, %d) is larger than search ROI size (%d, %d).", 
+                ptrOcvRecord->getBigTmpl().cols, ptrOcvRecord->getBigTmpl().rows, matGray.cols, matGray.rows);
+            WriteLog(chArrMsg);
+            pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+            FINISH_LOGCASE;
+            return pstRpy->enStatus;
+        }
+
+        cv::Point2f ptPosition;
+        float fRotation = 0.f, fCorrelation = 0.f;
+        MatchTmpl::matchTemplate(matGray, ptrOcvRecord->getBigTmpl(), false, PR_OBJECT_MOTION::TRANSLATION, ptPosition, fRotation, fCorrelation);
+        vecResultPos.push_back(ptPosition);
+        vecCorrelation.push_back(fCorrelation);
+        vecRecordPtr.push_back(ptrOcvRecord);
+    }
+
+    auto iterMaxScore = std::max_element(vecCorrelation.begin(), vecCorrelation.end());
+    pstRpy->fOverallScore = *iterMaxScore * ConstToPercentage;
+    if (pstRpy->fOverallScore < pstCmd->fMinMatchScore) {
+        char chArrMsg[100];
+        _snprintf(chArrMsg, sizeof(chArrMsg), "The best match socre %f is lower than minimum required score %f.", pstRpy->fOverallScore, pstCmd->fMinMatchScore);
+        WriteLog(chArrMsg);
+        pstRpy->enStatus = VisionStatus::OCV_MATCH_SCORE_UNDER_LIMIT;
+        FINISH_LOGCASE;
+        return pstRpy->enStatus;
+    }
+
+    if (! isAutoMode())
+        pstRpy->matResultImg = pstCmd->matInputImg.clone();
+
+    auto maxScoreIndex = iterMaxScore - vecCorrelation.begin();
+    cv::Point ptTarget = vecResultPos[maxScoreIndex];
+    auto ptrRecordPtr = vecRecordPtr[maxScoreIndex];
+    cv::Rect rectTarget(ptTarget.x - (ptrRecordPtr->getBigTmpl().cols + 1) / 2, ptTarget.y - (ptrRecordPtr->getBigTmpl().rows + 1) / 2, ptrRecordPtr->getBigTmpl().cols, ptrRecordPtr->getBigTmpl().rows);
+    cv::Mat matBigTarget(matGray, rectTarget);
+    auto vecCharRects = ptrRecordPtr->getCharRects();
+    const int nSrchRegionMargin = 5;
+    for (size_t i = 0; i < vecCharRects.size(); ++ i) {
+        auto rectChar = vecCharRects[i];
+        auto rectCharSrchWindow = CalcUtils::resizeRect(rectChar, cv::Size(rectChar.width + nSrchRegionMargin * 2, rectChar.height + nSrchRegionMargin * 2));
+        CalcUtils::adjustRectROI(rectCharSrchWindow, matBigTarget);
+        cv::Mat matCharSrch(matBigTarget, rectCharSrchWindow);
+        if (ConfigInstance->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE)
+            showImage("Char Srch Image", matCharSrch);
+        cv::Mat matCharTmpl(ptrRecordPtr->getBigTmpl(), rectChar);
+        cv::Point2f ptPosition;
+        float fRotation = 0.f, fCorrelation = 0.f;
+        MatchTmpl::matchTemplate(matCharSrch, matCharTmpl, false, PR_OBJECT_MOTION::TRANSLATION, ptPosition, fRotation, fCorrelation);
+        if (!isAutoMode()) {
+            cv::Rect rectChar(ToInt32(ptPosition.x) - matCharTmpl.cols / 2, ToInt32(ptPosition.y) - matCharTmpl.rows / 2, matCharTmpl.cols, matCharTmpl.rows);
+            rectChar.x += rectCharSrchWindow.x + rectTarget.x + pstCmd->rectROI.x;
+            rectChar.y += rectCharSrchWindow.y + rectTarget.y + pstCmd->rectROI.y;
+            cv::rectangle(pstRpy->matResultImg, rectChar, _constGreenScalar, 1);
+
+            int fontFace = cv::FONT_HERSHEY_SIMPLEX;
+            double fontScale = 0.5;
+            int thickness = 1;
+            int baseline = 0;
+
+            char strCharScore[100];
+            _snprintf(strCharScore, sizeof(strCharScore), "%.1f", fCorrelation * ConstToPercentage);
+            cv::Size textSize = cv::getTextSize(strCharScore, fontFace, fontScale, thickness, &baseline);
+            //The height use '+' because text origin start from left-bottom.
+            cv::Point ptTextOrg(rectChar.x + (rectChar.width - textSize.width) / 2, rectChar.y - 5);
+            cv::putText(pstRpy->matResultImg, strCharScore, ptTextOrg, fontFace, fontScale, _constCyanScalar, thickness);
+        }
+        pstRpy->vecCharScore.push_back(fCorrelation * ConstToPercentage);
+        if (fCorrelation * ConstToPercentage < pstCmd->fMinMatchScore) {
+            char chArrMsg[100];
+            _snprintf(chArrMsg, sizeof(chArrMsg), "Char %d match socre %f is lower than minimum required score %f.", i, fCorrelation * ConstToPercentage, pstCmd->fMinMatchScore);
+            WriteLog(chArrMsg);
+            pstRpy->enStatus = VisionStatus::OCV_MATCH_SCORE_UNDER_LIMIT;
+        }
+    }
+
+    if (! isAutoMode()) {
+        rectTarget.x += pstCmd->rectROI.x;
+        rectTarget.y += pstCmd->rectROI.y;
+        cv::rectangle(pstRpy->matResultImg, rectTarget, _constBlueScalar, 1);
+    }
+
+    FINISH_LOGCASE;
+    MARK_FUNCTION_END_TIME;
     return pstRpy->enStatus;
 }
 
