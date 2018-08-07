@@ -15,7 +15,7 @@ namespace Vision
 
 using VectorOfDMatch = std::vector<cv::DMatch>;
 using VectorOfVectorOfDMatch = std::vector<VectorOfDMatch>;
-using VectorOfKeyPoint =  std::vector<cv::KeyPoint> ;
+using VectorOfKeyPoint =  std::vector<cv::KeyPoint>;
 using VectorOfVectorKeyPoint = std::vector<VectorOfKeyPoint>;
 using VectorOfPoint = std::vector<cv::Point>;
 using VectorOfVectorOfPoint = std::vector<VectorOfPoint>;
@@ -1454,6 +1454,17 @@ struct PR_OCV_RPY {
     cv::Mat                 matResultImg;
     float                   fOverallScore;
     VectorOfFloat           vecCharScore;
+};
+
+struct PR_READ_2DCODE_CMD {
+    cv::Mat                 matInputImg;
+    cv::Rect                rectROI;
+};
+
+struct PR_READ_2DCODE_RPY {
+    VisionStatus            enStatus;
+    String                  strReadResult;
+    cv::Mat                 matResultImg;
 };
 
 }
