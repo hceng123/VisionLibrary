@@ -257,7 +257,7 @@ OCV REGRESSION TEST #1 STARTING
 PR_LrnOcv status 0
 PR_Ocv status 0
 Overall score: 87.06
-Individual char score: 90.54 86.26 78.59 89.57 
+Individual char score: 90.54 86.26 91.15 89.57 
 
 ------------------------------------------
 INSPECT DEVICE REGRESSION TEST #1 STARTING
@@ -316,6 +316,12 @@ MATCH TEMPLATE REGRESSION TEST #5 STARTING
 ------------------------------------------
 Match template status 25
 Match template score 8.34
+
+------------------------------------------
+MATCH TEMPLATE REGRESSION TEST #6 STARTING
+------------------------------------------
+Match template status 25
+Match template score 51.64
 
 ------------------------------------------------
 SEARCH FIDUCIAL MARK REGRESSION TEST #1 STARTING

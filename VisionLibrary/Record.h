@@ -14,7 +14,7 @@ namespace Vision
 class Record
 {
 public:
-    explicit Record(PR_RECORD_TYPE enType):_enType(enType) {}
+    Record(PR_RECORD_TYPE enType) : _enType(enType) {}
     virtual ~Record() = default;
     virtual VisionStatus load(cv::FileStorage &fileStorage, const String& strFilePath = "") = 0;
     virtual VisionStatus save(const String& strFilePath) = 0;
@@ -25,6 +25,7 @@ protected:
     PR_RECORD_TYPE  _enType;
     const String    _strKeyType         = "type";
     String          _strTmplFileName    = "Tmpl.png";
+    String          _strMaskFileName    = "Mask.png";
 };
 using RecordPtr = std::shared_ptr<Record>;
 
@@ -127,7 +128,18 @@ using ContourRecordPtr = std::shared_ptr<ContourRecord>;
 class TmplRecord : public Record
 {
 public:
-    TmplRecord(PR_RECORD_TYPE enType) : Record(enType) {}
+    TmplRecord(
+        PR_RECORD_TYPE          enType,
+        PR_MATCH_TMPL_ALGORITHM enAlgorithm,
+        const cv::Mat          &matTmpl,
+        const cv::Mat          &matMask,
+        const cv::Mat          &matEdgeMask) :
+        Record(enType),
+        _enAlgorithm(enAlgorithm),
+        _matTmpl(matTmpl),
+        _matMask(matMask),
+        _matEdgeMask(matEdgeMask) {}
+    TmplRecord(PR_RECORD_TYPE enType) : Record(enType)   {}
     virtual VisionStatus load(cv::FileStorage &fileStorage, const String& strFilePath = "") override;
     virtual VisionStatus save(const String& strFilePath) override;
     void setAlgorithm(PR_MATCH_TMPL_ALGORITHM enAlgorithm);
@@ -136,14 +148,16 @@ public:
     cv::Mat getTmpl() const;
     void setEdgeMask(const cv::Mat &matTmpl);
     cv::Mat getEdgeMask() const;
+    cv::Mat getMask() const { return _matMask; }
     virtual cv::Mat getImage() const { return _matTmpl; }
 
 private:
     PR_MATCH_TMPL_ALGORITHM _enAlgorithm;
     cv::Mat                 _matTmpl;
+    cv::Mat                 _matMask;
     cv::Mat                 _matEdgeMask;
-    String                  _strKeyAlgorithm    = "Algorithm";
-    String                  _strEdgeMaskName    = "EdgeMask.png";
+    String                  _strKeyAlgorithm        = "Algorithm";
+    String                  _strEdgeMaskFileName    = "EdgeMask.png";
 };
 using TmplRecordPtr = std::shared_ptr<TmplRecord>;
 

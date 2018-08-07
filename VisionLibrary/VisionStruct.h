@@ -93,6 +93,7 @@ struct PR_SRCH_OBJ_RPY {
 struct PR_LRN_TEMPLATE_CMD {
     PR_LRN_TEMPLATE_CMD() : enAlgorithm (PR_MATCH_TMPL_ALGORITHM::SQUARE_DIFF) {}
     cv::Mat                 matInputImg;
+    cv::Mat                 matMask;
     cv::Rect                rectROI;
     PR_MATCH_TMPL_ALGORITHM enAlgorithm;
 };

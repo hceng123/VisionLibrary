@@ -143,8 +143,8 @@ MatchTmpl::~MatchTmpl() {
     return VisionStatus::OK;
 }
 
-/*static*/ VisionStatus MatchTmpl::matchTemplate(const cv::Mat &mat, const cv::Mat &matTmpl, bool bSubPixelRefine, PR_OBJECT_MOTION enMotion, cv::Point2f &ptResult, float &fRotation, float &fCorrelation) {
-    ptResult = myMatchTemplate(mat, matTmpl);
+/*static*/ VisionStatus MatchTmpl::matchTemplate(const cv::Mat &mat, const cv::Mat &matTmpl, bool bSubPixelRefine, PR_OBJECT_MOTION enMotion, cv::Point2f &ptResult, float &fRotation, float &fCorrelation, const cv::Mat &matMask) {
+    ptResult = myMatchTemplate(mat, matTmpl, matMask);
     fRotation = 0.f;
     if (bSubPixelRefine) {
         try {
@@ -156,7 +156,7 @@ MatchTmpl::~MatchTmpl() {
     }
     else {
         cv::Mat matImgROI(mat, cv::Rect(ptResult, matTmpl.size()));
-        fCorrelation = calcCorrelation(matTmpl, matImgROI);
+        fCorrelation = calcCorrelation(matTmpl, matImgROI, matMask);
     }
 
     ptResult.x += (float)(matTmpl.cols / 2 + 0.5f);
@@ -164,7 +164,7 @@ MatchTmpl::~MatchTmpl() {
     return VisionStatus::OK;
 }
 
-/*static*/ cv::Point MatchTmpl::myMatchTemplate(const cv::Mat &mat, const cv::Mat &matTmpl) {
+/*static*/ cv::Point MatchTmpl::myMatchTemplate(const cv::Mat &mat, const cv::Mat &matTmpl, const cv::Mat &matMask) {
     cv::Mat matResult;
     int match_method = CV_TM_SQDIFF;
 
@@ -175,7 +175,7 @@ MatchTmpl::~MatchTmpl() {
     matResult.create(result_rows, result_cols, CV_32FC1);
 
     /// Do the Matching and Normalize
-    cv::matchTemplate(mat, matTmpl, matResult, match_method);
+    cv::matchTemplate(mat, matTmpl, matResult, match_method, matMask);
 
     /// Localizing the best match with minMaxLoc
     double minVal; double maxVal;

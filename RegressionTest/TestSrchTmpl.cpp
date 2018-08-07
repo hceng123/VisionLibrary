@@ -1,4 +1,4 @@
-#include "opencv2/core.hpp"
+﻿#include "opencv2/core.hpp"
 #include "opencv2/highgui.hpp"
 #include "../VisionLibrary/VisionAPI.h"
 #include <iostream>
@@ -166,7 +166,41 @@ void TestTmplMatch_5()
     stCmd.enMotion = PR_OBJECT_MOTION::TRANSLATION;
     
     PR_MatchTmpl(&stCmd, &stRpy);
-    PrintMatchTmplRpy ( stRpy );
+    PrintMatchTmplRpy(stRpy);
+}
+
+void TestTmplMatch_6() {
+    std::cout << std::endl << "------------------------------------------";
+    std::cout << std::endl << "MATCH TEMPLATE REGRESSION TEST #6 STARTING";
+    std::cout << std::endl << "------------------------------------------";
+    std::cout << std::endl;
+
+    PR_LRN_TEMPLATE_CMD stLrnCmd;
+    PR_LRN_TEMPLATE_RPY stLrnRpy;
+
+    stLrnCmd.matInputImg = cv::imread("./data/TestOCV.png");
+    stLrnCmd.enAlgorithm = PR_MATCH_TMPL_ALGORITHM::SQUARE_DIFF;
+    stLrnCmd.rectROI = cv::Rect(311, 818, 180, 61);
+    cv::Mat matMask = cv::Mat::ones(stLrnCmd.rectROI.size(), CV_8UC1) * 255;
+    cv::rectangle(matMask, cv::Rect(10, 10, 160, 30), cv::Scalar(0), CV_FILLED);
+    stLrnCmd.matMask = matMask;
+
+    PR_LrnTmpl(&stLrnCmd, &stLrnRpy);
+    if (stLrnRpy.enStatus != VisionStatus::OK) {
+        std::cout << "Failed to learn template." << std::endl;
+        return;
+    }
+
+    PR_MATCH_TEMPLATE_CMD stSrchCmd;
+    PR_MATCH_TEMPLATE_RPY stSrchRpy;
+    stSrchCmd.matInputImg = cv::imread("./data/TestOCV.png");
+    stSrchCmd.enAlgorithm = PR_MATCH_TMPL_ALGORITHM::SQUARE_DIFF;
+    stSrchCmd.enMotion = PR_OBJECT_MOTION::TRANSLATION;
+    stSrchCmd.rectSrchWindow = cv::Rect(223, 1035, 339, 216);
+    stSrchCmd.nRecordId = stLrnRpy.nRecordId;
+
+    PR_MatchTmpl(&stSrchCmd, &stSrchRpy);
+    PrintMatchTmplRpy(stSrchRpy);
 }
 
 void TestTmplMatch() {
@@ -175,6 +209,7 @@ void TestTmplMatch() {
     TestTmplMatch_3();
     TestTmplMatch_4();
     TestTmplMatch_5();
+    TestTmplMatch_6();
 }
 
 static void PrintFiducialMarkResult(const PR_SRCH_FIDUCIAL_MARK_RPY &stRpy) {
@@ -197,10 +232,10 @@ void TestSrchFiducialMark()
     stCmd.fSize = 54;
     stCmd.fMargin = 8;
     stCmd.matInputImg = cv::imread("./data/F6-313-1-Gray.bmp", cv::IMREAD_GRAYSCALE);
-    stCmd.rectSrchWindow = cv::Rect(1459, 155, 500, 500 );
-    
+    stCmd.rectSrchWindow = cv::Rect(1459, 155, 500, 500);
+
     PR_SrchFiducialMark(&stCmd, &stRpy);
-    PrintFiducialMarkResult ( stRpy );
+    PrintFiducialMarkResult(stRpy);
 
     std::cout << std::endl << "------------------------------------------------";
     std::cout << std::endl << "SEARCH FIDUCIAL MARK REGRESSION TEST #2 STARTING";
@@ -211,10 +246,10 @@ void TestSrchFiducialMark()
     stCmd.fSize = 64;
     stCmd.fMargin = 8;
     stCmd.matInputImg = cv::imread("./data/CircleFiducialMark.png", cv::IMREAD_GRAYSCALE);
-    stCmd.rectSrchWindow = cv::Rect(0, 40, 250, 250 );
+    stCmd.rectSrchWindow = cv::Rect(0, 40, 250, 250);
 
     PR_SrchFiducialMark(&stCmd, &stRpy);
-    PrintFiducialMarkResult ( stRpy );
+    PrintFiducialMarkResult(stRpy);
 
     std::cout << std::endl << "------------------------------------------------";
     std::cout << std::endl << "SEARCH FIDUCIAL MARK REGRESSION TEST #3 STARTING";
@@ -224,10 +259,10 @@ void TestSrchFiducialMark()
     stCmd.fSize = 64;
     stCmd.fMargin = 20;
     stCmd.matInputImg = cv::imread("./data/CircleFiducialMark.png", cv::IMREAD_GRAYSCALE);
-    stCmd.rectSrchWindow = cv::Rect(126, 96, 200, 160 );
+    stCmd.rectSrchWindow = cv::Rect(126, 96, 200, 160);
 
     PR_SrchFiducialMark(&stCmd, &stRpy);
-    PrintFiducialMarkResult ( stRpy );
+    PrintFiducialMarkResult(stRpy);
 }
 
 }

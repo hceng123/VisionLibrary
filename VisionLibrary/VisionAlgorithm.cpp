@@ -973,6 +973,16 @@ VisionStatus VisionAlgorithm::inspDevice(PR_INSP_DEVICE_CMD *pstInspDeviceCmd, P
     pstRpy->enStatus = _checkInputROI(pstCmd->rectROI, pstCmd->matInputImg, AT);
     if (VisionStatus::OK != pstRpy->enStatus) return pstRpy->enStatus;
 
+    if (!pstCmd->matMask.empty()) {
+        if (pstCmd->matMask.cols != pstCmd->rectROI.width || pstCmd->matMask.rows != pstCmd->rectROI.height) {
+            std::stringstream ss;
+            ss << "The size of mask " << pstCmd->matMask.size() << " doesn't match with ROI size " << pstCmd->rectROI.size();
+            WriteLog(ss.str());
+            pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+            return pstRpy->enStatus;
+        }
+    }
+
     MARK_FUNCTION_START_TIME;
     SETUP_LOGCASE(LogCaseLrnTmpl);
 
@@ -982,16 +992,18 @@ VisionStatus VisionAlgorithm::inspDevice(PR_INSP_DEVICE_CMD *pstInspDeviceCmd, P
     else
         pstRpy->matTmpl = matROI.clone();
     cv::Mat matEdgeMask;
+    cv::Mat matMask = pstCmd->matMask.empty() ? pstCmd->matMask : pstCmd->matMask > 0;
     if (PR_MATCH_TMPL_ALGORITHM::HIERARCHICAL_EDGE == pstCmd->enAlgorithm) {
         cv::Mat matCanny;
         cv::Canny(pstRpy->matTmpl, matCanny, 50, 200, 3);
         cv::dilate(matCanny, matEdgeMask, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(3, 3)));
+        if (!pstCmd->matMask.empty()) {
+            cv::Mat matReverseMask = PR_MAX_GRAY_LEVEL - matMask;
+            matEdgeMask.setTo(0, matReverseMask);
+        }
     }
 
-    TmplRecordPtr ptrRecord = std::make_shared<TmplRecord>(PR_RECORD_TYPE::TEMPLATE);
-    ptrRecord->setAlgorithm(pstCmd->enAlgorithm);
-    ptrRecord->setTmpl(pstRpy->matTmpl);
-    ptrRecord->setEdgeMask(matEdgeMask);
+    TmplRecordPtr ptrRecord = std::make_shared<TmplRecord>(PR_RECORD_TYPE::TEMPLATE, pstCmd->enAlgorithm, pstRpy->matTmpl, matMask, matEdgeMask);
     RecordManager::getInstance()->add(ptrRecord, pstRpy->nRecordId);
     pstRpy->enStatus = VisionStatus::OK;
 
@@ -1062,7 +1074,7 @@ VisionStatus VisionAlgorithm::inspDevice(PR_INSP_DEVICE_CMD *pstInspDeviceCmd, P
     cv::Mat matTmpl = ptrRecord->getTmpl();
     if (PR_MATCH_TMPL_ALGORITHM::SQUARE_DIFF == pstCmd->enAlgorithm) {
         float fCorrelation;
-        pstRpy->enStatus = MatchTmpl::matchTemplate(matSrchROI, matTmpl, pstCmd->bSubPixelRefine, pstCmd->enMotion, pstRpy->ptObjPos, pstRpy->fRotation, fCorrelation);
+        pstRpy->enStatus = MatchTmpl::matchTemplate(matSrchROI, matTmpl, pstCmd->bSubPixelRefine, pstCmd->enMotion, pstRpy->ptObjPos, pstRpy->fRotation, fCorrelation, ptrRecord->getMask());
         pstRpy->ptObjPos.x += pstCmd->rectSrchWindow.x;
         pstRpy->ptObjPos.y += pstCmd->rectSrchWindow.y;
         pstRpy->fMatchScore = fCorrelation * ConstToPercentage;
@@ -3192,7 +3204,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
         cv::RotatedRect rotatedRectROI;
         rotatedRectROI.angle = fAngle;
         rotatedRectROI.center = ptROICtr;
-        rotatedRectROI.size.width = CHECK_ROI_WIDTH;
+        rotatedRectROI.size.width  = CHECK_ROI_WIDTH;
         rotatedRectROI.size.height = CHECK_ROI_HEIGHT;
 
         if (! isAutoMode()) {

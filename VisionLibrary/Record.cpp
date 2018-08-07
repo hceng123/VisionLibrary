@@ -1,6 +1,7 @@
 #include "Record.h"
 #include "Config.h"
 #include "opencv2/highgui.hpp"
+#include "FileUtils.h"
 
 namespace AOI
 {
@@ -247,15 +248,20 @@ VisionStatus TmplRecord::load(cv::FileStorage &fs, const String& strFilePath) {
     cv::read(fileNode, nAlgorithm, 0 );
     _enAlgorithm = static_cast<PR_MATCH_TMPL_ALGORITHM> ( nAlgorithm );
 
-    _matTmpl = cv::imread ( strFilePath + "/" + _strTmplFileName, cv::IMREAD_GRAYSCALE );
-    if ( _matTmpl.empty() )
+    _matTmpl = cv::imread(strFilePath + "/" + _strTmplFileName, cv::IMREAD_GRAYSCALE);
+    if (_matTmpl.empty())
         return VisionStatus::INVALID_RECORD_FILE;
 
-    if ( PR_MATCH_TMPL_ALGORITHM::HIERARCHICAL_EDGE == _enAlgorithm ) {
-        _matEdgeMask = cv::imread ( strFilePath + "/" + _strEdgeMaskName, cv::IMREAD_GRAYSCALE );
-        if (_matEdgeMask.empty ())
+    if (PR_MATCH_TMPL_ALGORITHM::HIERARCHICAL_EDGE == _enAlgorithm) {
+        _matEdgeMask = cv::imread(strFilePath + "/" + _strEdgeMaskFileName, cv::IMREAD_GRAYSCALE);
+        if (_matEdgeMask.empty())
             return VisionStatus::INVALID_RECORD_FILE;
     }
+
+    String strMaskFileName = strFilePath + "/" + _strMaskFileName;
+    if (FileUtils::Exists(strMaskFileName))
+        _matMask = cv::imread(strMaskFileName);
+
     return VisionStatus::OK;
 }
 
@@ -269,7 +275,10 @@ VisionStatus TmplRecord::save(const String& strFilePath) {
     cv::write(fs, _strKeyAlgorithm, ToInt32(_enAlgorithm));
     cv::imwrite(strFilePath + "/" + _strTmplFileName, _matTmpl);
     if (PR_MATCH_TMPL_ALGORITHM::HIERARCHICAL_EDGE == _enAlgorithm)
-        cv::imwrite ( strFilePath + "/" + _strEdgeMaskName, _matEdgeMask );
+        cv::imwrite(strFilePath + "/" + _strEdgeMaskFileName, _matEdgeMask);
+
+    if (!_matMask.empty())
+        cv::imwrite(strFilePath + "/" + _strMaskFileName, _matMask);
     
     fs.release();
     return VisionStatus::OK;
