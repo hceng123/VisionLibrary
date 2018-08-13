@@ -90,6 +90,10 @@ enum class VisionStatus
     CAN_NOT_FIND_MTF_PATTERN            = 150,
     MTF_PATTERN_TOO_SMALL               = 151,
 
+    //Read 2D Code
+    NO_2DCODE_DETECTED                  = 160,
+    FAILED_TO_READ_2DCODE               = 161,
+
     //Caliper related errors
     CALIPER_CAN_NOT_FIND_LINE           = 200,
     PROJECTION_CANNOT_FIND_LINE         = 201,

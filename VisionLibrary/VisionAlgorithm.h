@@ -229,6 +229,10 @@ protected:
     static VisionStatus _autoLocateLeadByContour(const cv::Mat &matGray, const PR_AUTO_LOCATE_LEAD_CMD *const pstCmd, PR_AUTO_LOCATE_LEAD_RPY *const pstRpy);
     static VisionStatus _imageSplitByMax(const cv::Mat &matInput, UInt16 objCount, std::vector<int> &vecIndex1, std::vector<int> &vecIndex2);
     static VisionStatus _imageSplitByMaxNew(const cv::Mat &matInput, UInt16 objCount, std::vector<int> &vecIndex1, std::vector<int> &vecIndex2);
+    static cv::Mat _imageFilling(const cv::Mat &matInput, cv::Mat &matOuterEdge);
+    static VectorOfPoint2f _lineIntersect4P(std::vector<int> &vecReverseFit, VectorOfFloat &vecSlope, VectorOfFloat &vecIntercept);
+    static bool _lineScanRow(const cv::Mat &matInput, int &n, int &startRow);
+    static bool _lineScanMatrix(const cv::Mat &matInput, int &m, int &n, int &startRow, int &startCol);    
 
 protected:
     static const int       _constMinHessian        = 300;

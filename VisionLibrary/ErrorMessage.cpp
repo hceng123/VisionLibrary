@@ -230,6 +230,16 @@ VisionStatus GetErrorInfo(VisionStatus enStatus, PR_GET_ERROR_INFO_RPY *pstRpy)
         pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::PR_INSP_STATUS;
         break;
 
+    case VisionStatus::NO_2DCODE_DETECTED:
+        _snprintf(pstRpy->achErrorStr, PR_MAX_ERR_STR_LEN, "Cannot detect 2D code.");
+        pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::PR_INSP_STATUS;
+        break;
+
+    case VisionStatus::FAILED_TO_READ_2DCODE:
+        _snprintf(pstRpy->achErrorStr, PR_MAX_ERR_STR_LEN, "Failed to read 2D code.");
+        pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::PR_INSP_STATUS;
+        break;
+
     case VisionStatus::CALIPER_CAN_NOT_FIND_LINE:
         _snprintf(pstRpy->achErrorStr, PR_MAX_ERR_STR_LEN, "Caliper cannot find the line.");
         pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::PR_INSP_STATUS;

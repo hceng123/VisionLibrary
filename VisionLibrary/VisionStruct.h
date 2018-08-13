@@ -1457,8 +1457,11 @@ struct PR_OCV_RPY {
 };
 
 struct PR_READ_2DCODE_CMD {
+    PR_READ_2DCODE_CMD() :
+        nEdgeThreshold  (30) {}
     cv::Mat                 matInputImg;
     cv::Rect                rectROI;
+    int                     nEdgeThreshold;
 };
 
 struct PR_READ_2DCODE_RPY {

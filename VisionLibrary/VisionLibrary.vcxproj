@@ -141,6 +141,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Auxiliary.hpp" />
     <ClInclude Include="BaseDefs.h" />
     <ClInclude Include="BaseType.h" />
     <ClInclude Include="CalcUtils.h" />

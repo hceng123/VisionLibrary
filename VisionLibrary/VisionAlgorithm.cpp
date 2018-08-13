@@ -1,4 +1,9 @@
-﻿#include "VisionAlgorithm.h"
+﻿#include <iostream>
+#include <limits>
+#include <algorithm>
+#include <numeric>
+
+#include "VisionAlgorithm.h"
 #include "opencv2/features2d.hpp"
 #include "opencv2/xfeatures2d.hpp"
 #include "opencv2/calib3d.hpp"
@@ -14,10 +19,7 @@
 #include "MatchTmpl.h"
 #include "Unwrap.h"
 #include "SubFunctions.h"
-#include <iostream>
-#include <limits>
-#include <algorithm>
-#include <numeric>
+#include "Auxiliary.hpp"
 
 using namespace cv::xfeatures2d;
 namespace bfs = boost::filesystem;
@@ -7854,8 +7856,408 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     pstRpy->enStatus = _checkInputROI(pstCmd->rectROI, pstCmd->matInputImg, AT);
     if (VisionStatus::OK != pstRpy->enStatus) return pstRpy->enStatus;
 
+    cv::Mat matROI(pstCmd->matInputImg, pstCmd->rectROI), matGray;
+    if (pstCmd->matInputImg.channels() > 1)
+        cv::cvtColor(matROI, matGray, CV_BGR2GRAY);
+    else
+        matGray = matROI;
+
+    if (ConfigInstance->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE)
+        showImage("ROI gray image", matGray);
+
+    cv::erode(matGray, matGray, cv::getStructuringElement(cv::MorphShapes::MORPH_RECT, cv::Size(7, 7)));
+
+    if (ConfigInstance->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE)
+        showImage("Erode result image", matGray);
+
+    cv::Mat matCanny;
+    cv::Canny(matGray, matCanny, pstCmd->nEdgeThreshold, pstCmd->nEdgeThreshold * 2);
+
+    if (ConfigInstance->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE)
+        showImage("Canny result image", matCanny);
+
+    cv::Mat matSumX, matSumY;
+    cv::reduce(matCanny, matSumX, 0, cv::ReduceTypes::REDUCE_SUM, CV_32FC1);
+    cv::reduce(matCanny, matSumY, 1, cv::ReduceTypes::REDUCE_SUM, CV_32FC1);
+    cv::transpose(matSumY, matSumY);
+
+    cv::blur(matSumX, matSumX, cv::Size(51, 1));
+    cv::blur(matSumY, matSumY, cv::Size(51, 1));
+
+    matSumX = matSumX / PR_MAX_GRAY_LEVEL;
+    matSumY = matSumY / PR_MAX_GRAY_LEVEL;
+
+#ifdef _DEBUG
+    auto vecVecSumX = CalcUtils::matToVector<float>(matSumX);
+    auto vecVecSumY = CalcUtils::matToVector<float>(matSumY);
+#endif
+
+    std::vector<int> vecIndexX, vecIndexY;
+    for (int i = 0; i < matSumX.cols; ++ i)
+        if (matSumX.at<float>(i) > 6)
+            vecIndexX.push_back(i);
+
+    if (vecIndexX.size() < 10) {
+        pstRpy->enStatus = VisionStatus::NO_2DCODE_DETECTED;
+        return pstRpy->enStatus;
+    }
+
+    for (int i = 0; i < matSumY.cols; ++ i)
+        if (matSumY.at<float>(i) > 6)
+            vecIndexY.push_back(i);
+
+    if (vecIndexY.size() < 10) {
+        pstRpy->enStatus = VisionStatus::NO_2DCODE_DETECTED;
+        return pstRpy->enStatus;
+    }
+
+    const int margin = 5;
+    int lft = (vecIndexX.front() - margin) > 0 ? (vecIndexX.front() - margin) : 0;
+    int rgt = (vecIndexX.back()  + margin) > matGray.cols ? matGray.cols : (vecIndexX.back() + margin);
+    int top = (vecIndexY.front() - margin) > 0 ? (vecIndexY.front() - margin) : 0;
+    int btm = (vecIndexY.back()  + margin) > matGray.rows ? matGray.rows : (vecIndexY.back() + margin);
+    cv::Rect rect2DCode(lft, top, rgt - lft, btm - top);
+
+    cv::Mat matBarcode(matGray, rect2DCode);
+
+    cv::Canny(matBarcode, matCanny, pstCmd->nEdgeThreshold, pstCmd->nEdgeThreshold * 2);
+
+    cv::Mat matLabels;
+    cv::connectedComponents(matCanny, matLabels, 8, CV_32S);
+
+    double minValue = 0., maxValue = 0.;
+    cv::minMaxIdx(matLabels, &minValue, &maxValue);
+
+    for (int nLabel = 1; nLabel <= ToInt32(maxValue); ++ nLabel) {
+        cv::Mat matCC = CalcUtils::genMaskByValue<Int32>(matLabels, nLabel);
+        float fArea = ToFloat(cv::countNonZero(matCC));
+        if (fArea < 40)
+            matLabels.setTo(0, matCC);
+    }
+
+    cv::Mat mat2DCodeEdge = matLabels > 0;
+
+    if (ConfigInstance->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE)
+        showImage("2D code edge", mat2DCodeEdge);
+
+    cv::Mat matOuterEdge;
+    cv::Mat matImageFill = _imageFilling(mat2DCodeEdge, matOuterEdge);
+    matImageFill = _imageFilling(matImageFill, matOuterEdge);
+
+    //cv::Canny(matImageFill, matOuterEdge, 100, 255);
+    //cv::dilate(matOuterEdge, matOuterEdge, cv::getStructuringElement(cv::MorphShapes::MORPH_CROSS, cv::Size(3, 3)));
+    cv::dilate(matOuterEdge, matOuterEdge, cv::getStructuringElement(cv::MorphShapes::MORPH_ELLIPSE, cv::Size(1, 1)));
+
+    if (ConfigInstance->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE) {
+        showImage("Image fill result", matImageFill);
+        showImage("Outer edge", matOuterEdge);
+    }
+    std::vector<PR_Line2f> vecLines;
+    cv::Mat matHoughResult;
+    cv::cvtColor(matOuterEdge, matHoughResult, cv::COLOR_GRAY2BGR);
+
+#if 1
+    std::vector<cv::Vec2f> lines;
+    cv::HoughLines(matOuterEdge, lines, 5, CV_PI / 180, 30, 0, 0);
+
+    std::vector<int> vecReverseFit;
+    VectorOfFloat vecSlope, vecIntercept;
+    std::vector<HOUGH_LINE> vecHoughLines;
+    for (size_t i = 0; i < lines.size(); ++ i)
+    {
+        if (vecHoughLines.size() >= 4)
+            break;
+
+        float rho = lines[i][0], theta = lines[i][1];
+        if (std::find(vecHoughLines.begin(), vecHoughLines.end(), HOUGH_LINE{rho, theta}) != vecHoughLines.end())
+            continue;
+        vecHoughLines.push_back(HOUGH_LINE{rho, theta});
+        cv::Point pt1, pt2;
+        double a = cos(theta), b = sin(theta);
+        double x0 = a*rho, y0 = b*rho;
+        pt1.x = cvRound(x0 + 1000*(-b));
+        pt1.y = cvRound(y0 + 1000*(a));
+        pt2.x = cvRound(x0 - 1000*(-b));
+        pt2.y = cvRound(y0 - 1000*(a));
+        PR_Line2f line(pt1, pt2);
+        vecLines.push_back(line);
+        cv::Scalar scalar(_constYellowScalar);
+        if (i == 0)
+            scalar = _constBlueScalar;
+        else if (i == 1)
+            scalar = _constGreenScalar;
+        else if (i == 2)
+            scalar = _constRedScalar;
+        cv::line(matHoughResult, pt1, pt2, scalar, 1, CV_AA);
+
+        VectorOfPoint vecPoints;
+        VectorOfPoint vecPointToFit;
+        cv::findNonZero(matOuterEdge, vecPoints);
+        for (const auto &point : vecPoints) {
+            auto dist = point.x * a + point.y * b - rho;
+            if (fabs(dist) < 5)
+                vecPointToFit.push_back(point);
+        }
+
+        bool bReversedFit = false;
+        float fSlope = 0.f, fIntercept = 0.f;
+        auto vecPointsToKeep = Fitting::fitLineRemoveStray(vecPointToFit, bReversedFit, 0.2f, fSlope, fIntercept);
+        auto stLine = CalcUtils::calcEndPointOfLine(vecPointsToKeep, bReversedFit, fSlope, fIntercept);
+        vecReverseFit.push_back(bReversedFit);
+        vecSlope.push_back(fSlope);
+        vecIntercept.push_back(fIntercept);
+
+        cv::line(matHoughResult, stLine.pt1, stLine.pt2, _constCyanScalar, 1, CV_AA);
+    }
+#else
+    std::vector<cv::Vec4i> lines;
+    cv::HoughLinesP(matOuterEdge, lines, 1, CV_PI / 180, 30, matOuterEdge.rows / 2, 20);
+
+    for (size_t i = 0; i < lines.size() && i < 4; ++i) {
+        cv::Point2f pt1((float)lines[i][0], (float)lines[i][1]);
+        cv::Point2f pt2((float)lines[i][2], (float)lines[i][3]);
+        PR_Line2f line(pt1, pt2);
+        vecLines.push_back(line);
+        cv::Scalar scalar(_constRedScalar);
+        if (i == 0)
+            scalar = _constBlueScalar;
+        else if (i == 1)
+            scalar = _constGreenScalar;
+        cv::line(matHoughResult, pt1, pt2, scalar, 3, CV_AA);
+    }
+#endif
+
+    if (ConfigInstance->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE)
+        showImage("Hough result", matHoughResult);
+
+    if (lines.size() < 4) {
+        pstRpy->enStatus = VisionStatus::NO_2DCODE_DETECTED;
+        return pstRpy->enStatus;
+    }
+
+    auto vecCorners = _lineIntersect4P(vecReverseFit, vecSlope, vecIntercept);
+
+    if (ConfigInstance->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE) {
+        cv::Mat matBarcodeCornerResult;
+        cv::cvtColor(matBarcode, matBarcodeCornerResult, CV_GRAY2BGR);
+        for (int i = 0; i < 3; ++i)
+            cv::line(matBarcodeCornerResult, vecCorners[i], vecCorners[i + 1], _constGreenScalar, 1);
+        cv::line(matBarcodeCornerResult, vecCorners[3], vecCorners[0], _constGreenScalar, 1);
+        showImage("Find corner result", matBarcodeCornerResult);
+    }
+
+
+    int radius = 5;
+    for (const auto &point : vecCorners)
+        cv::circle(matHoughResult, point, radius++, _constGreenScalar, 2);
+
+    if (ConfigInstance->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE)
+        showImage("Find corner result", matHoughResult);
+
+    cv::Point2f ptCenter((vecCorners[0].x + vecCorners[2].x) / 2.f, (vecCorners[0].y + vecCorners[2].y) / 2.f);
+    cv::Point2f ptCenter1((vecCorners[1].x + vecCorners[3].x) / 2.f, (vecCorners[1].y + vecCorners[3].y) / 2.f);
+    float angle = atan2(vecCorners[1].y - vecCorners[0].y, vecCorners[1].x - vecCorners[0].x);  // OpenCV Y is reversed of traditional coordinate. So the atan2 angle is also reversed.
+    float angle1 = atan2(vecCorners[2].y - vecCorners[3].y, vecCorners[2].x - vecCorners[3].x);  // OpenCV Y is reversed of traditional coordinate. So the atan2 angle is also reversed.
+    angle = CalcUtils::radian2Degree(angle);
+    cv::Mat matWarp = cv::getRotationMatrix2D(ptCenter, angle, 1.f);
+
+    float width  = CalcUtils::distanceOf2Point(vecCorners[0], vecCorners[1]);
+    float height = CalcUtils::distanceOf2Point(vecCorners[1], vecCorners[2]);
+
+    cv::Mat matWarpResult;
+    cv::warpAffine(matBarcode, matWarpResult, matWarp, matGray.size());
+    if (ConfigInstance->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE)
+        showImage("Warp result", matWarpResult);
+
+    cv::Rect2f rectBarcode(ptCenter.x - width / 2.f , ptCenter.y - height / 2.f, width, height);
+    cv::Mat matReshapedBarcode(matWarpResult, rectBarcode);
+    if (ConfigInstance->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE)
+        showImage("Warp ROI result", matReshapedBarcode);
+
+    int m, n, startRow, startCol;
+    if (!_lineScanMatrix(matReshapedBarcode, m, n, startRow, startCol)) {
+        pstRpy->enStatus = VisionStatus::NO_2DCODE_DETECTED;
+        return pstRpy->enStatus;
+    }
+    
+    cv::Mat matSubBarcode(matReshapedBarcode, cv::Rect(0, startRow, matReshapedBarcode.cols - startCol, matReshapedBarcode.rows - startRow));
+    if (ConfigInstance->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE)
+        showImage("Refined Barcode", matSubBarcode);
+
+    cv::Mat matDataMatrix = cv::Mat::zeros(2*m, 2*n, CV_8UC1);
+    cv::Mat matFilter;
+    float fGridWidth  = ToFloat(matSubBarcode.cols) / ToFloat(2 * n);
+    float fGridHeight = ToFloat(matSubBarcode.rows) / ToFloat(2 * m);
+    const int KERNEL_SIZE = ToInt32(fGridWidth * 3.f) / 2 * 2 + 1;
+    cv::blur(matSubBarcode, matFilter, cv::Size(KERNEL_SIZE, KERNEL_SIZE), cv::Point(-1, -1), cv::BorderTypes::BORDER_REPLICATE);
+    cv::Mat matCompare = matFilter < matSubBarcode;    
+    int GRID_SIZE = 10;
+    int BORDER_SIZE = 10;
+    cv::Mat matConvertedBarcode = cv::Mat::ones(2*m*GRID_SIZE + BORDER_SIZE * 2, 2*n*GRID_SIZE + BORDER_SIZE * 2, CV_8UC1) * PR_MAX_GRAY_LEVEL;
+    for (int row = 0; row < 2*m; ++ row) {
+        for (int col = 0; col < 2*n; ++ col) {
+            cv::Point point(ToInt32(fGridWidth / 2 + fGridWidth * col), ToInt32(fGridHeight / 2 + fGridHeight * row));
+            matDataMatrix.at<uchar>(row, col) = matCompare.at<uchar>(point);
+            if (matDataMatrix.at<uchar>(row, col) == 0) {
+                cv::Mat matGrid(matConvertedBarcode, cv::Rect(col * GRID_SIZE + BORDER_SIZE, row * GRID_SIZE + BORDER_SIZE, GRID_SIZE, GRID_SIZE));
+                matGrid.setTo(0);
+            }
+        }
+    }
+
+    if (ConfigInstance->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE) {
+        showImage("Compare result", matCompare);
+        showImage("Result Barcode", matConvertedBarcode);
+    }
+
+    cv::imwrite("./data/Gen2DCode.png", matConvertedBarcode);
+
     pstRpy->enStatus = VisionStatus::OK;
     return pstRpy->enStatus;
+}
+
+/*static*/ cv::Mat VisionAlgorithm::_imageFilling(const cv::Mat &matInput, cv::Mat &matOuterEdge) {
+    cv::Mat matResult = matInput.clone();
+    matOuterEdge = cv::Mat::zeros(matInput.size(), CV_8UC1);
+    for (int col = 0; col < matInput.cols; ++ col) {
+        cv::Mat matCol = matResult.col(col);
+        VectorOfPoint vecPoints;
+        vecPoints.reserve(matInput.rows);
+        cv::findNonZero(matCol, vecPoints);
+        if (vecPoints.size() > 2) {
+            for (int y = vecPoints.front().y; y < vecPoints.back().y; ++ y)
+                matResult.at<uchar>(col, y) = PR_MAX_GRAY_LEVEL;
+
+            matOuterEdge.at<uchar>(col, vecPoints.front().y) = PR_MAX_GRAY_LEVEL;
+            matOuterEdge.at<uchar>(col, vecPoints.back().y)  = PR_MAX_GRAY_LEVEL;
+        }else if (vecPoints.size() == 1)
+            matOuterEdge.at<uchar>(col, vecPoints.front().y) = PR_MAX_GRAY_LEVEL;
+    }
+
+    for (int row = 0; row < matInput.rows; ++ row) {
+        cv::Mat matRow = matResult.row(row);
+        VectorOfPoint vecPoints;
+        vecPoints.reserve(matInput.cols);
+        cv::findNonZero(matRow, vecPoints);
+        if (vecPoints.size() > 2) {
+            for (int x = vecPoints.front().x; x < vecPoints.back().x; ++ x)
+                matResult.at<uchar>(x, row) = PR_MAX_GRAY_LEVEL;
+
+            matOuterEdge.at<uchar>(vecPoints.front().x, row) = PR_MAX_GRAY_LEVEL;
+            matOuterEdge.at<uchar>(vecPoints.back().x,  row) = PR_MAX_GRAY_LEVEL;
+        }else if (vecPoints.size() == 1)
+            matOuterEdge.at<uchar>(vecPoints.front().x, row) = PR_MAX_GRAY_LEVEL;
+    }
+
+    return matResult;
+}
+
+/*static*/ VectorOfPoint2f VisionAlgorithm::_lineIntersect4P(std::vector<int> &vecReverseFit, VectorOfFloat &vecSlope, VectorOfFloat &vecIntercept) {
+    assert(vecReverseFit.size() == 4);
+    assert(vecSlope.size() == 4);
+    assert(vecIntercept.size() == 4);
+
+    VectorOfFloat vecTheta;
+    for (int i = 0; i < 4; ++ i) {
+        if (vecReverseFit[i]) {
+            if (vecSlope[i] < 0.0001)
+                vecTheta.push_back(ToFloat(CV_PI) / 2.f);
+            else
+                vecTheta.push_back(atan(1.f / vecSlope[i]));
+        }else
+            vecTheta.push_back(atan(vecSlope[i]));
+    }
+
+    // If line 2 and line 3 are parallel, then change the sequence of line 3 and line 4.
+    if (fabs(vecTheta[1] - vecTheta[2]) < 10.f / 180.f * CV_PI) {
+        std::swap(vecTheta[2], vecTheta[3]);
+        std::swap(vecReverseFit[2], vecReverseFit[3]);
+        std::swap(vecSlope[2], vecSlope[3]);
+        std::swap(vecIntercept[2], vecIntercept[3]);
+    }
+
+    vecReverseFit.push_back(vecReverseFit.front());
+    vecSlope.push_back(vecSlope.front());
+    vecIntercept.push_back(vecIntercept.front());
+
+    VectorOfPoint2f vecPoints;
+    for (int i = 0; i < 4; ++ i) {
+        cv::Point2f point;
+        CalcUtils::twoLineIntersect(vecReverseFit[i] != 0, vecSlope[i], vecIntercept[i], vecReverseFit[i + 1] != 0, vecSlope[i + 1], vecIntercept[i + 1], point);
+        vecPoints.push_back(point);
+    }
+
+    auto angle1 = atan2(vecPoints[1].y - vecPoints[0].y, vecPoints[1].x - vecPoints[0].x);
+    auto angle2 = atan2(vecPoints[2].y - vecPoints[1].y, vecPoints[2].x - vecPoints[1].x);
+    auto th = angle2 - angle1;
+    auto nn = ToFloat(std::floor(th / 2.f / CV_PI + 0.5));
+    th = th - nn * 2 * ToFloat(CV_PI);
+    if (th > 0) {
+        std::reverse(vecPoints.begin() + 1, vecPoints.end());
+    }
+    return vecPoints;
+}
+
+/*static*/ bool VisionAlgorithm::_lineScanRow(const cv::Mat &matInput, int &n, int &startRow) {
+    bool bFoundRow = false;
+    for (int row = 0; row < matInput.rows; ++ row) {
+        cv::Mat matCol = matInput.row(row);
+        int th = _autoThreshold(matCol);
+        cv::Mat matThreshold;
+        cv::threshold(matCol, matThreshold, th, PR_MAX_GRAY_LEVEL, cv::ThresholdTypes::THRESH_BINARY);
+        matThreshold.convertTo(matThreshold, CV_32FC1);
+        cv::Mat matDiff = CalcUtils::diff(matThreshold, 1, CalcUtils::DIFF_ON_X_DIR);
+#ifdef _DEBUG
+        auto vecVecThreshold = CalcUtils::matToVector<float>(matThreshold);
+        auto vecVecDiff = CalcUtils::matToVector<float>(matDiff);
+#endif
+        std::vector<int> vecIndex1, vecIndex2;
+        for (int i = 0; i < matDiff.cols; ++ i) {
+            auto value = matDiff.at<float>(i);
+            if (value > 0)
+                vecIndex1.push_back(i);
+            else if (value < 0)
+                vecIndex2.push_back(i);
+        }
+
+        if (vecIndex1.size() < 2 || vecIndex2.size() < 2)
+            continue;
+
+        std::vector<int> vecDD;
+        for (size_t i = 0; i < vecIndex1.size() - 1; ++ i)
+            vecDD.push_back(vecIndex1[i + 1] - vecIndex1[i]);
+        for (size_t i = 0; i < vecIndex2.size() - 1; ++ i)
+            vecDD.push_back(vecIndex2[i + 1] - vecIndex2[i]);
+        int maxD = *std::max_element(vecDD.begin(), vecDD.end());
+        int minD = *std::min_element(vecDD.begin(), vecDD.end());
+        int D1 = maxD - minD;
+        float meanD = CalcUtils::mean(vecDD);
+        
+        n = ToInt32(std::max(vecIndex1.size(), vecIndex2.size()));
+        float Tc = floor(ToFloat(matCol.cols) / ToFloat(n) + 0.5f);
+        if (fabs(meanD - Tc) < 1 && D1 < 5) {
+            bFoundRow = true;
+            startRow = row;
+            break;
+        }
+    }
+    return bFoundRow;
+}
+
+/*static*/ bool VisionAlgorithm::_lineScanMatrix(const cv::Mat &matInput, int &m, int &n, int &startRow, int &startCol) {
+    if (!_lineScanRow(matInput, n, startRow))
+        return false;
+    cv::Mat matSubMat(matInput, cv::Rect(0, startRow, matInput.cols, matInput.rows - startRow));
+    cv::Mat matSubMatT;
+    cv::transpose(matSubMat, matSubMatT);
+    cv::Mat matFlip;
+    cv::flip(matSubMatT, matFlip, 0);
+    if (ConfigInstance->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE) {
+        showImage("Subtract", matSubMat);
+        showImage("Subtract Tranpose 2D code", matSubMatT);
+        showImage("Flip image", matFlip);
+    }
+    return _lineScanRow(matFlip, m, startCol);
 }
 
 }

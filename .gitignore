@@ -4,7 +4,6 @@
 *.idb
 *.pdb
 *.tlog
-*.hpp
 *.exe
 *.html
 *.sh

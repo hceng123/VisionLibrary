@@ -767,7 +767,9 @@ int _tmain(int argc, _TCHAR* argv[])
     //TestOCV_1();
     //TestOCV_2();
 
-    TestMatchTmpl_1();
+    //TestMatchTmpl_1();
+
+    TestRead2DCode_1();
 
     PR_DumpTimeLog("./Vision/Time.log");
     std::cout << "Press any key to exit." << std::endl;

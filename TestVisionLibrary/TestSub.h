@@ -75,6 +75,8 @@ void TestOCV_2();
 
 void TestMatchTmpl_1();
 
+void TestRead2DCode_1();
+
 template<class T>
 void printfMat(const cv::Mat &mat)
 {
