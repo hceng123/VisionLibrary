@@ -1577,6 +1577,9 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
     if (LogCaseOcv::StaticGetFolderPrefix() == strFolderPrefix)
         return std::make_unique<LogCaseOcv>(strLocalPath, true);
 
+    if (LogCase2DCode::StaticGetFolderPrefix() == strFolderPrefix)
+        return std::make_unique<LogCase2DCode>(strLocalPath, true);
+
     static String msg = strFolderPrefix + " is not handled in " + __FUNCTION__;
     throw std::exception(msg.c_str());
 }
@@ -7857,6 +7860,9 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     pstRpy->enStatus = _checkInputROI(pstCmd->rectROI, pstCmd->matInputImg, AT);
     if (VisionStatus::OK != pstRpy->enStatus) return pstRpy->enStatus;
 
+    MARK_FUNCTION_START_TIME;
+    SETUP_LOGCASE(LogCase2DCode);
+
     cv::Mat matROI(pstCmd->matInputImg, pstCmd->rectROI), matGray;
     if (pstCmd->matInputImg.channels() > 1)
         cv::cvtColor(matROI, matGray, CV_BGR2GRAY);
@@ -7932,7 +7938,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     for (int nLabel = 1; nLabel <= ToInt32(maxValue); ++ nLabel) {
         cv::Mat matCC = CalcUtils::genMaskByValue<Int32>(matLabels, nLabel);
         float fArea = ToFloat(cv::countNonZero(matCC));
-        if (fArea < 40)
+        if (fArea < pstCmd->nRemoveNoiseArea)
             matLabels.setTo(0, matCC);
     }
 
@@ -7957,15 +7963,13 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     cv::Mat matHoughResult;
     cv::cvtColor(matOuterEdge, matHoughResult, cv::COLOR_GRAY2BGR);
 
-#if 1
     std::vector<cv::Vec2f> lines;
     cv::HoughLines(matOuterEdge, lines, 5, CV_PI / 180, 30, 0, 0);
 
     std::vector<int> vecReverseFit;
     VectorOfFloat vecSlope, vecIntercept;
     std::vector<HOUGH_LINE> vecHoughLines;
-    for (size_t i = 0; i < lines.size(); ++ i)
-    {
+    for (size_t i = 0; i < lines.size(); ++ i) {
         if (vecHoughLines.size() >= 4)
             break;
 
@@ -8010,29 +8014,13 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
 
         cv::line(matHoughResult, stLine.pt1, stLine.pt2, _constCyanScalar, 1, CV_AA);
     }
-#else
-    std::vector<cv::Vec4i> lines;
-    cv::HoughLinesP(matOuterEdge, lines, 1, CV_PI / 180, 30, matOuterEdge.rows / 2, 20);
-
-    for (size_t i = 0; i < lines.size() && i < 4; ++i) {
-        cv::Point2f pt1((float)lines[i][0], (float)lines[i][1]);
-        cv::Point2f pt2((float)lines[i][2], (float)lines[i][3]);
-        PR_Line2f line(pt1, pt2);
-        vecLines.push_back(line);
-        cv::Scalar scalar(_constRedScalar);
-        if (i == 0)
-            scalar = _constBlueScalar;
-        else if (i == 1)
-            scalar = _constGreenScalar;
-        cv::line(matHoughResult, pt1, pt2, scalar, 3, CV_AA);
-    }
-#endif
 
     if (ConfigInstance->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE)
         showImage("Hough result", matHoughResult);
 
     if (lines.size() < 4) {
         pstRpy->enStatus = VisionStatus::NO_2DCODE_DETECTED;
+        FINISH_LOGCASE;
         return pstRpy->enStatus;
     }
 
@@ -8078,6 +8066,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     int m, n, startRow, startCol;
     if (!_lineScanMatrix(matReshapedBarcode, m, n, startRow, startCol)) {
         pstRpy->enStatus = VisionStatus::NO_2DCODE_DETECTED;
+        FINISH_LOGCASE;
         return pstRpy->enStatus;
     }
     
@@ -8113,10 +8102,11 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
 
     cv::imwrite("./data/Gen2DCode.png", matConvertedBarcode);
 
-    if (! DataMatrix::read(matConvertedBarcode, pstRpy->strReadResult)) {
+    if (! DataMatrix::read(matConvertedBarcode, pstRpy->strReadResult))
         pstRpy->enStatus = VisionStatus::FAILED_TO_READ_2DCODE;
-        return pstRpy->enStatus;
-    }    
+
+    FINISH_LOGCASE;
+    MARK_FUNCTION_END_TIME;
 
     pstRpy->enStatus = VisionStatus::OK;
     return pstRpy->enStatus;
@@ -8132,12 +8122,12 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
         cv::findNonZero(matCol, vecPoints);
         if (vecPoints.size() > 2) {
             for (int y = vecPoints.front().y; y < vecPoints.back().y; ++ y)
-                matResult.at<uchar>(col, y) = PR_MAX_GRAY_LEVEL;
+                matResult.at<uchar>(y, col) = PR_MAX_GRAY_LEVEL;
 
-            matOuterEdge.at<uchar>(col, vecPoints.front().y) = PR_MAX_GRAY_LEVEL;
-            matOuterEdge.at<uchar>(col, vecPoints.back().y)  = PR_MAX_GRAY_LEVEL;
+            matOuterEdge.at<uchar>(vecPoints.front().y, col) = PR_MAX_GRAY_LEVEL;
+            matOuterEdge.at<uchar>(vecPoints.back().y,  col) = PR_MAX_GRAY_LEVEL;
         }else if (vecPoints.size() == 1)
-            matOuterEdge.at<uchar>(col, vecPoints.front().y) = PR_MAX_GRAY_LEVEL;
+            matOuterEdge.at<uchar>(vecPoints.front().y, col) = PR_MAX_GRAY_LEVEL;
     }
 
     for (int row = 0; row < matInput.rows; ++ row) {
@@ -8147,12 +8137,12 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
         cv::findNonZero(matRow, vecPoints);
         if (vecPoints.size() > 2) {
             for (int x = vecPoints.front().x; x < vecPoints.back().x; ++ x)
-                matResult.at<uchar>(x, row) = PR_MAX_GRAY_LEVEL;
+                matResult.at<uchar>(row, x) = PR_MAX_GRAY_LEVEL;
 
-            matOuterEdge.at<uchar>(vecPoints.front().x, row) = PR_MAX_GRAY_LEVEL;
-            matOuterEdge.at<uchar>(vecPoints.back().x,  row) = PR_MAX_GRAY_LEVEL;
+            matOuterEdge.at<uchar>(row, vecPoints.front().x) = PR_MAX_GRAY_LEVEL;
+            matOuterEdge.at<uchar>(row, vecPoints.back().x)  = PR_MAX_GRAY_LEVEL;
         }else if (vecPoints.size() == 1)
-            matOuterEdge.at<uchar>(vecPoints.front().x, row) = PR_MAX_GRAY_LEVEL;
+            matOuterEdge.at<uchar>(row, vecPoints.front().x) = PR_MAX_GRAY_LEVEL;
     }
 
     return matResult;

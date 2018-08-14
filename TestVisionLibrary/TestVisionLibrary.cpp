@@ -643,7 +643,7 @@ int _tmain(int argc, _TCHAR* argv[])
     auto fFloorResult = std::floor ( fTest );
 
     PR_Init();
-    PR_SetDebugMode(PR_DEBUG_MODE::DISABLED);
+    PR_SetDebugMode(PR_DEBUG_MODE::LOG_ALL_CASE);
 
     //TestTemplate();
     //TestInspDevice();
@@ -770,6 +770,8 @@ int _tmain(int argc, _TCHAR* argv[])
     //TestMatchTmpl_1();
 
     TestRead2DCode_1();
+
+    //TestRead2DCode_2();
 
     PR_DumpTimeLog("./Vision/Time.log");
     std::cout << "Press any key to exit." << std::endl;

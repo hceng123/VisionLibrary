@@ -1458,10 +1458,12 @@ struct PR_OCV_RPY {
 
 struct PR_READ_2DCODE_CMD {
     PR_READ_2DCODE_CMD() :
-        nEdgeThreshold  (30) {}
+        nEdgeThreshold      (30),
+        nRemoveNoiseArea    (20) {}
     cv::Mat                 matInputImg;
     cv::Rect                rectROI;
     int                     nEdgeThreshold;
+    int                     nRemoveNoiseArea;   // The standalone edge which area smaller than this value will be removed.
 };
 
 struct PR_READ_2DCODE_RPY {
