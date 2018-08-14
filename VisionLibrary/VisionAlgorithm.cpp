@@ -20,6 +20,7 @@
 #include "Unwrap.h"
 #include "SubFunctions.h"
 #include "Auxiliary.hpp"
+#include "DataMatrix.h"
 
 using namespace cv::xfeatures2d;
 namespace bfs = boost::filesystem;
@@ -8111,6 +8112,11 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     }
 
     cv::imwrite("./data/Gen2DCode.png", matConvertedBarcode);
+
+    if (! DataMatrix::read(matConvertedBarcode, pstRpy->strReadResult)) {
+        pstRpy->enStatus = VisionStatus::FAILED_TO_READ_2DCODE;
+        return pstRpy->enStatus;
+    }    
 
     pstRpy->enStatus = VisionStatus::OK;
     return pstRpy->enStatus;
