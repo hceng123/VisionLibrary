@@ -78,6 +78,7 @@ enum class VisionStatus
     //3D Status
     CALIB_3D_HEIGHT_SURFACE_TOO_SMALL   = 100,
     CALIB_3D_HEIGHT_NO_BASE_STEP        = 101,
+    CALC_3D_HEIGHT_DIFF_NO_BASE_POINT   = 102,
 
     //Bridge status
     BRIDGE_DEFECT                       = 120,

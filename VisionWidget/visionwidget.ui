@@ -2829,7 +2829,7 @@
         <x>10</x>
         <y>290</y>
         <width>611</width>
-        <height>61</height>
+        <height>91</height>
        </rect>
       </property>
       <property name="title">
@@ -2854,7 +2854,7 @@
        </property>
        <property name="geometry">
         <rect>
-         <x>120</x>
+         <x>130</x>
          <y>30</y>
          <width>51</width>
          <height>20</height>
@@ -2909,6 +2909,35 @@
         <bool>true</bool>
        </property>
       </widget>
+      <widget class="QLabel" name="labelRemoveNoiseArea">
+       <property name="geometry">
+        <rect>
+         <x>20</x>
+         <y>60</y>
+         <width>101</width>
+         <height>16</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Remove Noise Area</string>
+       </property>
+      </widget>
+      <widget class="QLineEdit" name="lineEditRemoveNoiseArea">
+       <property name="enabled">
+        <bool>true</bool>
+       </property>
+       <property name="geometry">
+        <rect>
+         <x>130</x>
+         <y>60</y>
+         <width>51</width>
+         <height>20</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>30</string>
+       </property>
+      </widget>
      </widget>
     </widget>
    </widget>
@@ -2932,7 +2961,7 @@
      <x>0</x>
      <y>0</y>
      <width>1377</width>
-     <height>26</height>
+     <height>21</height>
     </rect>
    </property>
   </widget>

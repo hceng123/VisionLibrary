@@ -1471,6 +1471,21 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
     return VisionStatus::OK;
 }
 
+/*static*/ VisionStatus VisionAlgorithm::_checkMask(const cv::Mat &matInput, const cv::Mat &matMask, const char *filename, int line) {
+    if (matMask.cols != matInput.cols || matMask.rows != matInput.rows) {
+        std::stringstream ss;
+        ss << "The size of mask " << matMask.size() << " doesn't match with ROI size " << matInput.size();
+        Log::GetInstance()->Write(ss.str(), filename, line);
+        return VisionStatus::INVALID_PARAM;
+    }
+
+    if (matMask.type() != CV_8UC1) {
+        WriteLog("The mask must be gray image!");
+        return VisionStatus::INVALID_PARAM;
+    }
+    return VisionStatus::OK;
+}
+
 /*static*/ LogCasePtr VisionAlgorithm::_createLogCaseInstance(const String &strFolderPrefix, const String &strLocalPath) {
     if (LogCaseLrnObj::StaticGetFolderPrefix() == strFolderPrefix)
         return std::make_unique<LogCaseLrnObj>(strLocalPath, true);
@@ -6849,6 +6864,11 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     pstRpy->enStatus = _checkInputROI(pstCmd->rectROI, pstCmd->matHeight, AT);
     if (VisionStatus::OK != pstRpy->enStatus) return pstRpy->enStatus;
 
+    if (!pstCmd->matMask.empty()) {
+        pstRpy->enStatus = _checkMask(pstCmd->matHeight, pstCmd->matMask, AT);
+        if (VisionStatus::OK != pstRpy->enStatus) return pstRpy->enStatus;
+    }
+
     if (pstCmd->vecRectBases.empty()) {
         WriteLog("The base vector is empty.");
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
@@ -8034,7 +8054,6 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
         cv::line(matBarcodeCornerResult, vecCorners[3], vecCorners[0], _constGreenScalar, 1);
         showImage("Find corner result", matBarcodeCornerResult);
     }
-
 
     int radius = 5;
     for (const auto &point : vecCorners)

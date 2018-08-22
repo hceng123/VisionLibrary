@@ -1011,6 +1011,7 @@ void VisionWidget::on_btnRead2DCode_clicked() {
     stCmd.matInputImg = ui.visionView->getMat();
     stCmd.rectROI = ui.visionView->getSelectedWindow();
     stCmd.nEdgeThreshold = ui.lineEditEdgeThreshold->text().toInt();
+    stCmd.nRemoveNoiseArea = ui.lineEditRemoveNoiseArea->text().toInt();
 
     PR_Read2DCode(&stCmd, &stRpy);
 

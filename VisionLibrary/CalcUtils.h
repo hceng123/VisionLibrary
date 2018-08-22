@@ -229,7 +229,7 @@ public:
 
     static inline cv::Mat getNanMask(const cv::Mat &matInput) {
         cv::Mat matResult = cv::Mat(matInput == matInput);
-        matResult = 255 - matResult;
+        matResult = PR_MAX_GRAY_LEVEL - matResult;
         return matResult;
     }
 

@@ -1491,18 +1491,19 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
     cv::Mat matX, matY;
     CalcUtils::meshgrid<DATA_TYPE>(1.f, 1.f, ToFloat(COLS), 1.f, 1.f, ToFloat(ROWS), matX, matY);
 
-    cv::Mat matNan = CalcUtils::getNanMask(pstCmd->matHeight);
+    cv::Mat matNan = CalcUtils::getNanMask(pstCmd->matHeight);    
+    cv::Mat matNonNan = PR_MAX_GRAY_LEVEL - matNan;
+    if (!pstCmd->matMask.empty()) {
+        cv::Mat matMaskReverse = PR_MAX_GRAY_LEVEL - pstCmd->matMask;
+        matNonNan.setTo(0, matMaskReverse);
+    }
 
     cv::Mat matHeight = pstCmd->matHeight;
     for (const auto &rect : pstCmd->vecRectBases) {
-        cv::Mat matMask = cv::Mat::zeros(ROWS, COLS, CV_8UC1);
-        cv::Mat matMaskROI(matMask, rect);
-        matMaskROI.setTo(1);
-        cv::Mat matNanROI(matNan, rect);
-        matMaskROI.setTo(0, matNanROI);         //Remove the points which is NAN.
+        cv::Mat matNonNanROI(matNonNan, rect);
 
         AOI::Vision::VectorOfPoint vecPtLocations;
-        cv::findNonZero(matMask, vecPtLocations);
+        cv::findNonZero(matNonNanROI, vecPtLocations);
 
         std::sort(vecPtLocations.begin(), vecPtLocations.end(), [&matHeight](const cv::Point &pt1, const cv::Point &pt2) {
             return matHeight.at<float>(pt1) < matHeight.at<float>(pt2);
@@ -1517,6 +1518,13 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
             vecHeightTmp.push_back(matHeight.at<float>(point));
         }
     }
+
+    if (vecXt.empty() || vecYt.empty()) {
+        pstRpy->enStatus = VisionStatus::CALC_3D_HEIGHT_DIFF_NO_BASE_POINT;
+        WriteLog("No base points to calculate 3D height difference, all base points are masked or are NAN.");
+        return;
+    }
+
     cv::Mat matK;
     {
         cv::Mat matXX;

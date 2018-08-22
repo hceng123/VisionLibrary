@@ -102,6 +102,7 @@ public:
 
 protected:
     static VisionStatus _checkInputROI(const cv::Rect &rect, const cv::Mat &matInputImg, const char *filename, int line);
+    static VisionStatus _checkMask(const cv::Mat &matInput, const cv::Mat &matMask, const char *filename, int line);
     static LogCasePtr _createLogCaseInstance(const String &strFolderPrefix, const String &strLocalPath);
 	int _findBlob(const cv::Mat &mat, const cv::Mat &matRevs, PR_INSP_SURFACE_CMD *const pInspCmd, PR_INSP_SURFACE_RPY *pInspRpy );
 	int _findLine(const cv::Mat &mat, PR_INSP_SURFACE_CMD *const pInspCmd, PR_INSP_SURFACE_RPY *pInspRpy );
