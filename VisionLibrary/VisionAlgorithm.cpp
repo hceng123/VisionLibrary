@@ -1075,6 +1075,9 @@ VisionStatus VisionAlgorithm::inspDevice(PR_INSP_DEVICE_CMD *pstInspDeviceCmd, P
         cv::cvtColor(matSrchROI, matSrchROI, cv::COLOR_BGR2GRAY);
 
     cv::Mat matTmpl = ptrRecord->getTmpl();
+    if (ConfigInstance->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE)
+        showImage("Template Image", matTmpl);
+
     if (PR_MATCH_TMPL_ALGORITHM::SQUARE_DIFF == pstCmd->enAlgorithm) {
         float fCorrelation;
         pstRpy->enStatus = MatchTmpl::matchTemplate(matSrchROI, matTmpl, pstCmd->bSubPixelRefine, pstCmd->enMotion, pstRpy->ptObjPos, pstRpy->fRotation, fCorrelation, ptrRecord->getMask());
@@ -1092,7 +1095,7 @@ VisionStatus VisionAlgorithm::inspDevice(PR_INSP_DEVICE_CMD *pstInspDeviceCmd, P
         pstRpy->enStatus = VisionStatus::OK;
     }
     else if (PR_MATCH_TMPL_ALGORITHM::HIERARCHICAL_AREA == pstCmd->enAlgorithm) {
-        cv::Point ptResult = MatchTmpl::matchTemplateRecursive(matSrchROI, ptrRecord->getTmpl());
+        cv::Point ptResult = MatchTmpl::matchTemplateRecursive(matSrchROI, matTmpl);
         pstRpy->ptObjPos.x = ptResult.x + ptrRecord->getTmpl().cols / 2 + 0.5f + pstCmd->rectSrchWindow.x;
         pstRpy->ptObjPos.y = ptResult.y + ptrRecord->getTmpl().rows / 2 + 0.5f + pstCmd->rectSrchWindow.y;
         pstRpy->fRotation = 0.f;
@@ -7799,6 +7802,11 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
         vecRecordPtr.push_back(ptrOcvRecord);
     }
 
+    if (!isAutoMode()) {
+        pstRpy->matResultImg = pstCmd->matInputImg.clone();
+        cv::rectangle(pstRpy->matResultImg, pstCmd->rectROI, _constBlueScalar, 2);
+    }
+
     auto iterMaxScore = std::max_element(vecCorrelation.begin(), vecCorrelation.end());
     pstRpy->fOverallScore = *iterMaxScore * ConstToPercentage;
     if (pstRpy->fOverallScore < pstCmd->fMinMatchScore) {
@@ -7808,10 +7816,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
         pstRpy->enStatus = VisionStatus::OCV_MATCH_SCORE_UNDER_LIMIT;
         FINISH_LOGCASE;
         return pstRpy->enStatus;
-    }
-
-    if (! isAutoMode())
-        pstRpy->matResultImg = pstCmd->matInputImg.clone();
+    }   
 
     auto maxScoreIndex = iterMaxScore - vecCorrelation.begin();
     cv::Point ptTarget = vecResultPos[maxScoreIndex];
@@ -7858,7 +7863,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
         }
     }
 
-    if (! isAutoMode()) {
+    if (!isAutoMode()) {
         rectTarget.x += pstCmd->rectROI.x;
         rectTarget.y += pstCmd->rectROI.y;
         cv::rectangle(pstRpy->matResultImg, rectTarget, _constBlueScalar, 1);

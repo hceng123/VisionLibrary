@@ -1193,8 +1193,8 @@ using PairHeightPhase = std::pair<float, cv::Mat>;
 using VectorPairHeightPhase = std::vector<PairHeightPhase>;
 using PairHeightCalibResult = std::pair<float, cv::Mat>;
 using VectorHeightCalibResult = std::vector<PairHeightCalibResult>;
-using PairHeightBlockHeights = std::pair<float, VectorOfFloat>;
-using VectorHeightBlockHeights = std::vector<PairHeightBlockHeights>;
+using PairHeightGridHeights = std::pair<float, VectorOfFloat>;
+using VectorHeightGridHeights = std::vector<PairHeightGridHeights>;
 
 struct PR_MOTOR_CALIB_3D_CMD {
     PR_MOTOR_CALIB_3D_CMD() :
@@ -1213,7 +1213,7 @@ struct PR_MOTOR_CALIB_3D_RPY {
     cv::Mat                 matOrder3CurveSurface;  //The regression 3 order curve surface to convert phase to height. It is calculated by K(1)*x1.^3 + K(2)*y1.^3 + K(3)*x1.^2.*y1 + K(4)*x1.*y1.^2 + K(5)*x1.^2 + K(6)*y1.^2 + K(7)*x1.*y1 + K(8)*x1 + K(9)*y1 + K(10)
     VectorOfMat             vecMatResultImg;
     VectorHeightCalibResult vecHeightCalibResult;
-    VectorHeightBlockHeights vecHeightBlockHeights;
+    VectorHeightGridHeights vecHeightGridHeights;
 };
 
 struct PR_CALC_3D_HEIGHT_CMD {

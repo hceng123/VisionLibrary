@@ -1425,13 +1425,13 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
         cv::Mat matRatio = pstRpy->matPhaseToHeightK.at<DATA_TYPE>(0, 0) * matX + pstRpy->matPhaseToHeightK.at<DATA_TYPE>(1, 0) * matY + pstRpy->matPhaseToHeightK.at<DATA_TYPE>(2, 0);
         cv::divide(matPhase, matRatio, matTmpPhase);
     }
-    VectorOfFloat vecBlockHeights;
-    pstRpy->matResultImg = _drawHeightGrid(matTmpPhase, pstCmd->nResultImgGridRow, pstCmd->nResultImgGridCol, pstCmd->szMeasureWinSize, vecBlockHeights);
+    VectorOfFloat vecGridHeights;
+    pstRpy->matResultImg = _drawHeightGrid(matTmpPhase, pstCmd->nResultImgGridRow, pstCmd->nResultImgGridCol, pstCmd->szMeasureWinSize, vecGridHeights);
     pstRpy->enStatus = VisionStatus::OK;
 }
 
-/*static*/ cv::Mat Unwrap::_drawHeightGrid(const cv::Mat &matHeight, int nGridRow, int nGridCol, const cv::Size &szMeasureWinSize, VectorOfFloat &vecBlockHeights) {
-    vecBlockHeights.clear();
+/*static*/ cv::Mat Unwrap::_drawHeightGrid(const cv::Mat &matHeight, int nGridRow, int nGridCol, const cv::Size &szMeasureWinSize, VectorOfFloat &vecGridHeights) {
+    vecGridHeights.clear();
     double dMinValue = 0, dMaxValue = 0;
     cv::Mat matMask = (matHeight == matHeight);
     cv::minMaxIdx(matHeight, &dMinValue, &dMaxValue, 0, 0, matMask);
@@ -1463,7 +1463,7 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
         cv::Mat matROI(matHeight, rectROI);
         cv::Mat matMask = (matROI == matROI);
         float fAverage = ToFloat(cv::mean(matROI, matMask)[0]);
-        vecBlockHeights.push_back(fAverage);
+        vecGridHeights.push_back(fAverage);
 
         char strAverage[100];
         _snprintf(strAverage, sizeof(strAverage), "%.4f", fAverage);
@@ -1889,10 +1889,10 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
 
     if (K11 > 1e-5) {
         matBuffer2 = matBuffer1.mul(matPhase);   //Pow 3
-        matBuffer1 = matPhase + matBuffer1 * matK.at<DATA_TYPE>(10) + matBuffer2 * matK.at<DATA_TYPE>(11);
+        matBuffer1 = matPhase + matBuffer1 * K10 + matBuffer2 * K11;
     }
     else {
-        matBuffer1 = matPhase + matBuffer1 * matK.at<DATA_TYPE>(10);
+        matBuffer1 = matPhase + matBuffer1 * K10;
     }
 
     TimeLog::GetInstance()->addTimeLog("_calcHeightFromPhase add and muliply take: ", stopWatch.Span());
@@ -1961,14 +1961,14 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
     pstRpy->matOrder3CurveSurface = calcOrder3Surface(matX, matY, matK);
     for (const auto &stCalibData : pstCmd->vecCalibData) {
         cv::Mat matHeight = _calcHeightFromPhase(stCalibData.matPhase, pstRpy->matOrder3CurveSurface, matK);
-        VectorOfFloat vecBlockHeights;
-        cv::Mat matHeightGridImg = _drawHeightGrid(matHeight, pstCmd->nResultImgGridRow, pstCmd->nResultImgGridCol, pstCmd->szMeasureWinSize, vecBlockHeights);
+        VectorOfFloat vecGridHeights;
+        cv::Mat matHeightGridImg = _drawHeightGrid(matHeight, pstCmd->nResultImgGridRow, pstCmd->nResultImgGridCol, pstCmd->szMeasureWinSize, vecGridHeights);
         pstRpy->vecMatResultImg.push_back(matHeightGridImg);
     }
     if (! pstCmd->matTopSurfacePhase.empty()) {
         cv::Mat matHeight = _calcHeightFromPhase(pstCmd->matTopSurfacePhase, pstRpy->matOrder3CurveSurface, matK);
-        VectorOfFloat vecBlockHeights;
-        cv::Mat matHeightGridImg = _drawHeightGrid(matHeight, pstCmd->nResultImgGridRow, pstCmd->nResultImgGridCol, pstCmd->szMeasureWinSize, vecBlockHeights);
+        VectorOfFloat vecGridHeights;
+        cv::Mat matHeightGridImg = _drawHeightGrid(matHeight, pstCmd->nResultImgGridRow, pstCmd->nResultImgGridCol, pstCmd->szMeasureWinSize, vecGridHeights);
         pstRpy->vecMatResultImg.push_back(matHeightGridImg);
     }
     pstRpy->matIntegratedK = matK;
@@ -2018,9 +2018,9 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
     for (const auto &pairHeightPhase : pstCmd->vecPairHeightPhase) {
         cv::Mat matHeight = _calcHeightFromPhase(pairHeightPhase.second, pstRpy->matOrder3CurveSurface, matK);
         pstRpy->vecHeightCalibResult.push_back(PairHeightCalibResult(pairHeightPhase.first, matHeight));
-        VectorOfFloat vecBlockHeights;
-        cv::Mat matHeightGridImg = _drawHeightGrid(matHeight, pstCmd->nResultImgGridRow, pstCmd->nResultImgGridCol, pstCmd->szMeasureWinSize, vecBlockHeights);
-        pstRpy->vecHeightBlockHeights.push_back(PairHeightBlockHeights(pairHeightPhase.first, vecBlockHeights));
+        VectorOfFloat vecGridHeights;
+        cv::Mat matHeightGridImg = _drawHeightGrid(matHeight, pstCmd->nResultImgGridRow, pstCmd->nResultImgGridCol, pstCmd->szMeasureWinSize, vecGridHeights);
+        pstRpy->vecHeightGridHeights.push_back(PairHeightGridHeights(pairHeightPhase.first, vecGridHeights));
         pstRpy->vecMatResultImg.push_back(matHeightGridImg);
     }
     pstRpy->enStatus = VisionStatus::OK;
@@ -2044,8 +2044,8 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
         cv::Mat matPhaseDiff = CalcUtils::diff(matPhase, 1, 2);
 #ifdef _DEBUG
         //CalcUtils::saveMatToCsv ( matPhase, "./data/HaoYu_20171114/test1/NewLens2/BeforePhaseCorrectionX.csv");
-        auto vecVecPhase = CalcUtils::matToVector<float> ( matPhase );
-        auto vecVecPhaseDiff = CalcUtils::matToVector<float> ( matPhaseDiff );
+        auto vecVecPhase = CalcUtils::matToVector<float>(matPhase);
+        auto vecVecPhaseDiff = CalcUtils::matToVector<float>(matPhaseDiff);
 #endif
         cv::Mat matDiffSign = cv::Mat::zeros(ROWS, COLS, CV_8SC1);
         cv::Mat matDiffAmpl = cv::Mat::zeros(ROWS, COLS, CV_8SC1);
