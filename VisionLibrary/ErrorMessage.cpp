@@ -205,6 +205,11 @@ VisionStatus GetErrorInfo(VisionStatus enStatus, PR_GET_ERROR_INFO_RPY *pstRpy)
         pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::PR_INSP_STATUS;
         break;
 
+    case VisionStatus::CALC_3D_HEIGHT_DIFF_NO_BASE_POINT:
+        _snprintf(pstRpy->achErrorStr, PR_MAX_ERR_STR_LEN, "No effective base point can be used to calculate 3D height difference.");
+        pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::PR_INSP_STATUS;
+        break;
+
     case VisionStatus::BRIDGE_DEFECT:
         _snprintf(pstRpy->achErrorStr, PR_MAX_ERR_STR_LEN, "The inspect window with bridge defect.");
         pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::PR_INSP_STATUS;
@@ -227,6 +232,16 @@ VisionStatus GetErrorInfo(VisionStatus enStatus, PR_GET_ERROR_INFO_RPY *pstRpy)
 
     case VisionStatus::MTF_PATTERN_TOO_SMALL:
         _snprintf(pstRpy->achErrorStr, PR_MAX_ERR_STR_LEN, "The MTF pattern is too small.");
+        pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::PR_INSP_STATUS;
+        break;
+
+    case VisionStatus::NO_2DCODE_DETECTED:
+        _snprintf(pstRpy->achErrorStr, PR_MAX_ERR_STR_LEN, "Cannot detect 2D code.");
+        pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::PR_INSP_STATUS;
+        break;
+
+    case VisionStatus::FAILED_TO_READ_2DCODE:
+        _snprintf(pstRpy->achErrorStr, PR_MAX_ERR_STR_LEN, "Failed to read 2D code.");
         pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::PR_INSP_STATUS;
         break;
 

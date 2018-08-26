@@ -15,7 +15,7 @@ namespace Vision
 
 using VectorOfDMatch = std::vector<cv::DMatch>;
 using VectorOfVectorOfDMatch = std::vector<VectorOfDMatch>;
-using VectorOfKeyPoint =  std::vector<cv::KeyPoint> ;
+using VectorOfKeyPoint =  std::vector<cv::KeyPoint>;
 using VectorOfVectorKeyPoint = std::vector<VectorOfKeyPoint>;
 using VectorOfPoint = std::vector<cv::Point>;
 using VectorOfVectorOfPoint = std::vector<VectorOfPoint>;
@@ -1193,8 +1193,8 @@ using PairHeightPhase = std::pair<float, cv::Mat>;
 using VectorPairHeightPhase = std::vector<PairHeightPhase>;
 using PairHeightCalibResult = std::pair<float, cv::Mat>;
 using VectorHeightCalibResult = std::vector<PairHeightCalibResult>;
-using PairHeightBlockHeights = std::pair<float, VectorOfFloat>;
-using VectorHeightBlockHeights = std::vector<PairHeightBlockHeights>;
+using PairHeightGridHeights = std::pair<float, VectorOfFloat>;
+using VectorHeightGridHeights = std::vector<PairHeightGridHeights>;
 
 struct PR_MOTOR_CALIB_3D_CMD {
     PR_MOTOR_CALIB_3D_CMD() :
@@ -1213,7 +1213,7 @@ struct PR_MOTOR_CALIB_3D_RPY {
     cv::Mat                 matOrder3CurveSurface;  //The regression 3 order curve surface to convert phase to height. It is calculated by K(1)*x1.^3 + K(2)*y1.^3 + K(3)*x1.^2.*y1 + K(4)*x1.*y1.^2 + K(5)*x1.^2 + K(6)*y1.^2 + K(7)*x1.*y1 + K(8)*x1 + K(9)*y1 + K(10)
     VectorOfMat             vecMatResultImg;
     VectorHeightCalibResult vecHeightCalibResult;
-    VectorHeightBlockHeights vecHeightBlockHeights;
+    VectorHeightGridHeights vecHeightGridHeights;
 };
 
 struct PR_CALC_3D_HEIGHT_CMD {
@@ -1275,6 +1275,7 @@ struct PR_CALC_3D_HEIGHT_DIFF_CMD {
         fEffectHRatioStart(0.3f),
         fEffectHRatioEnd(0.7f) {}
     cv::Mat                 matHeight;
+    cv::Mat                 matMask;
     VectorOfRect            vecRectBases;           //One or more bases as the reference surface.
     cv::Rect                rectROI;                //The ROI to measure height difference to base.
     float                   fEffectHRatioStart;     //If fEffectHRatioStart = 0.3, the lower 30% points in the window will be removed for fitting.
@@ -1454,6 +1455,22 @@ struct PR_OCV_RPY {
     cv::Mat                 matResultImg;
     float                   fOverallScore;
     VectorOfFloat           vecCharScore;
+};
+
+struct PR_READ_2DCODE_CMD {
+    PR_READ_2DCODE_CMD() :
+        nEdgeThreshold      (30),
+        nRemoveNoiseArea    (20) {}
+    cv::Mat                 matInputImg;
+    cv::Rect                rectROI;
+    int                     nEdgeThreshold;
+    int                     nRemoveNoiseArea;   // The standalone edge which area smaller than this value will be removed.
+};
+
+struct PR_READ_2DCODE_RPY {
+    VisionStatus            enStatus;
+    String                  strReadResult;
+    cv::Mat                 matResultImg;
 };
 
 }

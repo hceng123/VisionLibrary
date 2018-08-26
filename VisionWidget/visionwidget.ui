@@ -73,7 +73,7 @@
      </rect>
     </property>
     <property name="currentIndex">
-     <number>0</number>
+     <number>6</number>
     </property>
     <widget class="QWidget" name="tabPreProcess">
      <attribute name="title">
@@ -2823,6 +2823,122 @@
        </property>
       </widget>
      </widget>
+     <widget class="QGroupBox" name="groupBoxRead2DCode">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>290</y>
+        <width>611</width>
+        <height>91</height>
+       </rect>
+      </property>
+      <property name="title">
+       <string>Read 2D Barcode</string>
+      </property>
+      <widget class="QPushButton" name="btnRead2DCode">
+       <property name="geometry">
+        <rect>
+         <x>460</x>
+         <y>20</y>
+         <width>141</width>
+         <height>23</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Read 2D Code</string>
+       </property>
+      </widget>
+      <widget class="QLineEdit" name="lineEditEdgeThreshold">
+       <property name="enabled">
+        <bool>true</bool>
+       </property>
+       <property name="geometry">
+        <rect>
+         <x>130</x>
+         <y>30</y>
+         <width>51</width>
+         <height>20</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>30</string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="labelEdgeThreshold">
+       <property name="geometry">
+        <rect>
+         <x>20</x>
+         <y>30</y>
+         <width>91</width>
+         <height>16</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Edge Threshold</string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="label2DCodeResult">
+       <property name="geometry">
+        <rect>
+         <x>230</x>
+         <y>30</y>
+         <width>91</width>
+         <height>16</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>2D Code Result</string>
+       </property>
+      </widget>
+      <widget class="QLineEdit" name="lineEdit2DCodeResult">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
+       <property name="geometry">
+        <rect>
+         <x>330</x>
+         <y>30</y>
+         <width>121</width>
+         <height>20</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string/>
+       </property>
+       <property name="readOnly">
+        <bool>true</bool>
+       </property>
+      </widget>
+      <widget class="QLabel" name="labelRemoveNoiseArea">
+       <property name="geometry">
+        <rect>
+         <x>20</x>
+         <y>60</y>
+         <width>101</width>
+         <height>16</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Remove Noise Area</string>
+       </property>
+      </widget>
+      <widget class="QLineEdit" name="lineEditRemoveNoiseArea">
+       <property name="enabled">
+        <bool>true</bool>
+       </property>
+       <property name="geometry">
+        <rect>
+         <x>130</x>
+         <y>60</y>
+         <width>51</width>
+         <height>20</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>30</string>
+       </property>
+      </widget>
+     </widget>
     </widget>
    </widget>
    <widget class="QCheckBox" name="checkBoxByerFormat">
@@ -2845,7 +2961,7 @@
      <x>0</x>
      <y>0</y>
      <width>1377</width>
-     <height>31</height>
+     <height>21</height>
     </rect>
    </property>
   </widget>

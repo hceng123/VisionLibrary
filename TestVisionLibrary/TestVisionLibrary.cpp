@@ -643,7 +643,7 @@ int _tmain(int argc, _TCHAR* argv[])
     auto fFloorResult = std::floor ( fTest );
 
     PR_Init();
-    PR_SetDebugMode(PR_DEBUG_MODE::SHOW_IMAGE);
+    PR_SetDebugMode(PR_DEBUG_MODE::LOG_ALL_CASE);
 
     //TestTemplate();
     //TestInspDevice();
@@ -710,7 +710,7 @@ int _tmain(int argc, _TCHAR* argv[])
     //TestCalc3DHeight_With_NormalCalibParam();
 
     //TestCalc3DHeight_With_IntegrateCalibParam();
-    //TestMerge3DHeight();
+    TestMerge3DHeight();
 
     //TestIntegrate3DCalibHaoYu();
 
@@ -767,7 +767,11 @@ int _tmain(int argc, _TCHAR* argv[])
     //TestOCV_1();
     //TestOCV_2();
 
-    TestMatchTmpl_1();
+    //TestMatchTmpl_1();
+
+    //TestRead2DCode_1();
+
+    //TestRead2DCode_2();
 
     PR_DumpTimeLog("./Vision/Time.log");
     std::cout << "Press any key to exit." << std::endl;

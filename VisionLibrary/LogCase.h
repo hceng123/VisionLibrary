@@ -879,8 +879,28 @@ private:
     const String _strKeyROI             = "ROI";
     const String _strKeyRecordCount     = "RecordCount";
     const String _strKeyRecordId        = "RecordId_";
-    const String _strKeyMinScore        =  "MinScore";
+    const String _strKeyMinScore        = "MinScore";
 };
+
+class LogCase2DCode : public LogCase
+{
+public:
+    explicit LogCase2DCode(const String &strPath, bool bReplay = false) : LogCase(strPath, bReplay) {}
+    VisionStatus WriteCmd(const PR_READ_2DCODE_CMD *const pstCmd);
+    VisionStatus WriteRpy(const PR_READ_2DCODE_RPY *const pstRpy);
+    virtual VisionStatus RunLogCase() override;
+    virtual String GetFolderPrefix() const { return StaticGetFolderPrefix(); }
+    static String StaticGetFolderPrefix();
+
+private:
+    const String _strKeyROI             = "ROI";
+    const String _strKeyEdgeThreshold   = "EdgeThreshold";
+    const String _strKeyRemoveNoiseArea = "RemoveNoiseArea";
+
+    const String _strKeyStatus          = "Status";
+    const String _strKeyReadResult      = "ReadResult";
+};
+
 
 }
 }

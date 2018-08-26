@@ -7,14 +7,6 @@ namespace AOI
 namespace Vision
 {
 
-/*static*/ double CalcUtils::radian2Degree(double fRadian) {
-    return (fRadian * 180.f / CV_PI);
-}
-
-/*static*/ double CalcUtils::degree2Radian(double fDegree) {
-    return (fDegree * CV_PI / 180.f);
-}
-
 /*static*/ float CalcUtils::ptDisToLine(const cv::Point2f &ptInput, bool bReversedFit, float fSlope, float fIntercept) {
     float distance = 0.f;
     if (bReversedFit) {
@@ -248,6 +240,30 @@ float CalcUtils::calcPointToContourDist(const cv::Point &ptInput, const VectorOf
     }
     else {
         return -1;
+    }
+    return 0;
+}
+
+/*static*/ int CalcUtils::twoLineIntersect(bool bReverseFit1, float fSlope1, float fIntercept1, bool bReverseFit2, float fSlope2, float fIntercept2, cv::Point2f &ptResult) {
+    if (bReverseFit1 == bReverseFit2) {
+        if (fabs(fSlope1 - fSlope2) < 0.01)
+            return -1;
+
+        if (bReverseFit1) {
+            ptResult.y = (fIntercept2 - fIntercept1) / (fSlope1 - fSlope2);
+            ptResult.x = fSlope1 * ptResult.y + fIntercept1;
+        }else {
+            ptResult.x = (fIntercept2 - fIntercept1) / (fSlope1 - fSlope2);
+            ptResult.y = fSlope1 * ptResult.y + fIntercept1;
+        }
+    }else {
+        if (bReverseFit1) {
+            ptResult.y = (fIntercept2 + fIntercept1 * fSlope2) / (1 - fSlope1 * fSlope2);
+            ptResult.x = fSlope1 * ptResult.y + fIntercept1;
+        }else {
+            ptResult.x = (fIntercept2 + fIntercept1 * fSlope2) / (1 - fSlope1 * fSlope2);
+            ptResult.y = fSlope1 * ptResult.x + fIntercept1;
+        }
     }
     return 0;
 }

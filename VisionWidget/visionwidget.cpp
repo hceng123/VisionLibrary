@@ -995,3 +995,32 @@ void VisionWidget::on_btnCameraMTF_clicked() {
         QMessageBox::critical(nullptr, "Camera MTF", stErrStrRpy.achErrorStr, "Quit");
     }
 }
+
+void VisionWidget::on_btnRead2DCode_clicked() {
+    if (_sourceImagePath.empty()) {
+        QMessageBox::information(this, "Vision Widget", "Please select an image first!", "Quit");
+        return;
+    }
+
+    ui.visionView->setState(VisionView::VISION_VIEW_STATE::TEST_VISION_LIBRARY);
+    ui.visionView->applyIntermediateResult();
+
+    PR_READ_2DCODE_CMD stCmd;
+    PR_READ_2DCODE_RPY stRpy;
+
+    stCmd.matInputImg = ui.visionView->getMat();
+    stCmd.rectROI = ui.visionView->getSelectedWindow();
+    stCmd.nEdgeThreshold = ui.lineEditEdgeThreshold->text().toInt();
+    stCmd.nRemoveNoiseArea = ui.lineEditRemoveNoiseArea->text().toInt();
+
+    PR_Read2DCode(&stCmd, &stRpy);
+
+    if (VisionStatus::OK == stRpy.enStatus) {
+        ui.lineEdit2DCodeResult->setText(stRpy.strReadResult.c_str());
+    }
+    else {
+        PR_GET_ERROR_INFO_RPY stErrStrRpy;
+        PR_GetErrorInfo(stRpy.enStatus, &stErrStrRpy);
+        QMessageBox::critical(nullptr, "Read 2D Code", stErrStrRpy.achErrorStr, "Quit");
+    }
+}

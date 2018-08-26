@@ -4,6 +4,7 @@
 #include <vector>
 #include "opencv2/core.hpp"
 #include "VisionStruct.h"
+#include "CalcUtils.h"
 
 namespace AOI
 {
@@ -353,56 +354,68 @@ public:
             for (const auto &it : vecOverTolIter)
                 listPoint.erase ( it );
 
-            Fitting::fitLine ( listPoint, fSlope, fIntercept, bReversedFit );
-            vecOverTolIter = findPointIterOverLineTol ( listPoint.cbegin(), listPoint.cend(), bReversedFit, fSlope, fIntercept, enRmNoiseMethod, fTolerance );
+            Fitting::fitLine(listPoint, fSlope, fIntercept, bReversedFit);
+            vecOverTolIter = findPointIterOverLineTol(listPoint.cbegin(), listPoint.cend(), bReversedFit, fSlope, fIntercept, enRmNoiseMethod, fTolerance );
         } while (!vecOverTolIter.empty () && nIteratorNum < 20);
 
-        if ( listPoint.size () < 2 )
+        if (listPoint.size() < 2)
             return VisionStatus::TOO_MUCH_NOISE_TO_FIT;
 
-        stLine = CalcUtils::calcEndPointOfLine ( listPoint, bReversedFit, fSlope, fIntercept );
+        stLine = CalcUtils::calcEndPointOfLine(listPoint, bReversedFit, fSlope, fIntercept);
         return VisionStatus::OK;
     }
 
     template<typename T>
     static T fitLineRemoveStray(const T               &vecPoints,
-                                bool                   bReversedFit,
+                                bool                  &bReversedFit,
                                 float                  fRmStrayPointRatio,
                                 float                  &fSlope,
-                                float                  &fIntercept )
+                                float                  &fIntercept)
     {
-        Fitting::fitLine ( vecPoints, fSlope, fIntercept, bReversedFit );
-        if ( fRmStrayPointRatio > 0.f ) {
+        std::vector<float> vecX, vecY;
+        for (const auto &point : vecPoints) {
+            vecX.push_back(ToFloat(point.x));
+            vecY.push_back(ToFloat(point.y));
+        }
+
+        //For y = kx + b, the k is the slope, when it is very large, the error is quite big, so change
+        //to get the x = k1 + b1, and get the k = 1 / k1, b = -b1 / k1. Then the result is more accurate.
+        bReversedFit = false;
+        if (CalcUtils::calcStdDeviation(vecY) > CalcUtils::calcStdDeviation(vecX))
+            bReversedFit = true;
+
+        Fitting::fitLine(vecPoints, fSlope, fIntercept, bReversedFit);
+        if (fRmStrayPointRatio > 0.f) {
             T vecKeepPoints;
             VectorOfFloat vecDistance;
-            vecDistance.reserve ( vecPoints.size() );
-        
-            for ( const auto &point : vecPoints ) {
-                auto distance = fabs ( CalcUtils::ptDisToLine ( point, bReversedFit, fSlope, fIntercept ) );
-                vecDistance.push_back ( distance );
+            vecDistance.reserve(vecPoints.size());
+
+            for (const auto &point : vecPoints) {
+                auto distance = fabs(CalcUtils::ptDisToLine(point, bReversedFit, fSlope, fIntercept));
+                vecDistance.push_back(distance);
             }
-            auto vecIndex = CalcUtils::sort_index ( vecDistance );
-            int nPointsToKeep = ToInt32 ( vecPoints.size() * ( 1.f - fRmStrayPointRatio ) );
-            for ( int i = 0; i < nPointsToKeep; ++ i )
-                vecKeepPoints.push_back ( vecPoints[ vecIndex[i] ] );
-            Fitting::fitLine ( vecKeepPoints, fSlope, fIntercept, bReversedFit );
+            auto vecIndex = CalcUtils::sort_index(vecDistance);
+            int nPointsToKeep = ToInt32(vecPoints.size() * (1.f - fRmStrayPointRatio));
+            for (int i = 0; i < nPointsToKeep; ++i)
+                vecKeepPoints.push_back(vecPoints[vecIndex[i]]);
+            Fitting::fitLine(vecKeepPoints, fSlope, fIntercept, bReversedFit);
             return vecKeepPoints;
         }
         return vecPoints;
     }
 
     template<typename T>
-    static T findPointInLineTol(const T &   vecPoint,
+    static T findPointInLineTol(const T    &vecPoint,
                                 bool        bReversedFit,
                                 const float fSlope,
                                 const float fIntercept,
-                                float       fTolerance )
+                                float       fTolerance)
     {
         T vecPointInTol;
         for (const auto &point : vecPoint) {
-            auto disToLine = CalcUtils::ptDisToLine ( point, bReversedFit, fSlope, fIntercept );
-            if (fabs ( disToLine ) <= fTolerance)
-                vecPointInTol.push_back ( point );
+            auto disToLine = CalcUtils::ptDisToLine(point, bReversedFit, fSlope, fIntercept);
+            if (fabs(disToLine) <= fTolerance)
+                vecPointInTol.push_back(point);
         }
         return vecPointInTol;
     }

@@ -122,6 +122,7 @@ VisionAPI VisionStatus PR_Threshold(const PR_THRESHOLD_CMD *const pstCmd, PR_THR
 VisionAPI VisionStatus PR_HeightToGray(const PR_HEIGHT_TO_GRAY_CMD *const pstCmd, PR_HEIGHT_TO_GRAY_RPY *const pstRpy);
 VisionAPI VisionStatus PR_LrnOcv(const PR_LRN_OCV_CMD *const pstCmd, PR_LRN_OCV_RPY *const pstRpy);
 VisionAPI VisionStatus PR_Ocv(const PR_OCV_CMD *const pstCmd, PR_OCV_RPY *const pstRpy);
+VisionAPI VisionStatus PR_Read2DCode(const PR_READ_2DCODE_CMD *const pstCmd, PR_READ_2DCODE_RPY *const pstRpy);
 
 VisionAPI void         _PR_InternalTest();
 }

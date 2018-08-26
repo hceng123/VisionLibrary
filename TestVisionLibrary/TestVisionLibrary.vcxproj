@@ -194,6 +194,7 @@
     <ClCompile Include="TestMisc.cpp" />
     <ClCompile Include="TestMTF.cpp" />
     <ClCompile Include="TestOCV.cpp" />
+    <ClCompile Include="TestRead2DCode.cpp" />
     <ClCompile Include="TestSrchObj.cpp" />
     <ClCompile Include="TestVisionLibrary.cpp" />
   </ItemGroup>

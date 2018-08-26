@@ -93,7 +93,7 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_WINDLL;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(BuildLevel)\ExtLibs\opencv\include;$(BuildLevel)\ExtLibs\boost_1_59_0;$(BuildLevel)\JoinSplit;</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(BuildLevel)\ExtLibs\opencv\include;$(BuildLevel)\ExtLibs\boost_1_59_0;$(BuildLevel)\JoinSplit;$(BuildLevel)\libzxing\core\src;$(BuildLevel)\libzxing\opencv\src</AdditionalIncludeDirectories>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
     </ClCompile>
     <Link>
@@ -129,7 +129,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_WINDLL;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(BuildLevel)\ExtLibs\opencv\include;$(BuildLevel)\ExtLibs\boost_1_59_0;$(BuildLevel)\JoinSplit;</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(BuildLevel)\ExtLibs\opencv\include;$(BuildLevel)\ExtLibs\boost_1_59_0;$(BuildLevel)\JoinSplit;$(BuildLevel)\JoinSplit;$(BuildLevel)\libzxing\core\src;$(BuildLevel)\libzxing\opencv\src</AdditionalIncludeDirectories>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
     </ClCompile>
     <Link>
@@ -141,10 +141,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Auxiliary.hpp" />
     <ClInclude Include="BaseDefs.h" />
     <ClInclude Include="BaseType.h" />
     <ClInclude Include="CalcUtils.h" />
     <ClInclude Include="Config.h" />
+    <ClInclude Include="DataMatrix.h" />
     <ClInclude Include="Exception.h" />
     <ClInclude Include="FileUtils.h" />
     <ClInclude Include="Fitting.h" />
@@ -170,6 +172,7 @@
   <ItemGroup>
     <ClCompile Include="CalcUtils.cpp" />
     <ClCompile Include="Config.cpp" />
+    <ClCompile Include="DataMatrix.cpp" />
     <ClCompile Include="ErrorMessage.cpp" />
     <ClCompile Include="Exception.cpp" />
     <ClCompile Include="FileUtils.cpp" />
@@ -192,6 +195,9 @@
     </ProjectReference>
     <ProjectReference Include="..\JoinSplit\JoinSplit.vcxproj">
       <Project>{88f7bea9-0810-464d-a949-8f63f38bed25}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\libzxing\libzxing.vcxproj">
+      <Project>{e1bc0acb-38fd-4742-85b8-b4ec998a2ccf}</Project>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

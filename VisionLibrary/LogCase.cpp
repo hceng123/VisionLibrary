@@ -2519,5 +2519,59 @@ VisionStatus LogCaseOcv::RunLogCase() {
     return enStatus;
 }
 
+/*static*/ String LogCase2DCode::StaticGetFolderPrefix() {
+    return "2DCode";
+}
+
+VisionStatus LogCase2DCode::WriteCmd(const PR_READ_2DCODE_CMD *const pstCmd) {
+    if (!_bReplay) {
+        _strLogCasePath = _generateLogCaseName(GetFolderPrefix());
+        bfs::path dir(_strLogCasePath);
+        bfs::create_directories(dir);
+    }
+
+    CSimpleIni ini(false, false, false);
+    auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
+    ini.LoadFile(cmdRpyFilePath.c_str());
+    ini.SetValue(_CMD_SECTION.c_str(), _strKeyROI.c_str(), _formatRect(pstCmd->rectROI).c_str());
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyEdgeThreshold.c_str(), pstCmd->nEdgeThreshold);
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyRemoveNoiseArea.c_str(), pstCmd->nRemoveNoiseArea);
+    ini.SaveFile(cmdRpyFilePath.c_str());
+
+    cv::imwrite(_strLogCasePath + _IMAGE_NAME, pstCmd->matInputImg);
+    return VisionStatus::OK;
+}
+
+VisionStatus LogCase2DCode::WriteRpy(const PR_READ_2DCODE_RPY *const pstRpy) {
+    CSimpleIni ini(false, false, false);
+    auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
+    ini.LoadFile(cmdRpyFilePath.c_str());
+    ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyStatus.c_str(), ToInt32(pstRpy->enStatus));
+    ini.SetValue(_RPY_SECTION.c_str(), _strKeyReadResult.c_str(), pstRpy->strReadResult.c_str());
+    ini.SaveFile(cmdRpyFilePath.c_str());
+    if (! pstRpy->matResultImg.empty())
+        cv::imwrite(_strLogCasePath + _RESULT_IMAGE_NAME, pstRpy->matResultImg);
+    _zip();
+    return VisionStatus::OK;
+}
+
+VisionStatus LogCase2DCode::RunLogCase() {
+    PR_READ_2DCODE_CMD stCmd;
+    PR_READ_2DCODE_RPY stRpy;
+
+    CSimpleIni ini(false, false, false);
+    auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
+    ini.LoadFile(cmdRpyFilePath.c_str());
+    stCmd.matInputImg = cv::imread(_strLogCasePath + _IMAGE_NAME, cv::IMREAD_COLOR);
+
+    stCmd.rectROI = _parseRect(ini.GetValue(_CMD_SECTION.c_str(), _strKeyROI.c_str(), _DEFAULT_RECT.c_str()));
+    stCmd.nEdgeThreshold = ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyEdgeThreshold.c_str(), 30);
+    stCmd.nRemoveNoiseArea = ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyRemoveNoiseArea.c_str(), 30);
+
+    VisionStatus enStatus = VisionStatus::OK;
+    enStatus = VisionAlgorithm::read2DCode(&stCmd, &stRpy, true);
+    WriteRpy(&stRpy);
+    return enStatus;
+}
 }
 }

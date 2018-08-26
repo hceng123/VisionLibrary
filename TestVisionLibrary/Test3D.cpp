@@ -712,13 +712,13 @@ void TestMerge3DHeight() {
     std::string strArrayHeightFile[2] = {strWorkingFolder + "newLens1/Height.yml",
                                          strWorkingFolder + "newLens2/Height.yml"};
 
-    for ( int i = 0; i < 2; ++ i ) {
+    for (int i = 0; i < 2; ++i) {
         cv::Mat matHeight;
-        cv::FileStorage fs ( strArrayHeightFile[i], cv::FileStorage::READ );
+        cv::FileStorage fs(strArrayHeightFile[i], cv::FileStorage::READ);
         cv::FileNode fileNode = fs["Height"];
-        cv::read ( fileNode, matHeight, cv::Mat () );
-        fs.release ();
-        stCmd.vecMatHeight.push_back ( matHeight );
+        cv::read(fileNode, matHeight, cv::Mat());
+        fs.release();
+        stCmd.vecMatHeight.push_back(matHeight);
     }
 
     stCmd.fRemoveLowerNoiseRatio = 0.005f;
@@ -727,42 +727,47 @@ void TestMerge3DHeight() {
     if ( VisionStatus::OK != stRpy.enStatus )
         return;
 
-    cv::Mat matHeightResultImg = _drawHeightGrid ( stRpy.matHeight, 10, 10 );
-    cv::imwrite ( strWorkingFolder + "PR_TestMerge3DHeight_HeightGridImg.png", matHeightResultImg );
+    cv::Mat matHeightResultImg = _drawHeightGrid(stRpy.matHeight, 10, 10);
+    cv::imwrite(strWorkingFolder + "PR_TestMerge3DHeight_HeightGridImg.png", matHeightResultImg);
 
-    saveMatToCsv ( stRpy.matHeight, strWorkingFolder + "MergeHeight.csv");
+    saveMatToCsv(stRpy.matHeight, strWorkingFolder + "MergeHeight.csv");
 
     double dMinValue = 0, dMaxValue = 0;
     cv::Point ptMin, ptMax;
     cv::Mat matMask = (stRpy.matHeight == stRpy.matHeight); //Find out value is not NAN.
     cv::Mat matNanMask = 255 - matMask;
-    cv::minMaxLoc ( stRpy.matHeight, &dMinValue, &dMaxValue, &ptMin, &ptMax, matMask );
+    cv::minMaxLoc(stRpy.matHeight, &dMinValue, &dMaxValue, &ptMin, &ptMax, matMask);
     std::cout << "Minimum position " << ptMin << " min value: " << dMinValue << std::endl;
     std::cout << "Maximum position " << ptMax << " max value: " << dMaxValue << std::endl;
-    double dMean = cv::mean ( stRpy.matHeight, matMask)[0];
+    double dMean = cv::mean(stRpy.matHeight, matMask)[0];
     std::cout << "Mean height " << dMean << std::endl;
     VectorOfPoint vecNanPoints;
-    cv::findNonZero ( matNanMask, vecNanPoints );
+    cv::findNonZero(matNanMask, vecNanPoints);
     std::cout << "Count of nan: " << vecNanPoints.size() << std::endl;
-    for ( const auto &point : vecNanPoints )
+    for (const auto &point : vecNanPoints)
         std::cout << point << std::endl;
     cv::Mat matNorm;
-    cv::normalize ( stRpy.matHeight, matNorm, 0, 255, cv::NormTypes::NORM_MINMAX, CV_8UC1 );
-    cv::imwrite ( strWorkingFolder + "PR_TestMerge3DHeight_NormHeight.png", matNorm );
+    cv::normalize(stRpy.matHeight, matNorm, 0, 255, cv::NormTypes::NORM_MINMAX, CV_8UC1);
+    cv::imwrite(strWorkingFolder + "PR_TestMerge3DHeight_NormHeight.png", matNorm);
+
+    TestCalc3DHeightDiff(stRpy.matHeight);
 }
 
 void TestCalc3DHeightDiff(const cv::Mat &matHeight) {
     PR_CALC_3D_HEIGHT_DIFF_CMD stCmd;
     PR_CALC_3D_HEIGHT_DIFF_RPY stRpy;
     stCmd.matHeight = matHeight;
+    stCmd.matMask = cv::Mat::zeros(matHeight.size(), CV_8UC1);
+    cv::Mat matMaskROI(stCmd.matMask, cv::Rect(727, 714, 80, 60));
+    matMaskROI.setTo(PR_MAX_GRAY_LEVEL);
     //stCmd.vecRectBases.push_back ( cv::Rect (761, 1783, 161, 113 ) );
     //stCmd.vecRectBases.push_back ( cv::Rect (539, 1370, 71, 32 ) );
     //stCmd.rectROI = cv::Rect(675, 1637, 103, 78 );
-    stCmd.vecRectBases.push_back ( cv::Rect (550, 787, 95, 184 ) );
-    stCmd.rectROI = cv::Rect ( 709, 852, 71, 69 );
-    PR_Calc3DHeightDiff ( &stCmd, &stRpy );
-    std::cout << "PR_Calc3DHeightDiff status " << ToInt32( stRpy.enStatus ) << std::endl;
-    if ( VisionStatus::OK == stRpy.enStatus ) {
+    stCmd.vecRectBases.push_back(cv::Rect(727, 714, 169, 128));
+    stCmd.rectROI = cv::Rect(859, 887, 98, 81);
+    PR_Calc3DHeightDiff(&stCmd, &stRpy);
+    std::cout << "PR_Calc3DHeightDiff status " << ToInt32(stRpy.enStatus) << std::endl;
+    if (VisionStatus::OK == stRpy.enStatus) {
         std::cout << "Height Diff Result " << stRpy.fHeightDiff << std::endl;
     }
 }

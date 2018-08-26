@@ -14,8 +14,11 @@
  * Copyright (c) 2016-2018, Xiao Shengguang.  All rights reserved.
  ****************************************************************************/
 
+//2018-08-22 (XSG) Add matMask in PR_CALC_3D_HEIGHT_DIFF_CMD
+#define AOI_VISION_VERSION          "1.00.41"
+
 //2018-08-07 (XSG) Add matMask in PR_LRN_TEMPLATE_CMD.
-#define AOI_VISION_VERSION          "1.00.40"
+//#define AOI_VISION_VERSION          "1.00.40"
 
 //2018-08-06 (XSG) Add PR_GetRecordInfo function.
 //                 Display the detailed result of OCV on result image.

@@ -77,16 +77,16 @@ void TestCalib3dBaseSub(
     std::string strFolder = strParentPath + strImageFolder + "/";
     PR_CALIB_3D_BASE_CMD stCmd;
     PR_CALIB_3D_BASE_RPY stRpy;
-    for ( int i = 1; i <= IMAGE_COUNT; ++ i ) {
+    for (int i = 1; i <= IMAGE_COUNT; ++i) {
         char chArrFileName[100];
-        _snprintf( chArrFileName, sizeof (chArrFileName), "%02d.bmp", i );
+        _snprintf(chArrFileName, sizeof(chArrFileName), "%02d.bmp", i);
         std::string strImageFile = strFolder + chArrFileName;
-        cv::Mat mat = cv::imread ( strImageFile, cv::IMREAD_GRAYSCALE );
-        stCmd.vecInputImgs.push_back ( mat );
+        cv::Mat mat = cv::imread(strImageFile, cv::IMREAD_GRAYSCALE);
+        stCmd.vecInputImgs.push_back(mat);
     }
     stCmd.bEnableGaussianFilter = true;
-    PR_Calib3DBase ( &stCmd, &stRpy );
-    std::cout << "PR_Calib3DBase status " << ToInt32( stRpy.enStatus ) << std::endl;
+    PR_Calib3DBase(&stCmd, &stRpy);
+    std::cout << "PR_Calib3DBase status " << ToInt32(stRpy.enStatus) << std::endl;
     std::cout << "ReverseSeq: " << stRpy.bReverseSeq << std::endl;
     std::cout << "ThickToThinK: " << std::endl;
     printfMat<float>(stRpy.matThickToThinK);
@@ -95,14 +95,14 @@ void TestCalib3dBaseSub(
 
     std::string strResultMatPath = strParentPath + "CalibPP.yml";
     cv::FileStorage fs(strResultMatPath, cv::FileStorage::WRITE);
-    if ( ! fs.isOpened() )
+    if (!fs.isOpened())
         return;
-    cv::write ( fs, "ReverseSeq", stRpy.bReverseSeq );
-    cv::write ( fs, "K1", stRpy.matThickToThinK );
-    cv::write ( fs, "K2", stRpy.matThickToThinnestK );
-    cv::write ( fs, "BaseWrappedAlpha", stRpy.matBaseWrappedAlpha );
-    cv::write ( fs, "BaseWrappedBeta",  stRpy.matBaseWrappedBeta );
-    cv::write ( fs, "BaseWrappedGamma", stRpy.matBaseWrappedGamma );
+    cv::write(fs, "ReverseSeq", stRpy.bReverseSeq);
+    cv::write(fs, "K1", stRpy.matThickToThinK);
+    cv::write(fs, "K2", stRpy.matThickToThinnestK);
+    cv::write(fs, "BaseWrappedAlpha", stRpy.matBaseWrappedAlpha);
+    cv::write(fs, "BaseWrappedBeta", stRpy.matBaseWrappedBeta);
+    cv::write(fs, "BaseWrappedGamma", stRpy.matBaseWrappedGamma);
     fs.release();
 }
 
@@ -129,23 +129,23 @@ void TestCalib3DHeightSub(
     const int IMAGE_COUNT = 12;
     PR_CALIB_3D_HEIGHT_CMD stCmd;
     PR_CALIB_3D_HEIGHT_RPY stRpy;
-    for ( int i = 1; i <= IMAGE_COUNT; ++ i ) {
+    for (int i = 1; i <= IMAGE_COUNT; ++i) {
         char chArrFileName[100];
-        _snprintf( chArrFileName, sizeof (chArrFileName), "%02d.bmp", i );
+        _snprintf(chArrFileName, sizeof(chArrFileName), "%02d.bmp", i);
         std::string strImageFile = strParentPath + strImageFolder + "/" + chArrFileName;
-        cv::Mat mat = cv::imread ( strImageFile, cv::IMREAD_GRAYSCALE );
-        stCmd.vecInputImgs.push_back ( mat );
+        cv::Mat mat = cv::imread(strImageFile, cv::IMREAD_GRAYSCALE);
+        stCmd.vecInputImgs.push_back(mat);
     }
     stCmd.bEnableGaussianFilter = true;
     stCmd.bReverseSeq = bReverseSeq;
     stCmd.bUseThinnestPattern = bUseGamma;
     stCmd.bReverseHeight = bReverseHeight;
-    if ( stCmd.bUseThinnestPattern )
+    if (stCmd.bUseThinnestPattern)
         stCmd.fMinAmplitude = 8.f;
     else
         stCmd.fMinAmplitude = 2.f;
     stCmd.nBlockStepCount = nBlockStepCount;
-    stCmd.fBlockStepHeight = 1.f;    
+    stCmd.fBlockStepHeight = 1.f;
 
     stCmd.matThickToThinK = matThickToThinK;
     stCmd.matThickToThinnestK = matThickToThinnestK;
@@ -153,35 +153,35 @@ void TestCalib3DHeightSub(
     stCmd.matBaseWrappedBeta = matBaseWrappedBeta;
     stCmd.matBaseWrappedGamma = matBaseWrappedGamma;
 
-    PR_Calib3DHeight ( &stCmd, &stRpy );
-    std::cout << "PR_Calib3DHeight status " << ToInt32( stRpy.enStatus ) << std::endl;
-    if ( VisionStatus::OK != stRpy.enStatus )
+    PR_Calib3DHeight(&stCmd, &stRpy);
+    std::cout << "PR_Calib3DHeight status " << ToInt32(stRpy.enStatus) << std::endl;
+    if (VisionStatus::OK != stRpy.enStatus)
         return;
     std::cout << "PhaseToHeightK: " << std::endl;
     printfMat<float>(stRpy.matPhaseToHeightK);
 
     std::cout << "Fetched StepPhase: " << std::endl;
-    printfVectorOfVector<float> ( stRpy.vecVecStepPhase );
+    printfVectorOfVector<float>(stRpy.vecVecStepPhase);
 
     std::cout << "Step-Phase slope: " << std::endl;
-    for ( const auto &value : stRpy.vecStepPhaseSlope)
+    for (const auto &value : stRpy.vecStepPhaseSlope)
         printf("%.2f ", value);
     std::cout << std::endl;
 
     std::cout << "StepPhaseDiff: " << std::endl;
-    printfVectorOfVector<float> ( stRpy.vecVecStepPhaseDiff );
+    printfVectorOfVector<float>(stRpy.vecVecStepPhaseDiff);
 
     String strCaseNo = std::to_string(nCaseNo);
-    cv::imwrite ( strParentPath + "PR_Calib3DHeight_DivideStepResultImg_"    + strCaseNo + ".png", stRpy.matDivideStepResultImg );
-    cv::imwrite ( strParentPath + "PR_Calib3DHeight_Calib3DHeightResultImg_" + strCaseNo + ".png", stRpy.matResultImg );
+    cv::imwrite(strParentPath + "PR_Calib3DHeight_DivideStepResultImg_" + strCaseNo + ".png", stRpy.matDivideStepResultImg);
+    cv::imwrite(strParentPath + "PR_Calib3DHeight_Calib3DHeightResultImg_" + strCaseNo + ".png", stRpy.matResultImg);
 
     String strResultNo = std::to_string(nResultNo);
     std::string strCalibDataFile(strParentPath + strResultNo + ".yml");
-    cv::FileStorage fsCalibData ( strCalibDataFile, cv::FileStorage::WRITE );
-    if ( ! fsCalibData.isOpened() )
+    cv::FileStorage fsCalibData(strCalibDataFile, cv::FileStorage::WRITE);
+    if (!fsCalibData.isOpened())
         return;
-    cv::write ( fsCalibData, "Phase", stRpy.matPhase );
-    cv::write ( fsCalibData, "DivideStepIndex", stRpy.matDivideStepIndex );
+    cv::write(fsCalibData, "Phase", stRpy.matPhase);
+    cv::write(fsCalibData, "DivideStepIndex", stRpy.matDivideStepIndex);
     fsCalibData.release();
 }
 
@@ -205,12 +205,12 @@ void TestCalcTopSurface3DHeightSub(
     const int IMAGE_COUNT = 12;
     PR_CALC_3D_HEIGHT_CMD stCmd;
     PR_CALC_3D_HEIGHT_RPY stRpy;
-    for ( int i = 1; i <= IMAGE_COUNT; ++ i ) {
+    for (int i = 1; i <= IMAGE_COUNT; ++i) {
         char chArrFileName[100];
-        _snprintf( chArrFileName, sizeof (chArrFileName), "%02d.bmp", i );
+        _snprintf(chArrFileName, sizeof(chArrFileName), "%02d.bmp", i);
         std::string strImageFile = strParentPath + strImageFolder + "/" + chArrFileName;
-        cv::Mat mat = cv::imread ( strImageFile, cv::IMREAD_GRAYSCALE );
-        stCmd.vecInputImgs.push_back ( mat );
+        cv::Mat mat = cv::imread(strImageFile, cv::IMREAD_GRAYSCALE);
+        stCmd.vecInputImgs.push_back(mat);
     }
     stCmd.bEnableGaussianFilter = true;
     stCmd.bReverseSeq = true;
@@ -224,24 +224,24 @@ void TestCalcTopSurface3DHeightSub(
     stCmd.matBaseWrappedBeta = matBaseWrappedBeta;
     stCmd.matBaseWrappedGamma = matBaseWrappedGamma;
 
-    PR_Calc3DHeight ( &stCmd, &stRpy );
-    std::cout << "PR_Calc3DHeight status " << ToInt32( stRpy.enStatus ) << std::endl;
-    if ( VisionStatus::OK != stRpy.enStatus )
+    PR_Calc3DHeight(&stCmd, &stRpy);
+    std::cout << "PR_Calc3DHeight status " << ToInt32(stRpy.enStatus) << std::endl;
+    if (VisionStatus::OK != stRpy.enStatus)
         return;
 
     cv::Mat matMask = stRpy.matPhase == stRpy.matPhase;
-    float fMeanPhase = ToFloat ( cv::mean ( stRpy.matPhase, matMask )[0] );
+    float fMeanPhase = ToFloat(cv::mean(stRpy.matPhase, matMask)[0]);
     std::cout << "Mean Phase: " << fMeanPhase << std::endl;
 
     std::cout << "Grid snoop phase: " << std::endl;
-    cv::Mat matPhaseResultImg = _drawHeightGrid ( stRpy.matHeight, 10, 10 );
-    cv::imwrite ( strParentPath + "PR_Calc3DHeight_H5_PhaseGridImg.png", matPhaseResultImg );
+    cv::Mat matPhaseResultImg = _drawHeightGrid(stRpy.matHeight, 10, 10);
+    cv::imwrite(strParentPath + "PR_Calc3DHeight_H5_PhaseGridImg.png", matPhaseResultImg);
 
-    std::string strCalibDataFile( strParentPath + "H5.yml");
-    cv::FileStorage fsCalibData ( strCalibDataFile, cv::FileStorage::WRITE );
-    if ( ! fsCalibData.isOpened() )
+    std::string strCalibDataFile(strParentPath + "H5.yml");
+    cv::FileStorage fsCalibData(strCalibDataFile, cv::FileStorage::WRITE);
+    if (!fsCalibData.isOpened())
         return;
-    cv::write ( fsCalibData, "Phase", stRpy.matPhase );
+    cv::write(fsCalibData, "Phase", stRpy.matPhase);
     fsCalibData.release();
 }
 

@@ -78,6 +78,7 @@ enum class VisionStatus
     //3D Status
     CALIB_3D_HEIGHT_SURFACE_TOO_SMALL   = 100,
     CALIB_3D_HEIGHT_NO_BASE_STEP        = 101,
+    CALC_3D_HEIGHT_DIFF_NO_BASE_POINT   = 102,
 
     //Bridge status
     BRIDGE_DEFECT                       = 120,
@@ -89,6 +90,10 @@ enum class VisionStatus
     //Camera MTF
     CAN_NOT_FIND_MTF_PATTERN            = 150,
     MTF_PATTERN_TOO_SMALL               = 151,
+
+    //Read 2D Code
+    NO_2DCODE_DETECTED                  = 160,
+    FAILED_TO_READ_2DCODE               = 161,
 
     //Caliper related errors
     CALIPER_CAN_NOT_FIND_LINE           = 200,

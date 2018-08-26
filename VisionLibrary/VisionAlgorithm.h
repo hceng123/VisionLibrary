@@ -98,9 +98,11 @@ public:
     static VisionStatus heightToGray(const PR_HEIGHT_TO_GRAY_CMD *const pstCmd, PR_HEIGHT_TO_GRAY_RPY *const pstRpy, bool bReplay = false);
     static VisionStatus lrnOcv(const PR_LRN_OCV_CMD *const pstCmd, PR_LRN_OCV_RPY *const pstRpy, bool bReplay = false);
     static VisionStatus ocv(const PR_OCV_CMD *const pstCmd, PR_OCV_RPY *const pstRpy, bool bReplay = false);
+    static VisionStatus read2DCode(const PR_READ_2DCODE_CMD *const pstCmd, PR_READ_2DCODE_RPY *const pstRpy, bool bReplay = false);
 
 protected:
     static VisionStatus _checkInputROI(const cv::Rect &rect, const cv::Mat &matInputImg, const char *filename, int line);
+    static VisionStatus _checkMask(const cv::Mat &matInput, const cv::Mat &matMask, const char *filename, int line);
     static LogCasePtr _createLogCaseInstance(const String &strFolderPrefix, const String &strLocalPath);
 	int _findBlob(const cv::Mat &mat, const cv::Mat &matRevs, PR_INSP_SURFACE_CMD *const pInspCmd, PR_INSP_SURFACE_RPY *pInspRpy );
 	int _findLine(const cv::Mat &mat, PR_INSP_SURFACE_CMD *const pInspCmd, PR_INSP_SURFACE_RPY *pInspRpy );
@@ -228,6 +230,10 @@ protected:
     static VisionStatus _autoLocateLeadByContour(const cv::Mat &matGray, const PR_AUTO_LOCATE_LEAD_CMD *const pstCmd, PR_AUTO_LOCATE_LEAD_RPY *const pstRpy);
     static VisionStatus _imageSplitByMax(const cv::Mat &matInput, UInt16 objCount, std::vector<int> &vecIndex1, std::vector<int> &vecIndex2);
     static VisionStatus _imageSplitByMaxNew(const cv::Mat &matInput, UInt16 objCount, std::vector<int> &vecIndex1, std::vector<int> &vecIndex2);
+    static cv::Mat _imageFilling(const cv::Mat &matInput, cv::Mat &matOuterEdge);
+    static VectorOfPoint2f _lineIntersect4P(std::vector<int> &vecReverseFit, VectorOfFloat &vecSlope, VectorOfFloat &vecIntercept);
+    static bool _lineScanRow(const cv::Mat &matInput, int &n, int &startRow);
+    static bool _lineScanMatrix(const cv::Mat &matInput, int &m, int &n, int &startRow, int &startCol);    
 
 protected:
     static const int       _constMinHessian        = 300;

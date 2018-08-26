@@ -60,13 +60,13 @@ public:
     }
 
     template<typename Tp>
-    static inline Tp mean(const std::vector<Tp> &vecInput) {
+    static inline float mean(const std::vector<Tp> &vecInput) {
         if (vecInput.empty())
             return 0;
         Tp sum = 0;
         for (auto value : vecInput)
             sum += value;
-        return sum / vecInput.size();
+        return ToFloat(sum) / ToFloat(vecInput.size());
     }
 
     //Calculate deviation in one pass. The algorithm is get from https://www.strchr.com/standard_deviation_in_one_pass
@@ -229,7 +229,7 @@ public:
 
     static inline cv::Mat getNanMask(const cv::Mat &matInput) {
         cv::Mat matResult = cv::Mat(matInput == matInput);
-        matResult = 255 - matResult;
+        matResult = PR_MAX_GRAY_LEVEL - matResult;
         return matResult;
     }
 
@@ -316,9 +316,12 @@ public:
         return vecResult;
     }
 
-    static inline cv::Mat diff(const cv::Mat &matInput, int nRecersiveTime, int nDimension) {
-        const int DIFF_ON_Y_DIR = 1;
-        const int DIFF_ON_X_DIR = 2;
+    enum {
+        DIFF_ON_Y_DIR = 1,
+        DIFF_ON_X_DIR = 2,
+    };
+
+    static inline cv::Mat diff(const cv::Mat &matInput, int nRecersiveTime, int nDimension) {        
         assert(DIFF_ON_X_DIR == nDimension || DIFF_ON_Y_DIR == nDimension);
         if (nRecersiveTime > 1)
             return diff(diff(matInput, nRecersiveTime - 1, nDimension), 1, nDimension);
@@ -402,8 +405,16 @@ public:
         return line;
     }
 
-    static double radian2Degree(double dRadian);
-    static double degree2Radian(double dDegree);
+    template<typename T>
+    static T radian2Degree(T radian) {
+        return (radian * 180.f / static_cast<T>(CV_PI));
+    }
+
+    template<typename T>
+    static T degree2Radian(T degree) {
+        return (degree * static_cast<T>(CV_PI) / 180.f);
+    }
+
     static float ptDisToLine(const cv::Point2f &ptInput, bool bReversedFit, float fSlope, float fIntercept);
     static float lineSlope(const PR_Line2f &line);
     static void lineSlopeIntercept(const PR_Line2f &line, float &fSlope, float &fIntercept);
@@ -421,6 +432,7 @@ public:
     static VectorOfDouble interp1(const VectorOfDouble &vecX, const VectorOfDouble &vecV, const VectorOfDouble &vecXq, bool bSpine = false);
     static void saveMatToCsv(const cv::Mat &matrix, std::string filename);
     static int twoLineIntersect(const PR_Line2f &line1, const PR_Line2f &line2, cv::Point2f &ptResult);
+    static int twoLineIntersect(bool bReverseFit1, float fSlope1, float fIntercept1, bool bReverseFit2, float fSlope2, float fIntercept2, cv::Point2f &ptResult);
     static float calc2LineAngle(const PR_Line2f &line1, const PR_Line2f &line2);
     static float linearInterpolate(const cv::Point2f &pt1, float fValue1, const cv::Point2f &pt2, float fValue2, const cv::Point2f &ptToGet);
     static float bilinearInterpolate(const VectorOfPoint2f &vecPoint, const VectorOfFloat &vecValue, const cv::Point2f &ptToGet);
