@@ -133,42 +133,44 @@ static cv::Mat _drawHeightGrid(const cv::Mat &matHeight, int nGridRow, int nGrid
     return matResultImg;
 }
 
-static std::string gstrWorkingFolder("./data/HaoYu_20171208_2/newLens1/");
+static std::string gstrWorkingFolder("./data/HaoYu_20171114/test1/NewLens1/");
 //static std::string gstrWorkingFolder("./data/HaoYu_20171208/");
 static std::string gstrCalibResultFile = gstrWorkingFolder + "CalibPP.yml";
-static std::string gstrIntegrateCalibResultFile( gstrWorkingFolder + "IntegrateCalibResult.yml" );
+static std::string gstrIntegrateCalibResultFile(gstrWorkingFolder + "IntegrateCalibResult.yml");
 bool gbUseGamma = true;
 const int IMAGE_COUNT = 12;
 void TestCalib3dBase() {
-    std::string strFolder = gstrWorkingFolder + "1208213334_base1/";
+    std::string strFolder = gstrWorkingFolder + "1114193238_base/";
     PR_CALIB_3D_BASE_CMD stCmd;
     PR_CALIB_3D_BASE_RPY stRpy;
-    for ( int i = 1; i <= IMAGE_COUNT; ++ i ) {
+    for (int i = 1; i <= IMAGE_COUNT; ++i) {
         char chArrFileName[100];
-        _snprintf( chArrFileName, sizeof (chArrFileName), "%02d.bmp", i );
+        _snprintf(chArrFileName, sizeof(chArrFileName), "%02d.bmp", i);
         std::string strImageFile = strFolder + chArrFileName;
-        cv::Mat mat = cv::imread ( strImageFile, cv::IMREAD_GRAYSCALE );
-        if ( mat.empty() ) {
+        cv::Mat mat = cv::imread(strImageFile, cv::IMREAD_GRAYSCALE);
+        if (mat.empty()) {
             std::cout << "Failed to read image " << strImageFile << std::endl;
             return;
         }
-        stCmd.vecInputImgs.push_back ( mat );
+        stCmd.vecInputImgs.push_back(mat);
     }
     stCmd.bEnableGaussianFilter = true;
     stCmd.fRemoveHarmonicWaveK = 0.f;
-    PR_Calib3DBase ( &stCmd, &stRpy );
-    std::cout << "PR_Calib3DBase status " << ToInt32( stRpy.enStatus ) << std::endl;
+    PR_Calib3DBase(&stCmd, &stRpy);
+    std::cout << "PR_Calib3DBase status " << ToInt32(stRpy.enStatus) << std::endl;
 
     std::string strResultMatPath = gstrCalibResultFile;
     cv::FileStorage fs(strResultMatPath, cv::FileStorage::WRITE);
-    if ( ! fs.isOpened() )
+    if (!fs.isOpened())
         return;
 
-    cv::write ( fs, "K1", stRpy.matThickToThinK );
-    cv::write ( fs, "K2", stRpy.matThickToThinnestK );
-    cv::write ( fs, "BaseWrappedAlpha", stRpy.matBaseWrappedAlpha );
-    cv::write ( fs, "BaseWrappedBeta",  stRpy.matBaseWrappedBeta );
-    cv::write ( fs, "BaseWrappedGamma", stRpy.matBaseWrappedGamma );
+    cv::write(fs, "ProjectDir", ToInt32(stRpy.enProjectDir));
+    cv::write(fs, "ScanDir", ToInt32(stRpy.enScanDir));
+    cv::write(fs, "K1", stRpy.matThickToThinK);
+    cv::write(fs, "K2", stRpy.matThickToThinnestK);
+    cv::write(fs, "BaseWrappedAlpha", stRpy.matBaseWrappedAlpha);
+    cv::write(fs, "BaseWrappedBeta", stRpy.matBaseWrappedBeta);
+    cv::write(fs, "BaseWrappedGamma", stRpy.matBaseWrappedGamma);
     fs.release();
 }
 
@@ -202,20 +204,20 @@ void TestCalib3DHeight_01() {
     cv::Mat matBaseSurfaceParam;
 
     std::string strResultMatPath = gstrCalibResultFile;
-    cv::FileStorage fs ( strResultMatPath, cv::FileStorage::READ );
+    cv::FileStorage fs(strResultMatPath, cv::FileStorage::READ);
     cv::FileNode fileNode = fs["K1"];
-    cv::read ( fileNode, stCmd.matThickToThinK, cv::Mat() );
+    cv::read(fileNode, stCmd.matThickToThinK, cv::Mat());
     fileNode = fs["K2"];
-    cv::read ( fileNode, stCmd.matThickToThinnestK, cv::Mat() );
+    cv::read(fileNode, stCmd.matThickToThinnestK, cv::Mat());
     fileNode = fs["BaseWrappedAlpha"];
-    cv::read ( fileNode, stCmd.matBaseWrappedAlpha, cv::Mat() );
+    cv::read(fileNode, stCmd.matBaseWrappedAlpha, cv::Mat());
     fileNode = fs["BaseWrappedBeta"];
-    cv::read ( fileNode, stCmd.matBaseWrappedBeta, cv::Mat() );
+    cv::read(fileNode, stCmd.matBaseWrappedBeta, cv::Mat());
     fileNode = fs["BaseWrappedGamma"];
-    cv::read ( fileNode, stCmd.matBaseWrappedGamma, cv::Mat() );
+    cv::read(fileNode, stCmd.matBaseWrappedGamma, cv::Mat());
     fs.release();
 
-    PR_Calib3DHeight ( &stCmd, &stRpy );
+    PR_Calib3DHeight(&stCmd, &stRpy);
     std::cout << "PR_Calib3DHeight status " << ToInt32( stRpy.enStatus ) << std::endl;
     if ( VisionStatus::OK != stRpy.enStatus ) {
         cv::Mat matPhaseResultImg = _drawHeightGrid ( stRpy.matPhase, 10, 10 );
@@ -223,8 +225,8 @@ void TestCalib3DHeight_01() {
         return;
     }
 
-    cv::imwrite ( gstrWorkingFolder + "DivideStepResultImg_01.png", stRpy.matDivideStepResultImg );
-    cv::imwrite ( gstrWorkingFolder + "Calib3DHeightResultImg_01.png", stRpy.matResultImg );
+    cv::imwrite(gstrWorkingFolder + "DivideStepResultImg_01.png", stRpy.matDivideStepResultImg);
+    cv::imwrite(gstrWorkingFolder + "Calib3DHeightResultImg_01.png", stRpy.matResultImg);
 
     cv::FileStorage fs1(strResultMatPath, cv::FileStorage::APPEND);
     if ( ! fs1.isOpened() )
@@ -265,29 +267,29 @@ void TestCalib3DHeight_02() {
     stCmd.nResultImgGridCol = 10;
 
     std::string strResultMatPath = gstrCalibResultFile;
-    cv::FileStorage fs ( strResultMatPath, cv::FileStorage::READ );
+    cv::FileStorage fs(strResultMatPath, cv::FileStorage::READ);
     cv::FileNode fileNode = fs["K1"];
-    cv::read ( fileNode, stCmd.matThickToThinK, cv::Mat() );
+    cv::read(fileNode, stCmd.matThickToThinK, cv::Mat());
     fileNode = fs["K2"];
-    cv::read ( fileNode, stCmd.matThickToThinnestK, cv::Mat() );
+    cv::read(fileNode, stCmd.matThickToThinnestK, cv::Mat());
     fileNode = fs["BaseWrappedAlpha"];
-    cv::read ( fileNode, stCmd.matBaseWrappedAlpha, cv::Mat() );
+    cv::read(fileNode, stCmd.matBaseWrappedAlpha, cv::Mat());
     fileNode = fs["BaseWrappedBeta"];
-    cv::read ( fileNode, stCmd.matBaseWrappedBeta, cv::Mat() );
+    cv::read(fileNode, stCmd.matBaseWrappedBeta, cv::Mat());
     fileNode = fs["BaseWrappedGamma"];
-    cv::read ( fileNode, stCmd.matBaseWrappedGamma, cv::Mat() );
+    cv::read(fileNode, stCmd.matBaseWrappedGamma, cv::Mat());
     fs.release();
 
-    PR_Calib3DHeight ( &stCmd, &stRpy );
-    std::cout << "PR_Calib3DHeight status " << ToInt32( stRpy.enStatus ) << std::endl;
-    if ( VisionStatus::OK != stRpy.enStatus ) {
-        cv::Mat matPhaseResultImg = _drawHeightGrid ( stRpy.matPhase, 10, 10 );
-        cv::imwrite ( gstrWorkingFolder + "PR_Calib3DHeight_PhaseGridImg_02.png", matPhaseResultImg );
+    PR_Calib3DHeight(&stCmd, &stRpy);
+    std::cout << "PR_Calib3DHeight status " << ToInt32(stRpy.enStatus) << std::endl;
+    if (VisionStatus::OK != stRpy.enStatus) {
+        cv::Mat matPhaseResultImg = _drawHeightGrid(stRpy.matPhase, 10, 10);
+        cv::imwrite(gstrWorkingFolder + "PR_Calib3DHeight_PhaseGridImg_02.png", matPhaseResultImg);
         return;
     }
 
-    cv::imwrite ( gstrWorkingFolder + "DivideStepResultImg_02.png", stRpy.matDivideStepResultImg );
-    cv::imwrite ( gstrWorkingFolder + "Calib3DHeightResultImg_02.png", stRpy.matResultImg );
+    cv::imwrite(gstrWorkingFolder + "DivideStepResultImg_02.png", stRpy.matDivideStepResultImg);
+    cv::imwrite(gstrWorkingFolder + "Calib3DHeightResultImg_02.png", stRpy.matResultImg);
 
     cv::FileStorage fs1(strResultMatPath, cv::FileStorage::APPEND);
     if ( ! fs1.isOpened() )
@@ -387,32 +389,41 @@ void TestCalc3DHeight() {
     cv::Mat matBaseSurfaceParam;
 
     std::string strResultMatPath = gstrCalibResultFile;
-    cv::FileStorage fs ( strResultMatPath, cv::FileStorage::READ );
+    cv::FileStorage fs(strResultMatPath, cv::FileStorage::READ);
     cv::FileNode fileNode = fs["K1"];
-    cv::read ( fileNode, stCmd.matThickToThinK, cv::Mat() );
+    cv::read(fileNode, stCmd.matThickToThinK, cv::Mat());
     fileNode = fs["K2"];
-    cv::read ( fileNode, stCmd.matThickToThinnestK, cv::Mat() );
+
+    Int32 projectDir, scanDir;
+    fileNode = fs["ProjectDir"];
+    cv::read(fileNode, projectDir, 0);
+    stCmd.enProjectDir = static_cast<PR_DIRECTION>(projectDir);
+    fileNode = fs["ScanDir"];
+    cv::read(fileNode, scanDir, 0);
+    stCmd.enScanDir = static_cast<PR_DIRECTION>(scanDir);
+
+    cv::read(fileNode, stCmd.matThickToThinnestK, cv::Mat());
     fileNode = fs["BaseWrappedAlpha"];
-    cv::read ( fileNode, stCmd.matBaseWrappedAlpha, cv::Mat() );
+    cv::read(fileNode, stCmd.matBaseWrappedAlpha, cv::Mat());
     fileNode = fs["BaseWrappedBeta"];
-    cv::read ( fileNode, stCmd.matBaseWrappedBeta, cv::Mat() );
+    cv::read(fileNode, stCmd.matBaseWrappedBeta, cv::Mat());
     fileNode = fs["BaseWrappedGamma"];
-    cv::read ( fileNode, stCmd.matBaseWrappedGamma, cv::Mat() );
+    cv::read(fileNode, stCmd.matBaseWrappedGamma, cv::Mat());
     fs.release();
 
-    PR_Calc3DHeight ( &stCmd, &stRpy );
-    std::cout << "PR_Calc3DHeight status " << ToInt32( stRpy.enStatus ) << std::endl;
-    if ( VisionStatus::OK != stRpy.enStatus )
+    PR_Calc3DHeight(&stCmd, &stRpy);
+    std::cout << "PR_Calc3DHeight status " << ToInt32(stRpy.enStatus) << std::endl;
+    if (VisionStatus::OK != stRpy.enStatus)
         return;
 
     cv::Mat matMask = stRpy.matPhase == stRpy.matPhase;
-    auto dMeanPhase = cv::mean ( stRpy.matPhase, matMask )[0];
+    auto dMeanPhase = cv::mean(stRpy.matPhase, matMask)[0];
     std::cout << "Mean Phase: " << dMeanPhase << std::endl;
 
-    cv::Mat matHeightResultImg = _drawHeightGrid ( stRpy.matHeight, 9, 9 );
-    cv::imwrite ( gstrWorkingFolder + "PR_Calc3DHeight_HeightGridImg.png", matHeightResultImg );
-    cv::Mat matPhaseResultImg = _drawHeightGrid ( stRpy.matPhase, 9, 9 );
-    cv::imwrite ( gstrWorkingFolder + "PR_Calc3DHeight_PhaseGridImg.png", matPhaseResultImg );
+    cv::Mat matHeightResultImg = _drawHeightGrid(stRpy.matHeight, 9, 9);
+    cv::imwrite(gstrWorkingFolder + "PR_Calc3DHeight_HeightGridImg.png", matHeightResultImg);
+    cv::Mat matPhaseResultImg = _drawHeightGrid(stRpy.matPhase, 9, 9);
+    cv::imwrite(gstrWorkingFolder + "PR_Calc3DHeight_PhaseGridImg.png", matPhaseResultImg);
 
     //cv::patchNaNs ( stRpy.matPhase, 0 );
     //saveMatToCsv ( stRpy.matPhase, gstrWorkingFolder + "Phase_Correction.csv");
@@ -533,16 +544,16 @@ void TestCalc3DHeight_With_NormalCalibParam() {
 }
 
 void TestCalc3DHeight_With_IntegrateCalibParam() {
-    std::string strFolder = gstrWorkingFolder + "1208214502_1/";
+    std::string strFolder = gstrWorkingFolder + "1114194015_01/";
     //std::string strFolder = "./data/0913212217_Unwrap_Not_Finish/";
     PR_CALC_3D_HEIGHT_CMD stCmd;
     PR_CALC_3D_HEIGHT_RPY stRpy;
-    for ( int i = 1; i <= IMAGE_COUNT; ++ i ) {
+    for (int i = 1; i <= IMAGE_COUNT; ++i) {
         char chArrFileName[100];
-        _snprintf( chArrFileName, sizeof (chArrFileName), "%02d.bmp", i );
+        _snprintf(chArrFileName, sizeof(chArrFileName), "%02d.bmp", i);
         std::string strImageFile = strFolder + chArrFileName;
-        cv::Mat mat = cv::imread ( strImageFile, cv::IMREAD_GRAYSCALE );
-        stCmd.vecInputImgs.push_back ( mat );
+        cv::Mat mat = cv::imread(strImageFile, cv::IMREAD_GRAYSCALE);
+        stCmd.vecInputImgs.push_back(mat);
     }
     stCmd.bEnableGaussianFilter = false;
     stCmd.bReverseSeq = true;
@@ -554,64 +565,73 @@ void TestCalc3DHeight_With_IntegrateCalibParam() {
     cv::Mat matBaseSurfaceParam;
 
     std::string strResultMatPath = gstrCalibResultFile;
-    cv::FileStorage fs ( strResultMatPath, cv::FileStorage::READ );
+    cv::FileStorage fs(strResultMatPath, cv::FileStorage::READ);
     cv::FileNode fileNode = fs["K1"];
-    cv::read ( fileNode, stCmd.matThickToThinK, cv::Mat() );
+    cv::read(fileNode, stCmd.matThickToThinK, cv::Mat());
     fileNode = fs["K2"];
-    cv::read ( fileNode, stCmd.matThickToThinnestK, cv::Mat() );
+    cv::read(fileNode, stCmd.matThickToThinnestK, cv::Mat());
+
+    Int32 projectDir, scanDir;
+    fileNode = fs["ProjectDir"];
+    cv::read(fileNode, projectDir, 0);
+    stCmd.enProjectDir = static_cast<PR_DIRECTION>(projectDir);
+    fileNode = fs["ScanDir"];
+    cv::read(fileNode, scanDir, 0);
+    stCmd.enScanDir = static_cast<PR_DIRECTION>(scanDir);
+
     fileNode = fs["BaseWrappedAlpha"];
-    cv::read ( fileNode, stCmd.matBaseWrappedAlpha, cv::Mat() );
+    cv::read(fileNode, stCmd.matBaseWrappedAlpha, cv::Mat());
     fileNode = fs["BaseWrappedBeta"];
-    cv::read ( fileNode, stCmd.matBaseWrappedBeta, cv::Mat() );
+    cv::read(fileNode, stCmd.matBaseWrappedBeta, cv::Mat());
     fileNode = fs["BaseWrappedGamma"];
-    cv::read ( fileNode, stCmd.matBaseWrappedGamma, cv::Mat() );
+    cv::read(fileNode, stCmd.matBaseWrappedGamma, cv::Mat());
     fs.release();
 
     fs.open(gstrIntegrateCalibResultFile, cv::FileStorage::READ);
-    if (!fs.isOpened ()) {
+    if (!fs.isOpened()) {
         std::cout << "Failed to open file: " << gstrIntegrateCalibResultFile << std::endl;
         return;
     }
     fileNode = fs["IntegratedK"];
-    cv::read ( fileNode, stCmd.matIntegratedK, cv::Mat() );
+    cv::read(fileNode, stCmd.matIntegratedK, cv::Mat());
     fileNode = fs["Order3CurveSurface"];
-    cv::read ( fileNode, stCmd.matOrder3CurveSurface, cv::Mat() );
+    cv::read(fileNode, stCmd.matOrder3CurveSurface, cv::Mat());
     fs.release();
 
-    PR_Calc3DHeight ( &stCmd, &stRpy );
-    std::cout << "PR_Calc3DHeight status " << ToInt32( stRpy.enStatus ) << std::endl;
-    if ( VisionStatus::OK != stRpy.enStatus )
+    PR_Calc3DHeight(&stCmd, &stRpy);
+    std::cout << "PR_Calc3DHeight status " << ToInt32(stRpy.enStatus) << std::endl;
+    if (VisionStatus::OK != stRpy.enStatus)
         return;
 
     cv::Mat matMask = (stRpy.matHeight == stRpy.matHeight); //Find out value is not NAN.
     cv::Mat matNanMask = 255 - matMask;
     double dMinValue, dMaxValue;
     cv::Point ptMin, ptMax;
-    cv::minMaxLoc ( stRpy.matHeight, &dMinValue, &dMaxValue, &ptMin, &ptMax, matMask );
+    cv::minMaxLoc(stRpy.matHeight, &dMinValue, &dMaxValue, &ptMin, &ptMax, matMask);
     std::cout << "Minimum position " << ptMin << " min value: " << dMinValue << std::endl;
     std::cout << "Maximum position " << ptMax << " max value: " << dMaxValue << std::endl;
-    double dMean = cv::mean ( stRpy.matHeight, matMask)[0];
+    double dMean = cv::mean(stRpy.matHeight, matMask)[0];
     std::cout << "Mean height " << dMean << std::endl;
-    
-    cv::Mat matHeightResultImg = _drawHeightGrid ( stRpy.matHeight, 10, 10 );
-    cv::imwrite ( gstrWorkingFolder + "PR_Calc3DHeight_HeightGridImg_IntegrateCalibParam.png", matHeightResultImg );
-    cv::Mat matPhaseResultImg = _drawHeightGrid ( stRpy.matPhase, 9, 9 );
-    cv::imwrite ( gstrWorkingFolder + "PR_Calc3DHeight_PhaseGridImg_IntegrateCalibParam.png", matPhaseResultImg );
+
+    cv::Mat matHeightResultImg = _drawHeightGrid(stRpy.matHeight, 10, 10);
+    cv::imwrite(gstrWorkingFolder + "PR_Calc3DHeight_HeightGridImg_IntegrateCalibParam.png", matHeightResultImg);
+    cv::Mat matPhaseResultImg = _drawHeightGrid(stRpy.matPhase, 9, 9);
+    cv::imwrite(gstrWorkingFolder + "PR_Calc3DHeight_PhaseGridImg_IntegrateCalibParam.png", matPhaseResultImg);
 
     cv::Mat matNonNan = stRpy.matHeight == stRpy.matHeight;
     cv::Mat matNan = 255 - matNonNan;
-    cv::imwrite ( gstrWorkingFolder + "PR_Calc3DHeight_NanMask.png", matNan );
+    cv::imwrite(gstrWorkingFolder + "PR_Calc3DHeight_NanMask.png", matNan);
 
-    saveMatToCsv ( stRpy.matHeight, gstrWorkingFolder + "Height.csv");
-    saveMatToCsv ( stRpy.matPhase,  gstrWorkingFolder + "Phase.csv");
+    saveMatToCsv(stRpy.matHeight, gstrWorkingFolder + "Height.csv");
+    saveMatToCsv(stRpy.matPhase, gstrWorkingFolder + "Phase.csv");
 
-    std::string strHeightFile( gstrWorkingFolder + "Height.yml" );
+    std::string strHeightFile(gstrWorkingFolder + "Height.yml");
     fs.open(strHeightFile, cv::FileStorage::WRITE);
-    if (!fs.isOpened ()) {
+    if (!fs.isOpened()) {
         std::cout << "Failed to open file: " << strHeightFile << std::endl;
         return;
     }
-    cv::write ( fs, "Height", stRpy.matHeight );
+    cv::write(fs, "Height", stRpy.matHeight);
     fs.release();
 }
 
@@ -707,7 +727,7 @@ void TestMerge3DHeight() {
     PR_MERGE_3D_HEIGHT_CMD stCmd;
     PR_MERGE_3D_HEIGHT_RPY stRpy;
 
-    std::string strWorkingFolder("./data/HaoYu_20171208_2/");
+    std::string strWorkingFolder("./data/HaoYu_20171114/test1/");
 
     std::string strArrayHeightFile[2] = {strWorkingFolder + "newLens1/Height.yml",
                                          strWorkingFolder + "newLens2/Height.yml"};
@@ -889,19 +909,19 @@ void TestCalib3dBase_1() {
     }
     stCmd.bEnableGaussianFilter = true;
     stCmd.fRemoveHarmonicWaveK = 0.f;
-    PR_Calib3DBase ( &stCmd, &stRpy );
+    PR_Calib3DBase(&stCmd, &stRpy);
     std::cout << "PR_Calib3DBase status " << ToInt32( stRpy.enStatus ) << std::endl;
 
     std::string strResultMatPath = gstrCalibResultFile;
     cv::FileStorage fs(strResultMatPath, cv::FileStorage::WRITE);
-    if ( ! fs.isOpened() )
+    if (!fs.isOpened())
         return;
 
-    cv::write ( fs, "K1", stRpy.matThickToThinK );
-    cv::write ( fs, "K2", stRpy.matThickToThinnestK );
-    cv::write ( fs, "BaseWrappedAlpha", stRpy.matBaseWrappedAlpha );
-    cv::write ( fs, "BaseWrappedBeta",  stRpy.matBaseWrappedBeta );
-    cv::write ( fs, "BaseWrappedGamma", stRpy.matBaseWrappedGamma );
+    cv::write(fs, "K1", stRpy.matThickToThinK);
+    cv::write(fs, "K2", stRpy.matThickToThinnestK);
+    cv::write(fs, "BaseWrappedAlpha", stRpy.matBaseWrappedAlpha);
+    cv::write(fs, "BaseWrappedBeta", stRpy.matBaseWrappedBeta);
+    cv::write(fs, "BaseWrappedGamma", stRpy.matBaseWrappedGamma);
     fs.release();
 }
 

@@ -818,8 +818,8 @@ private:
     const String _strKeyMinAmplitude        = "MinAmplitude";
     const String _strKeyThickToThinK        = "ThickToThinK";
     const String _strKeyThickToThinnestK    = "ThickToThinnestK";
-    const String _strKeyRmBetaJumpSpanX     = "RemoveBetaJumpSpanX";
-    const String _strKeyRmBetaJumpSpanY     = "RemoveBetaJumpSpanY";
+    const String _strKeyRmBetaJumpMinSpan   = "RemoveBetaJumpMinSpan";
+    const String _strKeyRmBetaJumpMaxSpan   = "RemoveBetaJumpMaxSpan";
     const String _strKeyRmGammaJumpSpanX    = "RemoveGammaJumpSpanX";
     const String _strKeyRmGammaJumpSpanY    = "RemoveGammaJumpSpanY";
 

@@ -1089,6 +1089,8 @@ struct PR_CALIB_3D_BASE_CMD {
 struct PR_CALIB_3D_BASE_RPY {
     VisionStatus            enStatus;
     bool                    bReverseSeq;            //Change the image sequence.
+    PR_DIRECTION            enProjectDir;           //The DLP project direction. UP means from top to bottom. Left means from left to right. To keep the same definition as Chen Lining's matlab code.
+    PR_DIRECTION            enScanDir;              //The phase correction direction.
     cv::Mat                 matThickToThinK;        //The factor between thick stripe and thin stripe.
     cv::Mat                 matThickToThinnestK;    //The factor between thick stripe and thinnest stripe.
     cv::Mat                 matBaseWrappedAlpha;    //The wrapped thick stripe phase.
@@ -1224,13 +1226,15 @@ struct PR_CALC_3D_HEIGHT_CMD {
         fRemoveHarmonicWaveK(0.f),
         fMinAmplitude(5.f),
         fPhaseShift(0.f),
-        nRemoveBetaJumpSpanX(25),
-        nRemoveBetaJumpSpanY(7),
+        nRemoveBetaJumpMinSpan(25),
+        nRemoveBetaJumpMaxSpan(80),
         nRemoveGammaJumpSpanX(23),
         nRemoveGammaJumpSpanY(4) {}
     VectorOfMat             vecInputImgs;
     bool                    bEnableGaussianFilter;
     bool                    bReverseSeq;             //Change the image sequence.
+    PR_DIRECTION            enProjectDir;            //The DLP project direction. Get it from PR_CALIB_3D_BASE_RPY.
+    PR_DIRECTION            enScanDir;               //The phase correction direction. Get it from PR_CALIB_3D_BASE_RPY.
     bool                    bUseThinnestPattern;     //Choose to use the thinnest stripe pattern. Otherwise just use the normal thin stripe.
     float                   fRemoveHarmonicWaveK;    //The factor to remove the harmonic wave in the thick stripe. If it is 0, then this procedure will be skipped.
     float                   fMinAmplitude;           //In a group of 4 images, if a pixel's gray scale amplitude less than this value, this pixel will be discarded.
@@ -1241,8 +1245,8 @@ struct PR_CALC_3D_HEIGHT_CMD {
     cv::Mat                 matBaseWrappedBeta;      //The wrapped thin stripe phase.
     cv::Mat                 matBaseWrappedGamma;     //The wrapped thin stripe phase.
     cv::Mat                 matPhaseToHeightK;       //The factor to convert phase to height. This is the single group of image calibration result.
-    int                     nRemoveBetaJumpSpanX;    //The phase jump span in X direction under this value in beta phase(the thin pattern) will be removed.
-    int                     nRemoveBetaJumpSpanY;    //The phase jump span in Y direction under this value in beta phase(the thin pattern) will be removed.
+    int                     nRemoveBetaJumpMinSpan;  //The phase jump span in the specified range of beta phase(the thin pattern) will be removed.
+    int                     nRemoveBetaJumpMaxSpan;  //The phase jump span in the specified range of beta phase(the thin pattern) will be removed.
     int                     nRemoveGammaJumpSpanX;   //The phase jump span in X direction under this value in gamma phase(the thinnest pattern) will be removed. It is used only when bUseThinnestPattern is true.
     int                     nRemoveGammaJumpSpanY;   //The phase jump span in Y direction under this value in gamma phase(the thinnest pattern) will be removed. It is used only when bUseThinnestPattern is true.
     //Below 2 parameters are result of PR_Integrate3DCalib, they are calibrated from positive, negative and H = 5mm surface phase. If these 2 parameters are used, then matPhaseToHeightK will be ignored.

@@ -14,8 +14,11 @@
  * Copyright (c) 2016-2018, Xiao Shengguang.  All rights reserved.
  ****************************************************************************/
 
+//2018-08-22 (XSG) Integrate new phase correction algorithm in PR_Calc3DHeiht.
+#define AOI_VISION_VERSION          "1.00.42"
+
 //2018-08-22 (XSG) Add matMask in PR_CALC_3D_HEIGHT_DIFF_CMD
-#define AOI_VISION_VERSION          "1.00.41"
+//#define AOI_VISION_VERSION          "1.00.41"
 
 //2018-08-07 (XSG) Add matMask in PR_LRN_TEMPLATE_CMD.
 //#define AOI_VISION_VERSION          "1.00.40"

@@ -378,10 +378,10 @@ static void TestPhaseCorrection() {
         {1.3f, 0.1f, 0.1f, 2.f, -5.5f},
         {0.2f, 1.1f, 1.3f, 2.f, 0.5f},
     };
-    cv::Mat matPhase = CalcUtils::vectorToMat<float> ( vecVecPhase );
+    cv::Mat matPhase = CalcUtils::vectorToMat<float>(vecVecPhase);
     std::cout << "Phase Correction input: " << std::endl;
     printfMat<float>(matPhase);
-    Unwrap::phaseCorrection ( matPhase, cv::Mat(), 5, 5 );
+    Unwrap::phaseCorrection(matPhase, cv::Mat(), 5, 5);
     std::cout << "Phase Correction result: " << std::endl;
     printfMat<float>(matPhase);
 }

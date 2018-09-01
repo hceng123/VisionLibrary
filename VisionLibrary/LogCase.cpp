@@ -2267,8 +2267,8 @@ VisionStatus LogCaseCalc3DHeight::WriteCmd(const PR_CALC_3D_HEIGHT_CMD *const ps
     ini.SetBoolValue(_CMD_SECTION.c_str(), _strKeyUseThinnestPattern.c_str(), pstCmd->bUseThinnestPattern);
     ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyRemoveHarmonicWaveK.c_str(), pstCmd->fRemoveHarmonicWaveK);
     ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyMinAmplitude.c_str(), pstCmd->fMinAmplitude);
-    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyRmBetaJumpSpanX.c_str(), pstCmd->nRemoveBetaJumpSpanX);
-    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyRmBetaJumpSpanY.c_str(), pstCmd->nRemoveBetaJumpSpanY);
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyRmBetaJumpMinSpan.c_str(), pstCmd->nRemoveBetaJumpMinSpan);
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyRmBetaJumpMaxSpan.c_str(), pstCmd->nRemoveBetaJumpMaxSpan);
     ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyRmGammaJumpSpanX.c_str(), pstCmd->nRemoveGammaJumpSpanX);
     ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyRmGammaJumpSpanY.c_str(), pstCmd->nRemoveGammaJumpSpanY);
     ini.SaveFile(cmdRpyFilePath.c_str());
@@ -2312,8 +2312,8 @@ VisionStatus LogCaseCalc3DHeight::RunLogCase() {
     stCmd.bUseThinnestPattern = ini.GetBoolValue(_CMD_SECTION.c_str(), _strKeyUseThinnestPattern.c_str(), false);
     stCmd.fRemoveHarmonicWaveK = ToFloat(ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyRemoveHarmonicWaveK.c_str(), 0.f));
     stCmd.fMinAmplitude = ToFloat(ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyMinAmplitude.c_str(), 1.5));
-    stCmd.nRemoveBetaJumpSpanX = ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyRmBetaJumpSpanX.c_str(), 25);
-    stCmd.nRemoveBetaJumpSpanY = ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyRmBetaJumpSpanY.c_str(), 7);
+    stCmd.nRemoveBetaJumpMinSpan = ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyRmBetaJumpMinSpan.c_str(), 25);
+    stCmd.nRemoveBetaJumpMaxSpan = ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyRmBetaJumpMaxSpan.c_str(), 7);
     stCmd.nRemoveGammaJumpSpanX = ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyRmGammaJumpSpanX.c_str(), 23);
     stCmd.nRemoveGammaJumpSpanY = ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyRmGammaJumpSpanY.c_str(), 23);
 

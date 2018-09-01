@@ -43,30 +43,37 @@ public:
     static void calcMTF(const PR_CALC_MTF_CMD *const pstCmd, PR_CALC_MTF_RPY *const pstRpy);
     static void calcPD(const PR_CALC_PD_CMD *const pstCmd, PR_CALC_PD_RPY *const pstRpy);
     static void phaseCorrection(cv::Mat &matPhase, const cv::Mat &matIdxNan, int nJumpSpanX, int nJumpSpanY);   //Put it to public to include it in regression test.
+    static void phaseCorrectionEx(cv::Mat &matPhase, PR_DIRECTION enProjDir, PR_DIRECTION enScanDir, int nMinSpan, int nMaxSpan);
     static void removeJumpArea(cv::Mat &matHeight, float fAreaLimit);
-    static bool isReverseSequence(const VectorOfMat &vecMat, bool bEnableGaussianFilter);
+
 private:
     static cv::Mat _getResidualPoint(const cv::Mat &matPhaseDx, const cv::Mat &matPhaseDy, cv::Mat &matPosPole, cv::Mat &matNegPole);
-    static VectorOfPoint _selectLonePole(ListOfPoint &listPoint, int width, int height, size_t nLonePoneCount );
+    static VectorOfPoint _selectLonePole(ListOfPoint &listPoint, int width, int height, size_t nLonePoneCount);
     static void _selectPolePair(const VectorOfPoint &vecPosPoint, const VectorOfPoint &vecNegPoint, int rows, int cols, VectorOfPoint &vecResult1, VectorOfPoint &vecResult2, VectorOfPoint &vecResult3 );
     static VectorOfPoint _getIntegralTree(const VectorOfPoint &vecResult1, const VectorOfPoint &vecResult2, const VectorOfPoint &vecResult3, int rows, int cols );
     static cv::Mat _phaseUnwrapSurface(const cv::Mat &matPhase);
     static cv::Mat _phaseUnwrapSurfaceTrk ( const cv::Mat &matPhase, const cv::Mat &matPhaseDx, const cv::Mat &matPhaseDy, const cv::Mat &matBranchCut);
     static cv::Mat _phaseUnwrapSurfaceTrkNew ( const cv::Mat &matPhase, const cv::Mat &matPhaseDx, const cv::Mat &matPhaseDy, const cv::Mat &matBranchCut);
-    static cv::Mat _phaseUnwrapSurfaceByRefer(const cv::Mat &matPhase, const cv::Mat &matRef, const cv::Mat &matNan );
+    static cv::Mat _phaseUnwrapSurfaceByRefer(const cv::Mat &matPhase, const cv::Mat &matRef, const cv::Mat &matNan);
     static cv::Mat _calculatePPz(const cv::Mat &matX, const cv::Mat &matY, const cv::Mat &matZ);
-    static void _setBySign(cv::Mat &matInOut, DATA_TYPE value );
+    static void _setBySign(cv::Mat &matInOut, DATA_TYPE value);
     static void _findUnstablePoint(const std::vector<cv::Mat> &vecInputImgs, float fDiffTol, float fAvgTol, cv::Mat &matDiffUnderTolIndex, cv::Mat &matAvgUnderTolIndex);
     static cv::Mat _drawHeightGrid(const cv::Mat &matHeight, int nGridRow, int nGridCol, const cv::Size &szMeasureWinSize, VectorOfFloat &vecGridHeights);
     static void _drawStar(cv::Mat &matInOut, cv::Point ptPosition, int nSize );
     static cv::Mat _calcHeightFromPhase(const cv::Mat &matPhase, const cv::Mat &matHtt, const cv::Mat &matK);
-    static cv::Mat _calcHeightFromPhaseBuffer(const cv::Mat &matPhase, const cv::Mat &matHtt, const cv::Mat &matK, cv::Mat &matBuffer1, cv::Mat &matBuffer2 );    
+    static cv::Mat _calcHeightFromPhaseBuffer(const cv::Mat &matPhase, const cv::Mat &matHtt, const cv::Mat &matK, cv::Mat &matBuffer1, cv::Mat &matBuffer2);    
     static cv::Mat _drawAutoThresholdResult(const cv::Mat &matInput, const VectorOfFloat &vecRanges);
     static void _fitHoleInNanMask(cv::Mat &matMask, const cv::Size &szMorphKernel, Int16 nMorphIteration);
+    static void _phasePatch(cv::Mat &matPhase, PR_DIRECTION enProjDir, const cv::Mat &matNanMask);
+    static void _phaseSwitch(cv::Mat &matPhase, PR_DIRECTION enProjDir, PR_DIRECTION enScanDir);
+    static void _phaseSwitchBack(cv::Mat &matPhase, PR_DIRECTION enProjDir, PR_DIRECTION enScanDir);
+    static void _calcReverseAndProjDir(const VectorOfMat &vecMat, bool bEnableGaussianFilter, PR_CALIB_3D_BASE_RPY *const pstRpy);
+    static void _turnPhase(cv::Mat &matPhase, char *ptrSignOfRow, char *ptrAmplOfRow, int row, int nStart, int nEnd);
+    static void _turnPhaseConditionOne(cv::Mat &matPhase, const cv::Mat &matPhaseDiff, cv::Mat &matDiffSign, cv::Mat &matDiffAmpl, int row, int Nt1);
     static inline void _phaseWrap(cv::Mat &matPhase) {
         CStopWatch stopWatch;
         cv::Mat matNn = matPhase / ONE_CYCLE + 0.5;
-        TimeLog::GetInstance()->addTimeLog( "_phaseWrap Divide and add.", stopWatch.Span() );
+        TimeLog::GetInstance()->addTimeLog( "_phaseWrap Divide and add.", stopWatch.Span());
 
         CalcUtils::floorByRef<DATA_TYPE> ( matNn ); //The floor takes about 36ms, need to optimize
 
@@ -74,36 +81,36 @@ private:
 
         matPhase = matPhase - matNn * ONE_CYCLE;
 
-        TimeLog::GetInstance()->addTimeLog( "_phaseWrap multiply and subtract takes.", stopWatch.Span() );
+        TimeLog::GetInstance()->addTimeLog( "_phaseWrap multiply and subtract takes.", stopWatch.Span());
     }
 
     static inline void _phaseWrapBuffer(cv::Mat &matPhase, cv::Mat &matBuffer, float fShift = 0.f) {
         CStopWatch stopWatch;
         matBuffer = matPhase / ONE_CYCLE + 0.5 - fShift;
-        TimeLog::GetInstance()->addTimeLog( "_phaseWrap Divide and add.", stopWatch.Span() );
+        TimeLog::GetInstance()->addTimeLog( "_phaseWrap Divide and add.", stopWatch.Span());
 
-        CalcUtils::floorByRef<DATA_TYPE> ( matBuffer );
+        CalcUtils::floorByRef<DATA_TYPE>(matBuffer);
 
-        TimeLog::GetInstance()->addTimeLog( "_phaseWrap floor takes.", stopWatch.Span() );
+        TimeLog::GetInstance()->addTimeLog("_phaseWrap floor takes.", stopWatch.Span());
 
         matBuffer = matPhase - matBuffer * ONE_CYCLE;
 
-        TimeLog::GetInstance()->addTimeLog( "_phaseWrap multiply and subtract takes.", stopWatch.Span() );
+        TimeLog::GetInstance()->addTimeLog("_phaseWrap multiply and subtract takes.", stopWatch.Span());
         float fSum = 0.f, fCount = 0.f;
-        for ( int row = 0; row < matBuffer.rows; row += 20 )
-        for ( int col = 0; col < matBuffer.cols; col += 20 ) {
+        for (int row = 0; row < matBuffer.rows; row += 20)
+        for (int col = 0; col < matBuffer.cols; col += 20) {
             float value = matBuffer.at<DATA_TYPE>(row, col);
-            if ( value == value ) {
+            if (value == value) {
                 fSum += value;
-                ++ fCount;
-            }                
+                ++fCount;
+            }
         }
         float fMean = fSum / fCount;
 
         matBuffer = matPhase / ONE_CYCLE + 0.5 - fShift - fMean / 2.f;
-        CalcUtils::floorByRef<DATA_TYPE> ( matBuffer );
+        CalcUtils::floorByRef<DATA_TYPE>(matBuffer);
 
-        TimeLog::GetInstance()->addTimeLog( "_phaseWrap floor takes.", stopWatch.Span() );
+        TimeLog::GetInstance()->addTimeLog("_phaseWrap floor takes.", stopWatch.Span());
 
         matPhase = matPhase - matBuffer * ONE_CYCLE;
     }
@@ -132,7 +139,6 @@ private:
     static const float ONE_HALF_CYCLE;
     static const float ONE_CYCLE;
     static const float CALIB_HEIGHT_STEP_USEFUL_PT;
-    static const float REMOVE_HEIGHT_NOSIE_RATIO;
     static const float LOW_BASE_PHASE;
     static VectorOfVectorOfFloat vecVecAtan2Table;
 };
