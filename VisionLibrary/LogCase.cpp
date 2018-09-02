@@ -1817,7 +1817,7 @@ VisionStatus LogCaseInspHole::WriteCmd(const PR_INSP_HOLE_CMD *const pstCmd) {
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile(cmdRpyFilePath.c_str());
     ini.SetValue(_CMD_SECTION.c_str(), _strKeyROI.c_str(), _formatRect(pstCmd->rectROI).c_str());
-    //ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyRecordId.c_str(), pstCmd->nRecordId );
+    ini.SetBoolValue(_CMD_SECTION.c_str(), _strKeyPreprocessed.c_str(), pstCmd->bPreprocessedImg);
     ini.SetLongValue(_CMD_SECTION.c_str(), _strKeySegmentMethod.c_str(), ToInt32(pstCmd->enSegmentMethod));
     ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyInspMode.c_str(), ToInt32(pstCmd->enInspMode));
     ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyGrayRangeStart.c_str(), pstCmd->stGrayScaleRange.nStart);
@@ -1875,7 +1875,7 @@ VisionStatus LogCaseInspHole::RunLogCase() {
         stCmd.matMask = cv::imread(strMaskPath, cv::IMREAD_GRAYSCALE);
 
     stCmd.rectROI = _parseRect(ini.GetValue(_CMD_SECTION.c_str(), _strKeyROI.c_str(), _DEFAULT_RECT.c_str()));
-    //stCmd.nRecordId = ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyRecordId.c_str(), 0 );
+    stCmd.bPreprocessedImg = ini.GetBoolValue(_CMD_SECTION.c_str(), _strKeyPreprocessed.c_str(), false);
     stCmd.enSegmentMethod = static_cast<PR_IMG_SEGMENT_METHOD>(ini.GetLongValue(_CMD_SECTION.c_str(), _strKeySegmentMethod.c_str(), 0));
     stCmd.enInspMode = static_cast<PR_INSP_HOLE_MODE>(ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyInspMode.c_str(), 0));
     stCmd.stGrayScaleRange.nStart = ToInt16(ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyGrayRangeStart.c_str(), 0));
