@@ -225,6 +225,10 @@ void TestCalcTopSurface3DHeightSub(
     stCmd.matBaseWrappedAlpha = matBaseWrappedAlpha;
     stCmd.matBaseWrappedBeta = matBaseWrappedBeta;
     stCmd.matBaseWrappedGamma = matBaseWrappedGamma;
+    stCmd.nRemoveBetaJumpMaxSpan = 0;
+    stCmd.nRemoveBetaJumpMinSpan = 0;
+    stCmd.nRemoveGammaJumpSpanX = 0;
+    stCmd.nRemoveGammaJumpSpanY = 0;
 
     PR_Calc3DHeight(&stCmd, &stRpy);
     std::cout << "PR_Calc3DHeight status " << ToInt32(stRpy.enStatus) << std::endl;

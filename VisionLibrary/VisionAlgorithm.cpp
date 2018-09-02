@@ -1577,6 +1577,9 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
     if (LogCaseInspLeadTmpl::StaticGetFolderPrefix() == strFolderPrefix)
         return std::make_unique<LogCaseInspLeadTmpl>(strLocalPath, true);
 
+    if (LogCaseInspPolarity::StaticGetFolderPrefix() == strFolderPrefix)
+        return std::make_unique<LogCaseInspPolarity>(strLocalPath, true);
+
     if (LogCaseCalib3DBase::StaticGetFolderPrefix() == strFolderPrefix)
         return std::make_unique<LogCaseCalib3DBase>(strLocalPath, true);
 
@@ -1705,8 +1708,9 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
 
     if (! isAutoMode()) {
         pstRpy->matResultImg = pstCmd->matInputImg.clone();
-        cv::circle(pstRpy->matResultImg, pstRpy->ptPos, 2, cv::Scalar(255, 0, 0), 2);
-        cv::rectangle(pstRpy->matResultImg, cv::Rect(ToInt32(pstRpy->ptPos.x) - nTmplSize / 2, ToInt32(pstRpy->ptPos.y) - nTmplSize / 2, nTmplSize, nTmplSize), cv::Scalar(255, 0, 0), 1);
+        cv::circle(pstRpy->matResultImg, pstRpy->ptPos, 2, _constBlueScalar, 2);
+        cv::rectangle(pstRpy->matResultImg, cv::Rect(ToInt32(pstRpy->ptPos.x) - nTmplSize / 2, ToInt32(pstRpy->ptPos.y) - nTmplSize / 2, nTmplSize, nTmplSize), _constBlueScalar, 2);
+        cv::rectangle(pstRpy->matResultImg, pstCmd->rectSrchWindow, _constYellowScalar, 2);
     }
 
     FINISH_LOGCASE;
@@ -6428,6 +6432,9 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     pstRpy->enStatus = _checkInputROI(pstCmd->rectCompareROI, pstCmd->matInputImg, AT);
     if (VisionStatus::OK != pstRpy->enStatus) return pstRpy->enStatus;
 
+    MARK_FUNCTION_START_TIME;
+    SETUP_LOGCASE(LogCaseInspPolarity);
+
     cv::Mat matInspROI(pstCmd->matInputImg, pstCmd->rectInspROI);
     cv::Mat matCompareROI(pstCmd->matInputImg, pstCmd->rectCompareROI);
     cv::Mat matInspROIGray, matCompareROIGray;
@@ -6487,6 +6494,9 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
             cv::putText(pstRpy->matResultImg, strGrayScale, ptTextOrg, fontFace, fontScale, _constCyanScalar, thickness);
         }
     }
+
+    FINISH_LOGCASE;
+    MARK_FUNCTION_END_TIME;
     return pstRpy->enStatus;
 }
 

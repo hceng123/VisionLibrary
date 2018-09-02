@@ -393,6 +393,7 @@ void TestCalc3DHeight() {
     cv::FileNode fileNode = fs["K1"];
     cv::read(fileNode, stCmd.matThickToThinK, cv::Mat());
     fileNode = fs["K2"];
+    cv::read(fileNode, stCmd.matThickToThinnestK, cv::Mat());
 
     Int32 projectDir, scanDir;
     fileNode = fs["ProjectDir"];
@@ -402,7 +403,6 @@ void TestCalc3DHeight() {
     cv::read(fileNode, scanDir, 0);
     stCmd.enScanDir = static_cast<PR_DIRECTION>(scanDir);
 
-    cv::read(fileNode, stCmd.matThickToThinnestK, cv::Mat());
     fileNode = fs["BaseWrappedAlpha"];
     cv::read(fileNode, stCmd.matBaseWrappedAlpha, cv::Mat());
     fileNode = fs["BaseWrappedBeta"];
