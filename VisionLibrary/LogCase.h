@@ -662,7 +662,7 @@ public:
 
 private:
     const String _strKeyROI             = "ROI";
-    const String _strKeyRecordId        = "RecordId";
+    const String _strKeyPreprocessed    = "Preprocessed";
     const String _strKeySegmentMethod   = "SegmentMethod";
     const String _strKeyInspMode        = "InspMode";
     const String _strKeyGrayRangeStart  = "GrayRangeStart";
@@ -699,6 +699,7 @@ public:
     virtual VisionStatus RunLogCase() override;
     virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
     static String StaticGetFolderPrefix();
+
 private:
     const String _strKeyChipCenter          = "RoiCenter";
     const String _strKeyChipSize            = "RoiSize";
