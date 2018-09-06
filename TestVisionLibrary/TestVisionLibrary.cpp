@@ -709,7 +709,7 @@ int _tmain(int argc, _TCHAR* argv[])
     //TestIntegrate3DCalib();
     //TestCalc3DHeight_With_NormalCalibParam();
 
-    TestCalc3DHeight_With_IntegrateCalibParam();
+    //TestCalc3DHeight_With_IntegrateCalibParam();
     //TestMerge3DHeight();
 
     //TestIntegrate3DCalibHaoYu();
@@ -748,7 +748,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
     //TestMotor3DCalib();
 
-    //TestCalc4DLPHeight();
+    TestCalc4DLPHeight();
 
     //TestCalcFrameValue_1();
     

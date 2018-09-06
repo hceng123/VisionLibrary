@@ -70,6 +70,8 @@ private:
     static void _calcReverseAndProjDir(const VectorOfMat &vecMat, bool bEnableGaussianFilter, PR_CALIB_3D_BASE_RPY *const pstRpy);
     static void _turnPhase(cv::Mat &matPhase, char *ptrSignOfRow, char *ptrAmplOfRow, int row, int nStart, int nEnd);
     static void _turnPhaseConditionOne(cv::Mat &matPhase, const cv::Mat &matPhaseDiff, cv::Mat &matDiffSign, cv::Mat &matDiffAmpl, int row, int Nt1);
+    static cv::Mat _mergeHeightIntersect(cv::Mat &matHeightOne, const cv::Mat &matNanMaskOne, cv::Mat &matHeightTwo, const cv::Mat &matNanMaskTwo, float fDiffThreshold, PR_DIRECTION enProjDir);
+    static cv::Mat _mergeHeightMax(cv::Mat &matHeightOne, const cv::Mat &matNanMaskOne, cv::Mat &matHeightTwo, const cv::Mat &matNanMaskTwo, float fDiffThreshold, PR_DIRECTION enProjDir);
     static inline void _phaseWrap(cv::Mat &matPhase) {
         CStopWatch stopWatch;
         cv::Mat matNn = matPhase / ONE_CYCLE + 0.5;
@@ -117,14 +119,14 @@ private:
 
     static inline void _phaseWrapByRefer(cv::Mat &matPhase, cv::Mat &matRef) {
         CStopWatch stopWatch;
-        matRef = ( matPhase - matRef ) / ONE_CYCLE + 0.5;  //Use matResult to store the substract result to reduce memory allocate time.
-        TimeLog::GetInstance()->addTimeLog( "_phaseWrapByRefer Divide and add.", stopWatch.Span() );
+        matRef = (matPhase - matRef) / ONE_CYCLE + 0.5;  //Use matResult to store the substract result to reduce memory allocate time.
+        TimeLog::GetInstance()->addTimeLog("_phaseWrapByRefer Divide and add.", stopWatch.Span());
 
-        CalcUtils::floorByRef<DATA_TYPE> ( matRef );
-        TimeLog::GetInstance()->addTimeLog( "_phaseWrapByRefer floor takes.", stopWatch.Span() );
+        CalcUtils::floorByRef<DATA_TYPE>(matRef);
+        TimeLog::GetInstance()->addTimeLog("_phaseWrapByRefer floor takes.", stopWatch.Span());
 
         matPhase = matPhase - matRef * ONE_CYCLE;
-        TimeLog::GetInstance()->addTimeLog( "_phaseWrapByRefer multiply and subtract takes.", stopWatch.Span() );
+        TimeLog::GetInstance()->addTimeLog("_phaseWrapByRefer multiply and subtract takes.", stopWatch.Span());
     }
 
     static const int GUASSIAN_FILTER_SIZE   = 11;

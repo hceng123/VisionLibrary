@@ -558,7 +558,7 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
         short y = (short)ptrData3[i] - (short)ptrData1[i];
         float fAmplitudeSquare = (x*x + y*y) / 4.f;
         if (fAmplitudeSquare < fMinimumAlpitudeSquare)
-            matAvgUnderTolIndex.at<uchar>(i) = 1;
+            matAvgUnderTolIndex.at<uchar>(i) = PR_MAX_GRAY_LEVEL;
         matAlpha.at<float>(i) = vecVecAtan2Table[x + PR_MAX_GRAY_LEVEL][y + PR_MAX_GRAY_LEVEL];
     }
 
@@ -604,7 +604,7 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
     TimeLog::GetInstance()->addTimeLog("Multiply takes.", stopWatch.Span());
 
     _phaseWrapByRefer(matBeta, matBuffer1);
-    TimeLog::GetInstance()->addTimeLog("_phaseWrapByRefer.", stopWatch.Span());    
+    TimeLog::GetInstance()->addTimeLog("_phaseWrapByRefer.", stopWatch.Span());
 
     if (pstCmd->nRemoveBetaJumpMinSpan > 0 || pstCmd->nRemoveBetaJumpMaxSpan > 0) {
         _phasePatch(matBeta, pstCmd->enProjectDir, matAvgUnderTolIndex);
@@ -626,13 +626,15 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
             TimeLog::GetInstance()->addTimeLog("phaseCorrection for gamma.", stopWatch.Span());
         }
 
-        matGamma.setTo(NAN, matAvgUnderTolIndex);
         pstRpy->matPhase = matGamma * k1 / k2;
     }
-    else {
-        matBeta.setTo(NAN, matAvgUnderTolIndex);
+    else
         pstRpy->matPhase = matBeta;
-    }
+
+    cv::medianBlur(pstRpy->matPhase, pstRpy->matPhase, 5);
+    cv::GaussianBlur(pstRpy->matPhase, pstRpy->matPhase, cv::Size(GUASSIAN_FILTER_SIZE, GUASSIAN_FILTER_SIZE), GAUSSIAN_FILTER_SIGMA, GAUSSIAN_FILTER_SIGMA, cv::BorderTypes::BORDER_REPLICATE);
+
+    pstRpy->matNanMask = matAvgUnderTolIndex;
 
     if (! pstCmd->matOrder3CurveSurface.empty() && ! pstCmd->matIntegratedK.empty())
         pstRpy->matHeight = _calcHeightFromPhaseBuffer(pstRpy->matPhase, pstCmd->matOrder3CurveSurface, pstCmd->matIntegratedK, matBuffer1, matBuffer2);
@@ -650,61 +652,26 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
 }
 
 /*static*/ void Unwrap::merge3DHeight(const PR_MERGE_3D_HEIGHT_CMD *const pstCmd, PR_MERGE_3D_HEIGHT_RPY *const pstRpy) {
-    CStopWatch stopWatch;
-    pstRpy->matHeight = cv::Mat::zeros(pstCmd->vecMatHeight[0].size(), pstCmd->vecMatHeight[0].type());
-    cv::Mat matNan0 = CalcUtils::getNanMask(pstCmd->vecMatHeight[0]);
-    cv::Mat matNan1 = CalcUtils::getNanMask(pstCmd->vecMatHeight[1]);
-
-    cv::Mat matIdxH0, matIdxH1, matIdxH2;
-    matIdxH0 = cv::abs(pstCmd->vecMatHeight[0] - pstCmd->vecMatHeight[1]) < pstCmd->fHeightDiffThreshold;
-    matIdxH1 = (pstCmd->vecMatHeight[0] - pstCmd->vecMatHeight[1]) > pstCmd->fHeightDiffThreshold;
-    matIdxH2 = (pstCmd->vecMatHeight[1] - pstCmd->vecMatHeight[0]) > pstCmd->fHeightDiffThreshold;
-
-    matIdxH1 = matIdxH1 | matNan0;
-    matIdxH2 = matIdxH2 | matNan1;
-    pstCmd->vecMatHeight[1].copyTo(pstRpy->matHeight, matIdxH1);
-    pstCmd->vecMatHeight[0].copyTo(pstRpy->matHeight, matIdxH2);
-
-    cv::add(pstCmd->vecMatHeight[0] / 2.f, pstCmd->vecMatHeight[1] / 2.f, pstRpy->matHeight, matIdxH0);
-    TimeLog::GetInstance()->addTimeLog("Merge height.", stopWatch.Span());
-
-    VectorOfPoint vecNanPoints;
-    cv::Mat matNan = CalcUtils::getNanMask(pstRpy->matHeight);
-    cv::dilate(matNan, matNan, cv::getStructuringElement(cv::MORPH_RECT, cv::Size(MEDIAN_FILTER_SIZE * 2, MEDIAN_FILTER_SIZE * 2)));
-    cv::findNonZero(matNan, vecNanPoints);
-    for (const auto &point : vecNanPoints) {
-        if (point.x > 0)
-            pstRpy->matHeight.at<DATA_TYPE>(point) = pstRpy->matHeight.at<DATA_TYPE>(point.y, point.x - 1);
-        else if (point.x == 0 && point.y > 0)
-            pstRpy->matHeight.at<DATA_TYPE>(point) = pstRpy->matHeight.at<DATA_TYPE>(point.y - 1, point.x);
+    cv::Mat matHeightOne = pstCmd->vecMatHeight[0], matHeightTwo = pstCmd->vecMatHeight[1];
+    if (pstCmd->enMethod == PR_MERGE_3D_HT_METHOD::SELECT_NEAREST_INTERSECT) {
+        pstRpy->matHeight = _mergeHeightIntersect(
+            matHeightOne,
+            pstCmd->vecMatNanMask[0],
+            matHeightTwo,
+            pstCmd->vecMatNanMask[1],
+            pstCmd->fHeightDiffThreshold,
+            pstCmd->enProjDir);
+    }else {
+        pstRpy->matHeight = _mergeHeightMax(
+            matHeightOne,
+            pstCmd->vecMatNanMask[0],
+            matHeightTwo,
+            pstCmd->vecMatNanMask[1],
+            pstCmd->fHeightDiffThreshold,
+            pstCmd->enProjDir);
     }
-    TimeLog::GetInstance()->addTimeLog("Clear Nan values.", stopWatch.Span());
-
-    //removeJumpArea ( pstRpy->matHeight, 2000 );
-    //TimeLog::GetInstance()->addTimeLog( "removeJumpArea.", stopWatch.Span() );
-
-    //cv::Mat matReshape = pstRpy->matHeight.reshape ( 1, 1 );
-    //auto vecVecHeight = CalcUtils::matToVector<DATA_TYPE> ( matReshape );
-    //auto vecSortedJumpSpanIdx = CalcUtils::sort_index_value<DATA_TYPE> ( vecVecHeight[0] );
-    //int nRemoveCount = ToInt32 ( pstCmd->fRemoveLowerNoiseRatio * matReshape.rows * matReshape.cols );
-    //std::cout << "Remove lower height count " << nRemoveCount << std::endl;
-    //for ( int i = 0; i < nRemoveCount; ++ i ) {
-    //    pstRpy->matHeight.at<DATA_TYPE>( ToInt32 ( vecSortedJumpSpanIdx[i] ) ) = NAN;
-    //}
-    //TimeLog::GetInstance()->addTimeLog( "Sort and set.", stopWatch.Span() );
-
-    //matNan = CalcUtils::getNanMask ( pstRpy->matHeight );
-    //cv::findNonZero ( matNan, vecNanPoints );
-    //for ( const auto &point : vecNanPoints ) {
-    //    if ( point.x > 0 )
-    //        pstRpy->matHeight.at<DATA_TYPE>(point) = pstRpy->matHeight.at<DATA_TYPE> ( point.y, point.x - 1 );
-    //    else if ( point.x == 0 && point.y > 0 )
-    //        pstRpy->matHeight.at<DATA_TYPE>(point) = pstRpy->matHeight.at<DATA_TYPE> ( point.y - 1, point.x );
-    //}
-    //TimeLog::GetInstance()->addTimeLog( "Clear Nan values again.", stopWatch.Span() );
-
-    cv::medianBlur(pstRpy->matHeight, pstRpy->matHeight, MEDIAN_FILTER_SIZE);
-    TimeLog::GetInstance()->addTimeLog("medianBlur.", stopWatch.Span());
+    pstRpy->matNanMask = pstCmd->vecMatNanMask[0] & pstCmd->vecMatNanMask[1];
+    pstRpy->enStatus = VisionStatus::OK;
 }
 
 /*static*/ cv::Mat Unwrap::_phaseUnwrapSurfaceTrk(const cv::Mat &matPhase, const cv::Mat &dxPhase, const cv::Mat &dyPhase, const cv::Mat &matBranchCut) {
@@ -2263,10 +2230,8 @@ void Unwrap::_turnPhase(cv::Mat &matPhase, char *ptrSignOfRow, char *ptrAmplOfRo
     if (chAmplNew <= 0)
         ptrSignOfRow[nEnd] = 0;
 
-    for (int col = nStart + 1; col <= nEnd; ++col) {
-        auto &value = matPhase.at<DATA_TYPE>(row, col);
-        value -= chSignFirst * ONE_CYCLE * chTurnAmpl;
-    }
+    for (int col = nStart + 1; col <= nEnd; ++ col)
+        matPhase.at<DATA_TYPE>(row, col) -= chSignFirst * ONE_CYCLE * chTurnAmpl;
 }
 
 /*static*/ void Unwrap::_turnPhaseConditionOne(cv::Mat &matPhase, const cv::Mat &matPhaseDiff, cv::Mat &matDiffSign, cv::Mat &matDiffAmpl, int row, int nMaxSpan) {
@@ -2296,7 +2261,7 @@ void Unwrap::_turnPhase(cv::Mat &matPhase, char *ptrSignOfRow, char *ptrAmplOfRo
     char *ptrAmplOfRow = matDiffAmpl.ptr<char>(row);
     auto ptrPhaseDiffOfRow = matPhaseDiff.ptr<DATA_TYPE>(row);
 
-    for (int kk = 0; kk < 2; ++kk) {
+    for (int kk = 0; kk < 2; ++ kk) {
         std::vector<int> vecJumpCol, vecJumpSpan, vecJumpIdxNeedToHandle;
         vecJumpCol.reserve(20);
         for (int col = 0; col < matPhase.cols; ++col) {
@@ -2362,6 +2327,7 @@ void Unwrap::_turnPhase(cv::Mat &matPhase, char *ptrSignOfRow, char *ptrAmplOfRo
     cv::Mat matDiffSign = cv::Mat::zeros(ROWS, COLS, CV_8SC1);
     cv::Mat matDiffAmpl = cv::Mat::zeros(ROWS, COLS, CV_8SC1);
 
+    std::vector<std::vector<DATA_TYPE>> vecTurnedPhase;
     for (int row = 0; row < matPhaseDiff.rows; ++ row) {
         _turnPhaseConditionOne(matPhase, matPhaseDiff, matDiffSign, matDiffAmpl, row, nMaxSpan);
         if(row == 0)
@@ -2403,6 +2369,7 @@ void Unwrap::_turnPhase(cv::Mat &matPhase, char *ptrSignOfRow, char *ptrAmplOfRo
             if (vecMatchIndex.empty())
                 continue;
 
+            // Process the largest phase difference first, the sort default is ascent, need to do a reverse to make it descent.
             auto vecSortedIdx = CalcUtils::sort_index_value(vecMatchPhaseDiff);
             std::reverse(vecSortedIdx.begin(), vecSortedIdx.end());
             std::reverse(vecMatchPhaseDiff.begin(), vecMatchPhaseDiff.end());
@@ -2589,10 +2556,12 @@ void removeBlob(cv::Mat &matThreshold, cv::Mat &matBlob, float fAreaLimit) {
     if (PR_DIRECTION::UP == enProjDir|| PR_DIRECTION::DOWN == enProjDir)
         cv::transpose(matPhase, matPhase);
     
+    // Flip around y-axis
     if (PR_DIRECTION::UP == enProjDir || PR_DIRECTION::LEFT == enProjDir)
         cv::flip(matPhase, matPhase, 1);
 
-    if (PR_DIRECTION::DOWN == enScanDir || PR_DIRECTION::RIGHT == enProjDir)
+    // Flip around x-axis
+    if (PR_DIRECTION::DOWN == enScanDir || PR_DIRECTION::RIGHT == enScanDir)
         cv::flip(matPhase, matPhase, 0);
 }
 
@@ -2600,7 +2569,7 @@ void removeBlob(cv::Mat &matThreshold, cv::Mat &matBlob, float fAreaLimit) {
     if (PR_DIRECTION::UP == enProjDir || PR_DIRECTION::LEFT == enProjDir)
         cv::flip(matPhase, matPhase, 1);
 
-    if (PR_DIRECTION::DOWN == enScanDir || PR_DIRECTION::RIGHT == enProjDir)
+    if (PR_DIRECTION::DOWN == enScanDir || PR_DIRECTION::RIGHT == enScanDir)
         cv::flip(matPhase, matPhase, 0);
 
     if (PR_DIRECTION::UP == enProjDir|| PR_DIRECTION::DOWN == enProjDir)
@@ -2708,6 +2677,109 @@ void removeBlob(cv::Mat &matThreshold, cv::Mat &matBlob, float fAreaLimit) {
         }
     }
     pstRpy->bReverseSeq = ReverseSeq;
+}
+
+// Merge height based on H1, H2, (H1+H2)/2. If the difference between 2 height is big, the area choose the nearest one from three of them.
+/*static*/ cv::Mat Unwrap::_mergeHeightIntersect(cv::Mat &matHeightOne, const cv::Mat &matNanMaskOne, cv::Mat &matHeightTwo, const cv::Mat &matNanMaskTwo, float fDiffThreshold, PR_DIRECTION enProjDir) {
+    CStopWatch stopWatch;
+    matHeightTwo.copyTo(matHeightOne, matNanMaskOne);
+    matHeightOne.copyTo(matHeightTwo, matNanMaskTwo);
+
+    if (PR_DIRECTION::UP == enProjDir || PR_DIRECTION::DOWN == enProjDir) {
+        cv::transpose(matHeightOne, matHeightOne);
+        cv::transpose(matHeightTwo, matHeightTwo);
+    }
+
+    cv::Mat matHeightTre = (matHeightOne + matHeightTwo) / 2.f; // Tre means three
+    
+    cv::Mat matAbsDiff, matBigDiffMask;
+    cv::absdiff(matHeightOne, matHeightTwo, matAbsDiff);
+    matBigDiffMask = matAbsDiff > fDiffThreshold;
+
+    cv::Mat matHeightFor = matHeightTre.clone();    // For means four
+    matHeightFor.setTo(NAN, matBigDiffMask);
+
+    for (int row = 0; row < matHeightFor.rows; ++ row) {
+        cv::Mat matRowOne = matHeightOne.row(row);
+        cv::Mat matRowTwo = matHeightTwo.row(row);
+        cv::Mat matRowTre = matHeightTre.row(row);
+        cv::Mat matRowFor = matHeightFor.row(row);
+
+        cv::Mat matNanMasks = CalcUtils::getNanMask(matRowFor);
+        matNanMasks.convertTo(matNanMasks, CV_32FC1);
+        cv::Mat matDiffAbs = cv::abs(CalcUtils::diff(matNanMasks, 1, CalcUtils::DIFF_ON_X_DIR));
+        std::deque<int> dequeIndex;
+        for (int col = 0; col < matDiffAbs.cols; ++ col)
+            if (matDiffAbs.at<float>(col) > 0)
+                dequeIndex.push_back(col);
+        if (matNanMasks.at<DATA_TYPE>(0) > 0)
+            dequeIndex.push_front(0);
+        if (matNanMasks.at<DATA_TYPE>(matNanMasks.cols - 1) > 0)
+            dequeIndex.push_back(matNanMasks.cols - 1);
+
+        for (int i = 0; i < dequeIndex.size() / 2; ++ i) {
+            int startIndex = dequeIndex[i*2];
+            int endIndex = dequeIndex[i*2+1];
+            VectorOfFloat vecTargetH;
+            if (0 == startIndex && endIndex < matNanMasks.cols - 1)
+                vecTargetH = std::vector<float>(endIndex - startIndex, matRowFor.at<DATA_TYPE>(endIndex + 1));
+            else if (matNanMasks.cols - 1 == endIndex && startIndex >= 0)
+                vecTargetH = std::vector<float>(endIndex - startIndex, matRowFor.at<DATA_TYPE>(startIndex));
+            else if (startIndex >= 0 && endIndex < matNanMasks.cols - 1) {
+                float fInterval = (matRowFor.at<DATA_TYPE>(endIndex + 1) - matRowFor.at<DATA_TYPE>(startIndex)) / (endIndex - startIndex + 1);
+                for (int j = 0; j < endIndex - startIndex; ++ j) {
+                    vecTargetH.push_back(matRowFor.at<DATA_TYPE>(startIndex) + fInterval);
+                }
+            }
+
+            float fAbsDiffSumOne = 0.f, fAbsDiffSumTwo = 0.f, fAbsDiffSumTre = 0.f;
+            for (int index = startIndex, i = 0; index < endIndex; ++ index, ++ i) {
+                fAbsDiffSumOne += fabs(matRowOne.at<DATA_TYPE>(index) - vecTargetH[i]);
+                fAbsDiffSumTwo += fabs(matRowTwo.at<DATA_TYPE>(index) - vecTargetH[i]);
+                fAbsDiffSumTre += fabs(matRowTre.at<DATA_TYPE>(index) - vecTargetH[i]);
+            }
+
+            cv::Mat matChoose;
+            if (fAbsDiffSumOne <= fAbsDiffSumTwo && fAbsDiffSumOne <= fAbsDiffSumTre)
+                matChoose = matRowOne;
+            else if (fAbsDiffSumTwo <= fAbsDiffSumOne && fAbsDiffSumTwo <= fAbsDiffSumTre)
+                matChoose = matRowTwo;
+            else
+                matChoose = matRowTre;
+
+            cv::Mat matTarget(matHeightFor, cv::Range(row, row + 1), cv::Range(startIndex, endIndex + 1));
+            cv::Mat matSrc(matChoose, cv::Range(0, 1), cv::Range(startIndex, endIndex + 1));
+            matSrc.copyTo(matTarget);
+        }
+    }
+
+    if (PR_DIRECTION::UP == enProjDir || PR_DIRECTION::DOWN == enProjDir)
+        cv::transpose(matHeightFor, matHeightFor);
+
+    return matHeightFor;
+}
+
+/*static*/ cv::Mat Unwrap::_mergeHeightMax(cv::Mat &matHeightOne, const cv::Mat &matNanMaskOne, cv::Mat &matHeightTwo, const cv::Mat &matNanMaskTwo, float fDiffThreshold, PR_DIRECTION enProjDir) {
+    CStopWatch stopWatch;
+    cv::Mat matHeight = cv::Mat::zeros(matHeightOne.size(), matHeightOne.type());
+
+    cv::Mat matAbsDiff, matIdxH0, matIdxH1, matIdxH2;
+    cv::absdiff(matHeightOne, matHeightTwo, matAbsDiff);
+    matIdxH0 = matAbsDiff < fDiffThreshold;
+    matIdxH1 = (matHeightTwo - matHeightOne) > fDiffThreshold;
+    matIdxH2 = (matHeightOne - matHeightTwo) > fDiffThreshold;
+
+    matIdxH1 = matIdxH1 | matNanMaskOne;
+    matIdxH2 = matIdxH2 | matNanMaskTwo;
+    matHeightTwo.copyTo(matHeight, matIdxH1);
+    matHeightOne.copyTo(matHeight, matIdxH2);
+
+    cv::add(matHeightOne / 2.f, matHeightTwo / 2.f, matHeight, matIdxH0);
+    TimeLog::GetInstance()->addTimeLog("Merge height.", stopWatch.Span());
+
+    cv::medianBlur(matHeight, matHeight, 5);
+    TimeLog::GetInstance()->addTimeLog("medianBlur.", stopWatch.Span());
+    return matHeight;
 }
 
 }

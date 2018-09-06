@@ -1258,13 +1258,18 @@ struct PR_CALC_3D_HEIGHT_RPY {
     VisionStatus            enStatus;
     cv::Mat                 matPhase;
     cv::Mat                 matHeight;
+    cv::Mat                 matNanMask;
 };
 
 struct PR_MERGE_3D_HEIGHT_CMD {
-    PR_MERGE_3D_HEIGHT_CMD() : 
+    PR_MERGE_3D_HEIGHT_CMD() :
+        enMethod (PR_MERGE_3D_HT_METHOD::SELECT_NEAREST_INTERSECT),
         fHeightDiffThreshold(0.2f),
         fRemoveLowerNoiseRatio(0.001f) {}
     VectorOfMat             vecMatHeight;
+    VectorOfMat             vecMatNanMask;
+    PR_MERGE_3D_HT_METHOD   enMethod;
+    PR_DIRECTION            enProjDir;
     float                   fHeightDiffThreshold;   //The height difference threshold. Unit mm. If height difference less than it, the result height is average of the input height. If larger than it, the result height use the small height.
     float                   fRemoveLowerNoiseRatio; //Remove the lower part of the image as noise, set to their neighbour values.
 };
@@ -1272,6 +1277,7 @@ struct PR_MERGE_3D_HEIGHT_CMD {
 struct PR_MERGE_3D_HEIGHT_RPY {
     VisionStatus            enStatus;
     cv::Mat                 matHeight;
+    cv::Mat                 matNanMask;
 };
 
 struct PR_CALC_3D_HEIGHT_DIFF_CMD {
