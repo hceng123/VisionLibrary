@@ -2082,6 +2082,63 @@ VisionStatus LogCaseInspLeadTmpl::RunLogCase() {
     return enStatus;
 }
 
+/*static*/ String LogCaseInspPolarity::StaticGetFolderPrefix() {
+    return "InspPolarity";
+}
+
+VisionStatus LogCaseInspPolarity::WriteCmd(const PR_INSP_POLARITY_CMD *const pstCmd) {
+    if (!_bReplay) {
+        _strLogCasePath = _generateLogCaseName(GetFolderPrefix());
+        bfs::path dir(_strLogCasePath);
+        bfs::create_directories(dir);
+    }
+
+    CSimpleIni ini(false, false, false);
+    auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
+    ini.LoadFile(cmdRpyFilePath.c_str());
+    ini.SetValue(_CMD_SECTION.c_str(), _strKeyInspROI.c_str(), _formatRect(pstCmd->rectInspROI).c_str());
+    ini.SetValue(_CMD_SECTION.c_str(), _strKeyCompareROI.c_str(), _formatRect(pstCmd->rectCompareROI).c_str());
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyAttribute.c_str(), ToInt32(pstCmd->enInspROIAttribute));
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyGrayDiffTol.c_str(), pstCmd->nGrayScaleDiffTol);
+    ini.SaveFile(cmdRpyFilePath.c_str());
+
+    cv::imwrite(_strLogCasePath + _IMAGE_NAME, pstCmd->matInputImg);
+    return VisionStatus::OK;
+}
+
+VisionStatus LogCaseInspPolarity::WriteRpy(const PR_INSP_POLARITY_RPY *const pstRpy) {
+    CSimpleIni ini(false, false, false);
+    auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
+    ini.LoadFile(cmdRpyFilePath.c_str());
+    ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyStatus.c_str(), ToInt32(pstRpy->enStatus));
+    ini.SetLongValue(_RPY_SECTION.c_str(), _strGrayScaleDiff.c_str(), pstRpy->nGrayScaleDiff);
+    ini.SaveFile(cmdRpyFilePath.c_str());
+    if (! pstRpy->matResultImg.empty())
+        cv::imwrite(_strLogCasePath + _RESULT_IMAGE_NAME, pstRpy->matResultImg);
+    _zip();
+    return VisionStatus::OK;
+}
+
+VisionStatus LogCaseInspPolarity::RunLogCase() {
+    PR_INSP_POLARITY_CMD stCmd;
+    PR_INSP_POLARITY_RPY stRpy;
+
+    CSimpleIni ini(false, false, false);
+    auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
+    ini.LoadFile(cmdRpyFilePath.c_str());
+    stCmd.matInputImg = cv::imread(_strLogCasePath + _IMAGE_NAME, cv::IMREAD_COLOR);
+
+    stCmd.rectInspROI = _parseRect(ini.GetValue(_CMD_SECTION.c_str(), _strKeyInspROI.c_str(), _DEFAULT_RECT.c_str()));
+    stCmd.rectCompareROI = _parseRect(ini.GetValue(_CMD_SECTION.c_str(), _strKeyCompareROI.c_str(), _DEFAULT_RECT.c_str()));
+    stCmd.enInspROIAttribute = static_cast<PR_OBJECT_ATTRIBUTE>(ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyAttribute.c_str(), 0));
+    stCmd.nGrayScaleDiffTol = ToInt16(ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyGrayDiffTol.c_str(), 0));
+
+    VisionStatus enStatus = VisionStatus::OK;
+    enStatus = VisionAlgorithm::inspPolarity(&stCmd, &stRpy, true);
+    WriteRpy(&stRpy);
+    return enStatus;
+}
+
 /*static*/ String LogCaseCalib3DBase::StaticGetFolderPrefix() {
     return "Calib3DBase";
 }
@@ -2267,8 +2324,8 @@ VisionStatus LogCaseCalc3DHeight::WriteCmd(const PR_CALC_3D_HEIGHT_CMD *const ps
     ini.SetBoolValue(_CMD_SECTION.c_str(), _strKeyUseThinnestPattern.c_str(), pstCmd->bUseThinnestPattern);
     ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyRemoveHarmonicWaveK.c_str(), pstCmd->fRemoveHarmonicWaveK);
     ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyMinAmplitude.c_str(), pstCmd->fMinAmplitude);
-    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyRmBetaJumpSpanX.c_str(), pstCmd->nRemoveBetaJumpSpanX);
-    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyRmBetaJumpSpanY.c_str(), pstCmd->nRemoveBetaJumpSpanY);
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyRmBetaJumpMinSpan.c_str(), pstCmd->nRemoveBetaJumpMinSpan);
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyRmBetaJumpMaxSpan.c_str(), pstCmd->nRemoveBetaJumpMaxSpan);
     ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyRmGammaJumpSpanX.c_str(), pstCmd->nRemoveGammaJumpSpanX);
     ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyRmGammaJumpSpanY.c_str(), pstCmd->nRemoveGammaJumpSpanY);
     ini.SaveFile(cmdRpyFilePath.c_str());
@@ -2312,8 +2369,8 @@ VisionStatus LogCaseCalc3DHeight::RunLogCase() {
     stCmd.bUseThinnestPattern = ini.GetBoolValue(_CMD_SECTION.c_str(), _strKeyUseThinnestPattern.c_str(), false);
     stCmd.fRemoveHarmonicWaveK = ToFloat(ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyRemoveHarmonicWaveK.c_str(), 0.f));
     stCmd.fMinAmplitude = ToFloat(ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyMinAmplitude.c_str(), 1.5));
-    stCmd.nRemoveBetaJumpSpanX = ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyRmBetaJumpSpanX.c_str(), 25);
-    stCmd.nRemoveBetaJumpSpanY = ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyRmBetaJumpSpanY.c_str(), 7);
+    stCmd.nRemoveBetaJumpMinSpan = ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyRmBetaJumpMinSpan.c_str(), 25);
+    stCmd.nRemoveBetaJumpMaxSpan = ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyRmBetaJumpMaxSpan.c_str(), 7);
     stCmd.nRemoveGammaJumpSpanX = ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyRmGammaJumpSpanX.c_str(), 23);
     stCmd.nRemoveGammaJumpSpanY = ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyRmGammaJumpSpanY.c_str(), 23);
 

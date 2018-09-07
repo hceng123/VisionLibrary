@@ -638,12 +638,12 @@ int _tmain(int argc, _TCHAR* argv[])
     std::cout << "VisionLibrary Version: " << stVersionInfo.chArrVersion << std::endl;
 
     float fTest = -1.2f;
-    int nTest = static_cast<int>( fTest );
+    int nTest = static_cast<int>(fTest);
 
-    auto fFloorResult = std::floor ( fTest );
+    auto fFloorResult = std::floor(fTest);
 
     PR_Init();
-    PR_SetDebugMode(PR_DEBUG_MODE::LOG_ALL_CASE);
+    PR_SetDebugMode(PR_DEBUG_MODE::DISABLED);
 
     //TestTemplate();
     //TestInspDevice();
@@ -702,7 +702,7 @@ int _tmain(int argc, _TCHAR* argv[])
     //TestCalib3DHeight_02();
     //TestCalib3DHeight_03();
     //TestCalc3DHeight();
-    //for ( int i = 0; i < 10; ++ i )
+    //for (int i = 0; i < 10; ++ i)
     //    TestFastCalc3DHeight();
     //TestFastCalc3DHeight_1();
     
@@ -710,7 +710,7 @@ int _tmain(int argc, _TCHAR* argv[])
     //TestCalc3DHeight_With_NormalCalibParam();
 
     //TestCalc3DHeight_With_IntegrateCalibParam();
-    TestMerge3DHeight();
+    //TestMerge3DHeight();
 
     //TestIntegrate3DCalibHaoYu();
 
@@ -748,7 +748,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
     //TestMotor3DCalib();
 
-    //TestCalc4DLPHeight();
+    TestCalc4DLPHeight();
 
     //TestCalcFrameValue_1();
     

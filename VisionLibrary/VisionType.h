@@ -189,6 +189,11 @@ enum class PR_AUTO_LOCATE_LEAD_METHOD {
     FIND_CONTOUR,
 };
 
+enum class PR_MERGE_3D_HT_METHOD {
+    SELECT_NEAREST_INTERSECT,
+    SELECT_MAX,
+};
+
 }
 }
 

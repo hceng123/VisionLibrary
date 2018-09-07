@@ -22,12 +22,12 @@ VisionStatus ObjRecord::load(cv::FileStorage &fs, const String& strFilePath) {
 
 VisionStatus ObjRecord::save(const String& strFilePath) {
     cv::FileStorage fs(strFilePath, cv::FileStorage::WRITE);
-    if ( ! fs.isOpened() )
+    if (!fs.isOpened())
         return VisionStatus::OPEN_FILE_FAIL;
 
-    cv::write ( fs, "type", static_cast<int>(PR_RECORD_TYPE::OBJECT));
-    cv::write ( fs, "keypoints", _vecModelKeyPoint );
-    cv::write ( fs, "descriptor", _matModelDescritor );
+    cv::write(fs, "type", static_cast<int>(PR_RECORD_TYPE::OBJECT));
+    cv::write(fs, "keypoints", _vecModelKeyPoint);
+    cv::write(fs, "descriptor", _matModelDescritor);
     fs.release();
     return VisionStatus::OK;
 }
@@ -74,9 +74,9 @@ VisionStatus DeviceRecord::save(const String& strFilePath) {
     if ( ! fs.isOpened() )
         return VisionStatus::OPEN_FILE_FAIL;
 
-    cv::write ( fs, "type", static_cast<int>(PR_RECORD_TYPE::DEVICE));
-    cv::write ( fs, "size", _size);
-    cv::write ( fs, "threshold", _nElectrodeThreshold );
+    cv::write(fs, "type", static_cast<int>(PR_RECORD_TYPE::DEVICE));
+    cv::write(fs, "size", _size);
+    cv::write(fs, "threshold", _nElectrodeThreshold);
     fs.release();
     return VisionStatus::OK;
 }

@@ -748,6 +748,26 @@ private:
     const String _strLeadOffsetY        = "LeadOffsetY";
 };
 
+class LogCaseInspPolarity : public LogCase
+{
+public:
+    explicit LogCaseInspPolarity(const String &strPath, bool bReplay = false) : LogCase(strPath, bReplay) {}
+    VisionStatus WriteCmd(const PR_INSP_POLARITY_CMD *const pstCmd);
+    VisionStatus WriteRpy(const PR_INSP_POLARITY_RPY *const pstRpy);
+    virtual VisionStatus RunLogCase() override;
+    virtual String GetFolderPrefix() const { return StaticGetFolderPrefix(); }
+    static String StaticGetFolderPrefix();
+
+private:
+    const String _strKeyInspROI         = "InspROI";
+    const String _strKeyCompareROI      = "CompareROI";
+    const String _strKeyAttribute       = "Attribute";
+    const String _strKeyGrayDiffTol     = "GrayScaleDiffTol";
+
+    const String _strKeyStatus          = "Status";
+    const String _strGrayScaleDiff      = "GrayScaleDiff";
+};
+
 class LogCaseCalib3DBase : public LogCase
 {
 public:
@@ -819,8 +839,8 @@ private:
     const String _strKeyMinAmplitude        = "MinAmplitude";
     const String _strKeyThickToThinK        = "ThickToThinK";
     const String _strKeyThickToThinnestK    = "ThickToThinnestK";
-    const String _strKeyRmBetaJumpSpanX     = "RemoveBetaJumpSpanX";
-    const String _strKeyRmBetaJumpSpanY     = "RemoveBetaJumpSpanY";
+    const String _strKeyRmBetaJumpMinSpan   = "RemoveBetaJumpMinSpan";
+    const String _strKeyRmBetaJumpMaxSpan   = "RemoveBetaJumpMaxSpan";
     const String _strKeyRmGammaJumpSpanX    = "RemoveGammaJumpSpanX";
     const String _strKeyRmGammaJumpSpanY    = "RemoveGammaJumpSpanY";
 

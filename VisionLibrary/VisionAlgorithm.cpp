@@ -1577,6 +1577,9 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
     if (LogCaseInspLeadTmpl::StaticGetFolderPrefix() == strFolderPrefix)
         return std::make_unique<LogCaseInspLeadTmpl>(strLocalPath, true);
 
+    if (LogCaseInspPolarity::StaticGetFolderPrefix() == strFolderPrefix)
+        return std::make_unique<LogCaseInspPolarity>(strLocalPath, true);
+
     if (LogCaseCalib3DBase::StaticGetFolderPrefix() == strFolderPrefix)
         return std::make_unique<LogCaseCalib3DBase>(strLocalPath, true);
 
@@ -1681,7 +1684,7 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
     }
     else if (PR_FIDUCIAL_MARK_TYPE::CIRCLE == pstCmd->enType) {
         auto radius = ToInt32(pstCmd->fSize / 2.f);
-        cv::circle(matTmpl, cv::Point(ToInt32(pstCmd->fMargin) + radius, ToInt32(pstCmd->fMargin) + radius), radius, cv::Scalar::all(256), -1);
+        cv::circle(matTmpl, cv::Point(ToInt32(pstCmd->fMargin) + radius, ToInt32(pstCmd->fMargin) + radius), radius, cv::Scalar::all(256), CV_FILLED);
     }
     else {
         WriteLog("Fiducial mark type is invalid.");
@@ -1705,8 +1708,9 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
 
     if (! isAutoMode()) {
         pstRpy->matResultImg = pstCmd->matInputImg.clone();
-        cv::circle(pstRpy->matResultImg, pstRpy->ptPos, 2, cv::Scalar(255, 0, 0), 2);
-        cv::rectangle(pstRpy->matResultImg, cv::Rect(ToInt32(pstRpy->ptPos.x) - nTmplSize / 2, ToInt32(pstRpy->ptPos.y) - nTmplSize / 2, nTmplSize, nTmplSize), cv::Scalar(255, 0, 0), 1);
+        cv::circle(pstRpy->matResultImg, pstRpy->ptPos, 2, _constBlueScalar, 2);
+        cv::rectangle(pstRpy->matResultImg, cv::Rect(ToInt32(pstRpy->ptPos.x) - nTmplSize / 2, ToInt32(pstRpy->ptPos.y) - nTmplSize / 2, nTmplSize, nTmplSize), _constBlueScalar, 2);
+        cv::rectangle(pstRpy->matResultImg, pstCmd->rectSrchWindow, _constYellowScalar, 2);
     }
 
     FINISH_LOGCASE;
@@ -4500,7 +4504,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
 
     cv::Mat matBW = matRow > (vecThreshold[1]);
     cv::medianBlur(matBW, matBW, 9);
-    matBW.convertTo(matBW, CV_32FC1);    
+    matBW.convertTo(matBW, CV_32FC1);
     cv::Mat matBWDiff = CalcUtils::diff(matBW, 1, 2);
 #ifdef _DEBUG
     auto vecRow = CalcUtils::matToVector<uchar>(matRow);
@@ -6428,6 +6432,9 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     pstRpy->enStatus = _checkInputROI(pstCmd->rectCompareROI, pstCmd->matInputImg, AT);
     if (VisionStatus::OK != pstRpy->enStatus) return pstRpy->enStatus;
 
+    MARK_FUNCTION_START_TIME;
+    SETUP_LOGCASE(LogCaseInspPolarity);
+
     cv::Mat matInspROI(pstCmd->matInputImg, pstCmd->rectInspROI);
     cv::Mat matCompareROI(pstCmd->matInputImg, pstCmd->rectCompareROI);
     cv::Mat matInspROIGray, matCompareROIGray;
@@ -6487,6 +6494,9 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
             cv::putText(pstRpy->matResultImg, strGrayScale, ptTextOrg, fontFace, fontScale, _constCyanScalar, thickness);
         }
     }
+
+    FINISH_LOGCASE;
+    MARK_FUNCTION_END_TIME;
     return pstRpy->enStatus;
 }
 
@@ -6649,7 +6659,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     }
 
     if (pstCmd->matBaseWrappedAlpha.size() != pstCmd->vecInputImgs[0].size()) {
-        WriteLog("The size of matBaseWrappedAlpha is not match with the input image size..");
+        WriteLog("The size of matBaseWrappedAlpha is not match with the input image size.");
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return pstRpy->enStatus;
     }
@@ -6801,6 +6811,14 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
         return pstRpy->enStatus;
     }
 
+    if (pstCmd->nRemoveBetaJumpMaxSpan < 0 || pstCmd->nRemoveBetaJumpMinSpan < 0 || pstCmd->nRemoveBetaJumpMinSpan > pstCmd->nRemoveBetaJumpMaxSpan) {
+        std::stringstream ss;
+        ss << "The RemoveBetaJumpMaxSpan " << pstCmd->nRemoveBetaJumpMaxSpan << " and RemoveBetaJumpMinSpan " << pstCmd->nRemoveBetaJumpMinSpan << " is invalid.";
+        WriteLog(ss.str());
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
     if (pstCmd->bUseThinnestPattern) {
         if (pstCmd->matBaseWrappedGamma.empty()) {
             WriteLog("matBaseWrappedGamma is empty.");
@@ -6835,7 +6853,13 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
 /*static*/ VisionStatus VisionAlgorithm::merge3DHeight(const PR_MERGE_3D_HEIGHT_CMD *const pstCmd, PR_MERGE_3D_HEIGHT_RPY *const pstRpy, bool bReplay /*= false*/) {
     assert(pstCmd != nullptr && pstRpy != nullptr);
     if (pstCmd->vecMatHeight.size() < 2) {
-        WriteLog("The height vector size is less than 2.");
+        WriteLog("The vector of height size is less than 2.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    if (pstCmd->vecMatNanMask.size() < 2) {
+        WriteLog("The vector of nan mask size is less than 2.");
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return pstRpy->enStatus;
     }
@@ -6843,6 +6867,14 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     for (const auto &mat : pstCmd->vecMatHeight) {
         if (mat.empty()) {
             WriteLog("The input height matrix is empty.");
+            pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+            return pstRpy->enStatus;
+        }
+    }
+
+    for (const auto &mat : pstCmd->vecMatNanMask) {
+        if (mat.empty()) {
+            WriteLog("The input nan mask is empty.");
             pstRpy->enStatus = VisionStatus::INVALID_PARAM;
             return pstRpy->enStatus;
         }
