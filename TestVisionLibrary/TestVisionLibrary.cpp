@@ -748,7 +748,8 @@ int _tmain(int argc, _TCHAR* argv[])
 
     //TestMotor3DCalib();
 
-    TestCalc4DLPHeight();
+    //TestCalc4DLPHeight();
+    TestInsp3DSolder();
 
     //TestCalcFrameValue_1();
     

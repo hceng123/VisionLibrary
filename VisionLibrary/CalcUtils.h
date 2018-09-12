@@ -321,7 +321,7 @@ public:
         DIFF_ON_X_DIR = 2,
     };
 
-    static inline cv::Mat diff(const cv::Mat &matInput, int nRecersiveTime, int nDimension) {        
+    static inline cv::Mat diff(const cv::Mat &matInput, int nRecersiveTime, int nDimension) {
         assert(DIFF_ON_X_DIR == nDimension || DIFF_ON_Y_DIR == nDimension);
         if (nRecersiveTime > 1)
             return diff(diff(matInput, nRecersiveTime - 1, nDimension), 1, nDimension);

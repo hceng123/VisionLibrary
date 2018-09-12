@@ -70,6 +70,8 @@ void TestCalcFrameValue_1();
 void TestCalc4DLPHeight();
 void TestQueryDlpOffset();
 
+void TestInsp3DSolder();
+
 void TestOCV_1();
 void TestOCV_2();
 
@@ -81,27 +83,27 @@ void TestRead2DCode_2();
 template<class T>
 void printfMat(const cv::Mat &mat)
 {
-	for (short row = 0; row < mat.rows; ++row)
-	{
-		for (short col = 0; col < mat.cols; ++col)
-		{
-			printf("%f ", mat.at<T>(row, col));
-		}
-		printf("\n");
-	}
+    for (short row = 0; row < mat.rows; ++row)
+    {
+        for (short col = 0; col < mat.cols; ++col)
+        {
+            printf("%f ", mat.at<T>(row, col));
+        }
+        printf("\n");
+    }
 }
 
 template<class T>
 void printfVectorOfVector(const std::vector<std::vector<T>> &vevVecInput)
 {
-	for (const auto &vecInput : vevVecInput )
-	{
-		for (const auto value : vecInput )
-		{
-			printf("%.2f ", value);
-		}
-		printf("\n");
-	}
+    for (const auto &vecInput : vevVecInput )
+    {
+        for (const auto value : vecInput )
+        {
+            printf("%.2f ", value);
+        }
+        printf("\n");
+    }
 }
 
 template<typename _Tp>

@@ -31,6 +31,12 @@ public:
         RED,
     };
 
+    static const cv::Scalar RED_SCALAR;
+    static const cv::Scalar BLUE_SCALAR;
+    static const cv::Scalar CYAN_SCALAR;
+    static const cv::Scalar GREEN_SCALAR;
+    static const cv::Scalar YELLOW_SCALAR;
+
     explicit VisionAlgorithm();
     static std::unique_ptr<VisionAlgorithm> create();
     static bool isAutoMode();
@@ -85,6 +91,7 @@ public:
     static VisionStatus calc3DHeight(const PR_CALC_3D_HEIGHT_CMD *const pstCmd, PR_CALC_3D_HEIGHT_RPY *const pstRpy, bool bReplay = false);
     static VisionStatus merge3DHeight(const PR_MERGE_3D_HEIGHT_CMD *const pstCmd, PR_MERGE_3D_HEIGHT_RPY *const pstRpy, bool bReplay = false);
     static VisionStatus calc3DHeightDiff(const PR_CALC_3D_HEIGHT_DIFF_CMD *const pstCmd, PR_CALC_3D_HEIGHT_DIFF_RPY *const pstRpy, bool bReplay = false);
+    static VisionStatus insp3DSolder(const PR_INSP_3D_SOLDER_CMD *pstCmd, PR_INSP_3D_SOLDER_RPY *const pstRpy, bool bReplay = false);
     static VisionStatus calcDlpOffset(const PR_CALC_DLP_OFFSET_CMD *const pstCmd, PR_CALC_DLP_OFFSET_RPY *const pstRpy, bool bReplay = false);
     static VisionStatus calcFrameValue(const PR_CALC_FRAME_VALUE_CMD *const pstCmd, PR_CALC_FRAME_VALUE_RPY *const pstRpy, bool bReplay = false);
     static VisionStatus calcCameraMTF(const PR_CALC_CAMERA_MTF_CMD *const pstCmd, PR_CALC_CAMERA_MTF_RPY *const pstRpy, bool bReplay = false);
@@ -233,7 +240,8 @@ protected:
     static cv::Mat _imageFilling(const cv::Mat &matInput, cv::Mat &matOuterEdge);
     static VectorOfPoint2f _lineIntersect4P(std::vector<int> &vecReverseFit, VectorOfFloat &vecSlope, VectorOfFloat &vecIntercept);
     static bool _lineScanRow(const cv::Mat &matInput, int &n, int &startRow);
-    static bool _lineScanMatrix(const cv::Mat &matInput, int &m, int &n, int &startRow, int &startCol);    
+    static bool _lineScanMatrix(const cv::Mat &matInput, int &m, int &n, int &startRow, int &startCol);
+    static cv::Mat _pickColor(const std::vector<int> &vecValue, const cv::Mat &matColor, int nColorDiff, int nGrayDiff, UInt32 &nPointCountOut);
 
 protected:
     static const int       _constMinHessian        = 300;
@@ -242,12 +250,7 @@ protected:
     static const UInt32    _constLeastFeatures     = 3;
     static const String    _strRecordLogPrefix;
     static const float     _constExpSmoothRatio;
-
-    static const cv::Scalar _constRedScalar;
-    static const cv::Scalar _constBlueScalar;
-    static const cv::Scalar _constCyanScalar;
-    static const cv::Scalar _constGreenScalar;
-    static const cv::Scalar _constYellowScalar;
+    
     static OcrTesseractPtr  _ptrOcrTesseract;
     static bool             _bAutoMode;
 private:

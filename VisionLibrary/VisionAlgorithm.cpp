@@ -53,11 +53,11 @@ if (! bReplay) {   \
 }
 
 /*static*/ OcrTesseractPtr VisionAlgorithm::_ptrOcrTesseract;
-/*static*/ const cv::Scalar VisionAlgorithm::_constRedScalar    (0,   0,   255 );
-/*static*/ const cv::Scalar VisionAlgorithm::_constBlueScalar   (255, 0,   0   );
-/*static*/ const cv::Scalar VisionAlgorithm::_constCyanScalar   (255, 255, 0   );
-/*static*/ const cv::Scalar VisionAlgorithm::_constGreenScalar  (0,   255, 0   );
-/*static*/ const cv::Scalar VisionAlgorithm::_constYellowScalar (0,   255, 255 );
+/*static*/ const cv::Scalar VisionAlgorithm::RED_SCALAR    (0,   0,   255 );
+/*static*/ const cv::Scalar VisionAlgorithm::BLUE_SCALAR   (255, 0,   0   );
+/*static*/ const cv::Scalar VisionAlgorithm::CYAN_SCALAR   (255, 255, 0   );
+/*static*/ const cv::Scalar VisionAlgorithm::GREEN_SCALAR  (0,   255, 0   );
+/*static*/ const cv::Scalar VisionAlgorithm::YELLOW_SCALAR (0,   255, 255 );
 /*static*/ const String VisionAlgorithm::_strRecordLogPrefix   = "tmplDir.";
 /*static*/ const float VisionAlgorithm::_constExpSmoothRatio   = 0.3f;
 /*static*/ bool VisionAlgorithm::_bAutoMode = false;
@@ -119,7 +119,7 @@ VisionAlgorithm::VisionAlgorithm() {
     }
 
     pstRpy->matResultImg = matROI.clone();
-    cv::drawKeypoints(pstRpy->matResultImg, pstRpy->vecKeyPoint, pstRpy->matResultImg, _constRedScalar, cv::DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);
+    cv::drawKeypoints(pstRpy->matResultImg, pstRpy->vecKeyPoint, pstRpy->matResultImg, RED_SCALAR, cv::DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);
 
     pstRpy->enStatus = VisionStatus::OK;
     pstRpy->ptCenter.x = pstCmd->rectLrn.x + pstCmd->rectLrn.width / 2.0f;
@@ -276,8 +276,8 @@ VisionAlgorithm::VisionAlgorithm() {
     for (const auto &point : vecPoint2f)
         vecVecPoint[0].push_back(point);
     cv::cvtColor(pstCmd->matInputImg, pstRpy->matResultImg, CV_GRAY2BGR);
-    cv::polylines(pstRpy->matResultImg, vecVecPoint, true, _constRedScalar);
-    cv::drawKeypoints(pstRpy->matResultImg, vecKeypointScene, pstRpy->matResultImg, _constRedScalar, cv::DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);
+    cv::polylines(pstRpy->matResultImg, vecVecPoint, true, RED_SCALAR);
+    cv::drawKeypoints(pstRpy->matResultImg, vecKeypointScene, pstRpy->matResultImg, RED_SCALAR, cv::DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);
 
     pstRpy->ptObjPos = CalcUtils::warpPoint<double>(pstRpy->matHomography, ptLrnObjCenter);
     pstRpy->szOffset.width = pstRpy->ptObjPos.x - pstCmd->ptExpectedPos.x;
@@ -1125,8 +1125,8 @@ VisionStatus VisionAlgorithm::inspDevice(PR_INSP_DEVICE_CMD *pstInspDeviceCmd, P
         if (ptrRecord->getTmpl().total() > 1000)
             nLineWidth = 2;
 
-        cv::line(pstRpy->matResultImg, crossLineOnePtOne, crossLineOnePtTwo, _constBlueScalar, nLineWidth);
-        cv::line(pstRpy->matResultImg, crossLineTwoPtOne, crossLineTwoPtTwo, _constBlueScalar, nLineWidth);
+        cv::line(pstRpy->matResultImg, crossLineOnePtOne, crossLineOnePtTwo, BLUE_SCALAR, nLineWidth);
+        cv::line(pstRpy->matResultImg, crossLineTwoPtOne, crossLineTwoPtTwo, BLUE_SCALAR, nLineWidth);
 
         matWarp = cv::getRotationMatrix2D(pstRpy->ptObjPos, -pstRpy->fRotation, 1.);
         auto vecPoint2f = CalcUtils::warpRect<double>(matWarp, cv::Rect2f(pstRpy->ptObjPos.x - ToFloat(ptrRecord->getTmpl().cols / 2),
@@ -1134,7 +1134,7 @@ VisionStatus VisionAlgorithm::inspDevice(PR_INSP_DEVICE_CMD *pstInspDeviceCmd, P
         VectorOfVectorOfPoint vecVecPoint(1);
         for (const auto &point : vecPoint2f)
             vecVecPoint[0].push_back(point);
-        cv::polylines(pstRpy->matResultImg, vecVecPoint, true, _constBlueScalar, nLineWidth);
+        cv::polylines(pstRpy->matResultImg, vecVecPoint, true, BLUE_SCALAR, nLineWidth);
     }
     FINISH_LOGCASE;
     MARK_FUNCTION_END_TIME;
@@ -1708,9 +1708,9 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
 
     if (! isAutoMode()) {
         pstRpy->matResultImg = pstCmd->matInputImg.clone();
-        cv::circle(pstRpy->matResultImg, pstRpy->ptPos, 2, _constBlueScalar, 2);
-        cv::rectangle(pstRpy->matResultImg, cv::Rect(ToInt32(pstRpy->ptPos.x) - nTmplSize / 2, ToInt32(pstRpy->ptPos.y) - nTmplSize / 2, nTmplSize, nTmplSize), _constBlueScalar, 2);
-        cv::rectangle(pstRpy->matResultImg, pstCmd->rectSrchWindow, _constYellowScalar, 2);
+        cv::circle(pstRpy->matResultImg, pstRpy->ptPos, 2, BLUE_SCALAR, 2);
+        cv::rectangle(pstRpy->matResultImg, cv::Rect(ToInt32(pstRpy->ptPos.x) - nTmplSize / 2, ToInt32(pstRpy->ptPos.y) - nTmplSize / 2, nTmplSize, nTmplSize), BLUE_SCALAR, 2);
+        cv::rectangle(pstRpy->matResultImg, pstCmd->rectSrchWindow, YELLOW_SCALAR, 2);
     }
 
     FINISH_LOGCASE;
@@ -2177,21 +2177,21 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
             pstRpy->matResultImg = pstCmd->matInputImg.clone();
         else
             cv::cvtColor(pstCmd->matInputImg, pstRpy->matResultImg, CV_GRAY2BGR);
-        cv::line(pstRpy->matResultImg, pstRpy->stLine.pt1, pstRpy->stLine.pt2, _constGreenScalar, 2);
+        cv::line(pstRpy->matResultImg, pstRpy->stLine.pt1, pstRpy->stLine.pt2, GREEN_SCALAR, 2);
         if (pstCmd->bFindPair)
-            cv::line(pstRpy->matResultImg, pstRpy->stLine2.pt1, pstRpy->stLine2.pt2, _constGreenScalar, 2);
+            cv::line(pstRpy->matResultImg, pstRpy->stLine2.pt1, pstRpy->stLine2.pt2, GREEN_SCALAR, 2);
 
         if (fabs(pstCmd->rectRotatedROI.angle) > 0.1)
-            cv::polylines(pstRpy->matResultImg, vecRotoatedSubRects, true, _constCyanScalar, 1);
+            cv::polylines(pstRpy->matResultImg, vecRotoatedSubRects, true, CYAN_SCALAR, 1);
         else {
             for (const auto &rect : vecSubRects)
-                cv::rectangle(pstRpy->matResultImg, rect, _constCyanScalar, 1);
+                cv::rectangle(pstRpy->matResultImg, rect, CYAN_SCALAR, 1);
         }
         for (const auto &point : vecFitPoint1)
-            cv::circle(pstRpy->matResultImg, point, 3, _constBlueScalar, 1);
+            cv::circle(pstRpy->matResultImg, point, 3, BLUE_SCALAR, 1);
 
         for (const auto &point : vecFitPoint2)
-            cv::circle(pstRpy->matResultImg, point, 3, _constBlueScalar, 1);
+            cv::circle(pstRpy->matResultImg, point, 3, BLUE_SCALAR, 1);
     }
 
     if (pstRpy->enStatus != VisionStatus::OK) {
@@ -2222,15 +2222,15 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
         pstRpy->stLine = CalcUtils::calcEndPointOfLine(vecFitPoint1, pstRpy->bReversedFit, pstRpy->fSlope, pstRpy->fIntercept);
         if (! isAutoMode()) {
             for (const auto &point : vecPointsToKeep)
-                cv::circle(pstRpy->matResultImg, point, 3, _constGreenScalar, 1);
+                cv::circle(pstRpy->matResultImg, point, 3, GREEN_SCALAR, 1);
         }
     }
 
     //Draw the result lines.
     if (! isAutoMode()) {
-        cv::line(pstRpy->matResultImg, pstRpy->stLine.pt1, pstRpy->stLine.pt2, _constGreenScalar, 2);
+        cv::line(pstRpy->matResultImg, pstRpy->stLine.pt1, pstRpy->stLine.pt2, GREEN_SCALAR, 2);
         if (pstCmd->bFindPair)
-            cv::line(pstRpy->matResultImg, pstRpy->stLine2.pt1, pstRpy->stLine2.pt2, _constGreenScalar, 2);
+            cv::line(pstRpy->matResultImg, pstRpy->stLine2.pt1, pstRpy->stLine2.pt2, GREEN_SCALAR, 2);
     }
 
     pstRpy->enStatus = VisionStatus::OK;
@@ -2961,7 +2961,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     for (const auto &line : vecLineDisplay) {
         cv::Point2f pt1(line.pt1.x + pstCmd->rectROI.x, line.pt1.y + pstCmd->rectROI.y);
         cv::Point2f pt2(line.pt2.x + pstCmd->rectROI.x, line.pt2.y + pstCmd->rectROI.y);
-        cv::line(pstRpy->matResultImg, pt1, pt2, _constBlueScalar, 2);
+        cv::line(pstRpy->matResultImg, pt1, pt2, BLUE_SCALAR, 2);
     }
     pstRpy->enStatus = VisionStatus::OK;
     FINISH_LOGCASE;
@@ -3073,7 +3073,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     pstRpy->enStatus = VisionStatus::OK;
 
     pstRpy->matResultImg = pstCmd->matInputImg.clone();
-    cv::circle(pstRpy->matResultImg, pstRpy->ptCircleCtr, (int)pstRpy->fRadius, _constBlueScalar, 2);
+    cv::circle(pstRpy->matResultImg, pstRpy->ptCircleCtr, (int)pstRpy->fRadius, BLUE_SCALAR, 2);
 
     FINISH_LOGCASE;
     MARK_FUNCTION_END_TIME;
@@ -3238,7 +3238,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
         if (! isAutoMode()) {
             VectorOfVectorOfPoint vevVecPoints;
             vevVecPoints.push_back(CalcUtils::getCornerOfRotatedRect(rotatedRectROI));
-            cv::polylines(pstRpy->matResultImg, vevVecPoints, true, _constCyanScalar, 1);
+            cv::polylines(pstRpy->matResultImg, vevVecPoints, true, CYAN_SCALAR, 1);
         }
 
         cv::Mat matROI;
@@ -3304,26 +3304,26 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
 
     if (! isAutoMode()) {
         for (const auto &point : vecPoints)
-            cv::circle(pstRpy->matResultImg, point, 3, _constBlueScalar, 2);
+            cv::circle(pstRpy->matResultImg, point, 3, BLUE_SCALAR, 2);
 
         for (const auto &point : vecKeepPoints1)
-            cv::circle(pstRpy->matResultImg, point, 3, _constGreenScalar, 2);
+            cv::circle(pstRpy->matResultImg, point, 3, GREEN_SCALAR, 2);
 
         if (pstCmd->bFindCirclePair) {
             for (const auto &point : vecPoints2)
-                cv::circle(pstRpy->matResultImg, point, 3, _constBlueScalar, 2);
+                cv::circle(pstRpy->matResultImg, point, 3, BLUE_SCALAR, 2);
 
             for (const auto &point : vecKeepPoints2)
-                cv::circle(pstRpy->matResultImg, point, 3, _constGreenScalar, 2);
+                cv::circle(pstRpy->matResultImg, point, 3, GREEN_SCALAR, 2);
         }
 
-        cv::circle(pstRpy->matResultImg, pstCmd->ptExpectedCircleCtr, 3, _constRedScalar, 1);
-        cv::circle(pstRpy->matResultImg, pstRpy->ptCircleCtr, 3, _constGreenScalar, 1);
+        cv::circle(pstRpy->matResultImg, pstCmd->ptExpectedCircleCtr, 3, RED_SCALAR, 1);
+        cv::circle(pstRpy->matResultImg, pstRpy->ptCircleCtr, 3, GREEN_SCALAR, 1);
 
         if (VisionStatus::OK == pstRpy->enStatus) {
-            cv::circle(pstRpy->matResultImg, pstRpy->ptCircleCtr, ToInt32(pstRpy->fRadius), _constGreenScalar, 1);
+            cv::circle(pstRpy->matResultImg, pstRpy->ptCircleCtr, ToInt32(pstRpy->fRadius), GREEN_SCALAR, 1);
             if (pstCmd->bFindCirclePair)
-                cv::circle(pstRpy->matResultImg, pstRpy->ptCircleCtr, ToInt32(pstRpy->fRadius2), _constGreenScalar, 1);
+                cv::circle(pstRpy->matResultImg, pstRpy->ptCircleCtr, ToInt32(pstRpy->fRadius2), GREEN_SCALAR, 1);
         }
     }
     FINISH_LOGCASE;
@@ -3411,7 +3411,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     }
     pstRpy->fRoundness = ToFloat(CalcUtils::calcStdDeviation<float>(vecDistance));
     pstRpy->matResultImg = pstCmd->matInputImg.clone();
-    cv::circle(pstRpy->matResultImg, pstRpy->ptCircleCtr, (int)pstRpy->fDiameter / 2, _constBlueScalar, 2);
+    cv::circle(pstRpy->matResultImg, pstRpy->ptCircleCtr, (int)pstRpy->fDiameter / 2, BLUE_SCALAR, 2);
 
     pstRpy->enStatus = VisionStatus::OK;
     FINISH_LOGCASE;
@@ -3793,50 +3793,13 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
 
     cv::Mat matROI(pstCmd->matInputImg, pstCmd->rectROI);
 
-    std::vector<cv::Mat> vecMat;
-    cv::split(matROI, vecMat);
+    std::vector<int> vecValue(3);
+    auto vecColor = pstCmd->matInputImg.at<cv::Vec3b>(pstCmd->ptPick);
+    vecValue[0] = vecColor[0]; vecValue[1] = vecColor[1]; vecValue[2] = vecColor[2];
 
-    cv::Point ptPick(pstCmd->ptPick.x - pstCmd->rectROI.x, pstCmd->ptPick.y - pstCmd->rectROI.y);
-
-    std::vector<int> vecValue;
-    for (const auto &mat : vecMat)
-        vecValue.push_back(mat.at<uchar>(ptPick));
-
-    assert(vecValue.size() == 3);
-
-    cv::Mat matGray;
-    cv::cvtColor(matROI, matGray, CV_BGR2GRAY);
-
-    int Tt = matGray.at<uchar>(ptPick);
-
-    auto maxElement = std::max_element(vecValue.begin(), vecValue.end());
-    auto maxIndex = std::distance(vecValue.begin(), maxElement);
-    std::vector<size_t> vecExcludedIndex{0, 1, 2};
-    vecExcludedIndex.erase(vecExcludedIndex.begin() + maxIndex);
-    cv::Mat matResultMask = cv::Mat::zeros(matROI.size(), CV_8UC1);
-    int diffLowerLimit1 = vecValue[maxIndex] - vecValue[vecExcludedIndex[0]] - pstCmd->nColorDiff;
-    int diffLowerLimit2 = vecValue[maxIndex] - vecValue[vecExcludedIndex[1]] - pstCmd->nColorDiff;
-    int diffUpLimit1 = vecValue[maxIndex] - vecValue[vecExcludedIndex[0]] + pstCmd->nColorDiff;
-    int diffUpLimit2 = vecValue[maxIndex] - vecValue[vecExcludedIndex[1]] + pstCmd->nColorDiff;
-
-    int nPointCount = 0;
-    for (int row = 0; row < matROI.rows; ++ row)
-    for (int col = 0; col < matROI.cols; ++ col) {
-        auto targetColorValue = vecMat[maxIndex].at<uchar>(row, col);
-        auto compareValue1 = vecMat[vecExcludedIndex[0]].at<uchar>(row, col);
-        auto compareValue2 = vecMat[vecExcludedIndex[1]].at<uchar>(row, col);
-        if ((targetColorValue - compareValue1) > diffLowerLimit1 &&
-            (targetColorValue - compareValue2) > diffLowerLimit2 &&
-            (targetColorValue - compareValue1) < diffUpLimit1 &&
-            (targetColorValue - compareValue2) < diffUpLimit2    &&
-            abs((int)matGray.at<uchar>(row, col) - Tt) < pstCmd->nGrayDiff) {
-            matResultMask.at<uchar>(row, col) = 1;
-            ++ nPointCount;
-        }
-    }
+    auto matResultMask = _pickColor(vecValue, matROI, pstCmd->nColorDiff, pstCmd->nGrayDiff, pstRpy->nPickPointCount);
 
     pstRpy->enStatus = VisionStatus::OK;
-    pstRpy->nPickPointCount = nPointCount;
     pstRpy->matResultImg = pstCmd->matInputImg.clone();
     cv::Mat matResultROI(pstRpy->matResultImg, pstCmd->rectROI);
     matResultROI.setTo(cv::Scalar::all(0));
@@ -3845,6 +3808,47 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     FINISH_LOGCASE;
     MARK_FUNCTION_END_TIME;
     return pstRpy->enStatus;
+}
+
+/*static*/ cv::Mat VisionAlgorithm::_pickColor(const std::vector<int> &vecValue, const cv::Mat &matColor, int nColorDiff, int nGrayDiff, UInt32 &nPointCountOut) {
+    assert(vecValue.size() == 3);
+
+    std::vector<cv::Mat> vecMat;
+    cv::split(matColor, vecMat);
+
+    cv::Mat matGray;
+    cv::cvtColor(matColor, matGray, CV_BGR2GRAY);
+
+    int Tt = ToInt32(0.114f * vecValue[0] + 0.587f * vecValue[1] + 0.299f * vecValue[2]);
+
+    auto maxElement = std::max_element(vecValue.begin(), vecValue.end());
+    auto maxIndex = std::distance(vecValue.begin(), maxElement);
+    std::vector<size_t> vecExcludedIndex{0, 1, 2};
+    vecExcludedIndex.erase(vecExcludedIndex.begin() + maxIndex);
+    cv::Mat matResultMask = cv::Mat::zeros(matColor.size(), CV_8UC1);
+    int diffLowerLimit1 = vecValue[maxIndex] - vecValue[vecExcludedIndex[0]] - nColorDiff;
+    int diffUpLimit1    = vecValue[maxIndex] - vecValue[vecExcludedIndex[0]] + nColorDiff;
+
+    int diffLowerLimit2 = vecValue[maxIndex] - vecValue[vecExcludedIndex[1]] - nColorDiff;
+    int diffUpLimit2    = vecValue[maxIndex] - vecValue[vecExcludedIndex[1]] + nColorDiff;
+
+    nPointCountOut = 0;
+    for (int row = 0; row < matColor.rows; ++ row)
+    for (int col = 0; col < matColor.cols; ++ col) {
+        auto targetColorValue = vecMat[maxIndex].at<uchar>(row, col);
+        auto compareValue1 = vecMat[vecExcludedIndex[0]].at<uchar>(row, col);
+        auto compareValue2 = vecMat[vecExcludedIndex[1]].at<uchar>(row, col);
+        if ((targetColorValue - compareValue1) > diffLowerLimit1 &&
+            (targetColorValue - compareValue2) > diffLowerLimit2 &&
+            (targetColorValue - compareValue1) < diffUpLimit1 &&
+            (targetColorValue - compareValue2) < diffUpLimit2 &&
+            abs((int)matGray.at<uchar>(row, col) - Tt) < nGrayDiff) {
+            matResultMask.at<uchar>(row, col) = 1;
+            ++ nPointCountOut;
+        }
+    }
+
+    return matResultMask;
 }
 
 /*static*/ VisionStatus VisionAlgorithm::_findChessBoardCorners(const cv::Mat   &mat,
@@ -3890,11 +3894,11 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
 
         if (fCorrelation > fMinCorrelation) {
             vecCorners.push_back(ptResult);
-            colorOfResultPoint = _constGreenScalar;
+            colorOfResultPoint = GREEN_SCALAR;
         }
         else {
             vecFailedRowCol.emplace_back(cv::Point(col, row));
-            colorOfResultPoint = _constRedScalar;
+            colorOfResultPoint = RED_SCALAR;
         }
 
         if (vecCorners.size() == 2) {
@@ -4067,7 +4071,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
         cv::Mat matDisplay;
         cv::cvtColor(matROI, matDisplay, CV_GRAY2BGR);
         for (size_t i = 0; i < contours.size(); ++ i) {
-            cv::drawContours(matDisplay, contours, ToInt32(i), _constRedScalar);
+            cv::drawContours(matDisplay, contours, ToInt32(i), RED_SCALAR);
         }
         showImage("findChessBoardBlockSize contour image", matDisplay);
     }
@@ -4587,9 +4591,9 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
             }
             vecPadPositions.push_back(ptPadPosition);
             cv::Point ptInOriginImg(ToInt32(ptPadPosition.x + rectLeadSrchArea.x + rectSubRegion.x + pstCmd->rectSrchWindow.x), ToInt32(ptPadPosition.y + rectLeadSrchArea.y + rectSubRegion.y + pstCmd->rectSrchWindow.y));
-            cv::circle(pstRpy->matResultImg, ptInOriginImg, 3, _constGreenScalar);
+            cv::circle(pstRpy->matResultImg, ptInOriginImg, 3, GREEN_SCALAR);
             stLeadInfo.rectPadWindow = cv::Rect(ptInOriginImg.x - matPad.cols / 2, ptInOriginImg.y - matPad.rows / 2, matPad.cols, matPad.rows);
-            cv::rectangle(pstRpy->matResultImg, stLeadInfo.rectPadWindow, _constGreenScalar, 1);
+            cv::rectangle(pstRpy->matResultImg, stLeadInfo.rectPadWindow, GREEN_SCALAR, 1);
             stLeadInfo.nPadRecordId = nPadRecordId;
         }
 
@@ -4613,14 +4617,14 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
         vecLeadPositions.push_back(ptLeadPosition);
         cv::Point ptInOriginImg(ToInt32(ptLeadPosition.x + rectLeadSrchArea.x + rectSubRegion.x + pstCmd->rectSrchWindow.x), ToInt32(ptLeadPosition.y + rectLeadSrchArea.y + rectSubRegion.y + pstCmd->rectSrchWindow.y));
         stLeadInfo.rectLeadWindow = cv::Rect(ptInOriginImg.x - matLead.cols / 2, ptInOriginImg.y - matLead.rows / 2, matLead.cols, matLead.rows);
-        cv::circle(pstRpy->matResultImg, ptInOriginImg, 3, _constCyanScalar);
-        cv::rectangle(pstRpy->matResultImg, stLeadInfo.rectLeadWindow, _constCyanScalar, 1);
+        cv::circle(pstRpy->matResultImg, ptInOriginImg, 3, CYAN_SCALAR);
+        cv::rectangle(pstRpy->matResultImg, stLeadInfo.rectLeadWindow, CYAN_SCALAR, 1);
         stLeadInfo.nLeadRecordId = nLeadRecordId;
 
         rectLeadSrchArea.x += rectSubRegion.x + pstCmd->rectSrchWindow.x;
         rectLeadSrchArea.y += rectSubRegion.y + pstCmd->rectSrchWindow.y;
         stLeadInfo.rectSrchWindow = rectLeadSrchArea;
-        cv::rectangle(pstRpy->matResultImg, stLeadInfo.rectSrchWindow, _constBlueScalar, 1);
+        cv::rectangle(pstRpy->matResultImg, stLeadInfo.rectSrchWindow, BLUE_SCALAR, 1);
         pstRpy->vecLeadInfo.push_back(stLeadInfo);
     }
 
@@ -4686,7 +4690,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
         cv::Mat matDisplay;
         cv::cvtColor(stRemoveCcRpy.matResultImg, matDisplay, CV_GRAY2BGR);
         for (int index = 0; index < ToInt32(contours.size()); ++ index)
-            cv::drawContours(matDisplay, contours, index, _constGreenScalar);
+            cv::drawContours(matDisplay, contours, index, GREEN_SCALAR);
         showImage("Find contour result", matDisplay);
     }
 
@@ -4720,7 +4724,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
                 ((rect.y < rectIcBodyInROI.y) || (rect.br().y > rectIcBodyInROI.br().y))) {
                 rect.x += pstCmd->rectSrchWindow.x;
                 rect.y += pstCmd->rectSrchWindow.y;
-                cv::rectangle(pstRpy->matResultImg, rect, _constRedScalar, 2);
+                cv::rectangle(pstRpy->matResultImg, rect, RED_SCALAR, 2);
                 continue;
             }
 
@@ -4728,7 +4732,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
                 ((rect.y < rectIcBodyInROI.y) || (rect.br().y > rectIcBodyInROI.br().y))) {
                 rect.x += pstCmd->rectSrchWindow.x;
                 rect.y += pstCmd->rectSrchWindow.y;
-                cv::rectangle(pstRpy->matResultImg, rect, _constRedScalar, 2);
+                cv::rectangle(pstRpy->matResultImg, rect, RED_SCALAR, 2);
                 continue;
             }
 
@@ -4736,7 +4740,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
                 ((rect.x < rectIcBodyInROI.x) || (rect.br().x > rectIcBodyInROI.br().x))) {
                 rect.x += pstCmd->rectSrchWindow.x;
                 rect.y += pstCmd->rectSrchWindow.y;
-                cv::rectangle(pstRpy->matResultImg, rect, _constRedScalar, 2);
+                cv::rectangle(pstRpy->matResultImg, rect, RED_SCALAR, 2);
                 continue;
             }
 
@@ -4744,14 +4748,14 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
                 ((rect.x < rectIcBodyInROI.x) || (rect.br().x > rectIcBodyInROI.br().x))) {
                 rect.x += pstCmd->rectSrchWindow.x;
                 rect.y += pstCmd->rectSrchWindow.y;
-                cv::rectangle(pstRpy->matResultImg, rect, _constRedScalar, 2);
+                cv::rectangle(pstRpy->matResultImg, rect, RED_SCALAR, 2);
                 continue;
             }
 
             rect.x += pstCmd->rectSrchWindow.x;
             rect.y += pstCmd->rectSrchWindow.y;
             pstRpy->vecLeadLocation.push_back(rect);
-            cv::rectangle(pstRpy->matResultImg, rect, _constGreenScalar, 2);
+            cv::rectangle(pstRpy->matResultImg, rect, GREEN_SCALAR, 2);
         }
     }
     pstRpy->enStatus = VisionStatus::OK;
@@ -4860,11 +4864,11 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
         else
             cv::cvtColor(pstCmd->matInputImg, pstRpy->matResultImg, CV_GRAY2BGR);
 
-        cv::rectangle(pstRpy->matResultImg, pstCmd->rectROI, _constBlueScalar);
+        cv::rectangle(pstRpy->matResultImg, pstCmd->rectROI, BLUE_SCALAR);
         if (PR_INSP_BRIDGE_MODE::OUTER == pstCmd->enInspMode)
-            cv::rectangle(pstRpy->matResultImg, pstCmd->rectOuterSrchWindow, _constBlueScalar);
+            cv::rectangle(pstRpy->matResultImg, pstCmd->rectOuterSrchWindow, BLUE_SCALAR);
         for (const auto &rectBridge : pstRpy->vecBridgeWindow)
-            cv::rectangle(pstRpy->matResultImg, rectBridge, _constRedScalar, 1);
+            cv::rectangle(pstRpy->matResultImg, rectBridge, RED_SCALAR, 1);
     }
 }
 
@@ -5011,7 +5015,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     //    pstRpy->arrSizeElectrode[index] = vecElectrodeSize[index];
     //    cv::Rect2f rectElectrode ( vecPtElectrode[index].x - vecElectrodeSize[index].width / 2 + rectROI.x, vecPtElectrode[index].y - vecElectrodeSize[index].height / 2 + rectROI.y,
     //        vecElectrodeSize[index].width, vecElectrodeSize[index].height );
-    //    cv::rectangle ( pstRpy->matResultImg, rectElectrode, _constBlueScalar );
+    //    cv::rectangle ( pstRpy->matResultImg, rectElectrode, BLUE_SCALAR );
     //}
     for (auto &contour : vecContours) {
         for (auto &point : contour) {
@@ -5019,7 +5023,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
             point.y += rectROI.y;
         }
     }
-    cv::polylines(pstRpy->matResultImg, vecContours, true, _constBlueScalar, 2);
+    cv::polylines(pstRpy->matResultImg, vecContours, true, BLUE_SCALAR, 2);
 
     return pstRpy->enStatus;
 }
@@ -5052,8 +5056,8 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     if (PR_DEBUG_MODE::SHOW_IMAGE == Config::GetInstance()->getDebugMode()) {
         cv::Mat matDisplay;
         cv::cvtColor(matThreshold, matDisplay, CV_GRAY2BGR);
-        cv::circle(matDisplay, fitCircleResult.center, ToInt32(fitCircleResult.size.width / 2 + 0.5), _constBlueScalar, 2);
-        cv::line(matDisplay, stLine.pt1, stLine.pt2, _constGreenScalar, 2);
+        cv::circle(matDisplay, fitCircleResult.center, ToInt32(fitCircleResult.size.width / 2 + 0.5), BLUE_SCALAR, 2);
+        cv::line(matDisplay, stLine.pt1, stLine.pt2, GREEN_SCALAR, 2);
         showImage("lrnChipCAEMode", matDisplay);
     }
 
@@ -5073,7 +5077,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     }
     VectorOfVectorOfPoint vevVecPoint;
     vevVecPoint.push_back(maxContour);
-    cv::polylines(pstRpy->matResultImg, vevVecPoint, true, _constBlueScalar, 2);
+    cv::polylines(pstRpy->matResultImg, vevVecPoint, true, BLUE_SCALAR, 2);
     pstRpy->enStatus = VisionStatus::OK;
     return pstRpy->enStatus;
 }
@@ -5090,7 +5094,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
         for (int i = 1; i < matOneRow.cols; ++ i) {
             cv::Point pt1(i - 1, nHeight - matOneRow.at<int>(0, i - 1));
             cv::Point pt2(i, nHeight - matOneRow.at<int>(0, i));
-            cv::line(matDisplay, pt1, pt2, _constBlueScalar, 2);
+            cv::line(matDisplay, pt1, pt2, BLUE_SCALAR, 2);
         }
         showImage("Project Curve Row", matDisplay);
     }
@@ -5105,7 +5109,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     bSuccess = (bSuccess && _findDataUpEdge(matOneCol, 0, matOneCol.cols / 2, nTopY));
     bSuccess = (bSuccess && _findDataDownEdge(matOneCol, matOneCol.cols / 2, matOneCol.cols, nBottomY));
     cv::rectangle(pstRpy->matResultImg, cv::Point(rectROI.x + nLeftX, rectROI.y + nTopY),
-        cv::Point(rectROI.x + nRightX, rectROI.y + nBottomY), _constGreenScalar, 2);
+        cv::Point(rectROI.x + nRightX, rectROI.y + nBottomY), GREEN_SCALAR, 2);
 
     if (! bSuccess) {
         pstRpy->enStatus = VisionStatus::CAN_NOT_FIND_SQUARE_EDGE;
@@ -5232,14 +5236,14 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
             point.y += rectROI.y;
         }
     }
-    cv::polylines(pstRpy->matResultImg, vecContours, true, _constBlueScalar, 2);
+    cv::polylines(pstRpy->matResultImg, vecContours, true, BLUE_SCALAR, 2);
 
     VectorOfPoint vecTwoContourTogether = vecContours[0];
     vecTwoContourTogether.insert(vecTwoContourTogether.end(), vecContours[1].begin(), vecContours[1].end());
     pstRpy->rotatedRectResult = cv::minAreaRect(vecTwoContourTogether);
     VectorOfVectorOfPoint vevVecPoints;
     vevVecPoints.push_back(CalcUtils::getCornerOfRotatedRect(pstRpy->rotatedRectResult));
-    cv::polylines(pstRpy->matResultImg, vevVecPoints, true, _constGreenScalar, 2);
+    cv::polylines(pstRpy->matResultImg, vevVecPoints, true, GREEN_SCALAR, 2);
     pstRpy->enStatus = VisionStatus::OK;
     return pstRpy->enStatus;
 }
@@ -5289,7 +5293,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
         cv::cvtColor(matThreshold, matDisplay, CV_GRAY2BGR);
         VectorOfVectorOfPoint vevVecPoints;
         vevVecPoints.push_back(CalcUtils::getCornerOfRotatedRect(rectBody));
-        cv::polylines(matDisplay, vevVecPoints, true, _constGreenScalar, 2);
+        cv::polylines(matDisplay, vevVecPoints, true, GREEN_SCALAR, 2);
         showImage("inspChipCircularMode", matDisplay);
     }
 
@@ -5340,7 +5344,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
 
     VectorOfVectorOfPoint vevVecPoints;
     vevVecPoints.push_back(CalcUtils::getCornerOfRotatedRect(pstRpy->rotatedRectResult));
-    cv::polylines(pstRpy->matResultImg, vevVecPoints, true, _constGreenScalar, 2);
+    cv::polylines(pstRpy->matResultImg, vevVecPoints, true, GREEN_SCALAR, 2);
     pstRpy->enStatus = VisionStatus::OK;
     return pstRpy->enStatus;
 }
@@ -5357,7 +5361,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
         for (int i = 1; i < matOneRow.cols; ++ i) {
             cv::Point pt1(i - 1, nHeight - matOneRow.at<int>(0, i - 1));
             cv::Point pt2(i, nHeight - matOneRow.at<int>(0, i));
-            cv::line(matDisplay, pt1, pt2, _constBlueScalar, 2);
+            cv::line(matDisplay, pt1, pt2, BLUE_SCALAR, 2);
         }
         showImage("Project Curve Row", matDisplay);
     }
@@ -5372,7 +5376,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
         for (int i = 1; i < matOneCol.cols; ++ i) {
             cv::Point pt1(i - 1, nHeight - matOneCol.at<int>(0, i - 1));
             cv::Point pt2(i, nHeight - matOneCol.at<int>(0, i));
-            cv::line(matDisplay, pt1, pt2, _constBlueScalar, 2);
+            cv::line(matDisplay, pt1, pt2, BLUE_SCALAR, 2);
         }
         showImage("Project Curve Col", matDisplay);
     }
@@ -5385,7 +5389,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     bSuccess = (bSuccess && _findDataUpEdge  (matOneCol, 0,                  matOneCol.cols / 2, nTopY));
     bSuccess = (bSuccess && _findDataDownEdge(matOneCol, matOneCol.cols / 2, matOneCol.cols,     nBottomY));
     cv::rectangle(pstRpy->matResultImg, cv::Point(rectROI.x + nLeftX, rectROI.y + nTopY),
-        cv::Point(rectROI.x + nRightX, rectROI.y + nBottomY), _constGreenScalar, 2);
+        cv::Point(rectROI.x + nRightX, rectROI.y + nBottomY), GREEN_SCALAR, 2);
 
     if (! bSuccess) {
         pstRpy->enStatus = VisionStatus::CAN_NOT_FIND_SQUARE_EDGE;
@@ -5399,7 +5403,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     pstRpy->rotatedRectResult.size.height = ToFloat(nBottomY - nTopY + 1);
     VectorOfVectorOfPoint vevVecPoints;
     vevVecPoints.push_back(CalcUtils::getCornerOfRotatedRect(pstRpy->rotatedRectResult));
-    cv::polylines(pstRpy->matResultImg, vevVecPoints, true, _constGreenScalar, 2);
+    cv::polylines(pstRpy->matResultImg, vevVecPoints, true, GREEN_SCALAR, 2);
     pstRpy->enStatus = VisionStatus::OK;
     return pstRpy->enStatus;
 }
@@ -5465,8 +5469,8 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     if (PR_DEBUG_MODE::SHOW_IMAGE == Config::GetInstance()->getDebugMode()) {
         cv::Mat matDisplay;
         cv::cvtColor(matThreshold, matDisplay, CV_GRAY2BGR);
-        cv::circle(matDisplay, fitCircleResult.center, ToInt32(fitCircleResult.size.width / 2 + 0.5), _constBlueScalar, 2);
-        cv::line(matDisplay, stLine.pt1, stLine.pt2, _constGreenScalar, 2);
+        cv::circle(matDisplay, fitCircleResult.center, ToInt32(fitCircleResult.size.width / 2 + 0.5), BLUE_SCALAR, 2);
+        cv::line(matDisplay, stLine.pt1, stLine.pt2, GREEN_SCALAR, 2);
         showImage("lrnChipCAEMode", matDisplay);
     }
 
@@ -5486,7 +5490,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     }
     VectorOfVectorOfPoint vevVecPoint;
     vevVecPoint.push_back(maxContour);
-    cv::polylines(pstRpy->matResultImg, vevVecPoint, true, _constBlueScalar, 2);
+    cv::polylines(pstRpy->matResultImg, vevVecPoint, true, BLUE_SCALAR, 2);
 
     fitCircleResult.center.x += rectROI.x;
     fitCircleResult.center.y += rectROI.y;
@@ -5540,7 +5544,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     if (PR_DEBUG_MODE::SHOW_IMAGE == Config::GetInstance()->getDebugMode()) {
         cv::Mat matDisplay;
         cv::cvtColor(matThreshold, matDisplay, CV_GRAY2BGR);
-        cv::circle(matDisplay, fitCircleResult.center, ToInt32(fitCircleResult.size.width / 2 + 0.5), _constBlueScalar, 2);
+        cv::circle(matDisplay, fitCircleResult.center, ToInt32(fitCircleResult.size.width / 2 + 0.5), BLUE_SCALAR, 2);
         showImage("inspChipCircularMode", matDisplay);
     }
 
@@ -5554,7 +5558,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     fitCircleResult.center.y += rectROI.y;
     pstRpy->rotatedRectResult = fitCircleResult;
 
-    cv::circle(pstRpy->matResultImg, fitCircleResult.center, ToInt32(fitCircleResult.size.width / 2 + 0.5), _constBlueScalar, 2);
+    cv::circle(pstRpy->matResultImg, fitCircleResult.center, ToInt32(fitCircleResult.size.width / 2 + 0.5), BLUE_SCALAR, 2);
     pstRpy->enStatus = VisionStatus::OK;
     return pstRpy->enStatus;
 }
@@ -5637,7 +5641,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
             point.y += pstCmd->rectROI.y;
         }
     }
-    cv::polylines(pstRpy->matResultImg, pstRpy->vecContours, true, _constBlueScalar, 2);
+    cv::polylines(pstRpy->matResultImg, pstRpy->vecContours, true, BLUE_SCALAR, 2);
 
     pstRpy->enStatus = VisionStatus::OK;
 
@@ -5771,7 +5775,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
                 point.y += pstCmd->rectROI.y;
             }
         }
-        cv::polylines(pstRpy->matResultImg, vecDefectContour, true, _constRedScalar, 2);
+        cv::polylines(pstRpy->matResultImg, vecDefectContour, true, RED_SCALAR, 2);
         pstRpy->vecDefectContour = vecDefectContour;
         pstRpy->enStatus = VisionStatus::CONTOUR_DEFECT_REJECT;
     }
@@ -5851,10 +5855,10 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
 
     if (Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE) {
         cv::Mat matDisplay = cv::Mat::zeros(size, CV_8UC3);
-        matDisplay.setTo(_constGreenScalar, matOuterMask);
-        matDisplay.setTo(_constBlueScalar, matInnerMask);
+        matDisplay.setTo(GREEN_SCALAR, matOuterMask);
+        matDisplay.setTo(BLUE_SCALAR, matInnerMask);
         for (int index = 0; index < (int)(vecContours.size()); ++index)
-            cv::drawContours(matDisplay, vecContours, index, _constRedScalar, 1);
+            cv::drawContours(matDisplay, vecContours, index, RED_SCALAR, 1);
         showImage("Result Mask", matDisplay);
     }
     return matMask;
@@ -5977,7 +5981,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
             pstRpy->matResultImg = pstCmd->matInputImg.clone();
         else
             cv::cvtColor(pstCmd->matInputImg, pstRpy->matResultImg, CV_GRAY2BGR);
-        pstRpy->matResultImg.setTo(_constYellowScalar, matSegmentInWholeImg);
+        pstRpy->matResultImg.setTo(YELLOW_SCALAR, matSegmentInWholeImg);
     }
 
     pstRpy->stRatioModeResult.fRatio = 0.f;
@@ -5992,7 +5996,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
         }
 
         if (! isAutoMode())
-            cv::drawKeypoints(pstRpy->matResultImg, pstRpy->stBlobModeResult.vecBlobs, pstRpy->matResultImg, _constRedScalar, cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
+            cv::drawKeypoints(pstRpy->matResultImg, pstRpy->stBlobModeResult.vecBlobs, pstRpy->matResultImg, RED_SCALAR, cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
     }
 
     FINISH_LOGCASE;
@@ -6113,7 +6117,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     if (Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE) {
         cv::Mat matDisplay;
         cv::cvtColor(matInput, matDisplay, CV_GRAY2BGR);
-        cv::drawKeypoints(matDisplay, keyPoints[0], matDisplay, _constRedScalar, cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
+        cv::drawKeypoints(matDisplay, keyPoints[0], matDisplay, RED_SCALAR, cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
         showImage("Find blob result", matDisplay);
     }
 
@@ -6157,16 +6161,16 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
                 vecVecSrchWindowPoint[0].push_back(point);
 
             if (pstRpy->vecLeadResult[i].bFound) {
-                cv::polylines(pstRpy->matResultImg, vecVecSrchWindowPoint, true, _constGreenScalar);
+                cv::polylines(pstRpy->matResultImg, vecVecSrchWindowPoint, true, GREEN_SCALAR);
 
                 auto vecPoint2f = CalcUtils::getCornerOfRotatedRect(pstRpy->vecLeadResult[i].rectLead);
                 VectorOfVectorOfPoint vecVecLeadPoint(1);
                 for (const auto &point : vecPoint2f)
                     vecVecLeadPoint[0].push_back(point);
-                cv::polylines(pstRpy->matResultImg, vecVecLeadPoint, true, _constBlueScalar);
+                cv::polylines(pstRpy->matResultImg, vecVecLeadPoint, true, BLUE_SCALAR);
             }
             else {
-                cv::polylines(pstRpy->matResultImg, vecVecSrchWindowPoint, true, _constRedScalar);
+                cv::polylines(pstRpy->matResultImg, vecVecSrchWindowPoint, true, RED_SCALAR);
             }
         }
     }
@@ -6279,12 +6283,12 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
         if (ptrPadRecord != nullptr) {
             auto matPadTmpl = ptrPadRecord->getTmpl();
             cv::Rect rectPad(ToInt32(pstCmd->rectROI.x + ptPadPos.x - matPadTmpl.cols / 2), ToInt32(pstCmd->rectROI.y + ptPadPos.y - matPadTmpl.rows / 2), matPadTmpl.cols, matPadTmpl.rows);
-            cv::rectangle(pstRpy->matResultImg, rectPad, _constGreenScalar, 2, cv::LineTypes::LINE_8);
+            cv::rectangle(pstRpy->matResultImg, rectPad, GREEN_SCALAR, 2, cv::LineTypes::LINE_8);
         }
 
         auto matLeadTmpl = ptrLeadRecord->getTmpl();
         cv::Rect rectLead(ToInt32(pstCmd->rectROI.x + ptLeadPos.x - matLeadTmpl.cols / 2), ToInt32(pstCmd->rectROI.y + ptLeadPos.y - matLeadTmpl.rows / 2), matLeadTmpl.cols, matLeadTmpl.rows);
-        cv::rectangle(pstRpy->matResultImg, rectLead, _constGreenScalar, 2, cv::LineTypes::LINE_8);
+        cv::rectangle(pstRpy->matResultImg, rectLead, GREEN_SCALAR, 2, cv::LineTypes::LINE_8);
     }
 
     FINISH_LOGCASE;
@@ -6468,8 +6472,8 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
             pstRpy->matResultImg = pstCmd->matInputImg.clone();
         else
             cv::cvtColor(pstCmd->matInputImg, pstRpy->matResultImg, CV_GRAY2BGR);
-        cv::rectangle(pstRpy->matResultImg, pstCmd->rectInspROI, _constBlueScalar, 2, cv::LineTypes::LINE_8);
-        cv::rectangle(pstRpy->matResultImg, pstCmd->rectCompareROI, _constBlueScalar, 2, cv::LineTypes::LINE_4);
+        cv::rectangle(pstRpy->matResultImg, pstCmd->rectInspROI, BLUE_SCALAR, 2, cv::LineTypes::LINE_8);
+        cv::rectangle(pstRpy->matResultImg, pstCmd->rectCompareROI, BLUE_SCALAR, 2, cv::LineTypes::LINE_4);
 
         int fontFace = cv::FONT_HERSHEY_SIMPLEX;
         double fontScale = 0.5;
@@ -6482,7 +6486,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
             cv::Size textSize = cv::getTextSize(strGrayScale, fontFace, fontScale, thickness, &baseline);
             //The height use '+' because text origin start from left-bottom.
             cv::Point ptTextOrg(pstCmd->rectInspROI.x + (pstCmd->rectInspROI.width - textSize.width) / 2, pstCmd->rectInspROI.y + (pstCmd->rectInspROI.height + textSize.height) / 2);
-            cv::putText(pstRpy->matResultImg, strGrayScale, ptTextOrg, fontFace, fontScale, _constCyanScalar, thickness);
+            cv::putText(pstRpy->matResultImg, strGrayScale, ptTextOrg, fontFace, fontScale, CYAN_SCALAR, thickness);
         }
 
         {
@@ -6491,7 +6495,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
             cv::Size textSize = cv::getTextSize(strGrayScale, fontFace, fontScale, thickness, &baseline);
             //The height use '+' because text origin start from left-bottom.
             cv::Point ptTextOrg(pstCmd->rectCompareROI.x + (pstCmd->rectCompareROI.width - textSize.width) / 2, pstCmd->rectCompareROI.y + (pstCmd->rectCompareROI.height + textSize.height) / 2);
-            cv::putText(pstRpy->matResultImg, strGrayScale, ptTextOrg, fontFace, fontScale, _constCyanScalar, thickness);
+            cv::putText(pstRpy->matResultImg, strGrayScale, ptTextOrg, fontFace, fontScale, CYAN_SCALAR, thickness);
         }
     }
 
@@ -6569,7 +6573,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
             cv::Size textSize = cv::getTextSize(strAverage, fontFace, fontScale, thickness, &baseline);
             //The height use '+' because text origin start from left-bottom.
             cv::Point ptTextOrg(rectROI.x + (rectROI.width - textSize.width) / 2, rectROI.y + (rectROI.height + textSize.height) / 2);
-            cv::putText(pstRpy->matResultImg, strAverage, ptTextOrg, fontFace, fontScale, _constBlueScalar, thickness);
+            cv::putText(pstRpy->matResultImg, strAverage, ptTextOrg, fontFace, fontScale, BLUE_SCALAR, thickness);
         }
         pstRpy->vecVecGrayScale.push_back(vecFloat);
     }
@@ -6945,6 +6949,72 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     Unwrap::calc3DHeightDiff(pstCmd, pstRpy);
 
     MARK_FUNCTION_END_TIME;
+    return pstRpy->enStatus;
+}
+
+/*static*/ VisionStatus VisionAlgorithm::insp3DSolder(const PR_INSP_3D_SOLDER_CMD *pstCmd, PR_INSP_3D_SOLDER_RPY *const pstRpy, bool bReplay /*= false*/) {
+    assert(pstCmd != nullptr && pstRpy != nullptr);
+    pstRpy->vecSolderResult.clear();
+    if (pstCmd->matHeight.empty()) {
+        WriteLog("The input height matrix is empty.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    if (pstCmd->matColorImage.empty()) {
+        WriteLog("The input color image is empty.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    if (pstCmd->matColorImage.size() != pstCmd->matHeight.size()) {
+        std::stringstream ss;
+        ss << "The input color image size " << pstCmd->matColorImage.size() << " doesn't match with height matrix size " << pstCmd->matHeight.size();
+        WriteLog(ss.str());
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    if (pstCmd->matColorImage.channels() < 3) {
+        WriteLog("The input color image is not color image.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    pstRpy->enStatus = _checkInputROI(pstCmd->rectDeviceROI, pstCmd->matHeight, AT);
+    if (VisionStatus::OK != pstRpy->enStatus) return pstRpy->enStatus;
+
+    if (pstCmd->vecRectCheckROIs.empty()) {
+        WriteLog("The vector of check ROI is empty.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    for (const auto &roiCheck : pstCmd->vecRectCheckROIs) {
+        if (!CalcUtils::isRectInRect(roiCheck, pstCmd->rectDeviceROI)) {
+            std::stringstream ss;
+            ss << "Check ROI " << roiCheck << " is not inside device ROI " << pstCmd->rectDeviceROI << std::endl;
+            WriteLog(ss.str());
+        }
+    }
+
+    std::vector<int> vecValue(3);
+    vecValue[0] = ToInt32(pstCmd->scalarBaseColor[0]); vecValue[1] = ToInt32(pstCmd->scalarBaseColor[1]); vecValue[2] = ToInt32(pstCmd->scalarBaseColor[2]);
+    cv::Mat matColorROI(pstCmd->matColorImage, pstCmd->rectDeviceROI);
+    UInt32 nBasePointCount = 0;
+    auto matBaseMask = _pickColor(vecValue, matColorROI, pstCmd->nBaseColorDiff, pstCmd->nBaseGrayDiff, nBasePointCount);
+
+    if (!isAutoMode()) {
+        pstRpy->matResultImg = pstCmd->matColorImage.clone();
+        cv::rectangle(pstRpy->matResultImg, pstCmd->rectDeviceROI, CYAN_SCALAR, 1);
+        for (const auto &roiCheck : pstCmd->vecRectCheckROIs)
+            cv::rectangle(pstRpy->matResultImg, roiCheck, GREEN_SCALAR, 1);
+    }
+
+    Unwrap::insp3DSolder(pstCmd, matBaseMask, pstRpy);
+
+    // Extract the base by color.
+    pstRpy->enStatus = VisionStatus::OK;
     return pstRpy->enStatus;
 }
 
@@ -7578,7 +7648,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     for (auto rectChar : vecCharRects) {
         rectChar.x += pstCmd->rectROI.x;
         rectChar.y += pstCmd->rectROI.y;
-        cv::rectangle(pstRpy->matResultImg, rectChar, _constGreenScalar, 1);
+        cv::rectangle(pstRpy->matResultImg, rectChar, GREEN_SCALAR, 1);
     }
 
     FINISH_LOGCASE;
@@ -7836,7 +7906,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
 
     if (!isAutoMode()) {
         pstRpy->matResultImg = pstCmd->matInputImg.clone();
-        cv::rectangle(pstRpy->matResultImg, pstCmd->rectROI, _constBlueScalar, 2);
+        cv::rectangle(pstRpy->matResultImg, pstCmd->rectROI, BLUE_SCALAR, 2);
     }
 
     auto iterMaxScore = std::max_element(vecCorrelation.begin(), vecCorrelation.end());
@@ -7872,7 +7942,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
             cv::Rect rectChar(ToInt32(ptPosition.x) - matCharTmpl.cols / 2, ToInt32(ptPosition.y) - matCharTmpl.rows / 2, matCharTmpl.cols, matCharTmpl.rows);
             rectChar.x += rectCharSrchWindow.x + rectTarget.x + pstCmd->rectROI.x;
             rectChar.y += rectCharSrchWindow.y + rectTarget.y + pstCmd->rectROI.y;
-            cv::rectangle(pstRpy->matResultImg, rectChar, _constGreenScalar, 1);
+            cv::rectangle(pstRpy->matResultImg, rectChar, GREEN_SCALAR, 1);
 
             int fontFace = cv::FONT_HERSHEY_SIMPLEX;
             double fontScale = 0.5;
@@ -7884,7 +7954,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
             cv::Size textSize = cv::getTextSize(strCharScore, fontFace, fontScale, thickness, &baseline);
             //The height use '+' because text origin start from left-bottom.
             cv::Point ptTextOrg(rectChar.x + (rectChar.width - textSize.width) / 2, rectChar.y - 5);
-            cv::putText(pstRpy->matResultImg, strCharScore, ptTextOrg, fontFace, fontScale, _constCyanScalar, thickness);
+            cv::putText(pstRpy->matResultImg, strCharScore, ptTextOrg, fontFace, fontScale, CYAN_SCALAR, thickness);
         }
         pstRpy->vecCharScore.push_back(fCorrelation * ConstToPercentage);
         if (fCorrelation * ConstToPercentage < pstCmd->fMinMatchScore) {
@@ -7898,7 +7968,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     if (!isAutoMode()) {
         rectTarget.x += pstCmd->rectROI.x;
         rectTarget.y += pstCmd->rectROI.y;
-        cv::rectangle(pstRpy->matResultImg, rectTarget, _constBlueScalar, 1);
+        cv::rectangle(pstRpy->matResultImg, rectTarget, BLUE_SCALAR, 1);
     }
 
     FINISH_LOGCASE;
@@ -8043,13 +8113,13 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
         pt2.y = cvRound(y0 - 1000*(a));
         PR_Line2f line(pt1, pt2);
         vecLines.push_back(line);
-        cv::Scalar scalar(_constYellowScalar);
+        cv::Scalar scalar(YELLOW_SCALAR);
         if (i == 0)
-            scalar = _constBlueScalar;
+            scalar = BLUE_SCALAR;
         else if (i == 1)
-            scalar = _constGreenScalar;
+            scalar = GREEN_SCALAR;
         else if (i == 2)
-            scalar = _constRedScalar;
+            scalar = RED_SCALAR;
         cv::line(matHoughResult, pt1, pt2, scalar, 1, CV_AA);
 
         VectorOfPoint vecPoints;
@@ -8069,7 +8139,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
         vecSlope.push_back(fSlope);
         vecIntercept.push_back(fIntercept);
 
-        cv::line(matHoughResult, stLine.pt1, stLine.pt2, _constCyanScalar, 1, CV_AA);
+        cv::line(matHoughResult, stLine.pt1, stLine.pt2, CYAN_SCALAR, 1, CV_AA);
     }
 
     if (ConfigInstance->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE)
@@ -8087,14 +8157,14 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
         cv::Mat matBarcodeCornerResult;
         cv::cvtColor(matBarcode, matBarcodeCornerResult, CV_GRAY2BGR);
         for (int i = 0; i < 3; ++i)
-            cv::line(matBarcodeCornerResult, vecCorners[i], vecCorners[i + 1], _constGreenScalar, 1);
-        cv::line(matBarcodeCornerResult, vecCorners[3], vecCorners[0], _constGreenScalar, 1);
+            cv::line(matBarcodeCornerResult, vecCorners[i], vecCorners[i + 1], GREEN_SCALAR, 1);
+        cv::line(matBarcodeCornerResult, vecCorners[3], vecCorners[0], GREEN_SCALAR, 1);
         showImage("Find corner result", matBarcodeCornerResult);
     }
 
     int radius = 5;
     for (const auto &point : vecCorners)
-        cv::circle(matHoughResult, point, radius++, _constGreenScalar, 2);
+        cv::circle(matHoughResult, point, radius++, GREEN_SCALAR, 2);
 
     if (ConfigInstance->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE)
         showImage("Find corner result", matHoughResult);
