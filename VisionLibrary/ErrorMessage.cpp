@@ -210,6 +210,11 @@ VisionStatus GetErrorInfo(VisionStatus enStatus, PR_GET_ERROR_INFO_RPY *pstRpy)
         pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::PR_INSP_STATUS;
         break;
 
+    case VisionStatus::FAIL_TO_EXTRACT_3D_SOLDER:
+        _snprintf(pstRpy->achErrorStr, PR_MAX_ERR_STR_LEN, "Failed to extract 3D conductor and solder.");
+        pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::PR_INSP_STATUS;
+        break;
+
     case VisionStatus::BRIDGE_DEFECT:
         _snprintf(pstRpy->achErrorStr, PR_MAX_ERR_STR_LEN, "The inspect window with bridge defect.");
         pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::PR_INSP_STATUS;

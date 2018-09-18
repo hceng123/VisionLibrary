@@ -88,6 +88,23 @@ cv::Size LogCase::_parseSize(const String &strSize) {
     return size;
 }
 
+String LogCase::_formatScalar(const cv::Scalar &scalar) {
+    char chArray[200];
+    _snprintf(chArray, sizeof(chArray), "%d, %d, %d", ToInt32(scalar[0]), ToInt32(scalar[1]), ToInt32(scalar[2]));
+    return String(chArray);
+}
+
+cv::Scalar LogCase::_parseScalar(const String &strScalar) {
+    StringVector vecStrScalar = split(strScalar, ',');
+    if (vecStrScalar.size() == 3) {
+        int B = std::stoi(vecStrScalar[0]);
+        int G = std::stoi(vecStrScalar[1]);
+        int R = std::stoi(vecStrScalar[2]);
+        return cv::Scalar(B, G, R);
+    }
+    return cv::Scalar();
+}
+
 String LogCase::_generateLogCaseName(const String &strFolderPrefix) {
     auto timeT = std::time(nullptr);
     auto stTM = std::localtime(&timeT);
@@ -2630,5 +2647,90 @@ VisionStatus LogCase2DCode::RunLogCase() {
     WriteRpy(&stRpy);
     return enStatus;
 }
+
+/*static*/ String LogCaseInsp3DSolder::StaticGetFolderPrefix() {
+    return "Insp3DSolder";
+}
+
+VisionStatus LogCaseInsp3DSolder::WriteCmd(const PR_INSP_3D_SOLDER_CMD *const pstCmd) {
+    if (!_bReplay) {
+        _strLogCasePath = _generateLogCaseName(GetFolderPrefix());
+        bfs::path dir(_strLogCasePath);
+        bfs::create_directories(dir);
+    }
+
+    CSimpleIni ini(false, false, false);
+    auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
+    ini.LoadFile(cmdRpyFilePath.c_str());
+    cv::Rect rectDeviceROI(pstCmd->rectDeviceROI);
+    rectDeviceROI.x = 0; rectDeviceROI.y = 0;
+    ini.SetValue(_CMD_SECTION.c_str(), _strKeyDeviceROI.c_str(), _formatRect(rectDeviceROI).c_str());
+    ini.SetValue(_CMD_SECTION.c_str(), _strKeyBaseColor.c_str(), _formatScalar(pstCmd->scalarBaseColor).c_str());
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyBaseColorDiff.c_str(), pstCmd->nBaseColorDiff);
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyBaseGrayDiff.c_str(), pstCmd->nBaseGrayDiff);
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyNumSubROI.c_str(), ToInt32(pstCmd->vecRectCheckROIs.size()));
+    for (size_t i = 0; i < pstCmd->vecRectCheckROIs.size(); ++i) {
+        String strKeySubROI = _strKeySubROI + std::to_string(i);
+        cv::Rect rectSubROI(pstCmd->vecRectCheckROIs[i]);
+        rectSubROI.x -= pstCmd->rectDeviceROI.x;
+        rectSubROI.y -= pstCmd->rectDeviceROI.y;
+        ini.SetValue(_CMD_SECTION.c_str(), strKeySubROI.c_str(), _formatRect(rectSubROI).c_str());
+    }
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyWettingWidth.c_str(), pstCmd->nWettingWidth);
+    ini.SaveFile(cmdRpyFilePath.c_str());
+
+    cv::Mat matColorImg(pstCmd->matColorImg, pstCmd->rectDeviceROI);
+    cv::Mat matHeight(pstCmd->matHeight, pstCmd->rectDeviceROI);
+    cv::imwrite(_strLogCasePath + _IMAGE_NAME, matColorImg);
+    cv::FileStorage fs(_strLogCasePath + _strHeightFileName, cv::FileStorage::WRITE);
+    cv::write(fs, "Height", matHeight);
+    fs.release();
+    return VisionStatus::OK;
+}
+
+VisionStatus LogCaseInsp3DSolder::WriteRpy(const PR_INSP_3D_SOLDER_RPY *const pstRpy) {
+    CSimpleIni ini(false, false, false);
+    auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
+    ini.LoadFile(cmdRpyFilePath.c_str());
+    ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyStatus.c_str(), ToInt32(pstRpy->enStatus));
+    ini.SaveFile(cmdRpyFilePath.c_str());
+    if (! pstRpy->matResultImg.empty() && pstRpy->matResultImg.total() < 500 * 500)
+        cv::imwrite(_strLogCasePath + _RESULT_IMAGE_NAME, pstRpy->matResultImg);
+
+    _zip();
+    return VisionStatus::OK;
+}
+
+VisionStatus LogCaseInsp3DSolder::RunLogCase() {
+    PR_INSP_3D_SOLDER_CMD stCmd;
+    PR_INSP_3D_SOLDER_RPY stRpy;
+
+    CSimpleIni ini(false, false, false);
+    auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
+    ini.LoadFile(cmdRpyFilePath.c_str());
+    stCmd.matColorImg = cv::imread(_strLogCasePath + _IMAGE_NAME, cv::IMREAD_COLOR);
+    cv::FileStorage fs(_strLogCasePath + _strHeightFileName, cv::FileStorage::READ);
+    cv::FileNode fileNode = fs["Height"];
+    cv::read(fileNode, stCmd.matHeight, cv::Mat());
+    fs.release();
+
+    stCmd.rectDeviceROI = _parseRect(ini.GetValue(_CMD_SECTION.c_str(), _strKeyDeviceROI.c_str(), _DEFAULT_RECT.c_str()));
+    stCmd.scalarBaseColor = _parseScalar(ini.GetValue(_CMD_SECTION.c_str(), _strKeyBaseColor.c_str(), "0, 0, 0"));
+    stCmd.nBaseColorDiff = ToInt16(ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyBaseColorDiff.c_str(), 20));
+    stCmd.nBaseGrayDiff = ToInt16(ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyBaseGrayDiff.c_str(), 20));
+    stCmd.nWettingWidth = ToInt16(ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyWettingWidth.c_str(), 8));
+    int nNumSubROIs = ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyNumSubROI.c_str(), 0);
+    for (int i = 0; i < nNumSubROIs; ++ i) {
+        String strKeySubROI = _strKeySubROI + std::to_string(i);
+        cv::Rect rectSubROI = _parseRect(ini.GetValue(_CMD_SECTION.c_str(), strKeySubROI.c_str(), _DEFAULT_RECT.c_str()));
+        stCmd.vecRectCheckROIs.push_back(rectSubROI);
+    }
+
+    VisionStatus enStatus = VisionStatus::OK;
+    enStatus = VisionAlgorithm::insp3DSolder(&stCmd, &stRpy, true);
+    WriteRpy(&stRpy);
+    return enStatus;
+}
+
 }
 }

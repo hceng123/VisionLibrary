@@ -14,9 +14,12 @@
  * Copyright (c) 2016-2018, Xiao Shengguang.  All rights reserved.
  ****************************************************************************/
 
+//2018-09-12 (XSG) Add PR_Insp3DSolder function.
+#define AOI_VISION_VERSION          "1.00.44"
+
 //2018-09-05 (XSG) Enhance new phase correction algorithm
 //                 Support intersect algorithm to merge 3D height.
-#define AOI_VISION_VERSION          "1.00.43"
+//#define AOI_VISION_VERSION          "1.00.43"
 
 //2018-09-02 (XSG) Integrate new phase correction algorithm in PR_Calc3DHeiht.
 //#define AOI_VISION_VERSION          "1.00.42"

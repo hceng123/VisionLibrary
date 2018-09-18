@@ -1300,25 +1300,27 @@ struct PR_CALC_3D_HEIGHT_DIFF_RPY {
 struct PR_INSP_3D_SOLDER_CMD {
     PR_INSP_3D_SOLDER_CMD() :
         nBaseColorDiff  (20),
-        nBaseGrayDiff   (20) {}
+        nBaseGrayDiff   (20),
+        nWettingWidth   (8) {}
     cv::Mat                 matHeight;
-    cv::Mat                 matColorImage;
+    cv::Mat                 matColorImg;
     cv::Rect                rectDeviceROI;
     cv::Scalar              scalarBaseColor;
     Int16                   nBaseColorDiff;
     Int16                   nBaseGrayDiff;
     VectorOfRect            vecRectCheckROIs;
+    int                     nWettingWidth;
 };
 
 struct PR_INSP_3D_SOLDER_RPY {
-    struct SOLDER_RESULT {
-        float               fHeight;
-        float               fArea;
-        float               fRatio;
+    struct RESULT {
+        float               fComponentHeight;
+        float               fSolderHeight;
+        float               fSolderArea;
+        float               fSolderRatio;
     };
-    using VectorSolderResult = std::vector<SOLDER_RESULT>;
     VisionStatus            enStatus;
-    VectorSolderResult      vecSolderResult;
+    std::vector<RESULT>     vecResults;
     cv::Mat                 matResultImg;
 };
 

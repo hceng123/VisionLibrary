@@ -107,7 +107,8 @@ public:
     cv::Rect getSelectedWindow() const;
     cv::Point getClickedPoint() const;
     PR_Line getIntensityCheckLine() const;
-    static float distanceOf2Point(const cv::Point &pt1, const cv::Point &pt2);    
+    static float distanceOf2Point(const cv::Point &pt1, const cv::Point &pt2);
+
 protected:
     void mousePressEvent(QMouseEvent *event);
     void mouseReleaseEvent(QMouseEvent *event);
@@ -124,6 +125,7 @@ protected:
     void _moveImage();
     void _applyMask();
     void _cutImageForDisplay(const cv::Mat &matInputImg, cv::Mat &matOutput);
+
 private:
     cv::Rect                        _rectLrnWindow;
     cv::Rect                        _rectSrchWindow;
@@ -134,7 +136,7 @@ private:
     TEST_VISION_STATE               _enTestVisionState;
     cv::Mat                         _matArray[DISPLAY_SOURCE::SIZE];
     DISPLAY_SOURCE                  _enDisplaySource;
-	cv::Mat             			_matDisplay;
+    cv::Mat                         _matDisplay;
     cv::Mat                         _matMaskForDisplay;
     cv::Mat                         _matMask;
     VectorOfRect                    _vecRectMask;

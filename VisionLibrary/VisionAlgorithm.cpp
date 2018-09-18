@@ -1601,6 +1601,9 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
     if (LogCase2DCode::StaticGetFolderPrefix() == strFolderPrefix)
         return std::make_unique<LogCase2DCode>(strLocalPath, true);
 
+    if (LogCaseInsp3DSolder::StaticGetFolderPrefix() == strFolderPrefix)
+        return std::make_unique<LogCaseInsp3DSolder>(strLocalPath, true);
+
     static String msg = strFolderPrefix + " is not handled in " + __FUNCTION__;
     throw std::exception(msg.c_str());
 }
@@ -3843,7 +3846,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
             (targetColorValue - compareValue1) < diffUpLimit1 &&
             (targetColorValue - compareValue2) < diffUpLimit2 &&
             abs((int)matGray.at<uchar>(row, col) - Tt) < nGrayDiff) {
-            matResultMask.at<uchar>(row, col) = 1;
+            matResultMask.at<uchar>(row, col) = PR_MAX_GRAY_LEVEL;
             ++ nPointCountOut;
         }
     }
@@ -6954,28 +6957,28 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
 
 /*static*/ VisionStatus VisionAlgorithm::insp3DSolder(const PR_INSP_3D_SOLDER_CMD *pstCmd, PR_INSP_3D_SOLDER_RPY *const pstRpy, bool bReplay /*= false*/) {
     assert(pstCmd != nullptr && pstRpy != nullptr);
-    pstRpy->vecSolderResult.clear();
+    pstRpy->vecResults.clear();
     if (pstCmd->matHeight.empty()) {
         WriteLog("The input height matrix is empty.");
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return pstRpy->enStatus;
     }
 
-    if (pstCmd->matColorImage.empty()) {
+    if (pstCmd->matColorImg.empty()) {
         WriteLog("The input color image is empty.");
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return pstRpy->enStatus;
     }
 
-    if (pstCmd->matColorImage.size() != pstCmd->matHeight.size()) {
+    if (pstCmd->matColorImg.size() != pstCmd->matHeight.size()) {
         std::stringstream ss;
-        ss << "The input color image size " << pstCmd->matColorImage.size() << " doesn't match with height matrix size " << pstCmd->matHeight.size();
+        ss << "The input color image size " << pstCmd->matColorImg.size() << " doesn't match with height matrix size " << pstCmd->matHeight.size();
         WriteLog(ss.str());
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return pstRpy->enStatus;
     }
 
-    if (pstCmd->matColorImage.channels() < 3) {
+    if (pstCmd->matColorImg.channels() < 3) {
         WriteLog("The input color image is not color image.");
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return pstRpy->enStatus;
@@ -6998,23 +7001,31 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
         }
     }
 
+    MARK_FUNCTION_START_TIME;
+    SETUP_LOGCASE(LogCaseInsp3DSolder);
+
     std::vector<int> vecValue(3);
     vecValue[0] = ToInt32(pstCmd->scalarBaseColor[0]); vecValue[1] = ToInt32(pstCmd->scalarBaseColor[1]); vecValue[2] = ToInt32(pstCmd->scalarBaseColor[2]);
-    cv::Mat matColorROI(pstCmd->matColorImage, pstCmd->rectDeviceROI);
+    cv::Mat matColorROI(pstCmd->matColorImg, pstCmd->rectDeviceROI);
     UInt32 nBasePointCount = 0;
     auto matBaseMask = _pickColor(vecValue, matColorROI, pstCmd->nBaseColorDiff, pstCmd->nBaseGrayDiff, nBasePointCount);
 
     if (!isAutoMode()) {
-        pstRpy->matResultImg = pstCmd->matColorImage.clone();
+        pstRpy->matResultImg = pstCmd->matColorImg.clone();
         cv::rectangle(pstRpy->matResultImg, pstCmd->rectDeviceROI, CYAN_SCALAR, 1);
         for (const auto &roiCheck : pstCmd->vecRectCheckROIs)
             cv::rectangle(pstRpy->matResultImg, roiCheck, GREEN_SCALAR, 1);
     }
 
+    if (ConfigInstance->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE)
+        showImage("Base Mask", matBaseMask);
+
     Unwrap::insp3DSolder(pstCmd, matBaseMask, pstRpy);
 
     // Extract the base by color.
     pstRpy->enStatus = VisionStatus::OK;
+    FINISH_LOGCASE;
+    MARK_FUNCTION_END_TIME;
     return pstRpy->enStatus;
 }
 
