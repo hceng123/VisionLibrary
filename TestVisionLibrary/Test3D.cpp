@@ -795,7 +795,7 @@ void TestCalc3DHeightDiff(const cv::Mat &matHeight) {
     PR_CALC_3D_HEIGHT_DIFF_RPY stRpy;
     stCmd.matHeight = matHeight;
     stCmd.matMask = cv::Mat::zeros(matHeight.size(), CV_8UC1);
-    cv::Mat matMaskROI(stCmd.matMask, cv::Rect(727, 714, 80, 60));
+    cv::Mat matMaskROI(stCmd.matMask, cv::Rect(727, 714, 100, 100));
     matMaskROI.setTo(PR_MAX_GRAY_LEVEL);
     //stCmd.vecRectBases.push_back ( cv::Rect (761, 1783, 161, 113 ) );
     //stCmd.vecRectBases.push_back ( cv::Rect (539, 1370, 71, 32 ) );

@@ -1604,6 +1604,9 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
     if (LogCaseInsp3DSolder::StaticGetFolderPrefix() == strFolderPrefix)
         return std::make_unique<LogCaseInsp3DSolder>(strLocalPath, true);
 
+    if (LogCaseCalc3DHeightDiff::StaticGetFolderPrefix() == strFolderPrefix)
+        return std::make_unique<LogCaseCalc3DHeightDiff>(strLocalPath, true);
+
     static String msg = strFolderPrefix + " is not handled in " + __FUNCTION__;
     throw std::exception(msg.c_str());
 }
@@ -3785,7 +3788,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     pstRpy->enStatus = _checkInputROI(pstCmd->rectROI, pstCmd->matInputImg, AT);
     if (VisionStatus::OK != pstRpy->enStatus) return pstRpy->enStatus;
 
-    if (! pstCmd->rectROI.contains(pstCmd->ptPick)) {
+    if (PR_PICK_COLOR_METHOD::SELECT_POINT == pstCmd->enMethod && !pstCmd->rectROI.contains(pstCmd->ptPick)) {
         WriteLog("The pick point must in selected ROI");
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return VisionStatus::INVALID_PARAM;
@@ -3797,8 +3800,12 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     cv::Mat matROI(pstCmd->matInputImg, pstCmd->rectROI);
 
     std::vector<int> vecValue(3);
-    auto vecColor = pstCmd->matInputImg.at<cv::Vec3b>(pstCmd->ptPick);
-    vecValue[0] = vecColor[0]; vecValue[1] = vecColor[1]; vecValue[2] = vecColor[2];
+    if (PR_PICK_COLOR_METHOD::SELECT_POINT == pstCmd->enMethod) {
+        auto vecColor = pstCmd->matInputImg.at<cv::Vec3b>(pstCmd->ptPick);
+        vecValue[0] = vecColor[0]; vecValue[1] = vecColor[1]; vecValue[2] = vecColor[2];
+    }else {
+        vecValue[0] = ToInt32(pstCmd->scalarSelect[0]); vecValue[1] = ToInt32(pstCmd->scalarSelect[1]); vecValue[2] = ToInt32(pstCmd->scalarSelect[2]);
+    }
 
     auto matResultMask = _pickColor(vecValue, matROI, pstCmd->nColorDiff, pstCmd->nGrayDiff, pstRpy->nPickPointCount);
 
@@ -6948,9 +6955,11 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     }
 
     MARK_FUNCTION_START_TIME;
+    SETUP_LOGCASE(LogCaseCalc3DHeightDiff);
 
     Unwrap::calc3DHeightDiff(pstCmd, pstRpy);
 
+    FINISH_LOGCASE;
     MARK_FUNCTION_END_TIME;
     return pstRpy->enStatus;
 }
@@ -6998,6 +7007,8 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
             std::stringstream ss;
             ss << "Check ROI " << roiCheck << " is not inside device ROI " << pstCmd->rectDeviceROI << std::endl;
             WriteLog(ss.str());
+            pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+            return pstRpy->enStatus; 
         }
     }
 

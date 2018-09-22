@@ -51,6 +51,7 @@ protected:
     const String _DEFAULT_COORD     = "0, 0";
     const String _DEFAULT_RECT      = "0, 0, 0, 0";
     const String _DEFAULT_SIZE      = "0, 0";
+    const String _DEFAULT_SCALAR    = "0, 0, 0";
     const String _EXTENSION         = ".logcase";
     const String _strKeyStatus      = "Status";
     bool         _bReplay;
@@ -501,7 +502,9 @@ public:
     static String StaticGetFolderPrefix();
 private:
     const String _strKeyROI             = "ROI";
+    const String _strKeyMethod          = "Method";
     const String _strKeyPickPoint       = "PickPoint";
+    const String _strKeyScalarSelect    = "ScalarSelect";
     const String _strKeyColorDiff       = "ColorDiff";
     const String _strKeyGrayDiff        = "GrayDiff";
 
@@ -947,6 +950,28 @@ private:
 
     const String _strKeyStatus          = "Status";
     const String _strKeySolderHeight    = "SolderHeight";
+};
+
+class LogCaseCalc3DHeightDiff : public LogCase
+{
+public:
+    explicit LogCaseCalc3DHeightDiff(const String &strPath, bool bReplay = false) : LogCase(strPath, bReplay) {}
+    VisionStatus WriteCmd(const PR_CALC_3D_HEIGHT_DIFF_CMD *const pstCmd);
+    VisionStatus WriteRpy(const PR_CALC_3D_HEIGHT_DIFF_RPY *const pstRpy);
+    virtual VisionStatus RunLogCase() override;
+    virtual String GetFolderPrefix() const { return StaticGetFolderPrefix(); }
+    static String StaticGetFolderPrefix();
+
+private:
+    const String _strHeightFileName     = "Height.yml";
+    const String _strKeyROI             = "ROI";
+    const String _strKeyNumBase         = "NumBase";
+    const String _strKeyBaseROI         = "BaseROI_";
+    const String _strKeyHRatioStart     = "HRatioStart";
+    const String _strKeyHRatioEnd       = "HRatioEnd";
+
+    const String _strKeyStatus          = "Status";
+    const String _strKeyHeightDiff      = "HeightDiff";
 };
 
 }

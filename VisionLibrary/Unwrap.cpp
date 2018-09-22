@@ -1465,25 +1465,34 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
 }
 
 /*static*/ void Unwrap::calc3DHeightDiff(const PR_CALC_3D_HEIGHT_DIFF_CMD *const pstCmd, PR_CALC_3D_HEIGHT_DIFF_RPY *const pstRpy) {
+    VectorOfRect vecRect = pstCmd->vecRectBases;
+    vecRect.push_back(pstCmd->rectROI);
+    cv::Rect rectBounding = CalcUtils::boundingRect(vecRect);
+    cv::Mat matHeight(pstCmd->matHeight, rectBounding);
+    cv::Mat matMask;
+    if (!pstCmd->matMask.empty())
+        matMask = cv::Mat(pstCmd->matMask, rectBounding);
+
     std::vector<float> vecXt, vecYt, vecHeightTmp;
-    auto ROWS = pstCmd->matHeight.rows;
-    auto COLS = pstCmd->matHeight.cols;
+    auto ROWS = matHeight.rows;
+    auto COLS = matHeight.cols;
     cv::Mat matX, matY;
     CalcUtils::meshgrid<DATA_TYPE>(1.f, 1.f, ToFloat(COLS), 1.f, 1.f, ToFloat(ROWS), matX, matY);
 
-    cv::Mat matNan = CalcUtils::getNanMask(pstCmd->matHeight);    
-    cv::Mat matNonNan = PR_MAX_GRAY_LEVEL - matNan;
-    if (!pstCmd->matMask.empty()) {
-        cv::Mat matMaskReverse = PR_MAX_GRAY_LEVEL - pstCmd->matMask;
-        matNonNan.setTo(0, matMaskReverse);
+    cv::Mat matNonNanMask = CalcUtils::getNonNanMask(matHeight);
+    if (!matMask.empty()) {
+        cv::Mat matMaskReverse = PR_MAX_GRAY_LEVEL - matMask;
+        matNonNanMask.setTo(0, matMaskReverse);
     }
 
-    cv::Mat matHeight = pstCmd->matHeight;
-    for (const auto &rect : pstCmd->vecRectBases) {
-        cv::Mat matNonNanROI(matNonNan, rect);
+    for (auto rect : pstCmd->vecRectBases) {
+        rect.x -= rectBounding.x;
+        rect.y -= rectBounding.y;
+        cv::Mat matTmpNonNanMask = matNonNanMask.clone();
+        CalcUtils::setToExcept(matTmpNonNanMask, 0, rect);
 
         AOI::Vision::VectorOfPoint vecPtLocations;
-        cv::findNonZero(matNonNanROI, vecPtLocations);
+        cv::findNonZero(matTmpNonNanMask, vecPtLocations);
 
         std::sort(vecPtLocations.begin(), vecPtLocations.end(), [&matHeight](const cv::Point &pt1, const cv::Point &pt2) {
             return matHeight.at<float>(pt1) < matHeight.at<float>(pt2);
@@ -1521,14 +1530,15 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
     float k3 = matK.at<float>(2);
 
     //Find the good points in ROI.
-    cv::Mat matMask = cv::Mat::zeros(ROWS, COLS, CV_8UC1);
-    cv::Mat matMaskROI(matMask, pstCmd->rectROI);
-    matMaskROI.setTo(1);
-    cv::Mat matNanROI(matNan, pstCmd->rectROI);
-    matMaskROI.setTo(0, matNanROI);         //Remove the points which is NAN.
+    if (!matMask.empty())
+        matNonNanMask = CalcUtils::getNonNanMask(matHeight);
+    auto rectROI = pstCmd->rectROI;
+    rectROI.x -= rectBounding.x;
+    rectROI.y -= rectBounding.y;
+    CalcUtils::setToExcept(matNonNanMask, 0, rectROI);
 
     AOI::Vision::VectorOfPoint vecPtLocations;
-    cv::findNonZero(matMask, vecPtLocations);
+    cv::findNonZero(matNonNanMask, vecPtLocations);
 
     std::sort(vecPtLocations.begin(), vecPtLocations.end(), [&matHeight](const cv::Point &pt1, const cv::Point &pt2) {
         return matHeight.at<float>(pt1) < matHeight.at<float>(pt2);

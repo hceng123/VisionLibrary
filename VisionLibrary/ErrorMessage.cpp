@@ -210,6 +210,11 @@ VisionStatus GetErrorInfo(VisionStatus enStatus, PR_GET_ERROR_INFO_RPY *pstRpy)
         pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::PR_INSP_STATUS;
         break;
 
+    case VisionStatus::CALC_3D_HEIGHT_DIFF_FAIL:
+        _snprintf(pstRpy->achErrorStr, PR_MAX_ERR_STR_LEN, "Failed to calcualte 3D height difference.");
+        pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::PR_INSP_STATUS;
+        break;
+
     case VisionStatus::FAIL_TO_EXTRACT_3D_SOLDER:
         _snprintf(pstRpy->achErrorStr, PR_MAX_ERR_STR_LEN, "Failed to extract 3D conductor and solder.");
         pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::PR_INSP_STATUS;

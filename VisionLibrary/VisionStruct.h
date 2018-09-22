@@ -706,9 +706,13 @@ struct PR_FILL_HOLE_RPY {
 };
 
 struct PR_PICK_COLOR_CMD {
+    PR_PICK_COLOR_CMD() :
+        enMethod    (PR_PICK_COLOR_METHOD::SELECT_POINT) {}
     cv::Mat                 matInputImg;
     cv::Rect                rectROI;
+    PR_PICK_COLOR_METHOD    enMethod;
     cv::Point               ptPick;
+    cv::Scalar              scalarSelect;
     Int16                   nColorDiff;
     Int16                   nGrayDiff;
 };

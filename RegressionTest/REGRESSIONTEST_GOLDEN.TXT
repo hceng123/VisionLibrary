@@ -1690,6 +1690,12 @@ PR_CalcFrameValue target [150.0, 180.0] result: 14.0
 PR_CalcFrameValue status 0
 PR_CalcFrameValue target [500.0, 180.0] result: 14.0
 
+--------------------------------------------
+CALC 3D HEIGHT DIFF #1 STARTING
+--------------------------------------------
+PR_Calc3DHeightDiff status 0
+Height Diff Result 0.0191
+
 ---------------------------------------------
 CALC CAMERA MTF REGRESSION TEST #1 STARTING
 ---------------------------------------------

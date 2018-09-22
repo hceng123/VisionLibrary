@@ -233,6 +233,10 @@ public:
         return matResult;
     }
 
+    static inline cv::Mat getNonNanMask(const cv::Mat &matInput) {
+        return matInput == matInput;
+    }
+
     template<typename T>
     static cv::Mat sin(const cv::Mat &matInput) {
         cv::Mat matResult(matInput.rows, matInput.cols, matInput.type());
@@ -438,6 +442,8 @@ public:
     static float bilinearInterpolate(const VectorOfPoint2f &vecPoint, const VectorOfFloat &vecValue, const cv::Point2f &ptToGet);
     static bool isRectInRect(const cv::Rect2f &rectIn, const cv::Rect2f &rectOut);
     static void adjustRectROI(cv::Rect &rect, const cv::Mat &matInput);
+    static cv::Rect boundingRect(const VectorOfRect &vecRect);
+    static void setToExcept(cv::Mat &matInOut, int value, const cv::Rect &rectROI);
 };
 
 }

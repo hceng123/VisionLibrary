@@ -14,8 +14,12 @@
  * Copyright (c) 2016-2018, Xiao Shengguang.  All rights reserved.
  ****************************************************************************/
 
+//2018-09-22 (XSG) Fix PR_Calc3DHeightDiff not correct problem, and improve the speed.
+//                 Add LogCaseCalc3DHeightDiff.
+#define AOI_VISION_VERSION          "1.00.45"
+
 //2018-09-12 (XSG) Add PR_Insp3DSolder function.
-#define AOI_VISION_VERSION          "1.00.44"
+//#define AOI_VISION_VERSION          "1.00.44"
 
 //2018-09-05 (XSG) Enhance new phase correction algorithm
 //                 Support intersect algorithm to merge 3D height.

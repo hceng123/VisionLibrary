@@ -356,5 +356,24 @@ float CalcUtils::calcPointToContourDist(const cv::Point &ptInput, const VectorOf
     if ((rect.y + rect.height) > matInput.rows) rect.height = matInput.rows - rect.y;
 }
 
+/*static*/ cv::Rect CalcUtils::boundingRect(const VectorOfRect &vecRect) {
+    VectorOfPoint vecPoints;
+    vecPoints.reserve(vecRect.size() * 4);
+    for (const auto &rect : vecRect) {
+        vecPoints.emplace_back(rect.x, rect.y);
+        vecPoints.emplace_back(rect.x + rect.width, rect.y);
+        vecPoints.emplace_back(rect.x + rect.width, rect.y + rect.height);
+        vecPoints.emplace_back(rect.x, rect.y + rect.height);
+    }
+    return cv::boundingRect(vecPoints);
+}
+
+/*static*/ void CalcUtils::setToExcept(cv::Mat &matInOut, int value, const cv::Rect &rectROI) {
+    cv::Mat matMask = cv::Mat::ones(matInOut.size(), CV_8UC1);
+    cv::Mat matMaskROI(matMask, rectROI);
+    matMaskROI.setTo(0);
+    matInOut.setTo(value, matMask);
+}
+
 }
 }
