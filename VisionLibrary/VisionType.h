@@ -194,6 +194,11 @@ enum class PR_MERGE_3D_HT_METHOD {
     SELECT_MAX,
 };
 
+enum class PR_PICK_COLOR_METHOD {
+    SELECT_POINT,
+    SELECT_COLOR,
+};
+
 }
 }
 

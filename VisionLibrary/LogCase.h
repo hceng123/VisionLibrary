@@ -18,7 +18,8 @@ public:
 
     virtual String GetFolderPrefix() const = 0;
     virtual VisionStatus RunLogCase()  = 0;
-    static String unzip(const String &strFilePath);    
+    static String unzip(const String &strFilePath);
+
 protected:
     String _formatCoordinate(const cv::Point2f &pt);
     cv::Point2f _parseCoordinate(const String &strCoordinate);
@@ -26,6 +27,8 @@ protected:
     cv::Rect2f _parseRect(const String &strCoordinate);
     String _formatSize(const cv::Size &size);
     cv::Size _parseSize(const String &strSize);
+    String _formatScalar(const cv::Scalar &scalar);
+    cv::Scalar _parseScalar(const String &strScalar);
     template<typename _tp>
     String _formatVector(const std::vector<_tp> &vecValue)  {
         String strValue;
@@ -48,6 +51,7 @@ protected:
     const String _DEFAULT_COORD     = "0, 0";
     const String _DEFAULT_RECT      = "0, 0, 0, 0";
     const String _DEFAULT_SIZE      = "0, 0";
+    const String _DEFAULT_SCALAR    = "0, 0, 0";
     const String _EXTENSION         = ".logcase";
     const String _strKeyStatus      = "Status";
     bool         _bReplay;
@@ -498,7 +502,9 @@ public:
     static String StaticGetFolderPrefix();
 private:
     const String _strKeyROI             = "ROI";
+    const String _strKeyMethod          = "Method";
     const String _strKeyPickPoint       = "PickPoint";
+    const String _strKeyScalarSelect    = "ScalarSelect";
     const String _strKeyColorDiff       = "ColorDiff";
     const String _strKeyGrayDiff        = "GrayDiff";
 
@@ -922,6 +928,51 @@ private:
     const String _strKeyReadResult      = "ReadResult";
 };
 
+class LogCaseInsp3DSolder : public LogCase
+{
+public:
+    explicit LogCaseInsp3DSolder(const String &strPath, bool bReplay = false) : LogCase(strPath, bReplay) {}
+    VisionStatus WriteCmd(const PR_INSP_3D_SOLDER_CMD *const pstCmd);
+    VisionStatus WriteRpy(const PR_INSP_3D_SOLDER_RPY *const pstRpy);
+    virtual VisionStatus RunLogCase() override;
+    virtual String GetFolderPrefix() const { return StaticGetFolderPrefix(); }
+    static String StaticGetFolderPrefix();
+
+private:
+    const String _strHeightFileName     = "Height.yml";
+    const String _strKeyDeviceROI       = "DeviceROI";
+    const String _strKeyBaseColor       = "BaseColor";
+    const String _strKeyBaseColorDiff   = "BaseColorDiff";
+    const String _strKeyBaseGrayDiff    = "BaseGrayDiff";
+    const String _strKeyNumSubROI       = "NumSubROI";
+    const String _strKeySubROI          = "SubROI_";
+    const String _strKeyWettingWidth    = "WettingWidth";
+
+    const String _strKeyStatus          = "Status";
+    const String _strKeySolderHeight    = "SolderHeight";
+};
+
+class LogCaseCalc3DHeightDiff : public LogCase
+{
+public:
+    explicit LogCaseCalc3DHeightDiff(const String &strPath, bool bReplay = false) : LogCase(strPath, bReplay) {}
+    VisionStatus WriteCmd(const PR_CALC_3D_HEIGHT_DIFF_CMD *const pstCmd);
+    VisionStatus WriteRpy(const PR_CALC_3D_HEIGHT_DIFF_RPY *const pstRpy);
+    virtual VisionStatus RunLogCase() override;
+    virtual String GetFolderPrefix() const { return StaticGetFolderPrefix(); }
+    static String StaticGetFolderPrefix();
+
+private:
+    const String _strHeightFileName     = "Height.yml";
+    const String _strKeyROI             = "ROI";
+    const String _strKeyNumBase         = "NumBase";
+    const String _strKeyBaseROI         = "BaseROI_";
+    const String _strKeyHRatioStart     = "HRatioStart";
+    const String _strKeyHRatioEnd       = "HRatioEnd";
+
+    const String _strKeyStatus          = "Status";
+    const String _strKeyHeightDiff      = "HeightDiff";
+};
 
 }
 }

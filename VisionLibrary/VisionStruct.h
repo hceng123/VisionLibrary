@@ -706,9 +706,13 @@ struct PR_FILL_HOLE_RPY {
 };
 
 struct PR_PICK_COLOR_CMD {
+    PR_PICK_COLOR_CMD() :
+        enMethod    (PR_PICK_COLOR_METHOD::SELECT_POINT) {}
     cv::Mat                 matInputImg;
     cv::Rect                rectROI;
+    PR_PICK_COLOR_METHOD    enMethod;
     cv::Point               ptPick;
+    cv::Scalar              scalarSelect;
     Int16                   nColorDiff;
     Int16                   nGrayDiff;
 };
@@ -1120,8 +1124,8 @@ struct PR_CALIB_3D_HEIGHT_CMD {
         bUseThinnestPattern(false),
         fRemoveHarmonicWaveK(0.f),
         fMinAmplitude(5.f),
-        nRemoveBetaJumpSpanX(25),
-        nRemoveBetaJumpSpanY(7),
+        nRemoveBetaJumpMinSpan(25),
+        nRemoveBetaJumpMaxSpan(80),
         nRemoveGammaJumpSpanX(23),
         nRemoveGammaJumpSpanY(4),
         nBlockStepCount(4),
@@ -1141,10 +1145,10 @@ struct PR_CALIB_3D_HEIGHT_CMD {
     cv::Mat                 matBaseWrappedAlpha;    //The wrapped thick stripe phase.
     cv::Mat                 matBaseWrappedBeta;     //The wrapped thin stripe phase.
     cv::Mat                 matBaseWrappedGamma;    //The wrapped thin stripe phase.
-    int                     nRemoveBetaJumpSpanX;    //The phase jump span in X direction under this value in beta phase(the thin pattern) will be removed.
-    int                     nRemoveBetaJumpSpanY;    //The phase jump span in Y direction under this value in beta phase(the thin pattern) will be removed.
-    int                     nRemoveGammaJumpSpanX;   //The phase jump span in X direction under this value in gamma phase(the thinnest pattern) will be removed. It is used only when bUseThinnestPattern is true.
-    int                     nRemoveGammaJumpSpanY;   //The phase jump span in Y direction under this value in gamma phase(the thinnest pattern) will be removed. It is used only when bUseThinnestPattern is true.
+    int                     nRemoveBetaJumpMinSpan; //The phase jump span in X direction under this value in beta phase(the thin pattern) will be removed.
+    int                     nRemoveBetaJumpMaxSpan; //The phase jump span in Y direction under this value in beta phase(the thin pattern) will be removed.
+    int                     nRemoveGammaJumpSpanX;  //The phase jump span in X direction under this value in gamma phase(the thinnest pattern) will be removed. It is used only when bUseThinnestPattern is true.
+    int                     nRemoveGammaJumpSpanY;  //The phase jump span in Y direction under this value in gamma phase(the thinnest pattern) will be removed. It is used only when bUseThinnestPattern is true.
     //Below is the calibration related parameters
     Int16                   nBlockStepCount;        //How many steps on the calibration block.
     float                   fBlockStepHeight;       //The height of each step, unit mm. So the total block height is nBlockStepCount x fBlockStepHeight.
@@ -1295,6 +1299,33 @@ struct PR_CALC_3D_HEIGHT_DIFF_CMD {
 struct PR_CALC_3D_HEIGHT_DIFF_RPY {
     VisionStatus            enStatus;
     float                   fHeightDiff;
+};
+
+struct PR_INSP_3D_SOLDER_CMD {
+    PR_INSP_3D_SOLDER_CMD() :
+        nBaseColorDiff  (20),
+        nBaseGrayDiff   (20),
+        nWettingWidth   (8) {}
+    cv::Mat                 matHeight;
+    cv::Mat                 matColorImg;
+    cv::Rect                rectDeviceROI;
+    cv::Scalar              scalarBaseColor;
+    Int16                   nBaseColorDiff;
+    Int16                   nBaseGrayDiff;
+    VectorOfRect            vecRectCheckROIs;
+    int                     nWettingWidth;
+};
+
+struct PR_INSP_3D_SOLDER_RPY {
+    struct RESULT {
+        float               fComponentHeight;
+        float               fSolderHeight;
+        float               fSolderArea;
+        float               fSolderRatio;
+    };
+    VisionStatus            enStatus;
+    std::vector<RESULT>     vecResults;
+    cv::Mat                 matResultImg;
 };
 
 // Calculate the DLP height offset, it using DLP4 as the base.

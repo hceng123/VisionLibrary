@@ -1116,10 +1116,10 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
     stCalcCmd.matBaseWrappedAlpha = pstCmd->matBaseWrappedAlpha;
     stCalcCmd.matBaseWrappedBeta = pstCmd->matBaseWrappedBeta;
     stCalcCmd.matBaseWrappedGamma = pstCmd->matBaseWrappedGamma;
-    stCalcCmd.nRemoveBetaJumpMinSpan = 0;
-    stCalcCmd.nRemoveBetaJumpMaxSpan = 0;
-    stCalcCmd.nRemoveGammaJumpSpanX = 0;
-    stCalcCmd.nRemoveGammaJumpSpanY = 0;
+    stCalcCmd.nRemoveBetaJumpMinSpan = pstCmd->nRemoveBetaJumpMinSpan;
+    stCalcCmd.nRemoveBetaJumpMaxSpan = pstCmd->nRemoveBetaJumpMaxSpan;
+    stCalcCmd.nRemoveGammaJumpSpanX = pstCmd->nRemoveGammaJumpSpanX;
+    stCalcCmd.nRemoveGammaJumpSpanY = pstCmd->nRemoveGammaJumpSpanY;
     calc3DHeight(&stCalcCmd, &stCalcRpy);
     if (VisionStatus::OK != stCalcRpy.enStatus) {
         WriteLog("Unwrap::calc3DHeight failed.");
@@ -1465,25 +1465,34 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
 }
 
 /*static*/ void Unwrap::calc3DHeightDiff(const PR_CALC_3D_HEIGHT_DIFF_CMD *const pstCmd, PR_CALC_3D_HEIGHT_DIFF_RPY *const pstRpy) {
+    VectorOfRect vecRect = pstCmd->vecRectBases;
+    vecRect.push_back(pstCmd->rectROI);
+    cv::Rect rectBounding = CalcUtils::boundingRect(vecRect);
+    cv::Mat matHeight(pstCmd->matHeight, rectBounding);
+    cv::Mat matMask;
+    if (!pstCmd->matMask.empty())
+        matMask = cv::Mat(pstCmd->matMask, rectBounding);
+
     std::vector<float> vecXt, vecYt, vecHeightTmp;
-    auto ROWS = pstCmd->matHeight.rows;
-    auto COLS = pstCmd->matHeight.cols;
+    auto ROWS = matHeight.rows;
+    auto COLS = matHeight.cols;
     cv::Mat matX, matY;
     CalcUtils::meshgrid<DATA_TYPE>(1.f, 1.f, ToFloat(COLS), 1.f, 1.f, ToFloat(ROWS), matX, matY);
 
-    cv::Mat matNan = CalcUtils::getNanMask(pstCmd->matHeight);    
-    cv::Mat matNonNan = PR_MAX_GRAY_LEVEL - matNan;
-    if (!pstCmd->matMask.empty()) {
-        cv::Mat matMaskReverse = PR_MAX_GRAY_LEVEL - pstCmd->matMask;
-        matNonNan.setTo(0, matMaskReverse);
+    cv::Mat matNonNanMask = CalcUtils::getNonNanMask(matHeight);
+    if (!matMask.empty()) {
+        cv::Mat matMaskReverse = PR_MAX_GRAY_LEVEL - matMask;
+        matNonNanMask.setTo(0, matMaskReverse);
     }
 
-    cv::Mat matHeight = pstCmd->matHeight;
-    for (const auto &rect : pstCmd->vecRectBases) {
-        cv::Mat matNonNanROI(matNonNan, rect);
+    for (auto rect : pstCmd->vecRectBases) {
+        rect.x -= rectBounding.x;
+        rect.y -= rectBounding.y;
+        cv::Mat matTmpNonNanMask = matNonNanMask.clone();
+        CalcUtils::setToExcept(matTmpNonNanMask, 0, rect);
 
         AOI::Vision::VectorOfPoint vecPtLocations;
-        cv::findNonZero(matNonNanROI, vecPtLocations);
+        cv::findNonZero(matTmpNonNanMask, vecPtLocations);
 
         std::sort(vecPtLocations.begin(), vecPtLocations.end(), [&matHeight](const cv::Point &pt1, const cv::Point &pt2) {
             return matHeight.at<float>(pt1) < matHeight.at<float>(pt2);
@@ -1521,14 +1530,15 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
     float k3 = matK.at<float>(2);
 
     //Find the good points in ROI.
-    cv::Mat matMask = cv::Mat::zeros(ROWS, COLS, CV_8UC1);
-    cv::Mat matMaskROI(matMask, pstCmd->rectROI);
-    matMaskROI.setTo(1);
-    cv::Mat matNanROI(matNan, pstCmd->rectROI);
-    matMaskROI.setTo(0, matNanROI);         //Remove the points which is NAN.
+    if (!matMask.empty())
+        matNonNanMask = CalcUtils::getNonNanMask(matHeight);
+    auto rectROI = pstCmd->rectROI;
+    rectROI.x -= rectBounding.x;
+    rectROI.y -= rectBounding.y;
+    CalcUtils::setToExcept(matNonNanMask, 0, rectROI);
 
     AOI::Vision::VectorOfPoint vecPtLocations;
-    cv::findNonZero(matMask, vecPtLocations);
+    cv::findNonZero(matNonNanMask, vecPtLocations);
 
     std::sort(vecPtLocations.begin(), vecPtLocations.end(), [&matHeight](const cv::Point &pt1, const cv::Point &pt2) {
         return matHeight.at<float>(pt1) < matHeight.at<float>(pt2);
@@ -2780,6 +2790,339 @@ void removeBlob(cv::Mat &matThreshold, cv::Mat &matBlob, float fAreaLimit) {
     cv::medianBlur(matHeight, matHeight, 5);
     TimeLog::GetInstance()->addTimeLog("medianBlur.", stopWatch.Span());
     return matHeight;
+}
+
+/*static*/ void Unwrap::insp3DSolder(const PR_INSP_3D_SOLDER_CMD *pstCmd, const cv::Mat &matBaseMask, PR_INSP_3D_SOLDER_RPY *const pstRpy) {
+    cv::Mat matHeightROI(pstCmd->matHeight, pstCmd->rectDeviceROI);
+
+    AOI::Vision::VectorOfPoint vecPtLocations;
+    cv::findNonZero(matBaseMask, vecPtLocations);
+
+    std::sort(vecPtLocations.begin(), vecPtLocations.end(), [&matHeightROI](const cv::Point &pt1, const cv::Point &pt2) {
+        return matHeightROI.at<float>(pt1) < matHeightROI.at<float>(pt2);
+    });
+
+    std::vector<float> vecXt, vecYt, vecHeightTmp;
+    auto ROWS = matHeightROI.rows;
+    auto COLS = matHeightROI.cols;
+    cv::Mat matX, matY;
+    CalcUtils::meshgrid<DATA_TYPE>(1.f, 1.f, ToFloat(COLS), 1.f, 1.f, ToFloat(ROWS), matX, matY);
+
+    const float fEffectHRatioStart = 0.15f, fEffectHRatioEnd = 0.9f;
+    AOI::Vision::VectorOfPoint vecTrimedLocations(vecPtLocations.begin() + ToInt32(vecPtLocations.size() * fEffectHRatioStart), vecPtLocations.begin() + ToInt32(vecPtLocations.size() * fEffectHRatioEnd));
+    vecXt.reserve(vecXt.size() + vecTrimedLocations.size());
+    vecYt.reserve(vecYt.size() + vecTrimedLocations.size());
+    vecHeightTmp.reserve(vecHeightTmp.size() + vecTrimedLocations.size());
+    for (const auto &point : vecTrimedLocations) {
+        vecXt.push_back(matX.at<float>(point));
+        vecYt.push_back(matY.at<float>(point));
+        vecHeightTmp.push_back(matHeightROI.at<float>(point));
+    }
+
+    if (vecXt.empty() || vecYt.empty()) {
+        pstRpy->enStatus = VisionStatus::CALC_3D_HEIGHT_DIFF_NO_BASE_POINT;
+        WriteLog("No base points to calculate 3D height difference, all base points are masked or are NAN.");
+        return;
+    }
+
+    cv::Mat matK;
+    {
+        cv::Mat matXX;
+        matXX.push_back(cv::Mat(vecXt).reshape(1, 1));
+        matXX.push_back(cv::Mat(vecYt).reshape(1, 1));
+        matXX.push_back(cv::Mat(cv::Mat::ones(1, ToInt32(vecHeightTmp.size()), CV_32FC1)));
+        cv::transpose(matXX, matXX);
+        cv::Mat matYY(vecHeightTmp);
+        cv::solve(matXX, matYY, matK, cv::DecompTypes::DECOMP_QR);
+    }
+
+    float k1 = matK.at<float>(0);
+    float k2 = matK.at<float>(1);
+    float k3 = matK.at<float>(2);
+
+    matHeightROI = matHeightROI - (matX * k1 + matY * k2 + k3);
+    const float COVERAGE = 0.75f;
+    for (const auto &rectCheckROI : pstCmd->vecRectCheckROIs) {
+        auto rectCheckROIOffset = rectCheckROI;
+        rectCheckROIOffset.x -= pstCmd->rectDeviceROI.x;
+        rectCheckROIOffset.y -= pstCmd->rectDeviceROI.y;
+
+        cv::Mat matCheckROI(matHeightROI, rectCheckROIOffset), matHighMask, matMidMask, matLowMask;
+        auto matCheckROIClone = matCheckROI.clone();
+        VectorOfFloat vecThreshold;
+        int nTopY = 0, nBtmY = 0;
+        cv::Mat matSolderMask = _extractSolder(matCheckROIClone, COVERAGE, vecThreshold, matHighMask, matMidMask, matLowMask, nTopY, nBtmY);
+
+        VectorOfPoint vecHighPoints;
+        cv::findNonZero(matHighMask, vecHighPoints);
+        if (vecHighPoints.empty()) {
+            pstRpy->enStatus = VisionStatus::FAIL_TO_EXTRACT_3D_SOLDER;
+            return;
+        }
+        float fSumX = 0.f, fSumY = 0.f;
+        for (const auto &point : vecHighPoints) {
+            fSumX += point.x;
+            fSumY += point.y;
+        }
+        cv::Point ptCenter(ToInt32(fSumX / vecHighPoints.size()), ToInt32(fSumY / vecHighPoints.size()));
+        float fHeightSum = 0.f;
+        int nCount = 0;
+        for (int row = ptCenter.y - 1; row <= ptCenter.y + 1; ++ row)
+        for (int col = ptCenter.x - 1; col <= ptCenter.x + 1; ++ col) {
+            fHeightSum += matCheckROIClone.at<DATA_TYPE>(row, col);
+            ++ nCount;
+        }
+        bool bLeft = (ptCenter.x + rectCheckROI.x - pstCmd->rectDeviceROI.x) <  pstCmd->rectDeviceROI.width / 2;
+        cv::Rect rectCalc;
+        auto fSolderHeight = _calcSolderHeightTri(matCheckROIClone, matMidMask, pstCmd->nWettingWidth, bLeft, nTopY, nBtmY, rectCalc);
+
+        PR_INSP_3D_SOLDER_RPY::RESULT result;
+        result.fComponentHeight = fHeightSum / nCount;
+        result.fSolderHeight = fSolderHeight;
+        result.fSolderArea = ToFloat(cv::countNonZero(matMidMask));
+        result.fSolderRatio = result.fSolderArea / rectCheckROI.size().area();
+        pstRpy->vecResults.push_back(result);
+
+        if (!pstRpy->matResultImg.empty()) {
+            cv::Mat matResultROI(pstRpy->matResultImg, rectCheckROI);
+            matResultROI.setTo(VisionAlgorithm::YELLOW_SCALAR, matHighMask);
+            matResultROI.setTo(VisionAlgorithm::BLUE_SCALAR, matMidMask);
+            matResultROI.setTo(VisionAlgorithm::RED_SCALAR, matLowMask);
+            rectCalc.x += rectCheckROI.x;
+            rectCalc.y += rectCheckROI.y;
+            cv::rectangle(pstRpy->matResultImg, rectCalc, VisionAlgorithm::GREEN_SCALAR, 1);
+            //cv::line(pstRpy->matResultImg, cv::Point(nSolderStart + rectCheckROI.x, rectCheckROI.y), cv::Point(nSolderStart + rectCheckROI.x, rectCheckROI.y + rectCheckROI.height),
+            //    VisionAlgorithm::GREEN_SCALAR, 1);
+            //cv::line(pstRpy->matResultImg, cv::Point(nSolderEnd + rectCheckROI.x, rectCheckROI.y), cv::Point(nSolderEnd + rectCheckROI.x, rectCheckROI.y + rectCheckROI.height),
+            //    VisionAlgorithm::GREEN_SCALAR, 1);
+        }
+    }
+}
+
+/*static*/ cv::Mat Unwrap::_extractSolder(const cv::Mat &matCheckROI, float fCoverage, VectorOfFloat &vecThreshold, cv::Mat &matHighMask, cv::Mat &matMidMask, cv::Mat &matLowMask, int &nTopY, int &nBtmY) {
+    cv::Mat matCheckOneRow = matCheckROI.clone();
+    matCheckOneRow = matCheckOneRow.reshape(1, 1);
+    cv::sort(matCheckOneRow, matCheckOneRow, cv::SortFlags::SORT_ASCENDING + cv::SortFlags::SORT_EVERY_ROW);
+    const float fEffectHRatioStart = 0.05f, fEffectHRatioEnd = 0.95f;
+    int nStart = ToInt32(fEffectHRatioStart * matCheckOneRow.cols);
+    int nEnd   = ToInt32(fEffectHRatioEnd   * matCheckOneRow.cols);
+    cv::Mat matFetch(matCheckOneRow, cv::Range(0, 1), cv::Range(nStart, nEnd));
+    matFetch = matFetch.clone();
+    int filterSize = ToInt32(matFetch.cols * 0.05);
+    cv::Mat matFilter;
+    cv::blur(matFetch, matFilter, cv::Size(filterSize, 1), cv::Point(-1, -1), cv::BorderTypes::BORDER_REPLICATE);
+    cv::Mat matDiff = CalcUtils::diff(matFilter, 1, CalcUtils::DIFF_ON_X_DIR).clone(), matDiffFilter;
+    cv::blur(matDiff, matDiffFilter, cv::Size(filterSize, 1), cv::Point(-1, -1), cv::BorderTypes::BORDER_REPLICATE);
+#ifdef _DEBUG
+    auto vecVecCheckOneRow = CalcUtils::matToVector<DATA_TYPE>(matCheckOneRow);
+    auto vecVecFetch = CalcUtils::matToVector<DATA_TYPE>(matFetch);
+    auto vecVecFetchFilter = CalcUtils::matToVector<DATA_TYPE>(matFilter);
+    auto vecVecDiff = CalcUtils::matToVector<DATA_TYPE>(matDiff);
+    auto vecVecDiffFilter = CalcUtils::matToVector<DATA_TYPE>(matDiffFilter);
+#endif
+
+    double dMinValue = 0., dMaxValue = 0.;
+    cv::Point ptMin, ptMax;
+    cv::minMaxLoc(matDiffFilter, &dMinValue, &dMaxValue, &ptMin, &ptMax);
+    float fMinValue = ToFloat(dMinValue), fMaxValue = ToFloat(dMaxValue);
+    float mH = (fMinValue + fMaxValue) / 2.f;
+    float fTotalSum = ToFloat(cv::sum(matDiffFilter)[0]);
+    float fOverRatio = 0.f;
+    int N = 0;
+    do
+    {
+        mH = (fMinValue + fMaxValue) / 2.f;
+        float fOverSum = 0;
+        for (int i = 0; i < matDiffFilter.cols; ++ i) {
+            auto value = matDiffFilter.at<DATA_TYPE>(i);
+            if (value > mH)
+                fOverSum += value;
+        }
+        fOverRatio = fOverSum / fTotalSum;
+        if (fabs(fOverRatio - fCoverage) < 0.001f)
+            break;
+
+        if (fOverRatio > fCoverage)
+            fMinValue = mH;
+        else
+            fMaxValue = mH;
+
+        ++ N;
+    }while(fabs(fOverRatio - fCoverage) > 0.001f && N < 20);
+
+    int index1 = 0, index2 = 0;
+    for (int col = 0; col < matDiffFilter.cols - 1; ++ col) {
+        auto value1 = matDiffFilter.at<DATA_TYPE>(col);
+        auto value2 = matDiffFilter.at<DATA_TYPE>(col + 1);
+        if (0 == index1 && value1 <= mH && value2 > mH)
+            index1 = col;
+        if (0 == index2 && value1 >= mH && value2 < mH)
+            index2 = col;
+
+        if (0 != index1 && 0 != index2)
+            break;
+    }
+
+    auto thres1 = matFetch.at<DATA_TYPE>(index1);
+    auto thres2 = matFetch.at<DATA_TYPE>(index2);
+
+    vecThreshold = VectorOfFloat{thres1, thres2};
+
+    cv::Mat matBW = cv::Mat::zeros(matCheckROI.size(), CV_8UC1);
+    matHighMask = matCheckROI >= thres2;
+    matMidMask = matCheckROI >= thres1 & matCheckROI < thres2;
+    matLowMask = matCheckROI < thres1;
+
+    cv::Mat matHeightMaskFloat, matHeightMaskReduce;
+    matHighMask.convertTo(matHeightMaskFloat, CV_32FC1, 1. / 255.);
+    cv::reduce(matHeightMaskFloat, matHeightMaskReduce, 1, cv::ReduceTypes::REDUCE_SUM);
+    float fMeanWidth = ToFloat(cv::mean(matHeightMaskReduce)[0]);
+    float fEffectWidth = 0.8f * fMeanWidth;
+    nTopY = 0, nBtmY = 0;
+    // To find first and last row with values.
+    for (int row = 0; row < matHeightMaskReduce.rows; ++ row) {
+        auto value = matHeightMaskReduce.at<DATA_TYPE>(row);
+        if (value > fMeanWidth) {
+            nBtmY = row;
+            if (nTopY == 0)
+                nTopY = row;
+        }
+    }
+
+    cv::Mat matMask = cv::Mat::zeros(matCheckROI.size(), CV_8UC1);
+    cv::Mat matTopMask(matMask, cv::Range(0, nTopY), cv::Range::all());
+    matTopMask.setTo(PR_MAX_GRAY_LEVEL);
+    cv::Mat matBtmMask(matMask, cv::Range(nBtmY + 1, matCheckROI.rows), cv::Range::all());
+    matBtmMask.setTo(PR_MAX_GRAY_LEVEL);
+
+    // Clear the values over the range of device.
+    matHighMask.setTo(0, matMask);
+    matMidMask.setTo(0, matMask);
+    matLowMask.setTo(0, matMask);
+
+    matBW.setTo(3, matHighMask);
+    matBW.setTo(2, matMidMask);
+    matBW.setTo(1, matLowMask);
+
+    return matBW;
+}
+
+/*static*/ float Unwrap::_calcSolderHeightXSG(const cv::Mat &matCheckROI, const cv::Mat &matMidMask) {
+    auto matCheckROIClone = matCheckROI.clone();
+    cv::Mat matReverseMask = PR_MAX_GRAY_LEVEL - matMidMask;
+    matCheckROIClone.setTo(0, matReverseMask);
+    cv::Mat matSolderHeightSum;
+    cv::reduce(matCheckROIClone, matSolderHeightSum, 0, cv::ReduceTypes::REDUCE_SUM);
+#ifdef _DEBUG
+    auto vecVecMidMask = CalcUtils::matToVector<uchar>(matMidMask);
+    auto vecVecReverseMidMask = CalcUtils::matToVector<uchar>(matReverseMask);
+    auto vecVecHeight = CalcUtils::matToVector<DATA_TYPE>(matCheckROIClone);
+    auto vecVecSolderHeightSum = CalcUtils::matToVector<DATA_TYPE>(matSolderHeightSum);
+#endif
+    cv::Mat matMidMaskOneRow;
+    cv::reduce(matMidMask, matMidMaskOneRow, 0, cv::ReduceTypes::REDUCE_SUM, CV_32FC1);
+    matMidMaskOneRow = matMidMaskOneRow / PR_MAX_GRAY_LEVEL;
+    int nSolderStart = 0, nSolderEnd = 0;
+    float startCount = 0, endCount = 0;
+    for (int col = 0; col < matMidMaskOneRow.cols; ++col) {
+        auto value = matMidMaskOneRow.at<DATA_TYPE>(col);
+        if (value > matMidMask.rows / 2) {
+            nSolderEnd = col;
+            endCount = value;
+            if (nSolderStart == 0) {
+                nSolderStart = col;
+                startCount = value;
+            }
+        }
+    }
+
+    float fSolderHeight = 0.f;
+    if (nSolderStart > 0 && nSolderEnd > 0) {
+        float fStartHeight = matSolderHeightSum.at<DATA_TYPE>(nSolderStart) / startCount;
+        float fEndHeight = matSolderHeightSum.at<DATA_TYPE>(nSolderEnd) / endCount;
+        fSolderHeight = fabs(fEndHeight - fStartHeight);
+    }
+
+    return fSolderHeight;
+}
+
+/*static*/ float Unwrap::_calcSolderHeightTri(const cv::Mat &matCheckROI, const cv::Mat &matMidMask, int nWettingWidth, bool bLeft, int nTopY, int nBtmY, cv::Rect &rectCalc) {
+    auto matCheckROIClone = matCheckROI.clone();
+    cv::Mat matReverseMask = PR_MAX_GRAY_LEVEL - matMidMask;
+    matCheckROIClone.setTo(0, matReverseMask);
+    cv::Mat matSolderHeightSum;
+    cv::reduce(matCheckROIClone, matSolderHeightSum, 0, cv::ReduceTypes::REDUCE_SUM);
+#ifdef _DEBUG
+    auto vecVecMidMask = CalcUtils::matToVector<uchar>(matMidMask);
+    auto vecVecReverseMidMask = CalcUtils::matToVector<uchar>(matReverseMask);
+    auto vecVecHeight = CalcUtils::matToVector<DATA_TYPE>(matCheckROIClone);
+    auto vecVecSolderHeightSum = CalcUtils::matToVector<DATA_TYPE>(matSolderHeightSum);
+#endif
+    cv::Mat matMidMaskOneRow;
+    cv::reduce(matMidMask, matMidMaskOneRow, 0, cv::ReduceTypes::REDUCE_SUM, CV_32FC1);
+    matMidMaskOneRow = matMidMaskOneRow / PR_MAX_GRAY_LEVEL;
+    int nSolderStart = 0, nSolderEnd = 0;
+    float startCount = 0, endCount = 0;
+    for (int col = 0; col < matMidMaskOneRow.cols; ++col) {
+        auto value = matMidMaskOneRow.at<DATA_TYPE>(col);
+        if (value > matMidMask.rows / 2) {
+            nSolderEnd = col;
+            endCount = value;
+            if (nSolderStart == 0) {
+                nSolderStart = col;
+                startCount = value;
+            }
+        }
+    }
+
+    if (nSolderStart == nSolderEnd) {
+        std::stringstream ss;
+        ss << "Cannot find solder area, please check input area.";
+        WriteLog(ss.str());
+        return 0;
+    }
+
+    int nHeight = nBtmY - nTopY;
+    int nShrink = nHeight / 10;
+    int nCheckTopY = nTopY + nShrink;
+    int nCheckBtmY = nBtmY - nShrink;
+    if (nBtmY <= nTopY) {
+        std::stringstream ss;
+        ss << "Calculate solder height goes wrong, the check range of Y (" << nTopY << ", " << nBtmY << ") is not correct.";
+        WriteLog(ss.str());
+        return 0;
+    }
+
+    if (bLeft) {
+        if (nSolderEnd - 2 - nWettingWidth < 0) {
+            std::stringstream ss;
+            ss << "Calculate solder height goes wrong, the left side solder end positoin " << nSolderEnd <<  " is too small.";
+            WriteLog(ss.str());
+            return 0;
+        }
+        rectCalc = cv::Rect(nSolderEnd - 2 - nWettingWidth, nCheckTopY, nWettingWidth, nCheckBtmY - nCheckTopY);
+    }else {
+        if (nSolderStart + 2 + nWettingWidth > matCheckROI.cols) {
+            std::stringstream ss;
+            ss << "Calculate solder height goes wrong, the right side solder start positoin " << nSolderStart <<  " is too big.";
+            WriteLog(ss.str());
+            return 0;
+        }
+
+        rectCalc = cv::Rect(nSolderStart + 2, nCheckTopY, nWettingWidth, nCheckBtmY - nCheckTopY);
+    }
+
+    cv::Mat matCalc(matCheckROI, rectCalc);
+    matCalc = matCalc.clone();
+    matCalc = matCalc.reshape(1, 1);
+    auto vecHeights = CalcUtils::matToVector<DATA_TYPE>(matCalc)[0];
+    std::sort(vecHeights.begin(), vecHeights.end());
+    vecHeights = VectorOfFloat(vecHeights.begin() + ToInt32(0.5f * vecHeights.size()), vecHeights.begin() + ToInt32(0.9f * vecHeights.size()));
+    float fHeightSum = 0.f;
+    for (const auto height : vecHeights)
+        fHeightSum += height;
+    float fMeanHeight = fHeightSum / vecHeights.size();
+    return fMeanHeight;
 }
 
 }

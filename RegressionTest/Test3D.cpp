@@ -566,6 +566,33 @@ void TestCalcFrameValue_3() {
     PrintResult(stCmd, stRpy);
 }
 
+void TestCalc3DHeightDiff_1() {
+    std::cout << std::endl << "--------------------------------------------";
+    std::cout << std::endl << "CALC 3D HEIGHT DIFF #1 STARTING";
+    std::cout << std::endl << "--------------------------------------------";
+    std::cout << std::endl;
+
+    String strWorkingFolder = "./data/TestCacl3DHeightDiff/";
+    PR_CALC_3D_HEIGHT_DIFF_CMD stCmd;
+    PR_CALC_3D_HEIGHT_DIFF_RPY stRpy;
+
+    cv::FileStorage fs(strWorkingFolder + "Height.yml", cv::FileStorage::READ);
+    cv::FileNode fileNode = fs["Height"];
+    cv::read(fileNode, stCmd.matHeight, cv::Mat());
+    fs.release();
+
+    stCmd.matMask = cv::imread(strWorkingFolder + "mask.png", cv::IMREAD_GRAYSCALE);
+    stCmd.rectROI = cv::Rect(132, 173, 98, 81);
+    stCmd.vecRectBases.emplace_back(0, 0, 169, 128);
+
+    PR_Calc3DHeightDiff(&stCmd, &stRpy);
+    std::cout << "PR_Calc3DHeightDiff status " << ToInt32(stRpy.enStatus) << std::endl;
+    std::cout << std::fixed << std::setprecision(4);
+    if (VisionStatus::OK == stRpy.enStatus) {
+        std::cout << "Height Diff Result " << stRpy.fHeightDiff << std::endl;
+    }
+}
+
 void Test3D() {
     TestCalib3dBase_1();
     TestCalib3DHeight_1();
@@ -580,6 +607,8 @@ void Test3D() {
     TestCalcFrameValue_1();
     TestCalcFrameValue_2();
     TestCalcFrameValue_3();
+
+    TestCalc3DHeightDiff_1();
 }
 
 }

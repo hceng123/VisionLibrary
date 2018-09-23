@@ -334,34 +334,33 @@ void VisionView::_drawTestVisionLibrary(cv::Mat &mat)
     }
 }
 
-void VisionView::_drawDisplay(bool bAddingMask)
-{
+void VisionView::_drawDisplay(bool bAddingMask) {
     cv::Mat mat = _matArray[ToInt32(_enDisplaySource)];
-    if ( mat.empty() )
+    if (mat.empty())
         return;
 
     cv::Mat matZoomResult, matMaskZoomResult;
-    auto displayWidth = this->size().width();
+    auto displayWidth  = this->size().width();
     auto displayHeight = this->size().height();
-    
-    _zoomMat ( mat, matZoomResult, _fZoomFactor, false );    
 
-    _matDisplay = cv::Mat::ones( displayHeight, displayWidth, mat.type() ) * 255;
+    _zoomMat(mat, matZoomResult, _fZoomFactor, false);
+
+    _matDisplay = cv::Mat::ones(displayHeight, displayWidth, mat.type()) * 255;
     _matDisplay.setTo(cv::Scalar(255, 255, 255));
 
-    _cutImageForDisplay ( matZoomResult, _matDisplay );
+    _cutImageForDisplay(matZoomResult, _matDisplay);
 
-    if ( ! bAddingMask )   {
+    if (!bAddingMask) {
         cv::Mat matMaskZoomResult;
-        _zoomMat ( _matMask, matMaskZoomResult, _fZoomFactor, false );
-        _cutImageForDisplay ( matMaskZoomResult, _matMaskForDisplay );
+        _zoomMat(_matMask, matMaskZoomResult, _fZoomFactor, false);
+        _cutImageForDisplay(matMaskZoomResult, _matMaskForDisplay);
     }
 
-    _drawTestVisionLibrary ( _matDisplay );
+    _drawTestVisionLibrary(_matDisplay);
 
-    cvtColor ( _matDisplay, _matDisplay, CV_BGR2RGB );
-    QImage image = QImage((uchar*) _matDisplay.data, _matDisplay.cols, _matDisplay.rows, ToInt(_matDisplay.step), QImage::Format_RGB888);
-        
+    cvtColor(_matDisplay, _matDisplay, CV_BGR2RGB);
+    QImage image = QImage((uchar*)_matDisplay.data, _matDisplay.cols, _matDisplay.rows, ToInt(_matDisplay.step), QImage::Format_RGB888);
+
     //show Qimage using QLabel
     setPixmap(QPixmap::fromImage(image));
 }
