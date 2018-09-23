@@ -3075,6 +3075,13 @@ void removeBlob(cv::Mat &matThreshold, cv::Mat &matBlob, float fAreaLimit) {
         }
     }
 
+    if (nSolderStart == nSolderEnd) {
+        std::stringstream ss;
+        ss << "Cannot find solder area, please check input area.";
+        WriteLog(ss.str());
+        return 0;
+    }
+
     int nHeight = nBtmY - nTopY;
     int nShrink = nHeight / 10;
     int nCheckTopY = nTopY + nShrink;
@@ -3086,10 +3093,24 @@ void removeBlob(cv::Mat &matThreshold, cv::Mat &matBlob, float fAreaLimit) {
         return 0;
     }
 
-    if (bLeft)
+    if (bLeft) {
+        if (nSolderEnd - 2 - nWettingWidth < 0) {
+            std::stringstream ss;
+            ss << "Calculate solder height goes wrong, the left side solder end positoin " << nSolderEnd <<  " is too small.";
+            WriteLog(ss.str());
+            return 0;
+        }
         rectCalc = cv::Rect(nSolderEnd - 2 - nWettingWidth, nCheckTopY, nWettingWidth, nCheckBtmY - nCheckTopY);
-    else
+    }else {
+        if (nSolderStart + 2 + nWettingWidth > matCheckROI.cols) {
+            std::stringstream ss;
+            ss << "Calculate solder height goes wrong, the right side solder start positoin " << nSolderStart <<  " is too big.";
+            WriteLog(ss.str());
+            return 0;
+        }
+
         rectCalc = cv::Rect(nSolderStart + 2, nCheckTopY, nWettingWidth, nCheckBtmY - nCheckTopY);
+    }
 
     cv::Mat matCalc(matCheckROI, rectCalc);
     matCalc = matCalc.clone();
