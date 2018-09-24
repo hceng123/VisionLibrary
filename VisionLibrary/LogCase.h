@@ -890,6 +890,7 @@ public:
 private:
     const String _strKeyROI             = "ROI";
     const String _strKeyCharCount       = "CharCount";
+    const String _strKeyCharDirection   = "CharDirection";
 };
 
 class LogCaseOcv : public LogCase
@@ -907,6 +908,7 @@ private:
     const String _strKeyRecordCount     = "RecordCount";
     const String _strKeyRecordId        = "RecordId_";
     const String _strKeyMinScore        = "MinScore";
+    const String _strKeyCharDirection   = "CharDirection";
 };
 
 class LogCase2DCode : public LogCase

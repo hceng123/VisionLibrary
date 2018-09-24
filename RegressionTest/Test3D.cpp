@@ -567,9 +567,9 @@ void TestCalcFrameValue_3() {
 }
 
 void TestCalc3DHeightDiff_1() {
-    std::cout << std::endl << "--------------------------------------------";
-    std::cout << std::endl << "CALC 3D HEIGHT DIFF #1 STARTING";
-    std::cout << std::endl << "--------------------------------------------";
+    std::cout << std::endl << "-----------------------------------------------";
+    std::cout << std::endl << "CALC 3D HEIGHT DIFF REGRESSION TEST #1 STARTING";
+    std::cout << std::endl << "-----------------------------------------------";
     std::cout << std::endl;
 
     String strWorkingFolder = "./data/TestCacl3DHeightDiff/";
@@ -593,6 +593,44 @@ void TestCalc3DHeightDiff_1() {
     }
 }
 
+static void PrintInsp3DSolderResult(const PR_INSP_3D_SOLDER_RPY &stRpy) {
+    std::cout << "PR_Insp3DSolder status " << ToInt32(stRpy.enStatus) << " at line " << __LINE__ << std::endl;
+    if (VisionStatus::OK == stRpy.enStatus) {
+        for (const auto &result : stRpy.vecResults) {
+            std::cout << "Component height " << result.fComponentHeight << " Solder height " << result.fSolderHeight
+                << ", area " << result.fSolderArea << ", ratio " << result.fSolderRatio << std::endl;
+        }
+    }
+}
+
+void TestInsp3DSolder_1() {
+    std::cout << std::endl << "--------------------------------------------";
+    std::cout << std::endl << "INSP 3D SOLDER REGRESSION TEST #1 STARTING";
+    std::cout << std::endl << "--------------------------------------------";
+    std::cout << std::endl;
+
+    const std::string strParentFolder = "./data/TestInsp3DSolder/";
+    PR_INSP_3D_SOLDER_CMD stCmd;
+    PR_INSP_3D_SOLDER_RPY stRpy;
+
+    stCmd.matHeight = readMatFromCsvFile(strParentFolder + "H3.csv");
+    stCmd.matColorImg = cv::imread(strParentFolder + "image3.bmp", cv::IMREAD_COLOR);
+
+    stCmd.rectDeviceROI = cv::Rect(1175, 575, 334, 179);
+    stCmd.vecRectCheckROIs.push_back(cv::Rect(1197, 605, 72, 122));
+    stCmd.vecRectCheckROIs.push_back(cv::Rect(1400, 605, 76, 122));
+
+    stCmd.nBaseColorDiff = 20;
+    stCmd.nBaseGrayDiff = 20;
+    
+    cv::Rect rectBase(400, 200, 200, 200);
+    cv::Mat matBaseRef(stCmd.matColorImg, rectBase);
+    stCmd.scalarBaseColor = cv::mean(matBaseRef);
+
+    PR_Insp3DSolder(&stCmd, &stRpy);
+    PrintInsp3DSolderResult(stRpy);
+}
+
 void Test3D() {
     TestCalib3dBase_1();
     TestCalib3DHeight_1();
@@ -609,6 +647,8 @@ void Test3D() {
     TestCalcFrameValue_3();
 
     TestCalc3DHeightDiff_1();
+
+    TestInsp3DSolder_1();
 }
 
 }

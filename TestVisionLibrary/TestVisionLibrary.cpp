@@ -643,7 +643,7 @@ int _tmain(int argc, _TCHAR* argv[])
     auto fFloorResult = std::floor(fTest);
 
     PR_Init();
-    PR_SetDebugMode(PR_DEBUG_MODE::DISABLED);
+    PR_SetDebugMode(PR_DEBUG_MODE::SHOW_IMAGE);
 
     //TestTemplate();
     //TestInspDevice();
@@ -710,7 +710,7 @@ int _tmain(int argc, _TCHAR* argv[])
     //TestCalc3DHeight_With_NormalCalibParam();
 
     //TestCalc3DHeight_With_IntegrateCalibParam();
-    TestMerge3DHeight();
+    //TestMerge3DHeight();
 
     //TestIntegrate3DCalibHaoYu();
 
@@ -767,6 +767,7 @@ int _tmain(int argc, _TCHAR* argv[])
     
     //TestOCV_1();
     //TestOCV_2();
+    TestOCV_3();
 
     //TestMatchTmpl_1();
 

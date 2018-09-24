@@ -74,6 +74,7 @@ void TestInsp3DSolder();
 
 void TestOCV_1();
 void TestOCV_2();
+void TestOCV_3();
 
 void TestMatchTmpl_1();
 

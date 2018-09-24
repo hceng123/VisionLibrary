@@ -242,6 +242,8 @@ protected:
     static bool _lineScanRow(const cv::Mat &matInput, int &n, int &startRow);
     static bool _lineScanMatrix(const cv::Mat &matInput, int &m, int &n, int &startRow, int &startCol);
     static cv::Mat _pickColor(const std::vector<int> &vecValue, const cv::Mat &matColor, int nColorDiff, int nGrayDiff, UInt32 &nPointCountOut);
+    static void _rotateOcvImage(PR_DIRECTION, cv::Mat &matInput);
+    static void _rotateOcvImageBack(PR_DIRECTION, cv::Mat &matInput);
 
 protected:
     static const int       _constMinHessian        = 300;

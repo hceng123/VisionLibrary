@@ -2498,6 +2498,7 @@ VisionStatus LogCaseLrnOcv::WriteCmd(const PR_LRN_OCV_CMD *const pstCmd) {
     ini.LoadFile(cmdRpyFilePath.c_str());
     ini.SetValue(_CMD_SECTION.c_str(), _strKeyROI.c_str(), _formatRect(pstCmd->rectROI).c_str());
     ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyCharCount.c_str(), pstCmd->nCharCount);
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyCharDirection.c_str(), ToInt32(pstCmd->enDirection));
     ini.SaveFile(cmdRpyFilePath.c_str());
 
     cv::imwrite(_strLogCasePath + _IMAGE_NAME, pstCmd->matInputImg);
@@ -2527,6 +2528,7 @@ VisionStatus LogCaseLrnOcv::RunLogCase() {
 
     stCmd.rectROI = _parseRect(ini.GetValue(_CMD_SECTION.c_str(), _strKeyROI.c_str(), _DEFAULT_RECT.c_str()));
     stCmd.nCharCount = ToInt16(ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyCharCount.c_str(), 0));
+    stCmd.enDirection = static_cast<PR_DIRECTION>(ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyCharDirection.c_str(), ToInt32(PR_DIRECTION::RIGHT)));
 
     VisionStatus enStatus = VisionStatus::OK;
     enStatus = VisionAlgorithm::lrnOcv(&stCmd, &stRpy, true);
@@ -2555,6 +2557,7 @@ VisionStatus LogCaseOcv::WriteCmd(const PR_OCV_CMD *const pstCmd) {
         ini.SetLongValue(_CMD_SECTION.c_str(), strKeyRecordId.c_str(), pstCmd->vecRecordId[i]);
     }
     ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyMinScore.c_str(), pstCmd->fMinMatchScore);
+    ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyCharDirection.c_str(), ToInt32(pstCmd->enDirection));
     ini.SaveFile(cmdRpyFilePath.c_str());
 
     cv::imwrite(_strLogCasePath + _IMAGE_NAME, pstCmd->matInputImg);
@@ -2590,6 +2593,7 @@ VisionStatus LogCaseOcv::RunLogCase() {
         stCmd.vecRecordId.push_back(recordId);
     }
     stCmd.fMinMatchScore = ToFloat(ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyMinScore.c_str(), 60));
+    stCmd.enDirection = static_cast<PR_DIRECTION>(ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyCharDirection.c_str(), ToInt32(PR_DIRECTION::RIGHT)));
 
     VisionStatus enStatus = VisionStatus::OK;
     enStatus = VisionAlgorithm::ocv(&stCmd, &stRpy, true);

@@ -22,14 +22,14 @@ void printfMat ( const cv::Mat &mat, int nPrecision = 1)
 template<class T>
 void printfVectorOfVector(const std::vector<std::vector<T>> &vevVecInput)
 {
-	for (const auto &vecInput : vevVecInput )
-	{
-		for (const auto value : vecInput )
-		{
-			printf("%.2f ", value);
-		}
-		printf("\n");
-	}
+    for (const auto &vecInput : vevVecInput )
+    {
+        for (const auto value : vecInput )
+        {
+            printf("%.2f ", value);
+        }
+        printf("\n");
+    }
 }
 
 namespace AOI
@@ -40,6 +40,8 @@ namespace Vision
 VectorOfFloat split ( const std::string &s, char delim );
 VectorOfVectorOfFloat parseData(const std::string &strContent);
 VectorOfVectorOfFloat readDataFromFile(const std::string &strFilePath);
+void copyVectorOfVectorToMat(const VectorOfVectorOfFloat &vecVecInput, cv::Mat &matOutput);
+cv::Mat readMatFromCsvFile(const std::string &strFilePath);
 
 template<class T>
 void printPRLine(const PR_Line_<T> &line) {

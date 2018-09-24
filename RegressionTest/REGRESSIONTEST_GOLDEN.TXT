@@ -259,6 +259,14 @@ PR_Ocv status 0
 Overall score: 87.06
 Individual char score: 90.54 86.26 91.15 89.57 
 
+---------------------------------------------
+OCV REGRESSION TEST #2 STARTING
+---------------------------------------------
+PR_LrnOcv status 0
+PR_Ocv status 0
+Overall score: 98.73
+Individual char score: 98.06 98.20 98.96 
+
 ------------------------------------------
 INSPECT DEVICE REGRESSION TEST #1 STARTING
 ------------------------------------------
@@ -1690,11 +1698,18 @@ PR_CalcFrameValue target [150.0, 180.0] result: 14.0
 PR_CalcFrameValue status 0
 PR_CalcFrameValue target [500.0, 180.0] result: 14.0
 
---------------------------------------------
-CALC 3D HEIGHT DIFF #1 STARTING
---------------------------------------------
+-----------------------------------------------
+CALC 3D HEIGHT DIFF REGRESSION TEST #1 STARTING
+-----------------------------------------------
 PR_Calc3DHeightDiff status 0
 Height Diff Result 0.0191
+
+--------------------------------------------
+INSP 3D SOLDER REGRESSION TEST #1 STARTING
+--------------------------------------------
+PR_Insp3DSolder status 0 at line 597
+Component height 0.4945 Solder height 0.2588, area 1303.0000, ratio 0.1483
+Component height 0.4724 Solder height 0.2033, area 1011.0000, ratio 0.1090
 
 ---------------------------------------------
 CALC CAMERA MTF REGRESSION TEST #1 STARTING
