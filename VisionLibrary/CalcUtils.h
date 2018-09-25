@@ -444,6 +444,7 @@ public:
     static void adjustRectROI(cv::Rect &rect, const cv::Mat &matInput);
     static cv::Rect boundingRect(const VectorOfRect &vecRect);
     static void setToExcept(cv::Mat &matInOut, int value, const cv::Rect &rectROI);
+    static bool isVerticalROI(const VectorOfRect &vecRectROIs);
 };
 
 }

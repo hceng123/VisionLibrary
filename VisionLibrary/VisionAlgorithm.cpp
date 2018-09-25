@@ -7034,7 +7034,6 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     Unwrap::insp3DSolder(pstCmd, matBaseMask, pstRpy);
 
     // Extract the base by color.
-    pstRpy->enStatus = VisionStatus::OK;
     FINISH_LOGCASE;
     MARK_FUNCTION_END_TIME;
     return pstRpy->enStatus;

@@ -71,6 +71,7 @@ void TestCalc4DLPHeight();
 void TestQueryDlpOffset();
 
 void TestInsp3DSolder();
+void TestInsp3DSolder_1();
 
 void TestOCV_1();
 void TestOCV_2();

@@ -643,7 +643,7 @@ int _tmain(int argc, _TCHAR* argv[])
     auto fFloorResult = std::floor(fTest);
 
     PR_Init();
-    PR_SetDebugMode(PR_DEBUG_MODE::SHOW_IMAGE);
+    PR_SetDebugMode(PR_DEBUG_MODE::LOG_ALL_CASE);
 
     //TestTemplate();
     //TestInspDevice();
@@ -750,6 +750,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
     //TestCalc4DLPHeight();
     //TestInsp3DSolder();
+    TestInsp3DSolder_1();
 
     //TestCalcFrameValue_1();
     
@@ -767,7 +768,7 @@ int _tmain(int argc, _TCHAR* argv[])
     
     //TestOCV_1();
     //TestOCV_2();
-    TestOCV_3();
+    //TestOCV_3();
 
     //TestMatchTmpl_1();
 

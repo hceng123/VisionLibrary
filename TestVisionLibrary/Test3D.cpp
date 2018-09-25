@@ -1338,6 +1338,50 @@ void TestInsp3DSolder() {
     }
 }
 
+static void rotateImage(cv::Mat &matInOut) {
+    cv::transpose(matInOut, matInOut);
+    cv::flip(matInOut, matInOut, 1); //transpose+flip(1)=CW
+}
+
+void TestInsp3DSolder_1() {
+    const std::string strParentFolder = "./data/TestInsp3DSolder/";
+    PR_INSP_3D_SOLDER_CMD stCmd;
+    PR_INSP_3D_SOLDER_RPY stRpy;
+
+    stCmd.matHeight = readMatFromCsvFile(strParentFolder + "H3_Rotated.csv");
+    stCmd.matColorImg = cv::imread(strParentFolder + "image3_rotated.png", cv::IMREAD_COLOR);
+
+    //rotateImage(stCmd.matHeight);
+    //rotateImage(stCmd.matColorImg);
+
+    //saveMatToCsv(stCmd.matHeight, strParentFolder + "H3_Rotated.csv");
+    //cv::imwrite(strParentFolder + "image3_rotated.png", stCmd.matColorImg);
+
+    stCmd.rectDeviceROI = cv::Rect(501, 1177, 191, 350);
+    stCmd.vecRectCheckROIs.push_back(cv::Rect(527, 1206, 138, 122));
+    stCmd.vecRectCheckROIs.push_back(cv::Rect(527, 1400, 138, 122));
+
+    stCmd.nBaseColorDiff = 20;
+    stCmd.nBaseGrayDiff = 20;
+    
+    cv::Rect rectBase(730, 180, 200, 200);
+    cv::Mat matBaseRef(stCmd.matColorImg, rectBase);
+    stCmd.scalarBaseColor = cv::mean(matBaseRef);
+
+    PR_Insp3DSolder(&stCmd, &stRpy);
+
+    std::cout << "PR_Insp3DSolder status " << ToInt32(stRpy.enStatus) << " at line " << __LINE__ << std::endl;
+    if (VisionStatus::OK == stRpy.enStatus) {
+        for (const auto &result : stRpy.vecResults) {
+            std::cout << "Component height " << result.fComponentHeight << " Solder height " << result.fSolderHeight
+                << ", area " << result.fSolderArea << ", ratio " << result.fSolderRatio << std::endl;
+        }
+        cv::imwrite(strParentFolder + "result.png", stRpy.matResultImg);
+        cv::Mat matDeviceROI(stRpy.matResultImg, stCmd.rectDeviceROI);
+        cv::imwrite(strParentFolder + "device.png", matDeviceROI);
+    }
+}
+
 int assignFrames(
         float                            left,
         float                            top,

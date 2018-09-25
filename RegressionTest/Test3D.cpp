@@ -599,7 +599,7 @@ static void PrintInsp3DSolderResult(const PR_INSP_3D_SOLDER_RPY &stRpy) {
         for (const auto &result : stRpy.vecResults) {
             std::cout << "Component height " << result.fComponentHeight << " Solder height " << result.fSolderHeight
                 << ", area " << result.fSolderArea << ", ratio " << result.fSolderRatio << std::endl;
-        }
+        }        
     }
 }
 
@@ -609,7 +609,7 @@ void TestInsp3DSolder_1() {
     std::cout << std::endl << "--------------------------------------------";
     std::cout << std::endl;
 
-    const std::string strParentFolder = "./data/TestInsp3DSolder/";
+    const std::string strParentFolder = "./data/TestInsp3DSolder_1/";
     PR_INSP_3D_SOLDER_CMD stCmd;
     PR_INSP_3D_SOLDER_RPY stRpy;
 
@@ -629,6 +629,69 @@ void TestInsp3DSolder_1() {
 
     PR_Insp3DSolder(&stCmd, &stRpy);
     PrintInsp3DSolderResult(stRpy);
+    cv::imwrite(strParentFolder + "result.png", stRpy.matResultImg);
+}
+
+void TestInsp3DSolder_2() {
+    std::cout << std::endl << "--------------------------------------------";
+    std::cout << std::endl << "INSP 3D SOLDER REGRESSION TEST #2 STARTING";
+    std::cout << std::endl << "--------------------------------------------";
+    std::cout << std::endl;
+
+    const std::string strParentFolder = "./data/TestInsp3DSolder_2/";
+    PR_INSP_3D_SOLDER_CMD stCmd;
+    PR_INSP_3D_SOLDER_RPY stRpy;
+
+    cv::FileStorage fs(strParentFolder + "Height.yml", cv::FileStorage::READ);
+    cv::FileNode fileNode = fs["Height"];
+    cv::read(fileNode, stCmd.matHeight, cv::Mat());
+    fs.release();
+
+    stCmd.matColorImg = cv::imread(strParentFolder + "image.png", cv::IMREAD_COLOR);
+
+    stCmd.rectDeviceROI = cv::Rect(0, 0, 143, 73);
+    stCmd.vecRectCheckROIs.push_back(cv::Rect(9, 15, 45, 47));
+    stCmd.vecRectCheckROIs.push_back(cv::Rect(94, 14, 35, 47));
+
+    stCmd.nBaseColorDiff = 20;
+    stCmd.nBaseGrayDiff = 20;
+    
+    stCmd.scalarBaseColor = cv::Scalar(37, 22, 5);
+
+    PR_Insp3DSolder(&stCmd, &stRpy);
+    PrintInsp3DSolderResult(stRpy);
+    cv::imwrite(strParentFolder + "result.png", stRpy.matResultImg);
+}
+
+void TestInsp3DSolder_3() {
+    std::cout << std::endl << "--------------------------------------------";
+    std::cout << std::endl << "INSP 3D SOLDER REGRESSION TEST #3 STARTING";
+    std::cout << std::endl << "--------------------------------------------";
+    std::cout << std::endl;
+
+    const std::string strParentFolder = "./data/TestInsp3DSolder_3/";
+    PR_INSP_3D_SOLDER_CMD stCmd;
+    PR_INSP_3D_SOLDER_RPY stRpy;
+
+    cv::FileStorage fs(strParentFolder + "Height.yml", cv::FileStorage::READ);
+    cv::FileNode fileNode = fs["Height"];
+    cv::read(fileNode, stCmd.matHeight, cv::Mat());
+    fs.release();
+
+    stCmd.matColorImg = cv::imread(strParentFolder + "image.png", cv::IMREAD_COLOR);
+
+    stCmd.rectDeviceROI = cv::Rect(0, 0, 191, 350);
+    stCmd.vecRectCheckROIs.push_back(cv::Rect(26, 29, 138, 122));
+    stCmd.vecRectCheckROIs.push_back(cv::Rect(26, 223, 138, 122));
+
+    stCmd.nBaseColorDiff = 20;
+    stCmd.nBaseGrayDiff = 20;
+    
+    stCmd.scalarBaseColor = cv::Scalar(42, 25, 7);
+
+    PR_Insp3DSolder(&stCmd, &stRpy);
+    PrintInsp3DSolderResult(stRpy);
+    cv::imwrite(strParentFolder + "result.png", stRpy.matResultImg);
 }
 
 void Test3D() {
@@ -648,7 +711,10 @@ void Test3D() {
 
     TestCalc3DHeightDiff_1();
 
+    PR_EnableAutoMode(false);
     TestInsp3DSolder_1();
+    TestInsp3DSolder_2();
+    TestInsp3DSolder_3();
 }
 
 }
