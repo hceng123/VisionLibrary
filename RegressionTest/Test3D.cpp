@@ -599,7 +599,7 @@ static void PrintInsp3DSolderResult(const PR_INSP_3D_SOLDER_RPY &stRpy) {
         for (const auto &result : stRpy.vecResults) {
             std::cout << "Component height " << result.fComponentHeight << " Solder height " << result.fSolderHeight
                 << ", area " << result.fSolderArea << ", ratio " << result.fSolderRatio << std::endl;
-        }        
+        }
     }
 }
 

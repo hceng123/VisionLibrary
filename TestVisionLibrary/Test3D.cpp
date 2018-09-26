@@ -1343,6 +1343,16 @@ static void rotateImage(cv::Mat &matInOut) {
     cv::flip(matInOut, matInOut, 1); //transpose+flip(1)=CW
 }
 
+static void PrintInsp3DSolderResult(const PR_INSP_3D_SOLDER_RPY &stRpy) {
+    std::cout << "PR_Insp3DSolder status " << ToInt32(stRpy.enStatus) << " at line " << __LINE__ << std::endl;
+    if (VisionStatus::OK == stRpy.enStatus) {
+        for (const auto &result : stRpy.vecResults) {
+            std::cout << "Component height " << result.fComponentHeight << " Solder height " << result.fSolderHeight
+                << ", area " << result.fSolderArea << ", ratio " << result.fSolderRatio << std::endl;
+        }
+    }
+}
+
 void TestInsp3DSolder_1() {
     const std::string strParentFolder = "./data/TestInsp3DSolder/";
     PR_INSP_3D_SOLDER_CMD stCmd;
@@ -1380,6 +1390,37 @@ void TestInsp3DSolder_1() {
         cv::Mat matDeviceROI(stRpy.matResultImg, stCmd.rectDeviceROI);
         cv::imwrite(strParentFolder + "device.png", matDeviceROI);
     }
+}
+
+void TestInsp3DSolder_2() {
+    std::cout << std::endl << "--------------------------------------------";
+    std::cout << std::endl << "INSP 3D SOLDER REGRESSION TEST #2 STARTING";
+    std::cout << std::endl << "--------------------------------------------";
+    std::cout << std::endl;
+
+    const std::string strParentFolder = "./data/TestInsp3DSolder_2/";
+    PR_INSP_3D_SOLDER_CMD stCmd;
+    PR_INSP_3D_SOLDER_RPY stRpy;
+
+    cv::FileStorage fs(strParentFolder + "Height.yml", cv::FileStorage::READ);
+    cv::FileNode fileNode = fs["Height"];
+    cv::read(fileNode, stCmd.matHeight, cv::Mat());
+    fs.release();
+
+    stCmd.matColorImg = cv::imread(strParentFolder + "image.png", cv::IMREAD_COLOR);
+
+    stCmd.rectDeviceROI = cv::Rect(0, 0, 143, 73);
+    stCmd.vecRectCheckROIs.push_back(cv::Rect(9, 15, 45, 47));
+    stCmd.vecRectCheckROIs.push_back(cv::Rect(94, 14, 35, 47));
+
+    stCmd.nBaseColorDiff = 20;
+    stCmd.nBaseGrayDiff = 20;
+    
+    stCmd.scalarBaseColor = cv::Scalar(37, 22, 5);
+
+    PR_Insp3DSolder(&stCmd, &stRpy);
+    PrintInsp3DSolderResult(stRpy);
+    cv::imwrite(strParentFolder + "result.png", stRpy.matResultImg);
 }
 
 int assignFrames(

@@ -1226,6 +1226,8 @@ struct PR_CALC_3D_HEIGHT_CMD {
     PR_CALC_3D_HEIGHT_CMD() :
         bEnableGaussianFilter(true),
         bReverseSeq(true),
+        enProjectDir(PR_DIRECTION::LEFT),
+        enScanDir(PR_DIRECTION::DOWN),
         bUseThinnestPattern(false),
         fRemoveHarmonicWaveK(0.f),
         fMinAmplitude(5.f),
