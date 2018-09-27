@@ -2813,7 +2813,7 @@ VisionStatus LogCaseCalc3DHeightDiff::RunLogCase() {
         stCmd.vecRectBases.push_back(rectBaseROI);
     }
     stCmd.fEffectHRatioStart = ToFloat(ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyHRatioStart.c_str(), 0.3));
-    stCmd.fEffectHRatioEnd = ToFloat(ini.SetDoubleValue(_CMD_SECTION.c_str(), _strKeyHRatioEnd.c_str(), 0.7));
+    stCmd.fEffectHRatioEnd = ToFloat(ini.GetDoubleValue(_CMD_SECTION.c_str(), _strKeyHRatioEnd.c_str(), 0.7));
 
     cv::FileStorage fs(_strLogCasePath + _strHeightFileName, cv::FileStorage::READ);
     cv::FileNode fileNode = fs["Height"];

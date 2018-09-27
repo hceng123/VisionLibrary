@@ -7901,6 +7901,10 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     else
         matGray = matROI;
 
+    _rotateOcvImage(pstCmd->enDirection, matGray);
+    if (ConfigInstance->getDebugMode() == Vision::PR_DEBUG_MODE::SHOW_IMAGE)
+        showImage("Rotated search image", matGray);
+
     VectorOfPoint2f vecResultPos;
     VectorOfFloat vecCorrelation;
     std::vector<OcvRecordPtr> vecRecordPtr;
@@ -7916,11 +7920,6 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
 
         if (ConfigInstance->getDebugMode() == Vision::PR_DEBUG_MODE::SHOW_IMAGE)
             showImage("Ocv template", ptrOcvRecord->getBigTmpl());
-
-        _rotateOcvImage(pstCmd->enDirection, matGray);
-
-        if (ConfigInstance->getDebugMode() == Vision::PR_DEBUG_MODE::SHOW_IMAGE)
-            showImage("Rotated search image", matGray);
 
         if (ptrOcvRecord->getBigTmpl().cols > matGray.cols || ptrOcvRecord->getBigTmpl().rows > matGray.rows) {
             char chArrMsg[100];
@@ -7941,7 +7940,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     }
 
     cv::Mat matDrawResult;
-    if (!isAutoMode())        
+    if (!isAutoMode())
         cv::cvtColor(matGray, matDrawResult, CV_GRAY2BGR);
 
     auto iterMaxScore = std::max_element(vecCorrelation.begin(), vecCorrelation.end());
