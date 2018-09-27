@@ -7034,7 +7034,6 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     Unwrap::insp3DSolder(pstCmd, matBaseMask, pstRpy);
 
     // Extract the base by color.
-    pstRpy->enStatus = VisionStatus::OK;
     FINISH_LOGCASE;
     MARK_FUNCTION_END_TIME;
     return pstRpy->enStatus;
@@ -7625,7 +7624,12 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
         matGray = matROI;
 
     if (ConfigInstance->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE)
-        showImage("Learn ROI image", matGray);
+        showImage("Original learn ROI image", matGray);
+
+    _rotateOcvImage(pstCmd->enDirection, matGray);
+
+    if (ConfigInstance->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE)
+        showImage("Rotated learn ROI image", matGray);
 
     std::vector<int> vecIndex1, vecIndex2;
     pstRpy->enStatus = _imageSplitByMaxNew(matGray, pstCmd->nCharCount, vecIndex1, vecIndex2);
@@ -7666,11 +7670,16 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     auto ptrOcvRecord = std::make_shared<OcvRecord>(matGray, vecCharRects);
     RecordManagerInstance->add(ptrOcvRecord, pstRpy->nRecordId);
 
-    pstRpy->matResultImg = pstCmd->matInputImg.clone();
-    for (auto rectChar : vecCharRects) {
-        rectChar.x += pstCmd->rectROI.x;
-        rectChar.y += pstCmd->rectROI.y;
-        cv::rectangle(pstRpy->matResultImg, rectChar, GREEN_SCALAR, 1);
+    if (!isAutoMode()) {
+        cv::Mat matDrawResult;
+        cv::cvtColor(matGray, matDrawResult, CV_GRAY2BGR);
+        for (auto rectChar : vecCharRects)
+            cv::rectangle(matDrawResult, rectChar, GREEN_SCALAR, 1);
+
+        _rotateOcvImageBack(pstCmd->enDirection, matDrawResult);
+        pstRpy->matResultImg = pstCmd->matInputImg.clone();
+        cv::Mat matResultROI(pstRpy->matResultImg, pstCmd->rectROI);
+        matDrawResult.copyTo(matResultROI);
     }
 
     FINISH_LOGCASE;
@@ -7892,6 +7901,10 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     else
         matGray = matROI;
 
+    _rotateOcvImage(pstCmd->enDirection, matGray);
+    if (ConfigInstance->getDebugMode() == Vision::PR_DEBUG_MODE::SHOW_IMAGE)
+        showImage("Rotated search image", matGray);
+
     VectorOfPoint2f vecResultPos;
     VectorOfFloat vecCorrelation;
     std::vector<OcvRecordPtr> vecRecordPtr;
@@ -7926,10 +7939,9 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
         vecRecordPtr.push_back(ptrOcvRecord);
     }
 
-    if (!isAutoMode()) {
-        pstRpy->matResultImg = pstCmd->matInputImg.clone();
-        cv::rectangle(pstRpy->matResultImg, pstCmd->rectROI, BLUE_SCALAR, 2);
-    }
+    cv::Mat matDrawResult;
+    if (!isAutoMode())
+        cv::cvtColor(matGray, matDrawResult, CV_GRAY2BGR);
 
     auto iterMaxScore = std::max_element(vecCorrelation.begin(), vecCorrelation.end());
     pstRpy->fOverallScore = *iterMaxScore * ConstToPercentage;
@@ -7961,10 +7973,12 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
         float fRotation = 0.f, fCorrelation = 0.f;
         MatchTmpl::matchTemplate(matCharSrch, matCharTmpl, false, PR_OBJECT_MOTION::TRANSLATION, ptPosition, fRotation, fCorrelation);
         if (!isAutoMode()) {
+            cv::rectangle(matDrawResult, rectTarget, BLUE_SCALAR, 1);
+
             cv::Rect rectChar(ToInt32(ptPosition.x) - matCharTmpl.cols / 2, ToInt32(ptPosition.y) - matCharTmpl.rows / 2, matCharTmpl.cols, matCharTmpl.rows);
-            rectChar.x += rectCharSrchWindow.x + rectTarget.x + pstCmd->rectROI.x;
-            rectChar.y += rectCharSrchWindow.y + rectTarget.y + pstCmd->rectROI.y;
-            cv::rectangle(pstRpy->matResultImg, rectChar, GREEN_SCALAR, 1);
+            rectChar.x += rectCharSrchWindow.x + rectTarget.x;
+            rectChar.y += rectCharSrchWindow.y + rectTarget.y;
+            cv::rectangle(matDrawResult, rectChar, GREEN_SCALAR, 1);
 
             int fontFace = cv::FONT_HERSHEY_SIMPLEX;
             double fontScale = 0.5;
@@ -7976,7 +7990,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
             cv::Size textSize = cv::getTextSize(strCharScore, fontFace, fontScale, thickness, &baseline);
             //The height use '+' because text origin start from left-bottom.
             cv::Point ptTextOrg(rectChar.x + (rectChar.width - textSize.width) / 2, rectChar.y - 5);
-            cv::putText(pstRpy->matResultImg, strCharScore, ptTextOrg, fontFace, fontScale, CYAN_SCALAR, thickness);
+            cv::putText(matDrawResult, strCharScore, ptTextOrg, fontFace, fontScale, CYAN_SCALAR, thickness);
         }
         pstRpy->vecCharScore.push_back(fCorrelation * ConstToPercentage);
         if (fCorrelation * ConstToPercentage < pstCmd->fMinMatchScore) {
@@ -7988,14 +8002,56 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     }
 
     if (!isAutoMode()) {
-        rectTarget.x += pstCmd->rectROI.x;
-        rectTarget.y += pstCmd->rectROI.y;
-        cv::rectangle(pstRpy->matResultImg, rectTarget, BLUE_SCALAR, 1);
+        _rotateOcvImageBack(pstCmd->enDirection, matDrawResult);
+        pstRpy->matResultImg = pstCmd->matInputImg.clone();
+        cv::rectangle(pstRpy->matResultImg, pstCmd->rectROI, BLUE_SCALAR, 2);
+        cv::Mat matResultROI(pstRpy->matResultImg, pstCmd->rectROI);
+        matDrawResult.copyTo(matResultROI);
     }
 
     FINISH_LOGCASE;
     MARK_FUNCTION_END_TIME;
     return pstRpy->enStatus;
+}
+
+// If the input image direction is not from left to right, then rotate it to left to right.
+/*static*/ void VisionAlgorithm::_rotateOcvImage(PR_DIRECTION enDirection, cv::Mat &matInOut) {
+    switch (enDirection)
+    {
+    case PR_DIRECTION::LEFT:
+        cv::flip(matInOut, matInOut, -1); //flip(-1)=180
+        break;
+    case PR_DIRECTION::UP:
+        cv::transpose(matInOut, matInOut);
+        cv::flip(matInOut, matInOut, 1); //transpose+flip(1)=CW
+        break;
+    case PR_DIRECTION::DOWN:
+        cv::transpose(matInOut, matInOut);
+        cv::flip(matInOut, matInOut, 0); //transpose+flip(0)=CCW
+        break;
+    default:
+        break;
+    }
+}
+
+// The input image is from left to right, rotate it to given direction
+/*static*/ void VisionAlgorithm::_rotateOcvImageBack(PR_DIRECTION enDirection, cv::Mat &matInOut) {
+    switch (enDirection)
+    {
+    case PR_DIRECTION::LEFT:
+        cv::flip(matInOut, matInOut, -1);    //flip(-1)=180
+        break;
+    case PR_DIRECTION::DOWN:
+        cv::transpose(matInOut, matInOut);
+        cv::flip(matInOut, matInOut, 1); //transpose+flip(1)=CW
+        break;
+    case PR_DIRECTION::UP:
+        cv::transpose(matInOut, matInOut);
+        cv::flip(matInOut, matInOut, 0); //transpose+flip(0)=CCW
+        break;
+    default:
+        break;
+    }
 }
 
 /*static*/ VisionStatus VisionAlgorithm::read2DCode(const PR_READ_2DCODE_CMD *const pstCmd, PR_READ_2DCODE_RPY *const pstRpy, bool bReplay /*= false*/) {

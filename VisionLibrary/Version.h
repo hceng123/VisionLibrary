@@ -14,9 +14,12 @@
  * Copyright (c) 2016-2018, Xiao Shengguang.  All rights reserved.
  ****************************************************************************/
 
+//2018-09-24 (XSG) Support rotated OCV inspection.
+#define AOI_VISION_VERSION          "1.00.46"
+
 //2018-09-22 (XSG) Fix PR_Calc3DHeightDiff not correct problem, and improve the speed.
 //                 Add LogCaseCalc3DHeightDiff.
-#define AOI_VISION_VERSION          "1.00.45"
+//#define AOI_VISION_VERSION          "1.00.45"
 
 //2018-09-12 (XSG) Add PR_Insp3DSolder function.
 //#define AOI_VISION_VERSION          "1.00.44"

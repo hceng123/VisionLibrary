@@ -5,6 +5,7 @@
 #include "VisionAlgorithm.h"
 #include "TimeLog.h"
 #include "Log.h"
+#include "Config.h"
 #include <iostream>
 #include <numeric>
 #include <limits>
@@ -2841,17 +2842,35 @@ void removeBlob(cv::Mat &matThreshold, cv::Mat &matBlob, float fAreaLimit) {
     float k3 = matK.at<float>(2);
 
     matHeightROI = matHeightROI - (matX * k1 + matY * k2 + k3);
-    const float COVERAGE = 0.75f;
-    for (const auto &rectCheckROI : pstCmd->vecRectCheckROIs) {
-        auto rectCheckROIOffset = rectCheckROI;
-        rectCheckROIOffset.x -= pstCmd->rectDeviceROI.x;
-        rectCheckROIOffset.y -= pstCmd->rectDeviceROI.y;
 
-        cv::Mat matCheckROI(matHeightROI, rectCheckROIOffset), matHighMask, matMidMask, matLowMask;
+    bool bIsVertialROI = CalcUtils::isVerticalROI(pstCmd->vecRectCheckROIs);
+    auto vecRectCheckROIs = pstCmd->vecRectCheckROIs;
+    for (auto &rectCheckROI : vecRectCheckROIs) {
+        rectCheckROI.x -= pstCmd->rectDeviceROI.x;
+        rectCheckROI.y -= pstCmd->rectDeviceROI.y;
+    }
+
+    if (bIsVertialROI) {
+        cv::transpose(matHeightROI, matHeightROI);
+        cv::flip(matHeightROI, matHeightROI, 1); //transpose+flip(1)=CW
+        for (auto &rectCheckROI : vecRectCheckROIs)
+            rectCheckROI = cv::Rect(rectCheckROI.y, rectCheckROI.x, rectCheckROI.height, rectCheckROI.width);
+    }
+
+    const float COVERAGE = 0.75f;
+    for (const auto &rectCheckROI : vecRectCheckROIs) {
+        cv::Mat matCheckROI(matHeightROI, rectCheckROI), matHighMask, matMidMask, matLowMask, matBW;
         auto matCheckROIClone = matCheckROI.clone();
         VectorOfFloat vecThreshold;
         int nTopY = 0, nBtmY = 0;
-        cv::Mat matSolderMask = _extractSolder(matCheckROIClone, COVERAGE, vecThreshold, matHighMask, matMidMask, matLowMask, nTopY, nBtmY);
+        bool bResult = _extractSolder(matCheckROIClone, COVERAGE, vecThreshold, matHighMask, matMidMask, matLowMask, matBW, nTopY, nBtmY);
+        if (!bResult)
+            continue;
+        if (ConfigInstance->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE) {
+            VisionAlgorithm::showImage("High Mask", matHighMask);
+            VisionAlgorithm::showImage("Mid Mask",  matMidMask);
+            VisionAlgorithm::showImage("Low Mask",  matLowMask);
+        }
 
         VectorOfPoint vecHighPoints;
         cv::findNonZero(matHighMask, vecHighPoints);
@@ -2884,22 +2903,29 @@ void removeBlob(cv::Mat &matThreshold, cv::Mat &matBlob, float fAreaLimit) {
         pstRpy->vecResults.push_back(result);
 
         if (!pstRpy->matResultImg.empty()) {
-            cv::Mat matResultROI(pstRpy->matResultImg, rectCheckROI);
+            cv::Mat matDrawROI(pstRpy->matResultImg, pstCmd->rectDeviceROI);
+            cv::Mat matDrawROIClone = matDrawROI.clone();
+            if (bIsVertialROI) {
+                cv::transpose(matDrawROIClone, matDrawROIClone);
+                cv::flip(matDrawROIClone, matDrawROIClone, 1); //transpose+flip(1)=CW
+            }
+            cv::Mat matResultROI(matDrawROIClone, rectCheckROI);
             matResultROI.setTo(VisionAlgorithm::YELLOW_SCALAR, matHighMask);
             matResultROI.setTo(VisionAlgorithm::BLUE_SCALAR, matMidMask);
             matResultROI.setTo(VisionAlgorithm::RED_SCALAR, matLowMask);
             rectCalc.x += rectCheckROI.x;
             rectCalc.y += rectCheckROI.y;
-            cv::rectangle(pstRpy->matResultImg, rectCalc, VisionAlgorithm::GREEN_SCALAR, 1);
-            //cv::line(pstRpy->matResultImg, cv::Point(nSolderStart + rectCheckROI.x, rectCheckROI.y), cv::Point(nSolderStart + rectCheckROI.x, rectCheckROI.y + rectCheckROI.height),
-            //    VisionAlgorithm::GREEN_SCALAR, 1);
-            //cv::line(pstRpy->matResultImg, cv::Point(nSolderEnd + rectCheckROI.x, rectCheckROI.y), cv::Point(nSolderEnd + rectCheckROI.x, rectCheckROI.y + rectCheckROI.height),
-            //    VisionAlgorithm::GREEN_SCALAR, 1);
+            cv::rectangle(matDrawROIClone, rectCalc, VisionAlgorithm::GREEN_SCALAR, 1);
+            if (bIsVertialROI) {
+                cv::transpose(matDrawROIClone, matDrawROIClone);
+                cv::flip(matDrawROIClone, matDrawROIClone, 0); //transpose+flip(0)=CCW
+            }
+            matDrawROIClone.copyTo(matDrawROI);
         }
     }
 }
 
-/*static*/ cv::Mat Unwrap::_extractSolder(const cv::Mat &matCheckROI, float fCoverage, VectorOfFloat &vecThreshold, cv::Mat &matHighMask, cv::Mat &matMidMask, cv::Mat &matLowMask, int &nTopY, int &nBtmY) {
+/*static*/ bool Unwrap::_extractSolder(const cv::Mat &matCheckROI, float fCoverage, VectorOfFloat &vecThreshold, cv::Mat &matHighMask, cv::Mat &matMidMask, cv::Mat &matLowMask, cv::Mat &matBW, int &nTopY, int &nBtmY) {
     cv::Mat matCheckOneRow = matCheckROI.clone();
     matCheckOneRow = matCheckOneRow.reshape(1, 1);
     cv::sort(matCheckOneRow, matCheckOneRow, cv::SortFlags::SORT_ASCENDING + cv::SortFlags::SORT_EVERY_ROW);
@@ -2950,25 +2976,39 @@ void removeBlob(cv::Mat &matThreshold, cv::Mat &matBlob, float fAreaLimit) {
         ++ N;
     }while(fabs(fOverRatio - fCoverage) > 0.001f && N < 20);
 
-    int index1 = 0, index2 = 0;
+    std::deque<int> vecIndex1, vecIndex2;
     for (int col = 0; col < matDiffFilter.cols - 1; ++ col) {
         auto value1 = matDiffFilter.at<DATA_TYPE>(col);
         auto value2 = matDiffFilter.at<DATA_TYPE>(col + 1);
-        if (0 == index1 && value1 <= mH && value2 > mH)
-            index1 = col;
-        if (0 == index2 && value1 >= mH && value2 < mH)
-            index2 = col;
+        if (value1 <= mH && value2 > mH)
+            vecIndex1.push_back(col);
+        if (value1 >= mH && value2 < mH)
+            vecIndex2.push_back(col);
+    }
+    if (matDiffFilter.at<DATA_TYPE>(0) > mH)
+        vecIndex1.push_front(0);
+    if (matDiffFilter.at<DATA_TYPE>(matDiffFilter.cols - 1) > mH)
+        vecIndex2.push_back(matDiffFilter.cols - 1);
 
-        if (0 != index1 && 0 != index2)
-            break;
+    if (vecIndex1.empty() || vecIndex2.empty()) {
+        WriteLog("Cannot find solder move up points.");
+        return false;
     }
 
-    auto thres1 = matFetch.at<DATA_TYPE>(index1);
-    auto thres2 = matFetch.at<DATA_TYPE>(index2);
+    int size = ToInt32(std::min(vecIndex1.size(), vecIndex2.size()));
+    int nMaxGap = std::numeric_limits<int>::min();
+    int nFindIndex = 0;
+    for (int i = 0; i < size; ++ i) {
+        if (vecIndex2[i] - vecIndex1[i] > nMaxGap)
+            nFindIndex = i;
+    }
+
+    auto thres1 = matFetch.at<DATA_TYPE>(vecIndex1[nFindIndex]);
+    auto thres2 = matFetch.at<DATA_TYPE>(vecIndex2[nFindIndex]);
 
     vecThreshold = VectorOfFloat{thres1, thres2};
 
-    cv::Mat matBW = cv::Mat::zeros(matCheckROI.size(), CV_8UC1);
+    matBW = cv::Mat::zeros(matCheckROI.size(), CV_8UC1);
     matHighMask = matCheckROI >= thres2;
     matMidMask = matCheckROI >= thres1 & matCheckROI < thres2;
     matLowMask = matCheckROI < thres1;
@@ -3004,7 +3044,7 @@ void removeBlob(cv::Mat &matThreshold, cv::Mat &matBlob, float fAreaLimit) {
     matBW.setTo(2, matMidMask);
     matBW.setTo(1, matLowMask);
 
-    return matBW;
+    return true;
 }
 
 /*static*/ float Unwrap::_calcSolderHeightXSG(const cv::Mat &matCheckROI, const cv::Mat &matMidMask) {
@@ -3065,7 +3105,7 @@ void removeBlob(cv::Mat &matThreshold, cv::Mat &matBlob, float fAreaLimit) {
     float startCount = 0, endCount = 0;
     for (int col = 0; col < matMidMaskOneRow.cols; ++col) {
         auto value = matMidMaskOneRow.at<DATA_TYPE>(col);
-        if (value > matMidMask.rows / 2) {
+        if (value > matMidMask.rows / 6) {
             nSolderEnd = col;
             endCount = value;
             if (nSolderStart == 0) {

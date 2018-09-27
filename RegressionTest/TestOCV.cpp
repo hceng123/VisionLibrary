@@ -47,9 +47,39 @@ void TestOCV_1()
     PrintOcvRpy(stOcvRpy);
 }
 
+void TestOCV_2()
+{
+    std::cout << std::endl << "---------------------------------------------";
+    std::cout << std::endl << "OCV REGRESSION TEST #2 STARTING";
+    std::cout << std::endl << "---------------------------------------------";
+    std::cout << std::endl;
+
+    PR_LRN_OCV_CMD stLrnCmd;
+    PR_LRN_OCV_RPY stLrnRpy;
+    stLrnCmd.matInputImg = cv::imread("./data/TestOCV_2.png");
+    stLrnCmd.rectROI = cv::Rect(148, 206, 89, 152);
+    stLrnCmd.enDirection = PR_DIRECTION::UP;
+    stLrnCmd.nCharCount = 3;
+
+    PR_LrnOcv(&stLrnCmd, &stLrnRpy);
+    std::cout << "PR_LrnOcv status " << ToInt32(stLrnRpy.enStatus) << std::endl;
+    if (stLrnRpy.enStatus != VisionStatus::OK)
+        return;
+
+    PR_OCV_CMD stOcvCmd;
+    PR_OCV_RPY stOcvRpy;
+    stOcvCmd.matInputImg = cv::imread("./data/TestOCV_2.png");
+    stOcvCmd.rectROI = cv::Rect(141, 903, 120, 296);
+    stOcvCmd.enDirection = PR_DIRECTION::UP;
+    stOcvCmd.vecRecordId.push_back(stLrnRpy.nRecordId);
+    PR_Ocv(&stOcvCmd, &stOcvRpy);
+    PrintOcvRpy(stOcvRpy);
+}
+
 void TestOCV()
 {
     TestOCV_1();
+    TestOCV_2();
 }
 
 }

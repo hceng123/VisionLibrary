@@ -47,5 +47,20 @@ VectorOfVectorOfFloat readDataFromFile(const std::string &strFilePath) {
     return parseData ( strContent );
 }
 
+void copyVectorOfVectorToMat(const VectorOfVectorOfFloat &vecVecInput, cv::Mat &matOutput) {
+    matOutput = cv::Mat ( ToInt32 ( vecVecInput.size() ), ToInt32 ( vecVecInput[0].size() ), CV_32FC1 );
+    for ( int row = 0; row < matOutput.rows; ++ row )
+    for ( int col = 0; col < matOutput.cols; ++ col ) {
+        matOutput.at<float>(row, col) = vecVecInput[row][col];
+    }
+}
+
+cv::Mat readMatFromCsvFile(const std::string &strFilePath) {
+    auto vecVecData = readDataFromFile(strFilePath);
+    cv::Mat matOutput;
+    copyVectorOfVectorToMat(vecVecData, matOutput);
+    return matOutput;
+}
+
 }
 }

@@ -1226,6 +1226,8 @@ struct PR_CALC_3D_HEIGHT_CMD {
     PR_CALC_3D_HEIGHT_CMD() :
         bEnableGaussianFilter(true),
         bReverseSeq(true),
+        enProjectDir(PR_DIRECTION::LEFT),
+        enScanDir(PR_DIRECTION::DOWN),
         bUseThinnestPattern(false),
         fRemoveHarmonicWaveK(0.f),
         fMinAmplitude(5.f),
@@ -1471,8 +1473,11 @@ struct PR_HEIGHT_TO_GRAY_RPY {
 };
 
 struct PR_LRN_OCV_CMD {
+    PR_LRN_OCV_CMD() :
+        enDirection (PR_DIRECTION::RIGHT) {}
     cv::Mat                 matInputImg;
     cv::Rect                rectROI;
+    PR_DIRECTION            enDirection;
     UInt16                  nCharCount;
 };
 
@@ -1484,9 +1489,11 @@ struct PR_LRN_OCV_RPY {
 
 struct PR_OCV_CMD {
     PR_OCV_CMD() :
+        enDirection     (PR_DIRECTION::RIGHT),
         fMinMatchScore  (60) {}
     cv::Mat                 matInputImg;
     cv::Rect                rectROI;
+    PR_DIRECTION            enDirection;
     std::vector<Int32>      vecRecordId;
     float                   fMinMatchScore;
 };

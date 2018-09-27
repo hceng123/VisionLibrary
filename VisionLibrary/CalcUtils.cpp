@@ -375,5 +375,15 @@ float CalcUtils::calcPointToContourDist(const cv::Point &ptInput, const VectorOf
     matInOut.setTo(value, matMask);
 }
 
+/*static*/ bool CalcUtils::isVerticalROI(const VectorOfRect &vecRectROIs) {
+    if (vecRectROIs.size() != 2)
+        return false;
+    cv::Point ptCenter1(vecRectROIs[0].x + vecRectROIs[0].width / 2, vecRectROIs[0].y + vecRectROIs[0].height / 2);
+    cv::Point ptCenter2(vecRectROIs[1].x + vecRectROIs[1].width / 2, vecRectROIs[1].y + vecRectROIs[1].height / 2);
+    if (abs(ptCenter1.y - ptCenter2.y) > abs(ptCenter1.x - ptCenter2.x))
+        return true;
+    return false;
+}
+
 }
 }

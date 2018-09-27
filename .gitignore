@@ -53,3 +53,4 @@ RegressionTest/Data/HaoYu_20170920
 *.db
 Install/VisionLibrary*
 RegressionTest/Data/DLPImage_ReverseSeqCheck*
+result.png
