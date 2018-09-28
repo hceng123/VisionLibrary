@@ -2794,7 +2794,7 @@ void removeBlob(cv::Mat &matThreshold, cv::Mat &matBlob, float fAreaLimit) {
 }
 
 /*static*/ void Unwrap::insp3DSolder(const PR_INSP_3D_SOLDER_CMD *pstCmd, const cv::Mat &matBaseMask, PR_INSP_3D_SOLDER_RPY *const pstRpy) {
-    cv::Mat matHeightROI(pstCmd->matHeight, pstCmd->rectDeviceROI);
+    cv::Mat matHeightROI = cv::Mat(pstCmd->matHeight, pstCmd->rectDeviceROI).clone();
 
     AOI::Vision::VectorOfPoint vecPtLocations;
     cv::findNonZero(matBaseMask, vecPtLocations);

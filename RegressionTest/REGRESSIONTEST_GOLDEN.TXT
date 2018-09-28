@@ -1703,27 +1703,31 @@ CALC 3D HEIGHT DIFF REGRESSION TEST #1 STARTING
 -----------------------------------------------
 PR_Calc3DHeightDiff status 0
 Height Diff Result 0.0191
+The difference between original data and after function run data: 0.0000
 
 --------------------------------------------
 INSP 3D SOLDER REGRESSION TEST #1 STARTING
 --------------------------------------------
-PR_Insp3DSolder status 0 at line 597
+PR_Insp3DSolder status 0
 Component height 0.4945 Solder height 0.3023, area 1303.0000, ratio 0.1483
 Component height 0.4724 Solder height 0.2033, area 1011.0000, ratio 0.1090
+The difference between original data and after function run data: 0.0000
 
 --------------------------------------------
 INSP 3D SOLDER REGRESSION TEST #2 STARTING
 --------------------------------------------
-PR_Insp3DSolder status 0 at line 597
+PR_Insp3DSolder status 0
 Component height 0.4927 Solder height 0.3060, area 287.0000, ratio 0.1357
 Component height 0.4875 Solder height 0.3567, area 202.0000, ratio 0.1228
+The difference between original data and after function run data: 0.0000
 
 --------------------------------------------
 INSP 3D SOLDER REGRESSION TEST #3 STARTING
 --------------------------------------------
-PR_Insp3DSolder status 0 at line 597
+PR_Insp3DSolder status 0
 Component height 0.5370 Solder height 0.1648, area 1295.0000, ratio 0.0769
 Component height 0.5429 Solder height 0.3645, area 1314.0000, ratio 0.0780
+The difference between original data and after function run data: 0.0000
 
 ---------------------------------------------
 CALC CAMERA MTF REGRESSION TEST #1 STARTING

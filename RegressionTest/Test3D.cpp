@@ -566,6 +566,11 @@ void TestCalcFrameValue_3() {
     PrintResult(stCmd, stRpy);
 }
 
+static void CheckOriginalDataChanged(const cv::Mat &matOriginal, const cv::Mat &matAfter) {
+    cv::Mat matDiff = matOriginal - matAfter;
+    std::cout << "The difference between original data and after function run data: " << cv::sum(matDiff)[0] << std::endl;
+}
+
 void TestCalc3DHeightDiff_1() {
     std::cout << std::endl << "-----------------------------------------------";
     std::cout << std::endl << "CALC 3D HEIGHT DIFF REGRESSION TEST #1 STARTING";
@@ -580,6 +585,7 @@ void TestCalc3DHeightDiff_1() {
     cv::FileNode fileNode = fs["Height"];
     cv::read(fileNode, stCmd.matHeight, cv::Mat());
     fs.release();
+    auto matOriginal = stCmd.matHeight.clone();
 
     stCmd.matMask = cv::imread(strWorkingFolder + "mask.png", cv::IMREAD_GRAYSCALE);
     stCmd.rectROI = cv::Rect(132, 173, 98, 81);
@@ -591,10 +597,11 @@ void TestCalc3DHeightDiff_1() {
     if (VisionStatus::OK == stRpy.enStatus) {
         std::cout << "Height Diff Result " << stRpy.fHeightDiff << std::endl;
     }
+    CheckOriginalDataChanged(matOriginal, stCmd.matHeight);
 }
 
 static void PrintInsp3DSolderResult(const PR_INSP_3D_SOLDER_RPY &stRpy) {
-    std::cout << "PR_Insp3DSolder status " << ToInt32(stRpy.enStatus) << " at line " << __LINE__ << std::endl;
+    std::cout << "PR_Insp3DSolder status " << ToInt32(stRpy.enStatus) << std::endl;
     if (VisionStatus::OK == stRpy.enStatus) {
         for (const auto &result : stRpy.vecResults) {
             std::cout << "Component height " << result.fComponentHeight << " Solder height " << result.fSolderHeight
@@ -614,6 +621,8 @@ void TestInsp3DSolder_1() {
     PR_INSP_3D_SOLDER_RPY stRpy;
 
     stCmd.matHeight = readMatFromCsvFile(strParentFolder + "H3.csv");
+    auto matOriginal = stCmd.matHeight.clone();
+
     stCmd.matColorImg = cv::imread(strParentFolder + "image3.bmp", cv::IMREAD_COLOR);
 
     stCmd.rectDeviceROI = cv::Rect(1175, 575, 334, 179);
@@ -630,6 +639,7 @@ void TestInsp3DSolder_1() {
     PR_Insp3DSolder(&stCmd, &stRpy);
     PrintInsp3DSolderResult(stRpy);
     cv::imwrite(strParentFolder + "result.png", stRpy.matResultImg);
+    CheckOriginalDataChanged(matOriginal, stCmd.matHeight);
 }
 
 void TestInsp3DSolder_2() {
@@ -647,6 +657,8 @@ void TestInsp3DSolder_2() {
     cv::read(fileNode, stCmd.matHeight, cv::Mat());
     fs.release();
 
+    auto matOriginal = stCmd.matHeight.clone();
+
     stCmd.matColorImg = cv::imread(strParentFolder + "image.png", cv::IMREAD_COLOR);
 
     stCmd.rectDeviceROI = cv::Rect(0, 0, 143, 73);
@@ -661,6 +673,7 @@ void TestInsp3DSolder_2() {
     PR_Insp3DSolder(&stCmd, &stRpy);
     PrintInsp3DSolderResult(stRpy);
     cv::imwrite(strParentFolder + "result.png", stRpy.matResultImg);
+    CheckOriginalDataChanged(matOriginal, stCmd.matHeight);
 }
 
 void TestInsp3DSolder_3() {
@@ -678,6 +691,8 @@ void TestInsp3DSolder_3() {
     cv::read(fileNode, stCmd.matHeight, cv::Mat());
     fs.release();
 
+    auto matOriginal = stCmd.matHeight.clone();
+
     stCmd.matColorImg = cv::imread(strParentFolder + "image.png", cv::IMREAD_COLOR);
 
     stCmd.rectDeviceROI = cv::Rect(0, 0, 191, 350);
@@ -692,6 +707,7 @@ void TestInsp3DSolder_3() {
     PR_Insp3DSolder(&stCmd, &stRpy);
     PrintInsp3DSolderResult(stRpy);
     cv::imwrite(strParentFolder + "result.png", stRpy.matResultImg);
+    CheckOriginalDataChanged(matOriginal, stCmd.matHeight);
 }
 
 void Test3D() {

@@ -14,8 +14,11 @@
  * Copyright (c) 2016-2018, Xiao Shengguang.  All rights reserved.
  ****************************************************************************/
 
+//2018-09-28 (XSG) Fix PR_Insp3DSolder change original height data issue.
+#define AOI_VISION_VERSION          "1.00.47"
+
 //2018-09-24 (XSG) Support rotated OCV inspection.
-#define AOI_VISION_VERSION          "1.00.46"
+//#define AOI_VISION_VERSION          "1.00.46"
 
 //2018-09-22 (XSG) Fix PR_Calc3DHeightDiff not correct problem, and improve the speed.
 //                 Add LogCaseCalc3DHeightDiff.
