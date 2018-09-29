@@ -14,8 +14,11 @@
  * Copyright (c) 2016-2018, Xiao Shengguang.  All rights reserved.
  ****************************************************************************/
 
+//2018-09-29 (XSG) Add PR_GetOcvRecordInfo and PR_SetOcvRecordInfo API function.
+#define AOI_VISION_VERSION          "1.00.48"
+
 //2018-09-28 (XSG) Fix PR_Insp3DSolder change original height data issue.
-#define AOI_VISION_VERSION          "1.00.47"
+//#define AOI_VISION_VERSION          "1.00.47"
 
 //2018-09-24 (XSG) Support rotated OCV inspection.
 //#define AOI_VISION_VERSION          "1.00.46"

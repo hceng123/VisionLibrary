@@ -366,6 +366,9 @@ VectorOfRect OcvRecord::getCharRects() const {
     return _vecCharRects;
 }
 
+void OcvRecord::setCharRects(const VectorOfRect &vecRects) {
+    _vecCharRects = vecRects;
+}
 
 }
 }

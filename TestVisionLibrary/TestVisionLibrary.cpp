@@ -751,7 +751,7 @@ int _tmain(int argc, _TCHAR* argv[])
     //TestCalc4DLPHeight();
     //TestInsp3DSolder();
     //TestInsp3DSolder_1();
-    TestInsp3DSolder_2();
+    //TestInsp3DSolder_2();
 
     //TestCalcFrameValue_1();
     
@@ -769,7 +769,7 @@ int _tmain(int argc, _TCHAR* argv[])
     
     //TestOCV_1();
     //TestOCV_2();
-    //TestOCV_3();
+    TestOCV_3();
 
     //TestMatchTmpl_1();
 

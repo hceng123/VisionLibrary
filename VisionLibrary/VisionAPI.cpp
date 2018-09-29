@@ -586,6 +586,32 @@ PR_FUNCTION_ENTRY
 PR_FUNCTION_EXIT
 }
 
+VisionAPI VisionStatus PR_GetOcvRecordInfo(Int32 nRecordId, PR_OCV_RECORD_INFO *const pstRecordInfo)
+{
+    auto ptrRecord = RecordManagerInstance->get(nRecordId);
+    if (nullptr == ptrRecord)
+        return VisionStatus::INVALID_PARAM;
+    if (ptrRecord->getType() != PR_RECORD_TYPE::OCV)
+        return VisionStatus::INVALID_PARAM;
+    OcvRecordPtr ptrOcvRecord = std::static_pointer_cast<OcvRecord>(ptrRecord);
+    pstRecordInfo->matTmplImg = ptrOcvRecord->getBigTmpl();
+    pstRecordInfo->vecCharRects = ptrOcvRecord->getCharRects();
+    return VisionStatus::OK;
+}
+
+VisionAPI VisionStatus PR_SetOcvRecordInfo(Int32 nRecordId, const PR_OCV_RECORD_INFO *const pstRecordInfo)
+{
+    auto ptrRecord = RecordManagerInstance->get(nRecordId);
+    if (nullptr == ptrRecord)
+        return VisionStatus::INVALID_PARAM;
+    if (ptrRecord->getType() != PR_RECORD_TYPE::OCV)
+        return VisionStatus::INVALID_PARAM;
+    OcvRecordPtr ptrOcvRecord = std::static_pointer_cast<OcvRecord>(ptrRecord);
+    ptrOcvRecord->setCharRects(pstRecordInfo->vecCharRects);
+    RecordManagerInstance->update(nRecordId, ptrOcvRecord);
+    return VisionStatus::OK;
+}
+
 VisionAPI VisionStatus PR_Ocv(const PR_OCV_CMD *const pstCmd, PR_OCV_RPY *const pstRpy)
 {
 PR_FUNCTION_ENTRY

@@ -1487,6 +1487,11 @@ struct PR_LRN_OCV_RPY {
     cv::Mat                 matResultImg;
 };
 
+struct PR_OCV_RECORD_INFO {
+    cv::Mat                 matTmplImg;
+    VectorOfRect            vecCharRects;
+};
+
 struct PR_OCV_CMD {
     PR_OCV_CMD() :
         enDirection     (PR_DIRECTION::RIGHT),
