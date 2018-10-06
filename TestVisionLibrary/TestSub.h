@@ -73,6 +73,7 @@ void TestQueryDlpOffset();
 void TestInsp3DSolder();
 void TestInsp3DSolder_1();
 void TestInsp3DSolder_2();
+void TestConvertToCsv();
 
 void TestOCV_1();
 void TestOCV_2();

@@ -529,14 +529,6 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
     }
     TimeLog::GetInstance()->addTimeLog("Convert image to float.", stopWatch.Span());
 
-    if (pstCmd->bEnableGaussianFilter) {
-        //Filtering can reduce residues at the expense of a loss of spatial resolution.
-        for (int i = 0; i < PR_GROUP_TEXTURE_IMG_COUNT; ++ i)
-            cv::GaussianBlur(vecConvertedImgs[i], vecConvertedImgs[i], cv::Size(GUASSIAN_FILTER_SIZE, GUASSIAN_FILTER_SIZE), GAUSSIAN_FILTER_SIGMA, GAUSSIAN_FILTER_SIGMA, cv::BorderTypes::BORDER_REPLICATE);
-    }
-
-    TimeLog::GetInstance()->addTimeLog("Guassian Filter.", stopWatch.Span());
-
     if (pstCmd->bReverseSeq) {
         std::swap(vecConvertedImgs[1], vecConvertedImgs[3]);
         std::swap(vecConvertedImgs[5], vecConvertedImgs[7]);
@@ -583,7 +575,7 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
         ptrData3 = vecConvertedImgs[11].ptr<uchar>(0);
         for (int i = 0; i < total; ++i) {
             short x = (short)ptrData0[i] - (short)ptrData2[i];  // x = 2*cos(beta)
-            short y = (short)ptrData3[i] - (short)ptrData1[i];  // y = 2*sin(beta)        
+            short y = (short)ptrData3[i] - (short)ptrData1[i];  // y = 2*sin(beta)
             matGamma.at<float>(i) = vecVecAtan2Table[x + PR_MAX_GRAY_LEVEL][y + PR_MAX_GRAY_LEVEL];
         }
         matGamma = matGamma - pstCmd->matBaseWrappedGamma;
@@ -633,7 +625,9 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
         pstRpy->matPhase = matBeta;
 
     cv::medianBlur(pstRpy->matPhase, pstRpy->matPhase, 5);
-    cv::GaussianBlur(pstRpy->matPhase, pstRpy->matPhase, cv::Size(GUASSIAN_FILTER_SIZE, GUASSIAN_FILTER_SIZE), GAUSSIAN_FILTER_SIGMA, GAUSSIAN_FILTER_SIGMA, cv::BorderTypes::BORDER_REPLICATE);
+
+    if (pstCmd->bEnableGaussianFilter)
+        cv::GaussianBlur(pstRpy->matPhase, pstRpy->matPhase, cv::Size(5, 5), 5, 5, cv::BorderTypes::BORDER_REPLICATE);
 
     pstRpy->matNanMask = matAvgUnderTolIndex;
 
@@ -2710,6 +2704,13 @@ void removeBlob(cv::Mat &matThreshold, cv::Mat &matBlob, float fAreaLimit) {
     cv::Mat matHeightFor = matHeightTre.clone();    // For means four
     matHeightFor.setTo(NAN, matBigDiffMask);
 
+#ifdef _DEBUG
+    auto vecVecHeightOne = CalcUtils::matToVector<DATA_TYPE>(matHeightOne);
+    auto vecVecHeightTwo = CalcUtils::matToVector<DATA_TYPE>(matHeightTwo);
+    auto vecVecHeightTre = CalcUtils::matToVector<DATA_TYPE>(matHeightTre);
+    auto vecVecHeightFor = CalcUtils::matToVector<DATA_TYPE>(matHeightFor);
+#endif
+
     for (int row = 0; row < matHeightFor.rows; ++ row) {
         cv::Mat matRowOne = matHeightOne.row(row);
         cv::Mat matRowTwo = matHeightTwo.row(row);
@@ -2744,10 +2745,10 @@ void removeBlob(cv::Mat &matThreshold, cv::Mat &matBlob, float fAreaLimit) {
             }
 
             float fAbsDiffSumOne = 0.f, fAbsDiffSumTwo = 0.f, fAbsDiffSumTre = 0.f;
-            for (int index = startIndex, i = 0; index < endIndex; ++ index, ++ i) {
-                fAbsDiffSumOne += fabs(matRowOne.at<DATA_TYPE>(index) - vecTargetH[i]);
-                fAbsDiffSumTwo += fabs(matRowTwo.at<DATA_TYPE>(index) - vecTargetH[i]);
-                fAbsDiffSumTre += fabs(matRowTre.at<DATA_TYPE>(index) - vecTargetH[i]);
+            for (int index = startIndex, k = 0; index < endIndex; ++ index, ++ k) {
+                fAbsDiffSumOne += fabs(matRowOne.at<DATA_TYPE>(index) - vecTargetH[k]);
+                fAbsDiffSumTwo += fabs(matRowTwo.at<DATA_TYPE>(index) - vecTargetH[k]);
+                fAbsDiffSumTre += fabs(matRowTre.at<DATA_TYPE>(index) - vecTargetH[k]);
             }
 
             cv::Mat matChoose;

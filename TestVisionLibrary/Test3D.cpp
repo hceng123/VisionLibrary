@@ -1173,6 +1173,8 @@ void TestCalc4DLPHeight()
     bool b3DDetectCaliUseThinPattern = true;
     bool b3DDetectGaussionFilter = true;
 
+    float dlpOffset[4] = {5.3551e-04, -0.0014f, 0.0694, 0};
+
     for (int nDlp = 0; nDlp < 4; ++ nDlp) {
         stCalcHeightCmds[nDlp].bEnableGaussianFilter = b3DDetectGaussionFilter;
         stCalcHeightCmds[nDlp].bUseThinnestPattern = b3DDetectCaliUseThinPattern;
@@ -1219,6 +1221,7 @@ void TestCalc4DLPHeight()
 
         stCalcHeightCmds[nDlp].vecInputImgs = VectorOfMat(vecImages.begin() + nDlp * IMAGE_COUNT, vecImages.begin() + (nDlp + 1) * IMAGE_COUNT);
         PR_Calc3DHeight(&stCalcHeightCmds[nDlp], &stCalcHeightRpys[nDlp]);
+        stCalcHeightRpys[nDlp].matHeight = stCalcHeightRpys[nDlp].matHeight + dlpOffset[nDlp];
 
         PrintMinMaxLoc(stCalcHeightRpys[nDlp].matHeight, "DLP_" + std::to_string(nDlp + 1) + "_result");
 
@@ -1277,7 +1280,7 @@ void TestCalc4DLPHeight()
     stMergeHCmd.vecMatNanMask = vecMatHeightNanMasks;
 
     stMergeHCmd.enMethod = PR_MERGE_3D_HT_METHOD::SELECT_MAX;
-    stMergeHCmd.fHeightDiffThreshold = 0.2f;
+    stMergeHCmd.fHeightDiffThreshold = 0.1f;
     stMergeHCmd.enProjDir = stCalcHeightCmds[0].enProjectDir;
 
     VisionStatus retStatus = PR_Merge3DHeight(&stMergeHCmd, &stMergeHRpy);
@@ -1407,6 +1410,8 @@ void TestInsp3DSolder_2() {
     cv::read(fileNode, stCmd.matHeight, cv::Mat());
     fs.release();
 
+    saveMatToCsv(stCmd.matHeight, strParentFolder + "height.csv");
+
     stCmd.matColorImg = cv::imread(strParentFolder + "image.png", cv::IMREAD_COLOR);
 
     stCmd.rectDeviceROI = cv::Rect(0, 0, 143, 73);
@@ -1421,6 +1426,17 @@ void TestInsp3DSolder_2() {
     PR_Insp3DSolder(&stCmd, &stRpy);
     PrintInsp3DSolderResult(stRpy);
     cv::imwrite(strParentFolder + "result.png", stRpy.matResultImg);
+}
+
+void TestConvertToCsv() {
+    const std::string strParentFolder = "./Vision/LogCase/Insp3DSolder_2018_10_01_23_49_04_553 - Copy/";
+    cv::FileStorage fs(strParentFolder + "Height.yml", cv::FileStorage::READ);
+    cv::FileNode fileNode = fs["Height"];
+    cv::Mat matHeight;
+    cv::read(fileNode, matHeight, cv::Mat());
+    fs.release();
+
+    saveMatToCsv(matHeight, strParentFolder + "height.csv");
 }
 
 int assignFrames(
