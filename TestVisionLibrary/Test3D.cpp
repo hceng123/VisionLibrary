@@ -1304,6 +1304,45 @@ void TestCalc4DLPHeight()
     std::cout << "Success to calculate 4 DLP height" << std::endl;
 }
 
+void TestMergeHeightMax() {
+    std::string strParentFolder = "./data/machine_image/20180903/";
+    std::string strImageFolder = strParentFolder + "0903164501/";
+    std::string strResultFolder = strParentFolder + "Frame_4_Result/";
+
+    PR_MERGE_3D_HEIGHT_CMD stMergeHCmd;
+    PR_MERGE_3D_HEIGHT_RPY stMergeHRpy;   
+    stMergeHCmd.enMethod = PR_MERGE_3D_HT_METHOD::SELECT_MAX;
+    stMergeHCmd.fHeightDiffThreshold = 0.2f;
+
+    for (int i = 0; i < 2; ++ i) {
+        cv::Mat matHeight = readMatFromCsvFile(strResultFolder + "Merge_" + std::to_string(i + 1) + "Height.csv");
+        cv::Mat matMask = cv::imread(strResultFolder + "Merge_" + std::to_string(i + 1) + "_NanMask.png", cv::IMREAD_GRAYSCALE);
+
+        stMergeHCmd.vecMatHeight.push_back(matHeight);
+        stMergeHCmd.vecMatNanMask.push_back(matMask);
+    }
+
+    VisionStatus retStatus = PR_Merge3DHeight(&stMergeHCmd, &stMergeHRpy);
+
+    if (retStatus == VisionStatus::OK)
+    {
+        PR_HEIGHT_TO_GRAY_CMD stCmd;
+        PR_HEIGHT_TO_GRAY_RPY stRpy;
+        stCmd.matHeight = stMergeHRpy.matHeight;
+        PR_HeightToGray(&stCmd, &stRpy);
+
+        cv::imwrite(strResultFolder + "Final_HeightGray.png", stRpy.matGray);
+        cv::imwrite(strResultFolder + "Final_NanMask.png", stMergeHRpy.matNanMask);
+        saveMatToCsv(stMergeHRpy.matHeight, strResultFolder + "Final_Height.csv");
+    }
+    else
+    {
+        std::cout << "PR_Merge3DHeight failed, status " << ToInt32(retStatus) << " at line " << __LINE__ << std::endl;
+        return;
+    }
+    std::cout << "Merge 3 height finished";
+}
+
 void TestInsp3DSolder() {
     const std::string strParentFolder = "./data/TestInsp3DSolder/";
     PR_INSP_3D_SOLDER_CMD stCmd;

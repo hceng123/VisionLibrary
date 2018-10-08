@@ -749,6 +749,8 @@ int _tmain(int argc, _TCHAR* argv[])
     //TestMotor3DCalib();
 
     //TestCalc4DLPHeight();
+    TestMergeHeightMax();
+
     //TestInsp3DSolder();
     //TestInsp3DSolder_1();
     //TestInsp3DSolder_2();
@@ -769,7 +771,7 @@ int _tmain(int argc, _TCHAR* argv[])
     
     //TestOCV_1();
     //TestOCV_2();
-    TestOCV_3();
+    //TestOCV_3();
 
     //TestMatchTmpl_1();
 

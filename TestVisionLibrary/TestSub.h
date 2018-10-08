@@ -68,6 +68,7 @@ void TestPrThreshold();
 void TestCalcFrameValue();
 void TestCalcFrameValue_1();
 void TestCalc4DLPHeight();
+void TestMergeHeightMax();
 void TestQueryDlpOffset();
 
 void TestInsp3DSolder();
