@@ -749,7 +749,7 @@ int _tmain(int argc, _TCHAR* argv[])
     //TestMotor3DCalib();
 
     //TestCalc4DLPHeight();
-    TestMergeHeightMax();
+    //TestMergeHeightMax();
 
     //TestInsp3DSolder();
     //TestInsp3DSolder_1();
@@ -778,6 +778,8 @@ int _tmain(int argc, _TCHAR* argv[])
     //TestRead2DCode_1();
 
     //TestRead2DCode_2();
+
+    TestDrawDashRect();
 
     PR_DumpTimeLog("./Vision/Time.log");
     std::cout << "Press any key to exit." << std::endl;

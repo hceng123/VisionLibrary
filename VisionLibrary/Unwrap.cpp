@@ -2015,14 +2015,6 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
     CStopWatch stopWatch;
     const int ROWS = matPhase.rows;
     const int COLS = matPhase.cols;
-    VectorOfPoint vecPoints;
-    cv::findNonZero(matIdxNan, vecPoints);
-    for (const auto &point : vecPoints) {
-        if (point.x == 0)
-            continue;
-        matPhase.at<DATA_TYPE>(point) = matPhase.at<DATA_TYPE>(point.y, point.x - 1);
-    }
-    TimeLog::GetInstance()->addTimeLog("phaseCorrection set nan to neighbour.", stopWatch.Span());
 
     //X direction
     if (nJumpSpanX > 0) {

@@ -85,6 +85,8 @@ void TestMatchTmpl_1();
 void TestRead2DCode_1();
 void TestRead2DCode_2();
 
+void TestDrawDashRect();
+
 template<class T>
 void printfMat(const cv::Mat &mat)
 {

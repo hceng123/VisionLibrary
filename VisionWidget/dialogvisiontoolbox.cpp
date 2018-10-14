@@ -59,17 +59,12 @@ void DialogVisionToolBox::on_btnCheckIntensity_clicked()
         return;
     }
 
-	CheckIntensityProcedure procedure(_pVisionView);
-	procedure.run(mat);    
+    CheckIntensityProcedure procedure(_pVisionView);
+    procedure.run(mat);    
 }
 
 void DialogVisionToolBox::on_btnReplayLogcase_clicked()
 {
-    //QString dir = QFileDialog::getExistingDirectory(this, tr("Open Logcase"),
-    //                                         "./Vision/Logcase/",
-    //                                         QFileDialog::ShowDirsOnly
-    //                                         | QFileDialog::DontResolveSymlinks);
-    //PR_RunLogCase(dir.toStdString());
 
     QFileDialog dialog(this);
     dialog.setFileMode(QFileDialog::ExistingFile);
@@ -81,5 +76,5 @@ void DialogVisionToolBox::on_btnReplayLogcase_clicked()
 
     QStringList fileNames = dialog.selectedFiles();
     std::string filePath = fileNames[0].toStdString();
-    PR_RunLogCase( filePath );
+    PR_RunLogCase(filePath);
 }
