@@ -76,6 +76,8 @@ void TestOCV_2()
     stOcvCmd.matInputImg = stLrnCmd.matInputImg;
     stOcvCmd.rectROI = cv::Rect(288, 1075, 217, 142);
     stOcvCmd.vecRecordId.push_back(stLrnRpy.nRecordId);
+    stOcvCmd.enDirection = PR_DIRECTION::LEFT;
+    //stOcvCmd.bAcceptReverse = true;
 
     PR_Ocv(&stOcvCmd, &stOcvRpy);
     PrintOcvRpy(stOcvRpy);

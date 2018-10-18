@@ -7,6 +7,7 @@
 #include "VisionHeader.h"
 #include "StopWatch.h"
 #include "LogCase.h"
+#include "Record.h"
 #include <list>
 #include <memory>
 
@@ -111,11 +112,11 @@ protected:
     static VisionStatus _checkInputROI(const cv::Rect &rect, const cv::Mat &matInputImg, const char *filename, int line);
     static VisionStatus _checkMask(const cv::Mat &matInput, const cv::Mat &matMask, const char *filename, int line);
     static LogCasePtr _createLogCaseInstance(const String &strFolderPrefix, const String &strLocalPath);
-	int _findBlob(const cv::Mat &mat, const cv::Mat &matRevs, PR_INSP_SURFACE_CMD *const pInspCmd, PR_INSP_SURFACE_RPY *pInspRpy );
-	int _findLine(const cv::Mat &mat, PR_INSP_SURFACE_CMD *const pInspCmd, PR_INSP_SURFACE_RPY *pInspRpy );
-	static int _mergeLines(const std::vector<PR_Line2f> &vecLines, std::vector<PR_Line2f> &vecResultLines);
-	static int _merge2Line(const PR_Line2f &line1, const PR_Line2f &line2, PR_Line2f &lineResult); 
-    static int _autoThreshold(const cv::Mat &mat, const cv::Mat &matMask = cv::Mat() );
+    int _findBlob(const cv::Mat &mat, const cv::Mat &matRevs, PR_INSP_SURFACE_CMD *const pInspCmd, PR_INSP_SURFACE_RPY *pInspRpy );
+    int _findLine(const cv::Mat &mat, PR_INSP_SURFACE_CMD *const pInspCmd, PR_INSP_SURFACE_RPY *pInspRpy );
+    static int _mergeLines(const std::vector<PR_Line2f> &vecLines, std::vector<PR_Line2f> &vecResultLines);
+    static int _merge2Line(const PR_Line2f &line1, const PR_Line2f &line2, PR_Line2f &lineResult); 
+    static int _autoThreshold(const cv::Mat &mat, const cv::Mat &matMask = cv::Mat());
     static bool _isContourRectShape(const VectorOfPoint &vecPoint);
     static bool _isContourRectShapeProjection(const VectorOfPoint &vecPoint);
     static inline float getContourRectRatio( const VectorOfPoint &vecPoint);
@@ -244,6 +245,8 @@ protected:
     static cv::Mat _pickColor(const std::vector<int> &vecValue, const cv::Mat &matColor, int nColorDiff, int nGrayDiff, UInt32 &nPointCountOut);
     static void _rotateOcvImage(PR_DIRECTION, cv::Mat &matInput);
     static void _rotateOcvImageBack(PR_DIRECTION, cv::Mat &matInput);
+    static VisionStatus _checkOcvTmplSize(const cv::Mat &matInput, const std::vector<OcvRecordPtr>& vecRecordPtr);
+    static VisionStatus _ocvOneDirection(PR_DIRECTION enDirection, const cv::Mat& matGray, const std::vector<OcvRecordPtr>& vecRecordPtr, const PR_OCV_CMD *const pstCmd, PR_OCV_RPY *const pstRpy);
 
 protected:
     static const int       _constMinHessian        = 300;

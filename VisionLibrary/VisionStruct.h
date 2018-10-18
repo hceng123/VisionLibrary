@@ -1495,10 +1495,12 @@ struct PR_OCV_RECORD_INFO {
 struct PR_OCV_CMD {
     PR_OCV_CMD() :
         enDirection     (PR_DIRECTION::RIGHT),
+        bAcceptReverse  (false),
         fMinMatchScore  (60) {}
     cv::Mat                 matInputImg;
     cv::Rect                rectROI;
     PR_DIRECTION            enDirection;
+    bool                    bAcceptReverse;
     std::vector<Int32>      vecRecordId;
     float                   fMinMatchScore;
 };
