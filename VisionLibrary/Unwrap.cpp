@@ -1460,6 +1460,7 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
 }
 
 /*static*/ void Unwrap::calc3DHeightDiff(const PR_CALC_3D_HEIGHT_DIFF_CMD *const pstCmd, PR_CALC_3D_HEIGHT_DIFF_RPY *const pstRpy) {
+    CStopWatch stopWatch;
     VectorOfRect vecRect = pstCmd->vecRectBases;
     vecRect.push_back(pstCmd->rectROI);
     cv::Rect rectBounding = CalcUtils::boundingRect(vecRect);
@@ -1489,6 +1490,8 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
         AOI::Vision::VectorOfPoint vecPtLocations;
         cv::findNonZero(matTmpNonNanMask, vecPtLocations);
 
+        TimeLog::GetInstance()->addTimeLog("Find base effective points take: ", stopWatch.Span());
+
         std::sort(vecPtLocations.begin(), vecPtLocations.end(), [&matHeight](const cv::Point &pt1, const cv::Point &pt2) {
             return matHeight.at<float>(pt1) < matHeight.at<float>(pt2);
         });
@@ -1501,6 +1504,8 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
             vecYt.push_back(matY.at<float>(point));
             vecHeightTmp.push_back(matHeight.at<float>(point));
         }
+
+        TimeLog::GetInstance()->addTimeLog("Sort and trim base points take: ", stopWatch.Span());
     }
 
     if (vecXt.empty() || vecYt.empty()) {
@@ -1519,6 +1524,8 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
         cv::Mat matYY(vecHeightTmp);
         cv::solve(matXX, matYY, matK, cv::DecompTypes::DECOMP_QR);
     }
+
+    TimeLog::GetInstance()->addTimeLog("cv::solve to calculate base surface take: ", stopWatch.Span());
 
     float k1 = matK.at<float>(0);
     float k2 = matK.at<float>(1);
@@ -1540,6 +1547,7 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
     });
     AOI::Vision::VectorOfPoint vecTrimedLocations(vecPtLocations.begin() + ToInt32(vecPtLocations.size() * pstCmd->fEffectHRatioStart), vecPtLocations.begin() + ToInt32(vecPtLocations.size() * pstCmd->fEffectHRatioEnd));
 
+    TimeLog::GetInstance()->addTimeLog("Sort and trim target points take: ", stopWatch.Span());
     vecXt.clear();
     vecYt.clear();
     vecHeightTmp.clear();
@@ -1559,6 +1567,8 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
     matZZ = matZZ - matXX * matK;
     pstRpy->fHeightDiff = ToFloat(cv::mean(matZZ)[0]);
     pstRpy->enStatus = VisionStatus::OK;
+
+    TimeLog::GetInstance()->addTimeLog("Calculate height difference take: ", stopWatch.Span());
 }
 
 /*static*/ void Unwrap::calcMTF(const PR_CALC_MTF_CMD *const pstCmd, PR_CALC_MTF_RPY *const pstRpy) {
