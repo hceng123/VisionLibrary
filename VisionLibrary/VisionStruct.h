@@ -1487,13 +1487,20 @@ struct PR_LRN_OCV_RPY {
     cv::Mat                 matResultImg;
 };
 
+struct PR_OCV_RECORD_INFO {
+    cv::Mat                 matTmplImg;
+    VectorOfRect            vecCharRects;
+};
+
 struct PR_OCV_CMD {
     PR_OCV_CMD() :
         enDirection     (PR_DIRECTION::RIGHT),
+        bAcceptReverse  (false),
         fMinMatchScore  (60) {}
     cv::Mat                 matInputImg;
     cv::Rect                rectROI;
     PR_DIRECTION            enDirection;
+    bool                    bAcceptReverse;
     std::vector<Int32>      vecRecordId;
     float                   fMinMatchScore;
 };

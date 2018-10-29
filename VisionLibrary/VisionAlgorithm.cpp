@@ -6854,11 +6854,12 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     }
 
     MARK_FUNCTION_START_TIME;
-    SETUP_LOGCASE(LogCaseCalc3DHeight);
+    //The Calc3DHeight logcase need to log 12 images, which is too slow when log always, and not useful right now, so disable it first.
+    //SETUP_LOGCASE(LogCaseCalc3DHeight);
 
     Unwrap::calc3DHeight(pstCmd, pstRpy);
 
-    FINISH_LOGCASE;
+    //FINISH_LOGCASE;
     MARK_FUNCTION_END_TIME;
     pstRpy->enStatus = VisionStatus::OK;
     return pstRpy->enStatus;
@@ -7893,50 +7894,99 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     MARK_FUNCTION_START_TIME;
     SETUP_LOGCASE(LogCaseOcv);
 
-    pstRpy->enStatus = VisionStatus::OK;
-
     cv::Mat matROI(pstCmd->matInputImg, pstCmd->rectROI), matGray;
     if (pstCmd->matInputImg.channels() > 1)
         cv::cvtColor(matROI, matGray, CV_BGR2GRAY);
     else
         matGray = matROI;
 
-    _rotateOcvImage(pstCmd->enDirection, matGray);
-    if (ConfigInstance->getDebugMode() == Vision::PR_DEBUG_MODE::SHOW_IMAGE)
-        showImage("Rotated search image", matGray);
-
-    VectorOfPoint2f vecResultPos;
-    VectorOfFloat vecCorrelation;
     std::vector<OcvRecordPtr> vecRecordPtr;
     for (const auto recordId : pstCmd->vecRecordId) {
         OcvRecordPtr ptrOcvRecord = std::static_pointer_cast<OcvRecord>(RecordManagerInstance->get(recordId));
         if (nullptr == ptrOcvRecord) {
             char chArrMsg[100];
-            _snprintf(chArrMsg, sizeof (chArrMsg), "Failed to get record ID %d in system.", recordId);
-            WriteLog(chArrMsg);
-            pstRpy->enStatus = VisionStatus::INVALID_PARAM;
-            return pstRpy->enStatus;
-        }
-
-        if (ConfigInstance->getDebugMode() == Vision::PR_DEBUG_MODE::SHOW_IMAGE)
-            showImage("Ocv template", ptrOcvRecord->getBigTmpl());
-
-        if (ptrOcvRecord->getBigTmpl().cols > matGray.cols || ptrOcvRecord->getBigTmpl().rows > matGray.rows) {
-            char chArrMsg[100];
-            _snprintf(chArrMsg, sizeof (chArrMsg), "The record template size (%d, %d) is larger than search ROI size (%d, %d).", 
-                ptrOcvRecord->getBigTmpl().cols, ptrOcvRecord->getBigTmpl().rows, matGray.cols, matGray.rows);
+            _snprintf(chArrMsg, sizeof(chArrMsg), "Failed to get record ID %d in system.", recordId);
             WriteLog(chArrMsg);
             pstRpy->enStatus = VisionStatus::INVALID_PARAM;
             FINISH_LOGCASE;
             return pstRpy->enStatus;
         }
 
+        if (ConfigInstance->getDebugMode() == Vision::PR_DEBUG_MODE::SHOW_IMAGE)
+            showImage("Ocv template", ptrOcvRecord->getBigTmpl());
+
+        vecRecordPtr.push_back(ptrOcvRecord);
+    }
+
+    _ocvOneDirection(pstCmd->enDirection, matGray, vecRecordPtr, pstCmd, pstRpy);
+    if (pstRpy->enStatus != VisionStatus::OK && pstCmd->bAcceptReverse) {
+        PR_DIRECTION enReverseDir;
+        switch (pstCmd->enDirection) {
+        case PR_DIRECTION::UP:
+            enReverseDir = PR_DIRECTION::DOWN;
+            break;
+        case PR_DIRECTION::DOWN:
+            enReverseDir = PR_DIRECTION::UP;
+            break;
+        case PR_DIRECTION::LEFT:
+            enReverseDir = PR_DIRECTION::RIGHT;
+            break;
+        case PR_DIRECTION::RIGHT:
+            enReverseDir = PR_DIRECTION::LEFT;
+            break;
+        default:
+            char chArrMsg[100];
+            _snprintf(chArrMsg, sizeof(chArrMsg), "Input direction %d is invalid.", ToInt32(pstCmd->enDirection));
+            WriteLog(chArrMsg);
+            pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+            break;
+        }
+
+        _ocvOneDirection(enReverseDir, matGray, vecRecordPtr, pstCmd, pstRpy);
+    }
+
+    FINISH_LOGCASE;
+    MARK_FUNCTION_END_TIME;
+    return pstRpy->enStatus;
+}
+
+/*static*/ VisionStatus VisionAlgorithm::_checkOcvTmplSize(const cv::Mat &matInput, const std::vector<OcvRecordPtr>& vecRecordPtr)
+{
+    for (const auto ptrOcvRecord : vecRecordPtr) {
+        if (ConfigInstance->getDebugMode() == Vision::PR_DEBUG_MODE::SHOW_IMAGE)
+            showImage("Ocv template", ptrOcvRecord->getBigTmpl());
+
+        if (ptrOcvRecord->getBigTmpl().cols > matInput.cols || ptrOcvRecord->getBigTmpl().rows > matInput.rows) {
+            char chArrMsg[100];
+            _snprintf(chArrMsg, sizeof(chArrMsg), "The record template size (%d, %d) is larger than search ROI size (%d, %d).",
+                ptrOcvRecord->getBigTmpl().cols, ptrOcvRecord->getBigTmpl().rows, matInput.cols, matInput.rows);
+            return VisionStatus::INVALID_PARAM;
+        }
+    }
+    return VisionStatus::OK;
+}
+
+/*static*/ VisionStatus VisionAlgorithm::_ocvOneDirection(PR_DIRECTION enDirection, const cv::Mat &matInput, const std::vector<OcvRecordPtr>& vecRecordPtr, const PR_OCV_CMD *const pstCmd, PR_OCV_RPY *const pstRpy) {
+    pstRpy->enStatus = VisionStatus::OK;
+
+    cv::Mat matGray = matInput.clone();
+    _rotateOcvImage(enDirection, matGray);
+    if (ConfigInstance->getDebugMode() == Vision::PR_DEBUG_MODE::SHOW_IMAGE)
+        showImage("Rotated search image", matGray);
+
+    pstRpy->enStatus = _checkOcvTmplSize(matGray, vecRecordPtr);
+    if (VisionStatus::OK != pstRpy->enStatus)
+        return pstRpy->enStatus;
+
+    VectorOfPoint2f vecResultPos;
+    VectorOfFloat vecCorrelation;
+    
+    for (const auto& ptrOcvRecord : vecRecordPtr) {
         cv::Point2f ptPosition;
         float fRotation = 0.f, fCorrelation = 0.f;
         MatchTmpl::matchTemplate(matGray, ptrOcvRecord->getBigTmpl(), false, PR_OBJECT_MOTION::TRANSLATION, ptPosition, fRotation, fCorrelation);
         vecResultPos.push_back(ptPosition);
         vecCorrelation.push_back(fCorrelation);
-        vecRecordPtr.push_back(ptrOcvRecord);
     }
 
     cv::Mat matDrawResult;
@@ -7950,7 +8000,6 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
         _snprintf(chArrMsg, sizeof(chArrMsg), "The best match socre %f is lower than minimum required score %f.", pstRpy->fOverallScore, pstCmd->fMinMatchScore);
         WriteLog(chArrMsg);
         pstRpy->enStatus = VisionStatus::OCV_MATCH_SCORE_UNDER_LIMIT;
-        FINISH_LOGCASE;
         return pstRpy->enStatus;
     }   
 
@@ -8008,9 +8057,6 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
         cv::Mat matResultROI(pstRpy->matResultImg, pstCmd->rectROI);
         matDrawResult.copyTo(matResultROI);
     }
-
-    FINISH_LOGCASE;
-    MARK_FUNCTION_END_TIME;
     return pstRpy->enStatus;
 }
 

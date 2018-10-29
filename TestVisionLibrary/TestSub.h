@@ -68,11 +68,13 @@ void TestPrThreshold();
 void TestCalcFrameValue();
 void TestCalcFrameValue_1();
 void TestCalc4DLPHeight();
+void TestMergeHeightMax();
 void TestQueryDlpOffset();
 
 void TestInsp3DSolder();
 void TestInsp3DSolder_1();
 void TestInsp3DSolder_2();
+void TestConvertToCsv();
 
 void TestOCV_1();
 void TestOCV_2();
@@ -82,6 +84,8 @@ void TestMatchTmpl_1();
 
 void TestRead2DCode_1();
 void TestRead2DCode_2();
+
+void TestDrawDashRect();
 
 template<class T>
 void printfMat(const cv::Mat &mat)

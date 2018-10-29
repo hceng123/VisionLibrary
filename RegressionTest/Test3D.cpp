@@ -284,14 +284,14 @@ void TestIntegrate3DCalibSub(
         stCmd.vecCalibData.push_back(stCalibData);
     }
 
-    std::string strCalibDataFile( strParentPath + "H5.yml" );
-    cv::FileStorage fsCalibData ( strCalibDataFile, cv::FileStorage::READ );
-    if (!fsCalibData.isOpened ()) {
+    std::string strCalibDataFile(strParentPath + "H5.yml");
+    cv::FileStorage fsCalibData(strCalibDataFile, cv::FileStorage::READ);
+    if (!fsCalibData.isOpened()) {
         std::cout << "Failed to open file: " << strCalibDataFile << std::endl;
         return;
     }
     cv::FileNode fileNode = fsCalibData["Phase"];
-    cv::read ( fileNode, stCmd.matTopSurfacePhase, cv::Mat() );
+    cv::read(fileNode, stCmd.matTopSurfacePhase, cv::Mat());
     fsCalibData.release();
 
     stCmd.fTopSurfaceHeight = 5;
@@ -310,7 +310,7 @@ void TestIntegrate3DCalibSub(
         ++i;
     }
     std::cout << "IntegratedK" << std::endl;
-    printfMat<float>(stRpy.matIntegratedK, 5);
+    printfMat<float>(stRpy.matIntegratedK, 4);
 
     std::string strCalibResultFile(strParentPath + "IntegrateCalibResult.yml");
     cv::FileStorage fsCalibResultData(strCalibResultFile, cv::FileStorage::WRITE);

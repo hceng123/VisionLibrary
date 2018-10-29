@@ -1173,6 +1173,8 @@ void TestCalc4DLPHeight()
     bool b3DDetectCaliUseThinPattern = true;
     bool b3DDetectGaussionFilter = true;
 
+    float dlpOffset[4] = {5.3551e-04, -0.0014f, 0.0694, 0};
+
     for (int nDlp = 0; nDlp < 4; ++ nDlp) {
         stCalcHeightCmds[nDlp].bEnableGaussianFilter = b3DDetectGaussionFilter;
         stCalcHeightCmds[nDlp].bUseThinnestPattern = b3DDetectCaliUseThinPattern;
@@ -1219,6 +1221,7 @@ void TestCalc4DLPHeight()
 
         stCalcHeightCmds[nDlp].vecInputImgs = VectorOfMat(vecImages.begin() + nDlp * IMAGE_COUNT, vecImages.begin() + (nDlp + 1) * IMAGE_COUNT);
         PR_Calc3DHeight(&stCalcHeightCmds[nDlp], &stCalcHeightRpys[nDlp]);
+        stCalcHeightRpys[nDlp].matHeight = stCalcHeightRpys[nDlp].matHeight + dlpOffset[nDlp];
 
         PrintMinMaxLoc(stCalcHeightRpys[nDlp].matHeight, "DLP_" + std::to_string(nDlp + 1) + "_result");
 
@@ -1277,7 +1280,7 @@ void TestCalc4DLPHeight()
     stMergeHCmd.vecMatNanMask = vecMatHeightNanMasks;
 
     stMergeHCmd.enMethod = PR_MERGE_3D_HT_METHOD::SELECT_MAX;
-    stMergeHCmd.fHeightDiffThreshold = 0.2f;
+    stMergeHCmd.fHeightDiffThreshold = 0.1f;
     stMergeHCmd.enProjDir = stCalcHeightCmds[0].enProjectDir;
 
     VisionStatus retStatus = PR_Merge3DHeight(&stMergeHCmd, &stMergeHRpy);
@@ -1299,6 +1302,45 @@ void TestCalc4DLPHeight()
     }
 
     std::cout << "Success to calculate 4 DLP height" << std::endl;
+}
+
+void TestMergeHeightMax() {
+    std::string strParentFolder = "./data/machine_image/20180903/";
+    std::string strImageFolder = strParentFolder + "0903164501/";
+    std::string strResultFolder = strParentFolder + "Frame_4_Result/";
+
+    PR_MERGE_3D_HEIGHT_CMD stMergeHCmd;
+    PR_MERGE_3D_HEIGHT_RPY stMergeHRpy;   
+    stMergeHCmd.enMethod = PR_MERGE_3D_HT_METHOD::SELECT_MAX;
+    stMergeHCmd.fHeightDiffThreshold = 0.2f;
+
+    for (int i = 0; i < 2; ++ i) {
+        cv::Mat matHeight = readMatFromCsvFile(strResultFolder + "Merge_" + std::to_string(i + 1) + "Height.csv");
+        cv::Mat matMask = cv::imread(strResultFolder + "Merge_" + std::to_string(i + 1) + "_NanMask.png", cv::IMREAD_GRAYSCALE);
+
+        stMergeHCmd.vecMatHeight.push_back(matHeight);
+        stMergeHCmd.vecMatNanMask.push_back(matMask);
+    }
+
+    VisionStatus retStatus = PR_Merge3DHeight(&stMergeHCmd, &stMergeHRpy);
+
+    if (retStatus == VisionStatus::OK)
+    {
+        PR_HEIGHT_TO_GRAY_CMD stCmd;
+        PR_HEIGHT_TO_GRAY_RPY stRpy;
+        stCmd.matHeight = stMergeHRpy.matHeight;
+        PR_HeightToGray(&stCmd, &stRpy);
+
+        cv::imwrite(strResultFolder + "Final_HeightGray.png", stRpy.matGray);
+        cv::imwrite(strResultFolder + "Final_NanMask.png", stMergeHRpy.matNanMask);
+        saveMatToCsv(stMergeHRpy.matHeight, strResultFolder + "Final_Height.csv");
+    }
+    else
+    {
+        std::cout << "PR_Merge3DHeight failed, status " << ToInt32(retStatus) << " at line " << __LINE__ << std::endl;
+        return;
+    }
+    std::cout << "Merge 3 height finished";
 }
 
 void TestInsp3DSolder() {
@@ -1407,6 +1449,8 @@ void TestInsp3DSolder_2() {
     cv::read(fileNode, stCmd.matHeight, cv::Mat());
     fs.release();
 
+    saveMatToCsv(stCmd.matHeight, strParentFolder + "height.csv");
+
     stCmd.matColorImg = cv::imread(strParentFolder + "image.png", cv::IMREAD_COLOR);
 
     stCmd.rectDeviceROI = cv::Rect(0, 0, 143, 73);
@@ -1421,6 +1465,17 @@ void TestInsp3DSolder_2() {
     PR_Insp3DSolder(&stCmd, &stRpy);
     PrintInsp3DSolderResult(stRpy);
     cv::imwrite(strParentFolder + "result.png", stRpy.matResultImg);
+}
+
+void TestConvertToCsv() {
+    const std::string strParentFolder = "./Vision/LogCase/Insp3DSolder_2018_10_01_23_49_04_553 - Copy/";
+    cv::FileStorage fs(strParentFolder + "Height.yml", cv::FileStorage::READ);
+    cv::FileNode fileNode = fs["Height"];
+    cv::Mat matHeight;
+    cv::read(fileNode, matHeight, cv::Mat());
+    fs.release();
+
+    saveMatToCsv(matHeight, strParentFolder + "height.csv");
 }
 
 int assignFrames(

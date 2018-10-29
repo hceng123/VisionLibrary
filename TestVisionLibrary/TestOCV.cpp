@@ -76,6 +76,8 @@ void TestOCV_2()
     stOcvCmd.matInputImg = stLrnCmd.matInputImg;
     stOcvCmd.rectROI = cv::Rect(288, 1075, 217, 142);
     stOcvCmd.vecRecordId.push_back(stLrnRpy.nRecordId);
+    stOcvCmd.enDirection = PR_DIRECTION::LEFT;
+    //stOcvCmd.bAcceptReverse = true;
 
     PR_Ocv(&stOcvCmd, &stOcvRpy);
     PrintOcvRpy(stOcvRpy);
@@ -98,6 +100,22 @@ void TestOCV_3() {
             return;
         cv::imwrite("./data/LrnOcvResult.png", stLrnRpy.matResultImg);
         nRecordId = stLrnRpy.nRecordId;
+
+        PR_OCV_RECORD_INFO stOcvRecordInfo;
+        auto enStatus = PR_GetOcvRecordInfo(nRecordId, &stOcvRecordInfo);
+        if (VisionStatus::OK != enStatus)
+        {
+            std::cout << "PR_GetOcvRecordInfo failed. Status " << ToInt32(enStatus) << std::endl;
+            return;
+        }
+
+        stOcvRecordInfo.vecCharRects[0].width += 2;
+        enStatus = PR_SetOcvRecordInfo(nRecordId, &stOcvRecordInfo);
+        if (VisionStatus::OK != enStatus)
+        {
+            std::cout << "PR_SetOcvRecordInfo failed. Status " << ToInt32(enStatus) << std::endl;
+            return;
+        }
     }
 
     PR_OCV_CMD stOcvCmd;

@@ -69,8 +69,8 @@ private:
     static void _phaseSwitch(cv::Mat &matPhase, PR_DIRECTION enProjDir, PR_DIRECTION enScanDir);
     static void _phaseSwitchBack(cv::Mat &matPhase, PR_DIRECTION enProjDir, PR_DIRECTION enScanDir);
     static void _calcReverseAndProjDir(const VectorOfMat &vecMat, bool bEnableGaussianFilter, PR_CALIB_3D_BASE_RPY *const pstRpy);
-    static void _turnPhase(cv::Mat &matPhase, char *ptrSignOfRow, char *ptrAmplOfRow, int row, int nStart, int nEnd);
-    static void _turnPhaseConditionOne(cv::Mat &matPhase, const cv::Mat &matPhaseDiff, cv::Mat &matDiffSign, cv::Mat &matDiffAmpl, int row, int Nt1);
+    static void _turnPhase(cv::Mat &matPhase, cv::Mat &matPhaseDiff, char *ptrSignOfRow, char *ptrAmplOfRow, int row, int nStart, int nEnd);
+    static void _turnPhaseConditionOne(cv::Mat &matPhase, cv::Mat &matPhaseDiff, cv::Mat &matDiffSign, cv::Mat &matDiffAmpl, int row, int Nt1);
     static cv::Mat _mergeHeightIntersect(cv::Mat &matHeightOne, const cv::Mat &matNanMaskOne, cv::Mat &matHeightTwo, const cv::Mat &matNanMaskTwo, float fDiffThreshold, PR_DIRECTION enProjDir);
     static cv::Mat _mergeHeightMax(cv::Mat &matHeightOne, const cv::Mat &matNanMaskOne, cv::Mat &matHeightTwo, const cv::Mat &matNanMaskTwo, float fDiffThreshold, PR_DIRECTION enProjDir);
     static bool _extractSolder(const cv::Mat &matHeightROI, float fCoverage, VectorOfFloat &vecThreshold, cv::Mat &matHighMask, cv::Mat &matMidMask, cv::Mat &matLowMask, cv::Mat &matBW, int &nTopY, int &nBtmY);

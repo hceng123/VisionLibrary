@@ -749,9 +749,11 @@ int _tmain(int argc, _TCHAR* argv[])
     //TestMotor3DCalib();
 
     //TestCalc4DLPHeight();
+    //TestMergeHeightMax();
+
     //TestInsp3DSolder();
     //TestInsp3DSolder_1();
-    TestInsp3DSolder_2();
+    //TestInsp3DSolder_2();
 
     //TestCalcFrameValue_1();
     
@@ -768,7 +770,7 @@ int _tmain(int argc, _TCHAR* argv[])
     //TestInspPolarity_01();
     
     //TestOCV_1();
-    //TestOCV_2();
+    TestOCV_2();
     //TestOCV_3();
 
     //TestMatchTmpl_1();
@@ -776,6 +778,8 @@ int _tmain(int argc, _TCHAR* argv[])
     //TestRead2DCode_1();
 
     //TestRead2DCode_2();
+
+    //TestDrawDashRect();
 
     PR_DumpTimeLog("./Vision/Time.log");
     std::cout << "Press any key to exit." << std::endl;

@@ -42,6 +42,21 @@ VisionStatus RecordManager::add(RecordPtr pRecord, Int32 &nRecordId) {
     return VisionStatus::OK;
 }
 
+VisionStatus RecordManager::update(Int32 recordId, RecordPtr pRecord)
+{
+    String strFilePath = _getRecordFilePath(recordId);
+    FileUtils::MakeDirectory(strFilePath);
+    pRecord->save(strFilePath);
+    joinDir(strFilePath.c_str(), Config::GetInstance()->getRecordExt().c_str());
+    FileUtils::RemoveAll(strFilePath);
+    _mapRecord[recordId] = pRecord;
+
+    String strLog = "Update record " + std::to_string(recordId) + ";";
+    WriteLog(strLog);
+
+    return VisionStatus::OK;
+}
+
 RecordPtr RecordManager::get(Int32 nRecordId) {
     if (_mapRecord.find(nRecordId) == _mapRecord.end()) {
         String strLog = "Cannot find record id " + std::to_string(nRecordId) + ".";

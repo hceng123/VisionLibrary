@@ -8,10 +8,10 @@
 template<class T>
 void printfMat ( const cv::Mat &mat, int nPrecision = 1)
 {
-    std::cout << std::fixed << std::setprecision ( nPrecision );
-    for ( short row = 0; row < mat.rows; ++ row )
+    std::cout << std::fixed << std::setprecision(nPrecision);
+    for (short row = 0; row < mat.rows; ++row)
     {
-        for ( short col = 0; col < mat.cols; ++ col )
+        for (short col = 0; col < mat.cols; ++col)
         {
             std::cout << mat.at<T>(row, col) << " ";
         }

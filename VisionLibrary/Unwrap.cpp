@@ -529,14 +529,6 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
     }
     TimeLog::GetInstance()->addTimeLog("Convert image to float.", stopWatch.Span());
 
-    if (pstCmd->bEnableGaussianFilter) {
-        //Filtering can reduce residues at the expense of a loss of spatial resolution.
-        for (int i = 0; i < PR_GROUP_TEXTURE_IMG_COUNT; ++ i)
-            cv::GaussianBlur(vecConvertedImgs[i], vecConvertedImgs[i], cv::Size(GUASSIAN_FILTER_SIZE, GUASSIAN_FILTER_SIZE), GAUSSIAN_FILTER_SIGMA, GAUSSIAN_FILTER_SIGMA, cv::BorderTypes::BORDER_REPLICATE);
-    }
-
-    TimeLog::GetInstance()->addTimeLog("Guassian Filter.", stopWatch.Span());
-
     if (pstCmd->bReverseSeq) {
         std::swap(vecConvertedImgs[1], vecConvertedImgs[3]);
         std::swap(vecConvertedImgs[5], vecConvertedImgs[7]);
@@ -583,7 +575,7 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
         ptrData3 = vecConvertedImgs[11].ptr<uchar>(0);
         for (int i = 0; i < total; ++i) {
             short x = (short)ptrData0[i] - (short)ptrData2[i];  // x = 2*cos(beta)
-            short y = (short)ptrData3[i] - (short)ptrData1[i];  // y = 2*sin(beta)        
+            short y = (short)ptrData3[i] - (short)ptrData1[i];  // y = 2*sin(beta)
             matGamma.at<float>(i) = vecVecAtan2Table[x + PR_MAX_GRAY_LEVEL][y + PR_MAX_GRAY_LEVEL];
         }
         matGamma = matGamma - pstCmd->matBaseWrappedGamma;
@@ -633,7 +625,9 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
         pstRpy->matPhase = matBeta;
 
     cv::medianBlur(pstRpy->matPhase, pstRpy->matPhase, 5);
-    cv::GaussianBlur(pstRpy->matPhase, pstRpy->matPhase, cv::Size(GUASSIAN_FILTER_SIZE, GUASSIAN_FILTER_SIZE), GAUSSIAN_FILTER_SIGMA, GAUSSIAN_FILTER_SIGMA, cv::BorderTypes::BORDER_REPLICATE);
+
+    if (pstCmd->bEnableGaussianFilter)
+        cv::GaussianBlur(pstRpy->matPhase, pstRpy->matPhase, cv::Size(5, 5), 5, 5, cv::BorderTypes::BORDER_REPLICATE);
 
     pstRpy->matNanMask = matAvgUnderTolIndex;
 
@@ -1466,6 +1460,7 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
 }
 
 /*static*/ void Unwrap::calc3DHeightDiff(const PR_CALC_3D_HEIGHT_DIFF_CMD *const pstCmd, PR_CALC_3D_HEIGHT_DIFF_RPY *const pstRpy) {
+    CStopWatch stopWatch;
     VectorOfRect vecRect = pstCmd->vecRectBases;
     vecRect.push_back(pstCmd->rectROI);
     cv::Rect rectBounding = CalcUtils::boundingRect(vecRect);
@@ -1495,6 +1490,8 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
         AOI::Vision::VectorOfPoint vecPtLocations;
         cv::findNonZero(matTmpNonNanMask, vecPtLocations);
 
+        TimeLog::GetInstance()->addTimeLog("Find base effective points take: ", stopWatch.Span());
+
         std::sort(vecPtLocations.begin(), vecPtLocations.end(), [&matHeight](const cv::Point &pt1, const cv::Point &pt2) {
             return matHeight.at<float>(pt1) < matHeight.at<float>(pt2);
         });
@@ -1507,6 +1504,8 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
             vecYt.push_back(matY.at<float>(point));
             vecHeightTmp.push_back(matHeight.at<float>(point));
         }
+
+        TimeLog::GetInstance()->addTimeLog("Sort and trim base points take: ", stopWatch.Span());
     }
 
     if (vecXt.empty() || vecYt.empty()) {
@@ -1525,6 +1524,8 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
         cv::Mat matYY(vecHeightTmp);
         cv::solve(matXX, matYY, matK, cv::DecompTypes::DECOMP_QR);
     }
+
+    TimeLog::GetInstance()->addTimeLog("cv::solve to calculate base surface take: ", stopWatch.Span());
 
     float k1 = matK.at<float>(0);
     float k2 = matK.at<float>(1);
@@ -1546,6 +1547,7 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
     });
     AOI::Vision::VectorOfPoint vecTrimedLocations(vecPtLocations.begin() + ToInt32(vecPtLocations.size() * pstCmd->fEffectHRatioStart), vecPtLocations.begin() + ToInt32(vecPtLocations.size() * pstCmd->fEffectHRatioEnd));
 
+    TimeLog::GetInstance()->addTimeLog("Sort and trim target points take: ", stopWatch.Span());
     vecXt.clear();
     vecYt.clear();
     vecHeightTmp.clear();
@@ -1565,6 +1567,8 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
     matZZ = matZZ - matXX * matK;
     pstRpy->fHeightDiff = ToFloat(cv::mean(matZZ)[0]);
     pstRpy->enStatus = VisionStatus::OK;
+
+    TimeLog::GetInstance()->addTimeLog("Calculate height difference take: ", stopWatch.Span());
 }
 
 /*static*/ void Unwrap::calcMTF(const PR_CALC_MTF_CMD *const pstCmd, PR_CALC_MTF_RPY *const pstRpy) {
@@ -2021,14 +2025,6 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
     CStopWatch stopWatch;
     const int ROWS = matPhase.rows;
     const int COLS = matPhase.cols;
-    VectorOfPoint vecPoints;
-    cv::findNonZero(matIdxNan, vecPoints);
-    for (const auto &point : vecPoints) {
-        if (point.x == 0)
-            continue;
-        matPhase.at<DATA_TYPE>(point) = matPhase.at<DATA_TYPE>(point.y, point.x - 1);
-    }
-    TimeLog::GetInstance()->addTimeLog("phaseCorrection set nan to neighbour.", stopWatch.Span());
 
     //X direction
     if (nJumpSpanX > 0) {
@@ -2227,25 +2223,42 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
     }
 }
 
-void Unwrap::_turnPhase(cv::Mat &matPhase, char *ptrSignOfRow, char *ptrAmplOfRow, int row, int nStart, int nEnd) {
+void Unwrap::_turnPhase(cv::Mat &matPhase, cv::Mat &matPhaseDiff, char *ptrSignOfRow, char *ptrAmplOfRow, int row, int nStart, int nEnd) {
     char chSignFirst = ptrSignOfRow[nStart];
-    char chAmplFirst = ptrAmplOfRow[nStart], chAmplSecond = ptrAmplOfRow[nEnd];
-    char chTurnAmpl = std::min(chAmplFirst, chAmplSecond) / 2;
-    char chAmplNew = chAmplFirst - 2 * chTurnAmpl;
-    ptrAmplOfRow[nStart] = chAmplNew;
-    if (chAmplNew <= 0)
-        ptrSignOfRow[nStart] = 0;  // Remove the sign of jump flag.
+    char chAmplFirst = ptrAmplOfRow[nStart], chAmplSecond = ptrAmplOfRow[nEnd]; //Map to matlab code n3i, n4i.
+    char chTurnAmpl = std::min(chAmplFirst, chAmplSecond) / 2;  //Map to matlab code n5i.    
 
-    chAmplNew = chAmplSecond - 2 * chTurnAmpl;
-    ptrAmplOfRow[nEnd] = chAmplNew;
-    if (chAmplNew <= 0)
-        ptrSignOfRow[nEnd] = 0;
+    float dp1 = matPhaseDiff.at<DATA_TYPE>(row, nStart);
+    float dp2 = matPhaseDiff.at<DATA_TYPE>(row, nEnd);
+
+    matPhaseDiff.at<DATA_TYPE>(row, nStart) = dp1 - ptrSignOfRow[nStart] * ONE_CYCLE * chTurnAmpl; // clear trigger condition.
+    matPhaseDiff.at<DATA_TYPE>(row, nEnd)   = dp2 - ptrSignOfRow[nEnd]   * ONE_CYCLE * chTurnAmpl; // clear trigger condition.
+
+    if (fabs(dp1) >= (ONE_CYCLE - PHASE_TURN_THRESHOLD_1)) {
+        char chAmplNew = chAmplFirst - 2 * chTurnAmpl;
+        ptrAmplOfRow[nStart] = chAmplNew;
+        if (chAmplNew <= 0)
+            ptrSignOfRow[nStart] = 0;  // Remove the sign of jump flag.
+    }else {
+        ptrSignOfRow[nStart] = dp1 >= 0 ? 1 : - 1;
+        ptrSignOfRow[nStart] = 2;
+    }
+
+    if (fabs(dp2) >= (ONE_CYCLE - PHASE_TURN_THRESHOLD_1)) {
+        char chAmplNew = chAmplSecond - 2 * chTurnAmpl;
+        ptrAmplOfRow[nEnd] = chAmplNew;
+        if (chAmplNew <= 0)
+            ptrSignOfRow[nEnd] = 0;
+    }else {
+        ptrSignOfRow[nEnd] = dp2 >= 0 ? 1 : - 1;
+        ptrSignOfRow[nEnd] = 2;
+    }
 
     for (int col = nStart + 1; col <= nEnd; ++ col)
         matPhase.at<DATA_TYPE>(row, col) -= chSignFirst * ONE_CYCLE * chTurnAmpl;
 }
 
-/*static*/ void Unwrap::_turnPhaseConditionOne(cv::Mat &matPhase, const cv::Mat &matPhaseDiff, cv::Mat &matDiffSign, cv::Mat &matDiffAmpl, int row, int nMaxSpan) {
+/*static*/ void Unwrap::_turnPhaseConditionOne(cv::Mat &matPhase, cv::Mat &matPhaseDiff, cv::Mat &matDiffSign, cv::Mat &matDiffAmpl, int row, int nMaxSpan) {
     bool bRowWithPosJump = false, bRowWithNegJump = false;
     for (int col = 0; col < matPhaseDiff.cols; ++col) {
         auto value = matPhaseDiff.at<DATA_TYPE>(row, col);
@@ -2298,7 +2311,7 @@ void Unwrap::_turnPhase(cv::Mat &matPhase, char *ptrSignOfRow, char *ptrAmplOfRo
             DATA_TYPE fStartPhase = ptrPhaseDiffOfRow[nStart], fEndPhase = ptrPhaseDiffOfRow[nEnd];
             if (chSignFirst * chSignSecond == -1 && fabs(fStartPhase - fEndPhase) > ONE_CYCLE) { //it is a pair
                 if (row == 0) {
-                    _turnPhase(matPhase, ptrSignOfRow, ptrAmplOfRow, row, nStart, nEnd);
+                    _turnPhase(matPhase, matPhaseDiff, ptrSignOfRow, ptrAmplOfRow, row, nStart, nEnd);
                 }
                 else {
                     char chAmplFirst = ptrAmplOfRow[nStart], chAmplSecond = ptrAmplOfRow[nEnd];
@@ -2314,7 +2327,7 @@ void Unwrap::_turnPhase(cv::Mat &matPhase, char *ptrSignOfRow, char *ptrAmplOfRo
                     }
 
                     if (fOriginalDiff > fTurnedDiff)
-                        _turnPhase(matPhase, ptrSignOfRow, ptrAmplOfRow, row, nStart, nEnd);
+                        _turnPhase(matPhase, matPhaseDiff, ptrSignOfRow, ptrAmplOfRow, row, nStart, nEnd);
                 }
             }
         }
@@ -2350,6 +2363,7 @@ void Unwrap::_turnPhase(cv::Mat &matPhase, char *ptrSignOfRow, char *ptrAmplOfRo
             auto phaseDiff = ptrPhaseDiffOfRow[col];
             if (fabs(phaseDiff) > 2 - PHASE_TURN_THRESHOLD_1)
                 vecIndex1.push_back(col);
+
             if (phaseDiff > PHASE_TURN_THRESHOLD_2 && phaseDiff < 2.f - PHASE_TURN_THRESHOLD_1)
                 vecIndex2.push_back(col);
             if (phaseDiff < -PHASE_TURN_THRESHOLD_2 && phaseDiff > -(2.f - PHASE_TURN_THRESHOLD_1))
@@ -2690,6 +2704,14 @@ void removeBlob(cv::Mat &matThreshold, cv::Mat &matBlob, float fAreaLimit) {
     pstRpy->bReverseSeq = ReverseSeq;
 }
 
+void _saveAsGray(const cv::Mat &matHeight, const std::string &strFilePath) {
+    PR_HEIGHT_TO_GRAY_CMD stCovertCmd;
+    PR_HEIGHT_TO_GRAY_RPY stConvertRpy;
+    stCovertCmd.matHeight = matHeight;
+    VisionAlgorithm::heightToGray(&stCovertCmd, &stConvertRpy);
+    cv::imwrite(strFilePath, stConvertRpy.matGray);
+}
+
 // Merge height based on H1, H2, (H1+H2)/2. If the difference between 2 height is big, the area choose the nearest one from three of them.
 /*static*/ cv::Mat Unwrap::_mergeHeightIntersect(cv::Mat &matHeightOne, const cv::Mat &matNanMaskOne, cv::Mat &matHeightTwo, const cv::Mat &matNanMaskTwo, float fDiffThreshold, PR_DIRECTION enProjDir) {
     CStopWatch stopWatch;
@@ -2709,6 +2731,13 @@ void removeBlob(cv::Mat &matThreshold, cv::Mat &matBlob, float fAreaLimit) {
 
     cv::Mat matHeightFor = matHeightTre.clone();    // For means four
     matHeightFor.setTo(NAN, matBigDiffMask);
+
+#ifdef _DEBUG
+    auto vecVecHeightOne = CalcUtils::matToVector<DATA_TYPE>(matHeightOne);
+    auto vecVecHeightTwo = CalcUtils::matToVector<DATA_TYPE>(matHeightTwo);
+    auto vecVecHeightTre = CalcUtils::matToVector<DATA_TYPE>(matHeightTre);
+    auto vecVecHeightFor = CalcUtils::matToVector<DATA_TYPE>(matHeightFor);
+#endif
 
     for (int row = 0; row < matHeightFor.rows; ++ row) {
         cv::Mat matRowOne = matHeightOne.row(row);
@@ -2744,10 +2773,10 @@ void removeBlob(cv::Mat &matThreshold, cv::Mat &matBlob, float fAreaLimit) {
             }
 
             float fAbsDiffSumOne = 0.f, fAbsDiffSumTwo = 0.f, fAbsDiffSumTre = 0.f;
-            for (int index = startIndex, i = 0; index < endIndex; ++ index, ++ i) {
-                fAbsDiffSumOne += fabs(matRowOne.at<DATA_TYPE>(index) - vecTargetH[i]);
-                fAbsDiffSumTwo += fabs(matRowTwo.at<DATA_TYPE>(index) - vecTargetH[i]);
-                fAbsDiffSumTre += fabs(matRowTre.at<DATA_TYPE>(index) - vecTargetH[i]);
+            for (int index = startIndex, k = 0; index < endIndex; ++ index, ++ k) {
+                fAbsDiffSumOne += fabs(matRowOne.at<DATA_TYPE>(index) - vecTargetH[k]);
+                fAbsDiffSumTwo += fabs(matRowTwo.at<DATA_TYPE>(index) - vecTargetH[k]);
+                fAbsDiffSumTre += fabs(matRowTre.at<DATA_TYPE>(index) - vecTargetH[k]);
             }
 
             cv::Mat matChoose;
@@ -2773,6 +2802,8 @@ void removeBlob(cv::Mat &matThreshold, cv::Mat &matBlob, float fAreaLimit) {
 /*static*/ cv::Mat Unwrap::_mergeHeightMax(cv::Mat &matHeightOne, const cv::Mat &matNanMaskOne, cv::Mat &matHeightTwo, const cv::Mat &matNanMaskTwo, float fDiffThreshold, PR_DIRECTION enProjDir) {
     CStopWatch stopWatch;
     cv::Mat matHeight = cv::Mat::zeros(matHeightOne.size(), matHeightOne.type());
+    cv::Mat matNonNanMaskOne = PR_MAX_GRAY_LEVEL - matNanMaskOne;
+    cv::Mat matNonNanMaskTwo = PR_MAX_GRAY_LEVEL - matNanMaskTwo;
 
     cv::Mat matAbsDiff, matIdxH0, matIdxH1, matIdxH2;
     cv::absdiff(matHeightOne, matHeightTwo, matAbsDiff);
@@ -2780,10 +2811,13 @@ void removeBlob(cv::Mat &matThreshold, cv::Mat &matBlob, float fAreaLimit) {
     matIdxH1 = (matHeightTwo - matHeightOne) > fDiffThreshold;
     matIdxH2 = (matHeightOne - matHeightTwo) > fDiffThreshold;
 
-    matIdxH1 = matIdxH1 | matNanMaskOne;
-    matIdxH2 = matIdxH2 | matNanMaskTwo;
+    matIdxH1 = (matIdxH1 | matNanMaskOne) & matNonNanMaskTwo;
+    matIdxH2 = (matIdxH2 | matNanMaskTwo) & matNonNanMaskOne;
+    
+    matIdxH0 = matIdxH0 & matNonNanMaskOne & matNonNanMaskTwo;
+
     matHeightTwo.copyTo(matHeight, matIdxH1);
-    matHeightOne.copyTo(matHeight, matIdxH2);
+    matHeightOne.copyTo(matHeight, matIdxH2);    
 
     cv::add(matHeightOne / 2.f, matHeightTwo / 2.f, matHeight, matIdxH0);
     TimeLog::GetInstance()->addTimeLog("Merge height.", stopWatch.Span());

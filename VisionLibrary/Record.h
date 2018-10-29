@@ -171,6 +171,7 @@ public:
     void setBigTmpl(const cv::Mat &matBigTmpl);
     cv::Mat getBigTmpl() const;
     VectorOfRect getCharRects() const;
+    void setCharRects(const VectorOfRect &vecRects);
     virtual cv::Mat getImage() const { return _matBigTmpl; }
 
 private:
