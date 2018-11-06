@@ -71,7 +71,7 @@ cv::Mat readMatFromCsvFile(const std::string &strFilePath) {
 
 void saveMatToCsv(cv::Mat &matrix, std::string filename){
     std::ofstream outputFile(filename);
-    outputFile << cv::format(matrix, cv::Formatter::FMT_CSV) << std::endl;
+    outputFile << cv::format(matrix, cv::Formatter::FMT_CSV);
     outputFile.close();
 }
 

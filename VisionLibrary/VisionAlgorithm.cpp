@@ -7022,6 +7022,8 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     UInt32 nBasePointCount = 0;
     auto matBaseMask = _pickColor(vecValue, matColorROI, pstCmd->nBaseColorDiff, pstCmd->nBaseGrayDiff, nBasePointCount);
 
+    TimeLog::GetInstance()->addTimeLog("Pick color.", stopWatch.Span());
+
     if (!isAutoMode()) {
         pstRpy->matResultImg = pstCmd->matColorImg.clone();
         cv::rectangle(pstRpy->matResultImg, pstCmd->rectDeviceROI, CYAN_SCALAR, 1);
@@ -7034,7 +7036,6 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
 
     Unwrap::insp3DSolder(pstCmd, matBaseMask, pstRpy);
 
-    // Extract the base by color.
     FINISH_LOGCASE;
     MARK_FUNCTION_END_TIME;
     return pstRpy->enStatus;

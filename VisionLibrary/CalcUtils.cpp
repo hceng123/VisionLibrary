@@ -199,7 +199,7 @@ float CalcUtils::calcPointToContourDist(const cv::Point &ptInput, const VectorOf
     std::ofstream outputFile(filename);
     if (! outputFile.is_open())
         return;
-    outputFile << cv::format(matrix, cv::Formatter::FMT_CSV) << std::endl;
+    outputFile << cv::format(matrix, cv::Formatter::FMT_CSV);
     outputFile.close();
 }
 
