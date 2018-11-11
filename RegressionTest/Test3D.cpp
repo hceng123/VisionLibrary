@@ -638,7 +638,9 @@ void TestInsp3DSolder_1() {
 
     PR_Insp3DSolder(&stCmd, &stRpy);
     PrintInsp3DSolderResult(stRpy);
-    cv::imwrite(strParentFolder + "result.png", stRpy.matResultImg);
+
+    if (!stRpy.matResultImg.empty())
+        cv::imwrite(strParentFolder + "result.png", stRpy.matResultImg);
     CheckOriginalDataChanged(matOriginal, stCmd.matHeight);
 }
 
@@ -672,7 +674,8 @@ void TestInsp3DSolder_2() {
 
     PR_Insp3DSolder(&stCmd, &stRpy);
     PrintInsp3DSolderResult(stRpy);
-    cv::imwrite(strParentFolder + "result.png", stRpy.matResultImg);
+    if (!stRpy.matResultImg.empty())
+        cv::imwrite(strParentFolder + "result.png", stRpy.matResultImg);
     CheckOriginalDataChanged(matOriginal, stCmd.matHeight);
 }
 
@@ -706,7 +709,8 @@ void TestInsp3DSolder_3() {
 
     PR_Insp3DSolder(&stCmd, &stRpy);
     PrintInsp3DSolderResult(stRpy);
-    cv::imwrite(strParentFolder + "result.png", stRpy.matResultImg);
+    if (!stRpy.matResultImg.empty())
+        cv::imwrite(strParentFolder + "result.png", stRpy.matResultImg);
     CheckOriginalDataChanged(matOriginal, stCmd.matHeight);
 }
 
@@ -727,7 +731,6 @@ void Test3D() {
 
     TestCalc3DHeightDiff_1();
 
-    PR_EnableAutoMode(false);
     TestInsp3DSolder_1();
     TestInsp3DSolder_2();
     TestInsp3DSolder_3();

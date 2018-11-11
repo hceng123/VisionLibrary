@@ -12,6 +12,7 @@ namespace Vision
 void PrintOcvRpy(const PR_OCV_RPY &stRpy)
 {
     std::cout << "PR_Ocv status " << ToInt32(stRpy.enStatus) << std::endl;
+    std::cout << std::fixed << std::setprecision(1);
     std::cout << "Overall score: " << stRpy.fOverallScore << std::endl;
     std::cout << "Individual char score: ";
     for (auto score : stRpy.vecCharScore)

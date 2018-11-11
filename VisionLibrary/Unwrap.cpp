@@ -2721,6 +2721,8 @@ void _saveAsGray(const cv::Mat &matHeight, const std::string &strFilePath) {
     if (PR_DIRECTION::UP == enProjDir || PR_DIRECTION::DOWN == enProjDir) {
         cv::transpose(matHeightOne, matHeightOne);
         cv::transpose(matHeightTwo, matHeightTwo);
+
+        TimeLog::GetInstance()->addTimeLog("_mergeHeightIntersect. Transpose image.", stopWatch.Span());
     }
 
     cv::Mat matHeightTre = (matHeightOne + matHeightTwo) / 2.f; // Tre means three
@@ -2768,7 +2770,7 @@ void _saveAsGray(const cv::Mat &matHeight, const std::string &strFilePath) {
             else if (startIndex >= 0 && endIndex < matNanMasks.cols - 1) {
                 float fInterval = (matRowFor.at<DATA_TYPE>(endIndex + 1) - matRowFor.at<DATA_TYPE>(startIndex)) / (endIndex - startIndex + 1);
                 for (int j = 0; j < endIndex - startIndex; ++ j) {
-                    vecTargetH.push_back(matRowFor.at<DATA_TYPE>(startIndex) + fInterval);
+                    vecTargetH.push_back(matRowFor.at<DATA_TYPE>(startIndex) + fInterval * j);
                 }
             }
 
@@ -2793,8 +2795,12 @@ void _saveAsGray(const cv::Mat &matHeight, const std::string &strFilePath) {
         }
     }
 
-    if (PR_DIRECTION::UP == enProjDir || PR_DIRECTION::DOWN == enProjDir)
+    TimeLog::GetInstance()->addTimeLog("_mergeHeightIntersect core.", stopWatch.Span());
+
+    if (PR_DIRECTION::UP == enProjDir || PR_DIRECTION::DOWN == enProjDir) {
         cv::transpose(matHeightFor, matHeightFor);
+        TimeLog::GetInstance()->addTimeLog("_mergeHeightIntersect. Transpose image back.", stopWatch.Span());
+    }
 
     return matHeightFor;
 }
@@ -2828,14 +2834,17 @@ void _saveAsGray(const cv::Mat &matHeight, const std::string &strFilePath) {
 }
 
 /*static*/ void Unwrap::insp3DSolder(const PR_INSP_3D_SOLDER_CMD *pstCmd, const cv::Mat &matBaseMask, PR_INSP_3D_SOLDER_RPY *const pstRpy) {
+    CStopWatch stopWatch;
     cv::Mat matHeightROI = cv::Mat(pstCmd->matHeight, pstCmd->rectDeviceROI).clone();
 
     AOI::Vision::VectorOfPoint vecPtLocations;
     cv::findNonZero(matBaseMask, vecPtLocations);
+    TimeLog::GetInstance()->addTimeLog("cv::findNonZero.", stopWatch.Span());
 
     std::sort(vecPtLocations.begin(), vecPtLocations.end(), [&matHeightROI](const cv::Point &pt1, const cv::Point &pt2) {
         return matHeightROI.at<float>(pt1) < matHeightROI.at<float>(pt2);
     });
+    TimeLog::GetInstance()->addTimeLog("Sort height.", stopWatch.Span());
 
     std::vector<float> vecXt, vecYt, vecHeightTmp;
     auto ROWS = matHeightROI.rows;
@@ -2871,6 +2880,8 @@ void _saveAsGray(const cv::Mat &matHeight, const std::string &strFilePath) {
         cv::solve(matXX, matYY, matK, cv::DecompTypes::DECOMP_QR);
     }
 
+    TimeLog::GetInstance()->addTimeLog("Calculate base parameters.", stopWatch.Span());
+
     float k1 = matK.at<float>(0);
     float k2 = matK.at<float>(1);
     float k3 = matK.at<float>(2);
@@ -2893,11 +2904,11 @@ void _saveAsGray(const cv::Mat &matHeight, const std::string &strFilePath) {
 
     const float COVERAGE = 0.75f;
     for (const auto &rectCheckROI : vecRectCheckROIs) {
-        cv::Mat matCheckROI(matHeightROI, rectCheckROI), matHighMask, matMidMask, matLowMask, matBW;
+        cv::Mat matCheckROI(matHeightROI, rectCheckROI), matHighMask, matMidMask, matLowMask;
         auto matCheckROIClone = matCheckROI.clone();
         VectorOfFloat vecThreshold;
         int nTopY = 0, nBtmY = 0;
-        bool bResult = _extractSolder(matCheckROIClone, COVERAGE, vecThreshold, matHighMask, matMidMask, matLowMask, matBW, nTopY, nBtmY);
+        bool bResult = _extractSolder(matCheckROIClone, COVERAGE, vecThreshold, matHighMask, matMidMask, matLowMask, nTopY, nBtmY);
         if (!bResult)
             continue;
         if (ConfigInstance->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE) {
@@ -2957,9 +2968,11 @@ void _saveAsGray(const cv::Mat &matHeight, const std::string &strFilePath) {
             matDrawROIClone.copyTo(matDrawROI);
         }
     }
+
+    TimeLog::GetInstance()->addTimeLog("Extract solder and calculate height.", stopWatch.Span());
 }
 
-/*static*/ bool Unwrap::_extractSolder(const cv::Mat &matCheckROI, float fCoverage, VectorOfFloat &vecThreshold, cv::Mat &matHighMask, cv::Mat &matMidMask, cv::Mat &matLowMask, cv::Mat &matBW, int &nTopY, int &nBtmY) {
+/*static*/ bool Unwrap::_extractSolder(const cv::Mat &matCheckROI, float fCoverage, VectorOfFloat &vecThreshold, cv::Mat &matHighMask, cv::Mat &matMidMask, cv::Mat &matLowMask, int &nTopY, int &nBtmY) {
     cv::Mat matCheckOneRow = matCheckROI.clone();
     matCheckOneRow = matCheckOneRow.reshape(1, 1);
     cv::sort(matCheckOneRow, matCheckOneRow, cv::SortFlags::SORT_ASCENDING + cv::SortFlags::SORT_EVERY_ROW);
@@ -3042,7 +3055,6 @@ void _saveAsGray(const cv::Mat &matHeight, const std::string &strFilePath) {
 
     vecThreshold = VectorOfFloat{thres1, thres2};
 
-    matBW = cv::Mat::zeros(matCheckROI.size(), CV_8UC1);
     matHighMask = matCheckROI >= thres2;
     matMidMask = matCheckROI >= thres1 & matCheckROI < thres2;
     matLowMask = matCheckROI < thres1;
@@ -3063,20 +3075,16 @@ void _saveAsGray(const cv::Mat &matHeight, const std::string &strFilePath) {
         }
     }
 
+    // Clear the values out the range of device.
     cv::Mat matMask = cv::Mat::zeros(matCheckROI.size(), CV_8UC1);
-    cv::Mat matTopMask(matMask, cv::Range(0, nTopY), cv::Range::all());
-    matTopMask.setTo(PR_MAX_GRAY_LEVEL);
-    cv::Mat matBtmMask(matMask, cv::Range(nBtmY + 1, matCheckROI.rows), cv::Range::all());
-    matBtmMask.setTo(PR_MAX_GRAY_LEVEL);
+    cv::Mat matTopOutRangeMask(matMask, cv::Range(0, nTopY), cv::Range::all());
+    matTopOutRangeMask.setTo(PR_MAX_GRAY_LEVEL);
+    cv::Mat matBtmOutRangeMask(matMask, cv::Range(nBtmY + 1, matCheckROI.rows), cv::Range::all());
+    matBtmOutRangeMask.setTo(PR_MAX_GRAY_LEVEL);
 
-    // Clear the values over the range of device.
     matHighMask.setTo(0, matMask);
     matMidMask.setTo(0, matMask);
     matLowMask.setTo(0, matMask);
-
-    matBW.setTo(3, matHighMask);
-    matBW.setTo(2, matMidMask);
-    matBW.setTo(1, matLowMask);
 
     return true;
 }

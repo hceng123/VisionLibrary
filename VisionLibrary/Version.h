@@ -14,8 +14,11 @@
  * Copyright (c) 2016-2018, Xiao Shengguang.  All rights reserved.
  ****************************************************************************/
 
+//2018-11-09 (XSG) Fix PR_LrnOcv has dead loop problem.
+#define AOI_VISION_VERSION          "1.00.50"
+
 //2018-10-14 (XSG) PR_OCV support accept reversed character.
-#define AOI_VISION_VERSION          "1.00.49"
+//#define AOI_VISION_VERSION          "1.00.49"
 
 //2018-09-29 (XSG) Add PR_GetOcvRecordInfo and PR_SetOcvRecordInfo API function.
 //#define AOI_VISION_VERSION          "1.00.48"

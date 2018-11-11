@@ -73,7 +73,7 @@ private:
     static void _turnPhaseConditionOne(cv::Mat &matPhase, cv::Mat &matPhaseDiff, cv::Mat &matDiffSign, cv::Mat &matDiffAmpl, int row, int Nt1);
     static cv::Mat _mergeHeightIntersect(cv::Mat &matHeightOne, const cv::Mat &matNanMaskOne, cv::Mat &matHeightTwo, const cv::Mat &matNanMaskTwo, float fDiffThreshold, PR_DIRECTION enProjDir);
     static cv::Mat _mergeHeightMax(cv::Mat &matHeightOne, const cv::Mat &matNanMaskOne, cv::Mat &matHeightTwo, const cv::Mat &matNanMaskTwo, float fDiffThreshold, PR_DIRECTION enProjDir);
-    static bool _extractSolder(const cv::Mat &matHeightROI, float fCoverage, VectorOfFloat &vecThreshold, cv::Mat &matHighMask, cv::Mat &matMidMask, cv::Mat &matLowMask, cv::Mat &matBW, int &nTopY, int &nBtmY);
+    static bool _extractSolder(const cv::Mat &matHeightROI, float fCoverage, VectorOfFloat &vecThreshold, cv::Mat &matHighMask, cv::Mat &matMidMask, cv::Mat &matLowMask, int &nTopY, int &nBtmY);
     static float _calcSolderHeightXSG(const cv::Mat &matCheckROI, const cv::Mat &matMidMask);
     static float _calcSolderHeightTri(const cv::Mat &matCheckROI, const cv::Mat &matMidMask, int nWettingWidth, bool bLeft, int nTopY, int nBtmY, cv::Rect &rectCalc);
     static inline void _phaseWrap(cv::Mat &matPhase) {

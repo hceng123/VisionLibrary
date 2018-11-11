@@ -645,6 +645,12 @@ int _tmain(int argc, _TCHAR* argv[])
     PR_Init();
     PR_SetDebugMode(PR_DEBUG_MODE::LOG_ALL_CASE);
 
+    cv::Mat matImage = cv::imread("./data/OcvTestImage.png", cv::IMREAD_GRAYSCALE);
+    if (matImage.empty())
+        return -1;
+    cv::equalizeHist(matImage, matImage);
+    cv::imwrite("./data/OcvTestImageNew.png", matImage);
+
     //TestTemplate();
     //TestInspDevice();
     //TestRunLogcase();
@@ -748,7 +754,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
     //TestMotor3DCalib();
 
-    //TestCalc4DLPHeight();
+    TestCalc4DLPHeight();
     //TestMergeHeightMax();
 
     //TestInsp3DSolder();
@@ -770,7 +776,7 @@ int _tmain(int argc, _TCHAR* argv[])
     //TestInspPolarity_01();
     
     //TestOCV_1();
-    TestOCV_2();
+    //TestOCV_2();
     //TestOCV_3();
 
     //TestMatchTmpl_1();
