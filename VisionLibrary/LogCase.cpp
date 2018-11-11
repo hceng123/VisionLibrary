@@ -2496,12 +2496,14 @@ VisionStatus LogCaseLrnOcv::WriteCmd(const PR_LRN_OCV_CMD *const pstCmd) {
     CSimpleIni ini(false, false, false);
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile(cmdRpyFilePath.c_str());
-    ini.SetValue(_CMD_SECTION.c_str(), _strKeyROI.c_str(), _formatRect(pstCmd->rectROI).c_str());
+    cv::Rect rectROI(pstCmd->rectROI);
+    rectROI.x = 0; rectROI.y = 0;
+    ini.SetValue(_CMD_SECTION.c_str(), _strKeyROI.c_str(), _formatRect(rectROI).c_str());
     ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyCharCount.c_str(), pstCmd->nCharCount);
     ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyCharDirection.c_str(), ToInt32(pstCmd->enDirection));
     ini.SaveFile(cmdRpyFilePath.c_str());
 
-    cv::imwrite(_strLogCasePath + _IMAGE_NAME, pstCmd->matInputImg);
+    cv::imwrite(_strLogCasePath + _IMAGE_NAME, cv::Mat(pstCmd->matInputImg, pstCmd->rectROI));
     return VisionStatus::OK;
 }
 
@@ -2550,7 +2552,9 @@ VisionStatus LogCaseOcv::WriteCmd(const PR_OCV_CMD *const pstCmd) {
     CSimpleIni ini(false, false, false);
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile(cmdRpyFilePath.c_str());
-    ini.SetValue(_CMD_SECTION.c_str(), _strKeyROI.c_str(), _formatRect(pstCmd->rectROI).c_str());
+    cv::Rect rectROI(pstCmd->rectROI);
+    rectROI.x = 0; rectROI.y = 0;
+    ini.SetValue(_CMD_SECTION.c_str(), _strKeyROI.c_str(), _formatRect(rectROI).c_str());
     ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyRecordCount.c_str(), ToInt32(pstCmd->vecRecordId.size()));
     for (size_t i = 0; i < pstCmd->vecRecordId.size(); ++ i) {
         String strKeyRecordId = _strKeyRecordId + std::to_string(i);
@@ -2560,7 +2564,7 @@ VisionStatus LogCaseOcv::WriteCmd(const PR_OCV_CMD *const pstCmd) {
     ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyCharDirection.c_str(), ToInt32(pstCmd->enDirection));
     ini.SaveFile(cmdRpyFilePath.c_str());
 
-    cv::imwrite(_strLogCasePath + _IMAGE_NAME, pstCmd->matInputImg);
+    cv::imwrite(_strLogCasePath + _IMAGE_NAME, cv::Mat(pstCmd->matInputImg, pstCmd->rectROI));
     return VisionStatus::OK;
 }
 

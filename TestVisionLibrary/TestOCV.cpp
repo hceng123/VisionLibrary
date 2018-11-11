@@ -1,7 +1,10 @@
 #include "stdafx.h"
+
+#include <iostream>
+#include <iomanip>
+
 #include "../VisionLibrary/VisionAPI.h"
 #include "opencv2/highgui.hpp"
-#include <iostream>
 #include "TestSub.h"
 
 using namespace AOI::Vision;
@@ -40,6 +43,7 @@ void TestOCV_1() {
 void PrintOcvRpy(const PR_OCV_RPY &stRpy)
 {
     std::cout << "PR_Ocv status " << ToInt32(stRpy.enStatus) << std::endl;
+    std::cout << std::fixed << std::setprecision(1);
     std::cout << "Overall score: " << stRpy.fOverallScore << std::endl;
     std::cout << "Individual char score: ";
     for (auto score : stRpy.vecCharScore)

@@ -2770,7 +2770,7 @@ void _saveAsGray(const cv::Mat &matHeight, const std::string &strFilePath) {
             else if (startIndex >= 0 && endIndex < matNanMasks.cols - 1) {
                 float fInterval = (matRowFor.at<DATA_TYPE>(endIndex + 1) - matRowFor.at<DATA_TYPE>(startIndex)) / (endIndex - startIndex + 1);
                 for (int j = 0; j < endIndex - startIndex; ++ j) {
-                    vecTargetH.push_back(matRowFor.at<DATA_TYPE>(startIndex) + fInterval);
+                    vecTargetH.push_back(matRowFor.at<DATA_TYPE>(startIndex) + fInterval * j);
                 }
             }
 

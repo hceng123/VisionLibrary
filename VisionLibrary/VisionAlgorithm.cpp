@@ -7741,8 +7741,9 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
                     vecIndex1.push_back(0);
                 if (vecIndex2.empty())
                     vecIndex2.push_back(matOneRow.cols - 1);
+                break;
             }
-        }            
+        }
     }
     return VisionStatus::OK;
 }
@@ -7751,7 +7752,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     cv::Mat matOneRow, matFilterResult;
     cv::reduce(matInput, matOneRow, 0, cv::ReduceTypes::REDUCE_MAX);
     matOneRow.convertTo(matOneRow, CV_32FC1);
-    cv::blur(matOneRow, matFilterResult, cv::Size(5, 1));    
+    cv::blur(matOneRow, matFilterResult, cv::Size(5, 1), cv::Point(-1,-1), cv::BorderTypes::BORDER_REPLICATE);
 #ifdef _DEBUG
     auto vecVecRow = CalcUtils::matToVector<float>(matOneRow);
     auto vecVecFilter = CalcUtils::matToVector<float>(matFilterResult);
@@ -7759,6 +7760,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     matOneRow = matFilterResult;
 
     int index1 = 0, index2 = 0;
+    // Find left side minimum value
     for (int i = 0; i < matOneRow.cols - 1; ++ i) {
         if (matOneRow.at<float>(i+1) > matOneRow.at<float>(i)) {
             index1 = i;
@@ -7766,6 +7768,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
         }
     }
 
+    // Find right side minimum value
     for(int i = matOneRow.cols - 1; i > 0; -- i) {
         if (matOneRow.at<float>(i-1) > matOneRow.at<float>(i)) {
             index2 = i;
@@ -7782,7 +7785,10 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     cv::Mat matLine = matXX * k + b;
     cv::transpose(matLine, matLine);
     matOneRow = matOneRow - matLine;
-    auto minGray = std::max(matOneRow.at<float>(index1), matOneRow.at<float>(index2));   
+#ifdef _DEBUG
+    vecVecRow = CalcUtils::matToVector<float>(matOneRow);
+#endif
+    auto minGray = std::max(matOneRow.at<float>(index1), matOneRow.at<float>(index2));
 
     const int COMPARE_COUNT = 5;
     if ((index2 - index1) <= 2 * COMPARE_COUNT)
@@ -7848,8 +7854,9 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
                     vecIndex1.push_back(0);
                 if (vecIndex2.empty())
                     vecIndex2.push_back(matOneRow.cols - 1);
+                break;
             }
-        }            
+        }
     }
 
     if (vecIndex1.size() > 1) {
