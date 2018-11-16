@@ -41,7 +41,7 @@ public:
     const cv::Mat& getModelDescriptor() const;
     void setObjCenter(const cv::Point2f ptObjCenter);
     cv::Point2f getObjCenter() const;
-    virtual cv::Mat getImage() const { return cv::Mat(); }
+    virtual cv::Mat getImage() const override { return cv::Mat(); }
 
 private:
     cv::Point2f                 _ptObjCenter;
@@ -60,7 +60,7 @@ public:
     const cv::Size2f& getSize() const;
     void setElectrodeThreshold(Int16 nElectrodeThreshold);
     Int16 getElectrodeThreshold() const;
-    virtual cv::Mat getImage() const { return cv::Mat(); }
+    virtual cv::Mat getImage() const override { return cv::Mat(); }
 
 private:
     cv::Size2f          _size;
@@ -81,7 +81,7 @@ public:
     void setThreshold(Int16 nThreshold);
     Int16 getThreshold() const;
     void setTmpl(const cv::Mat &matTmpl) { _matTmpl = matTmpl; }
-    virtual cv::Mat getImage() const { return _matTmpl; }
+    virtual cv::Mat getImage() const override { return _matTmpl; }
 
 private:
     PR_INSP_CHIP_MODE   _enInspMode;
@@ -112,7 +112,7 @@ public:
     VectorOfVectorOfPoint getContour() const;
     String getTmplFileName() const;
     String getContourFileName() const;
-    virtual cv::Mat getImage() const { return _matTmpl; }
+    virtual cv::Mat getImage() const override { return _matTmpl; }
 
 private:
     Int16                   _nThreshold;
@@ -149,7 +149,7 @@ public:
     void setEdgeMask(const cv::Mat &matTmpl);
     cv::Mat getEdgeMask() const;
     cv::Mat getMask() const { return _matMask; }
-    virtual cv::Mat getImage() const { return _matTmpl; }
+    virtual cv::Mat getImage() const override { return _matTmpl; }
 
 private:
     PR_MATCH_TMPL_ALGORITHM _enAlgorithm;
@@ -172,7 +172,7 @@ public:
     cv::Mat getBigTmpl() const;
     VectorOfRect getCharRects() const;
     void setCharRects(const VectorOfRect &vecRects);
-    virtual cv::Mat getImage() const { return _matBigTmpl; }
+    virtual cv::Mat getImage() const override { return _matBigTmpl; }
 
 private:
     cv::Mat                 _matBigTmpl;
@@ -181,6 +181,30 @@ private:
     String                  _strKeyCharRect     = "CharRect_";
 };
 using OcvRecordPtr = std::shared_ptr<OcvRecord>;
+
+class SimilarityRecord : public Record
+{
+public:
+    SimilarityRecord(
+        PR_RECORD_TYPE          enType,
+        const cv::Mat          &matTmpl,
+        const cv::Mat          &matMask) :
+        Record(enType),
+        _matTmpl(matTmpl),
+        _matMask(matMask) {}
+    SimilarityRecord(PR_RECORD_TYPE enType) : Record(enType)   {}
+    virtual VisionStatus load(cv::FileStorage &fileStorage, const String& strFilePath = "") override;
+    virtual VisionStatus save(const String& strFilePath) override;
+    void setTmpl(const cv::Mat &matTmpl);
+    cv::Mat getTmpl() const;
+    virtual cv::Mat getImage() const override { return _matTmpl; }
+    cv::Mat getMask() const { return _matMask; }
+
+private:
+    cv::Mat                 _matTmpl;
+    cv::Mat                 _matMask;
+};
+using SimilarityRecordPtr = std::shared_ptr<SimilarityRecord>;
 
 }
 }

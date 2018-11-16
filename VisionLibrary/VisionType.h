@@ -60,6 +60,7 @@ enum class PR_RECORD_TYPE {
     TEMPLATE,
     LEAD,
     OCV,
+    SIMILARITY,
 };
 
 enum class PR_FIDUCIAL_MARK_TYPE {

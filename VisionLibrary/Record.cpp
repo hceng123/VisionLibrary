@@ -268,7 +268,7 @@ VisionStatus TmplRecord::load(cv::FileStorage &fs, const String& strFilePath) {
 VisionStatus TmplRecord::save(const String& strFilePath) {
     String strParamFilePath = strFilePath + "/" + Config::GetInstance()->getRecordParamFile();
     cv::FileStorage fs(strParamFilePath, cv::FileStorage::WRITE);
-    if ( ! fs.isOpened() )
+    if (!fs.isOpened())
         return VisionStatus::OPEN_FILE_FAIL;
 
     cv::write(fs, _strKeyType, ToInt32(PR_RECORD_TYPE::TEMPLATE));
@@ -368,6 +368,34 @@ VectorOfRect OcvRecord::getCharRects() const {
 
 void OcvRecord::setCharRects(const VectorOfRect &vecRects) {
     _vecCharRects = vecRects;
+}
+
+VisionStatus SimilarityRecord::load(cv::FileStorage &fileStorage, const String& strFilePath) {
+    _matTmpl = cv::imread(strFilePath + "/" + _strTmplFileName, cv::IMREAD_GRAYSCALE);
+    if (_matTmpl.empty())
+        return VisionStatus::INVALID_RECORD_FILE;
+    return VisionStatus::OK;
+}
+
+VisionStatus SimilarityRecord::save(const String& strFilePath) {
+    String strParamFilePath = strFilePath + "/" + Config::GetInstance()->getRecordParamFile();
+    cv::FileStorage fs(strParamFilePath, cv::FileStorage::WRITE);
+    if (!fs.isOpened())
+        return VisionStatus::OPEN_FILE_FAIL;
+
+    cv::write(fs, _strKeyType, ToInt32(PR_RECORD_TYPE::SIMILARITY));
+    fs.release();
+    
+    cv::imwrite(strFilePath + "/" + _strTmplFileName, _matTmpl);
+    return VisionStatus::OK;
+}
+
+void SimilarityRecord::setTmpl(const cv::Mat &matTmpl) {
+    _matTmpl = matTmpl;
+}
+
+cv::Mat SimilarityRecord::getTmpl() const {
+    return _matTmpl;
 }
 
 }

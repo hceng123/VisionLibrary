@@ -8514,5 +8514,143 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     return _lineScanRow(matFlip, m, startCol);
 }
 
+/*static*/ VisionStatus VisionAlgorithm::lrnSimilarity(const PR_LRN_SIMILARITY_CMD *const pstCmd, PR_LRN_SIMILARITY_RPY *const pstRpy, bool bReplay/*= false*/) {
+    assert(pstCmd != nullptr && pstRpy != nullptr);
+
+    if (pstCmd->matInputImg.empty()) {
+        WriteLog("Input image is empty.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    pstRpy->enStatus = _checkInputROI(pstCmd->rectROI, pstCmd->matInputImg, AT);
+    if (VisionStatus::OK != pstRpy->enStatus) return pstRpy->enStatus;
+    if (! pstCmd->matMask.empty()) {
+        if (pstCmd->matMask.rows != pstCmd->matInputImg.rows || pstCmd->matMask.cols != pstCmd->matInputImg.cols) {
+            char chArrMsg[1000];
+            _snprintf(chArrMsg, sizeof(chArrMsg), "The mask size ( %d, %d ) not match with input image size ( %d, %d ).",
+                pstCmd->matMask.cols, pstCmd->matMask.rows, pstCmd->matInputImg.cols, pstCmd->matInputImg.rows);
+            WriteLog(chArrMsg);
+            pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+            return pstRpy->enStatus;
+        }
+
+        if (pstCmd->matMask.channels() != 1) {
+            WriteLog("The mask must be gray image!");
+            pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+            return pstRpy->enStatus;
+        }
+    }    
+
+    MARK_FUNCTION_START_TIME;
+
+    cv::Mat matROI(pstCmd->matInputImg, pstCmd->rectROI);
+    if (matROI.channels() > 1)
+        cv::cvtColor(matROI, pstRpy->matTmpl, CV_BGR2GRAY);
+    else
+        pstRpy->matTmpl = matROI.clone();
+
+    cv::Mat matMaskROI;
+    if (!pstCmd->matMask.empty())
+        matMaskROI = cv::Mat(pstCmd->matMask, pstCmd->rectROI).clone();
+
+    SimilarityRecordPtr ptrRecord = std::make_shared<SimilarityRecord>(PR_RECORD_TYPE::SIMILARITY, pstRpy->matTmpl, matMaskROI);
+    RecordManager::getInstance()->add(ptrRecord, pstRpy->nRecordId);
+    pstRpy->enStatus = VisionStatus::OK;
+
+    MARK_FUNCTION_END_TIME;
+    return pstRpy->enStatus;
+}
+
+/*static*/ VisionStatus VisionAlgorithm::inspSimilarity(const PR_INSP_SIMILARITY_CMD *const pstCmd, PR_INSP_SIMILARITY_RPY *const pstRpy, bool bReplay/* = false*/) {
+    assert(pstCmd != nullptr && pstRpy != nullptr);
+
+    if (pstCmd->matInputImg.empty()) {
+        WriteLog("Input image is empty.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    pstRpy->enStatus = _checkInputROI(pstCmd->rectSrchWindow, pstCmd->matInputImg, AT);
+    if (VisionStatus::OK != pstRpy->enStatus) return pstRpy->enStatus;
+
+    if (pstCmd->vecRecordId.empty()) {
+        char chArrMsg[100];
+        _snprintf(chArrMsg, sizeof(chArrMsg), "The vector of input record id invalid.");
+        WriteLog(chArrMsg);
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    MARK_FUNCTION_START_TIME;
+    pstRpy->enStatus = VisionStatus::OK;
+    pstRpy->vecSimilarity.clear();
+    VectorOfRect vecResultRects;
+
+    cv::Mat matROI(pstCmd->matInputImg, pstCmd->rectSrchWindow), matGray;
+    if (matROI.channels() > 1)
+        cv::cvtColor(matROI, matGray, CV_BGR2GRAY);
+    else
+        matGray= matROI.clone();
+
+    for (const auto recordId : pstCmd->vecRecordId) {
+        if (recordId <= 0) {
+            char chArrMsg[100];
+            _snprintf(chArrMsg, sizeof(chArrMsg), "The input record id %d is invalid.", recordId);
+            WriteLog(chArrMsg);
+            pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+            return pstRpy->enStatus;
+        }
+
+        SimilarityRecordPtr ptrRecord = std::static_pointer_cast<SimilarityRecord>(RecordManager::getInstance()->get(recordId));
+        if (nullptr == ptrRecord) {
+            char chArrMsg[100];
+            _snprintf(chArrMsg, sizeof(chArrMsg), "Failed to get record ID %d in system.", recordId);
+            WriteLog(chArrMsg);
+            pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+            return pstRpy->enStatus;
+        }
+
+        if (ptrRecord->getTmpl().rows >= pstCmd->rectSrchWindow.height || ptrRecord->getTmpl().cols >= pstCmd->rectSrchWindow.width) {
+            WriteLog("The inspect ROI size not match with template size.");
+            pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+            return pstRpy->enStatus;
+        }
+
+        float fSimilarity = 0.f, fRotation = 0.f;
+        cv::Point2f ptResult;
+
+        pstRpy->enStatus = MatchTmpl::matchTemplate(matGray, ptrRecord->getTmpl(), false, PR_OBJECT_MOTION::TRANSLATION, ptResult, fRotation, fSimilarity, ptrRecord->getMask());
+        if (pstRpy->enStatus != VisionStatus::OK) {
+            WriteLog("Match template fail when inspect similarity.");
+            pstRpy->enStatus = VisionStatus::INSP_SIMILARITY_FAIL;
+            break;
+        }
+
+        pstRpy->vecSimilarity.push_back(fSimilarity);
+        cv::Point ptCtr(ToInt32(ptResult.x) + pstCmd->rectSrchWindow.x, ToInt32(ptResult.y) + pstCmd->rectSrchWindow.y);
+        vecResultRects.emplace_back(ptCtr.x - ptrRecord->getTmpl().cols / 2, ptCtr.y - ptrRecord->getTmpl().rows / 2,
+            ptrRecord->getTmpl().cols, ptrRecord->getTmpl().rows);
+    } 
+
+    if (VisionStatus::OK == pstRpy->enStatus) {
+        auto iterMax = std::max_element(pstRpy->vecSimilarity.begin(), pstRpy->vecSimilarity.end());
+        if (*iterMax < pstCmd->fMinSimilarity) {
+            pstRpy->enStatus = VisionStatus::INSP_SIMILARITY_FAIL;
+        }else {
+            if (!isAutoMode()) {
+                assert(pstRpy->vecSimilarity.size() == vecResultRects.size());
+                pstRpy->matResultImg = pstCmd->matInputImg.clone();
+                cv::rectangle(pstRpy->matResultImg, pstCmd->rectSrchWindow, BLUE_SCALAR, 1);
+                auto index = iterMax - pstRpy->vecSimilarity.begin();
+                cv::rectangle(pstRpy->matResultImg, vecResultRects[index], GREEN_SCALAR, 1);
+            }
+        }
+    }
+
+    MARK_FUNCTION_END_TIME;
+    return pstRpy->enStatus;
+}
+
 }
 }

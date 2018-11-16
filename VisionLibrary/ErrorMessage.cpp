@@ -280,6 +280,11 @@ VisionStatus GetErrorInfo(VisionStatus enStatus, PR_GET_ERROR_INFO_RPY *pstRpy)
         pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::PR_INSP_STATUS;
         break;
 
+    case VisionStatus::INSP_SIMILARITY_FAIL:
+        _snprintf(pstRpy->achErrorStr, PR_MAX_ERR_STR_LEN, "Inspect similarity rejected.");
+        pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::PR_INSP_STATUS;
+        break;
+
     default:
         _snprintf(pstRpy->achErrorStr, PR_MAX_ERR_STR_LEN, "Undefined error code!");
         pstRpy->enErrorLevel = PR_STATUS_ERROR_LEVEL::PR_FATAL_ERROR;
