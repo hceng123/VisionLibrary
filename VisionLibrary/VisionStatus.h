@@ -45,18 +45,18 @@ enum class VisionStatus
     
     //Assist function fail.
     FIND_DEVICE_EDGE_FAIL               = 40,
-    FIND_ELECTRODE_FAIL                 = 41,    
+    FIND_ELECTRODE_FAIL                 = 41,
     NOT_ENOUGH_POINTS_TO_FIT            = 42,
     TOO_MUCH_NOISE_TO_FIT               = 43,
-    FAIL_TO_FIT_CIRCLE                  = 44,    
-    OCR_FAIL                            = 45,    
-    TOO_MUCH_CC_TO_REMOVE               = 46,    
+    FAIL_TO_FIT_CIRCLE                  = 44,
+    OCR_FAIL                            = 45,
+    TOO_MUCH_CC_TO_REMOVE               = 46,
 
     //Learn and inspect chip status
     CAN_NOT_FIND_CAE_LINE               = 50,   //Can not find the line of capacitor
     CAN_NOT_FIND_SQUARE_EDGE            = 51,
     CAN_NOT_FIND_CIRCULAR_CHIP          = 52,
-    CAN_NOT_FIND_CHIP_BODY              = 53,    
+    CAN_NOT_FIND_CHIP_BODY              = 53,
     
     //Learn and inspect contour status
     CAN_NOT_FIND_CONTOUR                = 60,
@@ -103,6 +103,9 @@ enum class VisionStatus
     CALIPER_NOT_ENOUGH_EDGE_POINTS      = 202,
     LINE_LINEARITY_REJECT               = 203,
     LINE_ANGLE_OUT_OF_TOL               = 204,
+
+    // Insp similarity
+    INSP_SIMILARITY_FAIL                = 210,
 };
 
 }

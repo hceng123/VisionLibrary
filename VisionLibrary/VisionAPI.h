@@ -126,6 +126,8 @@ VisionAPI VisionStatus PR_GetOcvRecordInfo(Int32 nRecordId, PR_OCV_RECORD_INFO *
 VisionAPI VisionStatus PR_SetOcvRecordInfo(Int32 nRecordId, const PR_OCV_RECORD_INFO *const pstRecordInfo);
 VisionAPI VisionStatus PR_Ocv(const PR_OCV_CMD *const pstCmd, PR_OCV_RPY *const pstRpy);
 VisionAPI VisionStatus PR_Read2DCode(const PR_READ_2DCODE_CMD *const pstCmd, PR_READ_2DCODE_RPY *const pstRpy);
+VisionAPI VisionStatus PR_LrnSimilarity(const PR_LRN_SIMILARITY_CMD *const pstCmd, PR_LRN_SIMILARITY_RPY *const pstRpy);
+VisionAPI VisionStatus PR_InspSimilarity(const PR_INSP_SIMILARITY_CMD *const pstCmd, PR_INSP_SIMILARITY_RPY *const pstRpy);
 
 VisionAPI void         _PR_InternalTest();
 }

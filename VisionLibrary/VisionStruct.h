@@ -1450,7 +1450,6 @@ struct PR_THRESHOLD_CMD {
     PR_THRESHOLD_CMD() :
         bDoubleThreshold    (false),
         bInverseResult      (false) {}
-
     cv::Mat                 matInputImg;
     bool                    bDoubleThreshold;
     bool                    bInverseResult;
@@ -1525,6 +1524,31 @@ struct PR_READ_2DCODE_CMD {
 struct PR_READ_2DCODE_RPY {
     VisionStatus            enStatus;
     String                  strReadResult;
+    cv::Mat                 matResultImg;
+};
+
+struct PR_LRN_SIMILARITY_CMD {
+    cv::Mat                 matInputImg;
+    cv::Mat                 matMask;
+    cv::Rect                rectROI;
+};
+
+struct PR_LRN_SIMILARITY_RPY {
+    VisionStatus            enStatus;
+    Int32                   nRecordId;
+    cv::Mat                 matTmpl;
+};
+
+struct PR_INSP_SIMILARITY_CMD {
+    cv::Mat                 matInputImg;
+    cv::Rect                rectSrchWindow;
+    std::vector<Int32>      vecRecordId;
+    float                   fMinSimilarity;
+};
+
+struct PR_INSP_SIMILARITY_RPY {
+    VisionStatus            enStatus;
+    VectorOfFloat           vecSimilarity;
     cv::Mat                 matResultImg;
 };
 

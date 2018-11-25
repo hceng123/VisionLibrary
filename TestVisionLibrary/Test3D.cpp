@@ -1161,8 +1161,8 @@ void TestCalc4DLPHeightOffset()
 void TestCalc4DLPHeight()
 {
     std::string strParentFolder = "./data/machine_image/20180903/";
-    std::string strImageFolder = strParentFolder + "0903164501/";
-    std::string strResultFolder = strParentFolder + "Frame_4_Result/";
+    std::string strImageFolder = strParentFolder + "0903164442/";
+    std::string strResultFolder = strParentFolder + "Frame_1_Result/";
 
     auto vecImages = ReadFrameImage(strImageFolder);
     if (vecImages.empty())
@@ -1173,7 +1173,8 @@ void TestCalc4DLPHeight()
     bool b3DDetectCaliUseThinPattern = true;
     bool b3DDetectGaussionFilter = true;
 
-    float dlpOffset[4] = {5.3551e-04, -0.0014f, 0.0694, 0};
+    //float dlpOffset[4] = {5.3551e-04, -0.0014f, 0.0694, 0};
+    float dlpOffset[4] = {0.0193f, -0.0032f, -0.0899, 0};
 
     for (int nDlp = 0; nDlp < 4; ++ nDlp) {
         stCalcHeightCmds[nDlp].bEnableGaussianFilter = b3DDetectGaussionFilter;

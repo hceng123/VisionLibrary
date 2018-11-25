@@ -159,6 +159,9 @@ RecordPtr RecordManager::_createRecordPtr(Int32 recordType) {
     case PR_RECORD_TYPE::OCV:
         return std::make_shared<OcvRecord>(enRecordType);
         break;
+    case PR_RECORD_TYPE::SIMILARITY:
+        return std::make_shared<SimilarityRecord>(enRecordType);
+        break;
     default:
         assert(0);
     }
