@@ -96,6 +96,9 @@
     <ClInclude Include="DataMatrix.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="TableMapping.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="VisionAPI.cpp">
@@ -150,6 +153,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="DataMatrix.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TableMapping.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

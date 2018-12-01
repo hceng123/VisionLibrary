@@ -4,6 +4,7 @@
 #include <iostream>
 #include <fstream>
 #include "TestSub.h"
+#include "../RegressionTest/UtilityFunc.h"
 
 using namespace AOI::Vision;
 

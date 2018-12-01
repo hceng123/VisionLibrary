@@ -36,14 +36,14 @@ static void printfVector(const std::vector<T> &vecInput)
 template<class T>
 static void printfVectorOfVector(const std::vector<std::vector<T>> &vecVecInput)
 {
-	for (const auto &vecInput : vecVecInput )
-	{
-		for (const auto value : vecInput )
-		{
-			printf("%.2f ", value);
-		}
-		printf("\n");
-	}
+    for (const auto &vecInput : vecVecInput)
+    {
+        for (const auto value : vecInput)
+        {
+            printf("%.2f ", value);
+        }
+        printf("\n");
+    }
 }
 
 template<class T>

@@ -1552,6 +1552,25 @@ struct PR_INSP_SIMILARITY_RPY {
     cv::Mat                 matResultImg;
 };
 
+struct PR_TABLE_MAPPING_CMD {
+    struct FramePoint {
+        cv::Point2f     targetPoint;
+        cv::Point2f     actualPoint;
+    };
+
+    using VectorOfFramePoint = std::vector<FramePoint>;
+    using VectorOfFramePoints = std::vector<VectorOfFramePoint>;
+
+    PR_TABLE_MAPPING_CMD() :
+        nBazierRank(11) {}
+    VectorOfFramePoints     vecFramePoints;
+    int                     nBazierRank;
+};
+
+struct PR_TABLE_MAPPING_RPY {
+    VisionStatus            enStatus;
+};
+
 }
 }
 #endif /*_AOI_VISION_STRUCT_H_*/

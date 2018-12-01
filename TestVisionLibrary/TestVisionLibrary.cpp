@@ -1,15 +1,18 @@
 // TestVisionLibrary.cpp : Defines the entry point for the console application.
 //
 
+#include <ctime>
+#include <iostream>
+#include <iomanip>
+
 #include "stdafx.h"
 #include "../VisionLibrary/VisionAPI.h"
 #include "opencv2/core.hpp"
 #include "opencv2/highgui.hpp"
 #include "opencv2/imgproc.hpp"
-#include <ctime>
-#include <iostream>
-#include <iomanip>
+#include "../RegressionTest/UtilityFunc.h"
 #include "TestSub.h"
+
 
 using namespace AOI::Vision;
 
@@ -754,7 +757,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
     //TestMotor3DCalib();
 
-    TestCalc4DLPHeight();
+    //TestCalc4DLPHeight();
     //TestMergeHeightMax();
 
     //TestInsp3DSolder();
@@ -786,6 +789,8 @@ int _tmain(int argc, _TCHAR* argv[])
     //TestRead2DCode_2();
 
     //TestDrawDashRect();
+    
+    TestTableMapping();
 
     PR_DumpTimeLog("./Vision/Time.log");
     std::cout << "Press any key to exit." << std::endl;

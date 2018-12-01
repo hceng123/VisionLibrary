@@ -87,48 +87,4 @@ void TestRead2DCode_2();
 
 void TestDrawDashRect();
 
-template<class T>
-void printfMat(const cv::Mat &mat)
-{
-    for (short row = 0; row < mat.rows; ++row)
-    {
-        for (short col = 0; col < mat.cols; ++col)
-        {
-            printf("%f ", mat.at<T>(row, col));
-        }
-        printf("\n");
-    }
-}
-
-template<class T>
-void printfVectorOfVector(const std::vector<std::vector<T>> &vevVecInput)
-{
-    for (const auto &vecInput : vevVecInput )
-    {
-        for (const auto value : vecInput )
-        {
-            printf("%.2f ", value);
-        }
-        printf("\n");
-    }
-}
-
-template<typename _Tp>
-inline std::vector<std::vector<_Tp>> matToVector(const cv::Mat &matInputImg) {
-    std::vector<std::vector<_Tp>> vecVecArray;
-    if ( matInputImg.isContinuous() ) {
-        for ( int row = 0; row < matInputImg.rows; ++ row ) {            
-            std::vector<_Tp> vecRow;
-            int nRowStart = row * matInputImg.cols;
-            vecRow.assign ( (_Tp *)matInputImg.datastart + nRowStart, (_Tp *)matInputImg.datastart + nRowStart + matInputImg.cols );
-            vecVecArray.push_back(vecRow);
-        }
-    }else {
-        for ( int row = 0; row < matInputImg.rows; ++ row ) {
-            std::vector<_Tp> vecRow;
-            vecRow.assign((_Tp*)matInputImg.ptr<uchar>(row), (_Tp*)matInputImg.ptr<uchar>(row) + matInputImg.cols);
-            vecVecArray.push_back(vecRow);
-        }
-    }
-    return vecVecArray;
-}
+void TestTableMapping();

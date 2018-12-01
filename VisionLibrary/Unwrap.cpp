@@ -837,14 +837,14 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
     }
 
 #ifdef _DEBUG
-    matNan = CalcUtils::getNanMask ( matPhaseResult );
+    matNan = CalcUtils::getNanMask(matPhaseResult);
     cv::imwrite("./data/NanMap_2.png", matNan);
 #endif
 
     matPhaseResult.setTo(cv::Scalar(NAN), matBranchCut);
 
 #ifdef _DEBUG
-    matNan = CalcUtils::getNanMask ( matPhaseResult );
+    matNan = CalcUtils::getNanMask(matPhaseResult);
     cv::imwrite("./data/NanMap_3.png", matNan);
 #endif
 

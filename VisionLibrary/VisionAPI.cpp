@@ -12,6 +12,7 @@
 #include "Log.h"
 #include "CalcUtils.h"
 #include "Unwrap.h"
+#include "TableMapping.h"
 
 #define PR_FUNCTION_ENTRY   \
 try \
@@ -638,6 +639,13 @@ VisionAPI VisionStatus PR_InspSimilarity(const PR_INSP_SIMILARITY_CMD *const pst
 PR_FUNCTION_ENTRY
     return VisionAlgorithm::inspSimilarity(pstCmd, pstRpy);
 PR_FUNCTION_EXIT
+}
+
+VisionAPI VisionStatus PR_TableMapping(const PR_TABLE_MAPPING_CMD *const pstCmd, PR_TABLE_MAPPING_RPY *const pstRpy)
+{
+//PR_FUNCTION_ENTRY
+    return TableMapping::run(pstCmd, pstRpy);
+//PR_FUNCTION_EXIT
 }
 
 }
