@@ -419,6 +419,16 @@ public:
         return (degree * static_cast<T>(CV_PI) / 180.f);
     }
 
+    template<typename T>
+    static cv::Mat power(const cv::Mat& matA, const cv::Mat& matB) {
+        assert(matA.size() == matB.size());
+        cv::Mat matResult = matA.clone();
+        for (int row = 0; row < matA.rows; ++ row)
+        for (int col = 0; col < matA.cols; ++ col)
+            matResult.at<T>(row, col) = std::pow(matResult.at<T>(row, col), matB.at<T>(row, col));
+        return matResult;
+    }
+
     static float ptDisToLine(const cv::Point2f &ptInput, bool bReversedFit, float fSlope, float fIntercept);
     static float lineSlope(const PR_Line2f &line);
     static void lineSlopeIntercept(const PR_Line2f &line, float &fSlope, float &fIntercept);
@@ -444,7 +454,7 @@ public:
     static void adjustRectROI(cv::Rect &rect, const cv::Mat &matInput);
     static cv::Rect boundingRect(const VectorOfRect &vecRect);
     static void setToExcept(cv::Mat &matInOut, int value, const cv::Rect &rectROI);
-    static bool isVerticalROI(const VectorOfRect &vecRectROIs);
+    static bool isVerticalROI(const VectorOfRect& vecRectROIs);
 };
 
 }

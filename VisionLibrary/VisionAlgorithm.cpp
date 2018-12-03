@@ -21,6 +21,7 @@
 #include "SubFunctions.h"
 #include "Auxiliary.hpp"
 #include "DataMatrix.h"
+#include "TableMapping.h"
 
 using namespace cv::xfeatures2d;
 namespace bfs = boost::filesystem;
@@ -8647,6 +8648,33 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
             }
         }
     }
+
+    MARK_FUNCTION_END_TIME;
+    return pstRpy->enStatus;
+}
+
+/*static*/ VisionStatus VisionAlgorithm::tableMapping(const PR_TABLE_MAPPING_CMD *const pstCmd, PR_TABLE_MAPPING_RPY *const pstRpy, bool bReplay /*= false*/) {
+    assert(pstCmd != nullptr && pstRpy != nullptr);
+
+    if (pstCmd->vecFramePoints.empty()) {
+        WriteLog("Input frame points is empty.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    for (size_t i = 0; i < pstCmd->vecFramePoints.size(); ++ i) {
+        if (pstCmd->vecFramePoints[i].empty()) {
+            std::stringstream ss;
+            ss << "Frame " << i << " mapping points vector is empty.";
+            WriteLog(ss.str());
+            pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+            return pstRpy->enStatus;
+        }
+    }
+
+    MARK_FUNCTION_START_TIME;
+
+    TableMapping::run(pstCmd, pstRpy);
 
     MARK_FUNCTION_END_TIME;
     return pstRpy->enStatus;

@@ -201,6 +201,7 @@ FC /L $(ProjectDir)$(ProjectName)_golden.txt $(ProjectDir)$(ProjectName)_result.
     <ClCompile Include="TestMisc.cpp" />
     <ClCompile Include="TestOCV.cpp" />
     <ClCompile Include="TestSrchTmpl.cpp" />
+    <ClCompile Include="TestTableMapping.cpp" />
     <ClCompile Include="UtilityFunc.cpp" />
   </ItemGroup>
   <ItemGroup>

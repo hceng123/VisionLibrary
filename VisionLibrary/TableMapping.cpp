@@ -125,7 +125,7 @@ TableMapping::~TableMapping()
         // Matlab: Mxyi = [Mxy(:, idx); ones(1, leni)];
         const auto& framePoints = vecFramePoints[i];
         cv::Mat matXYi;
-        std::vector<float> vecActualX, vecActualY;
+        VectorOfFloat vecActualX, vecActualY;
         vecActualX.reserve(framePoints.size());
         vecActualY.reserve(framePoints.size());
         for (const auto& mappingPoint : framePoints) {
@@ -206,14 +206,13 @@ TableMapping::~TableMapping()
     Axy.push_back(cv::Mat(vecTargetY).reshape(1, 1));
 
     matR1 = Axy - Axy1;
-    //cv::transpose(matR1, matR1);
-    matR1 = matR1.reshape(1, matR1.total());
+    matR1 = matR1.reshape(1, ToInt32(matR1.total()));
     float normR1 = ToFloat(cv::norm(matR1));
 
-    /*cv::transpose(dRa, dRa);*/ dRa = dRa.reshape(1, 1);
-    /*cv::transpose(dRb, dRb);*/ dRb = dRb.reshape(1, 1);
-    /*cv::transpose(dRc, dRc);*/ dRc = dRc.reshape(1, 1);
-    /*cv::transpose(dRTxy, dRTxy);*/ dRTxy = dRTxy.reshape(1, 3 * ToInt32(vecFramePoints.size()));
+    dRa = dRa.reshape(1, 1);
+    dRb = dRb.reshape(1, 1);
+    dRc = dRc.reshape(1, 1);
+    dRTxy = dRTxy.reshape(1, 3 * ToInt32(vecFramePoints.size()));
 
     matDR1.release();
     matDR1.push_back(dRa);
@@ -224,6 +223,140 @@ TableMapping::~TableMapping()
     matDR1 = -matDR1;
 
     return normR1;
+}
+
+/*static*/ cv::Mat TableMapping::_paraFromPolyNomial(int n) {
+    if (n < 3) n = 3;
+    cv::Mat matPolyPara = cv::Mat::zeros(1, n, CV_32FC1);
+    matPolyPara.at<float>(0) = 1;
+    matPolyPara.at<float>(1) = 2;
+    matPolyPara.at<float>(2) = 1;
+
+    for (int i = 0; i < n -3; ++ i) {
+        cv::Mat matPolyParaClone = cv::Mat::zeros(1, n, CV_32FC1);
+        cv::Mat matSrc(matPolyPara, cv::Range::all(), cv::Range(0, n - 1));
+        cv::Mat matDst(matPolyParaClone, cv::Range::all(), cv::Range(1, n));
+        matSrc.copyTo(matDst);
+
+        matPolyPara = matPolyPara + matPolyParaClone;
+    }
+
+#ifdef _DEBUG
+    auto vecVecPolyPara = CalcUtils::matToVector<float>(matPolyPara);
+#endif
+
+    return matPolyPara;
+}
+
+/*static*/ int TableMapping::_findMatchPoint(const VectorOfFloat& vecTargetX, const VectorOfFloat& vecTargetY, const cv::Point2f& ptSrch) {
+    assert(vecTargetX.size() == vecTargetY.size());
+    for (size_t i = 0; i < vecTargetX.size(); ++ i) {
+        if (fabs(vecTargetX[i] - ptSrch.x) < 1 && fabs(vecTargetY[i] - ptSrch.y) < 1)
+            return ToInt32(i);
+    }
+
+    return -1;
+}
+
+/*static*/ cv::Mat TableMapping::_generateBazier(const cv::Mat& matX, const cv::Mat& matY, const VectorOfFloat& vecXyMinMax, int mm, int nn) {
+    auto xMin = vecXyMinMax[0]; auto xMax = vecXyMinMax[1];
+    auto yMin = vecXyMinMax[2]; auto yMax = vecXyMinMax[3];
+
+    const int ROWS = matX.rows;
+
+    cv::Mat u = (matX - xMin) / (xMax - xMin);
+    cv::Mat v = (matY - yMin) / (yMax - yMin);
+
+#ifdef _DEBUG
+    cv::Mat uT; cv::transpose(u, uT);
+    auto vecVecUT = CalcUtils::matToVector<float>(uT);
+    cv::Mat vT; cv::transpose(v, vT);
+    auto vecVecVT = CalcUtils::matToVector<float>(vT);
+#endif
+
+    auto matPolyParamm = _paraFromPolyNomial(mm);
+    auto matPolyParann = _paraFromPolyNomial(nn);
+
+    cv::Mat Pm1 = cv::repeat(CalcUtils::intervals<float>(0.f, 1.f, ToFloat(mm - 1)).reshape(1, 1),  ROWS, 1);
+    cv::Mat Pm2 = cv::repeat(CalcUtils::intervals<float>(ToFloat(mm - 1), -1.f, 0.f).reshape(1, 1), ROWS, 1);
+    cv::Mat Pm3 = cv::repeat(u, 1, mm);
+    cv::Mat Pm4 = cv::repeat(1-u, 1, mm);
+
+    cv::Mat Pn1 = cv::repeat(CalcUtils::intervals<float>(0.f, 1.f, ToFloat(nn - 1)).reshape(1, 1),  ROWS, 1);
+    cv::Mat Pn2 = cv::repeat(CalcUtils::intervals<float>(ToFloat(nn - 1), -1.f, 0.f).reshape(1, 1), ROWS, 1);
+    cv::Mat Pn3 = cv::repeat(v, 1, nn);
+    cv::Mat Pn4 = cv::repeat(1-v, 1, nn);
+
+    // P1 = (Pm3.^Pm1).*(Pm4.^Pm2).*repmat(PolyParamm, len, 1);
+    cv::Mat matTmpPmPow, P1;
+    cv::multiply(CalcUtils::power<float>(Pm3, Pm1), CalcUtils::power<float>(Pm4, Pm2), matTmpPmPow);
+    cv::multiply(matTmpPmPow, cv::repeat(matPolyParamm, ROWS, 1), P1);
+
+    // P2 = (Pn3.^Pn1).*(Pn4.^Pn2).*repmat(PolyParann, len, 1);
+    cv::Mat matTmpPnPow, P2;
+    cv::multiply(CalcUtils::power<float>(Pn3, Pn1), CalcUtils::power<float>(Pn4, Pn2), matTmpPnPow);
+    cv::multiply(matTmpPnPow, cv::repeat(matPolyParann, ROWS, 1), P2);
+
+    cv::Mat matXX = cv::Mat::zeros(ROWS, mm * nn, CV_32FC1);
+
+    for (int ii = 0; ii < mm; ++ ii)
+    for (int jj = 0; jj < nn; ++ jj) {
+        auto matCol = matXX.col(ii * nn + jj);
+        cv::multiply(P1.col(ii), P2.col(jj), matCol);
+    }
+#ifdef _DEBUG
+    cv::Mat P1T; cv::transpose(P1, P1T);
+    auto vecVecP1T = CalcUtils::matToVector<float>(P1T);
+    cv::Mat P2T; cv::transpose(P2, P2T);
+    auto vecVecP2T = CalcUtils::matToVector<float>(P2T);
+    auto vecVecXX = CalcUtils::matToVector<float>(matXX);
+#endif
+
+    return matXX;
+}
+
+/*static*/ cv::Mat TableMapping::_calculatePPz(const cv::Mat& matX, const cv::Mat& matY, const cv::Mat& matZ,
+        const VectorOfFloat& vecXyMinMax, int mm, int nn) {
+    cv::Mat matX1, matY1, matZ1;
+    for (int row = 0; row < matZ.rows; ++ row) {
+        if (!std::isnan(matZ.at<float>(row))) {
+            matX1.push_back(matX.at<float>(row));
+            matY1.push_back(matY.at<float>(row));
+            matZ1.push_back(matZ.at<float>(row));
+        }
+    }
+
+#ifdef _DEBUG
+    cv::Mat matX1T; cv::transpose(matX1, matX1T);
+    auto vecVecX1T = CalcUtils::matToVector<float>(matX1T);
+    cv::Mat matY1T; cv::transpose(matY1, matY1T);
+    auto vecVecY1T = CalcUtils::matToVector<float>(matY1T);
+    cv::Mat matZ1T; cv::transpose(matZ1, matZ1T);
+    auto vecVecZ1T = CalcUtils::matToVector<float>(matZ1T);
+#endif
+
+    cv::Mat matXX = _generateBazier(matX1, matY1, vecXyMinMax, mm, nn);
+    //Matlab x'*x
+    cv::Mat matXXT; cv::transpose(matXX, matXXT);
+    cv::Mat matLeft = matXXT * matXX;
+
+    //Matlab xx'*Z1
+    cv::Mat matRight = matXXT * matZ1;
+
+    cv::Mat PPz;
+    cv::solve(matLeft, matRight, PPz, cv::DecompTypes::DECOMP_SVD);
+    return PPz;
+}
+
+/*static*/ cv::Mat TableMapping::_calculateSurface(const cv::Mat& matX, const cv::Mat& matY, const cv::Mat& matPPz, const VectorOfFloat& vecXyMinMax, int mm, int nn) {
+    cv::Mat matXInRow = matX.reshape(1, matX.rows * matX.cols);
+    cv::Mat matYInRow = matY.reshape(1, matY.rows * matY.cols);
+
+    cv::Mat matXX = _generateBazier(matXInRow, matYInRow, vecXyMinMax, mm, nn);
+
+    cv::Mat zp1 = matXX * matPPz;
+    zp1 = zp1.reshape(1, matX.rows);
+    return zp1;
 }
 
 /*static*/ VisionStatus TableMapping::run(const PR_TABLE_MAPPING_CMD *const pstCmd, PR_TABLE_MAPPING_RPY *const pstRpy) {
@@ -244,7 +377,7 @@ TableMapping::~TableMapping()
         auto k1 = std::sqrt(matK1.at<float>(0, 0) * matK1.at<float>(0, 0) + matK1.at<float>(1, 0) * matK1.at<float>(1, 0));
         auto k2 = std::sqrt(matK1.at<float>(0, 1) * matK1.at<float>(0, 1) + matK1.at<float>(1, 1) * matK1.at<float>(1, 1));
 
-        auto theta1 = atan(matK1.at<float>(1, 0) / matK1.at<float>(0, 0));
+        auto theta1 = atan( matK1.at<float>(1, 0) / matK1.at<float>(0, 0));
         auto theta2 = atan(-matK1.at<float>(0, 1) / matK1.at<float>(1, 1)) - theta1;
 
         auto Tx = matK.at<float>(2, 0);
@@ -286,11 +419,11 @@ TableMapping::~TableMapping()
     auto vecVecR1T = CalcUtils::matToVector<float>(matR1T);
 #endif
 
-    cv::Mat derivResidual = cv::Mat::ones(vecD1.size(), 1, CV_32FC1);
+    cv::Mat derivResidual = cv::Mat::ones(ToInt32(vecD1.size()), 1, CV_32FC1);
     int N  = 0;
-    float mu = 1e-6;
-    auto eyeX = cv::Mat::eye(vecD1.size(), vecD1.size(), CV_32FC1);
-    float fDrNorm = cv::norm(derivResidual);
+    float mu = 1e-6f;
+    auto eyeX = cv::Mat::eye(ToInt32(vecD1.size()), ToInt32(vecD1.size()), CV_32FC1);
+    float fDrNorm = ToFloat(cv::norm(derivResidual));
     const float EPSILON = 0.01f;
 
     while(fDrNorm > EPSILON) { // iteration end condition
@@ -303,7 +436,7 @@ TableMapping::~TableMapping()
         cv::Mat matXX = JrT * Jr  + mu * eyeX;
         cv::Mat matYY = JrT * Rt;
         cv::solve(matXX, matYY, derivResidual, cv::DecompTypes::DECOMP_SVD);
-        fDrNorm = cv::norm(derivResidual);
+        fDrNorm = ToFloat(cv::norm(derivResidual));
         derivResidual = -derivResidual;
 
 #ifdef _DEBUG
@@ -319,7 +452,7 @@ TableMapping::~TableMapping()
 
         int nn = 0;
         bool flag = false;
-        fDrNorm = cv::norm(derivResidual);        
+        fDrNorm = ToFloat(cv::norm(derivResidual));
 
         while (Rsum1 > Rsum && fDrNorm > EPSILON) {
             if (++nn > 10) {
@@ -331,7 +464,7 @@ TableMapping::~TableMapping()
             cv::Mat matXX = JrT * Jr + mu * eyeX;
             cv::Mat matYY = JrT * Rt;
             cv::solve(matXX, matYY, derivResidual);
-            fDrNorm = cv::norm(derivResidual);
+            fDrNorm = ToFloat(cv::norm(derivResidual));
             derivResidual = -derivResidual;
 
             matD1 = matD1 + derivResidual;
@@ -349,7 +482,110 @@ TableMapping::~TableMapping()
     auto vecVecD1T = CalcUtils::matToVector<float>(matD1T);
 #endif
 
-    return VisionStatus::OK;
+    a = d.at<float>(0); b =  d.at<float>(1); c = d.at<float>(2);
+    cv::Mat xtt, ytt, dxt, dyt;
+    for (int i = 0; i < vecProcessedFramePoints.size(); ++ i) {
+        auto theta1i = matD1.at<float>(i * 3 + 3);
+        auto Txi     = matD1.at<float>(i * 3 + 4);
+        auto Tyi     = matD1.at<float>(i * 3 + 5);
+
+        VectorOfFloat vecTargetX, vecTargetY, vecActualX, vecActualY;
+        const int dataLen = ToInt32(vecProcessedFramePoints[i].size());
+        vecTargetX.reserve(dataLen);
+        vecTargetX.reserve(dataLen);
+        vecActualX.reserve(dataLen);
+        vecActualY.reserve(dataLen);
+        for (const auto& mappingPoint : vecProcessedFramePoints[i]) {
+            vecTargetX.push_back(mappingPoint.targetPoint.x);
+            vecTargetY.push_back(mappingPoint.targetPoint.y);
+
+            vecActualX.push_back(mappingPoint.actualPoint.x);
+            vecActualY.push_back(mappingPoint.actualPoint.y);
+        }
+
+        auto minMaxIterOfX = std::minmax_element(vecTargetX.begin(), vecTargetX.end());
+        auto minMaxIterOfY = std::minmax_element(vecTargetY.begin(), vecTargetY.end());
+
+        cv::Mat xt, yt;
+        CalcUtils::meshgrid<float>(
+            *minMaxIterOfX.first, pstCmd->fBoardPointDist, *minMaxIterOfX.second,
+            *minMaxIterOfY.first, pstCmd->fBoardPointDist, *minMaxIterOfY.second, xt, yt);
+        cv::Mat dx = cv::Mat::ones(xt.size(), CV_32FC1) * NAN;
+        cv::Mat dy = dx.clone();
+
+        for (int row = 0; row < xt.rows; ++ row)
+        for (int col = 0; col < xt.cols; ++ col) {
+            auto index = _findMatchPoint(vecTargetX, vecTargetY, cv::Point2f(xt.at<float>(row, col), yt.at<float>(row, col)));
+            if (index >= 0) {
+                dx.at<float>(row, col) = vecActualX[index];
+                dy.at<float>(row, col) = vecActualY[index];
+                xt.at<float>(row, col) = vecTargetX[index];
+                yt.at<float>(row, col) = vecTargetY[index];
+            }
+        }
+
+        auto Tx1 = - ( Txi * cos(theta1i) + Tyi * sin(theta1i));
+        auto Ty1 = - (-Txi * sin(theta1i) + Tyi * cos(theta1i));
+
+        cv::Mat xti =  xt * cos(theta1i) + yt * sin(theta1i) + Tx1;
+        cv::Mat yti = -xt * sin(theta1i) + yt * cos(theta1i) + Ty1;
+
+        cv::Mat xte = a * dx + c * dy;
+        cv::Mat yte = b * dy;
+
+        cv::Mat dxi = xti - xte;
+        cv::Mat dyi = yti - yte;
+
+        // Matlab xtt = [xtt; xte(:)];
+        cv::transpose(xte, xte);
+        xtt.push_back(xte.reshape(1, xte.rows * xte.cols));
+
+        // Matlab ytt = [ytt; yte(:)];
+        cv::transpose(yte, yte);
+        ytt.push_back(yte.reshape(1, yte.rows * yte.cols));
+
+        // Matlab dxt = [dxt; dxi(:)];
+        cv::transpose(dxi, dxi);
+        dxt.push_back(dxi.reshape(1, dxi.rows * dxi.cols));
+
+        // Matlab dyt = [dyt; dyi(:)];
+        cv::transpose(dyi, dyi);
+        dyt.push_back(dyi.reshape(1, dyi.rows * dyi.cols));
+    }
+
+#ifdef _DEBUG
+    cv::Mat matdxtT; cv::transpose(dxt, matdxtT);
+    auto vecVecDxtT = CalcUtils::matToVector<float>(matdxtT);
+    cv::Mat matdytT; cv::transpose(dyt, matdytT);
+    auto vecVecDytT = CalcUtils::matToVector<float>(matdytT);
+#endif
+
+    const float BORDER_MARGIN = 10.f;
+    double minX = 0., maxX = 0., minY = 0., maxY = 0.;
+    cv::minMaxIdx(xtt, &minX, &maxX);
+    cv::minMaxIdx(ytt, &minY, &maxY);
+
+    minX += BORDER_MARGIN; maxX -= BORDER_MARGIN;
+    minY += BORDER_MARGIN; maxY -= BORDER_MARGIN;
+
+    std::vector<float> vecParamMinMaxXY{ToFloat(minX), ToFloat(maxX), ToFloat(minY), ToFloat(maxY)};
+    float mt = 40, nt = 50;
+    //[xt2, yt2] = meshgrid(xmin:(xmax-xmin)/(mt-1):xmax, ymin:(ymax-ymin)/(nt-1):ymax);
+    cv::Mat xt2, yt2;
+    CalcUtils::meshgrid(minX, (maxX - minX)/(mt-1), maxX, minY, (maxY - minY)/(nt-1), maxY, xt2, yt2);
+
+    pstRpy->matXOffsetParam = _calculatePPz(xtt, ytt, dxt, vecParamMinMaxXY, pstCmd->nBazierRank, pstCmd->nBazierRank);
+    pstRpy->matYOffsetParam = _calculatePPz(xtt, ytt, dyt, vecParamMinMaxXY, pstCmd->nBazierRank, pstCmd->nBazierRank);
+
+#ifdef _DEBUG
+    cv::Mat matXOffsetParamT; cv::transpose(pstRpy->matXOffsetParam, matXOffsetParamT);
+    auto vecVecXOffsetParamT = CalcUtils::matToVector<float>(matXOffsetParamT);
+    cv::Mat matYOffsetParamT; cv::transpose(pstRpy->matYOffsetParam, matYOffsetParamT);
+    auto vecVecYOffsetParam = CalcUtils::matToVector<float>(matYOffsetParamT);
+#endif
+
+    pstRpy->enStatus = VisionStatus::OK;
+    return pstRpy->enStatus;
 }
 
 }

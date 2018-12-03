@@ -93,7 +93,7 @@ static void TestCalcUtilsInternals() {
         std::cout << std::fixed << std::setprecision(2);
         std::cout << "INPUT: start = " << start << " interval = " << interval << " end = " << end << std::endl;
         std::cout << "INTERVALS RESULT: " << std::endl;
-        printfMat<float> ( matResult );
+        printfMat<float>(matResult);
     }
 
     {
@@ -105,7 +105,7 @@ static void TestCalcUtilsInternals() {
         auto matResult = CalcUtils::intervals<float>(start, interval, end);
         std::cout << "INPUT: start = " << start << " interval = " << interval << " end = " << end << std::endl;
         std::cout << "INTERVALS RESULT: " << std::endl;
-        printfMat<float> ( matResult );
+        printfMat<float>(matResult);
     }
 
     try
@@ -118,7 +118,7 @@ static void TestCalcUtilsInternals() {
         auto matResult = CalcUtils::intervals<float>(start, interval, end);
         std::cout << "INPUT: start = " << start << " interval = " << interval << " end = " << end << std::endl;
         std::cout << "INTERVALS RESULT: " << std::endl;
-        printfMat<float> ( matResult );
+        printfMat<float>(matResult);
     }catch (std::exception &e) {
         std::cout << e.what() << std::endl;
     }

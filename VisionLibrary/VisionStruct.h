@@ -1562,12 +1562,16 @@ struct PR_TABLE_MAPPING_CMD {
     using VectorOfFramePoints = std::vector<VectorOfFramePoint>;
 
     PR_TABLE_MAPPING_CMD() :
+        fBoardPointDist(5.f),
         nBazierRank(11) {}
     VectorOfFramePoints     vecFramePoints;
+    float                   fBoardPointDist; // The physical calibration point distance on the chess board. Unit: mm
     int                     nBazierRank;
 };
 
 struct PR_TABLE_MAPPING_RPY {
+    cv::Mat                 matXOffsetParam;
+    cv::Mat                 matYOffsetParam;
     VisionStatus            enStatus;
 };
 
