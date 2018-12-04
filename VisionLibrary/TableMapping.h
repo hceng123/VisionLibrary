@@ -25,6 +25,7 @@ class TableMapping
 
 public:
     static VisionStatus run(const PR_TABLE_MAPPING_CMD *const pstCmd, PR_TABLE_MAPPING_RPY *const pstRpy);
+    static VisionStatus calcTableOffset(const PR_CALC_TABLE_OFFSET_CMD* const pstCmd, PR_CALC_TABLE_OFFSET_RPY* const pstRpy);
 };
 
 }

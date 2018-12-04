@@ -129,6 +129,7 @@ VisionAPI VisionStatus PR_Read2DCode(const PR_READ_2DCODE_CMD *const pstCmd, PR_
 VisionAPI VisionStatus PR_LrnSimilarity(const PR_LRN_SIMILARITY_CMD *const pstCmd, PR_LRN_SIMILARITY_RPY *const pstRpy);
 VisionAPI VisionStatus PR_InspSimilarity(const PR_INSP_SIMILARITY_CMD *const pstCmd, PR_INSP_SIMILARITY_RPY *const pstRpy);
 VisionAPI VisionStatus PR_TableMapping(const PR_TABLE_MAPPING_CMD *const pstCmd, PR_TABLE_MAPPING_RPY *const pstRpy);
+VisionAPI VisionStatus PR_CalcTableOffset(const PR_CALC_TABLE_OFFSET_CMD* const pstCmd, PR_CALC_TABLE_OFFSET_RPY* const pstRpy);
 
 VisionAPI void         _PR_InternalTest();
 }

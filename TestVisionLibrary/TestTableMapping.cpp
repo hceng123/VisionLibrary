@@ -38,4 +38,22 @@ void TestTableMapping() {
     }
 
     PR_TableMapping(&stCmd, &stRpy);
+    if (VisionStatus::OK != stRpy.enStatus)
+        return;
+
+    PR_CALC_TABLE_OFFSET_CMD stCalcOffsetCmd;
+    PR_CALC_TABLE_OFFSET_RPY stCalcOffsetRpy;
+
+    stCalcOffsetCmd.ptTablePos = cv::Point2f(-300, 600);
+    stCalcOffsetCmd.matXOffsetParam = stRpy.matXOffsetParam;
+    stCalcOffsetCmd.matYOffsetParam = stRpy.matYOffsetParam;
+    stCalcOffsetCmd.fMinX = stRpy.fMinX;
+    stCalcOffsetCmd.fMaxX = stRpy.fMaxX;
+    stCalcOffsetCmd.fMinY = stRpy.fMinY;
+    stCalcOffsetCmd.fMaxY = stRpy.fMaxY;
+
+    PR_CalcTableOffset(&stCalcOffsetCmd, &stCalcOffsetRpy);
+
+    std::cout << "PR_CalcTableOffset status " << ToInt32(stCalcOffsetRpy.enStatus) << std::endl;
+    std::cout << "Offset " << stCalcOffsetRpy.fOffsetX << ", " << stCalcOffsetRpy.fOffsetY <<std::endl;
 }

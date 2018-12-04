@@ -1572,6 +1572,29 @@ struct PR_TABLE_MAPPING_CMD {
 struct PR_TABLE_MAPPING_RPY {
     cv::Mat                 matXOffsetParam;
     cv::Mat                 matYOffsetParam;
+    float                   fMinX;
+    float                   fMaxX;
+    float                   fMinY;
+    float                   fMaxY;
+    VisionStatus            enStatus;
+};
+
+struct PR_CALC_TABLE_OFFSET_CMD {
+    PR_CALC_TABLE_OFFSET_CMD() :
+        nBazierRank(11) {}
+    cv::Point2f             ptTablePos;
+    cv::Mat                 matXOffsetParam;
+    cv::Mat                 matYOffsetParam;
+    float                   fMinX;
+    float                   fMaxX;
+    float                   fMinY;
+    float                   fMaxY;
+    int                     nBazierRank;
+};
+
+struct PR_CALC_TABLE_OFFSET_RPY {
+    float                   fOffsetX;
+    float                   fOffsetY;
     VisionStatus            enStatus;
 };
 

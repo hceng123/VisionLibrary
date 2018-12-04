@@ -1,5 +1,6 @@
 #include "TableMapping.h"
 #include "CalcUtils.h"
+#include "Log.h"
 
 namespace AOI
 {
@@ -568,11 +569,16 @@ TableMapping::~TableMapping()
     minX += BORDER_MARGIN; maxX -= BORDER_MARGIN;
     minY += BORDER_MARGIN; maxY -= BORDER_MARGIN;
 
-    std::vector<float> vecParamMinMaxXY{ToFloat(minX), ToFloat(maxX), ToFloat(minY), ToFloat(maxY)};
-    float mt = 40, nt = 50;
-    //[xt2, yt2] = meshgrid(xmin:(xmax-xmin)/(mt-1):xmax, ymin:(ymax-ymin)/(nt-1):ymax);
-    cv::Mat xt2, yt2;
-    CalcUtils::meshgrid(minX, (maxX - minX)/(mt-1), maxX, minY, (maxY - minY)/(nt-1), maxY, xt2, yt2);
+    pstRpy->fMinX = ToFloat(minX);
+    pstRpy->fMaxX = ToFloat(maxX);
+    pstRpy->fMinY = ToFloat(minY);
+    pstRpy->fMaxY = ToFloat(maxY);
+
+    std::vector<float> vecParamMinMaxXY{pstRpy->fMinX, pstRpy->fMaxX, pstRpy->fMinY, pstRpy->fMaxY};
+    //float mt = 40, nt = 50;
+    ////[xt2, yt2] = meshgrid(xmin:(xmax-xmin)/(mt-1):xmax, ymin:(ymax-ymin)/(nt-1):ymax);
+    //cv::Mat xt2, yt2;
+    //CalcUtils::meshgrid(minX, (maxX - minX)/(mt-1), maxX, minY, (maxY - minY)/(nt-1), maxY, xt2, yt2);
 
     pstRpy->matXOffsetParam = _calculatePPz(xtt, ytt, dxt, vecParamMinMaxXY, pstCmd->nBazierRank, pstCmd->nBazierRank);
     pstRpy->matYOffsetParam = _calculatePPz(xtt, ytt, dyt, vecParamMinMaxXY, pstCmd->nBazierRank, pstCmd->nBazierRank);
@@ -583,6 +589,32 @@ TableMapping::~TableMapping()
     cv::Mat matYOffsetParamT; cv::transpose(pstRpy->matYOffsetParam, matYOffsetParamT);
     auto vecVecYOffsetParam = CalcUtils::matToVector<float>(matYOffsetParamT);
 #endif
+
+    pstRpy->enStatus = VisionStatus::OK;
+    return pstRpy->enStatus;
+}
+
+/*static*/ VisionStatus TableMapping::calcTableOffset(const PR_CALC_TABLE_OFFSET_CMD* const pstCmd, PR_CALC_TABLE_OFFSET_RPY* const pstRpy) {
+    cv::Mat matX = cv::Mat::zeros(1, 1, CV_32FC1);
+    matX.at<float>(0) = pstCmd->ptTablePos.x;
+
+    cv::Mat matY = cv::Mat::zeros(1, 1, CV_32FC1);
+    matY.at<float>(0) = pstCmd->ptTablePos.y;
+
+    std::vector<float> vecParamMinMaxXY{pstCmd->fMinX, pstCmd->fMaxX, pstCmd->fMinY, pstCmd->fMaxY};
+    cv::Mat matXX = _generateBazier(matX, matY, vecParamMinMaxXY, pstCmd->nBazierRank, pstCmd->nBazierRank);
+
+    if (matXX.cols != pstCmd->matXOffsetParam.rows || matXX.cols != pstCmd->matYOffsetParam.rows) {
+        WriteLog("The input calibration result and bazier rank not match.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    cv::Mat matXOffset = matXX * pstCmd->matXOffsetParam;
+    cv::Mat matYOffset = matXX * pstCmd->matYOffsetParam;
+
+    pstRpy->fOffsetX = matXOffset.at<float>(0);
+    pstRpy->fOffsetY = matYOffset.at<float>(0);
 
     pstRpy->enStatus = VisionStatus::OK;
     return pstRpy->enStatus;
