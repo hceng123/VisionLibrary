@@ -677,7 +677,7 @@ int _tmain(int argc, _TCHAR* argv[])
     //TestRunRestoreImgLogCase();
 
     //TestAutoLocateLead();
-    //TestAutoLocateLeadTmpl_1();
+    TestAutoLocateLeadTmpl_1();
     //TestAutoLocateLeadTmpl_2();
 
     //TestInspBridge();
@@ -790,7 +790,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
     //TestDrawDashRect();
     
-    TestTableMapping();
+    //TestTableMapping();
 
     PR_DumpTimeLog("./Vision/Time.log");
     std::cout << "Press any key to exit." << std::endl;
