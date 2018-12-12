@@ -1,6 +1,6 @@
 #include "MatchTmpl.h"
 #include "opencv2/video.hpp"
-#include "CalcUtils.h"
+#include "CalcUtils.hpp"
 
 namespace AOI
 {

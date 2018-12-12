@@ -1,5 +1,5 @@
 #include "TableMapping.h"
-#include "CalcUtils.h"
+#include "CalcUtils.hpp"
 #include "Log.h"
 
 namespace AOI

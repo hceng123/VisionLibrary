@@ -1,5 +1,5 @@
-#include "Fitting.h"
-#include "CalcUtils.h"
+#include "CalcUtils.hpp"
+#include "Fitting.hpp"
 #include "Unwrap.h"
 #include <iostream>
 #include <numeric>

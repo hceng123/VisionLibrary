@@ -1,4 +1,4 @@
-#include "CalcUtils.h"
+#include "CalcUtils.hpp"
 #include "spline.h"
 #include <fstream>
 

@@ -10,7 +10,7 @@
 #include "Version.h"
 #include "SubFunctions.h"
 #include "Log.h"
-#include "CalcUtils.h"
+#include "CalcUtils.hpp"
 #include "Unwrap.h"
 #include "TableMapping.h"
 

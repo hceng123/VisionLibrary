@@ -2,7 +2,7 @@
 #define _AOI_UNWRAP_H_
 
 #include "VisionHeader.h"
-#include "CalcUtils.h"
+#include "CalcUtils.hpp"
 #include "TimeLog.h"
 
 namespace AOI

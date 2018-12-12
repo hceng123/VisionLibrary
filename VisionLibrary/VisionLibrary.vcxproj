@@ -144,12 +144,12 @@
     <ClInclude Include="Auxiliary.hpp" />
     <ClInclude Include="BaseDefs.h" />
     <ClInclude Include="BaseType.h" />
-    <ClInclude Include="CalcUtils.h" />
+    <ClInclude Include="CalcUtils.hpp" />
     <ClInclude Include="Config.h" />
     <ClInclude Include="DataMatrix.h" />
     <ClInclude Include="Exception.h" />
     <ClInclude Include="FileUtils.h" />
-    <ClInclude Include="Fitting.h" />
+    <ClInclude Include="Fitting.hpp" />
     <ClInclude Include="Log.h" />
     <ClInclude Include="LogCase.h" />
     <ClInclude Include="MatchTmpl.h" />

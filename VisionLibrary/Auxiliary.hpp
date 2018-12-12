@@ -2,7 +2,7 @@
 #define _AUXLIARY_H_
 
 #include <math.h>
-#include "CalcUtils.h"
+#include "CalcUtils.hpp"
 
 namespace AOI
 {
