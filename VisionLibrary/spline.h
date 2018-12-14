@@ -163,7 +163,7 @@ double & band_matrix::operator () (int i, int j)
     assert( (-num_lower()<=k) && (k<=num_upper()) );
     // k=0 -> diogonal, k<0 lower left part, k>0 upper right part
     if(k>=0)   return m_upper[k][i];
-    else	    return m_lower[-k][i];
+    else        return m_lower[-k][i];
 }
 double band_matrix::operator () (int i, int j) const
 {
@@ -172,7 +172,7 @@ double band_matrix::operator () (int i, int j) const
     assert( (-num_lower()<=k) && (k<=num_upper()) );
     // k=0 -> diogonal, k<0 lower left part, k>0 upper right part
     if(k>=0)   return m_upper[k][i];
-    else	    return m_lower[-k][i];
+    else        return m_lower[-k][i];
 }
 // second diag (used in LU decomposition), saved in m_lower
 double band_matrix::saved_diag(int i) const
