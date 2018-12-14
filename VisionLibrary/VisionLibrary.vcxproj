@@ -190,6 +190,9 @@
     <ClCompile Include="VisionAPI.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\CudaLibrary\CudaLibrary.vcxproj">
+      <Project>{145864dd-b400-4dd5-a049-bf24b31a6b8a}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\ExtLibs\zlib\zlib.vcxproj">
       <Project>{cbd9195c-24a9-4367-a837-3eac4db9262e}</Project>
     </ProjectReference>

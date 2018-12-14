@@ -26,6 +26,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Install", "Install\Install.
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libzxing", "libzxing\libzxing.vcxproj", "{E1BC0ACB-38FD-4742-85B8-B4EC998A2CCF}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CudaLibrary", "CudaLibrary\CudaLibrary.vcxproj", "{145864DD-B400-4DD5-A049-BF24B31A6B8A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Mixed Platforms = Debug|Mixed Platforms
@@ -153,6 +155,16 @@ Global
 		{E1BC0ACB-38FD-4742-85B8-B4EC998A2CCF}.Release|Win32.Build.0 = Release|Win32
 		{E1BC0ACB-38FD-4742-85B8-B4EC998A2CCF}.Release|x64.ActiveCfg = Release|x64
 		{E1BC0ACB-38FD-4742-85B8-B4EC998A2CCF}.Release|x64.Build.0 = Release|x64
+		{145864DD-B400-4DD5-A049-BF24B31A6B8A}.Debug|Mixed Platforms.ActiveCfg = Debug|x64
+		{145864DD-B400-4DD5-A049-BF24B31A6B8A}.Debug|Mixed Platforms.Build.0 = Debug|x64
+		{145864DD-B400-4DD5-A049-BF24B31A6B8A}.Debug|Win32.ActiveCfg = Debug|x64
+		{145864DD-B400-4DD5-A049-BF24B31A6B8A}.Debug|x64.ActiveCfg = Debug|x64
+		{145864DD-B400-4DD5-A049-BF24B31A6B8A}.Debug|x64.Build.0 = Debug|x64
+		{145864DD-B400-4DD5-A049-BF24B31A6B8A}.Release|Mixed Platforms.ActiveCfg = Release|x64
+		{145864DD-B400-4DD5-A049-BF24B31A6B8A}.Release|Mixed Platforms.Build.0 = Release|x64
+		{145864DD-B400-4DD5-A049-BF24B31A6B8A}.Release|Win32.ActiveCfg = Release|x64
+		{145864DD-B400-4DD5-A049-BF24B31A6B8A}.Release|x64.ActiveCfg = Release|x64
+		{145864DD-B400-4DD5-A049-BF24B31A6B8A}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
