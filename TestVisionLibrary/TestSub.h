@@ -67,6 +67,8 @@ void TestInspPolarity_01();
 void TestPrThreshold();
 void TestCalcFrameValue();
 void TestCalcFrameValue_1();
+void TestCalcFrameValue_2();
+
 void TestCalc4DLPHeight();
 void TestMergeHeightMax();
 void TestQueryDlpOffset();

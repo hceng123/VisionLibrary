@@ -566,6 +566,47 @@ void TestCalcFrameValue_3() {
     PrintResult(stCmd, stRpy);
 }
 
+void TestCalcFrameValue_4() {
+    PR_CALC_FRAME_VALUE_CMD stCmd;
+    PR_CALC_FRAME_VALUE_RPY stRpy;
+
+    auto vecPoints = VectorOfPoint2f{cv::Point2f(-130.124084f, 151.156494f), cv::Point2f(-104.631355f, 151.156494f), cv::Point2f(-79.1386414f, 151.156494f), cv::Point2f(-53.6459198f, 151.156494f)};
+    stCmd.vecVecRefFrameCenters.push_back(vecPoints);
+
+    vecPoints = VectorOfPoint2f{cv::Point2f(-130.124084, 118.996170), cv::Point2f(-104.631355, 118.996170), cv::Point2f(-79.1386414, 118.996170), cv::Point2f(-53.6459198, 118.996170)};
+    stCmd.vecVecRefFrameCenters.push_back(vecPoints);
+
+    vecPoints = VectorOfPoint2f{cv::Point2f(-130.124084, 86.8358307), cv::Point2f(-104.631355, 86.8358307), cv::Point2f(-79.1386414, 86.8358307), cv::Point2f(-53.6459198, 86.8358307)};
+    stCmd.vecVecRefFrameCenters.push_back(vecPoints);
+
+    vecPoints = VectorOfPoint2f{cv::Point2f(-130.124084, 54.6754990), cv::Point2f(-104.631355, 54.6754990), cv::Point2f(-79.1386414, 54.6754990), cv::Point2f(-53.6459198, 54.6754990)};
+    stCmd.vecVecRefFrameCenters.push_back(vecPoints);
+
+    VectorOfFloat vecValues{0.0468321592f, 0.0429658033f, 0.0480033569f, 0.0454535373f};
+    stCmd.vecVecRefFrameValues.push_back(vecValues);
+
+    vecValues = VectorOfFloat{0.0454526432f, 0.0450277366f, 0.0459417216f, 0.0449718386f};
+    stCmd.vecVecRefFrameValues.push_back(vecValues);
+
+    vecValues = VectorOfFloat{0.0467235260f, 0.0470155515f, 0.0483370610f, 0.0471665189f};
+    stCmd.vecVecRefFrameValues.push_back(vecValues);
+
+    vecValues = VectorOfFloat{0.0498712249f, 0.0471298359f, 0.0499374978f, 0.0486724712f};
+    stCmd.vecVecRefFrameValues.push_back(vecValues);
+
+    std::cout << std::endl << "--------------------------------------------";
+    std::cout << std::endl << "CALC FRAME VALUE REGRESSION TEST #3 STARTING";
+    std::cout << std::endl << "--------------------------------------------";
+    std::cout << std::endl;
+    stCmd.ptTargetFrameCenter = cv::Point2f(-53.f, 102.f);
+    PR_CalcFrameValue(&stCmd, &stRpy);
+    PrintResult(stCmd, stRpy);
+
+    stCmd.ptTargetFrameCenter = cv::Point2f(-135.f, 102.f);
+    PR_CalcFrameValue(&stCmd, &stRpy);
+    PrintResult(stCmd, stRpy);
+}
+
 static void CheckOriginalDataChanged(const cv::Mat &matOriginal, const cv::Mat &matAfter) {
     cv::Mat matDiff = matOriginal - matAfter;
     std::cout << "The difference between original data and after function run data: " << cv::sum(matDiff)[0] << std::endl;
@@ -728,6 +769,7 @@ void Test3D() {
     TestCalcFrameValue_1();
     TestCalcFrameValue_2();
     TestCalcFrameValue_3();
+    TestCalcFrameValue_4();
 
     TestCalc3DHeightDiff_1();
 

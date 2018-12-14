@@ -765,6 +765,7 @@ int _tmain(int argc, _TCHAR* argv[])
     //TestInsp3DSolder_2();
 
     //TestCalcFrameValue_1();
+    TestCalcFrameValue_2();
     
     //TestQueryDlpOffset();
 
