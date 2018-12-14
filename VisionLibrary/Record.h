@@ -46,7 +46,7 @@ public:
 private:
     cv::Point2f                 _ptObjCenter;
     VectorOfKeyPoint            _vecModelKeyPoint;
-	cv::Mat                     _matModelDescritor;
+    cv::Mat                     _matModelDescritor;
 };
 using ObjRecordPtr = std::shared_ptr<ObjRecord>;
 

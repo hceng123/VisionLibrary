@@ -43,8 +43,8 @@ struct PR_VERSION_INFO {
 };
 
 struct PR_GET_ERROR_INFO_RPY {
-    PR_STATUS_ERROR_LEVEL	enErrorLevel;
-	char				    achErrorStr[PR_MAX_ERR_STR_LEN];
+    PR_STATUS_ERROR_LEVEL    enErrorLevel;
+    char                    achErrorStr[PR_MAX_ERR_STR_LEN];
 };
 
 struct PR_GET_RECORD_INFO_RPY {
@@ -54,17 +54,17 @@ struct PR_GET_RECORD_INFO_RPY {
 
 struct PR_LRN_OBJ_CMD {
     cv::Mat                 matInputImg;
-	PR_SRCH_OBJ_ALGORITHM   enAlgorithm;
-	cv::Mat                 matMask;
-	cv::Rect2f              rectLrn;
+    PR_SRCH_OBJ_ALGORITHM   enAlgorithm;
+    cv::Mat                 matMask;
+    cv::Rect2f              rectLrn;
 };
 
 struct PR_LRN_OBJ_RPY {
-	VisionStatus                enStatus;
-	std::vector<cv::KeyPoint>   vecKeyPoint;
-	cv::Mat                     matDescritor;
-	cv::Mat                     matTmpl;
-	cv::Point2f                 ptCenter;
+    VisionStatus                enStatus;
+    std::vector<cv::KeyPoint>   vecKeyPoint;
+    cv::Mat                     matDescritor;
+    cv::Mat                     matTmpl;
+    cv::Point2f                 ptCenter;
     Int32                       nRecordId;
     cv::Mat                     matResultImg;
 };
@@ -134,9 +134,9 @@ struct PR_MATCH_TEMPLATE_RPY {
 struct PR_DefectCriteria {
     PR_DEFECT_ATTRIBUTE     enAttribute;
     Byte                    ubContrast;
-    float                   fArea;	// For general defect.
+    float                   fArea;    // For general defect.
     float                   fLength;// For line defect only. If != 0, will regard as line defect detecton and rAreaThreshold will be ignored
-    float                   fWidth;	// For noise removal. Note: unit is in 8192 coord sys (in old convention is phy coord sys, which is no good)
+    float                   fWidth;    // For noise removal. Note: unit is in 8192 coord sys (in old convention is phy coord sys, which is no good)
 };
 
 struct PR_INSP_SURFACE_CMD {
@@ -190,8 +190,8 @@ using PR_Line2f = PR_Line_<float>;
 #define PR_MAX_CRITERIA_COUNT       (5)
 
 struct PR_INSP_DEVICE_ITEM {
-	bool        bCheckMissed;           //check if the device is missed
-	bool        bCheckShift;            //check if the device shift exceed tolerance
+    bool        bCheckMissed;           //check if the device is missed
+    bool        bCheckShift;            //check if the device shift exceed tolerance
     bool        bCheckRotation;         //check if rotation exceed tolerance
     bool        bCheckScale;
 };
@@ -868,8 +868,8 @@ struct PR_LRN_CONTOUR_CMD {
         bAutoThreshold  (true),
         nThreshold      (100) {}
     cv::Mat                 matInputImg;
-	cv::Mat                 matMask;
-	cv::Rect                rectROI;
+    cv::Mat                 matMask;
+    cv::Rect                rectROI;
     bool                    bAutoThreshold;
     Int16                   nThreshold;
 };
@@ -892,8 +892,8 @@ struct PR_INSP_CONTOUR_CMD {
         fInnerMaskDepth       (5),
         fOuterMaskDepth       (5) {}
     cv::Mat                 matInputImg;
-	cv::Mat                 matMask;
-	cv::Rect                rectROI;
+    cv::Mat                 matMask;
+    cv::Rect                rectROI;
     Int32                   nRecordId;
     Int16                   nDefectThreshold;
     float                   fMinDefectArea;

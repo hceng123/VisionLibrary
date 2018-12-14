@@ -1676,27 +1676,35 @@ ThickToThinnestK:
 CALC FRAME VALUE REGRESSION TEST #1 STARTING
 --------------------------------------------
 PR_CalcFrameValue status 0
-PR_CalcFrameValue target [60.0, 500.0] result: 14.0
+PR_CalcFrameValue target [60.000, 500.000] result: 14.040
 PR_CalcFrameValue status 0
-PR_CalcFrameValue target [150.0, 180.0] result: 14.7
+PR_CalcFrameValue target [150.000, 180.000] result: 14.690
 PR_CalcFrameValue status 0
-PR_CalcFrameValue target [500.0, 180.0] result: 19.2
+PR_CalcFrameValue target [500.000, 180.000] result: 19.240
 
 --------------------------------------------
 CALC FRAME VALUE REGRESSION TEST #2 STARTING
 --------------------------------------------
 PR_CalcFrameValue status 0
-PR_CalcFrameValue target [150.0, 180.0] result: 10.6
+PR_CalcFrameValue target [150.000, 180.000] result: 10.650
 PR_CalcFrameValue status 0
-PR_CalcFrameValue target [500.0, 180.0] result: 15.2
+PR_CalcFrameValue target [500.000, 180.000] result: 15.200
 
 --------------------------------------------
 CALC FRAME VALUE REGRESSION TEST #3 STARTING
 --------------------------------------------
 PR_CalcFrameValue status 0
-PR_CalcFrameValue target [150.0, 180.0] result: 14.0
+PR_CalcFrameValue target [150.000, 180.000] result: 14.040
 PR_CalcFrameValue status 0
-PR_CalcFrameValue target [500.0, 180.0] result: 14.0
+PR_CalcFrameValue target [500.000, 180.000] result: 14.040
+
+--------------------------------------------
+CALC FRAME VALUE REGRESSION TEST #3 STARTING
+--------------------------------------------
+PR_CalcFrameValue status 0
+PR_CalcFrameValue target [-53.000, 102.000] result: 0.046
+PR_CalcFrameValue status 0
+PR_CalcFrameValue target [-135.000, 102.000] result: 0.046
 
 -----------------------------------------------
 CALC 3D HEIGHT DIFF REGRESSION TEST #1 STARTING
