@@ -754,7 +754,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
     //TestMotor3DCalib();
 
-    TestCalc4DLPHeight();
+    //TestCalc4DLPHeight();
     //TestMergeHeightMax();
 
     //TestInsp3DSolder();
@@ -762,6 +762,7 @@ int _tmain(int argc, _TCHAR* argv[])
     //TestInsp3DSolder_2();
 
     //TestCalcFrameValue_1();
+    TestCalcFrameValue_2();
     
     //TestQueryDlpOffset();
 

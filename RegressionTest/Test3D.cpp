@@ -457,8 +457,9 @@ void TestCalib3dBase_3() {
     TestCalib3dBaseSub(3, strParentPath, strImageFolder);
 }
 
-void PrintResult(const PR_CALC_FRAME_VALUE_CMD &stCmd, const PR_CALC_FRAME_VALUE_RPY &stRpy) {
+void PrintCalcFrameResult(const PR_CALC_FRAME_VALUE_CMD &stCmd, const PR_CALC_FRAME_VALUE_RPY &stRpy) {
     std::cout << "PR_CalcFrameValue status " << ToInt32(stRpy.enStatus) << std::endl;
+    std::cout << std::fixed << std::setprecision(3);
     if (VisionStatus::OK == stRpy.enStatus)
         std::cout << "PR_CalcFrameValue target " << stCmd.ptTargetFrameCenter << " result: " << stRpy.fResult << std::endl;
 }
@@ -489,15 +490,15 @@ void TestCalcFrameValue_1() {
 
     stCmd.ptTargetFrameCenter = cv::Point(60, 500);
     PR_CalcFrameValue(&stCmd, &stRpy);
-    PrintResult(stCmd, stRpy);
+    PrintCalcFrameResult(stCmd, stRpy);
 
     stCmd.ptTargetFrameCenter = cv::Point(150, 180);
     PR_CalcFrameValue(&stCmd, &stRpy);
-    PrintResult(stCmd, stRpy);
+    PrintCalcFrameResult(stCmd, stRpy);
 
     stCmd.ptTargetFrameCenter = cv::Point(500, 180);
     PR_CalcFrameValue(&stCmd, &stRpy);
-    PrintResult(stCmd, stRpy);
+    PrintCalcFrameResult(stCmd, stRpy);
 }
 
 void TestCalcFrameValue_2() {
@@ -526,11 +527,11 @@ void TestCalcFrameValue_2() {
 
     stCmd.ptTargetFrameCenter = cv::Point(150, 180);
     PR_CalcFrameValue(&stCmd, &stRpy);
-    PrintResult(stCmd, stRpy);
+    PrintCalcFrameResult(stCmd, stRpy);
 
     stCmd.ptTargetFrameCenter = cv::Point(500, 180);
     PR_CalcFrameValue(&stCmd, &stRpy);
-    PrintResult(stCmd, stRpy);
+    PrintCalcFrameResult(stCmd, stRpy);
 }
 
 void TestCalcFrameValue_3() {
@@ -559,11 +560,52 @@ void TestCalcFrameValue_3() {
 
     stCmd.ptTargetFrameCenter = cv::Point(150, 180);
     PR_CalcFrameValue(&stCmd, &stRpy);
-    PrintResult(stCmd, stRpy);
+    PrintCalcFrameResult(stCmd, stRpy);
 
     stCmd.ptTargetFrameCenter = cv::Point(500, 180);
     PR_CalcFrameValue(&stCmd, &stRpy);
-    PrintResult(stCmd, stRpy);
+    PrintCalcFrameResult(stCmd, stRpy);
+}
+
+void TestCalcFrameValue_4() {
+    PR_CALC_FRAME_VALUE_CMD stCmd;
+    PR_CALC_FRAME_VALUE_RPY stRpy;
+
+    auto vecPoints = VectorOfPoint2f{cv::Point2f(-130.124084f, 151.156494f), cv::Point2f(-104.631355f, 151.156494f), cv::Point2f(-79.1386414f, 151.156494f), cv::Point2f(-53.6459198f, 151.156494f)};
+    stCmd.vecVecRefFrameCenters.push_back(vecPoints);
+
+    vecPoints = VectorOfPoint2f{cv::Point2f(-130.124084f, 118.996170f), cv::Point2f(-104.631355f, 118.996170f), cv::Point2f(-79.1386414f, 118.996170f), cv::Point2f(-53.6459198f, 118.996170f)};
+    stCmd.vecVecRefFrameCenters.push_back(vecPoints);
+
+    vecPoints = VectorOfPoint2f{cv::Point2f(-130.124084f, 86.8358307f), cv::Point2f(-104.631355f, 86.8358307f), cv::Point2f(-79.1386414f, 86.8358307f), cv::Point2f(-53.6459198f, 86.8358307f)};
+    stCmd.vecVecRefFrameCenters.push_back(vecPoints);
+
+    vecPoints = VectorOfPoint2f{cv::Point2f(-130.124084f, 54.6754990f), cv::Point2f(-104.631355f, 54.6754990f), cv::Point2f(-79.1386414f, 54.6754990f), cv::Point2f(-53.6459198f, 54.6754990f)};
+    stCmd.vecVecRefFrameCenters.push_back(vecPoints);
+
+    VectorOfFloat vecValues{0.0468321592f, 0.0429658033f, 0.0480033569f, 0.0454535373f};
+    stCmd.vecVecRefFrameValues.push_back(vecValues);
+
+    vecValues = VectorOfFloat{0.0454526432f, 0.0450277366f, 0.0459417216f, 0.0449718386f};
+    stCmd.vecVecRefFrameValues.push_back(vecValues);
+
+    vecValues = VectorOfFloat{0.0467235260f, 0.0470155515f, 0.0483370610f, 0.0471665189f};
+    stCmd.vecVecRefFrameValues.push_back(vecValues);
+
+    vecValues = VectorOfFloat{0.0498712249f, 0.0471298359f, 0.0499374978f, 0.0486724712f};
+    stCmd.vecVecRefFrameValues.push_back(vecValues);
+
+    std::cout << std::endl << "--------------------------------------------";
+    std::cout << std::endl << "CALC FRAME VALUE REGRESSION TEST #3 STARTING";
+    std::cout << std::endl << "--------------------------------------------";
+    std::cout << std::endl;
+    stCmd.ptTargetFrameCenter = cv::Point2f(-53.f, 102.f);
+    PR_CalcFrameValue(&stCmd, &stRpy);
+    PrintCalcFrameResult(stCmd, stRpy);
+
+    stCmd.ptTargetFrameCenter = cv::Point2f(-135.f, 102.f);
+    PR_CalcFrameValue(&stCmd, &stRpy);
+    PrintCalcFrameResult(stCmd, stRpy);
 }
 
 static void CheckOriginalDataChanged(const cv::Mat &matOriginal, const cv::Mat &matAfter) {
@@ -728,6 +770,7 @@ void Test3D() {
     TestCalcFrameValue_1();
     TestCalcFrameValue_2();
     TestCalcFrameValue_3();
+    TestCalcFrameValue_4();
 
     TestCalc3DHeightDiff_1();
 

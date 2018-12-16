@@ -16,7 +16,7 @@ enum class PR_STATUS_ERROR_LEVEL
 
 enum class VisionStatus
 {
-	OK,
+    OK,
 
     //Fatal system Error
     OPENCV_EXCEPTION,

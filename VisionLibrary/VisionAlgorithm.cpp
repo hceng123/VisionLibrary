@@ -7101,7 +7101,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
                 break;
     }
 
-    if (1== COLS)
+    if (1 == COLS)
         col = 0;
     else {
         for (; col < COLS; ++ col)
@@ -7122,17 +7122,6 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
                 pstCmd->vecVecRefFrameValues[row][col],
                 pstCmd->ptTargetFrameCenter);
         }
-    }else if (0 == col) {
-        if (ROWS == row)
-            pstRpy->fResult = pstCmd->vecVecRefFrameValues[row - 1][col];
-        else {
-            pstRpy->fResult = CalcUtils::linearInterpolate(
-                pstCmd->vecVecRefFrameCenters[row - 1][col],
-                pstCmd->vecVecRefFrameValues [row - 1][col],
-                pstCmd->vecVecRefFrameCenters[row][col],
-                pstCmd->vecVecRefFrameValues [row][col],
-                pstCmd->ptTargetFrameCenter);
-        }
     }else if (ROWS == row) {
         if (COLS == col)
             pstRpy->fResult = pstCmd->vecVecRefFrameValues[row - 1][col - 1];
@@ -7144,6 +7133,30 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
                 pstCmd->vecVecRefFrameValues [row - 1][col -1],
                 pstCmd->vecVecRefFrameCenters[row - 1][col],
                 pstCmd->vecVecRefFrameValues [row - 1][col],
+                pstCmd->ptTargetFrameCenter);
+        }
+    }else if (0 == col) {
+        if (ROWS == row)
+            pstRpy->fResult = pstCmd->vecVecRefFrameValues[row - 1][col];
+        else {
+            pstRpy->fResult = CalcUtils::linearInterpolate(
+                pstCmd->vecVecRefFrameCenters[row - 1][col],
+                pstCmd->vecVecRefFrameValues [row - 1][col],
+                pstCmd->vecVecRefFrameCenters[row][col],
+                pstCmd->vecVecRefFrameValues [row][col],
+                pstCmd->ptTargetFrameCenter);
+        }
+    }else if (COLS == col) {
+        if (0 == row)
+            pstRpy->fResult = pstCmd->vecVecRefFrameValues[0][col - 1];
+        else if (ROWS == row)
+            pstRpy->fResult = pstCmd->vecVecRefFrameValues[row - 1][col - 1];
+        else {
+            pstRpy->fResult = CalcUtils::linearInterpolate(
+                pstCmd->vecVecRefFrameCenters[row - 1][col - 1],
+                pstCmd->vecVecRefFrameValues [row - 1][col - 1],
+                pstCmd->vecVecRefFrameCenters[row][col - 1],
+                pstCmd->vecVecRefFrameValues [row][col - 1],
                 pstCmd->ptTargetFrameCenter);
         }
     }else {

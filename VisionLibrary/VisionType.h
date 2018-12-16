@@ -8,7 +8,7 @@ namespace Vision
 
 const int MAX_NUM_OF_DEFECT_CRITERIA =          5;
 const int MAX_NUM_OF_DEFECT_RESULT =            20;
-const float PARALLEL_LINE_SLOPE_DIFF_LMT =		0.1f;
+const float PARALLEL_LINE_SLOPE_DIFF_LMT =        0.1f;
 const float PARALLEL_LINE_MERGE_DIST_LMT =      10;
 const int PR_ELECTRODE_COUNT =                  2;
 const int PR_MAX_GRAY_LEVEL =                   255;
@@ -23,25 +23,25 @@ const int PR_GROUP_TEXTURE_IMG_COUNT =          4;
 const int PR_MAX_AUTO_THRESHOLD_COUNT =         10;
 
 enum class PR_SRCH_OBJ_ALGORITHM {
-	SIFT,
-	SURF,
+    SIFT,
+    SURF,
 };
 
 enum class PR_DEFECT_ATTRIBUTE {
-	BRIGHT, // Only bright defect (those defects brighter than the reference and the 
-	// absolute value of the difference is larger than the defect threshold) is detected. 
-	DARK,	// Only dark defect (those defects darker than the reference and the absolute 
-	// value of the difference is larger than the defect threshold) is detected
-	BOTH,	// Both bright and dark defect is detected
-	BRIGHT_LOOP,	// special for AOI
-	DARK_LOOP,		// special for AOI
-	END
+    BRIGHT, // Only bright defect (those defects brighter than the reference and the 
+    // absolute value of the difference is larger than the defect threshold) is detected. 
+    DARK,    // Only dark defect (those defects darker than the reference and the absolute 
+    // value of the difference is larger than the defect threshold) is detected
+    BOTH,    // Both bright and dark defect is detected
+    BRIGHT_LOOP,    // special for AOI
+    DARK_LOOP,        // special for AOI
+    END
 };
 
 enum class PR_DEFECT_TYPE {
-	BLOB,
-	LINE,
-	END,
+    BLOB,
+    LINE,
+    END,
 };
 
 enum class PR_DEBUG_MODE {
@@ -95,7 +95,7 @@ enum class PR_DIRECTION {
 
 enum class PR_OBJECT_ATTRIBUTE {
     BRIGHT,
-	DARK,
+    DARK,
     END,
 };
 
