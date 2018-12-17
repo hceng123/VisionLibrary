@@ -42,19 +42,13 @@ String Config::getRecordParamFile() const {
     return _strRecordParamFile;
 }
 
-PR_DEBUG_MODE Config::getDebugMode() const
-{
-    return _enDebugMode;
+void Config::setDebugMode(PR_DEBUG_MODE enDebugMode) {
+    _enDebugMode = enDebugMode;
 }
 
 Int16 Config::getDeviceInspChannel() const
 {
     return _nDeviceInspChannel;
-}
-
-void Config::setDebugMode(PR_DEBUG_MODE enDebugMode)
-{
-    _enDebugMode = enDebugMode;
 }
 
 Int32 Config::getRemoveCCMaxComponents()
@@ -73,6 +67,10 @@ Int32 Config::getInspBridgeMinThreshold() const {
 
 Int32 Config::getMinPointsToCalibCamera() const {
     return _nMinPointsToCalibCamera;
+}
+
+void Config::setEnableGpu(bool bEnable) {
+    _bEnableGpu = bEnable; 
 }
 
 void Config::load()
