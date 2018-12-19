@@ -140,6 +140,8 @@ int _tmain(int argc, _TCHAR* argv[])
 
     TestCalcCameraMTF();
 
+    TestTableMapping();
+
     PR_DumpTimeLog("./Vision/Time.log");
     return 0;
 }

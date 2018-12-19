@@ -8,7 +8,7 @@
 #include "SimpleIni.h"
 #include "VisionAlgorithm.h"
 #include "FileUtils.h"
-#include "CalcUtils.h"
+#include "CalcUtils.hpp"
 #include "JoinSplit.h"
 
 namespace bfs = boost::filesystem;

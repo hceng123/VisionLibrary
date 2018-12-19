@@ -5,12 +5,12 @@ namespace AOI
 namespace Vision
 {
 
-VectorOfFloat split ( const std::string &s, char delim ) {
+VectorOfFloat split(const std::string &s, char delim) {
     VectorOfFloat elems;
-    std::stringstream ss ( s );
+    std::stringstream ss(s);
     std::string strItem;
-    while( std::getline ( ss, strItem, delim ) ) {
-        elems.push_back ( ToFloat ( std::atof ( strItem.c_str() ) ) );
+    while (std::getline(ss, strItem, delim)) {
+        elems.push_back(ToFloat(std::atof(strItem.c_str())));
     }
     return elems;
 }
@@ -42,9 +42,9 @@ VectorOfVectorOfFloat readDataFromFile(const std::string &strFilePath) {
     size_t bytes = fread(buff, 1, size, fp);
     buff[bytes] = '\0';
     std::string strContent(buff);
-    delete []buff;
-    fclose ( fp );
-    return parseData ( strContent );
+    delete[]buff;
+    fclose(fp);
+    return parseData(strContent);
 }
 
 void copyVectorOfVectorToMat(const VectorOfVectorOfFloat &vecVecInput, cv::Mat &matOutput) {

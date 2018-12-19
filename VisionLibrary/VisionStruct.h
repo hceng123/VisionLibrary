@@ -1552,6 +1552,52 @@ struct PR_INSP_SIMILARITY_RPY {
     cv::Mat                 matResultImg;
 };
 
+struct PR_TABLE_MAPPING_CMD {
+    struct FramePoint {
+        cv::Point2f     targetPoint;
+        cv::Point2f     actualPoint;
+    };
+
+    using VectorOfFramePoint = std::vector<FramePoint>;
+    using VectorOfFramePoints = std::vector<VectorOfFramePoint>;
+
+    PR_TABLE_MAPPING_CMD() :
+        fBoardPointDist(5.f),
+        nBazierRank(11) {}
+    VectorOfFramePoints     vecFramePoints;
+    float                   fBoardPointDist; // The physical calibration point distance on the chess board. Unit: mm
+    int                     nBazierRank;
+};
+
+struct PR_TABLE_MAPPING_RPY {
+    cv::Mat                 matXOffsetParam;
+    cv::Mat                 matYOffsetParam;
+    float                   fMinX;
+    float                   fMaxX;
+    float                   fMinY;
+    float                   fMaxY;
+    VisionStatus            enStatus;
+};
+
+struct PR_CALC_TABLE_OFFSET_CMD {
+    PR_CALC_TABLE_OFFSET_CMD() :
+        nBazierRank(11) {}
+    cv::Point2f             ptTablePos;
+    cv::Mat                 matXOffsetParam;
+    cv::Mat                 matYOffsetParam;
+    float                   fMinX;
+    float                   fMaxX;
+    float                   fMinY;
+    float                   fMaxY;
+    int                     nBazierRank;
+};
+
+struct PR_CALC_TABLE_OFFSET_RPY {
+    float                   fOffsetX;
+    float                   fOffsetY;
+    VisionStatus            enStatus;
+};
+
 }
 }
 #endif /*_AOI_VISION_STRUCT_H_*/

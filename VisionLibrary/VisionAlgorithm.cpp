@@ -12,15 +12,16 @@
 #include "boost/filesystem.hpp"
 #include "RecordManager.h"
 #include "Config.h"
-#include "CalcUtils.h"
+#include "CalcUtils.hpp"
 #include "Log.h"
 #include "FileUtils.h"
-#include "Fitting.h"
+#include "Fitting.hpp"
 #include "MatchTmpl.h"
 #include "Unwrap.h"
 #include "SubFunctions.h"
 #include "Auxiliary.hpp"
 #include "DataMatrix.h"
+#include "TableMapping.h"
 
 using namespace cv::xfeatures2d;
 namespace bfs = boost::filesystem;
@@ -4553,45 +4554,33 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
 
     VectorOfPoint2f vecLeadPositions, vecPadPositions;
     for (int i = 0; i < n; ++ i) {
-        cv::Rect rectLeadSrchArea;
+        cv::Rect rectLeadSrchWindow;
         PR_AUTO_LOCATE_LEAD_RPY::PR_LEAD_INFO stLeadInfo;
         stLeadInfo.enDir = enDir;
         if (PR_DIRECTION::UP == enDir || PR_DIRECTION::DOWN == enDir)
-            rectLeadSrchArea = cv::Rect(vecSegPoint[i], 0, vecSegPoint[i + 1] - vecSegPoint[i], matSubRegion.rows);
+            rectLeadSrchWindow = cv::Rect(vecSegPoint[i], 0, vecSegPoint[i + 1] - vecSegPoint[i], matSubRegion.rows);
         else
-            rectLeadSrchArea = cv::Rect(0, vecSegPoint[i], matSubRegion.cols, vecSegPoint[i + 1] - vecSegPoint[i]);
+            rectLeadSrchWindow = cv::Rect(0, vecSegPoint[i], matSubRegion.cols, vecSegPoint[i + 1] - vecSegPoint[i]);
 
         if (PR_DIRECTION::UP == static_cast<PR_DIRECTION>(enDir) || PR_DIRECTION::DOWN == static_cast<PR_DIRECTION>(enDir))
-            rectLeadSrchArea = CalcUtils::resizeRect(rectLeadSrchArea, cv::Size(rectLeadSrchArea.width + 10, rectLeadSrchArea.height));
+            rectLeadSrchWindow = CalcUtils::resizeRect(rectLeadSrchWindow, cv::Size(rectLeadSrchWindow.width + 10, rectLeadSrchWindow.height));
         else
-            rectLeadSrchArea = CalcUtils::resizeRect(rectLeadSrchArea, cv::Size(rectLeadSrchArea.width, rectLeadSrchArea.height + 10));
-        CalcUtils::adjustRectROI(rectLeadSrchArea, matSubRegion);
-        //if (rectLeadSrchArea.x < 0 || rectLeadSrchArea.y < 0 ||
-        //    rectLeadSrchArea.width <= 0 || rectLeadSrchArea.height <= 0 ||
-        //    (rectLeadSrchArea.x + rectLeadSrchArea.width)  > rectSubRegion.width ||
-        //    (rectLeadSrchArea.y + rectLeadSrchArea.height) > rectSubRegion.height) {
-        //    char chArrMsg[1000];
-        //    _snprintf(chArrMsg, sizeof(chArrMsg), "The lead search window (%d, %d, %d, %d) should inside sub region window (%d, %d, %d, %d).",
-        //        rectLeadSrchArea.x, rectLeadSrchArea.y, rectLeadSrchArea.width, rectLeadSrchArea.height,
-        //        0, 0, rectSubRegion.width, rectSubRegion.height);
-        //    WriteLog(chArrMsg);
-        //    pstRpy->enStatus = VisionStatus::AUTO_LOCATE_LEAD_FAIL;
-        //    return pstRpy->enStatus;
-        //}
-        cv::Mat matLeadSrchArea(matSubRegion, rectLeadSrchArea);
+            rectLeadSrchWindow = CalcUtils::resizeRect(rectLeadSrchWindow, cv::Size(rectLeadSrchWindow.width, rectLeadSrchWindow.height + 10));
+        CalcUtils::adjustRectROI(rectLeadSrchWindow, matSubRegion);
+        cv::Mat matLeadSrchROI(matSubRegion, rectLeadSrchWindow);
         cv::Point2f ptPadPosition, ptLeadPosition;
         float fPadRotation, fLeadRotation, fPadScore, fLeadScore;
         if (! matPad.empty()) {
-            if (matPad.cols >= matLeadSrchArea.cols || matPad.rows >= matLeadSrchArea.rows) {
+            if (matPad.cols >= matLeadSrchROI.cols || matPad.rows >= matLeadSrchROI.rows) {
                 char chArrMsg[1000];
                 _snprintf(chArrMsg, sizeof(chArrMsg), "The pad template size (%d, %d) is bigger than search area size (%d, %d).",
-                    matPad.cols, matPad.rows, matLeadSrchArea.cols, matLeadSrchArea.rows);
+                    matPad.cols, matPad.rows, matLeadSrchROI.cols, matLeadSrchROI.rows);
                 WriteLog(chArrMsg);
                 pstRpy->enStatus = VisionStatus::AUTO_LOCATE_LEAD_FAIL;
                 return pstRpy->enStatus;
             }
 
-            MatchTmpl::matchTemplate(matLeadSrchArea, matPad, false, PR_OBJECT_MOTION::TRANSLATION, ptPadPosition, fPadRotation, fPadScore);
+            MatchTmpl::matchTemplate(matLeadSrchROI, matPad, false, PR_OBJECT_MOTION::TRANSLATION, ptPadPosition, fPadRotation, fPadScore);
             if (fPadScore < 0.6f) {
                 char msg[1000];
                 _snprintf(msg, sizeof(msg), "Auto locate lead at direction %d failed to search pad at %d lead.", ToInt32(enDir), i);
@@ -4600,40 +4589,53 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
                 continue;
             }
             vecPadPositions.push_back(ptPadPosition);
-            cv::Point ptInOriginImg(ToInt32(ptPadPosition.x + rectLeadSrchArea.x + rectSubRegion.x + pstCmd->rectSrchWindow.x), ToInt32(ptPadPosition.y + rectLeadSrchArea.y + rectSubRegion.y + pstCmd->rectSrchWindow.y));
+            cv::Point ptInOriginImg(ToInt32(ptPadPosition.x + rectLeadSrchWindow.x + rectSubRegion.x + pstCmd->rectSrchWindow.x),
+                                    ToInt32(ptPadPosition.y + rectLeadSrchWindow.y + rectSubRegion.y + pstCmd->rectSrchWindow.y));
             cv::circle(pstRpy->matResultImg, ptInOriginImg, 3, GREEN_SCALAR);
             stLeadInfo.rectPadWindow = cv::Rect(ptInOriginImg.x - matPad.cols / 2, ptInOriginImg.y - matPad.rows / 2, matPad.cols, matPad.rows);
             cv::rectangle(pstRpy->matResultImg, stLeadInfo.rectPadWindow, GREEN_SCALAR, 1);
             stLeadInfo.nPadRecordId = nPadRecordId;
         }
 
-        if (matLead.cols >= matLeadSrchArea.cols || matLead.rows >= matLeadSrchArea.rows) {
+        if (matLead.cols >= matLeadSrchROI.cols || matLead.rows >= matLeadSrchROI.rows) {
             char chArrMsg[1000];
             _snprintf(chArrMsg, sizeof(chArrMsg), "The lead template size (%d, %d) is bigger than search area size (%d, %d).",
-                matLead.cols, matLead.rows, matLeadSrchArea.cols, matLeadSrchArea.rows);
+                matLead.cols, matLead.rows, matLeadSrchROI.cols, matLeadSrchROI.rows);
             WriteLog(chArrMsg);
             pstRpy->enStatus = VisionStatus::AUTO_LOCATE_LEAD_FAIL;
             return pstRpy->enStatus;
         }
 
-        MatchTmpl::matchTemplate(matLeadSrchArea, matLead, false, PR_OBJECT_MOTION::TRANSLATION, ptLeadPosition, fLeadRotation, fLeadScore);
+        MatchTmpl::matchTemplate(matLeadSrchROI, matLead, false, PR_OBJECT_MOTION::TRANSLATION, ptLeadPosition, fLeadRotation, fLeadScore);
         if (fPadScore < 0.6f) {
             char msg[1000];
-            _snprintf(msg, sizeof(msg), "Auto locate lead at direction %d failed to search lead at %d lead.", ToInt32(enDir), i);
+            _snprintf(msg, sizeof(msg), "Auto locate lead at direction %d failed to search lead at lead index %d.", ToInt32(enDir), i);
             WriteLog(msg);
             pstRpy->enStatus = VisionStatus::AUTO_LOCATE_LEAD_FAIL;
             continue;
         }
         vecLeadPositions.push_back(ptLeadPosition);
-        cv::Point ptInOriginImg(ToInt32(ptLeadPosition.x + rectLeadSrchArea.x + rectSubRegion.x + pstCmd->rectSrchWindow.x), ToInt32(ptLeadPosition.y + rectLeadSrchArea.y + rectSubRegion.y + pstCmd->rectSrchWindow.y));
+        cv::Point ptInOriginImg(ToInt32(ptLeadPosition.x + rectLeadSrchWindow.x + rectSubRegion.x + pstCmd->rectSrchWindow.x),
+                                ToInt32(ptLeadPosition.y + rectLeadSrchWindow.y + rectSubRegion.y + pstCmd->rectSrchWindow.y));
         stLeadInfo.rectLeadWindow = cv::Rect(ptInOriginImg.x - matLead.cols / 2, ptInOriginImg.y - matLead.rows / 2, matLead.cols, matLead.rows);
         cv::circle(pstRpy->matResultImg, ptInOriginImg, 3, CYAN_SCALAR);
         cv::rectangle(pstRpy->matResultImg, stLeadInfo.rectLeadWindow, CYAN_SCALAR, 1);
         stLeadInfo.nLeadRecordId = nLeadRecordId;
 
-        rectLeadSrchArea.x += rectSubRegion.x + pstCmd->rectSrchWindow.x;
-        rectLeadSrchArea.y += rectSubRegion.y + pstCmd->rectSrchWindow.y;
-        stLeadInfo.rectSrchWindow = rectLeadSrchArea;
+        // Adjust the search window for lead according to the find out lead position.
+        auto leadOffsetInSrchWindowX = ToInt32(ptLeadPosition.x - rectLeadSrchWindow.width  / 2.f);
+        auto leadOffsetInSrchWindowY = ToInt32(ptLeadPosition.y - rectLeadSrchWindow.height / 2.f);
+        if (PR_DIRECTION::UP == enDir || PR_DIRECTION::DOWN == enDir) {
+            rectLeadSrchWindow.x += leadOffsetInSrchWindowX; // Make lead search window use lead center as center
+            rectLeadSrchWindow.width +=  abs(leadOffsetInSrchWindowX) * 2; // Enlarge the window to make the segment line don't change.
+        } else {
+            rectLeadSrchWindow.y += leadOffsetInSrchWindowY; // Make lead search window use lead center as center
+            rectLeadSrchWindow.height += abs(leadOffsetInSrchWindowY) * 2; // Enlarge the window to make the segment position between lead don't change.
+        }
+
+        rectLeadSrchWindow.x += rectSubRegion.x + pstCmd->rectSrchWindow.x;
+        rectLeadSrchWindow.y += rectSubRegion.y + pstCmd->rectSrchWindow.y;
+        stLeadInfo.rectSrchWindow = rectLeadSrchWindow;
         cv::rectangle(pstRpy->matResultImg, stLeadInfo.rectSrchWindow, BLUE_SCALAR, 1);
         pstRpy->vecLeadInfo.push_back(stLeadInfo);
     }
@@ -8660,6 +8662,33 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
             }
         }
     }
+
+    MARK_FUNCTION_END_TIME;
+    return pstRpy->enStatus;
+}
+
+/*static*/ VisionStatus VisionAlgorithm::tableMapping(const PR_TABLE_MAPPING_CMD *const pstCmd, PR_TABLE_MAPPING_RPY *const pstRpy, bool bReplay /*= false*/) {
+    assert(pstCmd != nullptr && pstRpy != nullptr);
+
+    if (pstCmd->vecFramePoints.empty()) {
+        WriteLog("Input frame points is empty.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    for (size_t i = 0; i < pstCmd->vecFramePoints.size(); ++ i) {
+        if (pstCmd->vecFramePoints[i].empty()) {
+            std::stringstream ss;
+            ss << "Frame " << i << " mapping points vector is empty.";
+            WriteLog(ss.str());
+            pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+            return pstRpy->enStatus;
+        }
+    }
+
+    MARK_FUNCTION_START_TIME;
+
+    TableMapping::run(pstCmd, pstRpy);
 
     MARK_FUNCTION_END_TIME;
     return pstRpy->enStatus;

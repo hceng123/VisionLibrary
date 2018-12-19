@@ -10,8 +10,9 @@
 #include "Version.h"
 #include "SubFunctions.h"
 #include "Log.h"
-#include "CalcUtils.h"
+#include "CalcUtils.hpp"
 #include "Unwrap.h"
+#include "TableMapping.h"
 
 #define PR_FUNCTION_ENTRY   \
 try \
@@ -637,6 +638,20 @@ VisionAPI VisionStatus PR_InspSimilarity(const PR_INSP_SIMILARITY_CMD *const pst
 {
 PR_FUNCTION_ENTRY
     return VisionAlgorithm::inspSimilarity(pstCmd, pstRpy);
+PR_FUNCTION_EXIT
+}
+
+VisionAPI VisionStatus PR_TableMapping(const PR_TABLE_MAPPING_CMD *const pstCmd, PR_TABLE_MAPPING_RPY *const pstRpy)
+{
+PR_FUNCTION_ENTRY
+    return VisionAlgorithm::tableMapping(pstCmd, pstRpy);
+PR_FUNCTION_EXIT
+}
+
+VisionAPI VisionStatus PR_CalcTableOffset(const PR_CALC_TABLE_OFFSET_CMD* const pstCmd, PR_CALC_TABLE_OFFSET_RPY* const pstRpy)
+{
+PR_FUNCTION_ENTRY
+    return TableMapping::calcTableOffset(pstCmd, pstRpy);
 PR_FUNCTION_EXIT
 }
 

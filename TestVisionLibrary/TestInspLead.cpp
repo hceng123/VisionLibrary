@@ -32,7 +32,7 @@ void TestInspLead() {
     stCmd.vecLeads.push_back ( stLeadInput );
 
     PR_InspLead ( &stCmd, &stRpy );
-    if ( ! stRpy.matResultImg.empty() ) {
-        cv::imwrite ( "./data/LeadInspResult.png", stRpy.matResultImg );
+    if (!stRpy.matResultImg.empty()) {
+        cv::imwrite("./data/LeadInspResult.png", stRpy.matResultImg);
     }
 }
