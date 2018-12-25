@@ -654,7 +654,7 @@ int _tmain(int argc, _TCHAR* argv[])
     cv::equalizeHist(matImage, matImage);
     cv::imwrite("./data/OcvTestImageNew.png", matImage);
 
-    PR_RunLogCase("./Vision/LogCase/CalibrateCamera_2018_12_21_08_03_14_131.logcase");
+    //PR_RunLogCase("./Vision/LogCase/CalibrateCamera_2018_12_21_08_03_14_131.logcase");
     //TestTemplate();
     //TestInspDevice();
     //TestRunLogcase();
@@ -678,7 +678,7 @@ int _tmain(int argc, _TCHAR* argv[])
     //TestRunRestoreImgLogCase();
 
     //TestAutoLocateLead();
-    TestAutoLocateLeadTmpl_1();
+    //TestAutoLocateLeadTmpl_1();
     //TestAutoLocateLeadTmpl_2();
 
     //TestInspBridge();
@@ -766,7 +766,7 @@ int _tmain(int argc, _TCHAR* argv[])
     //TestInsp3DSolder_2();
 
     //TestCalcFrameValue_1();
-    TestCalcFrameValue_2();
+    //TestCalcFrameValue_2();
     
     //TestQueryDlpOffset();
 
@@ -793,6 +793,8 @@ int _tmain(int argc, _TCHAR* argv[])
     //TestDrawDashRect();
     
     //TestTableMapping();
+    
+    TestTableMapping_1();
 
     PR_DumpTimeLog("./Vision/Time.log");
     std::cout << "Press any key to exit." << std::endl;

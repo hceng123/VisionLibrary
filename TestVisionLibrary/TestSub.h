@@ -90,3 +90,4 @@ void TestRead2DCode_2();
 void TestDrawDashRect();
 
 void TestTableMapping();
+void TestTableMapping_1();

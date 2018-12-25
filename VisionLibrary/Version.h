@@ -14,8 +14,11 @@
  * Copyright (c) 2016-2018, Xiao Shengguang.  All rights reserved.
  ****************************************************************************/
 
+//2018-12-25 (XSG) Add matResultMask in PR_PICK_COLOR_RPY 
+#define AOI_VISION_VERSION          "1.00.53"
+
 //2018-12-04 (XSG) Add PR_TableMapping and PR_CalcTableOffset functions.
-#define AOI_VISION_VERSION          "1.00.52"
+//#define AOI_VISION_VERSION          "1.00.52"
 
 //2018-11-16 (XSG) Add PR_InspSimilarity function.
 //#define AOI_VISION_VERSION          "1.00.51"

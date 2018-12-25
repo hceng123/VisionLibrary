@@ -720,6 +720,7 @@ struct PR_PICK_COLOR_CMD {
 struct PR_PICK_COLOR_RPY {
     VisionStatus            enStatus;
     UInt32                  nPickPointCount;
+    cv::Mat                 matResultMask;
     cv::Mat                 matResultImg;
 };
 

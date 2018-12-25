@@ -3816,6 +3816,10 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     matResultROI.setTo(cv::Scalar::all(0));
     matResultROI.setTo(cv::Scalar::all(PR_MAX_GRAY_LEVEL), matResultMask);
 
+    pstRpy->matResultMask = cv::Mat::zeros(pstCmd->matInputImg.size(), CV_8UC1);
+    cv::Mat matMaskROI(pstRpy->matResultMask, pstCmd->rectROI);
+    matMaskROI.setTo(cv::Scalar::all(PR_MAX_GRAY_LEVEL), matResultMask);
+
     FINISH_LOGCASE;
     MARK_FUNCTION_END_TIME;
     return pstRpy->enStatus;

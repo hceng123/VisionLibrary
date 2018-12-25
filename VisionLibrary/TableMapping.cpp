@@ -407,7 +407,8 @@ TableMapping::~TableMapping()
     vecD1.insert(vecD1.end(), vecVecTxy[0].begin(), vecVecTxy[0].end());
 
     // adding test error
-    VectorOfFloat dd{0.f, 0.f, 0.f, 0.001f, -5.34f, 6.79f, -0.01f, 20.8f, 4.9f};
+    //VectorOfFloat dd{0.f, 0.f, 0.f, 0.001f, -5.34f, 6.79f, -0.01f, 20.8f, 4.9f};
+    VectorOfFloat dd{0.f, 0.f, 0.f, 0.001f, -5.34f, 6.79f};
     for (size_t i = 0; i < dd.size(); ++ i)
         vecD1[i] += dd[i];
     cv::Mat matD1(vecD1);
@@ -595,6 +596,19 @@ TableMapping::~TableMapping()
 }
 
 /*static*/ VisionStatus TableMapping::calcTableOffset(const PR_CALC_TABLE_OFFSET_CMD* const pstCmd, PR_CALC_TABLE_OFFSET_RPY* const pstRpy) {
+    pstRpy->fOffsetX = 0.f;
+    pstRpy->fOffsetY = 0.f;
+
+    if (pstCmd->ptTablePos.x <= pstCmd->fMinX || pstCmd->ptTablePos.x > pstCmd->fMaxX ||
+        pstCmd->ptTablePos.y <= pstCmd->fMinY || pstCmd->ptTablePos.y > pstCmd->fMaxY) {
+        std::stringstream ss;
+        ss << "CalcTableOffset: the input position " << pstCmd->ptTablePos << " is not within calibration range X [" << pstCmd->fMinX << ", "
+           << pstCmd->fMaxX << "], Y [" << pstCmd->fMinY << ", " << pstCmd->fMaxY << "]";
+        WriteLog(ss.str());
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
     cv::Mat matX = cv::Mat::zeros(1, 1, CV_32FC1);
     matX.at<float>(0) = pstCmd->ptTablePos.x;
 
