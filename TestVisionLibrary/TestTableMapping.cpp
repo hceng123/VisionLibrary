@@ -68,6 +68,7 @@ void TestTableMapping_1() {
     PR_TABLE_MAPPING_CMD stCmd;
     PR_TABLE_MAPPING_RPY stRpy;
     stCmd.nBazierRank = BAZIER_RANK;
+    stCmd.fBoardPointDist = 16;
 
     for (int i = 1; i <= TOTAL_FRAME; ++ i) {
         char chArrFileName[100];

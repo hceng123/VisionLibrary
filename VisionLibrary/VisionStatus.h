@@ -106,6 +106,9 @@ enum class VisionStatus
 
     // Insp similarity
     INSP_SIMILARITY_FAIL                = 210,
+
+    // Table Mapping
+    TABLE_MAPPING_FAIL                  = 220,
 };
 
 }

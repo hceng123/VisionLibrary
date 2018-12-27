@@ -1564,7 +1564,7 @@ struct PR_TABLE_MAPPING_CMD {
 
     PR_TABLE_MAPPING_CMD() :
         fBoardPointDist(5.f),
-        nBazierRank(11) {}
+        nBazierRank(5) {}
     VectorOfFramePoints     vecFramePoints;
     float                   fBoardPointDist; // The physical calibration point distance on the chess board. Unit: mm
     int                     nBazierRank;

@@ -319,11 +319,12 @@ TableMapping::~TableMapping()
 /*static*/ cv::Mat TableMapping::_calculatePPz(const cv::Mat& matX, const cv::Mat& matY, const cv::Mat& matZ,
         const VectorOfFloat& vecXyMinMax, int mm, int nn) {
     cv::Mat matX1, matY1, matZ1;
-    for (int row = 0; row < matZ.rows; ++ row) {
-        if (!std::isnan(matZ.at<float>(row))) {
-            matX1.push_back(matX.at<float>(row));
-            matY1.push_back(matY.at<float>(row));
-            matZ1.push_back(matZ.at<float>(row));
+    for (int row = 0; row < matZ.rows; ++ row)
+    for (int col = 0; col < matZ.cols; ++ col){
+        if (!std::isnan(matZ.at<float>(row, col))) {
+            matX1.push_back(matX.at<float>(row, col));
+            matY1.push_back(matY.at<float>(row, col));
+            matZ1.push_back(matZ.at<float>(row, col));
         }
     }
 
@@ -360,33 +361,9 @@ TableMapping::~TableMapping()
     return zp1;
 }
 
-/*static*/ VisionStatus TableMapping::run(const PR_TABLE_MAPPING_CMD *const pstCmd, PR_TABLE_MAPPING_RPY *const pstRpy) {
-    VectorOfVectorOfFloat vecVecTransM;
-    PR_TABLE_MAPPING_CMD::VectorOfFramePoints vecProcessedFramePoints;
-    for (const auto &framePoints : pstCmd->vecFramePoints) {
-        auto preHandledFramePoints = _preHandleData(framePoints);
-        vecProcessedFramePoints.push_back(preHandledFramePoints);
-
-        cv::Mat matXX, matYY;
-        auto matK = _fitModel(preHandledFramePoints, matXX, matYY);
-        cv::Mat matK1 = cv::Mat(matK, cv::Range(0, 2), cv::Range::all()).clone();
-        cv::transpose(matK1, matK1);
-        
-#ifdef _DEBUG
-        auto vecVecK = CalcUtils::matToVector<float>(matK);
-#endif
-        auto k1 = std::sqrt(matK1.at<float>(0, 0) * matK1.at<float>(0, 0) + matK1.at<float>(1, 0) * matK1.at<float>(1, 0));
-        auto k2 = std::sqrt(matK1.at<float>(0, 1) * matK1.at<float>(0, 1) + matK1.at<float>(1, 1) * matK1.at<float>(1, 1));
-
-        auto theta1 = atan( matK1.at<float>(1, 0) / matK1.at<float>(0, 0));
-        auto theta2 = atan(-matK1.at<float>(0, 1) / matK1.at<float>(1, 1)) - theta1;
-
-        auto Tx = matK.at<float>(2, 0);
-        auto Ty = matK.at<float>(2, 1);
-
-        vecVecTransM.emplace_back(VectorOfFloat{k1, k2, theta2, theta1, Tx, Ty});
-    }
-
+/*static*/ void TableMapping::_processMultiFrameData(const PR_TABLE_MAPPING_CMD::VectorOfFramePoints& vecProcessedFramePoints,
+    const VectorOfVectorOfFloat& vecVecTransM, cv::Mat& xtt, cv::Mat& ytt, cv::Mat& dxt, cv::Mat& dyt,
+        const PR_TABLE_MAPPING_CMD *const pstCmd, PR_TABLE_MAPPING_RPY *const pstRpy) {
     cv::Mat matTransM = CalcUtils::vectorToMat(vecVecTransM);
     cv::Mat matMeanTransM;
     cv::reduce(matTransM, matMeanTransM, 0, cv::ReduceTypes::REDUCE_AVG);
@@ -407,8 +384,8 @@ TableMapping::~TableMapping()
     vecD1.insert(vecD1.end(), vecVecTxy[0].begin(), vecVecTxy[0].end());
 
     // adding test error
-    //VectorOfFloat dd{0.f, 0.f, 0.f, 0.001f, -5.34f, 6.79f, -0.01f, 20.8f, 4.9f};
-    VectorOfFloat dd{0.f, 0.f, 0.f, 0.001f, -5.34f, 6.79f};
+    VectorOfFloat dd{0.f, 0.f, 0.f, 0.001f, -5.34f, 6.79f, -0.01f, 20.8f, 4.9f};
+    //VectorOfFloat dd{0.f, 0.f, 0.f, 0.001f, -5.34f, 6.79f};
     for (size_t i = 0; i < dd.size(); ++ i)
         vecD1[i] += dd[i];
     cv::Mat matD1(vecD1);
@@ -485,7 +462,11 @@ TableMapping::~TableMapping()
 #endif
 
     a = d.at<float>(0); b =  d.at<float>(1); c = d.at<float>(2);
-    cv::Mat xtt, ytt, dxt, dyt;
+    xtt.release();
+    ytt.release();
+    dxt.release();
+    dyt.release();
+    int matchPointNumber = 0;
     for (int i = 0; i < vecProcessedFramePoints.size(); ++ i) {
         auto theta1i = matD1.at<float>(i * 3 + 3);
         auto Txi     = matD1.at<float>(i * 3 + 4);
@@ -523,6 +504,7 @@ TableMapping::~TableMapping()
                 dy.at<float>(row, col) = vecActualY[index];
                 xt.at<float>(row, col) = vecTargetX[index];
                 yt.at<float>(row, col) = vecTargetY[index];
+                ++ matchPointNumber;
             }
         }
 
@@ -562,6 +544,15 @@ TableMapping::~TableMapping()
     auto vecVecDytT = CalcUtils::matToVector<float>(matdytT);
 #endif
 
+    const int minPointsRequired = pstCmd->nBazierRank * pstCmd->nBazierRank;
+    if (matchPointNumber < minPointsRequired) {
+        pstRpy->enStatus = VisionStatus::TABLE_MAPPING_FAIL;
+        std::stringstream ss;
+        ss << "The match points number " << matchPointNumber << " is less than minimum required point number " << minPointsRequired;
+        WriteLog(ss.str());
+        return;
+    }
+
     const float BORDER_MARGIN = 10.f;
     double minX = 0., maxX = 0., minY = 0., maxY = 0.;
     cv::minMaxIdx(xtt, &minX, &maxX);
@@ -574,6 +565,128 @@ TableMapping::~TableMapping()
     pstRpy->fMaxX = ToFloat(maxX);
     pstRpy->fMinY = ToFloat(minY);
     pstRpy->fMaxY = ToFloat(maxY);
+}
+
+/*static*/ void TableMapping::_processSingleFrameData(const PR_TABLE_MAPPING_CMD::VectorOfFramePoints& vecProcessedFramePoints, const VectorOfVectorOfFloat& vecVecTransM,
+        cv::Mat& xtt, cv::Mat& ytt, cv::Mat& dxt, cv::Mat& dyt,
+        const PR_TABLE_MAPPING_CMD *const pstCmd, PR_TABLE_MAPPING_RPY *const pstRpy) {
+    xtt.release();
+    ytt.release();
+    dxt.release();
+    dyt.release();
+
+    cv::Mat matXX, matYY;
+    auto matK = _fitModel(vecProcessedFramePoints[0], matXX, matYY);
+
+    cv::Mat Y1 = matXX * matK;
+
+    cv::Mat matErr = matYY - Y1;
+
+    assert(vecProcessedFramePoints.size() == 1);
+
+    VectorOfFloat vecTargetX, vecTargetY, vecActualX, vecActualY, vecErrX, vecErrY;
+    const int dataLen = ToInt32(vecProcessedFramePoints[0].size());
+    vecTargetX.reserve(dataLen);
+    vecTargetX.reserve(dataLen);
+    vecActualX.reserve(dataLen);
+    vecActualY.reserve(dataLen);
+    int index = 0;
+    for (const auto& mappingPoint : vecProcessedFramePoints[0]) {
+        vecTargetX.push_back(mappingPoint.targetPoint.x);
+        vecTargetY.push_back(mappingPoint.targetPoint.y);
+
+        vecActualX.push_back(mappingPoint.actualPoint.x);
+        vecActualY.push_back(mappingPoint.actualPoint.y);
+
+        vecErrX.push_back(matErr.at<float>(index, 0));
+        vecErrY.push_back(matErr.at<float>(index, 1));
+        ++ index;
+    }
+
+    auto minMaxIterOfX = std::minmax_element(vecTargetX.begin(), vecTargetX.end());
+    auto minMaxIterOfY = std::minmax_element(vecTargetY.begin(), vecTargetY.end());
+
+    cv::Mat xt, yt;
+    CalcUtils::meshgrid<float>(
+        *minMaxIterOfX.first, pstCmd->fBoardPointDist, *minMaxIterOfX.second,
+        *minMaxIterOfY.first, pstCmd->fBoardPointDist, *minMaxIterOfY.second, xt, yt);
+    dxt = cv::Mat::ones(xt.size(), CV_32FC1) * NAN;
+    dyt = dxt.clone();
+
+    int matchPointNumber = 0;
+    for (int row = 0; row < xt.rows; ++row)
+    for (int col = 0; col < xt.cols; ++col) {
+        auto index = _findMatchPoint(vecTargetX, vecTargetY, cv::Point2f(xt.at<float>(row, col), yt.at<float>(row, col)));
+        if (index >= 0) {
+            dxt.at<float>(row, col) = vecErrX[index];
+            dyt.at<float>(row, col) = vecErrY[index];
+            xt.at<float>(row, col) = vecTargetX[index];
+            yt.at<float>(row, col) = vecTargetY[index];
+            ++matchPointNumber;
+        }
+    }
+
+    const int minPointsRequired = pstCmd->nBazierRank * pstCmd->nBazierRank;
+    if (matchPointNumber < minPointsRequired) {
+        pstRpy->enStatus = VisionStatus::TABLE_MAPPING_FAIL;
+        std::stringstream ss;
+        ss << "The match points number " << matchPointNumber << " is less than minimum required point number " << minPointsRequired;
+        WriteLog(ss.str());
+        return;
+    }
+
+#ifdef _DEBUG
+    cv::Mat matdxtT; cv::transpose(dxt, matdxtT);
+    auto vecVecDxtT = CalcUtils::matToVector<float>(matdxtT);
+    cv::Mat matdytT; cv::transpose(dyt, matdytT);
+    auto vecVecDytT = CalcUtils::matToVector<float>(matdytT);
+#endif
+
+    xtt = xt; ytt = yt;
+
+    const float BORDER_MARGIN = 10.f;
+    double minX = 0., maxX = 0., minY = 0., maxY = 0.;
+    cv::minMaxIdx(xtt, &minX, &maxX);
+    cv::minMaxIdx(ytt, &minY, &maxY);
+
+    pstRpy->fMinX = ToFloat(minX);
+    pstRpy->fMaxX = ToFloat(maxX);
+    pstRpy->fMinY = ToFloat(minY);
+    pstRpy->fMaxY = ToFloat(maxY);
+}
+
+/*static*/ VisionStatus TableMapping::run(const PR_TABLE_MAPPING_CMD *const pstCmd, PR_TABLE_MAPPING_RPY *const pstRpy) {
+    VectorOfVectorOfFloat vecVecTransM;
+    PR_TABLE_MAPPING_CMD::VectorOfFramePoints vecProcessedFramePoints;
+    for (const auto &framePoints : pstCmd->vecFramePoints) {
+        auto preHandledFramePoints = _preHandleData(framePoints);
+        vecProcessedFramePoints.push_back(preHandledFramePoints);
+
+        cv::Mat matXX, matYY;
+        auto matK = _fitModel(preHandledFramePoints, matXX, matYY);
+        cv::Mat matK1 = cv::Mat(matK, cv::Range(0, 2), cv::Range::all()).clone();
+        cv::transpose(matK1, matK1);
+        
+#ifdef _DEBUG
+        auto vecVecK = CalcUtils::matToVector<float>(matK);
+#endif
+        auto k1 = std::sqrt(matK1.at<float>(0, 0) * matK1.at<float>(0, 0) + matK1.at<float>(1, 0) * matK1.at<float>(1, 0));
+        auto k2 = std::sqrt(matK1.at<float>(0, 1) * matK1.at<float>(0, 1) + matK1.at<float>(1, 1) * matK1.at<float>(1, 1));
+
+        auto theta1 = atan( matK1.at<float>(1, 0) / matK1.at<float>(0, 0));
+        auto theta2 = atan(-matK1.at<float>(0, 1) / matK1.at<float>(1, 1)) - theta1;
+
+        auto Tx = matK.at<float>(2, 0);
+        auto Ty = matK.at<float>(2, 1);
+
+        vecVecTransM.emplace_back(VectorOfFloat{k1, k2, theta2, theta1, Tx, Ty});
+    }
+
+    cv::Mat xtt, ytt, dxt, dyt;
+    if (vecProcessedFramePoints.size() > 1) 
+        _processMultiFrameData(vecProcessedFramePoints, vecVecTransM, xtt, ytt, dxt, dyt, pstCmd, pstRpy);
+    else
+        _processSingleFrameData(vecProcessedFramePoints, vecVecTransM, xtt, ytt, dxt, dyt, pstCmd, pstRpy);
 
     std::vector<float> vecParamMinMaxXY{pstRpy->fMinX, pstRpy->fMaxX, pstRpy->fMinY, pstRpy->fMaxY};
     //float mt = 40, nt = 50;
