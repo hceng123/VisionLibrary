@@ -259,7 +259,7 @@ TableMapping::~TableMapping()
     return -1;
 }
 
-/*static*/ cv::Mat TableMapping::_generateBazier(const cv::Mat& matX, const cv::Mat& matY, const VectorOfFloat& vecXyMinMax, int mm, int nn) {
+/*static*/ cv::Mat TableMapping::_generateBezier(const cv::Mat& matX, const cv::Mat& matY, const VectorOfFloat& vecXyMinMax, int mm, int nn) {
     auto xMin = vecXyMinMax[0]; auto xMax = vecXyMinMax[1];
     auto yMin = vecXyMinMax[2]; auto yMax = vecXyMinMax[3];
 
@@ -337,7 +337,7 @@ TableMapping::~TableMapping()
     auto vecVecZ1T = CalcUtils::matToVector<float>(matZ1T);
 #endif
 
-    cv::Mat matXX = _generateBazier(matX1, matY1, vecXyMinMax, mm, nn);
+    cv::Mat matXX = _generateBezier(matX1, matY1, vecXyMinMax, mm, nn);
     //Matlab x'*x
     cv::Mat matXXT; cv::transpose(matXX, matXXT);
     cv::Mat matLeft = matXXT * matXX;
@@ -354,7 +354,7 @@ TableMapping::~TableMapping()
     cv::Mat matXInRow = matX.reshape(1, matX.rows * matX.cols);
     cv::Mat matYInRow = matY.reshape(1, matY.rows * matY.cols);
 
-    cv::Mat matXX = _generateBazier(matXInRow, matYInRow, vecXyMinMax, mm, nn);
+    cv::Mat matXX = _generateBezier(matXInRow, matYInRow, vecXyMinMax, mm, nn);
 
     cv::Mat zp1 = matXX * matPPz;
     zp1 = zp1.reshape(1, matX.rows);
@@ -544,7 +544,7 @@ TableMapping::~TableMapping()
     auto vecVecDytT = CalcUtils::matToVector<float>(matdytT);
 #endif
 
-    const int minPointsRequired = pstCmd->nBazierRank * pstCmd->nBazierRank;
+    const int minPointsRequired = pstCmd->nBezierRank * pstCmd->nBezierRank;
     if (matchPointNumber < minPointsRequired) {
         pstRpy->enStatus = VisionStatus::TABLE_MAPPING_FAIL;
         std::stringstream ss;
@@ -626,7 +626,7 @@ TableMapping::~TableMapping()
         }
     }
 
-    const int minPointsRequired = pstCmd->nBazierRank * pstCmd->nBazierRank;
+    const int minPointsRequired = pstCmd->nBezierRank * pstCmd->nBezierRank;
     if (matchPointNumber < minPointsRequired) {
         pstRpy->enStatus = VisionStatus::TABLE_MAPPING_FAIL;
         std::stringstream ss;
@@ -694,8 +694,8 @@ TableMapping::~TableMapping()
     //cv::Mat xt2, yt2;
     //CalcUtils::meshgrid(minX, (maxX - minX)/(mt-1), maxX, minY, (maxY - minY)/(nt-1), maxY, xt2, yt2);
 
-    pstRpy->matXOffsetParam = _calculatePPz(xtt, ytt, dxt, vecParamMinMaxXY, pstCmd->nBazierRank, pstCmd->nBazierRank);
-    pstRpy->matYOffsetParam = _calculatePPz(xtt, ytt, dyt, vecParamMinMaxXY, pstCmd->nBazierRank, pstCmd->nBazierRank);
+    pstRpy->matXOffsetParam = _calculatePPz(xtt, ytt, dxt, vecParamMinMaxXY, pstCmd->nBezierRank, pstCmd->nBezierRank);
+    pstRpy->matYOffsetParam = _calculatePPz(xtt, ytt, dyt, vecParamMinMaxXY, pstCmd->nBezierRank, pstCmd->nBezierRank);
 
 #ifdef _DEBUG
     cv::Mat matXOffsetParamT; cv::transpose(pstRpy->matXOffsetParam, matXOffsetParamT);
@@ -729,10 +729,10 @@ TableMapping::~TableMapping()
     matY.at<float>(0) = pstCmd->ptTablePos.y;
 
     std::vector<float> vecParamMinMaxXY{pstCmd->fMinX, pstCmd->fMaxX, pstCmd->fMinY, pstCmd->fMaxY};
-    cv::Mat matXX = _generateBazier(matX, matY, vecParamMinMaxXY, pstCmd->nBazierRank, pstCmd->nBazierRank);
+    cv::Mat matXX = _generateBezier(matX, matY, vecParamMinMaxXY, pstCmd->nBezierRank, pstCmd->nBezierRank);
 
     if (matXX.cols != pstCmd->matXOffsetParam.rows || matXX.cols != pstCmd->matYOffsetParam.rows) {
-        WriteLog("The input calibration result and bazier rank not match.");
+        WriteLog("PR_CalcTableOffset: The input calibration result and the input bezier rank not match.");
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return pstRpy->enStatus;
     }

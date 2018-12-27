@@ -18,7 +18,7 @@ class TableMapping
         const cv::Mat& matD1, cv::Mat& matR1, cv::Mat& matDR1);    
     static int _findMatchPoint(const VectorOfFloat& vecTargetX, const VectorOfFloat& vecTargetY, const cv::Point2f& ptSrch);
     static cv::Mat _paraFromPolyNomial(int n);
-    static cv::Mat _generateBazier(const cv::Mat& matX, const cv::Mat& matY, const VectorOfFloat& vecXyMinMax, int mm, int nn);
+    static cv::Mat _generateBezier(const cv::Mat& matX, const cv::Mat& matY, const VectorOfFloat& vecXyMinMax, int mm, int nn);
     static cv::Mat _calculatePPz(const cv::Mat& matX, const cv::Mat& matY, const cv::Mat& matZ,
         const VectorOfFloat& vecXyMinMax, int mm, int nn);
     static cv::Mat _calculateSurface(const cv::Mat& matX, const cv::Mat& matY, const cv::Mat& matPPz, const VectorOfFloat& vecXyMinMax, int mm, int nn);

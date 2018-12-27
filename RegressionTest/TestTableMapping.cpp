@@ -33,7 +33,7 @@ void TestTableMapping_1() {
 
     PR_TABLE_MAPPING_CMD stCmd;
     PR_TABLE_MAPPING_RPY stRpy;
-    stCmd.nBazierRank = 11;
+    stCmd.nBezierRank = 11;
 
     for (int i = 1; i <= TOTAL_FRAME; ++ i) {
         char chArrFileName[100];
@@ -66,11 +66,11 @@ void TestTableMapping_2() {
     std::string strDataPath = "./data/TableMappingTest_2/";
     const int TOTAL_FRAME = 1;
     const int DATA_START_ROW = 1;
-    const int BAZIER_RANK = 5;
+    const int BEZIER_RANK = 5;
 
     PR_TABLE_MAPPING_CMD stCmd;
     PR_TABLE_MAPPING_RPY stRpy;
-    stCmd.nBazierRank = BAZIER_RANK;
+    stCmd.nBezierRank = BEZIER_RANK;
     stCmd.fBoardPointDist = 16;
 
     for (int i = 1; i <= TOTAL_FRAME; ++ i) {
@@ -105,7 +105,7 @@ void TestTableMapping_2() {
     PR_CALC_TABLE_OFFSET_CMD stCalcOffsetCmd;
     PR_CALC_TABLE_OFFSET_RPY stCalcOffsetRpy;
 
-    stCalcOffsetCmd.nBazierRank = BAZIER_RANK;
+    stCalcOffsetCmd.nBezierRank = BEZIER_RANK;
     stCalcOffsetCmd.ptTablePos = cv::Point2f(-205, 103);
     stCalcOffsetCmd.matXOffsetParam = stRpy.matXOffsetParam;
     stCalcOffsetCmd.matYOffsetParam = stRpy.matYOffsetParam;
