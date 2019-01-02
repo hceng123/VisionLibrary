@@ -1136,6 +1136,7 @@ VisionStatus VisionAlgorithm::inspDevice(PR_INSP_DEVICE_CMD *pstInspDeviceCmd, P
         for (const auto &point : vecPoint2f)
             vecVecPoint[0].push_back(point);
         cv::polylines(pstRpy->matResultImg, vecVecPoint, true, BLUE_SCALAR, nLineWidth);
+        cv::rectangle(pstRpy->matResultImg, pstCmd->rectSrchWindow, GREEN_SCALAR, 1);
     }
     FINISH_LOGCASE;
     MARK_FUNCTION_END_TIME;
