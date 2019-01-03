@@ -1245,6 +1245,7 @@ VisionStatus LogCaseMatchTmpl::WriteCmd(const PR_MATCH_TEMPLATE_CMD *const pstCm
     ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyMotion.c_str(), ToInt32(pstCmd->enMotion));
     ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyRecordId.c_str(), pstCmd->nRecordId);
     ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyAlgorithm.c_str(), ToInt32(pstCmd->enAlgorithm));
+    ini.SetBoolValue(_CMD_SECTION.c_str(), _strKeySubPixelRefine.c_str(), pstCmd->bSubPixelRefine);
     ini.SaveFile(cmdRpyFilePath.c_str());
     cv::imwrite(_strLogCasePath + _IMAGE_NAME, pstCmd->matInputImg);
     return VisionStatus::OK;
@@ -1277,6 +1278,7 @@ VisionStatus LogCaseMatchTmpl::RunLogCase() {
     stCmd.enMotion = static_cast<PR_OBJECT_MOTION>(ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyMotion.c_str(), 0));
     stCmd.nRecordId = ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyRecordId.c_str(), 0);
     stCmd.enAlgorithm = static_cast<PR_MATCH_TMPL_ALGORITHM> (ini.GetLongValue(_CMD_SECTION.c_str(), _strKeyAlgorithm.c_str(), 0));
+    stCmd.bSubPixelRefine = ini.GetBoolValue(_CMD_SECTION.c_str(), _strKeySubPixelRefine.c_str(), false);
 
     PR_MATCH_TEMPLATE_RPY stRpy;
     enStatus = VisionAlgorithm::matchTemplate(&stCmd, &stRpy, true);

@@ -14,8 +14,11 @@
  * Copyright (c) 2016-2018, Xiao Shengguang.  All rights reserved.
  ****************************************************************************/
 
+//2019-01-03 (XSG) Fix template match log case not correct problem.
+#define AOI_VISION_VERSION          "1.00.55"
+
 //2018-12-27 (XSG) Fix single frame table mapping fail problem
-#define AOI_VISION_VERSION          "1.00.54"
+//#define AOI_VISION_VERSION          "1.00.54"
 
 //2018-12-25 (XSG) Add matResultMask in PR_PICK_COLOR_RPY
 //#define AOI_VISION_VERSION          "1.00.53"

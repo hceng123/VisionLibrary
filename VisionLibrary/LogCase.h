@@ -484,6 +484,7 @@ private:
     const String _strKeySrchWindow      = "SrchWindow";
     const String _strKeyMotion          = "Motion";
     const String _strKeyAlgorithm       = "Algorithm";
+    const String _strKeySubPixelRefine  = "SubPixelRefine";
 
     const String _strKeyStatus          = "Status";
     const String _strKeyObjPos          = "ObjPos";
