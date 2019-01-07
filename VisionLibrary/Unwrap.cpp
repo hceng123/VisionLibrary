@@ -2021,6 +2021,102 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
     pstRpy->enStatus = VisionStatus::OK;
 }
 
+/*static*/ cv::Mat Unwrap::_calculatePPzxx(const cv::Mat& matX1, const cv::Mat& matY1, int mm, int nn) {
+    cv::Mat u = (matX1 - 1.f) / (matX1.cols - 1.f);
+    cv::Mat v = (matY1 - 1.f) / (matX1.rows - 1.f);
+    int len = Vision::ToInt32(matX1.total());
+
+    auto matPolyParamm = CalcUtils::paraFromPolyNomial(mm);
+    auto matPolyParann = CalcUtils::paraFromPolyNomial(nn);
+
+    cv::Mat Pm1 = cv::repeat(CalcUtils::intervals<float>(0.f, 1.f, ToFloat(mm - 1)).reshape(1, 1),  len, 1);
+    cv::Mat Pm2 = cv::repeat(CalcUtils::intervals<float>(ToFloat(mm - 1), -1.f, 0.f).reshape(1, 1), len, 1);
+    cv::Mat Pm3 = cv::repeat(u, 1, mm);
+    cv::Mat Pm4 = cv::repeat(1-u, 1, mm);
+
+    cv::Mat Pn1 = cv::repeat(CalcUtils::intervals<float>(0.f, 1.f, ToFloat(nn - 1)).reshape(1, 1),  len, 1);
+    cv::Mat Pn2 = cv::repeat(CalcUtils::intervals<float>(ToFloat(nn - 1), -1.f, 0.f).reshape(1, 1), len, 1);
+    cv::Mat Pn3 = cv::repeat(v, 1, nn);
+    cv::Mat Pn4 = cv::repeat(1-v, 1, nn);
+
+    // P1 = (Pm3.^Pm1).*(Pm4.^Pm2).*repmat(PolyParamm, len, 1);
+    cv::Mat matTmpPmPow, P1;
+    cv::multiply(CalcUtils::power<float>(Pm3, Pm1), CalcUtils::power<float>(Pm4, Pm2), matTmpPmPow);
+    cv::multiply(matTmpPmPow, cv::repeat(matPolyParamm, len, 1), P1);
+
+    // P2 = (Pn3.^Pn1).*(Pn4.^Pn2).*repmat(PolyParann, len, 1);
+    cv::Mat matTmpPnPow, P2;
+    cv::multiply(CalcUtils::power<float>(Pn3, Pn1), CalcUtils::power<float>(Pn4, Pn2), matTmpPnPow);
+    cv::multiply(matTmpPnPow, cv::repeat(matPolyParann, len, 1), P2);
+
+    cv::Mat matXX = cv::Mat::zeros(len, mm * nn, CV_32FC1);
+
+    for (int ii = 0; ii < mm; ++ ii)
+    for (int jj = 0; jj < nn; ++ jj) {
+        auto matCol = matXX.col(ii * nn + jj);
+        cv::multiply(P1.col(ii), P2.col(jj), matCol);
+    }
+    return matXX;
+}
+
+/*static*/ cv::Mat Unwrap::_calculatePPzConvert3D(const cv::Mat& z1, const cv::Mat& matH, const VectorOfFloat& param, int ss, const cv::Mat& xxt1) {
+    auto zmin = param[5];
+    auto zmax = param[6];
+    auto zInRow = z1.reshape(1, z1.rows * z1.cols);
+    auto hInRow = matH.reshape(1, matH.rows * matH.cols);
+    cv::Mat w = (zInRow - zmin) / (zmax - zmin);
+    int len = zInRow.rows;
+
+    cv::Mat Ps1 = cv::repeat(CalcUtils::intervals<float>(0.f, 1.f, ToFloat(ss - 1)).reshape(1, 1),  len, 1);
+    cv::Mat Ps2 = cv::repeat(CalcUtils::intervals<float>(ToFloat(ss - 1), -1.f, 0.f).reshape(1, 1), len, 1);
+    cv::Mat Ps3 = cv::repeat(w,     1, ss);
+    cv::Mat Ps4 = cv::repeat(1 - w, 1, ss);
+
+    auto matPolyParass = CalcUtils::paraFromPolyNomial(ss);
+
+    // PP3 = (Ps3.^Ps1).*(Ps4.^Ps2).*repmat(PolyParass, len, 1);
+    cv::Mat matTmpPmPow, P1;
+    cv::multiply(CalcUtils::power<float>(Ps3, Ps1), CalcUtils::power<float>(Ps4, Ps2), matTmpPmPow);
+    cv::multiply(matTmpPmPow, cv::repeat(matPolyParass, len, 1), P1);
+
+    int len1 = xxt1.cols;
+
+    cv::Mat sum1 = cv::Mat::zeros(len1 * ss, len1 * ss, CV_32FC1); 
+    cv::Mat sum2 = cv::Mat::zeros(len1 * ss, 1, CV_32FC1);
+    return sum1;
+}
+
+/*static*/ void Unwrap::motorCalib3DNew(const PR_MOTOR_CALIB_3D_CMD *const pstCmd, PR_MOTOR_CALIB_3D_RPY *const pstRpy) {
+    auto vecPairHeightPhase = pstCmd->vecPairHeightPhase;
+    std::sort(vecPairHeightPhase.begin(), vecPairHeightPhase.end(), [](PairHeightPhase& kv1, PairHeightPhase& kv2) {
+        return kv1.first < kv2.first;
+    });
+
+    auto matN5 = vecPairHeightPhase.front().second;
+    auto matP5 = vecPairHeightPhase.back().second;
+
+    double zMax = 0., zMin = 0., zTmp = 0.;
+    cv::minMaxIdx(matN5, &zTmp, &zMax);
+    cv::minMaxIdx(matP5, &zMin, &zTmp);
+
+     cv::Mat matX1, matY1;
+    CalcUtils::meshgrid<DATA_TYPE>(1.f, 1.f, ToFloat(pstCmd->vecPairHeightPhase[0].second.cols), 1.f, 1.f, ToFloat(pstCmd->vecPairHeightPhase[0].second.rows), matX1, matY1);
+
+    int mm = 5, nn = 5, ss = 4;
+
+    cv::Mat matXInRow = matX1.reshape(1, matX1.rows * matX1.cols);
+    cv::Mat matYInRow = matX1.reshape(1, matX1.rows * matX1.cols);
+
+    std::vector<float> vecParamMinMaxXY{1.f, ToFloat(matX1.cols), 1.f, ToFloat(matX1.rows), ToFloat(zMin), ToFloat(zMax)};
+    auto xxt = CalcUtils::generateBezier(matXInRow, matYInRow, vecParamMinMaxXY, mm, nn);
+
+    for(const auto& heightPhase : pstCmd->vecPairHeightPhase) {
+
+    }
+
+    pstRpy->enStatus = VisionStatus::OK;
+}
+
 /*static*/ void Unwrap::phaseCorrection(cv::Mat &matPhase, const cv::Mat &matIdxNan, int nJumpSpanX, int nJumpSpanY) {
     CStopWatch stopWatch;
     const int ROWS = matPhase.rows;
