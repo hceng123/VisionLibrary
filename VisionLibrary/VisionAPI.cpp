@@ -643,9 +643,9 @@ PR_FUNCTION_EXIT
 
 VisionAPI VisionStatus PR_TableMapping(const PR_TABLE_MAPPING_CMD *const pstCmd, PR_TABLE_MAPPING_RPY *const pstRpy)
 {
-PR_FUNCTION_ENTRY
+//PR_FUNCTION_ENTRY
     return VisionAlgorithm::tableMapping(pstCmd, pstRpy);
-PR_FUNCTION_EXIT
+//PR_FUNCTION_EXIT
 }
 
 VisionAPI VisionStatus PR_CalcTableOffset(const PR_CALC_TABLE_OFFSET_CMD* const pstCmd, PR_CALC_TABLE_OFFSET_RPY* const pstRpy)

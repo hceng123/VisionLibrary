@@ -206,8 +206,8 @@ TableMapping::~TableMapping()
     Axy.push_back(cv::Mat(vecTargetX).reshape(1, 1));
     Axy.push_back(cv::Mat(vecTargetY).reshape(1, 1));
 
-    const cv::Mat matWeightConcat = matWeight.reshape(1, 1).clone();
-    cv::Mat matWeightConcatRepeat = cv::repeat(matWeightConcat.clone(), 2, 1);
+    //const cv::Mat matWeightConcat = matWeight.reshape(1, 1).clone();
+    cv::Mat matWeightConcatRepeat = cv::repeat(matWeight.clone(), 2, 1);
 
     matR1 = Axy - Axy1;
     cv::multiply(matR1, matWeightConcatRepeat, matR1);
@@ -370,8 +370,8 @@ TableMapping::~TableMapping()
     return zp1;
 }
 
-/*static*/ std::vector<ByteVector> TableMapping::_findCrossBorderPoint(const PR_TABLE_MAPPING_CMD::VectorOfFramePoints& vecProcessedFramePoints) {
-    std::vector<ByteVector> vecVecResult(vecProcessedFramePoints.size(), ByteVector(vecProcessedFramePoints[0].size(), 0));
+/*static*/ ByteVector TableMapping::_findCrossBorderPoint(const PR_TABLE_MAPPING_CMD::VectorOfFramePoints& vecProcessedFramePoints) {
+	ByteVector vecResult;
     const float BORDER_MARGIN = 5.f;
     const auto& firstFramePoints = vecProcessedFramePoints.front();
     const auto& lastFramePoints  = vecProcessedFramePoints.back();
@@ -384,18 +384,20 @@ TableMapping::~TableMapping()
         const auto& frameBtm = vecProcessedFramePoints[i].back().actualPoint.y;
         for (size_t j = 0; j < vecProcessedFramePoints[i].size(); ++ j) {
             const auto& ptCurrentPoint = vecProcessedFramePoints[i][j].actualPoint;
+			Byte result = 0;
             if (fabs(ptCurrentPoint.x - frameLft) < BORDER_MARGIN && fabs(ptCurrentPoint.x - fLft) > BORDER_MARGIN)
-                vecVecResult[i][j] = 1;
+				result = 1;
             if (fabs(ptCurrentPoint.y - frameTop) < BORDER_MARGIN && fabs(ptCurrentPoint.y - fTop) > BORDER_MARGIN)
-                vecVecResult[i][j] = 1;
+				result = 1;
             if (fabs(ptCurrentPoint.x - frameRgt) < BORDER_MARGIN && fabs(ptCurrentPoint.x - fRgt) > BORDER_MARGIN)
-                vecVecResult[i][j] = 1;
+				result = 1;
             if (fabs(ptCurrentPoint.y - frameBtm) < BORDER_MARGIN && fabs(ptCurrentPoint.y - fBtm) > BORDER_MARGIN)
-                vecVecResult[i][j] = 1;
+				result = 1;
+			vecResult.push_back(result);
         }
     }
 
-    return vecVecResult;
+	return vecResult;
 }
 
 /*static*/ void TableMapping::_processMultiFrameData(const PR_TABLE_MAPPING_CMD::VectorOfFramePoints& vecProcessedFramePoints,
@@ -408,12 +410,11 @@ TableMapping::~TableMapping()
     auto k2 = matMeanTransM.at<float>(1);
     auto theta2 = matMeanTransM.at<float>(2);
 
-    auto vecVecBorderPointMask = _findCrossBorderPoint(vecProcessedFramePoints);
-    cv::Mat matWeight = cv::Mat::ones(ToInt32(vecVecBorderPointMask.size()), ToInt32(vecVecBorderPointMask[0].size()), CV_32FC1);
-    for (int row = 0; row < matWeight.rows; ++ row)
-    for (int col = 0; col < matWeight.cols; ++ col) {
-        if (vecVecBorderPointMask[row][col] > 0)
-            matWeight.at<float>(row, col) = pstCmd->fFrameBorderPointWeight;
+    auto vecBorderPointMask = _findCrossBorderPoint(vecProcessedFramePoints);
+	cv::Mat matWeight = cv::Mat::ones(1, ToInt32(vecBorderPointMask.size()), CV_32FC1);
+	for (int i = 0; i < vecBorderPointMask.size(); ++ i) {
+		if (vecBorderPointMask[i] > 0)
+			matWeight.at<float>(i) = pstCmd->fFrameBorderPointWeight;
     }
 
 #ifdef _DEBUG

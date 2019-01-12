@@ -648,11 +648,6 @@ int _tmain(int argc, _TCHAR* argv[])
     PR_Init();
     PR_SetDebugMode(PR_DEBUG_MODE::SHOW_IMAGE);
 
-    cv::Mat matImage = cv::imread("./data/OcvTestImage.png", cv::IMREAD_GRAYSCALE);
-    if (matImage.empty())
-        return -1;
-    cv::equalizeHist(matImage, matImage);
-    cv::imwrite("./data/OcvTestImageNew.png", matImage);
 
     //PR_RunLogCase("./Vision/LogCase/CalibrateCamera_2018_12_21_08_03_14_131.logcase");
     //TestTemplate();
@@ -795,7 +790,8 @@ int _tmain(int argc, _TCHAR* argv[])
     //TestTableMapping();
     
     //TestTableMapping_1();
-    TestTableMapping_2();
+    //TestTableMapping_2();
+	TestTableMapping_4();
 
     PR_DumpTimeLog("./Vision/Time.log");
     std::cout << "Press any key to exit." << std::endl;
