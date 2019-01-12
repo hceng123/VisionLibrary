@@ -1564,15 +1564,20 @@ struct PR_TABLE_MAPPING_CMD {
 
     PR_TABLE_MAPPING_CMD() :
         fBoardPointDist(5.f),
-        nBezierRank(DEFAULT_TABLE_MAPPING_BEZIER_RANK) {}
+        nBezierRank(DEFAULT_TABLE_MAPPING_BEZIER_RANK),
+        fFrameBorderPointWeight(100) {}
     VectorOfFramePoints     vecFramePoints;
     float                   fBoardPointDist; // The physical calibration point distance on the chess board. Unit: mm
     int                     nBezierRank;
+    float                   fFrameBorderPointWeight;
 };
 
 struct PR_TABLE_MAPPING_RPY {
     cv::Mat                 matXOffsetParam;
     cv::Mat                 matYOffsetParam;
+    float                   a;
+    float                   b;
+    float                   c;
     float                   fMinX;
     float                   fMaxX;
     float                   fMinY;
@@ -1582,10 +1587,14 @@ struct PR_TABLE_MAPPING_RPY {
 
 struct PR_CALC_TABLE_OFFSET_CMD {
     PR_CALC_TABLE_OFFSET_CMD() :
-        nBezierRank(DEFAULT_TABLE_MAPPING_BEZIER_RANK) {}
+        nBezierRank(DEFAULT_TABLE_MAPPING_BEZIER_RANK),
+        a(1.f), b(1.f), c(0.f) {}
     cv::Point2f             ptTablePos;
     cv::Mat                 matXOffsetParam;
     cv::Mat                 matYOffsetParam;
+    float                   a;
+    float                   b;
+    float                   c;
     float                   fMinX;
     float                   fMaxX;
     float                   fMinY;

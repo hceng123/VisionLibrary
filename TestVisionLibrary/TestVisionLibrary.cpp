@@ -794,7 +794,8 @@ int _tmain(int argc, _TCHAR* argv[])
     
     //TestTableMapping();
     
-    TestTableMapping_1();
+    //TestTableMapping_1();
+    TestTableMapping_2();
 
     PR_DumpTimeLog("./Vision/Time.log");
     std::cout << "Press any key to exit." << std::endl;
