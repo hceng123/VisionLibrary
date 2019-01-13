@@ -1105,9 +1105,8 @@ INSPECT BRIDGE REGRESSION TEST #1 STARTING
 ---------------------------------------------
 Inspect bridge status 120
 Bridge window 0 : 224, 277, 14, 11
-Bridge window 1 : 249, 262, 5, 13
-Bridge window 2 : 213, 203, 8, 14
-Bridge window 3 : 228, 188, 14, 7
+Bridge window 1 : 213, 203, 8, 14
+Bridge window 2 : 228, 188, 14, 7
 
 ---------------------------------------------
 INSPECT BRIDGE REGRESSION TEST #2 STARTING

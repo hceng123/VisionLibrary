@@ -12,8 +12,10 @@ void TestInspBridge() {
 
     stCmd.matInputImg = cv::imread("./data/TestInspBridge.png", cv::IMREAD_GRAYSCALE);
     stCmd.enInspMode = PR_INSP_BRIDGE_MODE::OUTER;
-    stCmd.rectROI = cv::Rect(221, 195, 28, 82);
-    stCmd.rectOuterSrchWindow = cv::Rect(212, 187, 43, 102);
+    //stCmd.rectROI = cv::Rect(221, 195, 28, 82);
+    //stCmd.rectOuterSrchWindow = cv::Rect(212, 187, 43, 102);
+    stCmd.rectROI = cv::Rect(169, 195, 28, 82);
+    stCmd.rectOuterSrchWindow = cv::Rect(158, 187, 45, 108);
     for (int i = 0; i < 4; ++ i)
         stCmd.vecOuterInspDirection.push_back(PR_DIRECTION(i));
     
@@ -22,7 +24,9 @@ void TestInspBridge() {
         std::cout << "Failed to inspect bridge. Error Status: " << ToInt32(stRpy.enStatus) << std::endl;
         return;
     }
-    cv::imwrite("./data/TestInspBridge_Result.png", stRpy.matResultImg);
+
+    if (!stRpy.matResultImg.empty())
+        cv::imwrite("./data/TestInspBridge_Result.png", stRpy.matResultImg);
 }
 
 void TestInspBridge_1() {

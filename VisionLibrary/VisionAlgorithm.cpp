@@ -53,6 +53,16 @@ if (! bReplay) {   \
         pLogCase->WriteRpy(pstRpy); \
 }
 
+#define FINISH_LOGCASE_EX \
+if (! bReplay) {   \
+    if (PR_DEBUG_MODE::LOG_FAIL_CASE == Config::GetInstance()->getDebugMode() && pstRpy->enStatus != VisionStatus::OK) { \
+        pLogCase->WriteCmd(pstCmd); \
+        pLogCase->WriteRpy(pstCmd, pstRpy); \
+    } \
+    if (PR_DEBUG_MODE::LOG_ALL_CASE == Config::GetInstance()->getDebugMode()) \
+        pLogCase->WriteRpy(pstCmd, pstRpy); \
+}
+
 /*static*/ OcrTesseractPtr VisionAlgorithm::_ptrOcrTesseract;
 /*static*/ const cv::Scalar VisionAlgorithm::RED_SCALAR    (0,   0,   255 );
 /*static*/ const cv::Scalar VisionAlgorithm::BLUE_SCALAR   (255, 0,   0   );
@@ -3697,9 +3707,8 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
 
     VectorOfVectorOfPoint contours;
     cv::findContours(matOutput, contours, cv::RETR_CCOMP, cv::CHAIN_APPROX_SIMPLE);
-    for (size_t i = 0; i < contours.size(); ++ i) {
+    for (size_t i = 0; i < contours.size(); ++ i)
         cv::drawContours(matOutput, contours, ToInt32(i), cv::Scalar::all(PR_MAX_GRAY_LEVEL), CV_FILLED);
-    }
 
     if (PR_OBJECT_ATTRIBUTE::DARK == enAttribute)
         cv::bitwise_not(matOutput, matOutput);
@@ -4782,6 +4791,12 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     return pstRpy->enStatus;
 }
 
+/*static*/ void VisionAlgorithm::_addBridgeIfNotExist(VectorOfRect& vecBridgeWindow, const cv::Rect& rectBridge) {
+    auto iterBridge = std::find(vecBridgeWindow.begin(), vecBridgeWindow.end(), rectBridge);
+    if (iterBridge == vecBridgeWindow.end())
+        vecBridgeWindow.push_back(rectBridge);
+}
+
 /*static*/ void VisionAlgorithm::_inspBridgeItem(const PR_INSP_BRIDGE_CMD * const pstCmd, PR_INSP_BRIDGE_RPY * const pstRpy) {
     cv::Mat matROI, matFilter, matMask, matThreshold;
     cv::Point ptRoiTL;
@@ -4815,67 +4830,77 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     if (Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE)
         showImage("_inspBridgeItem threshold", matThreshold);
 
-    VectorOfVectorOfPoint contours, vecDrawContours;
+    VectorOfVectorOfPoint contours;
     cv::findContours(matThreshold, contours, cv::RETR_LIST, cv::CHAIN_APPROX_SIMPLE);
     if (contours.size() <= 0)
         return;
 
+    if (Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE) {
+        cv::Mat matDraw = matROI.clone();
+        for (int index = 0; index < contours.size(); ++ index) {
+            cv::RNG rng(12345);
+            cv::Scalar color = cv::Scalar(rng.uniform(0, 255), rng.uniform(0, 255), rng.uniform(0, 255));
+            cv::drawContours(matDraw, contours, index, color, 2);
+        }
+        showImage("Contours", matDraw);
+    }
+
     const int MARGIN = 3;
     for (const auto &contour : contours) {
-        cv::Rect rect = cv::boundingRect(contour);
-        if (rect.area() < 25)
+        auto area = cv::contourArea(contour);
+        if (area < 50.f)
             continue;
 
+        cv::Rect rect = cv::boundingRect(contour);
         cv::Point ptCenter = CalcUtils::getContourCtr(contour);
 
         if (PR_INSP_BRIDGE_MODE::INNER == pstCmd->enInspMode) {
             if (rect.width > pstCmd->stInnerInspCriteria.fMaxLengthX || rect.height > pstCmd->stInnerInspCriteria.fMaxLengthY) {
-                pstRpy->enStatus = VisionStatus::BRIDGE_DEFECT;
                 cv::Rect rectResult(rect.x + ptRoiTL.x, rect.y + ptRoiTL.y, rect.width, rect.height);
                 pstRpy->vecBridgeWindow.push_back(rectResult);
             }
         }
         else {
+            cv::Point ptWindowCtr(rectOuterWindowNew.x + rectOuterWindowNew.width / 2, rectOuterWindowNew.y + rectOuterWindowNew.height /2);
             for (const auto enDirection : pstCmd->vecOuterInspDirection)
             if (PR_DIRECTION::UP == enDirection) {
                 int nTolerance = pstCmd->rectROI.y - pstCmd->rectOuterSrchWindow.y - MARGIN;
-                if (ptCenter.y <= rectOuterWindowNew.tl().y && rect.height >= nTolerance) {
-                    pstRpy->enStatus = VisionStatus::BRIDGE_DEFECT;
+                if (ptCenter.y <= ptWindowCtr.y && rect.height >= nTolerance) {
                     cv::Rect rectResult(rect.x + ptRoiTL.x, rect.y + ptRoiTL.y, rect.width, rect.height);
-                    pstRpy->vecBridgeWindow.push_back(rectResult);
+                    _addBridgeIfNotExist(pstRpy->vecBridgeWindow, rectResult);
                 }
             }
             else if (PR_DIRECTION::DOWN == enDirection) {
                 int nTolerance = (pstCmd->rectOuterSrchWindow.y + pstCmd->rectOuterSrchWindow.height) - (pstCmd->rectROI.y + pstCmd->rectROI.height) - MARGIN;
-                if (ptCenter.y >= rectOuterWindowNew.br().y && rect.height >= nTolerance) {
-                    pstRpy->enStatus = VisionStatus::BRIDGE_DEFECT;
+                if (ptCenter.y >= ptWindowCtr.y && rect.height >= nTolerance) {
                     cv::Rect rectResult(rect.x + ptRoiTL.x, rect.y + ptRoiTL.y, rect.width, rect.height);
-                    pstRpy->vecBridgeWindow.push_back(rectResult);
+                    _addBridgeIfNotExist(pstRpy->vecBridgeWindow, rectResult);
                 }
             }
             else
             if (PR_DIRECTION::LEFT == enDirection) {
                 int nTolerance = pstCmd->rectROI.x - pstCmd->rectOuterSrchWindow.x - MARGIN;
-                if (ptCenter.x <= rectOuterWindowNew.tl().x && rect.width >= nTolerance) {
-                    pstRpy->enStatus = VisionStatus::BRIDGE_DEFECT;
+                if (ptCenter.x <= ptWindowCtr.x && rect.width >= nTolerance) {
                     cv::Rect rectResult(rect.x + ptRoiTL.x, rect.y + ptRoiTL.y, rect.width, rect.height);
-                    pstRpy->vecBridgeWindow.push_back(rectResult);
+                    _addBridgeIfNotExist(pstRpy->vecBridgeWindow, rectResult);
                 }
             }
             else
             if (PR_DIRECTION::RIGHT == enDirection) {
                 int nTolerance = (pstCmd->rectOuterSrchWindow.x + pstCmd->rectOuterSrchWindow.width) - (pstCmd->rectROI.x + pstCmd->rectROI.width) - MARGIN;
-                if (ptCenter.x >= rectOuterWindowNew.br().x && rect.width >= nTolerance) {
-                    pstRpy->enStatus = VisionStatus::BRIDGE_DEFECT;
+                if (ptCenter.x >= ptWindowCtr.x && rect.width >= nTolerance) {
                     cv::Rect rectResult(rect.x + ptRoiTL.x, rect.y + ptRoiTL.y, rect.width, rect.height);
-                    pstRpy->vecBridgeWindow.push_back(rectResult);
+                    _addBridgeIfNotExist(pstRpy->vecBridgeWindow, rectResult);
                 }
             }
         }
     }
 
+    if (!pstRpy->vecBridgeWindow.empty())
+        pstRpy->enStatus = VisionStatus::BRIDGE_DEFECT;
+
     //Draw the innter window and outer window.
-    if (! isAutoMode()) {
+    if (!isAutoMode()) {
         if (pstCmd->matInputImg.channels() > 1)
             pstRpy->matResultImg = pstCmd->matInputImg.clone();
         else
@@ -4885,7 +4910,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
         if (PR_INSP_BRIDGE_MODE::OUTER == pstCmd->enInspMode)
             cv::rectangle(pstRpy->matResultImg, pstCmd->rectOuterSrchWindow, BLUE_SCALAR);
         for (const auto &rectBridge : pstRpy->vecBridgeWindow)
-            cv::rectangle(pstRpy->matResultImg, rectBridge, RED_SCALAR, 1);
+            cv::rectangle(pstRpy->matResultImg, rectBridge, RED_SCALAR, 2);
     }
 }
 
@@ -4939,7 +4964,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
 
     _inspBridgeItem(pstCmd, pstRpy);
 
-    FINISH_LOGCASE;
+    FINISH_LOGCASE_EX;
     MARK_FUNCTION_END_TIME;
     return pstRpy->enStatus;
 }
