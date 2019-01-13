@@ -109,6 +109,7 @@ public:
     static VisionStatus read2DCode(const PR_READ_2DCODE_CMD *const pstCmd, PR_READ_2DCODE_RPY *const pstRpy, bool bReplay = false);
     static VisionStatus lrnSimilarity(const PR_LRN_SIMILARITY_CMD *const pstCmd, PR_LRN_SIMILARITY_RPY *const pstRpy, bool bReplay = false);
     static VisionStatus inspSimilarity(const PR_INSP_SIMILARITY_CMD *const pstCmd, PR_INSP_SIMILARITY_RPY *const pstRpy, bool bReplay = false);
+    static VisionStatus tableMapping(const PR_TABLE_MAPPING_CMD *const pstCmd, PR_TABLE_MAPPING_RPY *const pstRpy, bool bReplay = false);
 
 protected:
     static VisionStatus _checkInputROI(const cv::Rect &rect, const cv::Mat &matInputImg, const char *filename, int line);
@@ -188,6 +189,7 @@ protected:
                                           std::vector<cv::Point3f>  &corners,
                                           CalibPattern               patternType = CHESSBOARD );
     static cv::Point2f _findFirstChessBoardCorner(const cv::Mat &matInputImg, float fBlockSize);
+    static void _addBridgeIfNotExist(VectorOfRect& vecBridgeWindow, const cv::Rect& rectBridge);
     static void _inspBridgeItem(const PR_INSP_BRIDGE_CMD * const pstCmd, PR_INSP_BRIDGE_RPY * const pstRpy);
     static VisionStatus _lrnChipHeadMode(const cv::Mat &matThreshold, const cv::Rect &rectROI, PR_LRN_CHIP_RPY *const pstRpy);
     static VisionStatus _lrnChipCAEMode(const cv::Mat &matThreshold, const cv::Rect &rectROI, PR_LRN_CHIP_RPY *const pstRpy);

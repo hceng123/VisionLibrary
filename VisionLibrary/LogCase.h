@@ -484,6 +484,7 @@ private:
     const String _strKeySrchWindow      = "SrchWindow";
     const String _strKeyMotion          = "Motion";
     const String _strKeyAlgorithm       = "Algorithm";
+    const String _strKeySubPixelRefine  = "SubPixelRefine";
 
     const String _strKeyStatus          = "Status";
     const String _strKeyObjPos          = "ObjPos";
@@ -579,7 +580,7 @@ class LogCaseInspBridge : public LogCase
 public:
     explicit LogCaseInspBridge(const String &strPath, bool bReplay = false) : LogCase(strPath, bReplay) {}
     VisionStatus WriteCmd(const PR_INSP_BRIDGE_CMD *const pstCmd);
-    VisionStatus WriteRpy(PR_INSP_BRIDGE_RPY *const pstRpy);
+    VisionStatus WriteRpy(const PR_INSP_BRIDGE_CMD *const pstCmd, PR_INSP_BRIDGE_RPY *const pstRpy);
     virtual VisionStatus RunLogCase() override;
     virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
     static String StaticGetFolderPrefix();

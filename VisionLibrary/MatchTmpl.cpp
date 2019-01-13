@@ -1,6 +1,7 @@
 #include "MatchTmpl.h"
 #include "opencv2/video.hpp"
-#include "CalcUtils.h"
+#include "CalcUtils.hpp"
+#include "Log.h"
 
 namespace AOI
 {
@@ -150,7 +151,10 @@ MatchTmpl::~MatchTmpl() {
         try {
             refineSrchTemplate(mat, matTmpl, enMotion, ptResult, fRotation, fCorrelation);
         }
-        catch (std::exception) {
+        catch (std::exception& e) {
+            std::stringstream ss;
+            ss << "OpenCV exception captured in MatchTmpl::matchTemplate, exception: " << e.what();
+            WriteLog(ss.str());
             return VisionStatus::OPENCV_EXCEPTION;
         }
     }

@@ -52,8 +52,8 @@ void TestInspBridge() {
         stCmd.matInputImg = cv::imread("./data/TestInspBridge.png", cv::IMREAD_GRAYSCALE);
 
         stCmd.enInspMode = PR_INSP_BRIDGE_MODE::OUTER;
-        stCmd.rectROI = cv::Rect(169, 195, 26, 82);
-        stCmd.rectOuterSrchWindow = cv::Rect(158, 187, 54, 108);
+        stCmd.rectROI = cv::Rect(169, 195, 28, 82);
+        stCmd.rectOuterSrchWindow = cv::Rect(158, 187, 45, 108);
         for (int i = 0; i < 4; ++i)
             stCmd.vecOuterInspDirection.push_back(PR_DIRECTION(i));
 

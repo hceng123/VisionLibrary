@@ -35,6 +35,7 @@ void TestTwoLineIntersect();
 void TestParallelLineDistance();
 void TestCrossSectionArea();
 void TestOCV();
+void TestTableMapping();
 
 }
 }

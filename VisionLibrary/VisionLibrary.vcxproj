@@ -146,13 +146,13 @@
     <ClInclude Include="Auxiliary.hpp" />
     <ClInclude Include="BaseDefs.h" />
     <ClInclude Include="BaseType.h" />
-    <ClInclude Include="CalcUtils.h" />
+    <ClInclude Include="CalcUtils.hpp" />
     <ClInclude Include="Config.h" />
     <ClInclude Include="CudaAlgorithm.h" />
     <ClInclude Include="DataMatrix.h" />
     <ClInclude Include="Exception.h" />
     <ClInclude Include="FileUtils.h" />
-    <ClInclude Include="Fitting.h" />
+    <ClInclude Include="Fitting.hpp" />
     <ClInclude Include="Log.h" />
     <ClInclude Include="LogCase.h" />
     <ClInclude Include="MatchTmpl.h" />
@@ -161,6 +161,7 @@
     <ClInclude Include="SimpleIni.h" />
     <ClInclude Include="spline.h" />
     <ClInclude Include="SubFunctions.h" />
+    <ClInclude Include="TableMapping.h" />
     <ClInclude Include="TimeLog.h" />
     <ClInclude Include="Unwrap.h" />
     <ClInclude Include="Version.h" />
@@ -188,6 +189,7 @@
     <ClCompile Include="MultiThresh.cpp" />
     <ClCompile Include="Record.cpp" />
     <ClCompile Include="RecordManager.cpp" />
+    <ClCompile Include="TableMapping.cpp" />
     <ClCompile Include="TimeLog.cpp" />
     <ClCompile Include="Unwrap.cpp" />
     <ClCompile Include="VisionAlgorithm.cpp" />

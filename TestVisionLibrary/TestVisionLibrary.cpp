@@ -1,195 +1,198 @@
 // TestVisionLibrary.cpp : Defines the entry point for the console application.
 //
 
+#include <ctime>
+#include <iostream>
+#include <iomanip>
+
 #include "stdafx.h"
 #include "../VisionLibrary/VisionAPI.h"
 #include "opencv2/core.hpp"
 #include "opencv2/highgui.hpp"
 #include "opencv2/imgproc.hpp"
-#include <ctime>
-#include <iostream>
-#include <iomanip>
+#include "../RegressionTest/UtilityFunc.h"
 #include "TestSub.h"
+
 
 using namespace AOI::Vision;
 
 int TestVisionAlgorithm()
 {
-	float WZ = 0, TX = 0, TY = 0;
-	printf("Please enter WZ, TX and TY, separated by space.\n");
-	printf("Example: -0.01 5 -3\n");
-	printf(">");
+    float WZ = 0, TX = 0, TY = 0;
+    printf("Please enter WZ, TX and TY, separated by space.\n");
+    printf("Example: -0.01 5 -3\n");
+    printf(">");
 
-	// Here we will store our images.
-	IplImage* pColorPhoto = 0; // Photo of a butterfly on a flower.
-	IplImage* pGrayPhoto = 0;  // Grayscale copy of the photo.
-	IplImage* pImgT = 0;	   // Template T.
-	IplImage* pImgI = 0;	   // Image I.
+    // Here we will store our images.
+    IplImage* pColorPhoto = 0; // Photo of a butterfly on a flower.
+    IplImage* pGrayPhoto = 0;  // Grayscale copy of the photo.
+    IplImage* pImgT = 0;       // Template T.
+    IplImage* pImgI = 0;       // Image I.
 
-	// Here we will store our warp matrix.
-	CvMat* W = 0;  // Warp W(p)
+    // Here we will store our warp matrix.
+    CvMat* W = 0;  // Warp W(p)
 
-	// Create two simple windows. 
-	cvNamedWindow("template"); // Here we will display T(x).
-	//cvNamedWindow("image"); // Here we will display I(x).
+    // Create two simple windows. 
+    cvNamedWindow("template"); // Here we will display T(x).
+    //cvNamedWindow("image"); // Here we will display I(x).
 
-	// Load photo.
-	pColorPhoto = cvLoadImage("./data/photo.jpg");
-	if (NULL == pColorPhoto)
-		return -1;
+    // Load photo.
+    pColorPhoto = cvLoadImage("./data/photo.jpg");
+    if (NULL == pColorPhoto)
+        return -1;
 
-	// Create other images.
-	CvSize photo_size = cvSize(pColorPhoto->width, pColorPhoto->height);
-	pGrayPhoto = cvCreateImage(photo_size, IPL_DEPTH_8U, 1);
-	pImgT = cvCreateImage(photo_size, IPL_DEPTH_8U, 1);
-	pImgI = cvCreateImage(photo_size, IPL_DEPTH_8U, 1);
+    // Create other images.
+    CvSize photo_size = cvSize(pColorPhoto->width, pColorPhoto->height);
+    pGrayPhoto = cvCreateImage(photo_size, IPL_DEPTH_8U, 1);
+    pImgT = cvCreateImage(photo_size, IPL_DEPTH_8U, 1);
+    pImgI = cvCreateImage(photo_size, IPL_DEPTH_8U, 1);
 
-	// Convert photo to grayscale, because we need intensity values instead of RGB.	
-	cvCvtColor(pColorPhoto, pGrayPhoto, CV_RGB2GRAY);
+    // Convert photo to grayscale, because we need intensity values instead of RGB.    
+    cvCvtColor(pColorPhoto, pGrayPhoto, CV_RGB2GRAY);
 
-	// Create warp matrix, we will use it to create image I.
-	//W = cvCreateMat(3, 3, CV_32F);
-	cv::Mat matRotation = cv::getRotationMatrix2D(cv::Point(210, 175), 3, 1);
-	printf("Rotation Mat \n");
-	printfMat<double> ( matRotation );
-	cv::Mat matRotated;
-	cv::Mat src = cv::cvarrToMat ( pGrayPhoto );
-	warpAffine(src, matRotated, matRotation, src.size());
-	cv::line(matRotated, cv::Point(210, 175), cv::Point(260, 225), cv::Scalar(255,255, 0), 2 );		//Manually add defect.
-	circle(matRotated, cv::Point(240, 190), 15, cv::Scalar(255,255, 0), CV_FILLED);
+    // Create warp matrix, we will use it to create image I.
+    //W = cvCreateMat(3, 3, CV_32F);
+    cv::Mat matRotation = cv::getRotationMatrix2D(cv::Point(210, 175), 3, 1);
+    printf("Rotation Mat \n");
+    printfMat<double> ( matRotation );
+    cv::Mat matRotated;
+    cv::Mat src = cv::cvarrToMat ( pGrayPhoto );
+    warpAffine(src, matRotated, matRotation, src.size());
+    cv::line(matRotated, cv::Point(210, 175), cv::Point(260, 225), cv::Scalar(255,255, 0), 2 );        //Manually add defect.
+    circle(matRotated, cv::Point(240, 190), 15, cv::Scalar(255,255, 0), CV_FILLED);
 
     circle(matRotated, cv::Point(200, 160), 15, cv::Scalar(0,0, 0), CV_FILLED);
-	imshow("Rotated", matRotated);
+    imshow("Rotated", matRotated);
 
-	// Create template T
-	// Set region of interest to butterfly's bounding rectangle.
-	cvCopy(pGrayPhoto, pImgT);
-	CvRect omega = cvRect(110, 100, 200, 150);
+    // Create template T
+    // Set region of interest to butterfly's bounding rectangle.
+    cvCopy(pGrayPhoto, pImgT);
+    CvRect omega = cvRect(110, 100, 200, 150);
 
-	// Create I by warping photo with sub-pixel accuracy. 
-	//init_warp(W, WZ, TX, TY);
-	//warp_image(pGrayPhoto, pImgI, W);
+    // Create I by warping photo with sub-pixel accuracy. 
+    //init_warp(W, WZ, TX, TY);
+    //warp_image(pGrayPhoto, pImgI, W);
 
-	// Draw the initial template position approximation rectangle.
-	//cvSetIdentity(W);
-	//draw_warped_rect(pImgI, omega, W);
+    // Draw the initial template position approximation rectangle.
+    //cvSetIdentity(W);
+    //draw_warped_rect(pImgI, omega, W);
 
-	// Show T and I and wait for key press.
-	cvSetImageROI(pImgT, omega);
-	cvShowImage("template", pImgT);
-	//cvShowImage("image", pImgI);
-	// printf("Press any key to start Lucas-Kanade algorithm.\n");
-	cvWaitKey(0);
-	cvResetImageROI(pImgT);
+    // Show T and I and wait for key press.
+    cvSetImageROI(pImgT, omega);
+    cvShowImage("template", pImgT);
+    //cvShowImage("image", pImgI);
+    // printf("Press any key to start Lucas-Kanade algorithm.\n");
+    cvWaitKey(0);
+    cvResetImageROI(pImgT);
 
-	// Print what parameters were entered by user.
-	printf("==========================================================\n");
-	printf("Ground truth:  WZ=%f TX=%f TY=%f\n", WZ, TX, TY);
-	printf("==========================================================\n");
+    // Print what parameters were entered by user.
+    printf("==========================================================\n");
+    printf("Ground truth:  WZ=%f TX=%f TY=%f\n", WZ, TX, TY);
+    printf("==========================================================\n");
 
-	//init_warp(W, WZ, TX, TY);
+    //init_warp(W, WZ, TX, TY);
 
-	// Restore image I
-	//warp_image(pGrayPhoto, pImgI, W);
-	PR_SRCH_OBJ_ALGORITHM enAlgorithm = PR_SRCH_OBJ_ALGORITHM::SURF;
-	PR_LRN_OBJ_CMD stLrnTmplCmd;
-	PR_LRN_OBJ_RPY stLrnTmplRpy;
-	stLrnTmplCmd.matInputImg = cv::cvarrToMat(pImgT, true);
-	stLrnTmplCmd.rectLrn = omega;
-	stLrnTmplCmd.enAlgorithm = enAlgorithm;
-	PR_LrnObj(&stLrnTmplCmd, &stLrnTmplRpy);
+    // Restore image I
+    //warp_image(pGrayPhoto, pImgI, W);
+    PR_SRCH_OBJ_ALGORITHM enAlgorithm = PR_SRCH_OBJ_ALGORITHM::SURF;
+    PR_LRN_OBJ_CMD stLrnTmplCmd;
+    PR_LRN_OBJ_RPY stLrnTmplRpy;
+    stLrnTmplCmd.matInputImg = cv::cvarrToMat(pImgT, true);
+    stLrnTmplCmd.rectLrn = omega;
+    stLrnTmplCmd.enAlgorithm = enAlgorithm;
+    PR_LrnObj(&stLrnTmplCmd, &stLrnTmplRpy);
 
-	PR_SRCH_OBJ_CMD stSrchTmplCmd;
-	PR_SRCH_OBJ_RPY stSrchTmplRpy;
-	stSrchTmplCmd.matInputImg = matRotated;
-	//stSrchTmplCmd.rectLrn = omega;
-	stSrchTmplCmd.nRecordId = stLrnTmplRpy.nRecordId;
-	stSrchTmplCmd.ptExpectedPos = stLrnTmplRpy.ptCenter;
-	cv::Rect rectSrchWindow ( cv::Point(100, 80), cv::Point ( stSrchTmplCmd.matInputImg.cols - 70, stSrchTmplCmd.matInputImg.rows - 60 ) );
-	stSrchTmplCmd.rectSrchWindow = rectSrchWindow;
-	stSrchTmplCmd.enAlgorithm = enAlgorithm;
+    PR_SRCH_OBJ_CMD stSrchTmplCmd;
+    PR_SRCH_OBJ_RPY stSrchTmplRpy;
+    stSrchTmplCmd.matInputImg = matRotated;
+    //stSrchTmplCmd.rectLrn = omega;
+    stSrchTmplCmd.nRecordId = stLrnTmplRpy.nRecordId;
+    stSrchTmplCmd.ptExpectedPos = stLrnTmplRpy.ptCenter;
+    cv::Rect rectSrchWindow ( cv::Point(100, 80), cv::Point ( stSrchTmplCmd.matInputImg.cols - 70, stSrchTmplCmd.matInputImg.rows - 60 ) );
+    stSrchTmplCmd.rectSrchWindow = rectSrchWindow;
+    stSrchTmplCmd.enAlgorithm = enAlgorithm;
 
-	PR_SrchObj(&stSrchTmplCmd, &stSrchTmplRpy);
+    PR_SrchObj(&stSrchTmplCmd, &stSrchTmplRpy);
 
     printf("Match score %.2f \n", stSrchTmplRpy.fMatchScore );
-	printfMat<double>(stSrchTmplRpy.matHomography);
+    printfMat<double>(stSrchTmplRpy.matHomography);
 
-	PR_INSP_SURFACE_CMD stInspCmd;
-	PR_INSP_SURFACE_RPY stInspRpy;
-	stInspCmd.matTmpl = cv::cvarrToMat(pImgT, true);
-	stInspCmd.rectLrn = omega;
-	stInspCmd.ptObjPos = stSrchTmplRpy.ptObjPos;
-	stInspCmd.fRotation = stSrchTmplRpy.fRotation;
-	stInspCmd.matInsp = matRotated;
-	stInspCmd.u16NumOfDefectCriteria = 2;
-	stInspCmd.astDefectCriteria[0].fArea = 50;
-	stInspCmd.astDefectCriteria[0].fLength = 0.f;
-	stInspCmd.astDefectCriteria[0].ubContrast = 20;
-	stInspCmd.astDefectCriteria[0].enAttribute = PR_DEFECT_ATTRIBUTE::BOTH;
+    PR_INSP_SURFACE_CMD stInspCmd;
+    PR_INSP_SURFACE_RPY stInspRpy;
+    stInspCmd.matTmpl = cv::cvarrToMat(pImgT, true);
+    stInspCmd.rectLrn = omega;
+    stInspCmd.ptObjPos = stSrchTmplRpy.ptObjPos;
+    stInspCmd.fRotation = stSrchTmplRpy.fRotation;
+    stInspCmd.matInsp = matRotated;
+    stInspCmd.u16NumOfDefectCriteria = 2;
+    stInspCmd.astDefectCriteria[0].fArea = 50;
+    stInspCmd.astDefectCriteria[0].fLength = 0.f;
+    stInspCmd.astDefectCriteria[0].ubContrast = 20;
+    stInspCmd.astDefectCriteria[0].enAttribute = PR_DEFECT_ATTRIBUTE::BOTH;
 
     //PR_InspSurface(&stInspCmd, &stInspRpy);
 
-	stInspCmd.astDefectCriteria[1].fLength = 50.0;
-	stInspCmd.astDefectCriteria[1].fArea = 0.f;
-	stInspCmd.astDefectCriteria[1].ubContrast = 20;
+    stInspCmd.astDefectCriteria[1].fLength = 50.0;
+    stInspCmd.astDefectCriteria[1].fArea = 0.f;
+    stInspCmd.astDefectCriteria[1].ubContrast = 20;
 
     PR_SetDebugMode(PR_DEBUG_MODE::SHOW_IMAGE);
-	PR_InspSurface ( &stInspCmd, &stInspRpy );
+    PR_InspSurface ( &stInspCmd, &stInspRpy );
 
-	//PR_AlignCmd stAlignCmd;
-	//PR_AlignRpy stAlignRpy;
-	//stAlignCmd.matInputImg = matRotated;
-	//stAlignCmd.rectLrn = omega;
-	//stAlignCmd.rectSrchWindow.x = stFindObjRpy.ptObjPos.x - ( omega.width + 30.f ) / 2.0f;
-	//stAlignCmd.rectSrchWindow.y = stFindObjRpy.ptObjPos.y - ( omega.height + 30.f) / 2.0f;
-	//stAlignCmd.rectSrchWindow.width = (omega.width + 30.f);
-	//stAlignCmd.rectSrchWindow.height = (omega.height + 30.f);
-	//stAlignCmd.ptExpectedPos = stLrnTmplRpy.ptCenter;
-	//cv::Mat matT = cv::cvarrToMat(pImgT);
-	//stAlignCmd.matTmpl = cv::Mat(matT, omega);
-	//visionAlgorithm.align(&stAlignCmd, &stAlignRpy);
+    //PR_AlignCmd stAlignCmd;
+    //PR_AlignRpy stAlignRpy;
+    //stAlignCmd.matInputImg = matRotated;
+    //stAlignCmd.rectLrn = omega;
+    //stAlignCmd.rectSrchWindow.x = stFindObjRpy.ptObjPos.x - ( omega.width + 30.f ) / 2.0f;
+    //stAlignCmd.rectSrchWindow.y = stFindObjRpy.ptObjPos.y - ( omega.height + 30.f) / 2.0f;
+    //stAlignCmd.rectSrchWindow.width = (omega.width + 30.f);
+    //stAlignCmd.rectSrchWindow.height = (omega.height + 30.f);
+    //stAlignCmd.ptExpectedPos = stLrnTmplRpy.ptCenter;
+    //cv::Mat matT = cv::cvarrToMat(pImgT);
+    //stAlignCmd.matTmpl = cv::Mat(matT, omega);
+    //visionAlgorithm.align(&stAlignCmd, &stAlignRpy);
 
-	//printf("SURF and findTransformECC result \n");
-	//printfMat<float>(stAlignRpy.matAffine);
+    //printf("SURF and findTransformECC result \n");
+    //printfMat<float>(stAlignRpy.matAffine);
 
-	/* Lucas-Kanade */
-	//align_image_forwards_additive(pImgT, omega, pImgI);
+    /* Lucas-Kanade */
+    //align_image_forwards_additive(pImgT, omega, pImgI);
 
-	//printf("Press any key to start Baker-Dellaert-Matthews algorithm.\n");
+    //printf("Press any key to start Baker-Dellaert-Matthews algorithm.\n");
     PR_DumpTimeLog("PRTime.log");
-	cvWaitKey();
-	return 0;
+    cvWaitKey();
+    return 0;
 }
 
 void TestSearchFiducialMark()
 {
     PR_SRCH_OBJ_ALGORITHM enAlgorithm = PR_SRCH_OBJ_ALGORITHM::SURF;
     cv::Rect2f omega = cv::Rect2f(311, 45, 300, 300 );
-	PR_LRN_OBJ_CMD stLrnTmplCmd;
-	PR_LRN_OBJ_RPY stLrnTmplRpy;
-	stLrnTmplCmd.matInputImg = cv::imread(".\\data\\FiducialLrn.png");
-	stLrnTmplCmd.rectLrn = omega;
-	stLrnTmplCmd.enAlgorithm = enAlgorithm;
-	VisionStatus enStatus = PR_LrnObj(&stLrnTmplCmd, &stLrnTmplRpy);
+    PR_LRN_OBJ_CMD stLrnTmplCmd;
+    PR_LRN_OBJ_RPY stLrnTmplRpy;
+    stLrnTmplCmd.matInputImg = cv::imread(".\\data\\FiducialLrn.png");
+    stLrnTmplCmd.rectLrn = omega;
+    stLrnTmplCmd.enAlgorithm = enAlgorithm;
+    VisionStatus enStatus = PR_LrnObj(&stLrnTmplCmd, &stLrnTmplRpy);
     if ( VisionStatus::OK != enStatus ) {
         std::cout << "Learn fail with status " << static_cast<int>(enStatus) << std::endl;
         return;
     }
 
-	PR_SRCH_OBJ_CMD stSrchTmplCmd;
-	PR_SRCH_OBJ_RPY stSrchTmplRpy;
-	stSrchTmplCmd.matInputImg = cv::imread(".\\data\\FiducialSrch_BK.png");
-	//stSrchTmplCmd.rectLrn = omega;
-	stSrchTmplCmd.nRecordId = stLrnTmplRpy.nRecordId;
-	stSrchTmplCmd.ptExpectedPos = stLrnTmplRpy.ptCenter;
-	cv::Rect rectSrchWindow ( 40, 40, 390, 390 );
-	stSrchTmplCmd.rectSrchWindow = rectSrchWindow;
-	stSrchTmplCmd.enAlgorithm = enAlgorithm;
+    PR_SRCH_OBJ_CMD stSrchTmplCmd;
+    PR_SRCH_OBJ_RPY stSrchTmplRpy;
+    stSrchTmplCmd.matInputImg = cv::imread(".\\data\\FiducialSrch_BK.png");
+    //stSrchTmplCmd.rectLrn = omega;
+    stSrchTmplCmd.nRecordId = stLrnTmplRpy.nRecordId;
+    stSrchTmplCmd.ptExpectedPos = stLrnTmplRpy.ptCenter;
+    cv::Rect rectSrchWindow ( 40, 40, 390, 390 );
+    stSrchTmplCmd.rectSrchWindow = rectSrchWindow;
+    stSrchTmplCmd.enAlgorithm = enAlgorithm;
 
-	PR_SrchObj(&stSrchTmplCmd, &stSrchTmplRpy);
+    PR_SrchObj(&stSrchTmplCmd, &stSrchTmplRpy);
 
     printf("Match score %.2f \n", stSrchTmplRpy.fMatchScore );
-	printfMat<double>(stSrchTmplRpy.matHomography);
+    printfMat<double>(stSrchTmplRpy.matHomography);
 
     PR_DumpTimeLog("PRTime.log");
 }
@@ -198,31 +201,31 @@ void TestSearchFiducialMark_1()
 {
     PR_SRCH_OBJ_ALGORITHM enAlgorithm = PR_SRCH_OBJ_ALGORITHM::SURF;
     cv::Rect2f omega = cv::Rect2f(464, 591, 194, 194 );
-	PR_LRN_OBJ_CMD stLrnTmplCmd;
-	PR_LRN_OBJ_RPY stLrnTmplRpy;
-	stLrnTmplCmd.matInputImg = cv::imread(".\\data\\PCB_FiducialMark1.jpg");
-	stLrnTmplCmd.rectLrn = omega;
-	stLrnTmplCmd.enAlgorithm = enAlgorithm;
-	VisionStatus enStatus = PR_LrnObj(&stLrnTmplCmd, &stLrnTmplRpy);
+    PR_LRN_OBJ_CMD stLrnTmplCmd;
+    PR_LRN_OBJ_RPY stLrnTmplRpy;
+    stLrnTmplCmd.matInputImg = cv::imread(".\\data\\PCB_FiducialMark1.jpg");
+    stLrnTmplCmd.rectLrn = omega;
+    stLrnTmplCmd.enAlgorithm = enAlgorithm;
+    VisionStatus enStatus = PR_LrnObj(&stLrnTmplCmd, &stLrnTmplRpy);
     if ( VisionStatus::OK != enStatus ) {
         std::cout << "Learn fail with status " << static_cast<int>(enStatus) << std::endl;
         return;
     }
 
-	PR_SRCH_OBJ_CMD stSrchTmplCmd;
-	PR_SRCH_OBJ_RPY stSrchTmplRpy;
-	stSrchTmplCmd.matInputImg = cv::imread(".\\data\\PCB_FiducialMark2.jpg");
-	//stSrchTmplCmd.rectLrn = omega;
-	stSrchTmplCmd.nRecordId = stLrnTmplRpy.nRecordId;
-	stSrchTmplCmd.ptExpectedPos = stLrnTmplRpy.ptCenter;
-	cv::Rect rectSrchWindow ( 300, 600, 270, 270 );
-	stSrchTmplCmd.rectSrchWindow = rectSrchWindow;
-	stSrchTmplCmd.enAlgorithm = enAlgorithm;
+    PR_SRCH_OBJ_CMD stSrchTmplCmd;
+    PR_SRCH_OBJ_RPY stSrchTmplRpy;
+    stSrchTmplCmd.matInputImg = cv::imread(".\\data\\PCB_FiducialMark2.jpg");
+    //stSrchTmplCmd.rectLrn = omega;
+    stSrchTmplCmd.nRecordId = stLrnTmplRpy.nRecordId;
+    stSrchTmplCmd.ptExpectedPos = stLrnTmplRpy.ptCenter;
+    cv::Rect rectSrchWindow ( 300, 600, 270, 270 );
+    stSrchTmplCmd.rectSrchWindow = rectSrchWindow;
+    stSrchTmplCmd.enAlgorithm = enAlgorithm;
 
-	PR_SrchObj(&stSrchTmplCmd, &stSrchTmplRpy);
+    PR_SrchObj(&stSrchTmplCmd, &stSrchTmplRpy);
 
     printf("Match score %.2f \n", stSrchTmplRpy.fMatchScore );
-	printfMat<double>(stSrchTmplRpy.matHomography);
+    printfMat<double>(stSrchTmplRpy.matHomography);
 
     PR_DumpTimeLog("PRTime.log");
 }
@@ -409,33 +412,33 @@ void TestFindEdge1()
 
 void TestFitCircle()
 {
-	PR_SetDebugMode(PR_DEBUG_MODE::SHOW_IMAGE);
+    PR_SetDebugMode(PR_DEBUG_MODE::SHOW_IMAGE);
 
-	PR_FIT_CIRCLE_CMD stCmd;
-	stCmd.matInputImg = cv::imread("./data/001.bmp");
-	stCmd.enRmNoiseMethod = PR_RM_FIT_NOISE_METHOD::ABSOLUTE_ERR;
-	stCmd.fErrTol = 5;
-	//stCmd.ptRangeCtr = cv::Point2f(240, 235);
-	//stCmd.fRangeInnterRadius = 180;
-	//stCmd.fRangeOutterRadius = 210;
+    PR_FIT_CIRCLE_CMD stCmd;
+    stCmd.matInputImg = cv::imread("./data/001.bmp");
+    stCmd.enRmNoiseMethod = PR_RM_FIT_NOISE_METHOD::ABSOLUTE_ERR;
+    stCmd.fErrTol = 5;
+    //stCmd.ptRangeCtr = cv::Point2f(240, 235);
+    //stCmd.fRangeInnterRadius = 180;
+    //stCmd.fRangeOutterRadius = 210;
     stCmd.bPreprocessed = false;
-	stCmd.bAutoThreshold = false;
-	stCmd.nThreshold = 200;
-	stCmd.enMethod = PR_FIT_METHOD::RANSAC;
-	stCmd.nMaxRansacTime = 20;
+    stCmd.bAutoThreshold = false;
+    stCmd.nThreshold = 200;
+    stCmd.enMethod = PR_FIT_METHOD::RANSAC;
+    stCmd.nMaxRansacTime = 20;
 
-	PR_FIT_CIRCLE_RPY stRpy;
-	VisionStatus visionStatus = PR_FitCircle(&stCmd, &stRpy);
-	if (VisionStatus::OK != visionStatus)	{
-		std::cout << "Failed to fit circle, VisionStatus = " << ToInt32( stRpy.enStatus ) << std::endl;
-		return;
-	}
-	cv::Mat matResultImg = stCmd.matInputImg.clone();
-	//cv::circle(matResultImg, stCmd.ptRangeCtr, (int)stCmd.fRangeInnterRadius, cv::Scalar(0, 255, 0), 1);
-	//cv::circle(matResultImg, stCmd.ptRangeCtr, (int)stCmd.fRangeOutterRadius, cv::Scalar(0, 255, 0), 1);
-	cv::circle(matResultImg, stRpy.ptCircleCtr, (int)stRpy.fRadius, cv::Scalar(255, 0, 0), 2);
-	cv::imshow("Fit result", matResultImg);
-	cv::waitKey(0);
+    PR_FIT_CIRCLE_RPY stRpy;
+    VisionStatus visionStatus = PR_FitCircle(&stCmd, &stRpy);
+    if (VisionStatus::OK != visionStatus)    {
+        std::cout << "Failed to fit circle, VisionStatus = " << ToInt32( stRpy.enStatus ) << std::endl;
+        return;
+    }
+    cv::Mat matResultImg = stCmd.matInputImg.clone();
+    //cv::circle(matResultImg, stCmd.ptRangeCtr, (int)stCmd.fRangeInnterRadius, cv::Scalar(0, 255, 0), 1);
+    //cv::circle(matResultImg, stCmd.ptRangeCtr, (int)stCmd.fRangeOutterRadius, cv::Scalar(0, 255, 0), 1);
+    cv::circle(matResultImg, stRpy.ptCircleCtr, (int)stRpy.fRadius, cv::Scalar(255, 0, 0), 2);
+    cv::imshow("Fit result", matResultImg);
+    cv::waitKey(0);
 }
 
 static void PrintFindLineRpy(const PR_FIND_LINE_RPY &stRpy) {
@@ -624,8 +627,21 @@ void ChangeColor()
     cv::imwrite ( "C://Users//shenxiao//Pictures//Icons//CaliperCircle1.png", matInput );
 }
 
+void addBridgeIfNotExist(VectorOfRect& vecBridgeWindow, const cv::Rect& rectBridge) {
+    auto iterBridge = std::find(vecBridgeWindow.begin(), vecBridgeWindow.end(), rectBridge);
+    if (iterBridge == vecBridgeWindow.end())
+        vecBridgeWindow.push_back(rectBridge);
+}
+
 int _tmain(int argc, _TCHAR* argv[])
 {
+    cv::Rect rect(1, 5, 10, 10);
+    VectorOfRect vecBridgeWindow;
+    vecBridgeWindow.push_back(rect);
+
+    cv::Rect rect1(rect);
+    addBridgeIfNotExist(vecBridgeWindow, rect1);
+
     auto matResult = intervals<float>(0, 0.1f, 1.f);
 
     cv::Mat matNan (3, 3, CV_32FC1, NAN );
@@ -643,14 +659,10 @@ int _tmain(int argc, _TCHAR* argv[])
     auto fFloorResult = std::floor(fTest);
 
     PR_Init();
-    PR_SetDebugMode(PR_DEBUG_MODE::LOG_ALL_CASE);
+    PR_SetDebugMode(PR_DEBUG_MODE::SHOW_IMAGE);
 
-    cv::Mat matImage = cv::imread("./data/OcvTestImage.png", cv::IMREAD_GRAYSCALE);
-    if (matImage.empty())
-        return -1;
-    cv::equalizeHist(matImage, matImage);
-    cv::imwrite("./data/OcvTestImageNew.png", matImage);
 
+    //PR_RunLogCase("./Vision/LogCase/CalibrateCamera_2018_12_21_08_03_14_131.logcase");
     //TestTemplate();
     //TestInspDevice();
     //TestRunLogcase();
@@ -663,8 +675,8 @@ int _tmain(int argc, _TCHAR* argv[])
     //TestFindEdge();
     //TestFindEdge1();
 
-	//TestInspDeviceAutoThreshold();
-	//TestFitCircle();
+    //TestInspDeviceAutoThreshold();
+    //TestFitCircle();
 
     //TestCalibCamera();
     //TestCalibCamera_1();
@@ -677,7 +689,7 @@ int _tmain(int argc, _TCHAR* argv[])
     //TestAutoLocateLeadTmpl_1();
     //TestAutoLocateLeadTmpl_2();
 
-    //TestInspBridge();
+    TestInspBridge();
     //TestInspBridge_1();
 
     //TestAutoThreshold();
@@ -762,7 +774,7 @@ int _tmain(int argc, _TCHAR* argv[])
     //TestInsp3DSolder_2();
 
     //TestCalcFrameValue_1();
-    TestCalcFrameValue_2();
+    //TestCalcFrameValue_2();
     
     //TestQueryDlpOffset();
 
@@ -787,6 +799,12 @@ int _tmain(int argc, _TCHAR* argv[])
     //TestRead2DCode_2();
 
     //TestDrawDashRect();
+    
+    //TestTableMapping();
+    
+    //TestTableMapping_1();
+    //TestTableMapping_2();
+	TestTableMapping_4();
 
     PR_DumpTimeLog("./Vision/Time.log");
     std::cout << "Press any key to exit." << std::endl;

@@ -8,7 +8,7 @@ namespace Vision
 
 const int MAX_NUM_OF_DEFECT_CRITERIA =          5;
 const int MAX_NUM_OF_DEFECT_RESULT =            20;
-const float PARALLEL_LINE_SLOPE_DIFF_LMT =        0.1f;
+const float PARALLEL_LINE_SLOPE_DIFF_LMT =      0.1f;
 const float PARALLEL_LINE_MERGE_DIST_LMT =      10;
 const int PR_ELECTRODE_COUNT =                  2;
 const int PR_MAX_GRAY_LEVEL =                   255;
@@ -21,6 +21,7 @@ const int PR_FIT_CIRCLE_MAX_POINT =             10000;
 const double PR_MM_TO_UM =                      1000.;
 const int PR_GROUP_TEXTURE_IMG_COUNT =          4;
 const int PR_MAX_AUTO_THRESHOLD_COUNT =         10;
+const int DEFAULT_TABLE_MAPPING_BEZIER_RANK =   5;
 
 enum class PR_SRCH_OBJ_ALGORITHM {
     SIFT,

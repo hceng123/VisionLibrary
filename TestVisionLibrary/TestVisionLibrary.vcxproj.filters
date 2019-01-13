@@ -27,6 +27,9 @@
     <ClInclude Include="TestSub.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\RegressionTest\UtilityFunc.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -78,6 +81,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="TestRead2DCode.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TestTableMapping.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\RegressionTest\UtilityFunc.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

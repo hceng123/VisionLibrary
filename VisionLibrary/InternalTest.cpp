@@ -1,5 +1,5 @@
-#include "Fitting.h"
-#include "CalcUtils.h"
+#include "CalcUtils.hpp"
+#include "Fitting.hpp"
 #include "Unwrap.h"
 #include <iostream>
 #include <numeric>
@@ -36,9 +36,9 @@ static void printfVector(const std::vector<T> &vecInput)
 template<class T>
 static void printfVectorOfVector(const std::vector<std::vector<T>> &vecVecInput)
 {
-    for (const auto &vecInput : vecVecInput )
+    for (const auto &vecInput : vecVecInput)
     {
-        for (const auto value : vecInput )
+        for (const auto value : vecInput)
         {
             printf("%.2f ", value);
         }
@@ -93,7 +93,7 @@ static void TestCalcUtilsInternals() {
         std::cout << std::fixed << std::setprecision(2);
         std::cout << "INPUT: start = " << start << " interval = " << interval << " end = " << end << std::endl;
         std::cout << "INTERVALS RESULT: " << std::endl;
-        printfMat<float> ( matResult );
+        printfMat<float>(matResult);
     }
 
     {
@@ -105,7 +105,7 @@ static void TestCalcUtilsInternals() {
         auto matResult = CalcUtils::intervals<float>(start, interval, end);
         std::cout << "INPUT: start = " << start << " interval = " << interval << " end = " << end << std::endl;
         std::cout << "INTERVALS RESULT: " << std::endl;
-        printfMat<float> ( matResult );
+        printfMat<float>(matResult);
     }
 
     try
@@ -118,7 +118,7 @@ static void TestCalcUtilsInternals() {
         auto matResult = CalcUtils::intervals<float>(start, interval, end);
         std::cout << "INPUT: start = " << start << " interval = " << interval << " end = " << end << std::endl;
         std::cout << "INTERVALS RESULT: " << std::endl;
-        printfMat<float> ( matResult );
+        printfMat<float>(matResult);
     }catch (std::exception &e) {
         std::cout << e.what() << std::endl;
     }

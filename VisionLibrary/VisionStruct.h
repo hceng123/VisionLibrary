@@ -720,6 +720,7 @@ struct PR_PICK_COLOR_CMD {
 struct PR_PICK_COLOR_RPY {
     VisionStatus            enStatus;
     UInt32                  nPickPointCount;
+    cv::Mat                 matResultMask;
     cv::Mat                 matResultImg;
 };
 
@@ -1550,6 +1551,61 @@ struct PR_INSP_SIMILARITY_RPY {
     VisionStatus            enStatus;
     VectorOfFloat           vecSimilarity;
     cv::Mat                 matResultImg;
+};
+
+struct PR_TABLE_MAPPING_CMD {
+    struct FramePoint {
+        cv::Point2f     targetPoint;
+        cv::Point2f     actualPoint;
+    };
+
+    using VectorOfFramePoint = std::vector<FramePoint>;
+    using VectorOfFramePoints = std::vector<VectorOfFramePoint>;
+
+    PR_TABLE_MAPPING_CMD() :
+        fBoardPointDist(5.f),
+        nBezierRank(DEFAULT_TABLE_MAPPING_BEZIER_RANK),
+        fFrameBorderPointWeight(100) {}
+    VectorOfFramePoints     vecFramePoints;
+    float                   fBoardPointDist; // The physical calibration point distance on the chess board. Unit: mm
+    int                     nBezierRank;
+    float                   fFrameBorderPointWeight;
+};
+
+struct PR_TABLE_MAPPING_RPY {
+    cv::Mat                 matXOffsetParam;
+    cv::Mat                 matYOffsetParam;
+    float                   a;
+    float                   b;
+    float                   c;
+    float                   fMinX;
+    float                   fMaxX;
+    float                   fMinY;
+    float                   fMaxY;
+    VisionStatus            enStatus;
+};
+
+struct PR_CALC_TABLE_OFFSET_CMD {
+    PR_CALC_TABLE_OFFSET_CMD() :
+        nBezierRank(DEFAULT_TABLE_MAPPING_BEZIER_RANK),
+        a(1.f), b(1.f), c(0.f) {}
+    cv::Point2f             ptTablePos;
+    cv::Mat                 matXOffsetParam;
+    cv::Mat                 matYOffsetParam;
+    float                   a;
+    float                   b;
+    float                   c;
+    float                   fMinX;
+    float                   fMaxX;
+    float                   fMinY;
+    float                   fMaxY;
+    int                     nBezierRank;
+};
+
+struct PR_CALC_TABLE_OFFSET_RPY {
+    float                   fOffsetX;
+    float                   fOffsetY;
+    VisionStatus            enStatus;
 };
 
 }

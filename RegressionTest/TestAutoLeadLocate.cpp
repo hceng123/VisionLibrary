@@ -97,8 +97,10 @@ void TestAutoLocateLead()
     stCmd.vecSrchLeadDirections.push_back(PR_DIRECTION::UP);
     stCmd.vecSrchLeadDirections.push_back(PR_DIRECTION::DOWN);
     stCmd.vecSrchLeadDirections.push_back(PR_DIRECTION::LEFT);
-    PR_AutoLocateLead (&stCmd, &stRpy);
+    PR_AutoLocateLead(&stCmd, &stRpy);
     PrintRpy(stRpy);
+    if (VisionStatus::OK == stRpy.enStatus)
+        cv::imwrite("./data/TestAutoLocateLead_Result.png", stRpy.matResultImg);
 }
 
 }
