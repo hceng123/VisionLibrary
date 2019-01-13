@@ -91,3 +91,5 @@ void TestDrawDashRect();
 
 void TestTableMapping();
 void TestTableMapping_1();
+void TestTableMapping_2();
+void TestTableMapping_4();

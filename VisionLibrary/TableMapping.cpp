@@ -65,7 +65,7 @@ TableMapping::~TableMapping()
 }
 
 /*static*/ float TableMapping::_calcTransR1RSum(const PR_TABLE_MAPPING_CMD::VectorOfFramePoints& vecFramePoints,
-    const cv::Mat& matD1, cv::Mat& matR1, cv::Mat& matDR1) {
+    const cv::Mat& matD1, const cv::Mat& matWeight, cv::Mat& matR1, cv::Mat& matDR1) {
     // D1 = [a, b, c, theta11, Tx1, Ty1, theta12, Tx2, Ty2];
     auto a = matD1.at<float>(0), b = matD1.at<float>(1), c = matD1.at<float>(2);
 
@@ -206,8 +206,12 @@ TableMapping::~TableMapping()
     Axy.push_back(cv::Mat(vecTargetX).reshape(1, 1));
     Axy.push_back(cv::Mat(vecTargetY).reshape(1, 1));
 
+    //const cv::Mat matWeightConcat = matWeight.reshape(1, 1).clone();
+    cv::Mat matWeightConcatRepeat = cv::repeat(matWeight.clone(), 2, 1);
+
     matR1 = Axy - Axy1;
-    matR1 = matR1.reshape(1, ToInt32(matR1.total()));
+    cv::multiply(matR1, matWeightConcatRepeat, matR1);
+    matR1 = matR1.reshape(1, ToInt32(matR1.total()));   // Reshape for outside calculation
     float normR1 = ToFloat(cv::norm(matR1));
 
     dRa = dRa.reshape(1, 1);
@@ -221,6 +225,11 @@ TableMapping::~TableMapping()
     matDR1.push_back(dRc);
     matDR1.push_back(dRTxy);
     cv::transpose(matDR1, matDR1);
+
+    matWeightConcatRepeat = cv::repeat(matWeightConcatRepeat.reshape(1, 1), matDR1.cols, 1);
+    cv::transpose(matWeightConcatRepeat, matWeightConcatRepeat);
+
+    cv::multiply(matDR1, matWeightConcatRepeat, matDR1);
     matDR1 = -matDR1;
 
     return normR1;
@@ -338,11 +347,11 @@ TableMapping::~TableMapping()
 #endif
 
     cv::Mat matXX = _generateBezier(matX1, matY1, vecXyMinMax, mm, nn);
-    //Matlab x'*x
+    // Matlab x'*x
     cv::Mat matXXT; cv::transpose(matXX, matXXT);
     cv::Mat matLeft = matXXT * matXX;
 
-    //Matlab xx'*Z1
+    // Matlab xx'*Z1
     cv::Mat matRight = matXXT * matZ1;
 
     cv::Mat PPz;
@@ -361,6 +370,36 @@ TableMapping::~TableMapping()
     return zp1;
 }
 
+/*static*/ ByteVector TableMapping::_findCrossBorderPoint(const PR_TABLE_MAPPING_CMD::VectorOfFramePoints& vecProcessedFramePoints) {
+	ByteVector vecResult;
+    const float BORDER_MARGIN = 5.f;
+    const auto& firstFramePoints = vecProcessedFramePoints.front();
+    const auto& lastFramePoints  = vecProcessedFramePoints.back();
+    float fLft = firstFramePoints.front().actualPoint.x, fTop = firstFramePoints.front().actualPoint.y,
+          fRgt = lastFramePoints.back().actualPoint.x,   fBtm = lastFramePoints.back().actualPoint.y;
+    for (size_t i = 0; i < vecProcessedFramePoints.size(); ++ i) {
+        const auto& frameLft = vecProcessedFramePoints[i].front().actualPoint.x;
+        const auto& frameTop = vecProcessedFramePoints[i].front().actualPoint.y;
+        const auto& frameRgt = vecProcessedFramePoints[i].back().actualPoint.x;
+        const auto& frameBtm = vecProcessedFramePoints[i].back().actualPoint.y;
+        for (size_t j = 0; j < vecProcessedFramePoints[i].size(); ++ j) {
+            const auto& ptCurrentPoint = vecProcessedFramePoints[i][j].actualPoint;
+			Byte result = 0;
+            if (fabs(ptCurrentPoint.x - frameLft) < BORDER_MARGIN && fabs(ptCurrentPoint.x - fLft) > BORDER_MARGIN)
+				result = 1;
+            if (fabs(ptCurrentPoint.y - frameTop) < BORDER_MARGIN && fabs(ptCurrentPoint.y - fTop) > BORDER_MARGIN)
+				result = 1;
+            if (fabs(ptCurrentPoint.x - frameRgt) < BORDER_MARGIN && fabs(ptCurrentPoint.x - fRgt) > BORDER_MARGIN)
+				result = 1;
+            if (fabs(ptCurrentPoint.y - frameBtm) < BORDER_MARGIN && fabs(ptCurrentPoint.y - fBtm) > BORDER_MARGIN)
+				result = 1;
+			vecResult.push_back(result);
+        }
+    }
+
+	return vecResult;
+}
+
 /*static*/ void TableMapping::_processMultiFrameData(const PR_TABLE_MAPPING_CMD::VectorOfFramePoints& vecProcessedFramePoints,
     const VectorOfVectorOfFloat& vecVecTransM, cv::Mat& xtt, cv::Mat& ytt, cv::Mat& dxt, cv::Mat& dyt,
         const PR_TABLE_MAPPING_CMD *const pstCmd, PR_TABLE_MAPPING_RPY *const pstRpy) {
@@ -370,6 +409,17 @@ TableMapping::~TableMapping()
     auto k1 = matMeanTransM.at<float>(0);
     auto k2 = matMeanTransM.at<float>(1);
     auto theta2 = matMeanTransM.at<float>(2);
+
+    auto vecBorderPointMask = _findCrossBorderPoint(vecProcessedFramePoints);
+	cv::Mat matWeight = cv::Mat::ones(1, ToInt32(vecBorderPointMask.size()), CV_32FC1);
+	for (int i = 0; i < vecBorderPointMask.size(); ++ i) {
+		if (vecBorderPointMask[i] > 0)
+			matWeight.at<float>(i) = pstCmd->fFrameBorderPointWeight;
+    }
+
+#ifdef _DEBUG
+    auto vecVecWeight = CalcUtils::matToVector<float>(matWeight);
+#endif
 
     auto a =  k1;
     auto c = -k2 * sin(theta2);
@@ -384,14 +434,14 @@ TableMapping::~TableMapping()
     vecD1.insert(vecD1.end(), vecVecTxy[0].begin(), vecVecTxy[0].end());
 
     // adding test error
-    VectorOfFloat dd{0.f, 0.f, 0.f, 0.001f, -5.34f, 6.79f, -0.01f, 20.8f, 4.9f};
-    //VectorOfFloat dd{0.f, 0.f, 0.f, 0.001f, -5.34f, 6.79f};
-    for (size_t i = 0; i < dd.size(); ++ i)
-        vecD1[i] += dd[i];
+    //VectorOfFloat dd{0.f, 0.f, 0.f, 0.001f, -5.34f, 6.79f, -0.01f, 20.8f, 4.9f};
+    ////VectorOfFloat dd{0.f, 0.f, 0.f, 0.001f, -5.34f, 6.79f};
+    //for (size_t i = 0; i < dd.size(); ++ i)
+    //    vecD1[i] += dd[i];
     cv::Mat matD1(vecD1);
 
     cv::Mat matR1, matDR1;
-    float Rsum1 = _calcTransR1RSum(vecProcessedFramePoints, matD1, matR1, matDR1);
+    float Rsum1 = _calcTransR1RSum(vecProcessedFramePoints, matD1, matWeight, matR1, matDR1);
 
 #ifdef _DEBUG
     cv::Mat matR1T; cv::transpose(matR1, matR1T);
@@ -427,7 +477,7 @@ TableMapping::~TableMapping()
             break;
 
         matD1 = matD1 + derivResidual;
-        Rsum1 = _calcTransR1RSum(vecProcessedFramePoints, matD1, matR1, matDR1);
+        Rsum1 = _calcTransR1RSum(vecProcessedFramePoints, matD1, matWeight, matR1, matDR1);
 
         int nn = 0;
         bool flag = false;
@@ -447,7 +497,7 @@ TableMapping::~TableMapping()
             derivResidual = -derivResidual;
 
             matD1 = matD1 + derivResidual;
-            Rsum1 = _calcTransR1RSum(vecProcessedFramePoints, matD1, matR1, matDR1);
+            Rsum1 = _calcTransR1RSum(vecProcessedFramePoints, matD1, matWeight, matR1, matDR1);
         }
 
         if (flag)
@@ -553,7 +603,7 @@ TableMapping::~TableMapping()
         return;
     }
 
-    const float BORDER_MARGIN = 10.f;
+    const float BORDER_MARGIN = 1.f;
     double minX = 0., maxX = 0., minY = 0., maxY = 0.;
     cv::minMaxIdx(xtt, &minX, &maxX);
     cv::minMaxIdx(ytt, &minY, &maxY);
@@ -565,6 +615,9 @@ TableMapping::~TableMapping()
     pstRpy->fMaxX = ToFloat(maxX);
     pstRpy->fMinY = ToFloat(minY);
     pstRpy->fMaxY = ToFloat(maxY);
+    pstRpy->a = a;
+    pstRpy->b = b;
+    pstRpy->c = c;
 }
 
 /*static*/ void TableMapping::_processSingleFrameData(const PR_TABLE_MAPPING_CMD::VectorOfFramePoints& vecProcessedFramePoints, const VectorOfVectorOfFloat& vecVecTransM,
@@ -610,7 +663,7 @@ TableMapping::~TableMapping()
     CalcUtils::meshgrid<float>(
         *minMaxIterOfX.first, pstCmd->fBoardPointDist, *minMaxIterOfX.second,
         *minMaxIterOfY.first, pstCmd->fBoardPointDist, *minMaxIterOfY.second, xt, yt);
-    dxt = cv::Mat::ones(xt.size(), CV_32FC1) * NAN;
+    dxt = cv::Mat::ones(xt.size(), CV_32FC1) * NAN; 
     dyt = dxt.clone();
 
     int matchPointNumber = 0;
@@ -644,7 +697,6 @@ TableMapping::~TableMapping()
 
     xtt = xt; ytt = yt;
 
-    const float BORDER_MARGIN = 10.f;
     double minX = 0., maxX = 0., minY = 0., maxY = 0.;
     cv::minMaxIdx(xtt, &minX, &maxX);
     cv::minMaxIdx(ytt, &minY, &maxY);
@@ -653,6 +705,9 @@ TableMapping::~TableMapping()
     pstRpy->fMaxX = ToFloat(maxX);
     pstRpy->fMinY = ToFloat(minY);
     pstRpy->fMaxY = ToFloat(maxY);
+    pstRpy->a = 1.f;
+    pstRpy->b = 1.f;
+    pstRpy->c = 0.f;
 }
 
 /*static*/ VisionStatus TableMapping::run(const PR_TABLE_MAPPING_CMD *const pstCmd, PR_TABLE_MAPPING_RPY *const pstRpy) {
@@ -689,10 +744,6 @@ TableMapping::~TableMapping()
         _processSingleFrameData(vecProcessedFramePoints, vecVecTransM, xtt, ytt, dxt, dyt, pstCmd, pstRpy);
 
     std::vector<float> vecParamMinMaxXY{pstRpy->fMinX, pstRpy->fMaxX, pstRpy->fMinY, pstRpy->fMaxY};
-    //float mt = 40, nt = 50;
-    ////[xt2, yt2] = meshgrid(xmin:(xmax-xmin)/(mt-1):xmax, ymin:(ymax-ymin)/(nt-1):ymax);
-    //cv::Mat xt2, yt2;
-    //CalcUtils::meshgrid(minX, (maxX - minX)/(mt-1), maxX, minY, (maxY - minY)/(nt-1), maxY, xt2, yt2);
 
     pstRpy->matXOffsetParam = _calculatePPz(xtt, ytt, dxt, vecParamMinMaxXY, pstCmd->nBezierRank, pstCmd->nBezierRank);
     pstRpy->matYOffsetParam = _calculatePPz(xtt, ytt, dyt, vecParamMinMaxXY, pstCmd->nBezierRank, pstCmd->nBezierRank);
@@ -712,8 +763,8 @@ TableMapping::~TableMapping()
     pstRpy->fOffsetX = 0.f;
     pstRpy->fOffsetY = 0.f;
 
-    if (pstCmd->ptTablePos.x <= pstCmd->fMinX || pstCmd->ptTablePos.x > pstCmd->fMaxX ||
-        pstCmd->ptTablePos.y <= pstCmd->fMinY || pstCmd->ptTablePos.y > pstCmd->fMaxY) {
+    if (pstCmd->ptTablePos.x < pstCmd->fMinX || pstCmd->ptTablePos.x > pstCmd->fMaxX ||
+        pstCmd->ptTablePos.y < pstCmd->fMinY || pstCmd->ptTablePos.y > pstCmd->fMaxY) {
         std::stringstream ss;
         ss << "CalcTableOffset: the input position " << pstCmd->ptTablePos << " is not within calibration range X [" << pstCmd->fMinX << ", "
            << pstCmd->fMaxX << "], Y [" << pstCmd->fMinY << ", " << pstCmd->fMaxY << "]";
@@ -742,6 +793,92 @@ TableMapping::~TableMapping()
 
     pstRpy->fOffsetX = matXOffset.at<float>(0);
     pstRpy->fOffsetY = matYOffset.at<float>(0);
+
+    pstRpy->enStatus = VisionStatus::OK;
+    return pstRpy->enStatus;
+}
+
+/*static*/ cv::Size2f TableMapping::_calcPointOffset(const PR_CALC_TABLE_OFFSET_CMD *const pstCmd, const cv::Point2f &ptPos) {
+    cv::Mat matX = cv::Mat::zeros(1, 1, CV_32FC1);
+    matX.at<float>(0) = ptPos.x;
+
+    cv::Mat matY = cv::Mat::zeros(1, 1, CV_32FC1);
+    matY.at<float>(0) = ptPos.y;
+
+    std::vector<float> vecParamMinMaxXY{pstCmd->fMinX, pstCmd->fMaxX, pstCmd->fMinY, pstCmd->fMaxY};
+    cv::Mat matXX = _generateBezier(matX, matY, vecParamMinMaxXY, pstCmd->nBezierRank, pstCmd->nBezierRank);
+
+    cv::Mat matXOffset = matXX * pstCmd->matXOffsetParam;
+    cv::Mat matYOffset = matXX * pstCmd->matYOffsetParam;
+
+    float fOffsetX = matXOffset.at<float>(0);
+    float fOffsetY = matYOffset.at<float>(0);
+    return cv::Size2f(fOffsetX, fOffsetY);
+}
+
+/*static*/ VisionStatus TableMapping::calcTableOffsetNew(const PR_CALC_TABLE_OFFSET_CMD* const pstCmd, PR_CALC_TABLE_OFFSET_RPY* const pstRpy) {
+    auto szOffset1 = _calcPointOffset(pstCmd, pstCmd->ptTablePos);
+
+    // Calculate back to physical coordinate
+    float xt2 = pstCmd->a * pstCmd->ptTablePos.x + pstCmd->c * pstCmd->ptTablePos.y + szOffset1.width;
+    float yt2 = pstCmd->b * pstCmd->ptTablePos.y + szOffset1.height;
+
+    auto szOffset3 = _calcPointOffset(pstCmd, cv::Point2f(xt2, yt2));
+
+    float xt4 = xt2 - szOffset3.width;
+    float yt4 = yt2 - szOffset3.height;
+
+    cv::Mat matA = cv::Mat::eye(3, 3, CV_32FC1);
+    matA.at<float>(0, 0) = pstCmd->a;
+    matA.at<float>(0, 1) = pstCmd->c;
+    matA.at<float>(1, 1) = pstCmd->b;
+    cv::Mat matA1 = matA.inv();
+
+    auto a1 = matA1.at<float>(0, 0);
+    auto b1 = matA1.at<float>(1, 1);
+    auto c1 = matA1.at<float>(0, 1);
+
+    float xt5 = a1*xt4 + c1*yt4;
+    float yt5 = b1*yt4;
+    pstRpy->fOffsetX = xt5 - pstCmd->ptTablePos.x;
+    pstRpy->fOffsetY = yt5 - pstCmd->ptTablePos.y;
+
+    pstRpy->enStatus = VisionStatus::OK;
+    return pstRpy->enStatus;
+}
+
+/*static*/ VisionStatus TableMapping::calcTableOffsetNew1(const PR_CALC_TABLE_OFFSET_CMD* const pstCmd, PR_CALC_TABLE_OFFSET_RPY* const pstRpy) {
+    pstRpy->fOffsetX = 0.f;
+    pstRpy->fOffsetY = 0.f;
+
+    if (pstCmd->ptTablePos.x < pstCmd->fMinX || pstCmd->ptTablePos.x > pstCmd->fMaxX ||
+        pstCmd->ptTablePos.y < pstCmd->fMinY || pstCmd->ptTablePos.y > pstCmd->fMaxY) {
+        std::stringstream ss;
+        ss << "CalcTableOffset: the input position " << pstCmd->ptTablePos << " is not within calibration range X [" << pstCmd->fMinX << ", "
+           << pstCmd->fMaxX << "], Y [" << pstCmd->fMinY << ", " << pstCmd->fMaxY << "]";
+        WriteLog(ss.str());
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    auto szOffset1 = _calcPointOffset(pstCmd, pstCmd->ptTablePos);
+
+    cv::Mat matA = cv::Mat::eye(3, 3, CV_32FC1);
+    matA.at<float>(0, 0) = pstCmd->a;
+    matA.at<float>(0, 1) = pstCmd->c;
+    matA.at<float>(1, 1) = pstCmd->b;
+    cv::Mat matA1 = matA.inv();
+
+    auto a1 = matA1.at<float>(0, 0);
+    auto b1 = matA1.at<float>(1, 1);
+    auto c1 = matA1.at<float>(0, 1);
+
+    // Calculate back to physical coordinate
+    float xt2 = a1 * (pstCmd->ptTablePos.x - szOffset1.width) + c1 * (pstCmd->ptTablePos.y - szOffset1.height);
+    float yt2 = b1 * (pstCmd->ptTablePos.y - szOffset1.height);
+
+    pstRpy->fOffsetX = xt2 - pstCmd->ptTablePos.x;
+    pstRpy->fOffsetY = yt2 - pstCmd->ptTablePos.y;
 
     pstRpy->enStatus = VisionStatus::OK;
     return pstRpy->enStatus;
