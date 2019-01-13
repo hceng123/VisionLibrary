@@ -763,8 +763,8 @@ TableMapping::~TableMapping()
     pstRpy->fOffsetX = 0.f;
     pstRpy->fOffsetY = 0.f;
 
-    if (pstCmd->ptTablePos.x <= pstCmd->fMinX || pstCmd->ptTablePos.x > pstCmd->fMaxX ||
-        pstCmd->ptTablePos.y <= pstCmd->fMinY || pstCmd->ptTablePos.y > pstCmd->fMaxY) {
+    if (pstCmd->ptTablePos.x < pstCmd->fMinX || pstCmd->ptTablePos.x > pstCmd->fMaxX ||
+        pstCmd->ptTablePos.y < pstCmd->fMinY || pstCmd->ptTablePos.y > pstCmd->fMaxY) {
         std::stringstream ss;
         ss << "CalcTableOffset: the input position " << pstCmd->ptTablePos << " is not within calibration range X [" << pstCmd->fMinX << ", "
            << pstCmd->fMaxX << "], Y [" << pstCmd->fMinY << ", " << pstCmd->fMaxY << "]";
@@ -848,6 +848,19 @@ TableMapping::~TableMapping()
 }
 
 /*static*/ VisionStatus TableMapping::calcTableOffsetNew1(const PR_CALC_TABLE_OFFSET_CMD* const pstCmd, PR_CALC_TABLE_OFFSET_RPY* const pstRpy) {
+    pstRpy->fOffsetX = 0.f;
+    pstRpy->fOffsetY = 0.f;
+
+    if (pstCmd->ptTablePos.x < pstCmd->fMinX || pstCmd->ptTablePos.x > pstCmd->fMaxX ||
+        pstCmd->ptTablePos.y < pstCmd->fMinY || pstCmd->ptTablePos.y > pstCmd->fMaxY) {
+        std::stringstream ss;
+        ss << "CalcTableOffset: the input position " << pstCmd->ptTablePos << " is not within calibration range X [" << pstCmd->fMinX << ", "
+           << pstCmd->fMaxX << "], Y [" << pstCmd->fMinY << ", " << pstCmd->fMaxY << "]";
+        WriteLog(ss.str());
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
     auto szOffset1 = _calcPointOffset(pstCmd, pstCmd->ptTablePos);
 
     cv::Mat matA = cv::Mat::eye(3, 3, CV_32FC1);
