@@ -138,7 +138,7 @@ class LogCaseFindCircle : public LogCase
 public:
     explicit LogCaseFindCircle(const String &strPath, bool bReplay = false) : LogCase(strPath, bReplay) {}
     VisionStatus WriteCmd(const PR_FIND_CIRCLE_CMD *const pstCmd);
-    VisionStatus WriteRpy(const PR_FIND_CIRCLE_RPY *const pstRpy);
+	VisionStatus WriteRpy(const PR_FIND_CIRCLE_CMD *const pstCmd, const PR_FIND_CIRCLE_RPY *const pstRpy);
     virtual VisionStatus RunLogCase() override;
     virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
     static String StaticGetFolderPrefix();
@@ -215,7 +215,7 @@ class LogCaseFindLine : public LogCase
 public:
     explicit LogCaseFindLine(const String &strPath, bool bReplay = false) : LogCase(strPath, bReplay) {}
     VisionStatus WriteCmd(const PR_FIND_LINE_CMD *const pstCmd);
-    VisionStatus WriteRpy(const PR_FIND_LINE_RPY *const pstRpy);
+	VisionStatus WriteRpy(const PR_FIND_LINE_CMD *const pstCmd, const PR_FIND_LINE_RPY *const pstRpy);
     virtual VisionStatus RunLogCase() override;
     virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
     static String StaticGetFolderPrefix();
@@ -662,7 +662,7 @@ class LogCaseInspHole : public LogCase
 public:
     explicit LogCaseInspHole(const String &strPath, bool bReplay = false) : LogCase(strPath, bReplay) {}
     VisionStatus WriteCmd(const PR_INSP_HOLE_CMD *const pstCmd);
-    VisionStatus WriteRpy(const PR_INSP_HOLE_RPY *const pstRpy);
+    VisionStatus WriteRpy(const PR_INSP_HOLE_CMD *const pstCmd, const PR_INSP_HOLE_RPY *const pstRpy);
     virtual VisionStatus RunLogCase() override;
     virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
     static String StaticGetFolderPrefix();
@@ -936,7 +936,7 @@ class LogCaseInsp3DSolder : public LogCase
 public:
     explicit LogCaseInsp3DSolder(const String &strPath, bool bReplay = false) : LogCase(strPath, bReplay) {}
     VisionStatus WriteCmd(const PR_INSP_3D_SOLDER_CMD *const pstCmd);
-    VisionStatus WriteRpy(const PR_INSP_3D_SOLDER_RPY *const pstRpy);
+    VisionStatus WriteRpy(const PR_INSP_3D_SOLDER_CMD *const pstCmd, const PR_INSP_3D_SOLDER_RPY *const pstRpy);
     virtual VisionStatus RunLogCase() override;
     virtual String GetFolderPrefix() const { return StaticGetFolderPrefix(); }
     static String StaticGetFolderPrefix();

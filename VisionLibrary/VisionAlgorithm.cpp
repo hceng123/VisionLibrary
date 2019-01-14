@@ -2213,7 +2213,7 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
     }
 
     if (pstRpy->enStatus != VisionStatus::OK) {
-        FINISH_LOGCASE;
+        FINISH_LOGCASE_EX;
         return pstRpy->enStatus;
     }
 
@@ -2270,7 +2270,7 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
             pstRpy->enStatus = VisionStatus::LINE_ANGLE_OUT_OF_TOL;
     }
     
-    FINISH_LOGCASE;
+    FINISH_LOGCASE_EX;
     MARK_FUNCTION_END_TIME;
     return pstRpy->enStatus;
 }
@@ -3344,7 +3344,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
                 cv::circle(pstRpy->matResultImg, pstRpy->ptCircleCtr, ToInt32(pstRpy->fRadius2), GREEN_SCALAR, 1);
         }
     }
-    FINISH_LOGCASE;
+    FINISH_LOGCASE_EX;
     MARK_FUNCTION_END_TIME;
     return pstRpy->enStatus;
 }
@@ -6041,7 +6041,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
             cv::drawKeypoints(pstRpy->matResultImg, pstRpy->stBlobModeResult.vecBlobs, pstRpy->matResultImg, RED_SCALAR, cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
     }
 
-    FINISH_LOGCASE;
+    FINISH_LOGCASE_EX;
     MARK_FUNCTION_END_TIME;
     return pstRpy->enStatus;
 }
@@ -7068,7 +7068,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
 
     Unwrap::insp3DSolder(pstCmd, matBaseMask, pstRpy);
 
-    FINISH_LOGCASE;
+    FINISH_LOGCASE_EX;
     MARK_FUNCTION_END_TIME;
     return pstRpy->enStatus;
 }
