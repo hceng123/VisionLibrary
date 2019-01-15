@@ -555,7 +555,7 @@ class LogCaseAutoLocateLead : public LogCase
 public:
     explicit LogCaseAutoLocateLead(const String &strPath, bool bReplay = false) : LogCase(strPath, bReplay) {}
     VisionStatus WriteCmd(const PR_AUTO_LOCATE_LEAD_CMD *const pstCmd);
-    VisionStatus WriteRpy(PR_AUTO_LOCATE_LEAD_RPY *const pstRpy);
+    VisionStatus WriteRpy(const PR_AUTO_LOCATE_LEAD_CMD *const pstCmd, const PR_AUTO_LOCATE_LEAD_RPY *const pstRpy);
     virtual VisionStatus RunLogCase() override;
     virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
     static String StaticGetFolderPrefix();

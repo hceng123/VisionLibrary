@@ -1434,8 +1434,8 @@ VisionStatus LogCaseRestoreImg::WriteCmd(const PR_RESTORE_IMG_CMD *const pstCmd)
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
 
     cv::FileStorage fs(_strLogCasePath + _strYmlFile, cv::FileStorage::WRITE);
-    cv::write(fs, _strKeyMapX, pstCmd->vecMatRestoreImage[0]);
-    cv::write(fs, _strKeyMapY, pstCmd->vecMatRestoreImage[1]);
+    cv::write(fs, _strKeyMapX, pstCmd->vecMatRestoreMap[0]);
+    cv::write(fs, _strKeyMapY, pstCmd->vecMatRestoreMap[1]);
     fs.release();
 
     cv::imwrite(_strLogCasePath + _IMAGE_NAME, pstCmd->matInputImg);
@@ -1471,8 +1471,8 @@ VisionStatus LogCaseRestoreImg::RunLogCase() {
     cv::read(fileNodeMapY, matMapY);
     fs.release();
 
-    stCmd.vecMatRestoreImage.push_back(matMapX);
-    stCmd.vecMatRestoreImage.push_back(matMapY);
+    stCmd.vecMatRestoreMap.push_back(matMapX);
+    stCmd.vecMatRestoreMap.push_back(matMapY);
 
     PR_RESTORE_IMG_RPY stRpy;
     enStatus = VisionAlgorithm::restoreImage(&stCmd, &stRpy, true);
@@ -1504,10 +1504,22 @@ VisionStatus LogCaseAutoLocateLead::WriteCmd(const PR_AUTO_LOCATE_LEAD_CMD *cons
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile(cmdRpyFilePath.c_str());
     ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyMethod.c_str(), ToInt32(pstCmd->enMethod));
-    ini.SetValue(_CMD_SECTION.c_str(), _strKeySrchWindow.c_str(), _formatRect(pstCmd->rectSrchWindow).c_str());
-    ini.SetValue(_CMD_SECTION.c_str(), _strKeyChipWindow.c_str(), _formatRect(pstCmd->rectChipBody).c_str());
-    ini.SetValue(_CMD_SECTION.c_str(), _strKeyPadWindow.c_str(), _formatRect(pstCmd->rectPadWindow).c_str());
-    ini.SetValue(_CMD_SECTION.c_str(), _strKeyLeadWindow.c_str(), _formatRect(pstCmd->rectLeadWindow).c_str());
+
+    cv::Rect rectSrchWindow(pstCmd->rectSrchWindow);
+    rectSrchWindow.x = 0; rectSrchWindow.y = 0;
+    ini.SetValue(_CMD_SECTION.c_str(), _strKeySrchWindow.c_str(), _formatRect(rectSrchWindow).c_str());
+
+    cv::Rect rectChipBody(pstCmd->rectChipBody);
+    rectChipBody.x -= pstCmd->rectSrchWindow.x; rectChipBody.y -= pstCmd->rectSrchWindow.y;
+    ini.SetValue(_CMD_SECTION.c_str(), _strKeyChipWindow.c_str(), _formatRect(rectChipBody).c_str());
+
+    cv::Rect rectPadWindow(pstCmd->rectPadWindow);
+    rectPadWindow.x -= pstCmd->rectSrchWindow.x; rectPadWindow.y -= pstCmd->rectSrchWindow.y;
+    ini.SetValue(_CMD_SECTION.c_str(), _strKeyPadWindow.c_str(), _formatRect(rectPadWindow).c_str());
+
+    cv::Rect rectLeadWindow(pstCmd->rectLeadWindow);
+    rectLeadWindow.x -= pstCmd->rectSrchWindow.x; rectLeadWindow.y -= pstCmd->rectSrchWindow.y;
+    ini.SetValue(_CMD_SECTION.c_str(), _strKeyLeadWindow.c_str(), _formatRect(rectLeadWindow).c_str());
     for (auto enDir : pstCmd->vecSrchLeadDirections) {
         switch (enDir)
         {
@@ -1529,11 +1541,12 @@ VisionStatus LogCaseAutoLocateLead::WriteCmd(const PR_AUTO_LOCATE_LEAD_CMD *cons
     }
     ini.SaveFile(cmdRpyFilePath.c_str());
 
-    cv::imwrite(_strLogCasePath + _IMAGE_NAME, pstCmd->matInputImg);
+    cv::Mat matSrchROI(pstCmd->matInputImg, pstCmd->rectSrchWindow);
+    cv::imwrite(_strLogCasePath + _IMAGE_NAME, matSrchROI);
     return VisionStatus::OK;
 }
 
-VisionStatus LogCaseAutoLocateLead::WriteRpy(PR_AUTO_LOCATE_LEAD_RPY *const pstRpy) {
+VisionStatus LogCaseAutoLocateLead::WriteRpy(const PR_AUTO_LOCATE_LEAD_CMD *const pstCmd, const PR_AUTO_LOCATE_LEAD_RPY *const pstRpy) {
     CSimpleIni ini(false, false, false);
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile(cmdRpyFilePath.c_str());
@@ -1545,8 +1558,10 @@ VisionStatus LogCaseAutoLocateLead::WriteRpy(PR_AUTO_LOCATE_LEAD_RPY *const pstR
     }
     ini.SaveFile(cmdRpyFilePath.c_str());
 
-    if (! pstRpy->matResultImg.empty())
-        cv::imwrite(_strLogCasePath + _RESULT_IMAGE_NAME, pstRpy->matResultImg);
+    if (!pstRpy->matResultImg.empty()) {
+        cv::Mat matResultROI(pstRpy->matResultImg, pstCmd->rectSrchWindow);
+        cv::imwrite(_strLogCasePath + _RESULT_IMAGE_NAME, matResultROI);
+    }
     _zip();
     return VisionStatus::OK;
 }
@@ -1574,7 +1589,7 @@ VisionStatus LogCaseAutoLocateLead::RunLogCase() {
     if (ini.GetBoolValue(_CMD_SECTION.c_str(), _strKeyDirRight.c_str(), false))
         stCmd.vecSrchLeadDirections.push_back(PR_DIRECTION::RIGHT);
     VisionStatus enStatus = VisionAlgorithm::autoLocateLead(&stCmd, &stRpy, true);
-    WriteRpy(&stRpy);
+    WriteRpy(&stCmd, &stRpy);
     return enStatus;
 }
 

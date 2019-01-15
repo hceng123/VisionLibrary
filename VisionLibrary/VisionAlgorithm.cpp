@@ -4217,8 +4217,11 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     cv::Mat matNewCemraMatrix = cv::getOptimalNewCameraMatrix(pstRpy->matIntrinsicMatrix, pstRpy->matDistCoeffs, imageSize, 1, imageSize, 0);
     cv::initUndistortRectifyMap(pstRpy->matIntrinsicMatrix, pstRpy->matDistCoeffs, cv::Mat(), matNewCemraMatrix,
         imageSize, CV_32FC1, matMapX, matMapY);
-    pstRpy->vecMatRestoreImage.push_back(matMapX);
-    pstRpy->vecMatRestoreImage.push_back(matMapY);
+
+    cv::convertMaps(matMapX, matMapY, matMapX, matMapY, CV_16SC2, true);
+
+    pstRpy->vecMatRestoreMap.push_back(matMapX);
+    pstRpy->vecMatRestoreMap.push_back(matMapY);
 
     FINISH_LOGCASE;
     MARK_FUNCTION_END_TIME;
@@ -4234,16 +4237,25 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
         return pstRpy->enStatus;
     }
 
-    if (pstCmd->vecMatRestoreImage.size() != 2) {
-        _snprintf(chArrMsg, sizeof(chArrMsg), "The remap mat vector size %d is invalid.", pstCmd->vecMatRestoreImage.size());
+    if (pstCmd->vecMatRestoreMap.size() != 2) {
+        _snprintf(chArrMsg, sizeof(chArrMsg), "The remap mat vector size %d is invalid.", pstCmd->vecMatRestoreMap.size());
         WriteLog(chArrMsg);
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return pstRpy->enStatus;
     }
 
-    if (pstCmd->vecMatRestoreImage[0].size() != pstCmd->matInputImg.size() || pstCmd->vecMatRestoreImage[1].size() != pstCmd->matInputImg.size()) {
+    if (pstCmd->vecMatRestoreMap[0].size() != pstCmd->matInputImg.size()) {
         _snprintf(chArrMsg, sizeof(chArrMsg), "The remap mat size(%d, %d) is not match with input image size (%d, %d).",
-            pstCmd->vecMatRestoreImage[0].size().width, pstCmd->vecMatRestoreImage[0].size().height,
+            pstCmd->vecMatRestoreMap[0].size().width, pstCmd->vecMatRestoreMap[0].size().height,
+            pstCmd->matInputImg.size().width, pstCmd->matInputImg.size().height);
+        WriteLog(chArrMsg);
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    if (!pstCmd->vecMatRestoreMap[1].empty() && pstCmd->vecMatRestoreMap[1].size() != pstCmd->matInputImg.size()) {
+        _snprintf(chArrMsg, sizeof(chArrMsg), "The remap mat size(%d, %d) is not match with input image size (%d, %d).",
+            pstCmd->vecMatRestoreMap[1].size().width, pstCmd->vecMatRestoreMap[1].size().height,
             pstCmd->matInputImg.size().width, pstCmd->matInputImg.size().height);
         WriteLog(chArrMsg);
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
@@ -4253,9 +4265,8 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     MARK_FUNCTION_START_TIME;
     SETUP_LOGCASE(LogCaseRestoreImg);
 
-    cv::Mat matInputFloat;
-    pstCmd->matInputImg.convertTo(matInputFloat, CV_32FC1);
-    cv::remap(matInputFloat, pstRpy->matResultImg, pstCmd->vecMatRestoreImage[0], pstCmd->vecMatRestoreImage[1], cv::INTER_LINEAR);
+    cv::Mat matInputFloat = pstCmd->matInputImg;
+    cv::remap(matInputFloat, pstRpy->matResultImg, pstCmd->vecMatRestoreMap[0], pstCmd->vecMatRestoreMap[1], cv::InterpolationFlags::INTER_NEAREST);
 
     pstRpy->enStatus = VisionStatus::OK;
 
@@ -4277,8 +4288,8 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     cv::Mat matNewCemraMatrix = cv::getOptimalNewCameraMatrix(pstCmd->matIntrinsicMatrix, pstCmd->matDistCoeffs, pstCmd->szImage, 1, pstCmd->szImage, 0);
     cv::initUndistortRectifyMap(pstCmd->matIntrinsicMatrix, pstCmd->matDistCoeffs, cv::Mat(), matNewCemraMatrix,
         pstCmd->szImage, CV_32FC1, matMapX, matMapY);
-    pstRpy->vecMatRestoreImage.push_back(matMapX);
-    pstRpy->vecMatRestoreImage.push_back(matMapY);
+    pstRpy->vecMatRestoreMap.push_back(matMapX);
+    pstRpy->vecMatRestoreMap.push_back(matMapY);
 
     pstRpy->enStatus = VisionStatus::OK;
     MARK_FUNCTION_END_TIME;
@@ -4333,7 +4344,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     else
         _autoLocateLeadByContour(matGray, pstCmd, pstRpy);
 
-    FINISH_LOGCASE;
+    FINISH_LOGCASE_EX;
     return pstRpy->enStatus;
 }
 

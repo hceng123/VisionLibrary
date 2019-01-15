@@ -13,11 +13,11 @@ void TestCalibCamera()
     std::string strImgPath = "./data/ChessBoard.png";
     PR_CALIBRATE_CAMERA_CMD stCmd;
     PR_CALIBRATE_CAMERA_RPY stRpy;
-    stCmd.matInputImg = cv::imread(strImgPath, cv::IMREAD_GRAYSCALE );
+    stCmd.matInputImg = cv::imread(strImgPath, cv::IMREAD_GRAYSCALE);
     stCmd.fPatternDist = 2.;
     stCmd.szBoardPattern = cv::Size(25, 23); //cv::Size( 5, 5 );
 
-    PR_CalibrateCamera ( &stCmd, &stRpy );
+    PR_CalibrateCamera(&stCmd, &stRpy);
     if ( VisionStatus::OK != stRpy.enStatus ) {
         std::cout << "Failed to calibrate camera!" << std::endl;
         return;
@@ -53,24 +53,24 @@ void TestCalibCamera()
     PR_RESTORE_IMG_CMD stRetoreCmd;
     PR_RESTORE_IMG_RPY stRetoreRpy;
     stRetoreCmd.matInputImg = cv::imread(strImgPath, cv::IMREAD_GRAYSCALE );
-    stRetoreCmd.vecMatRestoreImage = stRpy.vecMatRestoreImage; //stCalcUndistortRectifyMapRpy.vecMatRestoreImage;
-    PR_RestoreImage ( &stRetoreCmd, &stRetoreRpy );
+    stRetoreCmd.vecMatRestoreMap = stRpy.vecMatRestoreMap; //stCalcUndistortRectifyMapRpy.vecMatRestoreMap;
+    PR_RestoreImage(&stRetoreCmd, &stRetoreRpy);
     if ( VisionStatus::OK != stRetoreRpy.enStatus) {
         std::cout << "Failed to restore image!" << std::endl;
         return;
     }
 
     cv::Mat matInputFloat;
-    stRetoreCmd.matInputImg.convertTo ( matInputFloat, CV_32FC1 );
+    stRetoreCmd.matInputImg.convertTo(matInputFloat, CV_32FC1);
 
     //cv::Mat matDiff = cv::Scalar::all(255.f) - ( matInputFloat - stRetoreRpy.matResultImg );
     cv::imwrite("./data/chessboardRestored.png", stRetoreRpy.matResultImg);
 
     cv::Mat matReadRestored = cv::imread("./data/chessboardRestored.png", cv::IMREAD_GRAYSCALE );
     cv::Mat matReadAgainFloat;
-    matReadRestored.convertTo ( matReadAgainFloat, CV_32FC1 );
+    matReadRestored.convertTo(matReadAgainFloat, CV_32FC1);
 
-    cv::Mat matDiff = cv::Scalar::all(255.f) - ( matInputFloat - matReadAgainFloat );
+    cv::Mat matDiff = cv::Scalar::all(255.f) - (matInputFloat - matReadAgainFloat);
     cv::imwrite("./data/chessboard_diff.png", matDiff);
     PR_DumpTimeLog("./data/TimeLog.log");
 }
@@ -205,7 +205,7 @@ void TestCalibCamera_1()
     //PR_RESTORE_IMG_CMD stRetoreCmd;
     //PR_RESTORE_IMG_RPY stRetoreRpy;
     //stRetoreCmd.matInputImg = cv::imread(strImgPath, cv::IMREAD_GRAYSCALE );
-    //stRetoreCmd.vecMatRestoreImage = stRpy.vecMatRestoreImage; //stCalcUndistortRectifyMapRpy.vecMatRestoreImage;
+    //stRetoreCmd.vecMatRestoreMap = stRpy.vecMatRestoreMap; //stCalcUndistortRectifyMapRpy.vecMatRestoreMap;
     //PR_RestoreImage ( &stRetoreCmd, &stRetoreRpy );
     //if ( VisionStatus::OK != stRetoreRpy.enStatus) {
     //    std::cout << "Failed to restore image!" << std::endl;
@@ -344,7 +344,7 @@ void TestCalibCamera_2()
     //PR_RESTORE_IMG_CMD stRetoreCmd;
     //PR_RESTORE_IMG_RPY stRetoreRpy;
     //stRetoreCmd.matInputImg = cv::imread(strImgPath, cv::IMREAD_GRAYSCALE );
-    //stRetoreCmd.vecMatRestoreImage = stRpy.vecMatRestoreImage; //stCalcUndistortRectifyMapRpy.vecMatRestoreImage;
+    //stRetoreCmd.vecMatRestoreMap = stRpy.vecMatRestoreMap; //stCalcUndistortRectifyMapRpy.vecMatRestoreMap;
     //PR_RestoreImage ( &stRetoreCmd, &stRetoreRpy );
     //if ( VisionStatus::OK != stRetoreRpy.enStatus) {
     //    std::cout << "Failed to restore image!" << std::endl;
