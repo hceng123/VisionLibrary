@@ -14,8 +14,11 @@
  * Copyright (c) 2016-2018, Xiao Shengguang.  All rights reserved.
  ****************************************************************************/
 
+//2019-01-16 (XSG) Update calibrate camera function.
+#define AOI_VISION_VERSION          "1.00.58"
+
 //2019-01-12 (XSG) Update calculate table offset function.
-#define AOI_VISION_VERSION          "1.00.57"
+//#define AOI_VISION_VERSION          "1.00.57"
 
 //2019-01-10 (XSG) Add border points weight for table mapping calibration.
 //#define AOI_VISION_VERSION          "1.00.56"

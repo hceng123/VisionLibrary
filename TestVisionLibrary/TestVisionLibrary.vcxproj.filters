@@ -38,9 +38,6 @@
     <ClCompile Include="TestVisionLibrary.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="TestCalib.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="TestAutoLocateLead.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -87,6 +84,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\RegressionTest\UtilityFunc.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TestCalibCamera.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

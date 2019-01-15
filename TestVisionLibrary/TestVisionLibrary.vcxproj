@@ -184,7 +184,7 @@
     </ClCompile>
     <ClCompile Include="Test3D.cpp" />
     <ClCompile Include="TestAutoLocateLead.cpp" />
-    <ClCompile Include="TestCalib.cpp" />
+    <ClCompile Include="TestCalibCamera.cpp" />
     <ClCompile Include="TestInspBridge.cpp" />
     <ClCompile Include="TestInspChip.cpp" />
     <ClCompile Include="TestInspLead.cpp" />
