@@ -227,6 +227,17 @@ void TestCalibCamera_1()
     PR_DumpTimeLog("./data/TimeLog.log");
 }
 
+cv::Mat readMapFromFile(const std::string& strFileName) {
+    auto vecOfVecFloat = readDataFromFile(strFileName);
+    cv::Mat matResult(2048, 2040, CV_16SC2);
+    int index = 0;
+    for (const auto& vecPoint : vecOfVecFloat) {
+        matResult.at<cv::Vec2s>(index) = cv::Vec2s(vecPoint[0] - 1, vecPoint[1] - 1);
+        ++ index;
+    }
+    return matResult;
+}
+
 void saveResult(const PR_CALIBRATE_CAMERA_RPY& stRpy) {
     cv::FileStorage fs("./data/CameraCalibrate.yml", cv::FileStorage::WRITE);
     if (!fs.isOpened())
@@ -235,7 +246,9 @@ void saveResult(const PR_CALIBRATE_CAMERA_RPY& stRpy) {
     cv::write(fs, "DistCoeffs", stRpy.matDistCoeffs);
     cv::write(fs, "IntrinsicMatrix", stRpy.matIntrinsicMatrix);
     cv::write(fs, "ExtrinsicMatrix", stRpy.matExtrinsicMatrix);
-    cv::write(fs, "RestoreImageMap1", stRpy.vecMatRestoreMap[0]);
+    auto matRestoreImageMap1 = readMapFromFile("./data/DistortionIndex.csv");
+    //cv::write(fs, "RestoreImageMap1", stRpy.vecMatRestoreMap[0]);
+    cv::write(fs, "RestoreImageMap1", matRestoreImageMap1);
     cv::write(fs, "RestoreImageMap2", stRpy.vecMatRestoreMap[1]);
 
     fs.release();
