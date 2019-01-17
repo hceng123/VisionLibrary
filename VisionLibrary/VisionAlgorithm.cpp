@@ -5698,8 +5698,8 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
 
     pstRpy->enStatus = VisionStatus::OK;
 
-    FINISH_LOGCASE;
-    MARK_FUNCTION_END_TIME;    
+    FINISH_LOGCASE_EX;
+    MARK_FUNCTION_END_TIME;
     return pstRpy->enStatus;
 }
 
@@ -5833,7 +5833,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
         pstRpy->enStatus = VisionStatus::CONTOUR_DEFECT_REJECT;
     }
 
-    FINISH_LOGCASE;
+    FINISH_LOGCASE_EX;
     MARK_FUNCTION_END_TIME;
     return pstRpy->enStatus;
 }
@@ -6286,7 +6286,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     MatchTmpl::matchTemplate(matGrayROI, ptrLeadRecord->getTmpl(), false, PR_OBJECT_MOTION::TRANSLATION, ptLeadPos, fLeadRotation, fLeadScore);
     if (fLeadScore * ConstToPercentage < pstCmd->fMinMatchScore) {
         pstRpy->enStatus = VisionStatus::NOT_FIND_LEAD;
-        FINISH_LOGCASE;
+        FINISH_LOGCASE_EX;
         return pstRpy->enStatus;
     }
 
@@ -6307,7 +6307,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
         MatchTmpl::matchTemplate(matGrayROI, ptrPadRecord->getTmpl(), false, PR_OBJECT_MOTION::TRANSLATION, ptPadPos, fPadRotation, fPadScore);
         if (fPadScore * ConstToPercentage < pstCmd->fMinMatchScore) {
             pstRpy->enStatus = VisionStatus::NOT_FIND_LEAD;
-            FINISH_LOGCASE;
+            FINISH_LOGCASE_EX;
             return pstRpy->enStatus;
         }
 
@@ -6344,12 +6344,13 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
         cv::rectangle(pstRpy->matResultImg, rectLead, GREEN_SCALAR, 2, cv::LineTypes::LINE_8);
     }
 
-    FINISH_LOGCASE;
-    MARK_FUNCTION_END_TIME;    
+    FINISH_LOGCASE_EX;
+    MARK_FUNCTION_END_TIME;
     return pstRpy->enStatus;
 }
 
-/*static*/ VisionStatus VisionAlgorithm::_inspSingleLead(const cv::Mat                              &matInput,
+/*static*/ VisionStatus VisionAlgorithm::_inspSingleLead(
+    const cv::Mat                              &matInput,
     const PR_INSP_LEAD_CMD::LEAD_INPUT_INFO    &stLeadInput,
     const PR_INSP_LEAD_CMD                     *pstCmd,
     PR_INSP_LEAD_RPY::LEAD_RESULT              &stLeadResult) {
@@ -7692,7 +7693,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     std::vector<int> vecIndex1, vecIndex2;
     pstRpy->enStatus = _imageSplitByMaxNew(matGray, pstCmd->nCharCount, vecIndex1, vecIndex2);
     if (VisionStatus::OK != pstRpy->enStatus) {
-        FINISH_LOGCASE;
+        FINISH_LOGCASE_EX;
         return pstRpy->enStatus;
     }
 
@@ -7702,7 +7703,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     for (int i = 0; i < len; ++ i) {
         if (vecIndex2[i] - vecIndex1[i] <= 0) {
             pstRpy->enStatus = VisionStatus::FAILED_TO_SPLIT_IMAGE;
-            FINISH_LOGCASE;
+            FINISH_LOGCASE_EX;
             return pstRpy->enStatus;
         }
         cv::Rect rectSubRegion(vecIndex1[i], 0, vecIndex2[i] - vecIndex1[i], matGray.rows);
@@ -7711,12 +7712,12 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
         std::vector<int> vecIndex3, vecIndex4;
         pstRpy->enStatus = _imageSplitByMax(matSubRegionT, 1, vecIndex3, vecIndex4);
         if (VisionStatus::OK != pstRpy->enStatus) {
-            FINISH_LOGCASE;
+            FINISH_LOGCASE_EX;
             return pstRpy->enStatus;
         }
         if (vecIndex3.empty() || vecIndex4.empty() || vecIndex4[0] - vecIndex3[0] <= 0) {
             pstRpy->enStatus = VisionStatus::FAILED_TO_SPLIT_IMAGE;
-            FINISH_LOGCASE;
+            FINISH_LOGCASE_EX;
             return pstRpy->enStatus;
         }
         cv::Rect rectChar(vecIndex1[i], vecIndex3[0], vecIndex2[i] - vecIndex1[i], vecIndex4[0] - vecIndex3[0]);
@@ -7740,7 +7741,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
         matDrawResult.copyTo(matResultROI);
     }
 
-    FINISH_LOGCASE;
+    FINISH_LOGCASE_EX;
     MARK_FUNCTION_END_TIME;
     return pstRpy->enStatus;
 }
@@ -7972,7 +7973,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
             _snprintf(chArrMsg, sizeof(chArrMsg), "Failed to get record ID %d in system.", recordId);
             WriteLog(chArrMsg);
             pstRpy->enStatus = VisionStatus::INVALID_PARAM;
-            FINISH_LOGCASE;
+            FINISH_LOGCASE_EX;
             return pstRpy->enStatus;
         }
 
@@ -8009,7 +8010,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
         _ocvOneDirection(enReverseDir, matGray, vecRecordPtr, pstCmd, pstRpy);
     }
 
-    FINISH_LOGCASE;
+    FINISH_LOGCASE_EX;
     MARK_FUNCTION_END_TIME;
     return pstRpy->enStatus;
 }
