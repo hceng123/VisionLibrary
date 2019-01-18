@@ -680,7 +680,7 @@ int _tmain(int argc, _TCHAR* argv[])
     //TestCalibCamera();
     //TestCalibCamera_1();
     //TestCalibCamera_2();
-    TestCalibCamera_3();
+    //TestCalibCamera_3();
 
     //TestCompareInputAndResult();
     //TestRunRestoreImgLogCase();
@@ -804,7 +804,7 @@ int _tmain(int argc, _TCHAR* argv[])
     
     //TestTableMapping_1();
     //TestTableMapping_2();
-    //TestTableMapping_4();
+    TestTableMapping_3();
 
     PR_DumpTimeLog("./Vision/Time.log");
     std::cout << "Press any key to exit." << std::endl;
