@@ -138,7 +138,7 @@ class LogCaseFindCircle : public LogCase
 public:
     explicit LogCaseFindCircle(const String &strPath, bool bReplay = false) : LogCase(strPath, bReplay) {}
     VisionStatus WriteCmd(const PR_FIND_CIRCLE_CMD *const pstCmd);
-    VisionStatus WriteRpy(const PR_FIND_CIRCLE_RPY *const pstRpy);
+	VisionStatus WriteRpy(const PR_FIND_CIRCLE_CMD *const pstCmd, const PR_FIND_CIRCLE_RPY *const pstRpy);
     virtual VisionStatus RunLogCase() override;
     virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
     static String StaticGetFolderPrefix();
@@ -215,7 +215,7 @@ class LogCaseFindLine : public LogCase
 public:
     explicit LogCaseFindLine(const String &strPath, bool bReplay = false) : LogCase(strPath, bReplay) {}
     VisionStatus WriteCmd(const PR_FIND_LINE_CMD *const pstCmd);
-    VisionStatus WriteRpy(const PR_FIND_LINE_RPY *const pstRpy);
+	VisionStatus WriteRpy(const PR_FIND_LINE_CMD *const pstCmd, const PR_FIND_LINE_RPY *const pstRpy);
     virtual VisionStatus RunLogCase() override;
     virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
     static String StaticGetFolderPrefix();
@@ -555,7 +555,7 @@ class LogCaseAutoLocateLead : public LogCase
 public:
     explicit LogCaseAutoLocateLead(const String &strPath, bool bReplay = false) : LogCase(strPath, bReplay) {}
     VisionStatus WriteCmd(const PR_AUTO_LOCATE_LEAD_CMD *const pstCmd);
-    VisionStatus WriteRpy(PR_AUTO_LOCATE_LEAD_RPY *const pstRpy);
+    VisionStatus WriteRpy(const PR_AUTO_LOCATE_LEAD_CMD *const pstCmd, const PR_AUTO_LOCATE_LEAD_RPY *const pstRpy);
     virtual VisionStatus RunLogCase() override;
     virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
     static String StaticGetFolderPrefix();
@@ -622,7 +622,7 @@ class LogCaseLrnContour : public LogCase
 public:
     explicit LogCaseLrnContour(const String &strPath, bool bReplay = false) : LogCase(strPath, bReplay) {}
     VisionStatus WriteCmd(const PR_LRN_CONTOUR_CMD *const pstCmd);
-    VisionStatus WriteRpy(const PR_LRN_CONTOUR_RPY *const pstRpy);
+    VisionStatus WriteRpy(const PR_LRN_CONTOUR_CMD *const pstCmd, const PR_LRN_CONTOUR_RPY *const pstRpy);
     virtual VisionStatus RunLogCase() override;
     virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
     static String StaticGetFolderPrefix();
@@ -640,7 +640,7 @@ class LogCaseInspContour : public LogCase
 public:
     explicit LogCaseInspContour(const String &strPath, bool bReplay = false) : LogCase(strPath, bReplay) {}
     VisionStatus WriteCmd(const PR_INSP_CONTOUR_CMD *const pstCmd);
-    VisionStatus WriteRpy(const PR_INSP_CONTOUR_RPY *const pstRpy);
+    VisionStatus WriteRpy(const PR_INSP_CONTOUR_CMD *const pstCmd, const PR_INSP_CONTOUR_RPY *const pstRpy);
     virtual VisionStatus RunLogCase() override;
     virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
     static String StaticGetFolderPrefix();
@@ -662,7 +662,7 @@ class LogCaseInspHole : public LogCase
 public:
     explicit LogCaseInspHole(const String &strPath, bool bReplay = false) : LogCase(strPath, bReplay) {}
     VisionStatus WriteCmd(const PR_INSP_HOLE_CMD *const pstCmd);
-    VisionStatus WriteRpy(const PR_INSP_HOLE_RPY *const pstRpy);
+    VisionStatus WriteRpy(const PR_INSP_HOLE_CMD *const pstCmd, const PR_INSP_HOLE_RPY *const pstRpy);
     virtual VisionStatus RunLogCase() override;
     virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
     static String StaticGetFolderPrefix();
@@ -736,7 +736,7 @@ class LogCaseInspLeadTmpl : public LogCase
 public:
     explicit LogCaseInspLeadTmpl(const String &strPath, bool bReplay = false) : LogCase(strPath, bReplay) {}
     VisionStatus WriteCmd(const PR_INSP_LEAD_TMPL_CMD *const pstCmd);
-    VisionStatus WriteRpy(const PR_INSP_LEAD_TMPL_RPY *const pstRpy);
+    VisionStatus WriteRpy(const PR_INSP_LEAD_TMPL_CMD *const pstCmd, const PR_INSP_LEAD_TMPL_RPY *const pstRpy);
     virtual VisionStatus RunLogCase() override;
     virtual String GetFolderPrefix() const { return StaticGetFolderPrefix(); }
     static String StaticGetFolderPrefix();
@@ -883,7 +883,7 @@ class LogCaseLrnOcv : public LogCase
 public:
     explicit LogCaseLrnOcv(const String &strPath, bool bReplay = false) : LogCase(strPath, bReplay) {}
     VisionStatus WriteCmd(const PR_LRN_OCV_CMD *const pstCmd);
-    VisionStatus WriteRpy(const PR_LRN_OCV_RPY *const pstRpy);
+    VisionStatus WriteRpy(const PR_LRN_OCV_CMD *const pstCmd, const PR_LRN_OCV_RPY *const pstRpy);
     virtual VisionStatus RunLogCase() override;
     virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
     static String StaticGetFolderPrefix();
@@ -899,7 +899,7 @@ class LogCaseOcv : public LogCase
 public:
     explicit LogCaseOcv(const String &strPath, bool bReplay = false) : LogCase(strPath, bReplay) {}
     VisionStatus WriteCmd(const PR_OCV_CMD *const pstCmd);
-    VisionStatus WriteRpy(const PR_OCV_RPY *const pstRpy);
+    VisionStatus WriteRpy(const PR_OCV_CMD *const pstCmd, const PR_OCV_RPY *const pstRpy);
     virtual VisionStatus RunLogCase() override;
     virtual String GetFolderPrefix() const { return StaticGetFolderPrefix(); }
     static String StaticGetFolderPrefix();
@@ -936,7 +936,7 @@ class LogCaseInsp3DSolder : public LogCase
 public:
     explicit LogCaseInsp3DSolder(const String &strPath, bool bReplay = false) : LogCase(strPath, bReplay) {}
     VisionStatus WriteCmd(const PR_INSP_3D_SOLDER_CMD *const pstCmd);
-    VisionStatus WriteRpy(const PR_INSP_3D_SOLDER_RPY *const pstRpy);
+    VisionStatus WriteRpy(const PR_INSP_3D_SOLDER_CMD *const pstCmd, const PR_INSP_3D_SOLDER_RPY *const pstRpy);
     virtual VisionStatus RunLogCase() override;
     virtual String GetFolderPrefix() const { return StaticGetFolderPrefix(); }
     static String StaticGetFolderPrefix();

@@ -659,8 +659,7 @@ int _tmain(int argc, _TCHAR* argv[])
     auto fFloorResult = std::floor(fTest);
 
     PR_Init();
-    PR_SetDebugMode(PR_DEBUG_MODE::SHOW_IMAGE);
-
+    PR_SetDebugMode(PR_DEBUG_MODE::DISABLED);
 
     //PR_RunLogCase("./Vision/LogCase/CalibrateCamera_2018_12_21_08_03_14_131.logcase");
     //TestTemplate();
@@ -681,6 +680,7 @@ int _tmain(int argc, _TCHAR* argv[])
     //TestCalibCamera();
     //TestCalibCamera_1();
     //TestCalibCamera_2();
+    TestCalibCamera_3();
 
     //TestCompareInputAndResult();
     //TestRunRestoreImgLogCase();
@@ -689,7 +689,7 @@ int _tmain(int argc, _TCHAR* argv[])
     //TestAutoLocateLeadTmpl_1();
     //TestAutoLocateLeadTmpl_2();
 
-    TestInspBridge();
+    //TestInspBridge();
     //TestInspBridge_1();
 
     //TestAutoThreshold();
@@ -804,7 +804,7 @@ int _tmain(int argc, _TCHAR* argv[])
     
     //TestTableMapping_1();
     //TestTableMapping_2();
-	TestTableMapping_4();
+    //TestTableMapping_4();
 
     PR_DumpTimeLog("./Vision/Time.log");
     std::cout << "Press any key to exit." << std::endl;
