@@ -719,7 +719,7 @@ namespace Vision
     matY.at<float>(0) = ptPos.y;
 
     std::vector<float> vecParamMinMaxXY{pstCmd->fMinX, pstCmd->fMaxX, pstCmd->fMinY, pstCmd->fMaxY};
-    cv::Mat matXX = _generateBezier(matX, matY, vecParamMinMaxXY, pstCmd->nBezierRank, pstCmd->nBezierRank);
+    cv::Mat matXX = CalcUtils::generateBezier(matX, matY, vecParamMinMaxXY, pstCmd->nBezierRank, pstCmd->nBezierRank);
 
     cv::Mat matXOffset = matXX * pstCmd->matXOffsetParam;
     cv::Mat matYOffset = matXX * pstCmd->matYOffsetParam;
