@@ -17,6 +17,7 @@ void TestSrchDie();
 void TestCalibCamera_1();
 void TestCalibCamera_2();
 void TestCalibCamera_3();
+void TestRestoreImage();
 
 void TestInspChipHead();
 void TestTemplate();
