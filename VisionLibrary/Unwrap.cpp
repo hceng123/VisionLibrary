@@ -2993,7 +2993,7 @@ void _saveAsGray(const cv::Mat &matHeight, const std::string &strFilePath) {
 
     if (bIsVertialROI) {
         cv::transpose(matHeightROI, matHeightROI);
-        cv::flip(matHeightROI, matHeightROI, 1); //transpose+flip(1)=CW
+        cv::flip(matHeightROI, matHeightROI, 0); //transpose+flip(0)=CCW
         for (auto &rectCheckROI : vecRectCheckROIs)
             rectCheckROI = cv::Rect(rectCheckROI.y, rectCheckROI.x, rectCheckROI.height, rectCheckROI.width);
     }
@@ -3048,7 +3048,7 @@ void _saveAsGray(const cv::Mat &matHeight, const std::string &strFilePath) {
             cv::Mat matDrawROIClone = matDrawROI.clone();
             if (bIsVertialROI) {
                 cv::transpose(matDrawROIClone, matDrawROIClone);
-                cv::flip(matDrawROIClone, matDrawROIClone, 1); //transpose+flip(1)=CW
+                cv::flip(matDrawROIClone, matDrawROIClone, 0); //transpose+flip(0)=CCW
             }
             cv::Mat matResultROI(matDrawROIClone, rectCheckROI);
             matResultROI.setTo(VisionAlgorithm::YELLOW_SCALAR, matHighMask);
@@ -3057,9 +3057,17 @@ void _saveAsGray(const cv::Mat &matHeight, const std::string &strFilePath) {
             rectCalc.x += rectCheckROI.x;
             rectCalc.y += rectCheckROI.y;
             cv::rectangle(matDrawROIClone, rectCalc, VisionAlgorithm::GREEN_SCALAR, 1);
+
+            if (ConfigInstance->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE)
+                VisionAlgorithm::showImage("Before rotate image", matDrawROIClone);
+
             if (bIsVertialROI) {
                 cv::transpose(matDrawROIClone, matDrawROIClone);
-                cv::flip(matDrawROIClone, matDrawROIClone, 0); //transpose+flip(0)=CCW
+                cv::flip(matDrawROIClone, matDrawROIClone, 1); //transpose+flip(1)=CW
+            }
+            if (ConfigInstance->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE) {
+                VisionAlgorithm::showImage("Result Image", pstRpy->matResultImg);
+                VisionAlgorithm::showImage("Copy source image", matDrawROIClone);
             }
             matDrawROIClone.copyTo(matDrawROI);
         }

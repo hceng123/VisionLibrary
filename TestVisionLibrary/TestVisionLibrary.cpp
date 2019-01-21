@@ -627,8 +627,21 @@ void ChangeColor()
     cv::imwrite ( "C://Users//shenxiao//Pictures//Icons//CaliperCircle1.png", matInput );
 }
 
+void addBridgeIfNotExist(VectorOfRect& vecBridgeWindow, const cv::Rect& rectBridge) {
+    auto iterBridge = std::find(vecBridgeWindow.begin(), vecBridgeWindow.end(), rectBridge);
+    if (iterBridge == vecBridgeWindow.end())
+        vecBridgeWindow.push_back(rectBridge);
+}
+
 int _tmain(int argc, _TCHAR* argv[])
 {
+    cv::Rect rect(1, 5, 10, 10);
+    VectorOfRect vecBridgeWindow;
+    vecBridgeWindow.push_back(rect);
+
+    cv::Rect rect1(rect);
+    addBridgeIfNotExist(vecBridgeWindow, rect1);
+
     auto matResult = intervals<float>(0, 0.1f, 1.f);
 
     cv::Mat matNan (3, 3, CV_32FC1, NAN );
@@ -646,13 +659,7 @@ int _tmain(int argc, _TCHAR* argv[])
     auto fFloorResult = std::floor(fTest);
 
     PR_Init();
-    PR_SetDebugMode(PR_DEBUG_MODE::SHOW_IMAGE);
-
-    cv::Mat matImage = cv::imread("./data/OcvTestImage.png", cv::IMREAD_GRAYSCALE);
-    if (matImage.empty())
-        return -1;
-    cv::equalizeHist(matImage, matImage);
-    cv::imwrite("./data/OcvTestImageNew.png", matImage);
+    PR_SetDebugMode(PR_DEBUG_MODE::DISABLED);
 
     //PR_RunLogCase("./Vision/LogCase/CalibrateCamera_2018_12_21_08_03_14_131.logcase");
     //TestTemplate();
@@ -673,6 +680,7 @@ int _tmain(int argc, _TCHAR* argv[])
     //TestCalibCamera();
     //TestCalibCamera_1();
     //TestCalibCamera_2();
+    TestCalibCamera_3();
 
     //TestCompareInputAndResult();
     //TestRunRestoreImgLogCase();
@@ -794,7 +802,9 @@ int _tmain(int argc, _TCHAR* argv[])
     
     //TestTableMapping();
     
-    TestTableMapping_1();
+    //TestTableMapping_1();
+    //TestTableMapping_2();
+    //TestTableMapping_4();
 
     PR_DumpTimeLog("./Vision/Time.log");
     std::cout << "Press any key to exit." << std::endl;

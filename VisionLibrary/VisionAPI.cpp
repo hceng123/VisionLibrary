@@ -651,7 +651,7 @@ PR_FUNCTION_EXIT
 VisionAPI VisionStatus PR_CalcTableOffset(const PR_CALC_TABLE_OFFSET_CMD* const pstCmd, PR_CALC_TABLE_OFFSET_RPY* const pstRpy)
 {
 PR_FUNCTION_ENTRY
-    return TableMapping::calcTableOffset(pstCmd, pstRpy);
+    return TableMapping::calcTableOffsetNew1(pstCmd, pstRpy);
 PR_FUNCTION_EXIT
 }
 

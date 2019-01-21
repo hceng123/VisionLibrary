@@ -53,6 +53,16 @@ if (! bReplay) {   \
         pLogCase->WriteRpy(pstRpy); \
 }
 
+#define FINISH_LOGCASE_EX \
+if (! bReplay) {   \
+    if (PR_DEBUG_MODE::LOG_FAIL_CASE == Config::GetInstance()->getDebugMode() && pstRpy->enStatus != VisionStatus::OK) { \
+        pLogCase->WriteCmd(pstCmd); \
+        pLogCase->WriteRpy(pstCmd, pstRpy); \
+    } \
+    if (PR_DEBUG_MODE::LOG_ALL_CASE == Config::GetInstance()->getDebugMode()) \
+        pLogCase->WriteRpy(pstCmd, pstRpy); \
+}
+
 /*static*/ OcrTesseractPtr VisionAlgorithm::_ptrOcrTesseract;
 /*static*/ const cv::Scalar VisionAlgorithm::RED_SCALAR    (0,   0,   255 );
 /*static*/ const cv::Scalar VisionAlgorithm::BLUE_SCALAR   (255, 0,   0   );
@@ -2203,7 +2213,7 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
     }
 
     if (pstRpy->enStatus != VisionStatus::OK) {
-        FINISH_LOGCASE;
+        FINISH_LOGCASE_EX;
         return pstRpy->enStatus;
     }
 
@@ -2260,7 +2270,7 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
             pstRpy->enStatus = VisionStatus::LINE_ANGLE_OUT_OF_TOL;
     }
     
-    FINISH_LOGCASE;
+    FINISH_LOGCASE_EX;
     MARK_FUNCTION_END_TIME;
     return pstRpy->enStatus;
 }
@@ -3334,7 +3344,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
                 cv::circle(pstRpy->matResultImg, pstRpy->ptCircleCtr, ToInt32(pstRpy->fRadius2), GREEN_SCALAR, 1);
         }
     }
-    FINISH_LOGCASE;
+    FINISH_LOGCASE_EX;
     MARK_FUNCTION_END_TIME;
     return pstRpy->enStatus;
 }
@@ -3697,9 +3707,8 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
 
     VectorOfVectorOfPoint contours;
     cv::findContours(matOutput, contours, cv::RETR_CCOMP, cv::CHAIN_APPROX_SIMPLE);
-    for (size_t i = 0; i < contours.size(); ++ i) {
+    for (size_t i = 0; i < contours.size(); ++ i)
         cv::drawContours(matOutput, contours, ToInt32(i), cv::Scalar::all(PR_MAX_GRAY_LEVEL), CV_FILLED);
-    }
 
     if (PR_OBJECT_ATTRIBUTE::DARK == enAttribute)
         cv::bitwise_not(matOutput, matOutput);
@@ -4208,8 +4217,11 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     cv::Mat matNewCemraMatrix = cv::getOptimalNewCameraMatrix(pstRpy->matIntrinsicMatrix, pstRpy->matDistCoeffs, imageSize, 1, imageSize, 0);
     cv::initUndistortRectifyMap(pstRpy->matIntrinsicMatrix, pstRpy->matDistCoeffs, cv::Mat(), matNewCemraMatrix,
         imageSize, CV_32FC1, matMapX, matMapY);
-    pstRpy->vecMatRestoreImage.push_back(matMapX);
-    pstRpy->vecMatRestoreImage.push_back(matMapY);
+
+    cv::convertMaps(matMapX, matMapY, matMapX, matMapY, CV_16SC2, true);
+
+    pstRpy->vecMatRestoreMap.push_back(matMapX);
+    pstRpy->vecMatRestoreMap.push_back(matMapY);
 
     FINISH_LOGCASE;
     MARK_FUNCTION_END_TIME;
@@ -4225,16 +4237,25 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
         return pstRpy->enStatus;
     }
 
-    if (pstCmd->vecMatRestoreImage.size() != 2) {
-        _snprintf(chArrMsg, sizeof(chArrMsg), "The remap mat vector size %d is invalid.", pstCmd->vecMatRestoreImage.size());
+    if (pstCmd->vecMatRestoreMap.size() != 2) {
+        _snprintf(chArrMsg, sizeof(chArrMsg), "The remap mat vector size %d is invalid.", pstCmd->vecMatRestoreMap.size());
         WriteLog(chArrMsg);
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return pstRpy->enStatus;
     }
 
-    if (pstCmd->vecMatRestoreImage[0].size() != pstCmd->matInputImg.size() || pstCmd->vecMatRestoreImage[1].size() != pstCmd->matInputImg.size()) {
+    if (pstCmd->vecMatRestoreMap[0].size() != pstCmd->matInputImg.size()) {
         _snprintf(chArrMsg, sizeof(chArrMsg), "The remap mat size(%d, %d) is not match with input image size (%d, %d).",
-            pstCmd->vecMatRestoreImage[0].size().width, pstCmd->vecMatRestoreImage[0].size().height,
+            pstCmd->vecMatRestoreMap[0].size().width, pstCmd->vecMatRestoreMap[0].size().height,
+            pstCmd->matInputImg.size().width, pstCmd->matInputImg.size().height);
+        WriteLog(chArrMsg);
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    if (!pstCmd->vecMatRestoreMap[1].empty() && pstCmd->vecMatRestoreMap[1].size() != pstCmd->matInputImg.size()) {
+        _snprintf(chArrMsg, sizeof(chArrMsg), "The remap mat size(%d, %d) is not match with input image size (%d, %d).",
+            pstCmd->vecMatRestoreMap[1].size().width, pstCmd->vecMatRestoreMap[1].size().height,
             pstCmd->matInputImg.size().width, pstCmd->matInputImg.size().height);
         WriteLog(chArrMsg);
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
@@ -4244,9 +4265,8 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     MARK_FUNCTION_START_TIME;
     SETUP_LOGCASE(LogCaseRestoreImg);
 
-    cv::Mat matInputFloat;
-    pstCmd->matInputImg.convertTo(matInputFloat, CV_32FC1);
-    cv::remap(matInputFloat, pstRpy->matResultImg, pstCmd->vecMatRestoreImage[0], pstCmd->vecMatRestoreImage[1], cv::INTER_LINEAR);
+    cv::Mat matInputFloat = pstCmd->matInputImg;
+    cv::remap(matInputFloat, pstRpy->matResultImg, pstCmd->vecMatRestoreMap[0], pstCmd->vecMatRestoreMap[1], cv::InterpolationFlags::INTER_NEAREST);
 
     pstRpy->enStatus = VisionStatus::OK;
 
@@ -4268,8 +4288,8 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     cv::Mat matNewCemraMatrix = cv::getOptimalNewCameraMatrix(pstCmd->matIntrinsicMatrix, pstCmd->matDistCoeffs, pstCmd->szImage, 1, pstCmd->szImage, 0);
     cv::initUndistortRectifyMap(pstCmd->matIntrinsicMatrix, pstCmd->matDistCoeffs, cv::Mat(), matNewCemraMatrix,
         pstCmd->szImage, CV_32FC1, matMapX, matMapY);
-    pstRpy->vecMatRestoreImage.push_back(matMapX);
-    pstRpy->vecMatRestoreImage.push_back(matMapY);
+    pstRpy->vecMatRestoreMap.push_back(matMapX);
+    pstRpy->vecMatRestoreMap.push_back(matMapY);
 
     pstRpy->enStatus = VisionStatus::OK;
     MARK_FUNCTION_END_TIME;
@@ -4324,7 +4344,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     else
         _autoLocateLeadByContour(matGray, pstCmd, pstRpy);
 
-    FINISH_LOGCASE;
+    FINISH_LOGCASE_EX;
     return pstRpy->enStatus;
 }
 
@@ -4782,6 +4802,12 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     return pstRpy->enStatus;
 }
 
+/*static*/ void VisionAlgorithm::_addBridgeIfNotExist(VectorOfRect& vecBridgeWindow, const cv::Rect& rectBridge) {
+    auto iterBridge = std::find(vecBridgeWindow.begin(), vecBridgeWindow.end(), rectBridge);
+    if (iterBridge == vecBridgeWindow.end())
+        vecBridgeWindow.push_back(rectBridge);
+}
+
 /*static*/ void VisionAlgorithm::_inspBridgeItem(const PR_INSP_BRIDGE_CMD * const pstCmd, PR_INSP_BRIDGE_RPY * const pstRpy) {
     cv::Mat matROI, matFilter, matMask, matThreshold;
     cv::Point ptRoiTL;
@@ -4815,67 +4841,77 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     if (Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE)
         showImage("_inspBridgeItem threshold", matThreshold);
 
-    VectorOfVectorOfPoint contours, vecDrawContours;
+    VectorOfVectorOfPoint contours;
     cv::findContours(matThreshold, contours, cv::RETR_LIST, cv::CHAIN_APPROX_SIMPLE);
     if (contours.size() <= 0)
         return;
 
+    if (Config::GetInstance()->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE) {
+        cv::Mat matDraw = matROI.clone();
+        for (int index = 0; index < contours.size(); ++ index) {
+            cv::RNG rng(12345);
+            cv::Scalar color = cv::Scalar(rng.uniform(0, 255), rng.uniform(0, 255), rng.uniform(0, 255));
+            cv::drawContours(matDraw, contours, index, color, 2);
+        }
+        showImage("Contours", matDraw);
+    }
+
     const int MARGIN = 3;
     for (const auto &contour : contours) {
-        cv::Rect rect = cv::boundingRect(contour);
-        if (rect.area() < 25)
+        auto area = cv::contourArea(contour);
+        if (area < 50.f)
             continue;
 
+        cv::Rect rect = cv::boundingRect(contour);
         cv::Point ptCenter = CalcUtils::getContourCtr(contour);
 
         if (PR_INSP_BRIDGE_MODE::INNER == pstCmd->enInspMode) {
             if (rect.width > pstCmd->stInnerInspCriteria.fMaxLengthX || rect.height > pstCmd->stInnerInspCriteria.fMaxLengthY) {
-                pstRpy->enStatus = VisionStatus::BRIDGE_DEFECT;
                 cv::Rect rectResult(rect.x + ptRoiTL.x, rect.y + ptRoiTL.y, rect.width, rect.height);
                 pstRpy->vecBridgeWindow.push_back(rectResult);
             }
         }
         else {
+            cv::Point ptWindowCtr(rectOuterWindowNew.x + rectOuterWindowNew.width / 2, rectOuterWindowNew.y + rectOuterWindowNew.height /2);
             for (const auto enDirection : pstCmd->vecOuterInspDirection)
             if (PR_DIRECTION::UP == enDirection) {
                 int nTolerance = pstCmd->rectROI.y - pstCmd->rectOuterSrchWindow.y - MARGIN;
-                if (ptCenter.y <= rectOuterWindowNew.tl().y && rect.height >= nTolerance) {
-                    pstRpy->enStatus = VisionStatus::BRIDGE_DEFECT;
+                if (ptCenter.y <= ptWindowCtr.y && rect.height >= nTolerance) {
                     cv::Rect rectResult(rect.x + ptRoiTL.x, rect.y + ptRoiTL.y, rect.width, rect.height);
-                    pstRpy->vecBridgeWindow.push_back(rectResult);
+                    _addBridgeIfNotExist(pstRpy->vecBridgeWindow, rectResult);
                 }
             }
             else if (PR_DIRECTION::DOWN == enDirection) {
                 int nTolerance = (pstCmd->rectOuterSrchWindow.y + pstCmd->rectOuterSrchWindow.height) - (pstCmd->rectROI.y + pstCmd->rectROI.height) - MARGIN;
-                if (ptCenter.y >= rectOuterWindowNew.br().y && rect.height >= nTolerance) {
-                    pstRpy->enStatus = VisionStatus::BRIDGE_DEFECT;
+                if (ptCenter.y >= ptWindowCtr.y && rect.height >= nTolerance) {
                     cv::Rect rectResult(rect.x + ptRoiTL.x, rect.y + ptRoiTL.y, rect.width, rect.height);
-                    pstRpy->vecBridgeWindow.push_back(rectResult);
+                    _addBridgeIfNotExist(pstRpy->vecBridgeWindow, rectResult);
                 }
             }
             else
             if (PR_DIRECTION::LEFT == enDirection) {
                 int nTolerance = pstCmd->rectROI.x - pstCmd->rectOuterSrchWindow.x - MARGIN;
-                if (ptCenter.x <= rectOuterWindowNew.tl().x && rect.width >= nTolerance) {
-                    pstRpy->enStatus = VisionStatus::BRIDGE_DEFECT;
+                if (ptCenter.x <= ptWindowCtr.x && rect.width >= nTolerance) {
                     cv::Rect rectResult(rect.x + ptRoiTL.x, rect.y + ptRoiTL.y, rect.width, rect.height);
-                    pstRpy->vecBridgeWindow.push_back(rectResult);
+                    _addBridgeIfNotExist(pstRpy->vecBridgeWindow, rectResult);
                 }
             }
             else
             if (PR_DIRECTION::RIGHT == enDirection) {
                 int nTolerance = (pstCmd->rectOuterSrchWindow.x + pstCmd->rectOuterSrchWindow.width) - (pstCmd->rectROI.x + pstCmd->rectROI.width) - MARGIN;
-                if (ptCenter.x >= rectOuterWindowNew.br().x && rect.width >= nTolerance) {
-                    pstRpy->enStatus = VisionStatus::BRIDGE_DEFECT;
+                if (ptCenter.x >= ptWindowCtr.x && rect.width >= nTolerance) {
                     cv::Rect rectResult(rect.x + ptRoiTL.x, rect.y + ptRoiTL.y, rect.width, rect.height);
-                    pstRpy->vecBridgeWindow.push_back(rectResult);
+                    _addBridgeIfNotExist(pstRpy->vecBridgeWindow, rectResult);
                 }
             }
         }
     }
 
+    if (!pstRpy->vecBridgeWindow.empty())
+        pstRpy->enStatus = VisionStatus::BRIDGE_DEFECT;
+
     //Draw the innter window and outer window.
-    if (! isAutoMode()) {
+    if (!isAutoMode()) {
         if (pstCmd->matInputImg.channels() > 1)
             pstRpy->matResultImg = pstCmd->matInputImg.clone();
         else
@@ -4885,7 +4921,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
         if (PR_INSP_BRIDGE_MODE::OUTER == pstCmd->enInspMode)
             cv::rectangle(pstRpy->matResultImg, pstCmd->rectOuterSrchWindow, BLUE_SCALAR);
         for (const auto &rectBridge : pstRpy->vecBridgeWindow)
-            cv::rectangle(pstRpy->matResultImg, rectBridge, RED_SCALAR, 1);
+            cv::rectangle(pstRpy->matResultImg, rectBridge, RED_SCALAR, 2);
     }
 }
 
@@ -4939,7 +4975,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
 
     _inspBridgeItem(pstCmd, pstRpy);
 
-    FINISH_LOGCASE;
+    FINISH_LOGCASE_EX;
     MARK_FUNCTION_END_TIME;
     return pstRpy->enStatus;
 }
@@ -5662,8 +5698,8 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
 
     pstRpy->enStatus = VisionStatus::OK;
 
-    FINISH_LOGCASE;
-    MARK_FUNCTION_END_TIME;    
+    FINISH_LOGCASE_EX;
+    MARK_FUNCTION_END_TIME;
     return pstRpy->enStatus;
 }
 
@@ -5797,7 +5833,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
         pstRpy->enStatus = VisionStatus::CONTOUR_DEFECT_REJECT;
     }
 
-    FINISH_LOGCASE;
+    FINISH_LOGCASE_EX;
     MARK_FUNCTION_END_TIME;
     return pstRpy->enStatus;
 }
@@ -6016,7 +6052,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
             cv::drawKeypoints(pstRpy->matResultImg, pstRpy->stBlobModeResult.vecBlobs, pstRpy->matResultImg, RED_SCALAR, cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
     }
 
-    FINISH_LOGCASE;
+    FINISH_LOGCASE_EX;
     MARK_FUNCTION_END_TIME;
     return pstRpy->enStatus;
 }
@@ -6250,7 +6286,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     MatchTmpl::matchTemplate(matGrayROI, ptrLeadRecord->getTmpl(), false, PR_OBJECT_MOTION::TRANSLATION, ptLeadPos, fLeadRotation, fLeadScore);
     if (fLeadScore * ConstToPercentage < pstCmd->fMinMatchScore) {
         pstRpy->enStatus = VisionStatus::NOT_FIND_LEAD;
-        FINISH_LOGCASE;
+        FINISH_LOGCASE_EX;
         return pstRpy->enStatus;
     }
 
@@ -6271,7 +6307,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
         MatchTmpl::matchTemplate(matGrayROI, ptrPadRecord->getTmpl(), false, PR_OBJECT_MOTION::TRANSLATION, ptPadPos, fPadRotation, fPadScore);
         if (fPadScore * ConstToPercentage < pstCmd->fMinMatchScore) {
             pstRpy->enStatus = VisionStatus::NOT_FIND_LEAD;
-            FINISH_LOGCASE;
+            FINISH_LOGCASE_EX;
             return pstRpy->enStatus;
         }
 
@@ -6308,12 +6344,13 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
         cv::rectangle(pstRpy->matResultImg, rectLead, GREEN_SCALAR, 2, cv::LineTypes::LINE_8);
     }
 
-    FINISH_LOGCASE;
-    MARK_FUNCTION_END_TIME;    
+    FINISH_LOGCASE_EX;
+    MARK_FUNCTION_END_TIME;
     return pstRpy->enStatus;
 }
 
-/*static*/ VisionStatus VisionAlgorithm::_inspSingleLead(const cv::Mat                              &matInput,
+/*static*/ VisionStatus VisionAlgorithm::_inspSingleLead(
+    const cv::Mat                              &matInput,
     const PR_INSP_LEAD_CMD::LEAD_INPUT_INFO    &stLeadInput,
     const PR_INSP_LEAD_CMD                     *pstCmd,
     PR_INSP_LEAD_RPY::LEAD_RESULT              &stLeadResult) {
@@ -7043,7 +7080,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
 
     Unwrap::insp3DSolder(pstCmd, matBaseMask, pstRpy);
 
-    FINISH_LOGCASE;
+    FINISH_LOGCASE_EX;
     MARK_FUNCTION_END_TIME;
     return pstRpy->enStatus;
 }
@@ -7656,7 +7693,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     std::vector<int> vecIndex1, vecIndex2;
     pstRpy->enStatus = _imageSplitByMaxNew(matGray, pstCmd->nCharCount, vecIndex1, vecIndex2);
     if (VisionStatus::OK != pstRpy->enStatus) {
-        FINISH_LOGCASE;
+        FINISH_LOGCASE_EX;
         return pstRpy->enStatus;
     }
 
@@ -7666,7 +7703,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     for (int i = 0; i < len; ++ i) {
         if (vecIndex2[i] - vecIndex1[i] <= 0) {
             pstRpy->enStatus = VisionStatus::FAILED_TO_SPLIT_IMAGE;
-            FINISH_LOGCASE;
+            FINISH_LOGCASE_EX;
             return pstRpy->enStatus;
         }
         cv::Rect rectSubRegion(vecIndex1[i], 0, vecIndex2[i] - vecIndex1[i], matGray.rows);
@@ -7675,12 +7712,12 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
         std::vector<int> vecIndex3, vecIndex4;
         pstRpy->enStatus = _imageSplitByMax(matSubRegionT, 1, vecIndex3, vecIndex4);
         if (VisionStatus::OK != pstRpy->enStatus) {
-            FINISH_LOGCASE;
+            FINISH_LOGCASE_EX;
             return pstRpy->enStatus;
         }
         if (vecIndex3.empty() || vecIndex4.empty() || vecIndex4[0] - vecIndex3[0] <= 0) {
             pstRpy->enStatus = VisionStatus::FAILED_TO_SPLIT_IMAGE;
-            FINISH_LOGCASE;
+            FINISH_LOGCASE_EX;
             return pstRpy->enStatus;
         }
         cv::Rect rectChar(vecIndex1[i], vecIndex3[0], vecIndex2[i] - vecIndex1[i], vecIndex4[0] - vecIndex3[0]);
@@ -7704,7 +7741,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
         matDrawResult.copyTo(matResultROI);
     }
 
-    FINISH_LOGCASE;
+    FINISH_LOGCASE_EX;
     MARK_FUNCTION_END_TIME;
     return pstRpy->enStatus;
 }
@@ -7936,7 +7973,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
             _snprintf(chArrMsg, sizeof(chArrMsg), "Failed to get record ID %d in system.", recordId);
             WriteLog(chArrMsg);
             pstRpy->enStatus = VisionStatus::INVALID_PARAM;
-            FINISH_LOGCASE;
+            FINISH_LOGCASE_EX;
             return pstRpy->enStatus;
         }
 
@@ -7973,7 +8010,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
         _ocvOneDirection(enReverseDir, matGray, vecRecordPtr, pstCmd, pstRpy);
     }
 
-    FINISH_LOGCASE;
+    FINISH_LOGCASE_EX;
     MARK_FUNCTION_END_TIME;
     return pstRpy->enStatus;
 }

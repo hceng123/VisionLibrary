@@ -739,7 +739,7 @@ struct PR_CALIBRATE_CAMERA_RPY {
     cv::Mat                 matDistCoeffs;              //type: CV_64FC1.
     double                  dResolutionX;               //Unit: um/pixel.
     double                  dResolutionY;               //Unit: um/pixel.
-    std::vector<cv::Mat>    vecMatRestoreImage;         //The remap matrix to restore image. vector size is 2, the matrix dimension is same as input image.
+    VectorOfMat             vecMatRestoreMap;           //The remap matrix to restore image. vector size is 2, the matrix dimension is same as input image.
     //Intermediate result.
     cv::Mat                 matCornerPointsImg;
     VectorOfPoint2f         vecImagePoints;
@@ -750,7 +750,7 @@ struct PR_CALIBRATE_CAMERA_RPY {
 
 struct PR_RESTORE_IMG_CMD {
     cv::Mat                 matInputImg;
-    std::vector<cv::Mat>    vecMatRestoreImage;
+    VectorOfMat             vecMatRestoreMap;
 };
 
 struct PR_RESTORE_IMG_RPY {
@@ -766,7 +766,7 @@ struct PR_CALC_UNDISTORT_RECTIFY_MAP_CMD {
 
 struct PR_CALC_UNDISTORT_RECTIFY_MAP_RPY {
     VisionStatus            enStatus;
-    std::vector<cv::Mat>    vecMatRestoreImage;
+    std::vector<cv::Mat>    vecMatRestoreMap;
 };
 
 struct PR_AUTO_LOCATE_LEAD_CMD {
@@ -1564,15 +1564,20 @@ struct PR_TABLE_MAPPING_CMD {
 
     PR_TABLE_MAPPING_CMD() :
         fBoardPointDist(5.f),
-        nBezierRank(DEFAULT_TABLE_MAPPING_BEZIER_RANK) {}
+        nBezierRank(DEFAULT_TABLE_MAPPING_BEZIER_RANK),
+        fFrameBorderPointWeight(100) {}
     VectorOfFramePoints     vecFramePoints;
     float                   fBoardPointDist; // The physical calibration point distance on the chess board. Unit: mm
     int                     nBezierRank;
+    float                   fFrameBorderPointWeight;
 };
 
 struct PR_TABLE_MAPPING_RPY {
     cv::Mat                 matXOffsetParam;
     cv::Mat                 matYOffsetParam;
+    float                   a;
+    float                   b;
+    float                   c;
     float                   fMinX;
     float                   fMaxX;
     float                   fMinY;
@@ -1582,10 +1587,14 @@ struct PR_TABLE_MAPPING_RPY {
 
 struct PR_CALC_TABLE_OFFSET_CMD {
     PR_CALC_TABLE_OFFSET_CMD() :
-        nBezierRank(DEFAULT_TABLE_MAPPING_BEZIER_RANK) {}
+        nBezierRank(DEFAULT_TABLE_MAPPING_BEZIER_RANK),
+        a(1.f), b(1.f), c(0.f) {}
     cv::Point2f             ptTablePos;
     cv::Mat                 matXOffsetParam;
     cv::Mat                 matYOffsetParam;
+    float                   a;
+    float                   b;
+    float                   c;
     float                   fMinX;
     float                   fMaxX;
     float                   fMinY;
