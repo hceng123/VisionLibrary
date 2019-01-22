@@ -2059,6 +2059,7 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
     return matXX;
 }
 
+// ss is the 3D bezier rank
 /*static*/ cv::Mat Unwrap::_calculatePPzConvert3D(const cv::Mat& z1, const cv::Mat& matH, const VectorOfFloat& param, int ss, const cv::Mat& xxt1) {
     auto zmin = param[5];
     auto zmax = param[6];
@@ -2074,7 +2075,7 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
 
     auto matPolyParass = CalcUtils::paraFromPolyNomial(ss);
 
-    // PP3 = (Ps3.^Ps1).*(Ps4.^Ps2).*repmat(PolyParass, len, 1);
+    // Matlab: PP3 = (Ps3.^Ps1).*(Ps4.^Ps2).*repmat(PolyParass, len, 1);
     cv::Mat matTmpPmPow, P1;
     cv::multiply(CalcUtils::power<float>(Ps3, Ps1), CalcUtils::power<float>(Ps4, Ps2), matTmpPmPow);
     cv::multiply(matTmpPmPow, cv::repeat(matPolyParass, len, 1), P1);
@@ -2083,6 +2084,20 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
 
     cv::Mat sum1 = cv::Mat::zeros(len1 * ss, len1 * ss, CV_32FC1); 
     cv::Mat sum2 = cv::Mat::zeros(len1 * ss, 1, CV_32FC1);
+
+    cv::Mat sum1t = cv::Mat::zeros(len1 * ss, len1 * ss, CV_32FC1);
+    cv::Mat sum2t = cv::Mat::zeros(len1 * ss, 1, CV_32FC1);
+
+    const int nt = 20000;
+    const int TOTAL_LOOP = ToInt32(std::ceil(ToFloat(len) / ToFloat(nt)));
+
+    for (int ii = 1; ii <= TOTAL_LOOP; ++ii) {
+        cv::Mat idxi;
+        if (ii == TOTAL_LOOP)
+            idxi = CalcUtils::intervals((ii - 1) * nt + 1, 1, len);
+        else
+            idxi = CalcUtils::intervals((ii - 1) * nt + 1, 1, ii * nt);
+    }
     return sum1;
 }
 
