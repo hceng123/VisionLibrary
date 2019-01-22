@@ -10,7 +10,6 @@ TableMapping::TableMapping()
 {
 }
 
-
 TableMapping::~TableMapping()
 {
 }
@@ -65,7 +64,7 @@ TableMapping::~TableMapping()
 }
 
 /*static*/ float TableMapping::_calcTransR1RSum(const PR_TABLE_MAPPING_CMD::VectorOfFramePoints& vecFramePoints,
-    const cv::Mat& matD1, const cv::Mat& matWeight, cv::Mat& matR1, cv::Mat& matDR1) {
+    const cv::Mat& matD1, const cv::Mat& matWeight, const std::vector<std::pair<int, int>>& vecStitchPair, cv::Mat& matR1, cv::Mat& matDR1) {
     // D1 = [a, b, c, theta11, Tx1, Ty1, theta12, Tx2, Ty2];
     auto a = matD1.at<float>(0), b = matD1.at<float>(1), c = matD1.at<float>(2);
 
@@ -205,18 +204,27 @@ TableMapping::~TableMapping()
     cv::Mat Axy;
     Axy.push_back(cv::Mat(vecTargetX).reshape(1, 1));
     Axy.push_back(cv::Mat(vecTargetY).reshape(1, 1));
-
-    //const cv::Mat matWeightConcat = matWeight.reshape(1, 1).clone();
-    cv::Mat matWeightConcatRepeat = cv::repeat(matWeight.clone(), 2, 1);
+    Axy = _appendStitchPoints(Axy, vecStitchPair);
+    
+    Axy1 = _appendStitchPoints(Axy1, vecStitchPair);
 
     matR1 = Axy - Axy1;
+    cv::Mat matWeightConcatRepeat = cv::repeat(matWeight.clone(), 2, 1);
+
     cv::multiply(matR1, matWeightConcatRepeat, matR1);
     matR1 = matR1.reshape(1, ToInt32(matR1.total()));   // Reshape for outside calculation
     float normR1 = ToFloat(cv::norm(matR1));
 
+    dRa = _appendStitchPoints(dRa, vecStitchPair);
     dRa = dRa.reshape(1, 1);
+
+    dRb = _appendStitchPoints(dRb, vecStitchPair);
     dRb = dRb.reshape(1, 1);
+
+    dRc = _appendStitchPoints(dRc, vecStitchPair);
     dRc = dRc.reshape(1, 1);
+
+    dRTxy = _appendStitchPoints(dRTxy, vecStitchPair);
     dRTxy = dRTxy.reshape(1, 3 * ToInt32(vecFramePoints.size()));
 
     matDR1.release();
@@ -371,7 +379,7 @@ TableMapping::~TableMapping()
 }
 
 /*static*/ ByteVector TableMapping::_findCrossBorderPoint(const PR_TABLE_MAPPING_CMD::VectorOfFramePoints& vecProcessedFramePoints) {
-	ByteVector vecResult;
+    ByteVector vecResult;
     const float BORDER_MARGIN = 5.f;
     const auto& firstFramePoints = vecProcessedFramePoints.front();
     const auto& lastFramePoints  = vecProcessedFramePoints.back();
@@ -382,22 +390,62 @@ TableMapping::~TableMapping()
         const auto& frameTop = vecProcessedFramePoints[i].front().actualPoint.y;
         const auto& frameRgt = vecProcessedFramePoints[i].back().actualPoint.x;
         const auto& frameBtm = vecProcessedFramePoints[i].back().actualPoint.y;
-        for (size_t j = 0; j < vecProcessedFramePoints[i].size(); ++ j) {
+        for (size_t j = 0; j < vecProcessedFramePoints[i].size(); ++j) {
             const auto& ptCurrentPoint = vecProcessedFramePoints[i][j].actualPoint;
-			Byte result = 0;
+            Byte result = 0;
             if (fabs(ptCurrentPoint.x - frameLft) < BORDER_MARGIN && fabs(ptCurrentPoint.x - fLft) > BORDER_MARGIN)
-				result = 1;
+                result = 1;
             if (fabs(ptCurrentPoint.y - frameTop) < BORDER_MARGIN && fabs(ptCurrentPoint.y - fTop) > BORDER_MARGIN)
-				result = 1;
+                result = 1;
             if (fabs(ptCurrentPoint.x - frameRgt) < BORDER_MARGIN && fabs(ptCurrentPoint.x - fRgt) > BORDER_MARGIN)
-				result = 1;
+                result = 1;
             if (fabs(ptCurrentPoint.y - frameBtm) < BORDER_MARGIN && fabs(ptCurrentPoint.y - fBtm) > BORDER_MARGIN)
-				result = 1;
-			vecResult.push_back(result);
+                result = 1;
+            vecResult.push_back(result);
         }
     }
 
-	return vecResult;
+    return vecResult;
+}
+
+/*static*/ int TableMapping::_calcTotalPoints(const PR_TABLE_MAPPING_CMD::VectorOfFramePoints& vecProcessedFramePoints) {
+    int nTotalPoints = 0;
+    for(const auto& framePoints : vecProcessedFramePoints)
+        nTotalPoints += ToInt32(framePoints.size());
+    return nTotalPoints;
+}
+
+/*static*/ std::vector<std::pair<int, int>> TableMapping::_findStitchPair(const PR_TABLE_MAPPING_CMD::VectorOfFramePoints& vecProcessedFramePoints) {
+    std::vector<std::pair<int, int>> vecStitchPair;
+    VectorOfPoint2f vecAllPoints;
+    vecAllPoints.reserve(vecProcessedFramePoints.size() * vecProcessedFramePoints[0].size());
+    for(const auto& framePoints : vecProcessedFramePoints)
+        for (const auto& framePoint : framePoints)
+            vecAllPoints.push_back(framePoint.actualPoint);
+
+    const float STITCH_POINT_DISTANCE = 8.f;
+    for (int i = 0; i < vecAllPoints.size(); ++ i) {
+        for (int j = i + 1; j < vecAllPoints.size(); ++ j) {
+            if (CalcUtils::distanceOf2Point(vecAllPoints[i], vecAllPoints[j]) < STITCH_POINT_DISTANCE)
+                vecStitchPair.emplace_back(i, j);
+        }
+    }
+    return vecStitchPair;
+}
+
+// This function has the same functionality of matlab code. Axy  = [Axy, Axy(:, Sxy(:, 1)) - Axy(:, Sxy(:, 2))];
+/*static*/ cv::Mat TableMapping::_appendStitchPoints(const cv::Mat& matData, const std::vector<std::pair<int, int>>& vecStitchPair) {
+    cv::Mat matResult = cv::Mat(matData.rows, matData.cols + ToInt32(vecStitchPair.size()), matData.type());
+    cv::Mat matResultROI(matResult, cv::Rect(0, 0, matData.cols, matData.rows));
+    matData.copyTo(matResultROI);
+    for (int row = 0; row < matData.rows; ++ row) {
+        int index = 0;
+        for (const auto& stitchPair : vecStitchPair) {
+            matResult.at<float>(row, matData.cols + index) = matResult.at<float>(row, stitchPair.first) - matResult.at<float>(row, stitchPair.second);
+            ++ index;
+        }
+    }
+    return matResult;
 }
 
 /*static*/ void TableMapping::_processMultiFrameData(const PR_TABLE_MAPPING_CMD::VectorOfFramePoints& vecProcessedFramePoints,
@@ -410,12 +458,18 @@ TableMapping::~TableMapping()
     auto k2 = matMeanTransM.at<float>(1);
     auto theta2 = matMeanTransM.at<float>(2);
 
-    auto vecBorderPointMask = _findCrossBorderPoint(vecProcessedFramePoints);
-	cv::Mat matWeight = cv::Mat::ones(1, ToInt32(vecBorderPointMask.size()), CV_32FC1);
-	for (int i = 0; i < vecBorderPointMask.size(); ++ i) {
-		if (vecBorderPointMask[i] > 0)
-			matWeight.at<float>(i) = pstCmd->fFrameBorderPointWeight;
-    }
+    //auto vecBorderPointMask = _findCrossBorderPoint(vecProcessedFramePoints);
+    //cv::Mat matWeight = cv::Mat::ones(1, ToInt32(vecBorderPointMask.size()), CV_32FC1);
+    //for (int i = 0; i < vecBorderPointMask.size(); ++i) {
+    //    if (vecBorderPointMask[i] > 0)
+    //        matWeight.at<float>(i) = pstCmd->fFrameBorderPointWeight;
+    //}
+    int nTotalPoints = _calcTotalPoints(vecProcessedFramePoints);
+    auto vecStitchPair = _findStitchPair(vecProcessedFramePoints);
+    int nTatalCalcPoints = nTotalPoints + ToInt32(vecStitchPair.size());
+    cv::Mat matWeight = cv::Mat::ones(1, nTatalCalcPoints, CV_32FC1);
+    for (int i = nTotalPoints; i < nTatalCalcPoints; ++ i)
+        matWeight.at<float>(i) = pstCmd->fFrameBorderPointWeight;
 
 #ifdef _DEBUG
     auto vecVecWeight = CalcUtils::matToVector<float>(matWeight);
@@ -441,7 +495,7 @@ TableMapping::~TableMapping()
     cv::Mat matD1(vecD1);
 
     cv::Mat matR1, matDR1;
-    float Rsum1 = _calcTransR1RSum(vecProcessedFramePoints, matD1, matWeight, matR1, matDR1);
+    float Rsum1 = _calcTransR1RSum(vecProcessedFramePoints, matD1, matWeight, vecStitchPair, matR1, matDR1);
 
 #ifdef _DEBUG
     cv::Mat matR1T; cv::transpose(matR1, matR1T);
@@ -477,7 +531,7 @@ TableMapping::~TableMapping()
             break;
 
         matD1 = matD1 + derivResidual;
-        Rsum1 = _calcTransR1RSum(vecProcessedFramePoints, matD1, matWeight, matR1, matDR1);
+        Rsum1 = _calcTransR1RSum(vecProcessedFramePoints, matD1, matWeight, vecStitchPair, matR1, matDR1);
 
         int nn = 0;
         bool flag = false;
@@ -497,7 +551,7 @@ TableMapping::~TableMapping()
             derivResidual = -derivResidual;
 
             matD1 = matD1 + derivResidual;
-            Rsum1 = _calcTransR1RSum(vecProcessedFramePoints, matD1, matWeight, matR1, matDR1);
+            Rsum1 = _calcTransR1RSum(vecProcessedFramePoints, matD1, matWeight, vecStitchPair, matR1, matDR1);
         }
 
         if (flag)
@@ -861,17 +915,12 @@ TableMapping::~TableMapping()
         return pstRpy->enStatus;
     }
 
+    auto a1 = 1.f / pstCmd->a;
+    auto b1 = 1.f / pstCmd->b;
+    // c*a1 + b*c1 = 0;
+    auto c1 = -pstCmd->c * a1 / pstCmd->b;
+
     auto szOffset1 = _calcPointOffset(pstCmd, pstCmd->ptTablePos);
-
-    cv::Mat matA = cv::Mat::eye(3, 3, CV_32FC1);
-    matA.at<float>(0, 0) = pstCmd->a;
-    matA.at<float>(0, 1) = pstCmd->c;
-    matA.at<float>(1, 1) = pstCmd->b;
-    cv::Mat matA1 = matA.inv();
-
-    auto a1 = matA1.at<float>(0, 0);
-    auto b1 = matA1.at<float>(1, 1);
-    auto c1 = matA1.at<float>(0, 1);
 
     // Calculate back to physical coordinate
     float xt2 = a1 * (pstCmd->ptTablePos.x - szOffset1.width) + c1 * (pstCmd->ptTablePos.y - szOffset1.height);

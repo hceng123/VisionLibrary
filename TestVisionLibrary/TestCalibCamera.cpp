@@ -229,12 +229,14 @@ void TestCalibCamera_1()
 
 cv::Mat readMapFromFile(const std::string& strFileName) {
     auto vecOfVecFloat = readDataFromFile(strFileName);
-    cv::Mat matResult(2048, 2040, CV_16SC2);
+    cv::Mat matResult(2040, 2048, CV_16SC2);
     int index = 0;
     for (const auto& vecPoint : vecOfVecFloat) {
         matResult.at<cv::Vec2s>(index) = cv::Vec2s(vecPoint[0] - 1, vecPoint[1] - 1);
         ++ index;
     }
+    // The row and col sequence of Matlab and OpenCV is reversed, need to reverse back.
+    cv::transpose(matResult, matResult);
     return matResult;
 }
 
@@ -535,17 +537,17 @@ void TestCalibCamera_3()
 
 
 void TestCompareInputAndResult() {
-    cv::Mat matInputImg = cv::imread ( "./Vision/Logcase/RestoreImg_2017_04_27_16_48_50_093/image.png");
-    if ( matInputImg.empty() )
+    cv::Mat matInputImg = cv::imread("./Vision/Logcase/RestoreImg_2017_04_27_16_48_50_093/image.png");
+    if (matInputImg.empty())
         return;
 
-    cv::Mat matResultImg = cv::imread ( "./Vision/Logcase/RestoreImg_2017_04_27_16_48_50_093/result.png" );
-    if ( matResultImg.empty() )
+    cv::Mat matResultImg = cv::imread("./Vision/Logcase/RestoreImg_2017_04_27_16_48_50_093/result.png");
+    if (matResultImg.empty())
         return;
 
     cv::Mat matInputFloat, matResultFloat;
-    matInputImg.convertTo  ( matInputFloat, CV_32FC1 );
-    matResultImg.convertTo ( matResultFloat, CV_32FC1 );
+    matInputImg.convertTo(matInputFloat, CV_32FC1);
+    matResultImg.convertTo(matResultFloat, CV_32FC1);
 
     cv::Mat matDiff = cv::Scalar::all(255.f) - ( matInputFloat - matResultFloat );
     cv::imwrite("./Vision/Logcase/RestoreImg_2017_04_27_16_48_50_093/chessboard_diff.png", matDiff);
@@ -553,4 +555,37 @@ void TestCompareInputAndResult() {
 
 void TestRunRestoreImgLogCase() {
     PR_RunLogCase ("./Vision/Logcase/RestoreImg_2017_04_27_16_48_50_093");
+}
+
+void TestRestoreImage() {
+    cv::FileStorage fs("./data/TestRestore/CameraCalibrate.yml", cv::FileStorage::READ);
+    if (!fs.isOpened())
+        return;
+
+    cv::Mat matRestoreMap1, matRestoreMap2;
+    cv::FileNode fileNode;
+    fileNode = fs["RestoreImageMap1"];
+    cv::read(fileNode, matRestoreMap1, cv::Mat());
+
+    fileNode = fs["RestoreImageMap2"];
+    cv::read(fileNode, matRestoreMap2, cv::Mat());
+
+    fs.release();
+
+    PR_RESTORE_IMG_CMD stCmd;
+    PR_RESTORE_IMG_RPY stRpy;
+
+    stCmd.vecMatRestoreMap.push_back(matRestoreMap1);
+    stCmd.vecMatRestoreMap.push_back(matRestoreMap2);
+
+    stCmd.matInputImg = cv::imread("./data/TestRestore/InputChessboard.bmp");
+    
+    PR_RestoreImage(&stCmd, &stRpy);
+
+    if (VisionStatus::OK != stRpy.enStatus) {
+        std::cout << "Failed to restore image!" << std::endl;
+        return;
+    }
+
+    cv::imwrite("./data/TestRestore/ResultImage.png", stRpy.matResultImg);
 }

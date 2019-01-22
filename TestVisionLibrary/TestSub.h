@@ -17,6 +17,7 @@ void TestSrchDie();
 void TestCalibCamera_1();
 void TestCalibCamera_2();
 void TestCalibCamera_3();
+void TestRestoreImage();
 
 void TestInspChipHead();
 void TestTemplate();
@@ -94,4 +95,4 @@ void TestDrawDashRect();
 void TestTableMapping();
 void TestTableMapping_1();
 void TestTableMapping_2();
-void TestTableMapping_4();
+void TestTableMapping_3();

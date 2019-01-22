@@ -8095,15 +8095,15 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
             cv::rectangle(matDrawResult, rectChar, GREEN_SCALAR, 1);
 
             int fontFace = cv::FONT_HERSHEY_SIMPLEX;
-            double fontScale = 0.5;
-            int thickness = 1;
+            double fontScale = 0.8;
+            int thickness = 2;
             int baseline = 0;
 
             char strCharScore[100];
-            _snprintf(strCharScore, sizeof(strCharScore), "%.1f", fCorrelation * ConstToPercentage);
+            _snprintf(strCharScore, sizeof(strCharScore), "%d", ToInt32(fCorrelation * ConstToPercentage));
             cv::Size textSize = cv::getTextSize(strCharScore, fontFace, fontScale, thickness, &baseline);
             //The height use '+' because text origin start from left-bottom.
-            cv::Point ptTextOrg(rectChar.x + (rectChar.width - textSize.width) / 2, rectChar.y - 5);
+            cv::Point ptTextOrg(rectChar.x + (rectChar.width - textSize.width) / 2, rectChar.y - 10);
             cv::putText(matDrawResult, strCharScore, ptTextOrg, fontFace, fontScale, CYAN_SCALAR, thickness);
         }
         pstRpy->vecCharScore.push_back(fCorrelation * ConstToPercentage);

@@ -141,10 +141,7 @@ void TestTableMapping_2() {
 
         for (int row = DATA_START_ROW; row < vecOfVecFloat.size(); ++ row) {
             PR_TABLE_MAPPING_CMD::FramePoint framePoint;
-            int index = row - DATA_START_ROW;
-            framePoint.targetPoint.x =   (index % POINTS_PER_ROW) * 16;
-            framePoint.targetPoint.y = - (index / POINTS_PER_ROW) * 16;
-            //framePoint.targetPoint = cv::Point2f(vecOfVecFloat[row][1], vecOfVecFloat[row][2]);
+            framePoint.targetPoint = cv::Point2f(vecOfVecFloat[row][1], vecOfVecFloat[row][2]);
             framePoint.actualPoint = cv::Point2f(vecOfVecFloat[row][3], vecOfVecFloat[row][4]);
             vecFramePoint.push_back(framePoint);
         }
@@ -185,11 +182,11 @@ void TestTableMapping_2() {
     std::cout << "Offset " << stCalcOffsetRpy.fOffsetX << ", " << stCalcOffsetRpy.fOffsetY <<std::endl;
 }
 
-void TestTableMapping_4() {
-    std::string strDataPath = "./data/TableMappingTest_4/";
-    const int TOTAL_FRAME = 2;
+void TestTableMapping_3() {
+    std::string strDataPath = "./data/TableMappingTest_3/";
+    const int TOTAL_FRAME = 4;
     const int DATA_START_ROW = 1;
-    const int BEZIER_RANK = 5;
+    const int BEZIER_RANK = 7;
 
     PR_TABLE_MAPPING_CMD stCmd;
     PR_TABLE_MAPPING_RPY stRpy;
