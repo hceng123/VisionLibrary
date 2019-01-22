@@ -1136,6 +1136,11 @@ Inspect bridge status 120
 Bridge window 0 : 165, 777, 91, 126
 
 ---------------------------------------------
+INSPECT BRIDGE REGRESSION TEST #7 STARTING
+---------------------------------------------
+Inspect bridge status 0
+
+---------------------------------------------
 INSP CHIP HEAD REGRESSION TEST #1 STARTING
 ---------------------------------------------
 Inspect chip status 0

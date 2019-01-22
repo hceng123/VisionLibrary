@@ -126,9 +126,26 @@ void TestInspBridge() {
         stCmd.matInputImg = cv::imread("./data/TestInspBridge_1.png", cv::IMREAD_GRAYSCALE);
         stCmd.enInspMode = PR_INSP_BRIDGE_MODE::OUTER;
         stCmd.rectROI = cv::Rect(184, 828, 208, 80);
-        stCmd.stInnerInspCriteria.fMaxLengthX = 15;
         stCmd.rectOuterSrchWindow = cv::Rect(146, 776, 285, 185);
         stCmd.vecOuterInspDirection = {PR_DIRECTION::UP, PR_DIRECTION::DOWN, PR_DIRECTION::LEFT};
+
+        PR_InspBridge(&stCmd, &stRpy);
+        PrintRpy(stRpy);
+    }
+
+    std::cout << std::endl << "---------------------------------------------";
+    std::cout << std::endl << "INSPECT BRIDGE REGRESSION TEST #7 STARTING";
+    std::cout << std::endl << "---------------------------------------------";
+    std::cout << std::endl;
+
+    {
+        PR_INSP_BRIDGE_CMD stCmd;
+        PR_INSP_BRIDGE_RPY stRpy;
+        stCmd.matInputImg = cv::imread("./data/TestInspBridge_2.png", cv::IMREAD_GRAYSCALE);
+        stCmd.enInspMode = PR_INSP_BRIDGE_MODE::OUTER;
+        stCmd.rectROI = cv::Rect(9, 14, 45, 173);
+        stCmd.rectOuterSrchWindow = cv::Rect(0, 0, 64, 202);
+        stCmd.vecOuterInspDirection = {PR_DIRECTION::LEFT, PR_DIRECTION::RIGHT};
 
         PR_InspBridge(&stCmd, &stRpy);
         PrintRpy(stRpy);

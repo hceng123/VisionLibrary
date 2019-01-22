@@ -4872,18 +4872,18 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
             }
         }
         else {
-            cv::Point ptWindowCtr(rectOuterWindowNew.x + rectOuterWindowNew.width / 2, rectOuterWindowNew.y + rectOuterWindowNew.height /2);
+            cv::Point ptWindowCtr(rectOuterWindowNew.x + rectOuterWindowNew.width / 2, rectOuterWindowNew.y + rectOuterWindowNew.height / 2);
             for (const auto enDirection : pstCmd->vecOuterInspDirection)
             if (PR_DIRECTION::UP == enDirection) {
                 int nTolerance = pstCmd->rectROI.y - pstCmd->rectOuterSrchWindow.y - MARGIN;
-                if (ptCenter.y <= ptWindowCtr.y && rect.height >= nTolerance) {
+                if (ptCenter.y <= (ptWindowCtr.y - rectOuterWindowNew.height / 4) && rect.height >= nTolerance) {
                     cv::Rect rectResult(rect.x + ptRoiTL.x, rect.y + ptRoiTL.y, rect.width, rect.height);
                     _addBridgeIfNotExist(pstRpy->vecBridgeWindow, rectResult);
                 }
             }
             else if (PR_DIRECTION::DOWN == enDirection) {
                 int nTolerance = (pstCmd->rectOuterSrchWindow.y + pstCmd->rectOuterSrchWindow.height) - (pstCmd->rectROI.y + pstCmd->rectROI.height) - MARGIN;
-                if (ptCenter.y >= ptWindowCtr.y && rect.height >= nTolerance) {
+                if (ptCenter.y >= (ptWindowCtr.y + rectOuterWindowNew.height / 4) && rect.height >= nTolerance) {
                     cv::Rect rectResult(rect.x + ptRoiTL.x, rect.y + ptRoiTL.y, rect.width, rect.height);
                     _addBridgeIfNotExist(pstRpy->vecBridgeWindow, rectResult);
                 }
@@ -4891,7 +4891,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
             else
             if (PR_DIRECTION::LEFT == enDirection) {
                 int nTolerance = pstCmd->rectROI.x - pstCmd->rectOuterSrchWindow.x - MARGIN;
-                if (ptCenter.x <= ptWindowCtr.x && rect.width >= nTolerance) {
+                if (ptCenter.x <= (ptWindowCtr.x - rectOuterWindowNew.width / 4) && rect.width >= nTolerance) {
                     cv::Rect rectResult(rect.x + ptRoiTL.x, rect.y + ptRoiTL.y, rect.width, rect.height);
                     _addBridgeIfNotExist(pstRpy->vecBridgeWindow, rectResult);
                 }
@@ -4899,7 +4899,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
             else
             if (PR_DIRECTION::RIGHT == enDirection) {
                 int nTolerance = (pstCmd->rectOuterSrchWindow.x + pstCmd->rectOuterSrchWindow.width) - (pstCmd->rectROI.x + pstCmd->rectROI.width) - MARGIN;
-                if (ptCenter.x >= ptWindowCtr.x && rect.width >= nTolerance) {
+                if (ptCenter.x >= (ptWindowCtr.x + rectOuterWindowNew.width / 4) && rect.width >= nTolerance) {
                     cv::Rect rectResult(rect.x + ptRoiTL.x, rect.y + ptRoiTL.y, rect.width, rect.height);
                     _addBridgeIfNotExist(pstRpy->vecBridgeWindow, rectResult);
                 }
