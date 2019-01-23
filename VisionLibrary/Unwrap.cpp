@@ -2021,48 +2021,10 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
     pstRpy->enStatus = VisionStatus::OK;
 }
 
-/*static*/ cv::Mat Unwrap::_calculatePPzxx(const cv::Mat& matX1, const cv::Mat& matY1, int mm, int nn) {
-    cv::Mat u = (matX1 - 1.f) / (matX1.cols - 1.f);
-    cv::Mat v = (matY1 - 1.f) / (matX1.rows - 1.f);
-    int len = Vision::ToInt32(matX1.total());
-
-    auto matPolyParamm = CalcUtils::paraFromPolyNomial(mm);
-    auto matPolyParann = CalcUtils::paraFromPolyNomial(nn);
-
-    cv::Mat Pm1 = cv::repeat(CalcUtils::intervals<float>(0.f, 1.f, ToFloat(mm - 1)).reshape(1, 1),  len, 1);
-    cv::Mat Pm2 = cv::repeat(CalcUtils::intervals<float>(ToFloat(mm - 1), -1.f, 0.f).reshape(1, 1), len, 1);
-    cv::Mat Pm3 = cv::repeat(u, 1, mm);
-    cv::Mat Pm4 = cv::repeat(1-u, 1, mm);
-
-    cv::Mat Pn1 = cv::repeat(CalcUtils::intervals<float>(0.f, 1.f, ToFloat(nn - 1)).reshape(1, 1),  len, 1);
-    cv::Mat Pn2 = cv::repeat(CalcUtils::intervals<float>(ToFloat(nn - 1), -1.f, 0.f).reshape(1, 1), len, 1);
-    cv::Mat Pn3 = cv::repeat(v, 1, nn);
-    cv::Mat Pn4 = cv::repeat(1-v, 1, nn);
-
-    // P1 = (Pm3.^Pm1).*(Pm4.^Pm2).*repmat(PolyParamm, len, 1);
-    cv::Mat matTmpPmPow, P1;
-    cv::multiply(CalcUtils::power<float>(Pm3, Pm1), CalcUtils::power<float>(Pm4, Pm2), matTmpPmPow);
-    cv::multiply(matTmpPmPow, cv::repeat(matPolyParamm, len, 1), P1);
-
-    // P2 = (Pn3.^Pn1).*(Pn4.^Pn2).*repmat(PolyParann, len, 1);
-    cv::Mat matTmpPnPow, P2;
-    cv::multiply(CalcUtils::power<float>(Pn3, Pn1), CalcUtils::power<float>(Pn4, Pn2), matTmpPnPow);
-    cv::multiply(matTmpPnPow, cv::repeat(matPolyParann, len, 1), P2);
-
-    cv::Mat matXX = cv::Mat::zeros(len, mm * nn, CV_32FC1);
-
-    for (int ii = 0; ii < mm; ++ ii)
-    for (int jj = 0; jj < nn; ++ jj) {
-        auto matCol = matXX.col(ii * nn + jj);
-        cv::multiply(P1.col(ii), P2.col(jj), matCol);
-    }
-    return matXX;
-}
-
 // ss is the 3D bezier rank
-/*static*/ cv::Mat Unwrap::_calculatePPzConvert3D(const cv::Mat& z1, const cv::Mat& matH, const VectorOfFloat& param, int ss, const cv::Mat& xxt1) {
-    auto zmin = param[5];
-    auto zmax = param[6];
+/*static*/ void Unwrap::_calculatePPzConvert3D(const cv::Mat& z1, const cv::Mat& matH, const VectorOfFloat& param, int ss, const cv::Mat& xxt, cv::Mat& matSum1t, cv::Mat& matSum2t) {
+    auto zmin = param[4];
+    auto zmax = param[5];
     auto zInRow = z1.reshape(1, z1.rows * z1.cols);
     auto hInRow = matH.reshape(1, matH.rows * matH.cols);
     cv::Mat w = (zInRow - zmin) / (zmax - zmin);
@@ -2075,30 +2037,76 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
 
     auto matPolyParass = CalcUtils::paraFromPolyNomial(ss);
 
-    // Matlab: PP3 = (Ps3.^Ps1).*(Ps4.^Ps2).*repmat(PolyParass, len, 1);
-    cv::Mat matTmpPmPow, P1;
+    // Matlab: P3 = (Ps3.^Ps1).*(Ps4.^Ps2).*repmat(PolyParass, len, 1);
+    cv::Mat matTmpPmPow, P3;
     cv::multiply(CalcUtils::power<float>(Ps3, Ps1), CalcUtils::power<float>(Ps4, Ps2), matTmpPmPow);
-    cv::multiply(matTmpPmPow, cv::repeat(matPolyParass, len, 1), P1);
+    cv::multiply(matTmpPmPow, cv::repeat(matPolyParass, len, 1), P3);
 
-    int len1 = xxt1.cols;
+    // 2D rank 5x5, then _2D_PARAMS will be 25.
+    const int _2D_PARAMS = xxt.cols;
 
-    cv::Mat sum1 = cv::Mat::zeros(len1 * ss, len1 * ss, CV_32FC1); 
-    cv::Mat sum2 = cv::Mat::zeros(len1 * ss, 1, CV_32FC1);
+    cv::Mat sum1 = cv::Mat::zeros(_2D_PARAMS * ss, _2D_PARAMS * ss, CV_32FC1);
+    cv::Mat sum2 = cv::Mat::zeros(_2D_PARAMS * ss, 1, CV_32FC1);
 
-    cv::Mat sum1t = cv::Mat::zeros(len1 * ss, len1 * ss, CV_32FC1);
-    cv::Mat sum2t = cv::Mat::zeros(len1 * ss, 1, CV_32FC1);
+    matSum1t = cv::Mat::zeros(_2D_PARAMS * ss, _2D_PARAMS * ss, CV_32FC1);
+    matSum2t = cv::Mat::zeros(_2D_PARAMS * ss, 1, CV_32FC1);
 
     const int nt = 20000;
     const int TOTAL_LOOP = ToInt32(std::ceil(ToFloat(len) / ToFloat(nt)));
 
     for (int ii = 1; ii <= TOTAL_LOOP; ++ii) {
         cv::Mat idxi;
-        if (ii == TOTAL_LOOP)
+        int nStart = (ii - 1) * nt, nEnd;
+        if (ii == TOTAL_LOOP) {
             idxi = CalcUtils::intervals((ii - 1) * nt + 1, 1, len);
-        else
+            nEnd = len;
+        }
+        else {
             idxi = CalcUtils::intervals((ii - 1) * nt + 1, 1, ii * nt);
+            nEnd = ii * nt;
+        }
+
+        int leni = idxi.rows;
+        cv::Mat xx = cv::Mat::zeros(leni, _2D_PARAMS * ss, CV_32FC1), xxTranspose;
+        for (int kk = 1; kk <= ss; ++ kk) {
+            //Matlab: xx(:, (kk-1)*len1+1:kk*len1) = xxt(idxi, :).*repmat(P3(idxi, kk), 1, len1); 
+            cv::Mat xxROI(xx, cv::Range::all(), cv::Range((kk - 1)*_2D_PARAMS, kk * _2D_PARAMS));
+            cv::Mat xxtROI(xxt, cv::Range(nStart, nEnd), cv::Range::all());
+            cv::Mat matP3Col(P3, cv::Range(nStart, nEnd), cv::Range(kk - 1, kk));
+            cv::Mat matP3ColRepeat = cv::repeat(matP3Col, 1, _2D_PARAMS);
+            cv::Mat matResult;
+            cv::multiply(xxtROI, matP3ColRepeat, matResult);
+            matResult.copyTo(xxROI);
+        }
+
+        cv::transpose(xx, xxTranspose);
+        sum1 = sum1 + xxTranspose * xx;
+        sum2 = sum2 + xxTranspose * cv::Mat(hInRow, cv::Range(nStart, nEnd), cv::Range::all());
     }
-    return sum1;
+}
+
+/*static*/ cv::Mat Unwrap::_calculateSurfaceConvert3D(const cv::Mat& z1, const VectorOfFloat& param, int ss, const cv::Mat& xxt1) {
+    auto zmin = param[4];
+    auto zmax = param[5];
+    auto zInRow = z1.reshape(1, z1.rows * z1.cols);
+    cv::Mat w = (zInRow - zmin) / (zmax - zmin);
+    int len = zInRow.rows;
+
+    cv::Mat Ps1 = cv::repeat(CalcUtils::intervals<float>(0.f, 1.f, ToFloat(ss - 1)).reshape(1, 1), len, 1);
+    cv::Mat Ps2 = cv::repeat(CalcUtils::intervals<float>(ToFloat(ss - 1), -1.f, 0.f).reshape(1, 1), len, 1);
+    cv::Mat Ps3 = cv::repeat(w, 1, ss);
+    cv::Mat Ps4 = cv::repeat(1 - w, 1, ss);
+
+    auto matPolyParass = CalcUtils::paraFromPolyNomial(ss);
+
+    // Matlab: P3 = (Ps3.^Ps1).*(Ps4.^Ps2).*repmat(PolyParass, len, 1);
+    cv::Mat matTmpPmPow, P3;
+    cv::multiply(CalcUtils::power<float>(Ps3, Ps1), CalcUtils::power<float>(Ps4, Ps2), matTmpPmPow);
+    cv::multiply(matTmpPmPow, cv::repeat(matPolyParass, len, 1), P3);
+    cv::Mat matResult;
+    cv::reduce(P3, matResult, 1, cv::ReduceTypes::REDUCE_SUM);
+    matResult = matResult.reshape(1, z1.rows);
+    return matResult;
 }
 
 /*static*/ void Unwrap::motorCalib3DNew(const PR_MOTOR_CALIB_3D_CMD *const pstCmd, PR_MOTOR_CALIB_3D_RPY *const pstRpy) {
@@ -2107,14 +2115,15 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
         return kv1.first < kv2.first;
     });
 
-    auto matN5 = vecPairHeightPhase.front().second;
-    auto matP5 = vecPairHeightPhase.back().second;
+    // In matlab code, N5 actually is the measured max height, and P5 is min height
+    auto matN5 = vecPairHeightPhase.back().second;
+    auto matP5 = vecPairHeightPhase.front().second;
 
     double zMax = 0., zMin = 0., zTmp = 0.;
     cv::minMaxIdx(matN5, &zTmp, &zMax);
     cv::minMaxIdx(matP5, &zMin, &zTmp);
 
-     cv::Mat matX1, matY1;
+    cv::Mat matX1, matY1;
     CalcUtils::meshgrid<DATA_TYPE>(1.f, 1.f, ToFloat(pstCmd->vecPairHeightPhase[0].second.cols), 1.f, 1.f, ToFloat(pstCmd->vecPairHeightPhase[0].second.rows), matX1, matY1);
 
     int mm = 5, nn = 5, ss = 4;
@@ -2124,9 +2133,47 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
 
     std::vector<float> vecParamMinMaxXY{1.f, ToFloat(matX1.cols), 1.f, ToFloat(matX1.rows), ToFloat(zMin), ToFloat(zMax)};
     auto xxt = CalcUtils::generateBezier(matXInRow, matYInRow, vecParamMinMaxXY, mm, nn);
-
+    cv::Mat matSum1, matSum2;
     for(const auto& heightPhase : pstCmd->vecPairHeightPhase) {
+        cv::Mat matSum1t, matSum2t;
+        cv::Mat matH = cv::Mat::ones(heightPhase.second.size(), heightPhase.second.type()) * heightPhase.first;
+        _calculatePPzConvert3D(heightPhase.second, matH, vecParamMinMaxXY, ss, xxt, matSum1t, matSum2t);
+        matSum1 = matSum1 + matSum1t;
+        matSum2 = matSum2 + matSum2t;
+    }
 
+    cv::Mat matK;
+    cv::solve(matSum1, matSum2, matK, cv::DecompTypes::DECOMP_NORMAL);
+
+#ifdef _DEBUG
+    auto vecVecSum1 = CalcUtils::matToVector<DATA_TYPE>(matSum1);
+    auto vecVecSum2 = CalcUtils::matToVector<DATA_TYPE>(matSum2);
+    auto vecVecK = CalcUtils::matToVector<DATA_TYPE>(matK);
+#endif
+    pstRpy->matIntegratedK = matK;
+
+    cv::Mat xxt1 = cv::Mat::zeros(ss, xxt.rows, CV_32FC1);
+
+    // 2D rank 5x5, then _2D_PARAMS will be 25.
+    const int _2D_PARAMS = xxt.cols;
+    for (int ii = 1; ii <= ss; ++ii) {
+        // Matlab: xxt1(:, ii) = xxt*K((ii - 1)*len1 + 1:ii*len1);
+        cv::Mat matXxt1ROI(xxt1, cv::Range(ii - 1, ii), cv::Range::all());
+        cv::Mat matResult = xxt * cv::Mat(matK, cv::Range((ii - 1)* _2D_PARAMS, ii* _2D_PARAMS), cv::Range::all());
+        matResult = matResult.reshape(1, 1);
+        matResult.copyTo(matXxt1ROI);
+    }
+    cv::transpose(xxt1, xxt1);
+
+    pstRpy->vecMatResultImg.clear();
+    pstRpy->vecHeightCalibResult.clear();
+    for (const auto &pairHeightPhase : pstCmd->vecPairHeightPhase) {
+        cv::Mat matHeight = _calculateSurfaceConvert3D(pairHeightPhase.second, vecParamMinMaxXY, ss, xxt1);
+        pstRpy->vecHeightCalibResult.push_back(PairHeightCalibResult(pairHeightPhase.first, matHeight));
+        VectorOfFloat vecGridHeights;
+        cv::Mat matHeightGridImg = _drawHeightGrid(matHeight, pstCmd->nResultImgGridRow, pstCmd->nResultImgGridCol, pstCmd->szMeasureWinSize, vecGridHeights);
+        pstRpy->vecHeightGridHeights.push_back(PairHeightGridHeights(pairHeightPhase.first, vecGridHeights));
+        pstRpy->vecMatResultImg.push_back(matHeightGridImg);
     }
 
     pstRpy->enStatus = VisionStatus::OK;

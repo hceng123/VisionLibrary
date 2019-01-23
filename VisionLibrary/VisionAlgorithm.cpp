@@ -6822,7 +6822,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
 
     MARK_FUNCTION_START_TIME;
 
-    Unwrap::motorCalib3D(pstCmd, pstRpy);
+    Unwrap::motorCalib3DNew(pstCmd, pstRpy);
 
     MARK_FUNCTION_END_TIME;
     return pstRpy->enStatus;

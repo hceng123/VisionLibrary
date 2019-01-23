@@ -424,8 +424,10 @@ public:
         assert(matA.size() == matB.size());
         cv::Mat matResult = matA.clone();
         for (int row = 0; row < matA.rows; ++ row)
-        for (int col = 0; col < matA.cols; ++ col)
-            matResult.at<T>(row, col) = std::pow(matResult.at<T>(row, col), matB.at<T>(row, col));
+        for (int col = 0; col < matA.cols; ++col) {
+            auto& value = matResult.at<T>(row, col);
+            value = std::pow(value, matB.at<T>(row, col));
+        }
         return matResult;
     }
 
@@ -456,7 +458,7 @@ public:
     static void setToExcept(cv::Mat &matInOut, int value, const cv::Rect &rectROI);
     static bool isVerticalROI(const VectorOfRect& vecRectROIs);
     static cv::Mat paraFromPolyNomial(int n);
-    static cv::Mat CalcUtils::generateBezier(const cv::Mat& matX, const cv::Mat& matY, const VectorOfFloat& vecXyMinMax, int mm, int nn);
+    static cv::Mat CalcUtils::generateBezier(const cv::Mat& matX, const cv::Mat& matY, const VectorOfFloat& vecXyMinMax, const int mm, const int nn);
 };
 
 }

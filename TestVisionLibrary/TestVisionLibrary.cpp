@@ -681,7 +681,7 @@ int _tmain(int argc, _TCHAR* argv[])
     //TestCalibCamera_1();
     //TestCalibCamera_2();
     //TestCalibCamera_3();
-    TestRestoreImage();
+    //TestRestoreImage();
 
     //TestCompareInputAndResult();
     //TestRunRestoreImgLogCase();
@@ -765,7 +765,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
     //ChangeColor();
 
-    //TestMotor3DCalib();
+    TestMotor3DCalib();
 
     //TestCalc4DLPHeight();
     //TestMergeHeightMax();

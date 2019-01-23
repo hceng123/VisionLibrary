@@ -408,7 +408,7 @@ float CalcUtils::calcPointToContourDist(const cv::Point &ptInput, const VectorOf
     return matPolyPara;
 }
 
-/*static*/ cv::Mat CalcUtils::generateBezier(const cv::Mat& matX, const cv::Mat& matY, const VectorOfFloat& vecXyMinMax, int mm, int nn) {
+/*static*/ cv::Mat CalcUtils::generateBezier(const cv::Mat& matX, const cv::Mat& matY, const VectorOfFloat& vecXyMinMax, const int mm, const int nn) {
     auto xMin = vecXyMinMax[0]; auto xMax = vecXyMinMax[1];
     auto yMin = vecXyMinMax[2]; auto yMax = vecXyMinMax[3];
 
@@ -432,9 +432,17 @@ float CalcUtils::calcPointToContourDist(const cv::Point &ptInput, const VectorOf
     cv::Mat Pm3 = cv::repeat(u,     1, mm);
     cv::Mat Pm4 = cv::repeat(1 - u, 1, mm);
 
-    cv::Mat Pn1 = cv::repeat(CalcUtils::intervals<float>(0.f, 1.f, ToFloat(nn - 1)).reshape(1, 1),  ROWS, 1);
-    cv::Mat Pn2 = cv::repeat(CalcUtils::intervals<float>(ToFloat(nn - 1), -1.f, 0.f).reshape(1, 1), ROWS, 1);
-    cv::Mat Pn3 = cv::repeat(v,     1, nn);
+    cv::Mat Pn1, Pn2;
+    if (mm == nn) {
+        Pn1 = Pm1;
+        Pn2 = Pm2;
+    }
+    else {
+        Pn1 = cv::repeat(CalcUtils::intervals<float>(0.f, 1.f, ToFloat(nn - 1)).reshape(1, 1),  ROWS, 1);
+        Pn2 = cv::repeat(CalcUtils::intervals<float>(ToFloat(nn - 1), -1.f, 0.f).reshape(1, 1), ROWS, 1);
+    }
+
+    cv::Mat Pn3 = cv::repeat(v, 1, nn);
     cv::Mat Pn4 = cv::repeat(1 - v, 1, nn);
 
     // P1 = (Pm3.^Pm1).*(Pm4.^Pm2).*repmat(PolyParamm, len, 1);
