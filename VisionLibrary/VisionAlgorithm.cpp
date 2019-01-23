@@ -3830,7 +3830,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     cv::Mat matMaskROI(pstRpy->matResultMask, pstCmd->rectROI);
     matMaskROI.setTo(cv::Scalar::all(PR_MAX_GRAY_LEVEL), matResultMask);
 
-    FINISH_LOGCASE;
+    FINISH_LOGCASE_EX;
     MARK_FUNCTION_END_TIME;
     return pstRpy->enStatus;
 }

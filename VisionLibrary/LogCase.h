@@ -497,7 +497,7 @@ class LogCasePickColor : public LogCase
 public:
     explicit LogCasePickColor(const String &strPath, bool bReplay = false) : LogCase(strPath, bReplay) {}
     VisionStatus WriteCmd(const PR_PICK_COLOR_CMD *const pstCmd);
-    VisionStatus WriteRpy(const PR_PICK_COLOR_RPY *const pstRpy);
+    VisionStatus WriteRpy(const PR_PICK_COLOR_CMD *const pstCmd, const PR_PICK_COLOR_RPY *const pstRpy);
     virtual VisionStatus RunLogCase() override;
     virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
     static String StaticGetFolderPrefix();
