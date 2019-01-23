@@ -1320,25 +1320,27 @@ VisionStatus LogCasePickColor::WriteCmd(const PR_PICK_COLOR_CMD *const pstCmd) {
     CSimpleIni ini(false, false, false);
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile(cmdRpyFilePath.c_str());
-    ini.SetValue(_CMD_SECTION.c_str(), _strKeyROI.c_str(), _formatRect(pstCmd->rectROI).c_str());
+    cv::Rect rectROI(pstCmd->rectROI);
+    rectROI.x = 0; rectROI.y = 0;
+    ini.SetValue(_CMD_SECTION.c_str(), _strKeyROI.c_str(), _formatRect(rectROI).c_str());
     ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyMethod.c_str(), ToInt32(pstCmd->enMethod));
     ini.SetValue(_CMD_SECTION.c_str(), _strKeyPickPoint.c_str(), _formatCoordinate(pstCmd->ptPick).c_str());
     ini.SetValue(_CMD_SECTION.c_str(), _strKeyScalarSelect.c_str(), _formatScalar(pstCmd->scalarSelect).c_str());
     ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyColorDiff.c_str(), pstCmd->nColorDiff);
     ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyGrayDiff.c_str(), pstCmd->nGrayDiff);
     ini.SaveFile(cmdRpyFilePath.c_str());
-    cv::imwrite(_strLogCasePath + _IMAGE_NAME, pstCmd->matInputImg);
+    cv::imwrite(_strLogCasePath + _IMAGE_NAME, cv::Mat(pstCmd->matInputImg, pstCmd->rectROI));
     return VisionStatus::OK;
 }
 
-VisionStatus LogCasePickColor::WriteRpy(const PR_PICK_COLOR_RPY *const pstRpy) {
+VisionStatus LogCasePickColor::WriteRpy(const PR_PICK_COLOR_CMD *const pstCmd, const PR_PICK_COLOR_RPY *const pstRpy) {
     CSimpleIni ini(false, false, false);
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile(cmdRpyFilePath.c_str());
     ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyStatus.c_str(), ToInt32(pstRpy->enStatus));
     ini.SaveFile(cmdRpyFilePath.c_str());
-    if (! pstRpy->matResultImg.empty())
-        cv::imwrite(_strLogCasePath + _RESULT_IMAGE_NAME, pstRpy->matResultImg);
+    if (!pstRpy->matResultImg.empty())
+        cv::imwrite(_strLogCasePath + _RESULT_IMAGE_NAME, cv::Mat(pstRpy->matResultImg, pstCmd->rectROI));
     _zip();
     return VisionStatus::OK;
 }
@@ -1360,7 +1362,7 @@ VisionStatus LogCasePickColor::RunLogCase() {
 
     PR_PICK_COLOR_RPY stRpy;
     enStatus = VisionAlgorithm::pickColor(&stCmd, &stRpy, true);
-    WriteRpy(&stRpy);
+    WriteRpy(&stCmd, &stRpy);
     return enStatus;
 }
 
