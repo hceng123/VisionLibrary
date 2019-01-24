@@ -18,7 +18,6 @@ class TableMapping
     static int _findMatchPoint(const VectorOfFloat& vecTargetX, const VectorOfFloat& vecTargetY, const cv::Point2f& ptSrch);
     static cv::Mat _calculatePPz(const cv::Mat& matX, const cv::Mat& matY, const cv::Mat& matZ,
         const VectorOfFloat& vecXyMinMax, int mm, int nn);
-    static cv::Mat _calculateSurface(const cv::Mat& matX, const cv::Mat& matY, const cv::Mat& matPPz, const VectorOfFloat& vecXyMinMax, int mm, int nn);
     static ByteVector _findCrossBorderPoint(const PR_TABLE_MAPPING_CMD::VectorOfFramePoints& vecProcessedFramePoints);
     static int _calcTotalPoints(const PR_TABLE_MAPPING_CMD::VectorOfFramePoints& vecProcessedFramePoints);
     static std::vector<std::pair<int, int>> _findStitchPair(const PR_TABLE_MAPPING_CMD::VectorOfFramePoints& vecProcessedFramePoints);

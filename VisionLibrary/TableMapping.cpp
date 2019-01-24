@@ -281,17 +281,6 @@ namespace Vision
     return PPz;
 }
 
-/*static*/ cv::Mat TableMapping::_calculateSurface(const cv::Mat& matX, const cv::Mat& matY, const cv::Mat& matPPz, const VectorOfFloat& vecXyMinMax, int mm, int nn) {
-    cv::Mat matXInRow = matX.reshape(1, matX.rows * matX.cols);
-    cv::Mat matYInRow = matY.reshape(1, matY.rows * matY.cols);
-
-    cv::Mat matXX = CalcUtils::generateBezier(matXInRow, matYInRow, vecXyMinMax, mm, nn);
-
-    cv::Mat zp1 = matXX * matPPz;
-    zp1 = zp1.reshape(1, matX.rows);
-    return zp1;
-}
-
 /*static*/ ByteVector TableMapping::_findCrossBorderPoint(const PR_TABLE_MAPPING_CMD::VectorOfFramePoints& vecProcessedFramePoints) {
     ByteVector vecResult;
     const float BORDER_MARGIN = 5.f;

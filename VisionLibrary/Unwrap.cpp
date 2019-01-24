@@ -2025,7 +2025,11 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
 /*static*/ void Unwrap::_calculatePPzConvert3D(const cv::Mat& z1, const cv::Mat& matH, const VectorOfFloat& param, int ss, const cv::Mat& xxt, cv::Mat& matSum1, cv::Mat& matSum2) {
     auto zmin = param[4];
     auto zmax = param[5];
-    auto zInRow = z1.reshape(1, z1.rows * z1.cols);
+
+    //Matlab: H = H(:); Matlab change to one row is row to row, but OpenCV is col by col, so need to transpose first
+    cv::Mat z1T;
+    cv::transpose(z1, z1T);
+    auto zInRow = z1T.reshape(1, z1.rows * z1.cols);
     auto hInRow = matH.reshape(1, matH.rows * matH.cols);
     cv::Mat w = (zInRow - zmin) / (zmax - zmin);
     int len = zInRow.rows;
@@ -2042,13 +2046,18 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
     cv::multiply(CalcUtils::power<float>(Ps3, Ps1), CalcUtils::power<float>(Ps4, Ps2), matTmpPmPow);
     cv::multiply(matTmpPmPow, cv::repeat(matPolyParass, len, 1), P3);
 
+#ifdef _DEBUG
+    cv::Mat P3t; cv::transpose(P3, P3t);
+    auto vecVecP3t = CalcUtils::matToVector<DATA_TYPE>(P3t);
+#endif
+
     // 2D rank 5x5, then _2D_PARAMS will be 25.
     const int _2D_PARAMS = xxt.cols;
 
     matSum1 = cv::Mat::zeros(_2D_PARAMS * ss, _2D_PARAMS * ss, CV_32FC1);
     matSum2 = cv::Mat::zeros(_2D_PARAMS * ss, 1, CV_32FC1);
 
-    const int nt = 2000000;
+    const int nt = 20000;
     const int TOTAL_LOOP = ToInt32(std::ceil(ToFloat(len) / ToFloat(nt)));
 
     cv::Mat xx = cv::Mat::zeros(nt, _2D_PARAMS * ss, CV_32FC1), xxTranspose;
@@ -2065,27 +2074,39 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
         if (nt != leni)
             xx = cv::Mat::zeros(leni, _2D_PARAMS * ss, CV_32FC1);
 
+        cv::Mat matResult;
         for (int kk = 1; kk <= ss; ++ kk) {
-            //Matlab: xx(:, (kk-1)*len1+1:kk*len1) = xxt(idxi, :).*repmat(P3(idxi, kk), 1, len1); 
-            cv::Mat xxROI(xx, cv::Range::all(), cv::Range((kk - 1)*_2D_PARAMS, kk * _2D_PARAMS));
+            //Matlab: xx(:, (kk-1)*len1+1:kk*len1) = xxt(idxi, :).*repmat(P3(idxi, kk), 1, len1);
             cv::Mat xxtROI(xxt, cv::Range(nStart, nEnd), cv::Range::all());
             cv::Mat matP3Col(P3, cv::Range(nStart, nEnd), cv::Range(kk - 1, kk));
             cv::Mat matP3ColRepeat = cv::repeat(matP3Col, 1, _2D_PARAMS);
-            cv::Mat matResult;
             cv::multiply(xxtROI, matP3ColRepeat, matResult);
+
+#ifdef _DEBUG
+            auto vecVecResult = CalcUtils::matToVector<DATA_TYPE>(matResult);
+#endif
+            cv::Mat xxROI(xx, cv::Range::all(), cv::Range((kk - 1) * _2D_PARAMS, kk * _2D_PARAMS));
             matResult.copyTo(xxROI);
         }
 
         cv::transpose(xx, xxTranspose);
         matSum1 = matSum1 + xxTranspose * xx;
         matSum2 = matSum2 + xxTranspose * cv::Mat(hInRow, cv::Range(nStart, nEnd), cv::Range::all());
+
+#ifdef _DEBUG
+        auto vecVecXX = CalcUtils::matToVector<DATA_TYPE>(xx);
+        auto vecVecSum1 = CalcUtils::matToVector<DATA_TYPE>(matSum1);
+        cv::Mat matSum2T; cv::transpose(matSum2, matSum2T);
+        auto vecVecSum2T = CalcUtils::matToVector<DATA_TYPE>(matSum2T);
+#endif
     }
 }
 
 /*static*/ cv::Mat Unwrap::_calculateSurfaceConvert3D(const cv::Mat& z1, const VectorOfFloat& param, int ss, const cv::Mat& xxt1) {
     auto zmin = param[4];
     auto zmax = param[5];
-    auto zInRow = z1.reshape(1, z1.rows * z1.cols);
+    cv::Mat z1t; cv::transpose(z1, z1t);
+    auto zInRow = z1t.reshape(1, z1.rows * z1.cols);
     cv::Mat w = (zInRow - zmin) / (zmax - zmin);
     int len = zInRow.rows;
 
@@ -2125,16 +2146,22 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
     cv::minMaxIdx(matN5, &zTmp, &zMax);
     cv::minMaxIdx(matP5, &zMin, &zTmp);
 
-    cv::Mat matX1, matY1;
+    cv::Mat matX1, matY1, matX1T, matY1T;
     CalcUtils::meshgrid<DATA_TYPE>(1.f, 1.f, ToFloat(pstCmd->vecPairHeightPhase[0].second.cols), 1.f, 1.f, ToFloat(pstCmd->vecPairHeightPhase[0].second.rows), matX1, matY1);
 
     int mm = 5, nn = 5, ss = 4;
 
-    cv::Mat matXInRow = matX1.reshape(1, matX1.rows * matX1.cols);
-    cv::Mat matYInRow = matX1.reshape(1, matX1.rows * matX1.cols);
+    cv::transpose(matX1, matX1T);
+    cv::transpose(matY1, matY1T);
+    cv::Mat matXInRow = matX1T.reshape(1, matX1.rows * matX1.cols);
+    cv::Mat matYInRow = matY1T.reshape(1, matX1.rows * matX1.cols);
 
     std::vector<float> vecParamMinMaxXY{1.f, ToFloat(matX1.cols), 1.f, ToFloat(matX1.rows), ToFloat(zMin), ToFloat(zMax)};
     auto xxt = CalcUtils::generateBezier(matXInRow, matYInRow, vecParamMinMaxXY, mm, nn);
+
+#ifdef _DEBUG
+    auto vecVecxxt = CalcUtils::matToVector<DATA_TYPE>(xxt);
+#endif
 
     // 2D rank 5x5, then _2D_PARAMS will be 25.
     const int _2D_PARAMS = xxt.cols;

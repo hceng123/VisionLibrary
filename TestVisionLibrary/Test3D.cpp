@@ -820,7 +820,7 @@ void TestMotor3DCalib() {
     if (VisionStatus::OK != stRpy.enStatus)
         return;
 
-    printfMat<float>(stRpy.matIntegratedK);
+    printfMat<float>(stRpy.matIntegratedK, 3);
     int i = 1;
     for (const auto &matResultImg : stRpy.vecMatResultImg) {
         char chArrFileName[100];
