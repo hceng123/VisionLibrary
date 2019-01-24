@@ -820,6 +820,7 @@ void TestMotor3DCalib() {
     if (VisionStatus::OK != stRpy.enStatus)
         return;
 
+    printfMat<float>(stRpy.matIntegratedK);
     int i = 1;
     for (const auto &matResultImg : stRpy.vecMatResultImg) {
         char chArrFileName[100];
@@ -845,9 +846,9 @@ void TestSolve() {
     fileNode = fsData["matSum2"];
     cv::read(fileNode, matSum2, cv::Mat());
 
-    cv::solve ( matSum1, matSum2, matK, cv::DecompTypes::DECOMP_SVD );
-    cv::Mat matEign(1, 5, CV_32FC1 );
-    cv::eigen ( matSum1, matEign );
+    cv::solve(matSum1, matSum2, matK, cv::DecompTypes::DECOMP_SVD);
+    cv::Mat matEign(1, 5, CV_32FC1);
+    cv::eigen(matSum1, matEign);
     printfMat<float>(matK);
     std::cout << "Eign value: " << std::endl;
     printfMat<float>(matEign);

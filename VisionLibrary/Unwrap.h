@@ -77,7 +77,7 @@ private:
     static bool _extractSolder(const cv::Mat &matHeightROI, float fCoverage, VectorOfFloat &vecThreshold, cv::Mat &matHighMask, cv::Mat &matMidMask, cv::Mat &matLowMask, int &nTopY, int &nBtmY);
     static float _calcSolderHeightXSG(const cv::Mat &matCheckROI, const cv::Mat &matMidMask);
     static float _calcSolderHeightTri(const cv::Mat &matCheckROI, const cv::Mat &matMidMask, int nWettingWidth, bool bLeft, int nTopY, int nBtmY, cv::Rect &rectCalc);
-    static void _calculatePPzConvert3D(const cv::Mat& z1, const cv::Mat& matH, const VectorOfFloat& param, int ss, const cv::Mat& xxt, cv::Mat& matSum1t, cv::Mat& matSum2t);
+    static void _calculatePPzConvert3D(const cv::Mat& z1, const cv::Mat& matH, const VectorOfFloat& param, int ss, const cv::Mat& xxt, cv::Mat& matSum1, cv::Mat& matSum2);
     static cv::Mat _calculateSurfaceConvert3D(const cv::Mat& z1, const VectorOfFloat& param, int ss, const cv::Mat& xxt1);
     static inline void _phaseWrap(cv::Mat &matPhase) {
         CStopWatch stopWatch;

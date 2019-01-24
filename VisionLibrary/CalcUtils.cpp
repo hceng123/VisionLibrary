@@ -462,13 +462,6 @@ float CalcUtils::calcPointToContourDist(const cv::Point &ptInput, const VectorOf
         auto matCol = matXX.col(ii * nn + jj);
         cv::multiply(P1.col(ii), P2.col(jj), matCol);
     }
-#ifdef _DEBUG
-    cv::Mat P1T; cv::transpose(P1, P1T);
-    auto vecVecP1T = CalcUtils::matToVector<float>(P1T);
-    cv::Mat P2T; cv::transpose(P2, P2T);
-    auto vecVecP2T = CalcUtils::matToVector<float>(P2T);
-    auto vecVecXX = CalcUtils::matToVector<float>(matXX);
-#endif
 
     return matXX;
 }
