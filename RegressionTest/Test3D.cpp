@@ -457,6 +457,41 @@ void TestCalib3dBase_3() {
     TestCalib3dBaseSub(3, strParentPath, strImageFolder);
 }
 
+void TestMotor3DCalib_1() {
+    std::cout << std::endl << "--------------------------------------------";
+    std::cout << std::endl << "MOTOR 3D CALIB REGRESSION TEST #1 STARTING";
+    std::cout << std::endl << "--------------------------------------------";
+    std::cout << std::endl;
+
+    PR_MOTOR_CALIB_3D_CMD stCmd;
+    PR_MOTOR_CALIB_3D_RPY stRpy;
+
+    std::string strDataFolder = "./data/Motor3DCalib/", strFile;
+
+    for (int i = 1; i <= 5; ++i) {
+        PairHeightPhase pairHeightPhase;
+        pairHeightPhase.first = -i;
+        strFile = strDataFolder + "HP" + std::to_string(i) + ".csv";
+        pairHeightPhase.second = readMatFromCsvFile(strFile);
+        stCmd.vecPairHeightPhase.push_back(pairHeightPhase);
+    }
+
+    for (int i = 1; i <= 5; ++i) {
+        PairHeightPhase pairHeightPhase;
+        pairHeightPhase.first = i;
+        strFile = strDataFolder + "HN" + std::to_string(i) + ".csv";
+        pairHeightPhase.second = readMatFromCsvFile(strFile);
+        stCmd.vecPairHeightPhase.push_back(pairHeightPhase);
+    }
+
+    PR_MotorCalib3D(&stCmd, &stRpy);
+    std::cout << "PR_MotorCalib3D status " << ToInt32(stRpy.enStatus) << std::endl;
+    if (VisionStatus::OK != stRpy.enStatus)
+        return;
+
+    printfMat<float>(stRpy.matIntegratedK, 3);
+}
+
 void PrintCalcFrameResult(const PR_CALC_FRAME_VALUE_CMD &stCmd, const PR_CALC_FRAME_VALUE_RPY &stRpy) {
     std::cout << "PR_CalcFrameValue status " << ToInt32(stRpy.enStatus) << std::endl;
     std::cout << std::fixed << std::setprecision(3);
@@ -766,6 +801,8 @@ void Test3D() {
     TestCalib3DHeight_4();
 
     TestCalib3dBase_3();
+
+    TestMotor3DCalib_1();
 
     TestCalcFrameValue_1();
     TestCalcFrameValue_2();

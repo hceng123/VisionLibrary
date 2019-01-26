@@ -245,6 +245,8 @@ void saveResult(const PR_CALIBRATE_CAMERA_RPY& stRpy) {
     if (!fs.isOpened())
         return;
 
+    cv::write(fs, "ResolutionX", stRpy.dResolutionX);
+    cv::write(fs, "ResolutionY", stRpy.dResolutionY);
     cv::write(fs, "DistCoeffs", stRpy.matDistCoeffs);
     cv::write(fs, "IntrinsicMatrix", stRpy.matIntrinsicMatrix);
     cv::write(fs, "ExtrinsicMatrix", stRpy.matExtrinsicMatrix);

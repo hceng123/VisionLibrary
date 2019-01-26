@@ -1347,6 +1347,8 @@ struct PR_CALC_DLP_OFFSET_RPY {
     float                   fOffset4;
 };
 
+// Interpolate the value of point with the already known points values
+// It can be used to calculate 3D height compensation.
 struct PR_CALC_FRAME_VALUE_CMD {
     VectorOfVectorOfPoint2f vecVecRefFrameCenters;
     VectorOfVectorOfFloat   vecVecRefFrameValues;
