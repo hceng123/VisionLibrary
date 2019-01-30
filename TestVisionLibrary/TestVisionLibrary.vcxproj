@@ -186,6 +186,7 @@
     <ClCompile Include="TestAutoLocateLead.cpp" />
     <ClCompile Include="TestCalibCamera.cpp" />
     <ClCompile Include="TestCombineImage.cpp" />
+    <ClCompile Include="TestComineMachineImage.cpp" />
     <ClCompile Include="TestInspBridge.cpp" />
     <ClCompile Include="TestInspChip.cpp" />
     <ClCompile Include="TestInspLead.cpp" />

@@ -807,8 +807,9 @@ int _tmain(int argc, _TCHAR* argv[])
     //TestTableMapping_2();
     //TestTableMapping_3();
     
-    TestCombineImageNew_1();
-    TestCombineImageNew_2();
+    //TestCombineImageNew_1();
+    //TestCombineImageNew_2();
+    TestCombineMachineImage();
 
     PR_DumpTimeLog("./Vision/Time.log");
     std::cout << "Press any key to exit." << std::endl;
