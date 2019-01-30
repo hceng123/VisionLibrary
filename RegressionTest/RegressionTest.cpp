@@ -141,6 +141,8 @@ int _tmain(int argc, _TCHAR* argv[])
 
     TestCalcCameraMTF();
 
+    TestCombineImageNew();
+
     TestTableMapping();
 
     PR_DumpTimeLog("./Vision/Time.log");

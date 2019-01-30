@@ -98,3 +98,4 @@ void TestTableMapping_2();
 void TestTableMapping_3();
 
 void TestCombineImageNew_1();
+void TestCombineImageNew_2();
