@@ -211,8 +211,8 @@ void drawDashRect(cv::Mat &matImage, int linelength, int dashlength, const cv::R
     int tl_y = rect.y;
 
     int totallength = dashlength + linelength;
-    int nCountX = std::ceil((float)rect.width  / totallength);
-    int nCountY = std::ceil((float)rect.height / totallength);
+    int nCountX = ToInt32(std::ceil((float)rect.width  / totallength));
+    int nCountY = ToInt32(std::ceil((float)rect.height / totallength));
 
     cv::Point start, end;//start and end point of each dash
     //draw the horizontal lines
