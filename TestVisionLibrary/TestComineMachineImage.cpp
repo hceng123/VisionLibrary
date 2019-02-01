@@ -10,31 +10,47 @@
 using namespace AOI::Vision;
 using namespace boost::filesystem;
 
-cv::Mat matRestoreMap1, matRestoreMap2;
+cv::Mat matRestoreMap12_1, matRestoreMap12_2, matRestoreMap34_1, matRestoreMap34_2;
 const static std::string WORKING_FOLDER = "./data/TestCombineImage/";
 
-bool loadCalibCameraResult() {
+bool loadCalibCameraResult_12() {
+    cv::FileStorage fs(WORKING_FOLDER + "CameraCalibrate12.yml", cv::FileStorage::READ);
+    if (!fs.isOpened())
+        return false;
+
+    cv::FileNode fileNode;
+    fileNode = fs["RestoreImageMap1"];
+    cv::read(fileNode, matRestoreMap12_1, cv::Mat());
+
+    fileNode = fs["RestoreImageMap2"];
+    cv::read(fileNode, matRestoreMap12_2, cv::Mat());
+
+    fs.release();
+    return true;
+}
+
+bool loadCalibCameraResult_34() {
     cv::FileStorage fs(WORKING_FOLDER + "CameraCalibrate34.yml", cv::FileStorage::READ);
     if (!fs.isOpened())
         return false;
 
     cv::FileNode fileNode;
     fileNode = fs["RestoreImageMap1"];
-    cv::read(fileNode, matRestoreMap1, cv::Mat());
+    cv::read(fileNode, matRestoreMap34_1, cv::Mat());
 
     fileNode = fs["RestoreImageMap2"];
-    cv::read(fileNode, matRestoreMap2, cv::Mat());
+    cv::read(fileNode, matRestoreMap34_2, cv::Mat());
 
     fs.release();
     return true;
 }
 
-cv::Mat restoreImage(const cv::Mat& matInput) {
+cv::Mat restoreImage_12(const cv::Mat& matInput) {
     PR_RESTORE_IMG_CMD stRetoreCmd;
     PR_RESTORE_IMG_RPY stRetoreRpy;
     stRetoreCmd.matInputImg = matInput;
-    stRetoreCmd.vecMatRestoreMap.push_back(matRestoreMap1);
-    stRetoreCmd.vecMatRestoreMap.push_back(matRestoreMap2);
+    stRetoreCmd.vecMatRestoreMap.push_back(matRestoreMap12_1);
+    stRetoreCmd.vecMatRestoreMap.push_back(matRestoreMap12_2);
     PR_RestoreImage(&stRetoreCmd, &stRetoreRpy);
     if (VisionStatus::OK != stRetoreRpy.enStatus) {
         return cv::Mat();
@@ -42,7 +58,20 @@ cv::Mat restoreImage(const cv::Mat& matInput) {
     return stRetoreRpy.matResultImg;
 }
 
-bool readImageFromFolder(VectorOfMat& vecFrameImages) {
+cv::Mat restoreImage_34(const cv::Mat& matInput) {
+    PR_RESTORE_IMG_CMD stRetoreCmd;
+    PR_RESTORE_IMG_RPY stRetoreRpy;
+    stRetoreCmd.matInputImg = matInput;
+    stRetoreCmd.vecMatRestoreMap.push_back(matRestoreMap34_1);
+    stRetoreCmd.vecMatRestoreMap.push_back(matRestoreMap34_2);
+    PR_RestoreImage(&stRetoreCmd, &stRetoreRpy);
+    if (VisionStatus::OK != stRetoreRpy.enStatus) {
+        return cv::Mat();
+    }
+    return stRetoreRpy.matResultImg;
+}
+
+bool readImageFromFolder(VectorOfMat& vecFrameImages, const VectorOfVectorOfFloat& vecVecFrameCtrs) {
     VectorOfMat vectorOfImage;
     path p(WORKING_FOLDER);
 
@@ -52,6 +81,7 @@ bool readImageFromFolder(VectorOfMat& vecFrameImages) {
     std::vector<directory_entry> v; // To save the file names in a vector.
     copy(directory_iterator(p), directory_iterator(), back_inserter(v));
 
+    int index = 0;
     for (std::vector<directory_entry>::const_iterator it = v.begin(); it != v.end(); ++it)
     {
         if (!is_directory(it->path()))
@@ -68,9 +98,15 @@ bool readImageFromFolder(VectorOfMat& vecFrameImages) {
             return false;
         }
 
-        matG = restoreImage(matG);
-        matR = restoreImage(matR);
-        matB = restoreImage(matB);
+        if (vecVecFrameCtrs[index][1] > 190.f) {
+            matG = restoreImage_12(matG);
+            matR = restoreImage_12(matR);
+            matB = restoreImage_12(matB);
+        }else {
+            matG = restoreImage_34(matG);
+            matR = restoreImage_34(matR);
+            matB = restoreImage_34(matB);
+        }
 
         if (matR.empty() || matG.empty() || matB.empty()) {
             std::cout << "Failed to restore image " << strSubFolder << std::endl;
@@ -82,6 +118,7 @@ bool readImageFromFolder(VectorOfMat& vecFrameImages) {
         cv::merge(vecChannels, matPseudocolorImage);
 
         vecFrameImages.push_back(matPseudocolorImage);
+        ++ index;
     }
     return true;
 }
@@ -102,15 +139,20 @@ void TestCombineMachineImage() {
         return;
     }
 
-    if (!loadCalibCameraResult()) {
-        std::cout << "Failed to load camera calibration result" << std::endl;
+    if (!loadCalibCameraResult_12()) {
+        std::cout << "Failed to load camera calibration result 12" << std::endl;
+        return;
+    }
+
+    if (!loadCalibCameraResult_34()) {
+        std::cout << "Failed to load camera calibration result 34" << std::endl;
         return;
     }
 
     PR_COMBINE_IMG_NEW_CMD stCmd;
     PR_COMBINE_IMG_NEW_RPY stRpy;
     cv::Point2f ptTopLeftFrameTableCtr;
-    if (!readImageFromFolder(stCmd.vecInputImages))
+    if (!readImageFromFolder(stCmd.vecInputImages, vecOfVecFloat))
         return;
 
     cv::Point ptTopLeftFrameCtr(cv::Point(stCmd.vecInputImages[0].cols / 2, stCmd.vecInputImages[0].rows / 2));
