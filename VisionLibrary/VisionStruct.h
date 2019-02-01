@@ -1447,6 +1447,19 @@ struct PR_COMBINE_IMG_RPY {
     VectorOfMat             vecResultImages;
 };
 
+struct PR_COMBINE_IMG_NEW_CMD {
+    PR_COMBINE_IMG_NEW_CMD() :
+        bDrawFrame(false) {}
+    VectorOfMat             vecInputImages;
+    VectorOfVectorOfPoint   vecVecFrameCtr;
+    bool                    bDrawFrame;
+};
+
+struct PR_COMBINE_IMG_NEW_RPY {
+    VisionStatus            enStatus;
+    cv::Mat                 matResultImage;
+};
+
 struct PR_THRESHOLD_CMD {
     PR_THRESHOLD_CMD() :
         bDoubleThreshold    (false),

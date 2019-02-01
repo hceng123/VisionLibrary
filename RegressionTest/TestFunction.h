@@ -29,6 +29,7 @@ void TestInspChipCircular();
 void TestInspContour();
 void Test3D();
 void TestCalcCameraMTF();
+void TestCombineImageNew();
 void TestPointLineDistance();
 void TestTwoLineAngle();
 void TestTwoLineIntersect();

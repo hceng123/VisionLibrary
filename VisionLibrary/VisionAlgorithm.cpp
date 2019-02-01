@@ -7590,6 +7590,109 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     return pstRpy->enStatus;
 }
 
+/*static*/ VisionStatus VisionAlgorithm::combineImgNew(const PR_COMBINE_IMG_NEW_CMD *const pstCmd, PR_COMBINE_IMG_NEW_RPY *const pstRpy, bool bReplay/* = false*/) {
+    assert(pstCmd != nullptr && pstRpy != nullptr);
+    if (pstCmd->vecInputImages.empty()) {
+        WriteLog("Input image vector is empty");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    if (pstCmd->vecVecFrameCtr.empty()) {
+        WriteLog("Input image frame center is empty");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    const auto TOTAL_FRAME_NUMBER = pstCmd->vecVecFrameCtr.size() * pstCmd->vecVecFrameCtr[0].size();
+    if (pstCmd->vecInputImages.size() < TOTAL_FRAME_NUMBER) {
+        std::stringstream ss;
+        ss << "Input image size " << pstCmd->vecInputImages.size() << " less than total frame number " << TOTAL_FRAME_NUMBER;
+        WriteLog(ss.str());
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    auto topLftFrameCtr = pstCmd->vecVecFrameCtr.front().front();
+    auto btnRgtFrameCtr = pstCmd->vecVecFrameCtr.back().back();
+    const int IMAGE_WIDTH  = pstCmd->vecInputImages[0].cols;
+    const int IMAGE_HEIGHT = pstCmd->vecInputImages[0].rows;
+
+    if (btnRgtFrameCtr.x < topLftFrameCtr.x) {
+        std::stringstream ss;
+        ss << "Right side frame center " << btnRgtFrameCtr.x << " is smaller than left side frame center " << topLftFrameCtr.x;
+        WriteLog(ss.str());
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    if (btnRgtFrameCtr.y < topLftFrameCtr.y) {
+        std::stringstream ss;
+        ss << "Bottom side frame center " << btnRgtFrameCtr.y << " is smaller than top side frame center " << topLftFrameCtr.y;
+        WriteLog(ss.str());
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    int TOTAL_WIDTH  = btnRgtFrameCtr.x - topLftFrameCtr.x + IMAGE_WIDTH;
+    int TOTAL_HEIGHT = btnRgtFrameCtr.y - topLftFrameCtr.y + IMAGE_HEIGHT;
+    pstRpy->matResultImage = cv::Mat::zeros(TOTAL_HEIGHT, TOTAL_WIDTH, pstCmd->vecInputImages[0].type());
+    int index = 0;
+    for (int row = 0; row < pstCmd->vecVecFrameCtr.size(); ++ row)
+    for (int col = 0; col < pstCmd->vecVecFrameCtr[0].size(); ++ col) {
+        if (pstCmd->vecInputImages[index].empty()) {
+            std::stringstream ss;
+            ss << "Input image at index " << index << " is empty";
+            WriteLog(ss.str());
+            pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+            return pstRpy->enStatus;
+        }
+
+        auto ptFrameCtr = pstCmd->vecVecFrameCtr[row][col];
+        cv::Rect rectDstROI(ptFrameCtr.x - IMAGE_WIDTH / 2, ptFrameCtr.y - IMAGE_HEIGHT / 2, IMAGE_WIDTH, IMAGE_HEIGHT);
+        if (rectDstROI.x < 0) {
+            rectDstROI = CalcUtils::resizeRect(rectDstROI, cv::Size(rectDstROI.width + 2 * rectDstROI.x, rectDstROI.height));
+        }
+
+        if (rectDstROI.y < 0) {
+            rectDstROI = CalcUtils::resizeRect(rectDstROI, cv::Size(rectDstROI.width, rectDstROI.height + 2 * rectDstROI.y));
+        }
+
+        if ((rectDstROI.x + rectDstROI.width) > pstRpy->matResultImage.cols) {
+            int reduceSizeOneSide = (rectDstROI.x + rectDstROI.width) - pstRpy->matResultImage.cols;
+            rectDstROI = CalcUtils::resizeRect(rectDstROI, cv::Size(rectDstROI.width - 2 * reduceSizeOneSide, rectDstROI.height));
+        }
+
+        if ((rectDstROI.y + rectDstROI.height) > pstRpy->matResultImage.rows) {
+            int reduceSizeOneSide = (rectDstROI.y + rectDstROI.height) - pstRpy->matResultImage.rows;
+            rectDstROI = CalcUtils::resizeRect(rectDstROI, cv::Size(rectDstROI.width, rectDstROI.height - 2 * reduceSizeOneSide));
+        }
+
+        cv::Mat matSrc = pstCmd->vecInputImages[index];
+
+        if (rectDstROI.width != IMAGE_WIDTH || rectDstROI.height != IMAGE_HEIGHT) {
+            rectDstROI = cv::Rect(ptFrameCtr.x - rectDstROI.width / 2, ptFrameCtr.y - rectDstROI.height / 2, rectDstROI.width, rectDstROI.height);
+            cv::Rect rectSrcROI(IMAGE_WIDTH / 2 - rectDstROI.width / 2, IMAGE_HEIGHT / 2 - rectDstROI.height / 2, rectDstROI.width, rectDstROI.height);
+            matSrc = cv::Mat(pstCmd->vecInputImages[index], rectSrcROI);
+        }
+        cv::Mat matDstROI(pstRpy->matResultImage, rectDstROI);
+        matSrc.copyTo(matDstROI);
+        ++index;
+    }
+
+    if (pstCmd->bDrawFrame && pstRpy->matResultImage.type() == CV_8UC3) {
+        for (int row = 0; row < pstCmd->vecVecFrameCtr.size(); ++ row)
+        for (int col = 0; col < pstCmd->vecVecFrameCtr[0].size(); ++ col) {
+            auto ptFrameCtr = pstCmd->vecVecFrameCtr[row][col];
+            cv::Rect rectDstROI(ptFrameCtr.x - IMAGE_WIDTH / 2, ptFrameCtr.y - IMAGE_HEIGHT / 2, IMAGE_WIDTH, IMAGE_HEIGHT);
+            cv::rectangle(pstRpy->matResultImage, rectDstROI, CYAN_SCALAR, 1);
+        }
+    }
+
+    pstRpy->enStatus = VisionStatus::OK;
+    return pstRpy->enStatus;
+}
+
 /*static*/ VisionStatus VisionAlgorithm::threshold(const PR_THRESHOLD_CMD *const pstCmd, PR_THRESHOLD_RPY *const pstRpy, bool bReplay /*= false*/) {
     assert(pstCmd != nullptr && pstRpy != nullptr);
 
