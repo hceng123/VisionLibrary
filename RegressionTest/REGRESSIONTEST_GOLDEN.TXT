@@ -1758,6 +1758,12 @@ COMBINE IMAGE NEW REGRESSION TEST #1 STARTING
 PR_CombineImgNew status 0
 Compare with difference points cout 0
 
+---------------------------------------------
+COMBINE IMAGE NEW REGRESSION TEST #2 STARTING
+---------------------------------------------
+PR_CombineImgNew status 0
+Compare with difference points cout 5670
+
 ------------------------------------------
 TABLE MAPPING REGRESSION TEST #1 STARTING
 ------------------------------------------

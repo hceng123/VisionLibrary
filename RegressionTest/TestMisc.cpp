@@ -46,7 +46,7 @@ static cv::Mat generateChessBoardImage(int totalRow, int totalCol, int blockSize
     return matResult;
 }
 
-void TestCombineImageNew() {
+void TestCombineImageNew_1() {
     std::cout << std::endl << "---------------------------------------------";
     std::cout << std::endl << "COMBINE IMAGE NEW REGRESSION TEST #1 STARTING";
     std::cout << std::endl << "---------------------------------------------";
@@ -74,6 +74,42 @@ void TestCombineImageNew() {
     cv::Mat matCompare = stRpy.matResultImage - matResultChessBoardImage;
     int nonZeroCount = cv::countNonZero(matCompare);
     std::cout << "Compare with difference points cout " << nonZeroCount << std::endl;
+}
+
+void TestCombineImageNew_2() {
+    std::cout << std::endl << "---------------------------------------------";
+    std::cout << std::endl << "COMBINE IMAGE NEW REGRESSION TEST #2 STARTING";
+    std::cout << std::endl << "---------------------------------------------";
+    std::cout << std::endl;
+
+    cv::Mat matChessBoardImage = generateChessBoardImage(11, 11, 20);
+    PR_COMBINE_IMG_NEW_CMD stCmd;
+    PR_COMBINE_IMG_NEW_RPY stRpy;
+    stCmd.vecVecFrameCtr = VectorOfVectorOfPoint{ VectorOfPoint{ cv::Point(110, 110), cv::Point(312, 109)},
+        VectorOfPoint{ cv::Point(111, 312), cv::Point(310, 310) } };
+    stCmd.vecInputImages.push_back(matChessBoardImage);
+    stCmd.vecInputImages.push_back(matChessBoardImage);
+    stCmd.vecInputImages.push_back(matChessBoardImage);
+    stCmd.vecInputImages.push_back(matChessBoardImage);
+    stCmd.bDrawFrame = true;
+
+    PR_CombineImgNew(&stCmd, &stRpy);
+    std::cout << "PR_CombineImgNew status " << ToInt32(stRpy.enStatus) << std::endl;
+    if (!stRpy.matResultImage.empty())
+        cv::imwrite("./data/CombineImageNewResult_2.png", stRpy.matResultImage);
+
+    if (VisionStatus::OK != stRpy.enStatus)
+        return;
+
+    cv::Mat matResultChessBoardImage = generateChessBoardImage(21, 21, 20);
+    cv::Mat matCompare = stRpy.matResultImage - matResultChessBoardImage;
+    int nonZeroCount = cv::countNonZero(matCompare);
+    std::cout << "Compare with difference points cout " << nonZeroCount << std::endl;
+}
+
+void TestCombineImageNew() {
+    TestCombineImageNew_1();
+    TestCombineImageNew_2();
 }
 
 }
