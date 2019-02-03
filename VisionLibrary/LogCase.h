@@ -475,11 +475,13 @@ class LogCaseMatchTmpl : public LogCase
 public:
     explicit LogCaseMatchTmpl(const String &strPath, bool bReplay = false) : LogCase(strPath, bReplay) {}
     VisionStatus WriteCmd(const PR_MATCH_TEMPLATE_CMD *const pstCmd);
-    VisionStatus WriteRpy(const PR_MATCH_TEMPLATE_RPY *const pstRpy);
+    VisionStatus WriteRpy(const PR_MATCH_TEMPLATE_CMD *const pstCmd, const PR_MATCH_TEMPLATE_RPY *const pstRpy);
     virtual VisionStatus RunLogCase() override;
     virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
     static String StaticGetFolderPrefix();
+
 private:
+    cv::Rect _calcLogImageROI(const PR_MATCH_TEMPLATE_CMD *const pstCmd);
     const String _strKeyRecordId        = "RecordId";
     const String _strKeySrchWindow      = "SrchWindow";
     const String _strKeyMotion          = "Motion";

@@ -1261,17 +1261,30 @@ VisionStatus LogCaseMatchTmpl::WriteCmd(const PR_MATCH_TEMPLATE_CMD *const pstCm
     CSimpleIni ini(false, false, false);
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile(cmdRpyFilePath.c_str());
-    ini.SetValue(_CMD_SECTION.c_str(), _strKeySrchWindow.c_str(), _formatRect(pstCmd->rectSrchWindow).c_str());
+    auto rectLogROI = _calcLogImageROI(pstCmd);
+    auto rectSrchWidnow(pstCmd->rectSrchWindow);
+    rectSrchWidnow.x -= rectLogROI.x;
+    rectSrchWidnow.y -= rectLogROI.y;
+    ini.SetValue(_CMD_SECTION.c_str(), _strKeySrchWindow.c_str(), _formatRect(rectSrchWidnow).c_str());
     ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyMotion.c_str(), ToInt32(pstCmd->enMotion));
     ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyRecordId.c_str(), pstCmd->nRecordId);
     ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyAlgorithm.c_str(), ToInt32(pstCmd->enAlgorithm));
     ini.SetBoolValue(_CMD_SECTION.c_str(), _strKeySubPixelRefine.c_str(), pstCmd->bSubPixelRefine);
     ini.SaveFile(cmdRpyFilePath.c_str());
-    cv::imwrite(_strLogCasePath + _IMAGE_NAME, pstCmd->matInputImg);
+    cv::imwrite(_strLogCasePath + _IMAGE_NAME, cv::Mat(pstCmd->matInputImg, rectLogROI));
     return VisionStatus::OK;
 }
 
-VisionStatus LogCaseMatchTmpl::WriteRpy(const PR_MATCH_TEMPLATE_RPY *const pstRpy) {
+cv::Rect LogCaseMatchTmpl::_calcLogImageROI(const PR_MATCH_TEMPLATE_CMD *const pstCmd) {
+    if (pstCmd->matInputImg.total() < 512 * 512)
+        return cv::Rect(0, 0, pstCmd->matInputImg.cols, pstCmd->matInputImg.rows);
+
+    cv::Rect rectLogROI = CalcUtils::resizeRect(pstCmd->rectSrchWindow, cv::Size(pstCmd->rectSrchWindow.width * 2, pstCmd->rectSrchWindow.height * 2));
+    CalcUtils::adjustRectROI(rectLogROI, pstCmd->matInputImg);
+    return rectLogROI;
+}
+
+VisionStatus LogCaseMatchTmpl::WriteRpy(const PR_MATCH_TEMPLATE_CMD *const pstCmd, const PR_MATCH_TEMPLATE_RPY *const pstRpy) {
     CSimpleIni ini(false, false, false);
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile(cmdRpyFilePath.c_str());
@@ -1280,8 +1293,10 @@ VisionStatus LogCaseMatchTmpl::WriteRpy(const PR_MATCH_TEMPLATE_RPY *const pstRp
     ini.SetDoubleValue(_RPY_SECTION.c_str(), _strKeyRotation.c_str(), pstRpy->fRotation);
     ini.SetDoubleValue(_RPY_SECTION.c_str(), _strKeyMatchScore.c_str(), pstRpy->fMatchScore);
     ini.SaveFile(cmdRpyFilePath.c_str());
-    if (! pstRpy->matResultImg.empty())
-        cv::imwrite(_strLogCasePath + _RESULT_IMAGE_NAME, pstRpy->matResultImg);
+    if (!pstRpy->matResultImg.empty()) {
+        auto rectLogROI = _calcLogImageROI(pstCmd);
+        cv::imwrite(_strLogCasePath + _RESULT_IMAGE_NAME, cv::Mat(pstRpy->matResultImg, rectLogROI));
+    }
     _zip();
     return VisionStatus::OK;
 }
@@ -1302,7 +1317,7 @@ VisionStatus LogCaseMatchTmpl::RunLogCase() {
 
     PR_MATCH_TEMPLATE_RPY stRpy;
     enStatus = VisionAlgorithm::matchTemplate(&stCmd, &stRpy, true);
-    WriteRpy(&stRpy);
+    WriteRpy(&stCmd, &stRpy);
     return enStatus;
 }
 
