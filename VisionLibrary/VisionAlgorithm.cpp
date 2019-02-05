@@ -1118,7 +1118,7 @@ VisionStatus VisionAlgorithm::inspDevice(PR_INSP_DEVICE_CMD *pstInspDeviceCmd, P
     if (pstRpy->fMatchScore <= pstCmd->fMinMatchScore)
         pstRpy->enStatus = VisionStatus::MATCH_SCORE_REJECT;
 
-    if (! isAutoMode()) {
+    if (!isAutoMode()) {
         if (pstCmd->matInputImg.channels() > 1)
             pstRpy->matResultImg = pstCmd->matInputImg.clone();
         else
@@ -1731,7 +1731,7 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
         cv::rectangle(pstRpy->matResultImg, pstCmd->rectSrchWindow, YELLOW_SCALAR, 2);
     }
 
-    FINISH_LOGCASE;
+    FINISH_LOGCASE_EX;
     MARK_FUNCTION_END_TIME;
     return pstRpy->enStatus;
 }
@@ -4435,7 +4435,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     
     pstRpy->enStatus = VisionStatus::OK;
 
-    const int nMarginToChip = 20;
+    const int nMarginToChip = 40;
     const int nEnlargeChipMargin = 10;
     for (auto enDir : pstCmd->vecSrchLeadDirections) {
         cv::Rect rectSubRegion;
@@ -4451,7 +4451,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
             cv::transpose(matLead, matLeadTmp);
             cv::flip(matLeadTmp, matLeadTmp, 0); //transpose+flip(0)=CCW
             rectSubRegion = cv::Rect(0, pstCmd->rectChipBody.y - pstCmd->rectSrchWindow.y - nEnlargeChipMargin, 
-                pstCmd->rectChipBody.x - pstCmd->rectSrchWindow.x, pstCmd->rectChipBody.height + nMarginToChip * 2);
+                pstCmd->rectChipBody.x - pstCmd->rectSrchWindow.x + nMarginToChip, pstCmd->rectChipBody.height + nMarginToChip * 2);
         }else if (PR_DIRECTION::DOWN == enDir) {
             cv::flip(matPad, matPadTmp, -1);    //flip(-1)=180
             cv::flip(matLead, matLeadTmp, -1);    //flip(-1)=180
@@ -4650,13 +4650,19 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
         // Adjust the search window for lead according to the find out lead position.
         auto leadOffsetInSrchWindowX = ToInt32(ptLeadPosition.x - rectLeadSrchWindow.width  / 2.f);
         auto leadOffsetInSrchWindowY = ToInt32(ptLeadPosition.y - rectLeadSrchWindow.height / 2.f);
+        cv::Point ptLeadSrchWindowCtr(rectLeadSrchWindow.x + rectLeadSrchWindow.width / 2, rectLeadSrchWindow.y + rectLeadSrchWindow.height / 2);
         if (PR_DIRECTION::UP == enDir || PR_DIRECTION::DOWN == enDir) {
-            rectLeadSrchWindow.x += leadOffsetInSrchWindowX; // Make lead search window use lead center as center
-            rectLeadSrchWindow.width +=  abs(leadOffsetInSrchWindowX) * 2; // Enlarge the window to make the segment line don't change.
+            // Make lead search window use lead center as center
+            ptLeadSrchWindowCtr.x += leadOffsetInSrchWindowX;
+            rectLeadSrchWindow.width  +=  abs(leadOffsetInSrchWindowX) * 2; // Enlarge the window to make the segment line don't change.
         } else {
-            rectLeadSrchWindow.y += leadOffsetInSrchWindowY; // Make lead search window use lead center as center
-            rectLeadSrchWindow.height += abs(leadOffsetInSrchWindowY) * 2; // Enlarge the window to make the segment position between lead don't change.
+            // Make lead search window use lead center as center
+            ptLeadSrchWindowCtr.y += leadOffsetInSrchWindowY;
+            rectLeadSrchWindow.height +=  abs(leadOffsetInSrchWindowY) * 2; // Enlarge the window to make the segment line don't change.
         }
+
+        rectLeadSrchWindow = cv::Rect(ptLeadSrchWindowCtr.x - rectLeadSrchWindow.width / 2, ptLeadSrchWindowCtr.y - rectLeadSrchWindow.height / 2,
+                rectLeadSrchWindow.width, rectLeadSrchWindow.height);
 
         rectLeadSrchWindow.x += rectSubRegion.x + pstCmd->rectSrchWindow.x;
         rectLeadSrchWindow.y += rectSubRegion.y + pstCmd->rectSrchWindow.y;

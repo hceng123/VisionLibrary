@@ -346,12 +346,14 @@ class LogCaseSrchFiducial : public LogCase
 {
 public:
     explicit LogCaseSrchFiducial(const String &strPath, bool bReplay = false) : LogCase(strPath, bReplay) {}
-    VisionStatus WriteCmd(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd);
-    VisionStatus WriteRpy(PR_SRCH_FIDUCIAL_MARK_RPY *pstRpy);
+    VisionStatus WriteCmd(const PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd);
+    VisionStatus WriteRpy(const PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd, const PR_SRCH_FIDUCIAL_MARK_RPY *pstRpy);
     virtual VisionStatus RunLogCase() override;
     virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
     static String StaticGetFolderPrefix();
+
 private:
+    cv::Rect _calcLogImageROI(const PR_SRCH_FIDUCIAL_MARK_CMD *const pstCmd);
     const String _strKeySrchWindow  = "SrchWindow";
     const String _strKeyType        = "Type";
     const String _strKeySize        = "Size";
