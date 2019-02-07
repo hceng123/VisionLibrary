@@ -1464,6 +1464,7 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
     VectorOfRect vecRect = pstCmd->vecRectBases;
     vecRect.push_back(pstCmd->rectROI);
     cv::Rect rectBounding = CalcUtils::boundingRect(vecRect);
+    CalcUtils::adjustRectROI(rectBounding, pstCmd->matHeight);
     cv::Mat matHeight(pstCmd->matHeight, rectBounding);
     cv::Mat matMask;
     if (!pstCmd->matMask.empty())
