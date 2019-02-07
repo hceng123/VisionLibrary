@@ -1118,7 +1118,7 @@ VisionStatus VisionAlgorithm::inspDevice(PR_INSP_DEVICE_CMD *pstInspDeviceCmd, P
     if (pstRpy->fMatchScore <= pstCmd->fMinMatchScore)
         pstRpy->enStatus = VisionStatus::MATCH_SCORE_REJECT;
 
-    if (! isAutoMode()) {
+    if (!isAutoMode()) {
         if (pstCmd->matInputImg.channels() > 1)
             pstRpy->matResultImg = pstCmd->matInputImg.clone();
         else
@@ -1148,7 +1148,7 @@ VisionStatus VisionAlgorithm::inspDevice(PR_INSP_DEVICE_CMD *pstInspDeviceCmd, P
         cv::polylines(pstRpy->matResultImg, vecVecPoint, true, BLUE_SCALAR, nLineWidth);
         cv::rectangle(pstRpy->matResultImg, pstCmd->rectSrchWindow, GREEN_SCALAR, 1);
     }
-    FINISH_LOGCASE;
+    FINISH_LOGCASE_EX;
     MARK_FUNCTION_END_TIME;
     return pstRpy->enStatus;
 }
@@ -1731,7 +1731,7 @@ VisionStatus VisionAlgorithm::_writeDeviceRecord(PR_LRN_DEVICE_RPY *pLrnDeviceRp
         cv::rectangle(pstRpy->matResultImg, pstCmd->rectSrchWindow, YELLOW_SCALAR, 2);
     }
 
-    FINISH_LOGCASE;
+    FINISH_LOGCASE_EX;
     MARK_FUNCTION_END_TIME;
     return pstRpy->enStatus;
 }
@@ -4435,7 +4435,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     
     pstRpy->enStatus = VisionStatus::OK;
 
-    const int nMarginToChip = 20;
+    const int nMarginToChip = 40;
     const int nEnlargeChipMargin = 10;
     for (auto enDir : pstCmd->vecSrchLeadDirections) {
         cv::Rect rectSubRegion;
@@ -4451,7 +4451,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
             cv::transpose(matLead, matLeadTmp);
             cv::flip(matLeadTmp, matLeadTmp, 0); //transpose+flip(0)=CCW
             rectSubRegion = cv::Rect(0, pstCmd->rectChipBody.y - pstCmd->rectSrchWindow.y - nEnlargeChipMargin, 
-                pstCmd->rectChipBody.x - pstCmd->rectSrchWindow.x, pstCmd->rectChipBody.height + nMarginToChip * 2);
+                pstCmd->rectChipBody.x - pstCmd->rectSrchWindow.x + nMarginToChip, pstCmd->rectChipBody.height + nMarginToChip * 2);
         }else if (PR_DIRECTION::DOWN == enDir) {
             cv::flip(matPad, matPadTmp, -1);    //flip(-1)=180
             cv::flip(matLead, matLeadTmp, -1);    //flip(-1)=180
@@ -4650,13 +4650,19 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
         // Adjust the search window for lead according to the find out lead position.
         auto leadOffsetInSrchWindowX = ToInt32(ptLeadPosition.x - rectLeadSrchWindow.width  / 2.f);
         auto leadOffsetInSrchWindowY = ToInt32(ptLeadPosition.y - rectLeadSrchWindow.height / 2.f);
+        cv::Point ptLeadSrchWindowCtr(rectLeadSrchWindow.x + rectLeadSrchWindow.width / 2, rectLeadSrchWindow.y + rectLeadSrchWindow.height / 2);
         if (PR_DIRECTION::UP == enDir || PR_DIRECTION::DOWN == enDir) {
-            rectLeadSrchWindow.x += leadOffsetInSrchWindowX; // Make lead search window use lead center as center
-            rectLeadSrchWindow.width +=  abs(leadOffsetInSrchWindowX) * 2; // Enlarge the window to make the segment line don't change.
+            // Make lead search window use lead center as center
+            ptLeadSrchWindowCtr.x += leadOffsetInSrchWindowX;
+            rectLeadSrchWindow.width  +=  abs(leadOffsetInSrchWindowX) * 2; // Enlarge the window to make the segment line don't change.
         } else {
-            rectLeadSrchWindow.y += leadOffsetInSrchWindowY; // Make lead search window use lead center as center
-            rectLeadSrchWindow.height += abs(leadOffsetInSrchWindowY) * 2; // Enlarge the window to make the segment position between lead don't change.
+            // Make lead search window use lead center as center
+            ptLeadSrchWindowCtr.y += leadOffsetInSrchWindowY;
+            rectLeadSrchWindow.height +=  abs(leadOffsetInSrchWindowY) * 2; // Enlarge the window to make the segment line don't change.
         }
+
+        rectLeadSrchWindow = cv::Rect(ptLeadSrchWindowCtr.x - rectLeadSrchWindow.width / 2, ptLeadSrchWindowCtr.y - rectLeadSrchWindow.height / 2,
+                rectLeadSrchWindow.width, rectLeadSrchWindow.height);
 
         rectLeadSrchWindow.x += rectSubRegion.x + pstCmd->rectSrchWindow.x;
         rectLeadSrchWindow.y += rectSubRegion.y + pstCmd->rectSrchWindow.y;
@@ -7586,6 +7592,109 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     }
 
     MARK_FUNCTION_END_TIME;
+    pstRpy->enStatus = VisionStatus::OK;
+    return pstRpy->enStatus;
+}
+
+/*static*/ VisionStatus VisionAlgorithm::combineImgNew(const PR_COMBINE_IMG_NEW_CMD *const pstCmd, PR_COMBINE_IMG_NEW_RPY *const pstRpy, bool bReplay/* = false*/) {
+    assert(pstCmd != nullptr && pstRpy != nullptr);
+    if (pstCmd->vecInputImages.empty()) {
+        WriteLog("Input image vector is empty");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    if (pstCmd->vecVecFrameCtr.empty()) {
+        WriteLog("Input image frame center is empty");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    const auto TOTAL_FRAME_NUMBER = pstCmd->vecVecFrameCtr.size() * pstCmd->vecVecFrameCtr[0].size();
+    if (pstCmd->vecInputImages.size() < TOTAL_FRAME_NUMBER) {
+        std::stringstream ss;
+        ss << "Input image size " << pstCmd->vecInputImages.size() << " less than total frame number " << TOTAL_FRAME_NUMBER;
+        WriteLog(ss.str());
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    auto topLftFrameCtr = pstCmd->vecVecFrameCtr.front().front();
+    auto btnRgtFrameCtr = pstCmd->vecVecFrameCtr.back().back();
+    const int IMAGE_WIDTH  = pstCmd->vecInputImages[0].cols;
+    const int IMAGE_HEIGHT = pstCmd->vecInputImages[0].rows;
+
+    if (btnRgtFrameCtr.x < topLftFrameCtr.x) {
+        std::stringstream ss;
+        ss << "Right side frame center " << btnRgtFrameCtr.x << " is smaller than left side frame center " << topLftFrameCtr.x;
+        WriteLog(ss.str());
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    if (btnRgtFrameCtr.y < topLftFrameCtr.y) {
+        std::stringstream ss;
+        ss << "Bottom side frame center " << btnRgtFrameCtr.y << " is smaller than top side frame center " << topLftFrameCtr.y;
+        WriteLog(ss.str());
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    int TOTAL_WIDTH  = btnRgtFrameCtr.x - topLftFrameCtr.x + IMAGE_WIDTH;
+    int TOTAL_HEIGHT = btnRgtFrameCtr.y - topLftFrameCtr.y + IMAGE_HEIGHT;
+    pstRpy->matResultImage = cv::Mat::zeros(TOTAL_HEIGHT, TOTAL_WIDTH, pstCmd->vecInputImages[0].type());
+    int index = 0;
+    for (int row = 0; row < pstCmd->vecVecFrameCtr.size(); ++ row)
+    for (int col = 0; col < pstCmd->vecVecFrameCtr[0].size(); ++ col) {
+        if (pstCmd->vecInputImages[index].empty()) {
+            std::stringstream ss;
+            ss << "Input image at index " << index << " is empty";
+            WriteLog(ss.str());
+            pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+            return pstRpy->enStatus;
+        }
+
+        auto ptFrameCtr = pstCmd->vecVecFrameCtr[row][col];
+        cv::Rect rectDstROI(ptFrameCtr.x - IMAGE_WIDTH / 2, ptFrameCtr.y - IMAGE_HEIGHT / 2, IMAGE_WIDTH, IMAGE_HEIGHT);
+        if (rectDstROI.x < 0) {
+            rectDstROI = CalcUtils::resizeRect(rectDstROI, cv::Size(rectDstROI.width + 2 * rectDstROI.x, rectDstROI.height));
+        }
+
+        if (rectDstROI.y < 0) {
+            rectDstROI = CalcUtils::resizeRect(rectDstROI, cv::Size(rectDstROI.width, rectDstROI.height + 2 * rectDstROI.y));
+        }
+
+        if ((rectDstROI.x + rectDstROI.width) > pstRpy->matResultImage.cols) {
+            int reduceSizeOneSide = (rectDstROI.x + rectDstROI.width) - pstRpy->matResultImage.cols;
+            rectDstROI = CalcUtils::resizeRect(rectDstROI, cv::Size(rectDstROI.width - 2 * reduceSizeOneSide, rectDstROI.height));
+        }
+
+        if ((rectDstROI.y + rectDstROI.height) > pstRpy->matResultImage.rows) {
+            int reduceSizeOneSide = (rectDstROI.y + rectDstROI.height) - pstRpy->matResultImage.rows;
+            rectDstROI = CalcUtils::resizeRect(rectDstROI, cv::Size(rectDstROI.width, rectDstROI.height - 2 * reduceSizeOneSide));
+        }
+
+        cv::Mat matSrc = pstCmd->vecInputImages[index];
+
+        if (rectDstROI.width != IMAGE_WIDTH || rectDstROI.height != IMAGE_HEIGHT) {
+            rectDstROI = cv::Rect(ptFrameCtr.x - rectDstROI.width / 2, ptFrameCtr.y - rectDstROI.height / 2, rectDstROI.width, rectDstROI.height);
+            cv::Rect rectSrcROI(IMAGE_WIDTH / 2 - rectDstROI.width / 2, IMAGE_HEIGHT / 2 - rectDstROI.height / 2, rectDstROI.width, rectDstROI.height);
+            matSrc = cv::Mat(pstCmd->vecInputImages[index], rectSrcROI);
+        }
+        cv::Mat matDstROI(pstRpy->matResultImage, rectDstROI);
+        matSrc.copyTo(matDstROI);
+        ++index;
+    }
+
+    if (pstCmd->bDrawFrame && pstRpy->matResultImage.type() == CV_8UC3) {
+        for (int row = 0; row < pstCmd->vecVecFrameCtr.size(); ++ row)
+        for (int col = 0; col < pstCmd->vecVecFrameCtr[0].size(); ++ col) {
+            auto ptFrameCtr = pstCmd->vecVecFrameCtr[row][col];
+            cv::Rect rectDstROI(ptFrameCtr.x - IMAGE_WIDTH / 2, ptFrameCtr.y - IMAGE_HEIGHT / 2, IMAGE_WIDTH, IMAGE_HEIGHT);
+            cv::rectangle(pstRpy->matResultImage, rectDstROI, CYAN_SCALAR, 1);
+        }
+    }
+
     pstRpy->enStatus = VisionStatus::OK;
     return pstRpy->enStatus;
 }

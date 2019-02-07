@@ -346,12 +346,14 @@ class LogCaseSrchFiducial : public LogCase
 {
 public:
     explicit LogCaseSrchFiducial(const String &strPath, bool bReplay = false) : LogCase(strPath, bReplay) {}
-    VisionStatus WriteCmd(PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd);
-    VisionStatus WriteRpy(PR_SRCH_FIDUCIAL_MARK_RPY *pstRpy);
+    VisionStatus WriteCmd(const PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd);
+    VisionStatus WriteRpy(const PR_SRCH_FIDUCIAL_MARK_CMD *pstCmd, const PR_SRCH_FIDUCIAL_MARK_RPY *pstRpy);
     virtual VisionStatus RunLogCase() override;
     virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
     static String StaticGetFolderPrefix();
+
 private:
+    cv::Rect _calcLogImageROI(const PR_SRCH_FIDUCIAL_MARK_CMD *const pstCmd);
     const String _strKeySrchWindow  = "SrchWindow";
     const String _strKeyType        = "Type";
     const String _strKeySize        = "Size";
@@ -475,11 +477,13 @@ class LogCaseMatchTmpl : public LogCase
 public:
     explicit LogCaseMatchTmpl(const String &strPath, bool bReplay = false) : LogCase(strPath, bReplay) {}
     VisionStatus WriteCmd(const PR_MATCH_TEMPLATE_CMD *const pstCmd);
-    VisionStatus WriteRpy(const PR_MATCH_TEMPLATE_RPY *const pstRpy);
+    VisionStatus WriteRpy(const PR_MATCH_TEMPLATE_CMD *const pstCmd, const PR_MATCH_TEMPLATE_RPY *const pstRpy);
     virtual VisionStatus RunLogCase() override;
     virtual String GetFolderPrefix()    const { return StaticGetFolderPrefix(); }
     static String StaticGetFolderPrefix();
+
 private:
+    cv::Rect _calcLogImageROI(const PR_MATCH_TEMPLATE_CMD *const pstCmd);
     const String _strKeyRecordId        = "RecordId";
     const String _strKeySrchWindow      = "SrchWindow";
     const String _strKeyMotion          = "Motion";

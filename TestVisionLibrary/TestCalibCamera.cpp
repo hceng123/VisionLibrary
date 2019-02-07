@@ -241,7 +241,7 @@ cv::Mat readMapFromFile(const std::string& strFileName) {
 }
 
 void saveResult(const PR_CALIBRATE_CAMERA_RPY& stRpy) {
-    cv::FileStorage fs("./data/CameraCalibrate.yml", cv::FileStorage::WRITE);
+    cv::FileStorage fs("./data/CameraCalibrate12.yml", cv::FileStorage::WRITE);
     if (!fs.isOpened())
         return;
 
@@ -250,7 +250,7 @@ void saveResult(const PR_CALIBRATE_CAMERA_RPY& stRpy) {
     cv::write(fs, "DistCoeffs", stRpy.matDistCoeffs);
     cv::write(fs, "IntrinsicMatrix", stRpy.matIntrinsicMatrix);
     cv::write(fs, "ExtrinsicMatrix", stRpy.matExtrinsicMatrix);
-    auto matRestoreImageMap1 = readMapFromFile("./data/DistortionIndex.csv");
+    auto matRestoreImageMap1 = readMapFromFile("./data/DistortionIndex20190127/DistortionIndex12.csv");
     //cv::write(fs, "RestoreImageMap1", stRpy.vecMatRestoreMap[0]);
     cv::write(fs, "RestoreImageMap1", matRestoreImageMap1);
     cv::write(fs, "RestoreImageMap2", stRpy.vecMatRestoreMap[1]);
