@@ -6828,9 +6828,53 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
 
     MARK_FUNCTION_START_TIME;
 
+    Unwrap::motorCalib3D(pstCmd, pstRpy);
+
+    MARK_FUNCTION_END_TIME;
+    return pstRpy->enStatus;
+}
+
+/*static*/ VisionStatus VisionAlgorithm::motorCalib3DNew(const PR_MOTOR_CALIB_3D_CMD *const pstCmd, PR_MOTOR_CALIB_3D_NEW_RPY *const pstRpy, bool bReplay /*= false*/) {
+    if (pstCmd->vecPairHeightPhase.size() < 2) {
+        WriteLog("The input height count is less than 2.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    MARK_FUNCTION_START_TIME;
+
     Unwrap::motorCalib3DNew(pstCmd, pstRpy);
 
     MARK_FUNCTION_END_TIME;
+    return pstRpy->enStatus;
+}
+
+/*static*/ VisionStatus VisionAlgorithm::calibDlpOffset(const PR_CALIB_DLP_OFFSET_CMD *const pstCmd, PR_CALIB_DLP_OFFSET_RPY *const pstRpy, bool bReplay /*= false*/) {
+    assert(pstCmd != nullptr && pstRpy != nullptr);
+
+    if (pstCmd->nCalibPosRows <= 0 || pstCmd->nCalibPosCols <= 0) {
+        std::stringstream ss;
+        ss << "The nCalibPosRows " << pstCmd->nCalibPosRows << " and nCalibPosCols " << pstCmd->nCalibPosCols << " is invalid";
+        WriteLog(ss.str());
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    for (int i = 0; i < NUM_OF_DLP; ++ i) {
+        if (pstCmd->arrVecDlpH[i].empty() || pstCmd->arrVecDlpH[i].size() != pstCmd->nCalibPosRows * pstCmd->nCalibPosCols) {
+            std::stringstream ss;
+            ss << "DLP " << i + 1 << " input number of frame heights " << pstCmd->arrVecDlpH[i].size() << " is invalid";
+            WriteLog(ss.str());
+            pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+            return pstRpy->enStatus;
+        }
+    }
+
+    MARK_FUNCTION_START_TIME;
+
+    MARK_FUNCTION_END_TIME;
+
+    pstRpy->enStatus = VisionStatus::OK;
     return pstRpy->enStatus;
 }
 
@@ -6908,6 +6952,87 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     //SETUP_LOGCASE(LogCaseCalc3DHeight);
 
     Unwrap::calc3DHeight(pstCmd, pstRpy);
+
+    //FINISH_LOGCASE;
+    MARK_FUNCTION_END_TIME;
+    pstRpy->enStatus = VisionStatus::OK;
+    return pstRpy->enStatus;
+}
+
+/*static*/ VisionStatus VisionAlgorithm::calc3DHeightNew(const PR_CALC_3D_HEIGHT_NEW_CMD *const pstCmd, PR_CALC_3D_HEIGHT_RPY *const pstRpy, bool bReplay /*= false*/) {
+    assert(pstCmd != nullptr && pstRpy != nullptr);
+
+    if (pstCmd->vecInputImgs.size() < 8) {
+        WriteLog("The input image count is less than 8.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    for (const auto &mat : pstCmd->vecInputImgs) {
+        if (mat.empty()) {
+            WriteLog("The input image is empty.");
+            pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+            return pstRpy->enStatus;
+        }
+    }
+
+    if (pstCmd->matThickToThinK.empty()) {
+        WriteLog("The matThickToThinK is empty.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    if (pstCmd->matBaseWrappedAlpha.empty()) {
+        WriteLog("matBaseWrappedAlpha is empty.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    if (pstCmd->matBaseWrappedAlpha.size() != pstCmd->vecInputImgs[0].size()) {
+        WriteLog("The size of matBaseWrappedAlpha is not match with the input image size..");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    if (pstCmd->matBaseWrappedBeta.empty()) {
+        WriteLog("matBaseWrappedBeta is empty.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    if (pstCmd->nRemoveBetaJumpMaxSpan < 0 || pstCmd->nRemoveBetaJumpMinSpan < 0 || pstCmd->nRemoveBetaJumpMinSpan > pstCmd->nRemoveBetaJumpMaxSpan) {
+        std::stringstream ss;
+        ss << "The RemoveBetaJumpMaxSpan " << pstCmd->nRemoveBetaJumpMaxSpan << " and RemoveBetaJumpMinSpan " << pstCmd->nRemoveBetaJumpMinSpan << " is invalid.";
+        WriteLog(ss.str());
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    if (pstCmd->bUseThinnestPattern) {
+        if (pstCmd->matBaseWrappedGamma.empty()) {
+            WriteLog("matBaseWrappedGamma is empty.");
+            pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+            return pstRpy->enStatus;
+        }
+
+        if (pstCmd->matThickToThinnestK.empty()) {
+            WriteLog("matThickToThinnestK is empty.");
+            pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+            return pstRpy->enStatus;
+        }
+
+        if (pstCmd->vecInputImgs.size() != 3 * PR_GROUP_TEXTURE_IMG_COUNT) {
+            WriteLog("Please input 12 images if using the thinnest pattern.");
+            pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+            return pstRpy->enStatus;
+        }
+    }
+
+    MARK_FUNCTION_START_TIME;
+    //The Calc3DHeight logcase need to log 12 images, which is too slow when log always, and not useful right now, so disable it first.
+    //SETUP_LOGCASE(LogCaseCalc3DHeight);
+
+    Unwrap::calc3DHeightNew(pstCmd, pstRpy);
 
     //FINISH_LOGCASE;
     MARK_FUNCTION_END_TIME;

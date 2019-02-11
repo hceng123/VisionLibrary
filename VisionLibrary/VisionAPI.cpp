@@ -489,6 +489,20 @@ PR_FUNCTION_ENTRY
 PR_FUNCTION_EXIT
 }
 
+VisionAPI VisionStatus PR_MotorCalib3DNew(const PR_MOTOR_CALIB_3D_CMD *const pstCmd, PR_MOTOR_CALIB_3D_NEW_RPY *const pstRpy)
+{
+PR_FUNCTION_ENTRY
+    return VisionAlgorithm::motorCalib3DNew(pstCmd, pstRpy);
+PR_FUNCTION_EXIT
+}
+
+VisionAPI VisionStatus PR_CalibDlpOffset(const PR_CALIB_DLP_OFFSET_CMD *const pstCmd, PR_CALIB_DLP_OFFSET_RPY *const pstRpy)
+{
+PR_FUNCTION_ENTRY
+    return VisionAlgorithm::calibDlpOffset(pstCmd, pstRpy);
+PR_FUNCTION_EXIT
+}
+
 VisionAPI VisionStatus PR_Integrate3DCalib(const PR_INTEGRATE_3D_CALIB_CMD *const pstCmd, PR_INTEGRATE_3D_CALIB_RPY *const pstRpy)
 {
 PR_FUNCTION_ENTRY
@@ -500,6 +514,13 @@ VisionAPI VisionStatus PR_Calc3DHeight(const PR_CALC_3D_HEIGHT_CMD *const pstCmd
 {
 PR_FUNCTION_ENTRY
     return VisionAlgorithm::calc3DHeight(pstCmd, pstRpy);
+PR_FUNCTION_EXIT
+}
+
+VisionAPI VisionStatus PR_Calc3DHeightNew(const PR_CALC_3D_HEIGHT_NEW_CMD *const pstCmd, PR_CALC_3D_HEIGHT_RPY *const pstRpy)
+{
+PR_FUNCTION_ENTRY
+    return VisionAlgorithm::calc3DHeightNew(pstCmd, pstRpy);
 PR_FUNCTION_EXIT
 }
 
