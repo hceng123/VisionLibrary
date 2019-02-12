@@ -1680,6 +1680,23 @@ ThickToThinnestK:
 MOTOR 3D CALIB REGRESSION TEST #1 STARTING
 --------------------------------------------
 PR_MotorCalib3D status 0
+0.000 
+0.000 
+0.000 
+0.000 
+-0.000 
+-0.000 
+-0.000 
+0.000 
+0.000 
+0.558 
+-0.005 
+-0.000 
+
+----------------------------------------------
+MOTOR 3D CALIB NEW REGRESSION TEST #1 STARTING
+----------------------------------------------
+PR_MotorCalib3D status 0
 -7.609 
 -6.887 
 -6.504 
