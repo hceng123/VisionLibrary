@@ -730,6 +730,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
     //TestCalc3DHeight_With_IntegrateCalibParam();
     //TestMerge3DHeight();
+    TestCalibDlpOffset_1();
 
     //TestIntegrate3DCalibHaoYu();
 
@@ -809,7 +810,7 @@ int _tmain(int argc, _TCHAR* argv[])
     
     //TestCombineImageNew_1();
     //TestCombineImageNew_2();
-    TestCombineMachineImage();
+    //TestCombineMachineImage();
 
     PR_DumpTimeLog("./Vision/Time.log");
     std::cout << "Press any key to exit." << std::endl;

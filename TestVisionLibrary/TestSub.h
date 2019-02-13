@@ -31,6 +31,7 @@ void TestCalib3DHeight_03();
 void TestIntegrate3DCalib();
 void TestCalc3DHeight_With_NormalCalibParam();
 void TestCalc3DHeight_With_IntegrateCalibParam();
+void TestCalibDlpOffset_1();
 
 void TestCalcMTF();
 void TestCalcPD();

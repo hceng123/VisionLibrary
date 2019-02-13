@@ -95,5 +95,8 @@
     <ClCompile Include="TestComineMachineImage.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\VisionLibrary\CalcUtils.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

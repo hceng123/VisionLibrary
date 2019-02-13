@@ -2425,7 +2425,7 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
     cv::Mat arrMatQ[NUM_OF_DLP];
 
     for (int nDlp = 0; nDlp < NUM_OF_DLP; ++ nDlp) {
-        pstRpy->fOffset[nDlp] = arryMeanZ[nDlp] - arryMeanZ[3]; // To return out the result
+        pstRpy->arrOffset[nDlp] = arryMeanZ[nDlp] - arryMeanZ[3]; // To return out the result
         cv::reduce(arrVecQ[nDlp], arrMatQ[nDlp], 0, cv::ReduceTypes::REDUCE_AVG);
 
         float zp0 = -arrMatP[nDlp].at<float>(0) * cx * pstCmd->fResolution - arrMatP[nDlp].at<float>(1) * cy * pstCmd->fResolution;

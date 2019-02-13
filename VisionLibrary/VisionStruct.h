@@ -1247,7 +1247,7 @@ struct PR_CALIB_DLP_OFFSET_CMD {
 
 struct PR_CALIB_DLP_OFFSET_RPY {
     VisionStatus            enStatus;
-    float                   fOffset[NUM_OF_DLP];
+    float                   arrOffset[NUM_OF_DLP];
     cv::Mat                 arrMatRotationSurface[NUM_OF_DLP];
 };
 
