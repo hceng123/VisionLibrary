@@ -1,3 +1,7 @@
+#include <iostream>
+#include <numeric>
+#include <limits>
+
 #include "Unwrap.h"
 #include "opencv2/imgproc.hpp"
 #include "opencv2/highgui.hpp"
@@ -6,9 +10,8 @@
 #include "TimeLog.h"
 #include "Log.h"
 #include "Config.h"
-#include <iostream>
-#include <numeric>
-#include <limits>
+#include "Auxiliary.hpp"
+
 
 #define MARK_FUNCTION_START_TIME    CStopWatch      stopWatch; __int64 functionStart = stopWatch.AbsNow()
 #define MARK_FUNCTION_END_TIME      TimeLog::GetInstance()->addTimeLog( __FUNCTION__, stopWatch.AbsNow() - functionStart)
@@ -1323,7 +1326,7 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
         cv::Mat matXX;
         matXX.push_back(cv::Mat(vecXt).reshape(1, 1));
         matXX.push_back(cv::Mat(vecYt).reshape(1, 1));
-        matXX.push_back(cv::Mat(cv::Mat::ones(1, ToInt32(vecTrimedLocations.size()), CV_32FC1)));
+        matXX.push_back(cv::Mat(cv::Mat::ones(1, ToInt32(vecTrimedLocations.size()), CV_32FC1))); // cv::Mat::ones return MatExpr, need to convert to Mat
         cv::transpose(matXX, matXX);
         cv::Mat matYY(vecPhaseTmp);
         cv::Mat matK;
@@ -1390,7 +1393,7 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
                 cv::Mat matXX;
                 matXX.push_back(cv::Mat(vecXt).reshape(1, 1));
                 matXX.push_back(cv::Mat(vecYt).reshape(1, 1));
-                matXX.push_back(cv::Mat(cv::Mat::ones(1, ToInt32(vecPtLocations.size()), CV_32FC1)));
+                matXX.push_back(cv::Mat(cv::Mat::ones(1, ToInt32(vecPtLocations.size()), CV_32FC1))); // cv::Mat::ones return MatExpr, need to convert to Mat
                 cv::transpose(matXX, matXX);
                 cv::Mat matYY(vecPhaseTmp);
                 cv::solve(matXX, matYY, matK, cv::DecompTypes::DECOMP_SVD);
@@ -1645,7 +1648,7 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
         cv::Mat matXX;
         matXX.push_back(cv::Mat(vecXt).reshape(1, 1));
         matXX.push_back(cv::Mat(vecYt).reshape(1, 1));
-        matXX.push_back(cv::Mat(cv::Mat::ones(1, ToInt32(vecHeightTmp.size()), CV_32FC1)));
+        matXX.push_back(cv::Mat(cv::Mat::ones(1, ToInt32(vecHeightTmp.size()), CV_32FC1))); // cv::Mat::ones return MatExpr, need to convert to Mat
         cv::transpose(matXX, matXX);
         cv::Mat matYY(vecHeightTmp);
         cv::solve(matXX, matYY, matK, cv::DecompTypes::DECOMP_QR);
@@ -1686,7 +1689,7 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
     cv::Mat matXX;
     matXX.push_back(cv::Mat(vecXt).reshape(1, 1));
     matXX.push_back(cv::Mat(vecYt).reshape(1, 1));
-    matXX.push_back(cv::Mat(cv::Mat::ones(1, ToInt32(vecHeightTmp.size()), CV_32FC1)));
+    matXX.push_back(cv::Mat(cv::Mat::ones(1, ToInt32(vecHeightTmp.size()), CV_32FC1))); // cv::Mat::ones return MatExpr, need to convert to Mat
     cv::transpose(matXX, matXX);
     cv::Mat matZZ(vecHeightTmp);
 
@@ -2346,16 +2349,16 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
 }
 
 /*static*/ cv::Mat Unwrap::_pickPointInterval(const cv::Mat& matInput, int interval) {
-        VectorOfVectorOfFloat vecVecResult;
-        for (int row = 0; row < matInput.rows; row += interval) {
-            VectorOfFloat vecResult, vecY;
-            for (int col = 0; col < matInput.cols; col += interval) {
-                vecResult.push_back(matInput.at<float>(row, col));
-            }
-            vecVecResult.push_back(vecResult);
+    VectorOfVectorOfFloat vecVecResult;
+    for (int row = 0; row < matInput.rows; row += interval) {
+        VectorOfFloat vecResult;
+        for (int col = 0; col < matInput.cols; col += interval) {
+            vecResult.push_back(matInput.at<float>(row, col));
         }
-        return CalcUtils::vectorToMat(vecVecResult);
+        vecVecResult.push_back(vecResult);
     }
+    return CalcUtils::vectorToMat(vecVecResult);
+}
 
 /*static*/ void Unwrap::calibDlpOffset(const PR_CALIB_DLP_OFFSET_CMD *const pstCmd, PR_CALIB_DLP_OFFSET_RPY *const pstRpy) {
     CStopWatch stopWatch;
@@ -2370,18 +2373,30 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
     const int dt = 20; // Use one data in every 20 pixels
     cv::Mat matX2 = _pickPointInterval(matX1, dt);
     cv::Mat matY2 = _pickPointInterval(matY1, dt);
+
+    std::cout << "matX2" << std::endl;
+    printfMat<float>(matX2);
+
+    std::cout << "matY2" << std::endl;
+    printfMat<float>(matY2);
+
     float meanX = ToFloat(cv::mean(matX2)[0]);
     float meanY = ToFloat(cv::mean(matY2)[0]);
 
     // Matlab: xx = [x2(:), y2(:), ones(size(x2(:)))];
     cv::Mat matXX;
+    // Transpose to make the result same as matlab
+    cv::transpose(matX2, matX2);
+    cv::transpose(matY2, matY2);
     matXX.push_back(matX2.reshape(1, 1));
     matXX.push_back(matY2.reshape(1, 1));
-    matXX.push_back(cv::Mat::ones(1, matXX.cols, CV_32FC1));
+    matXX.push_back(cv::Mat(cv::Mat::ones(1, matXX.cols, CV_32FC1)));   // cv::Mat::ones return MatExpr, need to convert to Mat
     cv::transpose(matXX, matXX);
 
-    VectorOfMat arrVecQ[NUM_OF_DLP];
-    cv::Mat arrMatP[NUM_OF_DLP], arrMatZ[NUM_OF_DLP];
+    std::cout << "matXX" << std::endl;
+    printfMat<float>(matXX);
+
+    cv::Mat arrMatP[NUM_OF_DLP], arrMatZ[NUM_OF_DLP], arrMatQ[NUM_OF_DLP];
     float arryMeanZ[NUM_OF_DLP];
     for (int nDlp = 0; nDlp < NUM_OF_DLP; ++ nDlp) {
         cv::Mat matX = cv::Mat::zeros(pstCmd->nCalibPosRows, pstCmd->nCalibPosCols, CV_32FC1);
@@ -2395,12 +2410,21 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
                 matY.at<float>(row, col) = meanY + row * pstCmd->fFrameDistY;
                 matZ.at<float>(row, col) = ToFloat(cv::mean(matZt)[0]);
 
+                std::cout << "DLP " << nDlp << " row " << row << " col " << col << " matZt" << std::endl;
+                printfMat<float>(matZt);
+
                 // Calculate Surface
+                cv::transpose(matZt, matZt);
                 cv::Mat matYY = matZt.reshape(1, ToInt32(matZt.total()));
                 cv::Mat matQt;
                 cv::solve(matXX, matYY, matQt, cv::DecompTypes::DECOMP_SVD);
+
                 cv::transpose(matQt, matQt);
-                arrVecQ[nDlp].push_back(matQt);
+
+                std::cout << "DLP " << nDlp << " row " << row << " col " << col << " matQt" << std::endl;
+                printfMat<float>(matQt);
+
+                arrMatQ[nDlp].push_back(matQt);
             }
         }
 
@@ -2410,29 +2434,46 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
         cv::Mat matXX1;
         matXX1.push_back(matX.reshape(1, 1));
         matXX1.push_back(matY.reshape(1, 1));
-        matXX1.push_back(cv::Mat::ones(1, matXX1.cols, CV_32FC1));
-        cv::transpose(matXX, matXX);
+        matXX1.push_back(cv::Mat(cv::Mat::ones(1, matXX1.cols, CV_32FC1))); // cv::Mat::ones return MatExpr, need to convert to Mat
+        cv::transpose(matXX1, matXX1);
 
         cv::Mat matYY1 = matZ.reshape(1, ToInt32(matZ.total()));
         cv::Mat matPt;
+
+        std::cout << "DLP " << nDlp << " matXX1" << std::endl;
+        printfMat<float>(matXX1);
+
+        std::cout << "DLP " << nDlp << " matYY1" << std::endl;
+        printfMat<float>(matYY1);
+
         cv::solve(matXX1, matYY1, matPt, cv::DecompTypes::DECOMP_SVD);
+
+        std::cout << "DLP " << nDlp << " matPt" << std::endl;
+        printfMat<float>(matPt);
+
         arrMatP[nDlp] = matPt;
-        arryMeanZ[nDlp] = ToFloat(cv::mean(matPt)[0]);
+
+        arryMeanZ[nDlp] = ToFloat(cv::mean(matZ)[0]);
     }
 
     float cx = (1 + COLS) / 2.f;
     float cy = (1 + ROWS) / 2.f;
-    cv::Mat arrMatQ[NUM_OF_DLP];
 
     for (int nDlp = 0; nDlp < NUM_OF_DLP; ++ nDlp) {
         pstRpy->arrOffset[nDlp] = arryMeanZ[nDlp] - arryMeanZ[3]; // To return out the result
-        cv::reduce(arrVecQ[nDlp], arrMatQ[nDlp], 0, cv::ReduceTypes::REDUCE_AVG);
+
+        std::cout << "DLP " << nDlp << " arrMatQ" << std::endl;
+        printfMat<float>(arrMatQ[nDlp]);
+        cv::reduce(arrMatQ[nDlp], arrMatQ[nDlp], 0, cv::ReduceTypes::REDUCE_AVG);
+
+        std::cout << "After average" << std::endl;
+        printfMat<float>(arrMatQ[nDlp]);
 
         float zp0 = -arrMatP[nDlp].at<float>(0) * cx * pstCmd->fResolution - arrMatP[nDlp].at<float>(1) * cy * pstCmd->fResolution;
         float zq0 = -arrMatQ[nDlp].at<float>(0) * cx * pstCmd->fResolution - arrMatQ[nDlp].at<float>(1) * cy * pstCmd->fResolution;
     
         cv::Mat zp1 = arrMatP[nDlp].at<float>(0) * matX1 + arrMatP[nDlp].at<float>(1) * matY1 + zp0;
-        cv::Mat zq1 = arrMatQ[nDlp].at<float>(0) * matX1 +arrMatQ[nDlp].at<float>(1)  * matY1 + zq0;
+        cv::Mat zq1 = arrMatQ[nDlp].at<float>(0) * matX1 + arrMatQ[nDlp].at<float>(1) * matY1 + zq0;
     
         pstRpy->arrMatRotationSurface[nDlp] = zq1 - zp1;
     }
@@ -3292,7 +3333,7 @@ void _saveAsGray(const cv::Mat &matHeight, const std::string &strFilePath) {
         cv::Mat matXX;
         matXX.push_back(cv::Mat(vecXt).reshape(1, 1));
         matXX.push_back(cv::Mat(vecYt).reshape(1, 1));
-        matXX.push_back(cv::Mat(cv::Mat::ones(1, ToInt32(vecHeightTmp.size()), CV_32FC1)));
+        matXX.push_back(cv::Mat(cv::Mat::ones(1, ToInt32(vecHeightTmp.size()), CV_32FC1))); // cv::Mat::ones return MatExpr, need to convert to Mat
         cv::transpose(matXX, matXX);
         cv::Mat matYY(vecHeightTmp);
         cv::solve(matXX, matYY, matK, cv::DecompTypes::DECOMP_QR);

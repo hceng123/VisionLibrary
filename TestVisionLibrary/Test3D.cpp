@@ -1522,7 +1522,7 @@ void TestQueryDlpOffset()
     float                           fOverlapX;
     float                           fOverlapY;
 
-    assignFrames ( fLeft, fTop, fRight, fBottom, fFovWidth, fFovHeight, vecVecFrameCtr, fOverlapX, fOverlapY);
+    assignFrames(fLeft, fTop, fRight, fBottom, fFovWidth, fFovHeight, vecVecFrameCtr, fOverlapX, fOverlapY);
 
     stCmd.vecVecRefFrameCenters = vecVecFrameCtr;
     stCmd.vecVecRefFrameValues = VectorOfVectorOfFloat(1, {0.15f, 0.04f, -0.06f, -0.09f});
@@ -1670,7 +1670,7 @@ void TestCalibDlpOffset_1() {
     if (!ReadDlpHeight(stCmd.arrVecDlpH))
         return;
 
-    stCmd.fResolution = 0.159f;
+    stCmd.fResolution = 0.0159f;
     stCmd.fFrameDistX = 27.7946f;
     stCmd.fFrameDistY = 24.739f;
     stCmd.nCalibPosRows = CALIB_FOV_ROWS;

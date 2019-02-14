@@ -498,9 +498,9 @@ PR_FUNCTION_EXIT
 
 VisionAPI VisionStatus PR_CalibDlpOffset(const PR_CALIB_DLP_OFFSET_CMD *const pstCmd, PR_CALIB_DLP_OFFSET_RPY *const pstRpy)
 {
-PR_FUNCTION_ENTRY
+//PR_FUNCTION_ENTRY
     return VisionAlgorithm::calibDlpOffset(pstCmd, pstRpy);
-PR_FUNCTION_EXIT
+//PR_FUNCTION_EXIT
 }
 
 VisionAPI VisionStatus PR_Integrate3DCalib(const PR_INTEGRATE_3D_CALIB_CMD *const pstCmd, PR_INTEGRATE_3D_CALIB_RPY *const pstRpy)

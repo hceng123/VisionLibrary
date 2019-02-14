@@ -11,7 +11,9 @@ using namespace AOI::Vision;
 using namespace boost::filesystem;
 
 cv::Mat matRestoreMap12_1, matRestoreMap12_2, matRestoreMap34_1, matRestoreMap34_2;
-const static std::string WORKING_FOLDER = "./data/TestCombineImage/";
+const static std::string WORKING_FOLDER = "./data/TestCombineImage_2/";
+const bool LOAD_COLOR_IMAGE = false;
+const float CHANGE_DISTORTION_MATRIX_Y = 250.f;
 
 bool loadCalibCameraResult_12() {
     cv::FileStorage fs(WORKING_FOLDER + "CameraCalibrate12.yml", cv::FileStorage::READ);
@@ -88,36 +90,64 @@ bool readImageFromFolder(VectorOfMat& vecFrameImages, const VectorOfVectorOfFloa
             continue;
 
         auto strSubFolder = (*it).path().string();
-        std::cout << "Reading image from " << strSubFolder << std::endl;
-        cv::Mat matR =  cv::imread(strSubFolder + "/51.bmp", cv::IMREAD_GRAYSCALE);
-        cv::Mat matG =  cv::imread(strSubFolder + "/52.bmp", cv::IMREAD_GRAYSCALE);
-        cv::Mat matB =  cv::imread(strSubFolder + "/53.bmp", cv::IMREAD_GRAYSCALE);
 
-        if (matR.empty() || matG.empty() || matB.empty()) {
-            std::cout << "Failed to read image from " << strSubFolder << std::endl;
-            return false;
-        }
+        if (LOAD_COLOR_IMAGE) {
+            std::cout << "Reading image from " << strSubFolder << std::endl;
+            cv::Mat matR = cv::imread(strSubFolder + "/51.bmp", cv::IMREAD_GRAYSCALE);
+            cv::Mat matG = cv::imread(strSubFolder + "/52.bmp", cv::IMREAD_GRAYSCALE);
+            cv::Mat matB = cv::imread(strSubFolder + "/53.bmp", cv::IMREAD_GRAYSCALE);
 
-        if (vecVecFrameCtrs[index][1] > 190.f) {
-            matG = restoreImage_12(matG);
-            matR = restoreImage_12(matR);
-            matB = restoreImage_12(matB);
+            if (matR.empty() || matG.empty() || matB.empty()) {
+                std::cout << "Failed to read image from " << strSubFolder << std::endl;
+                return false;
+            }
+
+            if (vecVecFrameCtrs[index][1] > CHANGE_DISTORTION_MATRIX_Y) {
+                matG = restoreImage_12(matG);
+                matR = restoreImage_12(matR);
+                matB = restoreImage_12(matB);
+            }
+            else {
+                matG = restoreImage_34(matG);
+                matR = restoreImage_34(matR);
+                matB = restoreImage_34(matB);
+            }
+
+            if (matR.empty() || matG.empty() || matB.empty()) {
+                std::cout << "Failed to restore image " << strSubFolder << std::endl;
+                return false;
+            }
+
+            VectorOfMat vecChannels{ matB, matG, matR };
+            cv::Mat matPseudocolorImage;
+            cv::merge(vecChannels, matPseudocolorImage);
+
+            vecFrameImages.push_back(matPseudocolorImage);
         }else {
-            matG = restoreImage_34(matG);
-            matR = restoreImage_34(matR);
-            matB = restoreImage_34(matB);
+            cv::Mat matGray = cv::imread(strSubFolder + "/54.bmp", cv::IMREAD_GRAYSCALE);
+
+            if (matGray.empty()) {
+                std::cout << "Failed to read image from " << strSubFolder << std::endl;
+                return false;
+            }
+
+            if (vecVecFrameCtrs[index][1] > CHANGE_DISTORTION_MATRIX_Y) {
+                matGray = restoreImage_12(matGray);
+            }
+            else {
+                matGray = restoreImage_34(matGray);
+            }
+
+            if (matGray.empty()) {
+                std::cout << "Failed to restore image " << strSubFolder << std::endl;
+                return false;
+            }
+
+            cv:imwrite(strSubFolder + "/54_Restore.bmp", matGray);
+
+            vecFrameImages.push_back(matGray);
         }
 
-        if (matR.empty() || matG.empty() || matB.empty()) {
-            std::cout << "Failed to restore image " << strSubFolder << std::endl;
-            return false;
-        }
-
-        VectorOfMat vecChannels{ matB, matG, matR };
-        cv::Mat matPseudocolorImage;
-        cv::merge(vecChannels, matPseudocolorImage);
-
-        vecFrameImages.push_back(matPseudocolorImage);
         ++ index;
     }
     return true;
@@ -125,9 +155,13 @@ bool readImageFromFolder(VectorOfMat& vecFrameImages, const VectorOfVectorOfFloa
 
 void TestCombineMachineImage() {
     //float fResolutionX = 15.8655f;
-    //float fResolutionY = 15.9024f;
-    float fResolutionX = 15.883068f;
-    float fResolutionY = 15.884272f;
+    //float fResolutionY = 15.90f;
+
+    //float fResolutionX = 15.883068f;
+    //float fResolutionY = 15.884272f;
+
+    float fResolutionX = 15.8729f;
+    float fResolutionY = 15.8736f;
 
     const int ROWS = 8;
     const int COLS = 6;

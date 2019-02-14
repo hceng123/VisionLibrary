@@ -25,7 +25,7 @@ namespace Vision
     matYY.release();
     matXX.push_back(cv::Mat(vecActualX).reshape(1, 1));
     matXX.push_back(cv::Mat(vecActualY).reshape(1, 1));
-    matXX.push_back(cv::Mat(cv::Mat::ones(1, ToInt32(framePoints.size()), CV_32FC1)));
+    matXX.push_back(cv::Mat(cv::Mat::ones(1, ToInt32(framePoints.size()), CV_32FC1))); // cv::Mat::ones return MatExpr, need to convert to Mat
     cv::transpose(matXX, matXX);
     
     matYY.push_back(cv::Mat(vecTargetX).reshape(1, 1));

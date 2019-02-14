@@ -1,27 +1,17 @@
-#include "CalcUtils.hpp"
-#include "Fitting.hpp"
-#include "Unwrap.h"
 #include <iostream>
 #include <numeric>
 #include <iomanip>
+
+#include "CalcUtils.hpp"
+#include "Fitting.hpp"
+#include "Unwrap.h"
+#include "Auxiliary.hpp"
+
 
 namespace AOI
 {
 namespace Vision
 {
-
-template<class T>
-static void printfMat ( const cv::Mat &mat)
-{
-    for ( short row = 0; row < mat.rows; ++ row )
-    {
-        for ( short col = 0; col < mat.cols; ++ col )
-        {
-            printf ("%.2f ", mat.at<T>(row, col) );
-        }
-        printf("\n");
-    }
-}
 
 template<class T>
 static void printfVector(const std::vector<T> &vecInput)
@@ -66,18 +56,18 @@ static void TestCalcUtilsCumSum() {
             0.9f, 0.8f, 0.6f, 0.5f,
             0.8f, 0.8f, 0.7f, 0.6f
         };
-        cv::Mat matInput ( vecFloat ), matResult;
-        matInput = matInput.reshape ( 1, 4 );
+        cv::Mat matInput(vecFloat), matResult;
+        matInput = matInput.reshape(1, 4);
         std::cout << "INPUT: " << std::endl;
-        printfMat<float> ( matInput );
+        printfMat<float>(matInput);
 
         std::cout << "CALCUTILS CUMSUM ON DIMENSION 0 RESULT: " << std::endl;
-        matResult = CalcUtils::cumsum<float> ( matInput, 0 );
-        printfMat<float> ( matResult );
+        matResult = CalcUtils::cumsum<float>(matInput, 0);
+        printfMat<float>(matResult);
 
         std::cout << "CALCUTILS CUMSUM ON DIMENSION 1 RESULT: " << std::endl;
-        matResult = CalcUtils::cumsum<float> ( matInput, 1 );
-        printfMat<float> ( matResult );
+        matResult = CalcUtils::cumsum<float>(matInput, 1);
+        printfMat<float>(matResult);
     }
 }
 

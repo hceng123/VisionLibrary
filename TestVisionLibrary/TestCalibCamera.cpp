@@ -80,12 +80,12 @@ void TestCalibCamera_1()
     std::string strImgPath = "./data/CLNChessboardWith2DCode.png";
     PR_CALIBRATE_CAMERA_CMD stCmd;
     PR_CALIBRATE_CAMERA_RPY stRpy;
-    stCmd.matInputImg = cv::imread(strImgPath, cv::IMREAD_GRAYSCALE );
+    stCmd.matInputImg = cv::imread(strImgPath, cv::IMREAD_GRAYSCALE);
     stCmd.fPatternDist = 2.;
     stCmd.fMinTmplMatchScore = 80;
     stCmd.szBoardPattern = cv::Size(16, 16); //cv::Size( 5, 5 );
 
-    PR_CalibrateCamera ( &stCmd, &stRpy );
+    PR_CalibrateCamera(&stCmd, &stRpy);
     if ( VisionStatus::OK != stRpy.enStatus ) {
         std::cout << "Failed to calibrate camera!" << std::endl;
         return;
@@ -144,7 +144,7 @@ void TestCalibCamera_1()
             cv::Point3f ptObject = stRpy.vecObjectPoints[index];
             ofStrm << ptObject.x << ", " << ptObject.y << ", " << ptObject.z << std::endl;
         }
-        ofStrm.close();    
+        ofStrm.close();
     }
     {
         cv::Mat matxyz = stRpy.matExtrinsicMatrix * matPoint;
@@ -240,7 +240,7 @@ cv::Mat readMapFromFile(const std::string& strFileName) {
     return matResult;
 }
 
-void saveResult(const PR_CALIBRATE_CAMERA_RPY& stRpy) {
+static void saveResult(const PR_CALIBRATE_CAMERA_RPY& stRpy) {
     cv::FileStorage fs("./data/CameraCalibrate12.yml", cv::FileStorage::WRITE);
     if (!fs.isOpened())
         return;

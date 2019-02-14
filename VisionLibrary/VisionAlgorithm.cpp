@@ -6860,6 +6860,14 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
         return pstRpy->enStatus;
     }
 
+    if (pstCmd->fResolution < 0.01f || pstCmd->fResolution > 0.02f) {
+        std::stringstream ss;
+        ss << "The fResolution " << pstCmd->fResolution << " is invalid";
+        WriteLog(ss.str());
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
     for (int i = 0; i < NUM_OF_DLP; ++ i) {
         if (pstCmd->arrVecDlpH[i].empty() || pstCmd->arrVecDlpH[i].size() != pstCmd->nCalibPosRows * pstCmd->nCalibPosCols) {
             std::stringstream ss;
@@ -6871,6 +6879,8 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     }
 
     MARK_FUNCTION_START_TIME;
+
+    Unwrap::calibDlpOffset(pstCmd, pstRpy);
 
     MARK_FUNCTION_END_TIME;
 
