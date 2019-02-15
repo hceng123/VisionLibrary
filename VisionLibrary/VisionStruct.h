@@ -1519,9 +1519,11 @@ struct PR_COMBINE_IMG_RPY {
 
 struct PR_COMBINE_IMG_NEW_CMD {
     PR_COMBINE_IMG_NEW_CMD() :
+        nCutBorderPixel(5),
         bDrawFrame(false) {}
     VectorOfMat             vecInputImages;
     VectorOfVectorOfPoint   vecVecFrameCtr;
+    int                     nCutBorderPixel;
     bool                    bDrawFrame;
 };
 

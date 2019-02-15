@@ -811,6 +811,7 @@ int _tmain(int argc, _TCHAR* argv[])
     //TestCombineImageNew_1();
     //TestCombineImageNew_2();
     TestCombineMachineImage();
+    //FindFramePositionFromBigImage();
 
     PR_DumpTimeLog("./Vision/Time.log");
     std::cout << "Press any key to exit." << std::endl;

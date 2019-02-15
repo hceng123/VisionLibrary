@@ -7756,8 +7756,18 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
 
     auto topLftFrameCtr = pstCmd->vecVecFrameCtr.front().front();
     auto btnRgtFrameCtr = pstCmd->vecVecFrameCtr.back().back();
-    const int IMAGE_WIDTH  = pstCmd->vecInputImages[0].cols;
-    const int IMAGE_HEIGHT = pstCmd->vecInputImages[0].rows;
+    const int ORIGIN_IMAGE_WIDTH   = pstCmd->vecInputImages[0].cols;
+    const int ORIGIN_IMAGE_HEIGHT  = pstCmd->vecInputImages[0].rows;
+    const int CUTTED_IMAGE_WIDTH  = ORIGIN_IMAGE_WIDTH  - 2 * pstCmd->nCutBorderPixel;
+    const int CUTTED_IMAGE_HEIGHT = ORIGIN_IMAGE_HEIGHT - 2 * pstCmd->nCutBorderPixel;
+
+    if (pstCmd->nCutBorderPixel < 0 || pstCmd->nCutBorderPixel > ORIGIN_IMAGE_WIDTH / 4) {
+        std::stringstream ss;
+        ss << "Cut image border pixel " << pstCmd->nCutBorderPixel << " is invalid";
+        WriteLog(ss.str());
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
 
     if (btnRgtFrameCtr.x < topLftFrameCtr.x) {
         std::stringstream ss;
@@ -7775,8 +7785,8 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
         return pstRpy->enStatus;
     }
 
-    int TOTAL_WIDTH  = btnRgtFrameCtr.x - topLftFrameCtr.x + IMAGE_WIDTH;
-    int TOTAL_HEIGHT = btnRgtFrameCtr.y - topLftFrameCtr.y + IMAGE_HEIGHT;
+    int TOTAL_WIDTH  = btnRgtFrameCtr.x - topLftFrameCtr.x + ORIGIN_IMAGE_WIDTH;
+    int TOTAL_HEIGHT = btnRgtFrameCtr.y - topLftFrameCtr.y + ORIGIN_IMAGE_HEIGHT;
     pstRpy->matResultImage = cv::Mat::zeros(TOTAL_HEIGHT, TOTAL_WIDTH, pstCmd->vecInputImages[0].type());
     int index = 0;
     for (int row = 0; row < pstCmd->vecVecFrameCtr.size(); ++ row)
@@ -7790,7 +7800,8 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
         }
 
         auto ptFrameCtr = pstCmd->vecVecFrameCtr[row][col];
-        cv::Rect rectDstROI(ptFrameCtr.x - IMAGE_WIDTH / 2, ptFrameCtr.y - IMAGE_HEIGHT / 2, IMAGE_WIDTH, IMAGE_HEIGHT);
+        cv::Rect rectDstROI(ptFrameCtr.x - CUTTED_IMAGE_WIDTH / 2, ptFrameCtr.y - CUTTED_IMAGE_HEIGHT / 2, CUTTED_IMAGE_WIDTH, CUTTED_IMAGE_HEIGHT);
+
         if (rectDstROI.x < 0) {
             rectDstROI = CalcUtils::resizeRect(rectDstROI, cv::Size(rectDstROI.width + 2 * rectDstROI.x, rectDstROI.height));
         }
@@ -7799,23 +7810,20 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
             rectDstROI = CalcUtils::resizeRect(rectDstROI, cv::Size(rectDstROI.width, rectDstROI.height + 2 * rectDstROI.y));
         }
 
-        if ((rectDstROI.x + rectDstROI.width) > pstRpy->matResultImage.cols) {
-            int reduceSizeOneSide = (rectDstROI.x + rectDstROI.width) - pstRpy->matResultImage.cols;
+        if ((rectDstROI.x + rectDstROI.width) > TOTAL_WIDTH) {
+            int reduceSizeOneSide = (rectDstROI.x + rectDstROI.width) - TOTAL_WIDTH;
             rectDstROI = CalcUtils::resizeRect(rectDstROI, cv::Size(rectDstROI.width - 2 * reduceSizeOneSide, rectDstROI.height));
         }
 
-        if ((rectDstROI.y + rectDstROI.height) > pstRpy->matResultImage.rows) {
-            int reduceSizeOneSide = (rectDstROI.y + rectDstROI.height) - pstRpy->matResultImage.rows;
+        if ((rectDstROI.y + rectDstROI.height) > TOTAL_HEIGHT) {
+            int reduceSizeOneSide = (rectDstROI.y + rectDstROI.height) - TOTAL_HEIGHT;
             rectDstROI = CalcUtils::resizeRect(rectDstROI, cv::Size(rectDstROI.width, rectDstROI.height - 2 * reduceSizeOneSide));
         }
 
-        cv::Mat matSrc = pstCmd->vecInputImages[index];
+        //rectDstROI = cv::Rect(ptFrameCtr.x - rectDstROI.width / 2, ptFrameCtr.y - rectDstROI.height / 2, rectDstROI.width, rectDstROI.height);
+        cv::Rect rectSrcROI(ORIGIN_IMAGE_WIDTH / 2 - rectDstROI.width / 2, ORIGIN_IMAGE_HEIGHT / 2 - rectDstROI.height / 2, rectDstROI.width, rectDstROI.height);
+        cv::Mat matSrc = cv::Mat(pstCmd->vecInputImages[index], rectSrcROI);
 
-        if (rectDstROI.width != IMAGE_WIDTH || rectDstROI.height != IMAGE_HEIGHT) {
-            rectDstROI = cv::Rect(ptFrameCtr.x - rectDstROI.width / 2, ptFrameCtr.y - rectDstROI.height / 2, rectDstROI.width, rectDstROI.height);
-            cv::Rect rectSrcROI(IMAGE_WIDTH / 2 - rectDstROI.width / 2, IMAGE_HEIGHT / 2 - rectDstROI.height / 2, rectDstROI.width, rectDstROI.height);
-            matSrc = cv::Mat(pstCmd->vecInputImages[index], rectSrcROI);
-        }
         cv::Mat matDstROI(pstRpy->matResultImage, rectDstROI);
         matSrc.copyTo(matDstROI);
         ++index;
@@ -7825,7 +7833,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
         for (int row = 0; row < pstCmd->vecVecFrameCtr.size(); ++ row)
         for (int col = 0; col < pstCmd->vecVecFrameCtr[0].size(); ++ col) {
             auto ptFrameCtr = pstCmd->vecVecFrameCtr[row][col];
-            cv::Rect rectDstROI(ptFrameCtr.x - IMAGE_WIDTH / 2, ptFrameCtr.y - IMAGE_HEIGHT / 2, IMAGE_WIDTH, IMAGE_HEIGHT);
+            cv::Rect rectDstROI(ptFrameCtr.x - CUTTED_IMAGE_WIDTH / 2, ptFrameCtr.y - CUTTED_IMAGE_HEIGHT / 2, CUTTED_IMAGE_WIDTH, CUTTED_IMAGE_HEIGHT);
             cv::rectangle(pstRpy->matResultImage, rectDstROI, CYAN_SCALAR, 1);
         }
     }

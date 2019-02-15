@@ -21,7 +21,7 @@ struct HOUGH_LINE {
 };
 
 template<class T>
-void printfMat(const cv::Mat &mat, int nPrecision = 3)
+void printfMat(const cv::Mat &mat, int nPrecision = 2)
 {
     if (mat.empty()) {
         std::cout << "The matrix to print is empty" << std::endl;

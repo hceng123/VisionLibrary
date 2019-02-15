@@ -101,3 +101,4 @@ void TestTableMapping_3();
 void TestCombineImageNew_1();
 void TestCombineImageNew_2();
 void TestCombineMachineImage();
+void FindFramePositionFromBigImage();

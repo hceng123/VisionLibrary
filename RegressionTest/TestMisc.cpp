@@ -61,6 +61,7 @@ void TestCombineImageNew_1() {
     stCmd.vecInputImages.push_back(matChessBoardImage);
     stCmd.vecInputImages.push_back(matChessBoardImage);
     stCmd.vecInputImages.push_back(matChessBoardImage);
+    stCmd.nCutBorderPixel = 5;
 
     PR_CombineImgNew(&stCmd, &stRpy);
     std::cout << "PR_CombineImgNew status " << ToInt32(stRpy.enStatus) << std::endl;
@@ -91,6 +92,7 @@ void TestCombineImageNew_2() {
     stCmd.vecInputImages.push_back(matChessBoardImage);
     stCmd.vecInputImages.push_back(matChessBoardImage);
     stCmd.vecInputImages.push_back(matChessBoardImage);
+    stCmd.nCutBorderPixel = 0;
     stCmd.bDrawFrame = true;
 
     PR_CombineImgNew(&stCmd, &stRpy);

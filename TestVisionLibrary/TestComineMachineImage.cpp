@@ -163,8 +163,8 @@ void TestCombineMachineImage() {
     float fResolutionX = 15.8729f;
     float fResolutionY = 15.8736f;
 
-    const int ROWS = 8;
-    const int COLS = 6;
+    const int ROWS = 6;
+    const int COLS = 8;
     const int TOTAL_FRAME = ROWS * COLS;
 
     auto vecOfVecFloat = readDataFromFile(WORKING_FOLDER + "ScanImagePositions.csv");
@@ -184,7 +184,7 @@ void TestCombineMachineImage() {
     }
 
     PR_COMBINE_IMG_NEW_CMD stCmd;
-    PR_COMBINE_IMG_NEW_RPY stRpy;    
+    PR_COMBINE_IMG_NEW_RPY stRpy;
     if (!readImageFromFolder(stCmd.vecInputImages, vecOfVecFloat))
         return;
 
@@ -206,6 +206,7 @@ void TestCombineMachineImage() {
     }
 
     stCmd.bDrawFrame = true;
+    stCmd.nCutBorderPixel = 5;
     PR_CombineImgNew(&stCmd, &stRpy);
     std::cout << "PR_CombineImgNew status " << ToInt32(stRpy.enStatus) << std::endl;
     if (!stRpy.matResultImage.empty())
@@ -213,7 +214,8 @@ void TestCombineMachineImage() {
 }
 
 void FindFramePositionFromBigImage() {
-    cv::Point ptBigFramePos(9061, 9335);
+    //cv::Point ptBigFramePos(9061, 9335);
+    cv::Point ptBigFramePos(9063, 10507);
     float fResolutionX = 15.8729f;
     float fResolutionY = 15.8736f;
 
@@ -241,7 +243,9 @@ void FindFramePositionFromBigImage() {
             frameCtr.y = ptTopLeftFrameCtr.y - (frameTableCtr.y - ptTopLeftFrameTableCtr.y) * 1000.f / fResolutionX; // Table direction is reversed with image direction
             
             if (abs(ptBigFramePos.x - frameCtr.x) < IMAGE_WIDTH / 2 && abs(ptBigFramePos.y - frameCtr.y) < IMEGE_HEIGHT / 2) {
-                std::cout << "Frame row " << row << " col " << col << " at index " << index << " contains this point" << std::endl;
+                cv::Point ptInFrame(ptBigFramePos.x - frameCtr.x + IMAGE_WIDTH / 2, ptBigFramePos.y - frameCtr.y + IMEGE_HEIGHT / 2);
+                std::cout << "Frame row " << row << " col " << col << " index " << index << " contains this point, position in frame " << ptInFrame << std::endl;
+                
             }
             ++index;
         }
