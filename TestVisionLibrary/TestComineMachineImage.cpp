@@ -184,21 +184,16 @@ void TestCombineMachineImage() {
     }
 
     PR_COMBINE_IMG_NEW_CMD stCmd;
-    PR_COMBINE_IMG_NEW_RPY stRpy;
-    cv::Point2f ptTopLeftFrameTableCtr;
+    PR_COMBINE_IMG_NEW_RPY stRpy;    
     if (!readImageFromFolder(stCmd.vecInputImages, vecOfVecFloat))
         return;
 
+    cv::Point2f ptTopLeftFrameTableCtr(vecOfVecFloat[0][0], vecOfVecFloat[0][1]);
     cv::Point ptTopLeftFrameCtr(cv::Point(stCmd.vecInputImages[0].cols / 2, stCmd.vecInputImages[0].rows / 2));
     int index = 0;
     for (int row = 0; row < ROWS; ++row) {
         VectorOfPoint vecFrameCtr;
         for (int col = 0; col < COLS; ++col) {
-            if (row == 0 && col == 0) {
-                ptTopLeftFrameTableCtr.x = vecOfVecFloat[index][2];
-                ptTopLeftFrameTableCtr.y = vecOfVecFloat[index][3];
-            }
-
             cv::Point2f frameTableCtr(vecOfVecFloat[index][0], vecOfVecFloat[index][1]);
             cv::Point frameCtr;
             frameCtr.x = ptTopLeftFrameCtr.x + (frameTableCtr.x - ptTopLeftFrameTableCtr.x) * 1000.f / fResolutionX;
@@ -215,4 +210,40 @@ void TestCombineMachineImage() {
     std::cout << "PR_CombineImgNew status " << ToInt32(stRpy.enStatus) << std::endl;
     if (!stRpy.matResultImage.empty())
         cv::imwrite(WORKING_FOLDER + "CombineImageNewResult.png", stRpy.matResultImage);
+}
+
+void FindFramePositionFromBigImage() {
+    cv::Point ptBigFramePos(9061, 9335);
+    float fResolutionX = 15.8729f;
+    float fResolutionY = 15.8736f;
+
+    const int ROWS = 8;
+    const int COLS = 6;
+    const int TOTAL_FRAME = ROWS * COLS;
+    const int IMAGE_WIDTH = 2040, IMEGE_HEIGHT = 2048;
+
+    auto vecOfVecFloat = readDataFromFile(WORKING_FOLDER + "ScanImagePositions.csv");
+    if (vecOfVecFloat.size() != TOTAL_FRAME) {
+        std::cout << "Number of scan image position " << vecOfVecFloat.size() << " not match with total frame " << TOTAL_FRAME << std::endl;
+        return;
+    }
+
+    cv::Point2f ptTopLeftFrameTableCtr(vecOfVecFloat[0][0], vecOfVecFloat[0][1]);
+    cv::Point ptTopLeftFrameCtr(IMAGE_WIDTH / 2, IMEGE_HEIGHT / 2);
+
+    int index = 0;
+    for (int row = 0; row < ROWS; ++row) {
+        VectorOfPoint vecFrameCtr;
+        for (int col = 0; col < COLS; ++col) {
+            cv::Point2f frameTableCtr(vecOfVecFloat[index][0], vecOfVecFloat[index][1]);
+            cv::Point frameCtr;
+            frameCtr.x = ptTopLeftFrameCtr.x + (frameTableCtr.x - ptTopLeftFrameTableCtr.x) * 1000.f / fResolutionX;
+            frameCtr.y = ptTopLeftFrameCtr.y - (frameTableCtr.y - ptTopLeftFrameTableCtr.y) * 1000.f / fResolutionX; // Table direction is reversed with image direction
+            
+            if (abs(ptBigFramePos.x - frameCtr.x) < IMAGE_WIDTH / 2 && abs(ptBigFramePos.y - frameCtr.y) < IMEGE_HEIGHT / 2) {
+                std::cout << "Frame row " << row << " col " << col << " at index " << index << " contains this point" << std::endl;
+            }
+            ++index;
+        }
+    }
 }
