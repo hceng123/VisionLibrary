@@ -1224,21 +1224,23 @@ VisionStatus LogCaseLrnTmpl::WriteCmd(const PR_LRN_TEMPLATE_CMD *const pstCmd) {
     CSimpleIni ini(false, false, false);
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile(cmdRpyFilePath.c_str());
-    ini.SetValue(_CMD_SECTION.c_str(), _strKeyROI.c_str(), _formatRect(pstCmd->rectROI).c_str());
+    cv::Rect rectROI(pstCmd->rectROI);
+    rectROI.x = 0; rectROI.y = 0;
+    ini.SetValue(_CMD_SECTION.c_str(), _strKeyROI.c_str(), _formatRect(rectROI).c_str());
     ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyAlgorithm.c_str(), ToInt32(pstCmd->enAlgorithm));
     ini.SaveFile(cmdRpyFilePath.c_str());
-    cv::imwrite(_strLogCasePath + _IMAGE_NAME, pstCmd->matInputImg);
+    cv::imwrite(_strLogCasePath + _IMAGE_NAME, cv::Mat(pstCmd->matInputImg, pstCmd->rectROI));
     return VisionStatus::OK;
 }
 
-VisionStatus LogCaseLrnTmpl::WriteRpy(const PR_LRN_TEMPLATE_RPY *const pstRpy) {
+VisionStatus LogCaseLrnTmpl::WriteRpy(const PR_LRN_TEMPLATE_CMD *const pstCmd, const PR_LRN_TEMPLATE_RPY *const pstRpy) {
     CSimpleIni ini(false, false, false);
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile(cmdRpyFilePath.c_str());
     ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyStatus.c_str(), ToInt32(pstRpy->enStatus));
     ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyRecordId.c_str(), pstRpy->nRecordId);
     ini.SaveFile(cmdRpyFilePath.c_str());
-    if (! pstRpy->matTmpl.empty())
+    if (!pstRpy->matTmpl.empty())
         cv::imwrite(_strLogCasePath + _strTmplFileName, pstRpy->matTmpl);
     _zip();
     return VisionStatus::OK;
@@ -1257,7 +1259,7 @@ VisionStatus LogCaseLrnTmpl::RunLogCase() {
 
     PR_LRN_TEMPLATE_RPY stRpy;
     enStatus = VisionAlgorithm::lrnTemplate(&stCmd, &stRpy, true);
-    WriteRpy(&stRpy);
+    WriteRpy(&stCmd, &stRpy);
     return enStatus;
 }
 

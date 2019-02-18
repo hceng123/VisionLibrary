@@ -1021,7 +1021,7 @@ VisionStatus VisionAlgorithm::inspDevice(PR_INSP_DEVICE_CMD *pstInspDeviceCmd, P
     RecordManager::getInstance()->add(ptrRecord, pstRpy->nRecordId);
     pstRpy->enStatus = VisionStatus::OK;
 
-    FINISH_LOGCASE;
+    FINISH_LOGCASE_EX;
     MARK_FUNCTION_END_TIME;
     return pstRpy->enStatus;
 }
