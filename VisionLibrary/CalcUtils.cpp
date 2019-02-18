@@ -385,5 +385,86 @@ float CalcUtils::calcPointToContourDist(const cv::Point &ptInput, const VectorOf
     return false;
 }
 
+/*static*/ cv::Mat CalcUtils::paraFromPolyNomial(int n) {
+    if (n < 3) n = 3;
+    cv::Mat matPolyPara = cv::Mat::zeros(1, n, CV_32FC1);
+    matPolyPara.at<float>(0) = 1;
+    matPolyPara.at<float>(1) = 2;
+    matPolyPara.at<float>(2) = 1;
+
+    for (int i = 0; i < n - 3; ++ i) {
+        cv::Mat matPolyParaClone = cv::Mat::zeros(1, n, CV_32FC1);
+        cv::Mat matSrc(matPolyPara, cv::Range::all(), cv::Range(0, n - 1));
+        cv::Mat matDst(matPolyParaClone, cv::Range::all(), cv::Range(1, n));
+        matSrc.copyTo(matDst);
+
+        matPolyPara = matPolyPara + matPolyParaClone;
+    }
+
+#ifdef _DEBUG
+    auto vecVecPolyPara = CalcUtils::matToVector<float>(matPolyPara);
+#endif
+
+    return matPolyPara;
+}
+
+/*static*/ cv::Mat CalcUtils::generateBezier(const cv::Mat& matX, const cv::Mat& matY, const VectorOfFloat& vecXyMinMax, const int mm, const int nn) {
+    auto xMin = vecXyMinMax[0]; auto xMax = vecXyMinMax[1];
+    auto yMin = vecXyMinMax[2]; auto yMax = vecXyMinMax[3];
+
+    const int ROWS = matX.rows;
+
+    cv::Mat u = (matX - xMin) / (xMax - xMin);
+    cv::Mat v = (matY - yMin) / (yMax - yMin);
+
+#ifdef _DEBUG
+    cv::Mat uT; cv::transpose(u, uT);
+    auto vecVecUT = CalcUtils::matToVector<float>(uT);
+    cv::Mat vT; cv::transpose(v, vT);
+    auto vecVecVT = CalcUtils::matToVector<float>(vT);
+#endif
+
+    auto matPolyParamm = CalcUtils::paraFromPolyNomial(mm);
+    auto matPolyParann = CalcUtils::paraFromPolyNomial(nn);
+
+    cv::Mat Pm1 = cv::repeat(CalcUtils::intervals<float>(0.f, 1.f, ToFloat(mm - 1)).reshape(1, 1),  ROWS, 1);
+    cv::Mat Pm2 = cv::repeat(CalcUtils::intervals<float>(ToFloat(mm - 1), -1.f, 0.f).reshape(1, 1), ROWS, 1);
+    cv::Mat Pm3 = cv::repeat(u,     1, mm);
+    cv::Mat Pm4 = cv::repeat(1 - u, 1, mm);
+
+    cv::Mat Pn1, Pn2;
+    if (mm == nn) {
+        Pn1 = Pm1;
+        Pn2 = Pm2;
+    }
+    else {
+        Pn1 = cv::repeat(CalcUtils::intervals<float>(0.f, 1.f, ToFloat(nn - 1)).reshape(1, 1),  ROWS, 1);
+        Pn2 = cv::repeat(CalcUtils::intervals<float>(ToFloat(nn - 1), -1.f, 0.f).reshape(1, 1), ROWS, 1);
+    }
+
+    cv::Mat Pn3 = cv::repeat(v, 1, nn);
+    cv::Mat Pn4 = cv::repeat(1 - v, 1, nn);
+
+    // P1 = (Pm3.^Pm1).*(Pm4.^Pm2).*repmat(PolyParamm, len, 1);
+    cv::Mat matTmpPmPow, P1;
+    cv::multiply(CalcUtils::power<float>(Pm3, Pm1), CalcUtils::power<float>(Pm4, Pm2), matTmpPmPow);
+    cv::multiply(matTmpPmPow, cv::repeat(matPolyParamm, ROWS, 1), P1);
+
+    // P2 = (Pn3.^Pn1).*(Pn4.^Pn2).*repmat(PolyParann, len, 1);
+    cv::Mat matTmpPnPow, P2;
+    cv::multiply(CalcUtils::power<float>(Pn3, Pn1), CalcUtils::power<float>(Pn4, Pn2), matTmpPnPow);
+    cv::multiply(matTmpPnPow, cv::repeat(matPolyParann, ROWS, 1), P2);
+
+    cv::Mat matXX = cv::Mat::zeros(ROWS, mm * nn, CV_32FC1);
+
+    for (int ii = 0; ii < mm; ++ ii)
+    for (int jj = 0; jj < nn; ++ jj) {
+        auto matCol = matXX.col(ii * nn + jj);
+        cv::multiply(P1.col(ii), P2.col(jj), matCol);
+    }
+
+    return matXX;
+}
+
 }
 }

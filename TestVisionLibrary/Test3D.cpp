@@ -8,6 +8,7 @@
 #include <fstream>
 #include "TestSub.h"
 #include "../RegressionTest/UtilityFunc.h"
+#include "../VisionLibrary/CalcUtils.hpp"
 
 void TestCalc3DHeightDiff(const cv::Mat &matHeight);
 
@@ -820,6 +821,7 @@ void TestMotor3DCalib() {
     if (VisionStatus::OK != stRpy.enStatus)
         return;
 
+    printfMat<float>(stRpy.matIntegratedK, 3);
     int i = 1;
     for (const auto &matResultImg : stRpy.vecMatResultImg) {
         char chArrFileName[100];
@@ -845,9 +847,9 @@ void TestSolve() {
     fileNode = fsData["matSum2"];
     cv::read(fileNode, matSum2, cv::Mat());
 
-    cv::solve ( matSum1, matSum2, matK, cv::DecompTypes::DECOMP_SVD );
-    cv::Mat matEign(1, 5, CV_32FC1 );
-    cv::eigen ( matSum1, matEign );
+    cv::solve(matSum1, matSum2, matK, cv::DecompTypes::DECOMP_SVD);
+    cv::Mat matEign(1, 5, CV_32FC1);
+    cv::eigen(matSum1, matEign);
     printfMat<float>(matK);
     std::cout << "Eign value: " << std::endl;
     printfMat<float>(matEign);
@@ -1520,7 +1522,7 @@ void TestQueryDlpOffset()
     float                           fOverlapX;
     float                           fOverlapY;
 
-    assignFrames ( fLeft, fTop, fRight, fBottom, fFovWidth, fFovHeight, vecVecFrameCtr, fOverlapX, fOverlapY);
+    assignFrames(fLeft, fTop, fRight, fBottom, fFovWidth, fFovHeight, vecVecFrameCtr, fOverlapX, fOverlapY);
 
     stCmd.vecVecRefFrameCenters = vecVecFrameCtr;
     stCmd.vecVecRefFrameValues = VectorOfVectorOfFloat(1, {0.15f, 0.04f, -0.06f, -0.09f});
@@ -1540,4 +1542,218 @@ void TestQueryDlpOffset()
     }
     
     std::cout << "Run to here" << std::endl;
+}
+
+static const std::string DLP_OFFSET_CALIB_WORKING_FOLDER("C:/Users/shengguang/Documents/AOI/3D/");
+const int CALIB_FOV_ROWS = 5;
+const int CALIB_FOV_COLS = 4;
+
+static cv::Mat _calculateSurfaceConvert3D(const cv::Mat& z1, const VectorOfFloat& param, int ss, const cv::Mat& xxt1) {
+    auto zmin = param[4];
+    auto zmax = param[5];
+    cv::Mat z1t; cv::transpose(z1, z1t);
+    auto zInRow = z1t.reshape(1, z1.rows * z1.cols);
+    cv::Mat w = (zInRow - zmin) / (zmax - zmin);
+    int len = zInRow.rows;
+
+    assert(len == z1.rows * z1.cols);
+
+    cv::Mat Ps1 = cv::repeat(CalcUtils::intervals<float>(0.f, 1.f, ToFloat(ss - 1)).reshape(1, 1),  len, 1);
+    cv::Mat Ps2 = cv::repeat(CalcUtils::intervals<float>(ToFloat(ss - 1), -1.f, 0.f).reshape(1, 1), len, 1);
+    cv::Mat Ps3 = cv::repeat(w, 1, ss);
+    cv::Mat Ps4 = cv::repeat(1 - w, 1, ss);
+
+    auto matPolyParass = CalcUtils::paraFromPolyNomial(ss);
+
+#ifdef _DEBUG
+    auto vecVecPolyParass = CalcUtils::matToVector<float>(matPolyParass);
+#endif
+
+    // Matlab: P3 = (Ps3.^Ps1).*(Ps4.^Ps2).*repmat(PolyParass, len, 1);
+    cv::Mat matTmpPmPow, P3;
+    cv::multiply(CalcUtils::power<float>(Ps3, Ps1), CalcUtils::power<float>(Ps4, Ps2), matTmpPmPow);
+    cv::multiply(matTmpPmPow, cv::repeat(matPolyParass, len, 1), P3);
+
+    // Matlab: zp1 = sum(xxt1.*P3, 2);
+    cv::multiply(xxt1, P3, P3);
+    cv::Mat matResult;
+    cv::reduce(P3, matResult, 1, cv::ReduceTypes::REDUCE_SUM);
+
+#ifdef _DEBUG
+    cv::Mat matResultT; cv::transpose(matResult, matResultT);
+    auto vecVecResultT = CalcUtils::matToVector<float>(matResultT);
+#endif
+    matResult = matResult.reshape(1, z1.cols);
+    cv::transpose(matResult, matResult);
+
+#ifdef _DEBUG
+    auto vecVecFinalResult = CalcUtils::matToVector<float>(matResult);
+#endif
+
+    return matResult;
+}
+
+static cv::Mat _calculateSurfaceConvert3D_1(const cv::Mat& z1, const VectorOfFloat& param, int ss, const cv::Mat& xxt1) {
+    auto zmin = param[4];
+    auto zmax = param[5];
+    auto zInRow = z1.reshape(1, z1.rows * z1.cols);
+    cv::Mat w = (zInRow - zmin) / (zmax - zmin);
+    int len = zInRow.rows;
+
+    assert(len == z1.rows * z1.cols);
+
+    cv::Mat Ps1 = cv::repeat(CalcUtils::intervals<float>(0.f, 1.f, ToFloat(ss - 1)).reshape(1, 1),  len, 1);
+    cv::Mat Ps2 = cv::repeat(CalcUtils::intervals<float>(ToFloat(ss - 1), -1.f, 0.f).reshape(1, 1), len, 1);
+    cv::Mat Ps3 = cv::repeat(w, 1, ss);
+    cv::Mat Ps4 = cv::repeat(1 - w, 1, ss);
+
+    auto matPolyParass = CalcUtils::paraFromPolyNomial(ss);
+
+#ifdef _DEBUG
+    auto vecVecPolyParass = CalcUtils::matToVector<float>(matPolyParass);
+#endif
+
+    // Matlab: P3 = (Ps3.^Ps1).*(Ps4.^Ps2).*repmat(PolyParass, len, 1);
+    cv::Mat matTmpPmPow, P3;
+    cv::multiply(CalcUtils::power<float>(Ps3, Ps1), CalcUtils::power<float>(Ps4, Ps2), matTmpPmPow);
+    cv::multiply(matTmpPmPow, cv::repeat(matPolyParass, len, 1), P3);
+
+    // Matlab: zp1 = sum(xxt1.*P3, 2);
+    cv::multiply(xxt1, P3, P3);
+    cv::Mat matResult;
+    cv::reduce(P3, matResult, 1, cv::ReduceTypes::REDUCE_SUM);
+
+#ifdef _DEBUG
+    cv::Mat matResultT; cv::transpose(matResult, matResultT);
+    auto vecVecResultT = CalcUtils::matToVector<float>(matResultT);
+#endif
+    matResult = matResult.reshape(1, z1.rows);
+    //cv::transpose(matResult, matResult);
+
+#ifdef _DEBUG
+    auto vecVecFinalResult = CalcUtils::matToVector<float>(matResult);
+#endif
+
+    return matResult;
+}
+
+static bool CalcDlpHeight(VectorOfMat *pVecOfMat) {
+    cv::Mat matX1, matY1, matX1T, matY1T;
+    CalcUtils::meshgrid<float>(1.f, 1.f, 2040.f, 1.f, 1.f, 2048.f, matX1, matY1);
+    std::vector<float> vecParamMinMaxXY{ 1.f, 2040.f, 1.f, 2048.f, -6.f, 6.f};
+    int mm = 5, nn = 5, ss = 4;
+
+    cv::transpose(matX1, matX1T);
+    cv::transpose(matY1, matY1T);
+    cv::Mat matXInRow = matX1T.reshape(1, matX1.rows * matX1.cols);
+    cv::Mat matYInRow = matY1T.reshape(1, matX1.rows * matX1.cols);
+
+    auto xxt = CalcUtils::generateBezier(matXInRow, matYInRow, vecParamMinMaxXY, mm, nn);
+    const int _2D_PARAMS = xxt.cols;
+
+    for (int nDlp = 0; nDlp < NUM_OF_DLP; ++ nDlp) {
+        char strBezierParamFileName[100];
+        _snprintf(strBezierParamFileName, sizeof(strBezierParamFileName), "BezierParameter/K%d.csv", nDlp + 1);
+        auto vecOfVecFloat = readDataFromFile(DLP_OFFSET_CALIB_WORKING_FOLDER + strBezierParamFileName);
+
+        if (vecOfVecFloat.empty()) {
+            std::cout << "Failed to read phase data from: " << DLP_OFFSET_CALIB_WORKING_FOLDER << strBezierParamFileName << std::endl;
+            return false;
+        }
+        std::cout << "Success to read data from: " << DLP_OFFSET_CALIB_WORKING_FOLDER << strBezierParamFileName << std::endl;
+
+        cv::Mat matK = vectorToMat(vecOfVecFloat);
+        cv::Mat mat3DBezierSurface = cv::Mat::zeros(ss, xxt.rows, CV_32FC1);
+        //Matlab: for ii = 1:ss
+        for (int ii = 1; ii <= ss; ++ii) {
+            // Matlab: xxt1(:, ii) = xxt*K((ii - 1)*len1 + 1:ii*len1);
+            cv::Mat matXxt1ROI(mat3DBezierSurface, cv::Range(ii - 1, ii), cv::Range::all());
+            cv::Mat matResult = xxt * cv::Mat(matK, cv::Range((ii - 1)* _2D_PARAMS, ii* _2D_PARAMS), cv::Range::all());
+            matResult = matResult.reshape(1, 1);
+            matResult.copyTo(matXxt1ROI);
+        }
+
+        cv::transpose(mat3DBezierSurface, mat3DBezierSurface);
+
+        char strBezierSurfaceName[100];
+        _snprintf(strBezierSurfaceName, sizeof(strBezierSurfaceName), "PhaseFOV/FOV1/DLP%d/3DBezierSurface.csv", nDlp + 1);
+        CalcUtils::saveMatToCsv(mat3DBezierSurface, DLP_OFFSET_CALIB_WORKING_FOLDER + strBezierSurfaceName);
+        std::cout << "Success to write 3D bezier surface data to: " << DLP_OFFSET_CALIB_WORKING_FOLDER << strBezierSurfaceName << std::endl;
+
+        for (int row = 0; row < CALIB_FOV_ROWS; ++row)
+            for (int col = 0; col < CALIB_FOV_COLS; ++col) {
+                char strPhaseDataName[100];
+                _snprintf(strPhaseDataName, sizeof(strPhaseDataName), "PhaseFOV/FOV1/DLP%d/H%d%d.csv", nDlp + 1, row, col);
+                auto vecOfVecFloat = readDataFromFile(DLP_OFFSET_CALIB_WORKING_FOLDER + strPhaseDataName);
+                if (vecOfVecFloat.empty()) {
+                    std::cout << "Failed to read phase data from: " << DLP_OFFSET_CALIB_WORKING_FOLDER << strPhaseDataName << std::endl;
+                    return false;
+                }
+                std::cout << "Success to read data from: " << DLP_OFFSET_CALIB_WORKING_FOLDER << strPhaseDataName << std::endl;
+
+                cv::Mat matPhase = vectorToMat(vecOfVecFloat);
+                cv::GaussianBlur(matPhase, matPhase, cv::Size(5, 5), 5, 5, cv::BorderTypes::BORDER_REPLICATE);
+
+                //{
+                //    char strPhaseFilteredDataName[100];
+                //    _snprintf(strPhaseFilteredDataName, sizeof(strPhaseFilteredDataName), "PhaseFOV/FOV1/DLP%d/PhaseFiltered%d%d.csv", nDlp + 1, row, col);
+                //    CalcUtils::saveMatToCsv(matPhase, DLP_OFFSET_CALIB_WORKING_FOLDER + strPhaseFilteredDataName);
+                //    std::cout << "Success to write data to: " << DLP_OFFSET_CALIB_WORKING_FOLDER << strPhaseFilteredDataName << std::endl;
+                //}
+                
+                auto matHeight = _calculateSurfaceConvert3D(matPhase, vecParamMinMaxXY, 4, mat3DBezierSurface);
+                pVecOfMat[nDlp].push_back(matHeight);
+
+                char strHeightDataName[100];
+                _snprintf(strHeightDataName, sizeof(strHeightDataName), "PhaseFOV/FOV1/DLP%d/HResult%d%d.csv", nDlp + 1, row, col);
+                CalcUtils::saveMatToCsv(matHeight, DLP_OFFSET_CALIB_WORKING_FOLDER + strHeightDataName);
+                std::cout << "Success to write data to: " << DLP_OFFSET_CALIB_WORKING_FOLDER << strHeightDataName << std::endl;
+            }
+    }
+    return true;
+}
+
+static bool ReadDlpHeight(VectorOfMat *pVecOfMat) {
+    for (int nDlp = 0; nDlp < NUM_OF_DLP; ++ nDlp) {
+        for (int row = 0; row < CALIB_FOV_ROWS; ++row)
+            for (int col = 0; col < CALIB_FOV_COLS; ++col) {
+                char strHeightDataName[100];
+                _snprintf(strHeightDataName, sizeof(strHeightDataName), "PhaseFOV/FOV1/DLP%d/HResult%d%d.csv", nDlp + 1, row, col);
+                auto vecOfVecFloat = readDataFromFile(DLP_OFFSET_CALIB_WORKING_FOLDER + strHeightDataName);
+                if (vecOfVecFloat.empty()) {
+                    std::cout << "Failed to read phase data from: " << DLP_OFFSET_CALIB_WORKING_FOLDER << strHeightDataName << std::endl;
+                    return false;
+                }
+                std::cout << "Success to read data from: " << DLP_OFFSET_CALIB_WORKING_FOLDER << strHeightDataName << std::endl;
+
+                cv::Mat matHeight = vectorToMat(vecOfVecFloat);
+                pVecOfMat[nDlp].push_back(matHeight);
+            }
+    }
+    return true;
+}
+
+void TestCalibDlpOffset_1() {
+    PR_CALIB_DLP_OFFSET_CMD stCmd;
+    PR_CALIB_DLP_OFFSET_RPY stRpy;
+
+    if (!CalcDlpHeight(stCmd.arrVecDlpH))
+        return;
+
+    stCmd.fResolution = 0.0159f;
+    stCmd.fFrameDistX = 27.7946f;
+    stCmd.fFrameDistY = 24.739f;
+    stCmd.nCalibPosRows = CALIB_FOV_ROWS;
+    stCmd.nCalibPosCols = CALIB_FOV_COLS;
+
+    PR_CalibDlpOffset(&stCmd, &stRpy);
+    std::cout << std::setprecision(3) << "Dlp offset: " << std::endl;
+    for (int nDlp = 0; nDlp < NUM_OF_DLP; ++ nDlp) {
+        std::cout << stRpy.arrOffset[nDlp] << std::endl;
+
+        char strSurfaceDataName[100];
+        _snprintf(strSurfaceDataName, sizeof(strSurfaceDataName), "PhaseFOV/FOV1/Dlp_Offset_Surface_%d.csv", nDlp + 1);
+        CalcUtils::saveMatToCsv(stRpy.arrMatRotationSurface[nDlp], DLP_OFFSET_CALIB_WORKING_FOLDER + strSurfaceDataName);
+        std::cout << "Success to write surface data to: " << DLP_OFFSET_CALIB_WORKING_FOLDER << strSurfaceDataName << std::endl;
+    }
 }

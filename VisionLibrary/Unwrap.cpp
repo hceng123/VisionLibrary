@@ -1,3 +1,7 @@
+#include <iostream>
+#include <numeric>
+#include <limits>
+
 #include "Unwrap.h"
 #include "opencv2/imgproc.hpp"
 #include "opencv2/highgui.hpp"
@@ -6,9 +10,8 @@
 #include "TimeLog.h"
 #include "Log.h"
 #include "Config.h"
-#include <iostream>
-#include <numeric>
-#include <limits>
+#include "Auxiliary.hpp"
+
 
 #define MARK_FUNCTION_START_TIME    CStopWatch      stopWatch; __int64 functionStart = stopWatch.AbsNow()
 #define MARK_FUNCTION_END_TIME      TimeLog::GetInstance()->addTimeLog( __FUNCTION__, stopWatch.AbsNow() - functionStart)
@@ -563,7 +566,7 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
     ptrData3 = vecConvertedImgs[7].ptr<uchar>(0);
     for (int i = 0; i < total; ++ i) {
         short x = (short)ptrData0[i] - (short)ptrData2[i];  // x = 2*cos(beta)
-        short y = (short)ptrData3[i] - (short)ptrData1[i];  // y = 2*sin(beta)        
+        short y = (short)ptrData3[i] - (short)ptrData1[i];  // y = 2*sin(beta)
         matBeta.at<float>(i) = vecVecAtan2Table[x + PR_MAX_GRAY_LEVEL][y + PR_MAX_GRAY_LEVEL];
     }
     TimeLog::GetInstance()->addTimeLog("2 lookup phase ", stopWatch.Span());
@@ -631,13 +634,138 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
 
     pstRpy->matNanMask = matAvgUnderTolIndex;
 
-    if (! pstCmd->matOrder3CurveSurface.empty() && ! pstCmd->matIntegratedK.empty())
+    if (!pstCmd->matOrder3CurveSurface.empty() && ! pstCmd->matIntegratedK.empty())
         pstRpy->matHeight = _calcHeightFromPhaseBuffer(pstRpy->matPhase, pstCmd->matOrder3CurveSurface, pstCmd->matIntegratedK, matBuffer1, matBuffer2);
-    else if (! pstCmd->matPhaseToHeightK.empty()) {
+    else if (!pstCmd->matPhaseToHeightK.empty()) {
         cv::Mat matX, matY;
         CalcUtils::meshgrid<DATA_TYPE>(1.f, 1.f, ToFloat(pstRpy->matPhase.cols), 1.f, 1.f, ToFloat(pstRpy->matPhase.rows), matX, matY);
         cv::Mat matRatio = pstCmd->matPhaseToHeightK.at<DATA_TYPE>(0, 0) * matX + pstCmd->matPhaseToHeightK.at<DATA_TYPE>(1, 0) * matY + pstCmd->matPhaseToHeightK.at<DATA_TYPE>(2, 0);
         cv::divide(pstRpy->matPhase, matRatio, pstRpy->matHeight);
+    }
+    else
+        pstRpy->matHeight = pstRpy->matPhase;
+
+    TimeLog::GetInstance()->addTimeLog("_calcHeightFromPhase.", stopWatch.Span());
+    pstRpy->enStatus = VisionStatus::OK;
+}
+
+/*static*/ void Unwrap::calc3DHeightNew(const PR_CALC_3D_HEIGHT_NEW_CMD *const pstCmd, PR_CALC_3D_HEIGHT_RPY *const pstRpy) {
+    CStopWatch stopWatch;
+    std::vector<cv::Mat> vecConvertedImgs;
+    for (auto &mat : pstCmd->vecInputImgs) {
+        cv::Mat matConvert = mat;
+        if (mat.channels() > 1)
+            cv::cvtColor(mat, matConvert, CV_BGR2GRAY);
+        vecConvertedImgs.push_back(matConvert);
+    }
+    TimeLog::GetInstance()->addTimeLog("Convert image to float.", stopWatch.Span());
+
+    if (pstCmd->bReverseSeq) {
+        std::swap(vecConvertedImgs[1], vecConvertedImgs[3]);
+        std::swap(vecConvertedImgs[5], vecConvertedImgs[7]);
+        if (pstCmd->bUseThinnestPattern)
+            std::swap(vecConvertedImgs[9], vecConvertedImgs[11]);
+    }
+
+    auto size = vecConvertedImgs[0].size();
+    auto total = ToInt32(vecConvertedImgs[0].total());
+    cv::Mat matAlpha(size, CV_32FC1), matBeta(size, CV_32FC1), matGamma(size, CV_32FC1), matBuffer1(size, CV_32FC1), matBuffer2(size, CV_32FC1);
+    cv::Mat matAvgUnderTolIndex = cv::Mat::zeros(size, CV_8UC1);
+    float fMinimumAlpitudeSquare = pstCmd->fMinAmplitude * pstCmd->fMinAmplitude;
+
+    auto ptrData0 = vecConvertedImgs[0].ptr<uchar>(0);
+    auto ptrData1 = vecConvertedImgs[1].ptr<uchar>(0);
+    auto ptrData2 = vecConvertedImgs[2].ptr<uchar>(0);
+    auto ptrData3 = vecConvertedImgs[3].ptr<uchar>(0);
+    for (int i = 0; i < total; ++ i) {
+        short x = (short)ptrData0[i] - (short)ptrData2[i];
+        short y = (short)ptrData3[i] - (short)ptrData1[i];
+        float fAmplitudeSquare = (x*x + y*y) / 4.f;
+        if (fAmplitudeSquare < fMinimumAlpitudeSquare)
+            matAvgUnderTolIndex.at<uchar>(i) = PR_MAX_GRAY_LEVEL;
+        matAlpha.at<float>(i) = vecVecAtan2Table[x + PR_MAX_GRAY_LEVEL][y + PR_MAX_GRAY_LEVEL];
+    }
+
+    //_fitHoleInNanMask(matAvgUnderTolIndex, cv::Size(10, 10), 2);
+
+    ptrData0 = vecConvertedImgs[4].ptr<uchar>(0);
+    ptrData1 = vecConvertedImgs[5].ptr<uchar>(0);
+    ptrData2 = vecConvertedImgs[6].ptr<uchar>(0);
+    ptrData3 = vecConvertedImgs[7].ptr<uchar>(0);
+    for (int i = 0; i < total; ++ i) {
+        short x = (short)ptrData0[i] - (short)ptrData2[i];  // x = 2*cos(beta)
+        short y = (short)ptrData3[i] - (short)ptrData1[i];  // y = 2*sin(beta)
+        matBeta.at<float>(i) = vecVecAtan2Table[x + PR_MAX_GRAY_LEVEL][y + PR_MAX_GRAY_LEVEL];
+    }
+    TimeLog::GetInstance()->addTimeLog("2 lookup phase ", stopWatch.Span());
+
+    if (pstCmd->bUseThinnestPattern) {
+        ptrData0 = vecConvertedImgs[8].ptr<uchar>(0);
+        ptrData1 = vecConvertedImgs[9].ptr<uchar>(0);
+        ptrData2 = vecConvertedImgs[10].ptr<uchar>(0);
+        ptrData3 = vecConvertedImgs[11].ptr<uchar>(0);
+        for (int i = 0; i < total; ++i) {
+            short x = (short)ptrData0[i] - (short)ptrData2[i];  // x = 2*cos(beta)
+            short y = (short)ptrData3[i] - (short)ptrData1[i];  // y = 2*sin(beta)
+            matGamma.at<float>(i) = vecVecAtan2Table[x + PR_MAX_GRAY_LEVEL][y + PR_MAX_GRAY_LEVEL];
+        }
+        matGamma = matGamma - pstCmd->matBaseWrappedGamma;
+    }
+
+    matAlpha = matAlpha - pstCmd->matBaseWrappedAlpha;
+    matBeta = matBeta - pstCmd->matBaseWrappedBeta;
+    TimeLog::GetInstance()->addTimeLog("2 substract take. ", stopWatch.Span());
+
+#ifdef _DEBUG
+    auto vecVecAlpha = CalcUtils::matToVector<DATA_TYPE>(matAlpha);
+    auto vecVecBeta  = CalcUtils::matToVector<DATA_TYPE>(matBeta);
+#endif
+
+    _phaseWrapBuffer(matAlpha, matBuffer1, pstCmd->fPhaseShift);
+    TimeLog::GetInstance()->addTimeLog("_phaseWrapBuffer.", stopWatch.Span());
+
+    matBuffer1 = matAlpha * pstCmd->matThickToThinK.at<DATA_TYPE>(0);
+    TimeLog::GetInstance()->addTimeLog("Multiply takes.", stopWatch.Span());
+
+    _phaseWrapByRefer(matBeta, matBuffer1);
+    TimeLog::GetInstance()->addTimeLog("_phaseWrapByRefer.", stopWatch.Span());
+
+    if (pstCmd->nRemoveBetaJumpMinSpan > 0 || pstCmd->nRemoveBetaJumpMaxSpan > 0) {
+        _phasePatch(matBeta, pstCmd->enProjectDir, matAvgUnderTolIndex);
+        phaseCorrectionEx(matBeta, pstCmd->enProjectDir, pstCmd->enScanDir, pstCmd->nRemoveBetaJumpMinSpan, pstCmd->nRemoveBetaJumpMaxSpan);
+        TimeLog::GetInstance()->addTimeLog("phaseCorrection for beta.", stopWatch.Span());
+    }
+
+    if (pstCmd->bUseThinnestPattern) {
+        auto k1 = pstCmd->matThickToThinK.at<DATA_TYPE>(0);
+        auto k2 = pstCmd->matThickToThinnestK.at<DATA_TYPE>(0);
+        matBuffer1 = matBeta * k2 / k1;
+        _phaseWrapByRefer(matGamma, matBuffer1);
+
+        if (pstCmd->nRemoveGammaJumpSpanX > 0 || pstCmd->nRemoveGammaJumpSpanY > 0) {
+            _phasePatch(matGamma, pstCmd->enProjectDir, matAvgUnderTolIndex);
+            phaseCorrection(matGamma, matAvgUnderTolIndex, pstCmd->nRemoveGammaJumpSpanX, pstCmd->nRemoveGammaJumpSpanY);
+            //Run 2 times, first time remove small jump, second time remove big jump. 2 pass can remove big jump with small jump on its edge.
+            //phaseCorrection(matGamma, matAvgUnderTolIndex, pstCmd->nRemoveGammaJumpSpanX, pstCmd->nRemoveGammaJumpSpanY);
+            TimeLog::GetInstance()->addTimeLog("phaseCorrection for gamma.", stopWatch.Span());
+        }
+
+        pstRpy->matPhase = matGamma * k1 / k2;
+    }
+    else
+        pstRpy->matPhase = matBeta;
+
+    cv::medianBlur(pstRpy->matPhase, pstRpy->matPhase, 5);
+
+    if (pstCmd->bEnableGaussianFilter)
+        cv::GaussianBlur(pstRpy->matPhase, pstRpy->matPhase, cv::Size(5, 5), 5, 5, cv::BorderTypes::BORDER_REPLICATE);
+
+    pstRpy->matNanMask = matAvgUnderTolIndex;
+
+    if (!pstCmd->mat3DBezierK.empty() && !pstCmd->mat3DBezierSurface.empty()) {
+        std::vector<float> vecParamMinMaxXY{1.f, ToFloat(pstRpy->matPhase.cols), 1.f, ToFloat(pstRpy->matPhase.rows), 
+            ToFloat(pstCmd->fMinPhase), ToFloat(pstCmd->fMaxPhase)};
+        pstRpy->matHeight = _calculateSurfaceConvert3D(pstRpy->matPhase, vecParamMinMaxXY, 4, pstCmd->mat3DBezierSurface);
     }
     else
         pstRpy->matHeight = pstRpy->matPhase;
@@ -1198,7 +1326,7 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
         cv::Mat matXX;
         matXX.push_back(cv::Mat(vecXt).reshape(1, 1));
         matXX.push_back(cv::Mat(vecYt).reshape(1, 1));
-        matXX.push_back(cv::Mat(cv::Mat::ones(1, ToInt32(vecTrimedLocations.size()), CV_32FC1)));
+        matXX.push_back(cv::Mat(cv::Mat::ones(1, ToInt32(vecTrimedLocations.size()), CV_32FC1))); // cv::Mat::ones return MatExpr, need to convert to Mat
         cv::transpose(matXX, matXX);
         cv::Mat matYY(vecPhaseTmp);
         cv::Mat matK;
@@ -1265,7 +1393,7 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
                 cv::Mat matXX;
                 matXX.push_back(cv::Mat(vecXt).reshape(1, 1));
                 matXX.push_back(cv::Mat(vecYt).reshape(1, 1));
-                matXX.push_back(cv::Mat(cv::Mat::ones(1, ToInt32(vecPtLocations.size()), CV_32FC1)));
+                matXX.push_back(cv::Mat(cv::Mat::ones(1, ToInt32(vecPtLocations.size()), CV_32FC1))); // cv::Mat::ones return MatExpr, need to convert to Mat
                 cv::transpose(matXX, matXX);
                 cv::Mat matYY(vecPhaseTmp);
                 cv::solve(matXX, matYY, matK, cv::DecompTypes::DECOMP_SVD);
@@ -1520,7 +1648,7 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
         cv::Mat matXX;
         matXX.push_back(cv::Mat(vecXt).reshape(1, 1));
         matXX.push_back(cv::Mat(vecYt).reshape(1, 1));
-        matXX.push_back(cv::Mat(cv::Mat::ones(1, ToInt32(vecHeightTmp.size()), CV_32FC1)));
+        matXX.push_back(cv::Mat(cv::Mat::ones(1, ToInt32(vecHeightTmp.size()), CV_32FC1))); // cv::Mat::ones return MatExpr, need to convert to Mat
         cv::transpose(matXX, matXX);
         cv::Mat matYY(vecHeightTmp);
         cv::solve(matXX, matYY, matK, cv::DecompTypes::DECOMP_QR);
@@ -1561,7 +1689,7 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
     cv::Mat matXX;
     matXX.push_back(cv::Mat(vecXt).reshape(1, 1));
     matXX.push_back(cv::Mat(vecYt).reshape(1, 1));
-    matXX.push_back(cv::Mat(cv::Mat::ones(1, ToInt32(vecHeightTmp.size()), CV_32FC1)));
+    matXX.push_back(cv::Mat(cv::Mat::ones(1, ToInt32(vecHeightTmp.size()), CV_32FC1))); // cv::Mat::ones return MatExpr, need to convert to Mat
     cv::transpose(matXX, matXX);
     cv::Mat matZZ(vecHeightTmp);
 
@@ -2018,6 +2146,350 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
         cv::Mat matHeightGridImg = _drawHeightGrid(matHeight, pstCmd->nResultImgGridRow, pstCmd->nResultImgGridCol, pstCmd->szMeasureWinSize, vecGridHeights);
         pstRpy->vecHeightGridHeights.push_back(PairHeightGridHeights(pairHeightPhase.first, vecGridHeights));
         pstRpy->vecMatResultImg.push_back(matHeightGridImg);
+    }
+    pstRpy->enStatus = VisionStatus::OK;
+}
+
+// ss is the 3D bezier rank
+/*static*/ void Unwrap::_calculatePPzConvert3D(const cv::Mat& z1, const cv::Mat& matH, const VectorOfFloat& param, int ss, const cv::Mat& xxt, cv::Mat& matSum1, cv::Mat& matSum2) {
+    auto zmin = param[4];
+    auto zmax = param[5];
+
+    //Matlab: H = H(:); Matlab change to one row is row to row, but OpenCV is col by col, so need to transpose first
+    cv::Mat z1T;
+    cv::transpose(z1, z1T);
+    auto zInRow = z1T.reshape(1, z1.rows * z1.cols);
+    auto hInRow = matH.reshape(1, matH.rows * matH.cols);
+    cv::Mat w = (zInRow - zmin) / (zmax - zmin);
+    int len = zInRow.rows;
+
+    cv::Mat Ps1 = cv::repeat(CalcUtils::intervals<float>(0.f, 1.f, ToFloat(ss - 1)).reshape(1, 1),  len, 1);
+    cv::Mat Ps2 = cv::repeat(CalcUtils::intervals<float>(ToFloat(ss - 1), -1.f, 0.f).reshape(1, 1), len, 1);
+    cv::Mat Ps3 = cv::repeat(w,     1, ss);
+    cv::Mat Ps4 = cv::repeat(1 - w, 1, ss);
+
+    auto matPolyParass = CalcUtils::paraFromPolyNomial(ss);
+
+    // Matlab: P3 = (Ps3.^Ps1).*(Ps4.^Ps2).*repmat(PolyParass, len, 1);
+    cv::Mat matTmpPmPow, P3;
+    cv::multiply(CalcUtils::power<float>(Ps3, Ps1), CalcUtils::power<float>(Ps4, Ps2), matTmpPmPow);
+    cv::multiply(matTmpPmPow, cv::repeat(matPolyParass, len, 1), P3);
+
+#ifdef _DEBUG
+    cv::Mat P3t; cv::transpose(P3, P3t);
+    auto vecVecP3t = CalcUtils::matToVector<DATA_TYPE>(P3t);
+#endif
+
+    // 2D rank 5x5, then _2D_PARAMS will be 25.
+    const int _2D_PARAMS = xxt.cols;
+
+    matSum1 = cv::Mat::zeros(_2D_PARAMS * ss, _2D_PARAMS * ss, CV_32FC1);
+    matSum2 = cv::Mat::zeros(_2D_PARAMS * ss, 1, CV_32FC1);
+
+    const int nt = 20000;
+    const int TOTAL_LOOP = ToInt32(std::ceil(ToFloat(len) / ToFloat(nt)));
+
+    cv::Mat xx = cv::Mat::zeros(nt, _2D_PARAMS * ss, CV_32FC1), xxTranspose;
+
+    for (int ii = 1; ii <= TOTAL_LOOP; ++ii) {
+        int nStart = (ii - 1) * nt, nEnd;
+        if (ii == TOTAL_LOOP)
+            nEnd = len;
+        else
+            nEnd = ii * nt;
+
+        int leni = nEnd - nStart;
+
+        if (nt != leni)
+            xx = cv::Mat::zeros(leni, _2D_PARAMS * ss, CV_32FC1);
+
+        cv::Mat matResult;
+        for (int kk = 1; kk <= ss; ++ kk) {
+            //Matlab: xx(:, (kk-1)*len1+1:kk*len1) = xxt(idxi, :).*repmat(P3(idxi, kk), 1, len1);
+            cv::Mat xxtROI(xxt, cv::Range(nStart, nEnd), cv::Range::all());
+            cv::Mat matP3Col(P3, cv::Range(nStart, nEnd), cv::Range(kk - 1, kk));
+            cv::Mat matP3ColRepeat = cv::repeat(matP3Col, 1, _2D_PARAMS);
+            cv::multiply(xxtROI, matP3ColRepeat, matResult);
+
+#ifdef _DEBUG
+            auto vecVecResult = CalcUtils::matToVector<DATA_TYPE>(matResult);
+#endif
+            cv::Mat xxROI(xx, cv::Range::all(), cv::Range((kk - 1) * _2D_PARAMS, kk * _2D_PARAMS));
+            matResult.copyTo(xxROI);
+        }
+
+        cv::transpose(xx, xxTranspose);
+        matSum1 = matSum1 + xxTranspose * xx;
+        matSum2 = matSum2 + xxTranspose * cv::Mat(hInRow, cv::Range(nStart, nEnd), cv::Range::all());
+
+#ifdef _DEBUG
+        auto vecVecXX = CalcUtils::matToVector<DATA_TYPE>(xx);
+        auto vecVecSum1 = CalcUtils::matToVector<DATA_TYPE>(matSum1);
+        cv::Mat matSum2T; cv::transpose(matSum2, matSum2T);
+        auto vecVecSum2T = CalcUtils::matToVector<DATA_TYPE>(matSum2T);
+#endif
+    }
+}
+
+/*static*/ cv::Mat Unwrap::_calculateSurfaceConvert3D(const cv::Mat& z1, const VectorOfFloat& param, int ss, const cv::Mat& xxt1) {
+    MARK_FUNCTION_START_TIME;
+
+    auto zmin = param[4];
+    auto zmax = param[5];
+    cv::Mat z1t; cv::transpose(z1, z1t);
+    auto zInRow = z1t.reshape(1, z1.rows * z1.cols);
+    cv::Mat w = (zInRow - zmin) / (zmax - zmin);
+    int len = zInRow.rows;
+
+    assert(len == z1.rows * z1.cols);
+
+    cv::Mat Ps1 = cv::repeat(CalcUtils::intervals<float>(0.f, 1.f, ToFloat(ss - 1)).reshape(1, 1),  len, 1);
+    cv::Mat Ps2 = cv::repeat(CalcUtils::intervals<float>(ToFloat(ss - 1), -1.f, 0.f).reshape(1, 1), len, 1);
+    cv::Mat Ps3 = cv::repeat(w, 1, ss);
+    cv::Mat Ps4 = cv::repeat(1 - w, 1, ss);
+
+    auto matPolyParass = CalcUtils::paraFromPolyNomial(ss);
+
+#ifdef _DEBUG
+    auto vecVecPolyParass = CalcUtils::matToVector<float>(matPolyParass);
+#endif
+
+    // Matlab: P3 = (Ps3.^Ps1).*(Ps4.^Ps2).*repmat(PolyParass, len, 1);
+    cv::Mat matTmpPmPow, P3;
+    cv::multiply(CalcUtils::power<float>(Ps3, Ps1), CalcUtils::power<float>(Ps4, Ps2), matTmpPmPow);
+    cv::multiply(matTmpPmPow, cv::repeat(matPolyParass, len, 1), P3);
+
+    // Matlab: zp1 = sum(xxt1.*P3, 2);
+    cv::multiply(xxt1, P3, P3);
+    cv::Mat matResult;
+    cv::reduce(P3, matResult, 1, cv::ReduceTypes::REDUCE_SUM);
+
+#ifdef _DEBUG
+    cv::Mat matResultT; cv::transpose(matResult, matResultT);
+    auto vecVecResultT = CalcUtils::matToVector<float>(matResultT);
+#endif
+    matResult = matResult.reshape(1, z1.cols);
+    cv::transpose(matResult, matResult);
+
+#ifdef _DEBUG
+    auto vecVecFinalResult = CalcUtils::matToVector<float>(matResult);
+#endif
+
+    MARK_FUNCTION_END_TIME;
+    return matResult;
+}
+
+/*static*/ void Unwrap::motorCalib3DNew(const PR_MOTOR_CALIB_3D_CMD *const pstCmd, PR_MOTOR_CALIB_3D_NEW_RPY *const pstRpy) {
+    auto vecPairHeightPhase = pstCmd->vecPairHeightPhase;
+    std::sort(vecPairHeightPhase.begin(), vecPairHeightPhase.end(), [](PairHeightPhase& kv1, PairHeightPhase& kv2) {
+        return kv1.first < kv2.first;
+    });
+
+    // In matlab code, N5 actually is the measured max height, and P5 is min height
+    auto matN5 = vecPairHeightPhase.back().second;
+    auto matP5 = vecPairHeightPhase.front().second;
+
+    double zMax = 0., zMin = 0., zTmp = 0.;
+    cv::minMaxIdx(matN5, &zTmp, &zMax);
+    cv::minMaxIdx(matP5, &zMin, &zTmp);
+
+    cv::Mat matX1, matY1, matX1T, matY1T;
+    CalcUtils::meshgrid<DATA_TYPE>(1.f, 1.f, ToFloat(pstCmd->vecPairHeightPhase[0].second.cols), 1.f, 1.f, ToFloat(pstCmd->vecPairHeightPhase[0].second.rows), matX1, matY1);
+
+    int mm = 5, nn = 5, ss = 4;
+
+    cv::transpose(matX1, matX1T);
+    cv::transpose(matY1, matY1T);
+    cv::Mat matXInRow = matX1T.reshape(1, matX1.rows * matX1.cols);
+    cv::Mat matYInRow = matY1T.reshape(1, matX1.rows * matX1.cols);
+
+    std::vector<float> vecParamMinMaxXY{1.f, ToFloat(matX1.cols), 1.f, ToFloat(matX1.rows), ToFloat(zMin), ToFloat(zMax)};
+    auto xxt = CalcUtils::generateBezier(matXInRow, matYInRow, vecParamMinMaxXY, mm, nn);
+
+#ifdef _DEBUG
+    auto vecVecxxt = CalcUtils::matToVector<DATA_TYPE>(xxt);
+#endif
+
+    // 2D rank 5x5, then _2D_PARAMS will be 25.
+    const int _2D_PARAMS = xxt.cols;
+
+    cv::Mat matSum1 = cv::Mat::zeros(_2D_PARAMS * ss, _2D_PARAMS * ss, CV_32FC1);
+    cv::Mat matSum2 = cv::Mat::zeros(_2D_PARAMS * ss, 1, CV_32FC1);
+
+    for (const auto& heightPhase : pstCmd->vecPairHeightPhase) {
+        cv::Mat matSum1t, matSum2t;
+        cv::Mat matH = cv::Mat::ones(heightPhase.second.size(), heightPhase.second.type()) * heightPhase.first;
+        _calculatePPzConvert3D(heightPhase.second, matH, vecParamMinMaxXY, ss, xxt, matSum1t, matSum2t);
+        matSum1 = matSum1 + matSum1t;
+        matSum2 = matSum2 + matSum2t;
+    }
+
+    cv::Mat matK;
+    cv::solve(matSum1, matSum2, matK, cv::DecompTypes::DECOMP_NORMAL);
+
+#ifdef _DEBUG
+    auto vecVecSum1 = CalcUtils::matToVector<DATA_TYPE>(matSum1);
+    auto vecVecSum2 = CalcUtils::matToVector<DATA_TYPE>(matSum2);
+    cv::Mat matKt; cv::transpose(matK, matKt);
+    auto vecVecKt = CalcUtils::matToVector<DATA_TYPE>(matKt);
+#endif
+    pstRpy->mat3DBezierK = matK;
+
+    cv::Mat xxt1 = cv::Mat::zeros(ss, xxt.rows, CV_32FC1);
+    //Matlab: for ii = 1:ss
+    for (int ii = 1; ii <= ss; ++ii) {
+        // Matlab: xxt1(:, ii) = xxt*K((ii - 1)*len1 + 1:ii*len1);
+        cv::Mat matXxt1ROI(xxt1, cv::Range(ii - 1, ii), cv::Range::all());
+        cv::Mat matResult = xxt * cv::Mat(matK, cv::Range((ii - 1)* _2D_PARAMS, ii* _2D_PARAMS), cv::Range::all());
+        matResult = matResult.reshape(1, 1);
+        matResult.copyTo(matXxt1ROI);
+    }
+    cv::transpose(xxt1, pstRpy->mat3DBezierSurface);
+
+    pstRpy->vecMatResultImg.clear();
+    pstRpy->vecHeightCalibResult.clear();
+    for (const auto &pairHeightPhase : pstCmd->vecPairHeightPhase) {
+        cv::Mat matHeight = _calculateSurfaceConvert3D(pairHeightPhase.second, vecParamMinMaxXY, ss, pstRpy->mat3DBezierSurface);
+        pstRpy->vecHeightCalibResult.push_back(PairHeightCalibResult(pairHeightPhase.first, matHeight));
+        VectorOfFloat vecGridHeights;
+        cv::Mat matHeightGridImg = _drawHeightGrid(matHeight, pstCmd->nResultImgGridRow, pstCmd->nResultImgGridCol, pstCmd->szMeasureWinSize, vecGridHeights);
+        pstRpy->vecHeightGridHeights.push_back(PairHeightGridHeights(pairHeightPhase.first, vecGridHeights));
+        pstRpy->vecMatResultImg.push_back(matHeightGridImg);
+    }
+
+    pstRpy->fMaxPhase = ToFloat(zMax);
+    pstRpy->fMinPhase = ToFloat(zMin);
+    pstRpy->enStatus = VisionStatus::OK;
+}
+
+/*static*/ cv::Mat Unwrap::_pickPointInterval(const cv::Mat& matInput, int interval) {
+    VectorOfVectorOfFloat vecVecResult;
+    for (int row = 0; row < matInput.rows; row += interval) {
+        VectorOfFloat vecResult;
+        for (int col = 0; col < matInput.cols; col += interval) {
+            vecResult.push_back(matInput.at<float>(row, col));
+        }
+        vecVecResult.push_back(vecResult);
+    }
+    return CalcUtils::vectorToMat(vecVecResult);
+}
+
+/*static*/ void Unwrap::calibDlpOffset(const PR_CALIB_DLP_OFFSET_CMD *const pstCmd, PR_CALIB_DLP_OFFSET_RPY *const pstRpy) {
+    CStopWatch stopWatch;
+    //[m1, n1] = size(H1_00);
+    //[x1, y1] = meshgrid(1:n1, 1:m1);
+    int COLS = pstCmd->arrVecDlpH[0].front().cols;
+    int ROWS = pstCmd->arrVecDlpH[0].front().rows;
+    cv::Mat matX1, matY1;
+    CalcUtils::meshgrid<float>(1.f, 1.f, ToFloat(COLS), 1.f, 1.f, ToFloat(ROWS), matX1, matY1);
+    matX1 = matX1 * pstCmd->fResolution;
+    matY1 = matY1 * pstCmd->fResolution;
+    const int dt = 20; // Use one data in every 20 pixels
+    cv::Mat matX2 = _pickPointInterval(matX1, dt);
+    cv::Mat matY2 = _pickPointInterval(matY1, dt);
+
+    std::cout << "matX2" << std::endl;
+    printfMat<float>(matX2);
+
+    std::cout << "matY2" << std::endl;
+    printfMat<float>(matY2);
+
+    float meanX = ToFloat(cv::mean(matX2)[0]);
+    float meanY = ToFloat(cv::mean(matY2)[0]);
+
+    // Matlab: xx = [x2(:), y2(:), ones(size(x2(:)))];
+    cv::Mat matXX;
+    // Transpose to make the result same as matlab
+    cv::transpose(matX2, matX2);
+    cv::transpose(matY2, matY2);
+    matXX.push_back(matX2.reshape(1, 1));
+    matXX.push_back(matY2.reshape(1, 1));
+    matXX.push_back(cv::Mat(cv::Mat::ones(1, matXX.cols, CV_32FC1)));   // cv::Mat::ones return MatExpr, need to convert to Mat
+    cv::transpose(matXX, matXX);
+
+    std::cout << "matXX" << std::endl;
+    printfMat<float>(matXX);
+
+    cv::Mat arrMatP[NUM_OF_DLP], arrMatZ[NUM_OF_DLP], arrMatQ[NUM_OF_DLP];
+    float arryMeanZ[NUM_OF_DLP];
+    for (int nDlp = 0; nDlp < NUM_OF_DLP; ++ nDlp) {
+        cv::Mat matX = cv::Mat::zeros(pstCmd->nCalibPosRows, pstCmd->nCalibPosCols, CV_32FC1);
+        cv::Mat matY = matX.clone();
+        cv::Mat matZ = matX.clone();
+        for (int row = 0; row < pstCmd->nCalibPosRows; ++ row) {
+            for (int col = 0; col < pstCmd->nCalibPosCols; ++ col) {
+                int index = row * pstCmd->nCalibPosCols + col;
+                cv::Mat matZt = _pickPointInterval(pstCmd->arrVecDlpH[nDlp][index], dt);
+                matX.at<float>(row, col) = meanX + col * pstCmd->fFrameDistX;
+                matY.at<float>(row, col) = meanY + row * pstCmd->fFrameDistY;
+                matZ.at<float>(row, col) = ToFloat(cv::mean(matZt)[0]);
+
+                std::cout << "DLP " << nDlp << " row " << row << " col " << col << " matZt" << std::endl;
+                printfMat<float>(matZt);
+
+                // Calculate Surface
+                cv::transpose(matZt, matZt);
+                cv::Mat matYY = matZt.reshape(1, ToInt32(matZt.total()));
+                cv::Mat matQt;
+                cv::solve(matXX, matYY, matQt, cv::DecompTypes::DECOMP_SVD);
+
+                cv::transpose(matQt, matQt);
+
+                std::cout << "DLP " << nDlp << " row " << row << " col " << col << " matQt" << std::endl;
+                printfMat<float>(matQt);
+
+                arrMatQ[nDlp].push_back(matQt);
+            }
+        }
+
+        arrMatZ[nDlp] = matZ;
+
+        // Matlab: xx = [X(:), Y(:), ones(length(row)*length(col), 1)];
+        cv::Mat matXX1;
+        matXX1.push_back(matX.reshape(1, 1));
+        matXX1.push_back(matY.reshape(1, 1));
+        matXX1.push_back(cv::Mat(cv::Mat::ones(1, matXX1.cols, CV_32FC1))); // cv::Mat::ones return MatExpr, need to convert to Mat
+        cv::transpose(matXX1, matXX1);
+
+        cv::Mat matYY1 = matZ.reshape(1, ToInt32(matZ.total()));
+        cv::Mat matPt;
+
+        std::cout << "DLP " << nDlp << " matXX1" << std::endl;
+        printfMat<float>(matXX1);
+
+        std::cout << "DLP " << nDlp << " matYY1" << std::endl;
+        printfMat<float>(matYY1);
+
+        cv::solve(matXX1, matYY1, matPt, cv::DecompTypes::DECOMP_SVD);
+
+        std::cout << "DLP " << nDlp << " matPt" << std::endl;
+        printfMat<float>(matPt);
+
+        arrMatP[nDlp] = matPt;
+
+        arryMeanZ[nDlp] = ToFloat(cv::mean(matZ)[0]);
+    }
+
+    float cx = (1 + COLS) / 2.f;
+    float cy = (1 + ROWS) / 2.f;
+
+    for (int nDlp = 0; nDlp < NUM_OF_DLP; ++ nDlp) {
+        pstRpy->arrOffset[nDlp] = arryMeanZ[nDlp] - arryMeanZ[3]; // To return out the result
+
+        std::cout << "DLP " << nDlp << " arrMatQ" << std::endl;
+        printfMat<float>(arrMatQ[nDlp]);
+        cv::reduce(arrMatQ[nDlp], arrMatQ[nDlp], 0, cv::ReduceTypes::REDUCE_AVG);
+
+        std::cout << "After average" << std::endl;
+        printfMat<float>(arrMatQ[nDlp]);
+
+        float zp0 = -arrMatP[nDlp].at<float>(0) * cx * pstCmd->fResolution - arrMatP[nDlp].at<float>(1) * cy * pstCmd->fResolution;
+        float zq0 = -arrMatQ[nDlp].at<float>(0) * cx * pstCmd->fResolution - arrMatQ[nDlp].at<float>(1) * cy * pstCmd->fResolution;
+    
+        cv::Mat zp1 = arrMatP[nDlp].at<float>(0) * matX1 + arrMatP[nDlp].at<float>(1) * matY1 + zp0;
+        cv::Mat zq1 = arrMatQ[nDlp].at<float>(0) * matX1 + arrMatQ[nDlp].at<float>(1) * matY1 + zq0;
+    
+        pstRpy->arrMatRotationSurface[nDlp] = zq1 - zp1;
     }
     pstRpy->enStatus = VisionStatus::OK;
 }
@@ -2875,7 +3347,7 @@ void _saveAsGray(const cv::Mat &matHeight, const std::string &strFilePath) {
         cv::Mat matXX;
         matXX.push_back(cv::Mat(vecXt).reshape(1, 1));
         matXX.push_back(cv::Mat(vecYt).reshape(1, 1));
-        matXX.push_back(cv::Mat(cv::Mat::ones(1, ToInt32(vecHeightTmp.size()), CV_32FC1)));
+        matXX.push_back(cv::Mat(cv::Mat::ones(1, ToInt32(vecHeightTmp.size()), CV_32FC1))); // cv::Mat::ones return MatExpr, need to convert to Mat
         cv::transpose(matXX, matXX);
         cv::Mat matYY(vecHeightTmp);
         cv::solve(matXX, matYY, matK, cv::DecompTypes::DECOMP_QR);
