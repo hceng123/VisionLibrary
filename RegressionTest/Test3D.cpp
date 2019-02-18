@@ -470,7 +470,7 @@ void TestMotor3DCalib_1() {
 
     for (int i = 1; i <= 5; ++i) {
         PairHeightPhase pairHeightPhase;
-        pairHeightPhase.first = -i;
+        pairHeightPhase.first = ToFloat(-i);
         strFile = strDataFolder + "HP" + std::to_string(i) + ".csv";
         pairHeightPhase.second = readMatFromCsvFile(strFile);
         stCmd.vecPairHeightPhase.push_back(pairHeightPhase);
@@ -478,7 +478,7 @@ void TestMotor3DCalib_1() {
 
     for (int i = 1; i <= 5; ++i) {
         PairHeightPhase pairHeightPhase;
-        pairHeightPhase.first = i;
+        pairHeightPhase.first = ToFloat(i);
         strFile = strDataFolder + "HN" + std::to_string(i) + ".csv";
         pairHeightPhase.second = readMatFromCsvFile(strFile);
         stCmd.vecPairHeightPhase.push_back(pairHeightPhase);
@@ -505,7 +505,7 @@ void TestMotor3DCalibNew_1() {
 
     for (int i = 1; i <= 5; ++i) {
         PairHeightPhase pairHeightPhase;
-        pairHeightPhase.first = -i;
+        pairHeightPhase.first = ToFloat(-i);
         strFile = strDataFolder + "HP" + std::to_string(i) + ".csv";
         pairHeightPhase.second = readMatFromCsvFile(strFile);
         stCmd.vecPairHeightPhase.push_back(pairHeightPhase);
@@ -513,7 +513,7 @@ void TestMotor3DCalibNew_1() {
 
     for (int i = 1; i <= 5; ++i) {
         PairHeightPhase pairHeightPhase;
-        pairHeightPhase.first = i;
+        pairHeightPhase.first = ToFloat(i);
         strFile = strDataFolder + "HN" + std::to_string(i) + ".csv";
         pairHeightPhase.second = readMatFromCsvFile(strFile);
         stCmd.vecPairHeightPhase.push_back(pairHeightPhase);
@@ -525,6 +525,16 @@ void TestMotor3DCalibNew_1() {
         return;
 
     printfMat<float>(stRpy.mat3DBezierK, 3);
+    for (const auto& gridHeight : stRpy.vecHeightGridHeights) {
+        std::cout << "Height " << gridHeight.first << " grid result " << std::endl;
+        for (int row = 0; row < stCmd.nResultImgGridRow; ++ row) {
+            for (int col = 0; col < stCmd.nResultImgGridCol; ++ col) {
+                int index = col + row * stCmd.nResultImgGridCol;
+                std::cout << gridHeight.second[index] << " ";
+            }
+            std::cout << std::endl;
+        }
+    }
 }
 
 void PrintCalcFrameResult(const PR_CALC_FRAME_VALUE_CMD &stCmd, const PR_CALC_FRAME_VALUE_RPY &stRpy) {

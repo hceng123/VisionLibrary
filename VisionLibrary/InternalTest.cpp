@@ -71,7 +71,7 @@ static void TestCalcUtilsCumSum() {
     }
 }
 
-static void TestCalcUtilsInternals() {
+static void TestCalcUtilsIntervals() {
     float start = 0.f, interval = 0.f, end = 0.f;
     {
         std::cout << std::endl << "------------------------------------------";
@@ -223,6 +223,39 @@ static void TestCalcUtilsDiff() {
 
         matResult = CalcUtils::diff(matInput, 2, 2);
         std::cout << "Diff recursive time 2, dim 2 result: " << std::endl;
+        printfMat<float>(matResult);
+    }
+}
+
+static void TestCalcUtilsPower() {
+    {
+        std::cout << std::endl << "------------------------------------------";
+        std::cout << std::endl << "CALCUTILS POWER TEST #1 STARTING";
+        std::cout << std::endl << "------------------------------------------";
+        std::cout << std::endl;
+        std::vector<float> vecInput {
+            1,  3,  5,
+            7,  11, 13,
+            17, 19, 23
+        };
+
+        std::vector<float> vecPow {
+            1, 2, 1,
+            2, 1, 1,
+            1, 1, 2
+        };
+
+        cv::Mat matInput(vecInput), matPow(vecPow), matResult;
+        matInput = matInput.reshape(1, 3);
+        std::cout << "INPUT: " << std::endl;
+        printfMat<float>(matInput);
+
+        std::cout << "POWER: " << std::endl;
+        matPow = matPow.reshape(1, 3);
+        printfMat<float>(matPow);
+
+        matResult = CalcUtils::power<float>(matInput, matPow);
+        std::cout << "Power result: " << std::endl;
         printfMat<float>(matResult);
     }
 }
@@ -467,9 +500,10 @@ static void TestBilinearInterpolation() {
 void InternalTest() {
     TestBilinearInterpolation();
     TestCalcUtilsCumSum();
-    TestCalcUtilsInternals();
+    TestCalcUtilsIntervals();
     TestCalcUtilsMeshGrid();
     TestCalcUtilsDiff();
+    TestCalcUtilsPower();
     TestCountOfNan();
     TestFindLargestKItems();
     TestCalcUtilsFloor();

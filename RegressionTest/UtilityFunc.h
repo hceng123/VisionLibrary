@@ -20,15 +20,16 @@ void printfMat(const cv::Mat &mat, int nPrecision = 1)
 }
 
 template<class T>
-void printfVectorOfVector(const std::vector<std::vector<T>> &vevVecInput)
+void printfVectorOfVector(const std::vector<std::vector<T>> &vevVecInput, int nPrecision = 2)
 {
+    std::cout << std::fixed << std::setprecision(nPrecision);
     for (const auto &vecInput : vevVecInput)
     {
         for (const auto value : vecInput)
         {
-            printf("%.2f ", value);
+            std::cout << value << " ";
         }
-        printf("\n");
+        std::cout << std::endl;
     }
 }
 

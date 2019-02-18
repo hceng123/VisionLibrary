@@ -633,8 +633,27 @@ void addBridgeIfNotExist(VectorOfRect& vecBridgeWindow, const cv::Rect& rectBrid
         vecBridgeWindow.push_back(rectBridge);
 }
 
+void TestReshape() {
+    std::vector<float> vecInput {
+            1,  3,
+            7,  11,
+            17, 19
+        };
+    cv::Mat matInput(vecInput);
+    cv::Mat matReshape1 = matInput.reshape(1, 3);
+    std::cout << "Reshape 1 result: " << std::endl;
+    printfMat<float>(matReshape1);
+
+    matInput = matInput.reshape(1, 1);
+    cv::Mat matReshape2 = matInput.reshape(1, 3);
+    std::cout << "Reshape 2 result: " << std::endl;
+    printfMat<float>(matReshape2);
+}
+
 int _tmain(int argc, _TCHAR* argv[])
 {
+    TestReshape();
+
     cv::Rect rect(1, 5, 10, 10);
     VectorOfRect vecBridgeWindow;
     vecBridgeWindow.push_back(rect);
@@ -730,7 +749,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
     //TestCalc3DHeight_With_IntegrateCalibParam();
     //TestMerge3DHeight();
-    //TestCalibDlpOffset_1();
+    TestCalibDlpOffset_1();
 
     //TestIntegrate3DCalibHaoYu();
 
@@ -810,7 +829,7 @@ int _tmain(int argc, _TCHAR* argv[])
     
     //TestCombineImageNew_1();
     //TestCombineImageNew_2();
-    TestCombineMachineImage();
+    //TestCombineMachineImage();
     //FindFramePositionFromBigImage();
 
     PR_DumpTimeLog("./Vision/Time.log");

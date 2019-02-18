@@ -2250,6 +2250,10 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
 
     auto matPolyParass = CalcUtils::paraFromPolyNomial(ss);
 
+#ifdef _DEBUG
+    auto vecVecPolyParass = CalcUtils::matToVector<float>(matPolyParass);
+#endif
+
     // Matlab: P3 = (Ps3.^Ps1).*(Ps4.^Ps2).*repmat(PolyParass, len, 1);
     cv::Mat matTmpPmPow, P3;
     cv::multiply(CalcUtils::power<float>(Ps3, Ps1), CalcUtils::power<float>(Ps4, Ps2), matTmpPmPow);
@@ -2259,7 +2263,17 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
     cv::multiply(xxt1, P3, P3);
     cv::Mat matResult;
     cv::reduce(P3, matResult, 1, cv::ReduceTypes::REDUCE_SUM);
-    matResult = matResult.reshape(1, z1.rows);
+
+#ifdef _DEBUG
+    cv::Mat matResultT; cv::transpose(matResult, matResultT);
+    auto vecVecResultT = CalcUtils::matToVector<float>(matResultT);
+#endif
+    matResult = matResult.reshape(1, z1.cols);
+    cv::transpose(matResult, matResult);
+
+#ifdef _DEBUG
+    auto vecVecFinalResult = CalcUtils::matToVector<float>(matResult);
+#endif
 
     MARK_FUNCTION_END_TIME;
     return matResult;
