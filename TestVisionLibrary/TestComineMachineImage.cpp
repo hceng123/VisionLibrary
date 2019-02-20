@@ -1,11 +1,12 @@
 #include <iostream>
 #include <iomanip>
+#include <boost/filesystem.hpp>
 
 #include "stdafx.h"
 #include "opencv2/highgui.hpp"
 #include "../VisionLibrary/VisionAPI.h"
 #include "../RegressionTest/UtilityFunc.h"
-#include <boost/filesystem.hpp>
+#include "../VisionLibrary/CalcUtils.hpp"
 
 using namespace AOI::Vision;
 using namespace boost::filesystem;
@@ -66,6 +67,19 @@ cv::Mat restoreImage_34(const cv::Mat& matInput) {
     stRetoreCmd.matInputImg = matInput;
     stRetoreCmd.vecMatRestoreMap.push_back(matRestoreMap34_1);
     stRetoreCmd.vecMatRestoreMap.push_back(matRestoreMap34_2);
+    PR_RestoreImage(&stRetoreCmd, &stRetoreRpy);
+    if (VisionStatus::OK != stRetoreRpy.enStatus) {
+        return cv::Mat();
+    }
+    return stRetoreRpy.matResultImg;
+}
+
+cv::Mat restoreImageWithMap(const cv::Mat& matInput, const cv::Mat& matMap) {
+    PR_RESTORE_IMG_CMD stRetoreCmd;
+    PR_RESTORE_IMG_RPY stRetoreRpy;
+    stRetoreCmd.matInputImg = matInput;
+    stRetoreCmd.vecMatRestoreMap.push_back(matMap);
+    stRetoreCmd.vecMatRestoreMap.push_back(cv::Mat());
     PR_RestoreImage(&stRetoreCmd, &stRetoreRpy);
     if (VisionStatus::OK != stRetoreRpy.enStatus) {
         return cv::Mat();
@@ -249,5 +263,61 @@ void FindFramePositionFromBigImage() {
             }
             ++index;
         }
+    }
+}
+
+void DynamicCalculateDistortion() {
+    int mm = 7, nn = 9;
+    const int ROWS = 6;
+    const int COLS = 8;
+    const int TOTAL_FRAME = ROWS * COLS;
+    const int CTF = 6;
+    const int TOTAL_DISTORTION_MAP = 11;
+
+    cv::Mat matXOffsetParam, matYOffsetParam;
+    //Load map from data
+    matXOffsetParam = matXOffsetParam.reshape(1, nn);
+    matYOffsetParam = matYOffsetParam.reshape(1, nn);
+
+    auto vecOfVecFloat = readDataFromFile(WORKING_FOLDER + "ScanImagePositions.csv");
+    if (vecOfVecFloat.size() != TOTAL_FRAME) {
+        std::cout << "Number of scan image position " << vecOfVecFloat.size() << " not match with total frame " << TOTAL_FRAME << std::endl;
+        return;
+    }
+
+    VectorOfFloat vecX, vecY;
+    for (const auto& vecFloat : vecOfVecFloat) {
+        vecX.push_back(vecFloat[0]);
+        vecY.push_back(vecFloat[1]);
+    }
+    cv::Mat matX(vecX), matY(vecY);
+
+    cv::Mat PPz3 = (mm - 1) * CalcUtils::diff(matYOffsetParam, 1, 2);
+    PPz3 = PPz3.reshape(1, nn*(mm - 1));
+    VectorOfFloat vecParamMinMaxXY{-396.152f, 20.547f, 32.017f, 351.187f};
+    cv::Mat dydu = CalcUtils::generateBezier(matX, matY, vecParamMinMaxXY, mm - 1, nn);
+    cv::Mat dydx = dydu / (vecParamMinMaxXY[1] - vecParamMinMaxXY[0]);
+
+    cv::Mat dtheta = dydx.reshape(1, nn);
+    dtheta = dtheta * (2048 / 2);
+    cv::Mat arrMap[TOTAL_DISTORTION_MAP];
+
+    for (int row = 0; row < ROWS; ++row) {
+        VectorOfPoint vecFrameCtr;
+        for (int col = 0; col < COLS; ++col) {
+            int idx = -dtheta.at<float>(row, col) + CTF;
+            if (arrMap[idx].empty())
+                arrMap[idx] = 
+
+            //restoreImageWithMap()
+            cv::Point2f frameTableCtr(vecOfVecFloat[index][0], vecOfVecFloat[index][1]);
+            cv::Point frameCtr;
+            frameCtr.x = ptTopLeftFrameCtr.x + (frameTableCtr.x - ptTopLeftFrameTableCtr.x) * 1000.f / fResolutionX;
+            frameCtr.y = ptTopLeftFrameCtr.y - (frameTableCtr.y - ptTopLeftFrameTableCtr.y) * 1000.f / fResolutionX; // Table direction is reversed with image direction
+            std::cout << "Row " << row << " Col " << col << " frame center " << frameCtr << std::endl;
+            vecFrameCtr.push_back(frameCtr);
+            ++index;
+        }
+        stCmd.vecVecFrameCtr.push_back(vecFrameCtr);
     }
 }
