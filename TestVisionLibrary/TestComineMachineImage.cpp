@@ -15,6 +15,7 @@ cv::Mat matRestoreMap12_1, matRestoreMap12_2, matRestoreMap34_1, matRestoreMap34
 const static std::string WORKING_FOLDER = "./data/TestCombineImage_2/";
 const bool LOAD_COLOR_IMAGE = false;
 const float CHANGE_DISTORTION_MATRIX_Y = 250.f;
+const int IMAGE_WIDTH = 2040, IMEGE_HEIGHT = 2048;
 
 bool loadCalibCameraResult_12() {
     cv::FileStorage fs(WORKING_FOLDER + "CameraCalibrate12.yml", cv::FileStorage::READ);
@@ -87,7 +88,58 @@ cv::Mat restoreImageWithMap(const cv::Mat& matInput, const cv::Mat& matMap) {
     return stRetoreRpy.matResultImg;
 }
 
-bool readImageFromFolder(VectorOfMat& vecFrameImages, const VectorOfVectorOfFloat& vecVecFrameCtrs) {
+static bool readImageFromFolder(VectorOfMat& vecFrameImages, const VectorOfVectorOfFloat& vecVecFrameCtrs) {
+    VectorOfMat vectorOfImage;
+    path p(WORKING_FOLDER);
+
+    if (!is_directory(p))
+        return false;
+
+    std::vector<directory_entry> v; // To save the file names in a vector.
+    copy(directory_iterator(p), directory_iterator(), back_inserter(v));
+
+    int index = 0;
+    for (std::vector<directory_entry>::const_iterator it = v.begin(); it != v.end(); ++it)
+    {
+        if (!is_directory(it->path()))
+            continue;
+
+        auto strSubFolder = (*it).path().string();
+
+        if (LOAD_COLOR_IMAGE) {
+            std::cout << "Reading image from " << strSubFolder << std::endl;
+            cv::Mat matR = cv::imread(strSubFolder + "/51.bmp", cv::IMREAD_GRAYSCALE);
+            cv::Mat matG = cv::imread(strSubFolder + "/52.bmp", cv::IMREAD_GRAYSCALE);
+            cv::Mat matB = cv::imread(strSubFolder + "/53.bmp", cv::IMREAD_GRAYSCALE);
+
+            if (matR.empty() || matG.empty() || matB.empty()) {
+                std::cout << "Failed to read image from " << strSubFolder << std::endl;
+                return false;
+            }
+
+            VectorOfMat vecChannels{ matB, matG, matR };
+            cv::Mat matPseudocolorImage;
+            cv::merge(vecChannels, matPseudocolorImage);
+
+            vecFrameImages.push_back(matPseudocolorImage);
+        }else {
+            cv::Mat matGray = cv::imread(strSubFolder + "/54.bmp", cv::IMREAD_GRAYSCALE);
+
+            if (matGray.empty()) {
+                std::cout << "Failed to read image from " << strSubFolder << std::endl;
+                return false;
+            }
+
+            cv::imwrite(strSubFolder + "/54_Restore.bmp", matGray);
+            vecFrameImages.push_back(matGray);
+        }
+
+        ++ index;
+    }
+    return true;
+}
+
+static bool readImageFromFolderWithRestore(VectorOfMat& vecFrameImages, const VectorOfVectorOfFloat& vecVecFrameCtrs) {
     VectorOfMat vectorOfImage;
     path p(WORKING_FOLDER);
 
@@ -157,7 +209,7 @@ bool readImageFromFolder(VectorOfMat& vecFrameImages, const VectorOfVectorOfFloa
                 return false;
             }
 
-            cv:imwrite(strSubFolder + "/54_Restore.bmp", matGray);
+            cv::imwrite(strSubFolder + "/54_Restore.bmp", matGray);
 
             vecFrameImages.push_back(matGray);
         }
@@ -199,7 +251,7 @@ void TestCombineMachineImage() {
 
     PR_COMBINE_IMG_NEW_CMD stCmd;
     PR_COMBINE_IMG_NEW_RPY stRpy;
-    if (!readImageFromFolder(stCmd.vecInputImages, vecOfVecFloat))
+    if (!readImageFromFolderWithRestore(stCmd.vecInputImages, vecOfVecFloat))
         return;
 
     cv::Point2f ptTopLeftFrameTableCtr(vecOfVecFloat[0][0], vecOfVecFloat[0][1]);
@@ -236,7 +288,6 @@ void FindFramePositionFromBigImage() {
     const int ROWS = 8;
     const int COLS = 6;
     const int TOTAL_FRAME = ROWS * COLS;
-    const int IMAGE_WIDTH = 2040, IMEGE_HEIGHT = 2048;
 
     auto vecOfVecFloat = readDataFromFile(WORKING_FOLDER + "ScanImagePositions.csv");
     if (vecOfVecFloat.size() != TOTAL_FRAME) {
@@ -266,6 +317,20 @@ void FindFramePositionFromBigImage() {
     }
 }
 
+cv::Mat readMapFromFile(int idx) {
+    std::string strFileName = "./distortion/map_" + std::to_string(idx) + ".txt";
+    auto vecOfVecFloat = readDataFromFile(strFileName);
+    cv::Mat matResult(2040, 2048, CV_16SC2);
+    int index = 0;
+    for (const auto& vecPoint : vecOfVecFloat) {
+        matResult.at<cv::Vec2s>(index) = cv::Vec2s(vecPoint[0] - 1, vecPoint[1] - 1);
+        ++ index;
+    }
+    // The row and col sequence of Matlab and OpenCV is reversed, need to reverse back.
+    cv::transpose(matResult, matResult);
+    return matResult;
+}
+
 void DynamicCalculateDistortion() {
     int mm = 7, nn = 9;
     const int ROWS = 6;
@@ -273,6 +338,8 @@ void DynamicCalculateDistortion() {
     const int TOTAL_FRAME = ROWS * COLS;
     const int CTF = 6;
     const int TOTAL_DISTORTION_MAP = 11;
+    float fResolutionX = 15.88;
+    float fResolutionY = 15.88;
 
     cv::Mat matXOffsetParam, matYOffsetParam;
     //Load map from data
@@ -302,12 +369,24 @@ void DynamicCalculateDistortion() {
     dtheta = dtheta * (2048 / 2);
     cv::Mat arrMap[TOTAL_DISTORTION_MAP];
 
+    PR_COMBINE_IMG_NEW_CMD stCmd;
+    PR_COMBINE_IMG_NEW_RPY stRpy;
+    if (!readImageFromFolderWithRestore(stCmd.vecInputImages, vecOfVecFloat))
+        return;
+
+    cv::Point2f ptTopLeftFrameTableCtr(vecOfVecFloat[0][0], vecOfVecFloat[0][1]);
+    cv::Point ptTopLeftFrameCtr(IMAGE_WIDTH / 2, IMEGE_HEIGHT / 2);
+
+    int index = 0;
     for (int row = 0; row < ROWS; ++row) {
         VectorOfPoint vecFrameCtr;
         for (int col = 0; col < COLS; ++col) {
             int idx = -dtheta.at<float>(row, col) + CTF;
-            if (arrMap[idx].empty())
-                arrMap[idx] = 
+            if (arrMap[idx].empty()) {
+                arrMap[idx] = readMapFromFile(idx);
+            }
+
+            stCmd.vecInputImages = restoreImageWithMap(stCmd.vecInputImages[index], arrMap[idx]);
 
             //restoreImageWithMap()
             cv::Point2f frameTableCtr(vecOfVecFloat[index][0], vecOfVecFloat[index][1]);
