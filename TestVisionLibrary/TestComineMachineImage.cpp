@@ -318,8 +318,12 @@ void FindFramePositionFromBigImage() {
 }
 
 cv::Mat readMapFromFile(int idx) {
-    std::string strFileName = "./distortion/map_" + std::to_string(idx) + ".txt";
+    std::string strFileName = WORKING_FOLDER + "Frame_" + std::to_string(idx) + ".txt";
     auto vecOfVecFloat = readDataFromFile(strFileName);
+    if (vecOfVecFloat.empty())
+        std::cout << "Failed to read map data from " << strFileName << std::endl;
+    else
+        std::cout << "Success to read map data from " << strFileName << std::endl;
     cv::Mat matResult(2040, 2048, CV_16SC2);
     int index = 0;
     for (const auto& vecPoint : vecOfVecFloat) {
@@ -341,10 +345,20 @@ void DynamicCalculateDistortion() {
     float fResolutionX = 15.88;
     float fResolutionY = 15.88;
 
-    cv::Mat matXOffsetParam, matYOffsetParam;
+    cv::Mat matXOffsetParam = readMatFromCsvFile(WORKING_FOLDER + "XOffsetParams.csv");
+    cv::Mat matYOffsetParam = readMatFromCsvFile(WORKING_FOLDER + "YOffsetParams.csv");
+
     //Load map from data
-    matXOffsetParam = matXOffsetParam.reshape(1, nn);
-    matYOffsetParam = matYOffsetParam.reshape(1, nn);
+    matXOffsetParam = matXOffsetParam.reshape(1, mm);
+    cv::transpose(matXOffsetParam, matXOffsetParam);
+
+    matYOffsetParam = matYOffsetParam.reshape(1, mm);
+    cv::transpose(matYOffsetParam, matYOffsetParam);
+
+#ifdef _DEBUG
+    auto vecVecXOffsetParam = matToVector<float>(matXOffsetParam);
+    auto vecVecYOffsetParam = matToVector<float>(matYOffsetParam);
+#endif
 
     auto vecOfVecFloat = readDataFromFile(WORKING_FOLDER + "ScanImagePositions.csv");
     if (vecOfVecFloat.size() != TOTAL_FRAME) {
@@ -360,18 +374,38 @@ void DynamicCalculateDistortion() {
     cv::Mat matX(vecX), matY(vecY);
 
     cv::Mat PPz3 = (mm - 1) * CalcUtils::diff(matYOffsetParam, 1, 2);
+    cv::transpose(PPz3, PPz3);
     PPz3 = PPz3.reshape(1, nn*(mm - 1));
     VectorOfFloat vecParamMinMaxXY{-396.152f, 20.547f, 32.017f, 351.187f};
-    cv::Mat dydu = CalcUtils::generateBezier(matX, matY, vecParamMinMaxXY, mm - 1, nn);
-    cv::Mat dydx = dydu / (vecParamMinMaxXY[1] - vecParamMinMaxXY[0]);
+    auto matBezierSurface = CalcUtils::generateBezier(matX, matY, vecParamMinMaxXY, mm - 1, nn);
 
-    cv::Mat dtheta = dydx.reshape(1, nn);
-    dtheta = dtheta * (2048 / 2);
+    cv::Mat dydu = matBezierSurface * PPz3;
+
+#ifdef _DEBUG
+    auto vecVecBezierSurface = matToVector<float>(matBezierSurface);
+    auto vecVecDydu = matToVector<float>(dydu);
+#endif
+
+    cv::Mat dydx = dydu / (0.5f / 2048.f) / (vecParamMinMaxXY[1] - vecParamMinMaxXY[0]);
+
+    cv::Mat dtheta = dydx.reshape(1, ROWS);
+
+#ifdef _DEBUG
+    auto vecVecBeforeDTheta = matToVector<float>(dtheta);
+#endif
+
+    //dtheta = dtheta * (2048.f / 2.f);
+    CalcUtils::round<float>(dtheta);
+
+#ifdef _DEBUG
+    auto vecVecDTheta = matToVector<float>(dtheta);
+#endif
+
     cv::Mat arrMap[TOTAL_DISTORTION_MAP];
 
     PR_COMBINE_IMG_NEW_CMD stCmd;
     PR_COMBINE_IMG_NEW_RPY stRpy;
-    if (!readImageFromFolderWithRestore(stCmd.vecInputImages, vecOfVecFloat))
+    if (!readImageFromFolder(stCmd.vecInputImages, vecOfVecFloat))
         return;
 
     cv::Point2f ptTopLeftFrameTableCtr(vecOfVecFloat[0][0], vecOfVecFloat[0][1]);
@@ -382,8 +416,12 @@ void DynamicCalculateDistortion() {
         VectorOfPoint vecFrameCtr;
         for (int col = 0; col < COLS; ++col) {
             int idx = -dtheta.at<float>(row, col) + CTF;
-            if (arrMap[idx].empty()) {
+            if (arrMap[idx].empty())
                 arrMap[idx] = readMapFromFile(idx);
+
+            if (arrMap[idx].empty()) {
+                std::cout << "Distortion map " << idx << " is empty" << std::endl;
+                return;
             }
 
             stCmd.vecInputImages = restoreImageWithMap(stCmd.vecInputImages[index], arrMap[idx]);
@@ -399,4 +437,11 @@ void DynamicCalculateDistortion() {
         }
         stCmd.vecVecFrameCtr.push_back(vecFrameCtr);
     }
+
+    stCmd.bDrawFrame = true;
+    stCmd.nCutBorderPixel = 5;
+    PR_CombineImgNew(&stCmd, &stRpy);
+    std::cout << "PR_CombineImgNew status " << ToInt32(stRpy.enStatus) << std::endl;
+    if (!stRpy.matResultImage.empty())
+        cv::imwrite(WORKING_FOLDER + "CombineImageNewResult.png", stRpy.matResultImage);
 }
