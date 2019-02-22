@@ -327,7 +327,7 @@ cv::Mat readMapFromFile(int idx) {
     cv::Mat matResult(2040, 2048, CV_16SC2);
     int index = 0;
     for (const auto& vecPoint : vecOfVecFloat) {
-        matResult.at<cv::Vec2s>(index) = cv::Vec2s(vecPoint[0] - 1, vecPoint[1] - 1);
+        matResult.at<cv::Vec2s>(index) = cv::Vec2s(std::floor(vecPoint[0]) - 1, std::floor(vecPoint[1]) - 1);
         ++ index;
     }
     // The row and col sequence of Matlab and OpenCV is reversed, need to reverse back.
@@ -408,6 +408,8 @@ void DynamicCalculateDistortion() {
     if (!readImageFromFolder(stCmd.vecInputImages, vecOfVecFloat))
         return;
 
+    std::cout << "Success to read image from folder" << std::endl;
+
     cv::Point2f ptTopLeftFrameTableCtr(vecOfVecFloat[0][0], vecOfVecFloat[0][1]);
     cv::Point ptTopLeftFrameCtr(IMAGE_WIDTH / 2, IMEGE_HEIGHT / 2);
 
@@ -416,15 +418,17 @@ void DynamicCalculateDistortion() {
         VectorOfPoint vecFrameCtr;
         for (int col = 0; col < COLS; ++col) {
             int idx = -dtheta.at<float>(row, col) + CTF;
-            if (arrMap[idx].empty())
+            if (arrMap[idx].empty()) {
                 arrMap[idx] = readMapFromFile(idx);
+                std::cout << "Sucess to read map for idx " << idx << std::endl;
+            }
 
             if (arrMap[idx].empty()) {
                 std::cout << "Distortion map " << idx << " is empty" << std::endl;
                 return;
             }
 
-            stCmd.vecInputImages = restoreImageWithMap(stCmd.vecInputImages[index], arrMap[idx]);
+            stCmd.vecInputImages[index] = restoreImageWithMap(stCmd.vecInputImages[index], arrMap[idx]);
 
             //restoreImageWithMap()
             cv::Point2f frameTableCtr(vecOfVecFloat[index][0], vecOfVecFloat[index][1]);
@@ -444,4 +448,47 @@ void DynamicCalculateDistortion() {
     std::cout << "PR_CombineImgNew status " << ToInt32(stRpy.enStatus) << std::endl;
     if (!stRpy.matResultImage.empty())
         cv::imwrite(WORKING_FOLDER + "CombineImageNewResult.png", stRpy.matResultImage);
+}
+
+void TestCalcRestoreIdx() {
+    const int ROWS = 6;
+    const int COLS = 8;
+    const int TOTAL_FRAME = ROWS * COLS;
+
+    PR_CALC_RESTORE_IDX_CMD stCmd;
+    PR_CALC_RESTORE_IDX_RPY stRpy;
+
+    stCmd.matXOffsetParam = readMatFromCsvFile(WORKING_FOLDER + "XOffsetParams.csv");
+    stCmd.matYOffsetParam = readMatFromCsvFile(WORKING_FOLDER + "YOffsetParams.csv");
+    stCmd.fMinX = -396.152f;
+    stCmd.fMaxX = 20.547f;
+    stCmd.fMinY = 32.017f;
+    stCmd.fMaxY = 351.187f;
+    stCmd.fRestoreMatrixAngleInterval = 0.5f / 2048.f;
+    stCmd.nCenterIdx = 6;
+    stCmd.nBezierRankX = 7;
+    stCmd.nBezierRankY = 9;
+
+    auto vecOfVecFloat = readDataFromFile(WORKING_FOLDER + "ScanImagePositions.csv");
+    if (vecOfVecFloat.size() != TOTAL_FRAME) {
+        std::cout << "Number of scan image position " << vecOfVecFloat.size() << " not match with total frame " << TOTAL_FRAME << std::endl;
+        return;
+    }
+
+    int index = 0;
+    for (int row = 0; row < ROWS; ++row) {
+        VectorOfPoint2f vecFrameCtr;
+        for (int col = 0; col < COLS; ++col) {
+            cv::Point2f ptCenter(vecOfVecFloat[index][0], vecOfVecFloat[index][1]);
+            vecFrameCtr.push_back(ptCenter);
+            ++index;
+        }
+        stCmd.vecVecFrameCtr.push_back(vecFrameCtr);
+    }
+
+    PR_CalcRestoreIdx(&stCmd, &stRpy);
+
+    std::cout << "PR_CalcRestoreIdx status " << ToInt32(stRpy.enStatus) << std::endl;
+    if (!stRpy.vecVecRestoreIndex.empty())
+        printfVectorOfVector<int>(stRpy.vecVecRestoreIndex);
 }

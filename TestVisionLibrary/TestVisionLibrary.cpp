@@ -750,7 +750,8 @@ int _tmain(int argc, _TCHAR* argv[])
     //TestCalc3DHeight_With_IntegrateCalibParam();
     //TestMerge3DHeight();
     //TestCalibDlpOffset_1();
-    DynamicCalculateDistortion();
+    //DynamicCalculateDistortion();
+    TestCalcRestoreIdx();
 
     //TestIntegrate3DCalibHaoYu();
 

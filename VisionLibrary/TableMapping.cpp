@@ -836,5 +836,70 @@ namespace Vision
     return pstRpy->enStatus;
 }
 
+/*static*/ VisionStatus TableMapping::calcRestoreIdx(const PR_CALC_RESTORE_IDX_CMD* const pstCmd, PR_CALC_RESTORE_IDX_RPY* const pstRpy) {
+    const int ROWS = ToInt32(pstCmd->vecVecFrameCtr.size());
+    const int COLS = ToInt32(pstCmd->vecVecFrameCtr[0].size());
+
+    auto matXOffsetParam = pstCmd->matXOffsetParam.reshape(1, pstCmd->nBezierRankX);
+    cv::transpose(matXOffsetParam, matXOffsetParam);
+
+    auto matYOffsetParam = pstCmd->matYOffsetParam.reshape(1, pstCmd->nBezierRankX);
+    cv::transpose(matYOffsetParam, matYOffsetParam);
+
+#ifdef _DEBUG
+    auto vecVecXOffsetParam = CalcUtils::matToVector<float>(matXOffsetParam);
+    auto vecVecYOffsetParam = CalcUtils::matToVector<float>(matYOffsetParam);
+#endif
+
+    VectorOfFloat vecX, vecY;
+    for (const auto& vecFrameCtr : pstCmd->vecVecFrameCtr) {
+        for (const auto& frameCtr : vecFrameCtr) {
+            vecX.push_back(frameCtr.x);
+            vecY.push_back(frameCtr.y);
+        }
+    }
+    cv::Mat matX(vecX), matY(vecY);
+
+    cv::Mat PPz3 = (pstCmd->nBezierRankX - 1) * CalcUtils::diff(matYOffsetParam, 1, 2);
+    cv::transpose(PPz3, PPz3);
+    PPz3 = PPz3.reshape(1, pstCmd->nBezierRankY * (pstCmd->nBezierRankX - 1));
+    VectorOfFloat vecParamMinMaxXY{ pstCmd->fMinX, pstCmd->fMaxX, pstCmd->fMinY, pstCmd->fMaxY };
+    auto matBezierSurface = CalcUtils::generateBezier(matX, matY, vecParamMinMaxXY, pstCmd->nBezierRankX - 1, pstCmd->nBezierRankY);
+
+    cv::Mat dydu = matBezierSurface * PPz3;
+
+#ifdef _DEBUG
+    auto vecVecBezierSurface = CalcUtils::matToVector<float>(matBezierSurface);
+    auto vecVecDydu = CalcUtils::matToVector<float>(dydu);
+#endif
+
+    cv::Mat dydx = dydu / pstCmd->fRestoreMatrixAngleInterval / (vecParamMinMaxXY[1] - vecParamMinMaxXY[0]);
+
+    cv::Mat dtheta = dydx.reshape(1, ROWS);
+
+#ifdef _DEBUG
+    auto vecVecBeforeDTheta = CalcUtils::matToVector<float>(dtheta);
+#endif
+
+    //dtheta = dtheta * (2048.f / 2.f);
+    CalcUtils::round<float>(dtheta);
+
+#ifdef _DEBUG
+    auto vecVecDTheta = CalcUtils::matToVector<float>(dtheta);
+#endif
+
+    for (int row = 0; row < ROWS; ++row) {
+        VectorOfInt vecIdx;
+        for (int col = 0; col < COLS; ++col) {
+            int idx = pstCmd->nCenterIdx - ToInt32(dtheta.at<float>(row, col));
+            vecIdx.push_back(idx);
+        }
+        pstRpy->vecVecRestoreIndex.push_back(vecIdx);
+    }
+
+    pstRpy->enStatus = VisionStatus::OK;
+    return pstRpy->enStatus;
+}
+
 }
 }

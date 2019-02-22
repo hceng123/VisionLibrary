@@ -33,6 +33,8 @@ using VectorOfFloat = std::vector<float>;
 using VectorOfVectorOfFloat = std::vector<VectorOfFloat>;
 using VectorOfDouble = std::vector<double>;
 using VectorOfDirection = std::vector<PR_DIRECTION>;
+using VectorOfInt = std::vector<int>;
+using VectorOfVectorOfInt = std::vector<VectorOfInt>;
 
 template <typename Tp> inline Int32 ToInt32(Tp param) { return static_cast<Int32>(param); }
 template <typename Tp> inline Int16 ToInt16(Tp param) { return static_cast<Int16>(param); }
@@ -1691,6 +1693,30 @@ struct PR_CALC_TABLE_OFFSET_RPY {
     float                   fOffsetX;
     float                   fOffsetY;
     VisionStatus            enStatus;
+};
+
+// Use the table mapping result to calculate using which restore matrix to restore the image
+// Because the table offset too big will cause image like rotated.
+struct PR_CALC_RESTORE_IDX_CMD {
+    PR_CALC_RESTORE_IDX_CMD() :
+        nCenterIdx                  (5),
+        fRestoreMatrixAngleInterval (0.5f / 2048.f){}
+    cv::Mat                 matXOffsetParam;
+    cv::Mat                 matYOffsetParam;
+    int                     nBezierRankX;
+    int                     nBezierRankY;
+    float                   fMinX;
+    float                   fMaxX;
+    float                   fMinY;
+    float                   fMaxY;
+    int                     nCenterIdx;
+    float                   fRestoreMatrixAngleInterval;
+    VectorOfVectorOfPoint2f vecVecFrameCtr;
+};
+
+struct PR_CALC_RESTORE_IDX_RPY {
+    VisionStatus            enStatus;
+    VectorOfVectorOfInt     vecVecRestoreIndex;
 };
 
 }

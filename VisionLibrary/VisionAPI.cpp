@@ -683,5 +683,12 @@ PR_FUNCTION_ENTRY
 PR_FUNCTION_EXIT
 }
 
+VisionAPI VisionStatus PR_CalcRestoreIdx(const PR_CALC_RESTORE_IDX_CMD* const pstCmd, PR_CALC_RESTORE_IDX_RPY* const pstRpy)
+{
+PR_FUNCTION_ENTRY
+    return VisionAlgorithm::calcRestoreIdx(pstCmd, pstRpy);
+PR_FUNCTION_EXIT
+}
+
 }
 }

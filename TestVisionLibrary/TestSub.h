@@ -103,3 +103,4 @@ void TestCombineImageNew_2();
 void TestCombineMachineImage();
 void FindFramePositionFromBigImage();
 void DynamicCalculateDistortion();
+void TestCalcRestoreIdx();
