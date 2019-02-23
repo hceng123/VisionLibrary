@@ -14,8 +14,11 @@
  * Copyright (c) 2016-2018, Xiao Shengguang.  All rights reserved.
  ****************************************************************************/
 
+//2019-02-23 (XSG) Develop PR_CalcRestoreIdx function.
+#define AOI_VISION_VERSION          "1.00.63"
+
 //2019-02-18 (XSG) Develop PR_CalibDlpOffset function.
-#define AOI_VISION_VERSION          "1.00.62"
+//#define AOI_VISION_VERSION          "1.00.62"
 
 //2019-02-05 (XSG) Fix auto locate lead bugs.
 //                 Fix height detect bugs.

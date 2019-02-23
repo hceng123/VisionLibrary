@@ -751,7 +751,9 @@ int _tmain(int argc, _TCHAR* argv[])
     //TestMerge3DHeight();
     //TestCalibDlpOffset_1();
     //DynamicCalculateDistortion();
-    TestCalcRestoreIdx();
+    //TestCalcRestoreIdx();
+    //ConvertRestoreCsvToYml();
+    TestTableMappingAndCombineImage();
 
     //TestIntegrate3DCalibHaoYu();
 

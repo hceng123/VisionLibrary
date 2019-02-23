@@ -104,3 +104,5 @@ void TestCombineMachineImage();
 void FindFramePositionFromBigImage();
 void DynamicCalculateDistortion();
 void TestCalcRestoreIdx();
+void ConvertRestoreCsvToYml();
+void TestTableMappingAndCombineImage();

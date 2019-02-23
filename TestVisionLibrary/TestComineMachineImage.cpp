@@ -12,8 +12,8 @@ using namespace AOI::Vision;
 using namespace boost::filesystem;
 
 cv::Mat matRestoreMap12_1, matRestoreMap12_2, matRestoreMap34_1, matRestoreMap34_2;
-const static std::string WORKING_FOLDER = "./data/TestCombineImage_2/";
-const bool LOAD_COLOR_IMAGE = false;
+const static std::string WORKING_FOLDER = "./data/TestCombineImage_4/";
+const bool LOAD_COLOR_IMAGE = true;
 const float CHANGE_DISTORTION_MATRIX_Y = 250.f;
 const int IMAGE_WIDTH = 2040, IMEGE_HEIGHT = 2048;
 
@@ -130,7 +130,6 @@ static bool readImageFromFolder(VectorOfMat& vecFrameImages, const VectorOfVecto
                 return false;
             }
 
-            cv::imwrite(strSubFolder + "/54_Restore.bmp", matGray);
             vecFrameImages.push_back(matGray);
         }
 
@@ -318,7 +317,7 @@ void FindFramePositionFromBigImage() {
 }
 
 cv::Mat readMapFromFile(int idx) {
-    std::string strFileName = WORKING_FOLDER + "Frame_" + std::to_string(idx) + ".txt";
+    std::string strFileName = WORKING_FOLDER + "RestoreMatrix_" + std::to_string(idx) + ".csv";
     auto vecOfVecFloat = readDataFromFile(strFileName);
     if (vecOfVecFloat.empty())
         std::cout << "Failed to read map data from " << strFileName << std::endl;
@@ -333,6 +332,20 @@ cv::Mat readMapFromFile(int idx) {
     // The row and col sequence of Matlab and OpenCV is reversed, need to reverse back.
     cv::transpose(matResult, matResult);
     return matResult;
+}
+
+void ConvertRestoreCsvToYml() {
+    for (int i = 0; i < 11; ++ i) {
+        cv::Mat matRestore = readMapFromFile(i+1);
+        std::string strFileName = WORKING_FOLDER + "RestoreMatrix_" + std::to_string(i+1) + ".yml";
+        cv::FileStorage fsRestoreMatrix(strFileName, cv::FileStorage::WRITE);
+        if (!fsRestoreMatrix.isOpened()) {
+            std::cout << "Failed to open file: " << strFileName << std::endl;
+            return;
+        }
+        cv::write(fsRestoreMatrix, "RestoreMatrix", matRestore);
+        fsRestoreMatrix.release();
+    }
 }
 
 void DynamicCalculateDistortion() {
@@ -454,6 +467,8 @@ void TestCalcRestoreIdx() {
     const int ROWS = 6;
     const int COLS = 8;
     const int TOTAL_FRAME = ROWS * COLS;
+    float fResolutionX = 15.88;
+    float fResolutionY = 15.88;
 
     PR_CALC_RESTORE_IDX_CMD stCmd;
     PR_CALC_RESTORE_IDX_RPY stRpy;
@@ -491,4 +506,201 @@ void TestCalcRestoreIdx() {
     std::cout << "PR_CalcRestoreIdx status " << ToInt32(stRpy.enStatus) << std::endl;
     if (!stRpy.vecVecRestoreIndex.empty())
         printfVectorOfVector<int>(stRpy.vecVecRestoreIndex);
+
+    PR_COMBINE_IMG_NEW_CMD stCombineCmd;
+    PR_COMBINE_IMG_NEW_RPY stCombineRpy;
+    if (!readImageFromFolder(stCombineCmd.vecInputImages, vecOfVecFloat))
+        return;
+
+    std::cout << "Success to read image from folder" << std::endl;
+
+    cv::Point2f ptTopLeftFrameTableCtr(vecOfVecFloat[0][0], vecOfVecFloat[0][1]);
+    cv::Point ptTopLeftFrameCtr(IMAGE_WIDTH / 2, IMEGE_HEIGHT / 2);
+
+    index = 0;
+    cv::Mat arrMap[11];
+    for (int row = 0; row < ROWS; ++row) {
+        VectorOfPoint vecFrameCtr;
+        for (int col = 0; col < COLS; ++col) {
+            int idx = stRpy.vecVecRestoreIndex[row][col];
+            if (arrMap[idx].empty()) {
+                arrMap[idx] = readMapFromFile(idx);
+                std::cout << "Sucess to read map for idx " << idx << std::endl;
+            }
+
+            if (arrMap[idx].empty()) {
+                std::cout << "Distortion map " << idx << " is empty" << std::endl;
+                return;
+            }
+
+            stCombineCmd.vecInputImages[index] = restoreImageWithMap(stCombineCmd.vecInputImages[index], arrMap[idx]);
+
+            //restoreImageWithMap()
+            cv::Point2f frameTableCtr(vecOfVecFloat[index][0], vecOfVecFloat[index][1]);
+            cv::Point frameCtr;
+            frameCtr.x = ptTopLeftFrameCtr.x + (frameTableCtr.x - ptTopLeftFrameTableCtr.x) * 1000.f / fResolutionX;
+            frameCtr.y = ptTopLeftFrameCtr.y - (frameTableCtr.y - ptTopLeftFrameTableCtr.y) * 1000.f / fResolutionX; // Table direction is reversed with image direction
+            std::cout << "Row " << row << " Col " << col << " frame center " << frameCtr << std::endl;
+            vecFrameCtr.push_back(frameCtr);
+            ++index;
+        }
+        stCombineCmd.vecVecFrameCtr.push_back(vecFrameCtr);
+    }
+
+    stCombineCmd.bDrawFrame = true;
+    stCombineCmd.nCutBorderPixel = 5;
+    PR_CombineImgNew(&stCombineCmd, &stCombineRpy);
+    std::cout << "PR_CombineImgNew status " << ToInt32(stRpy.enStatus) << std::endl;
+    if (!stCombineRpy.matResultImage.empty())
+        cv::imwrite(WORKING_FOLDER + "CombineImageNewResult.png", stCombineRpy.matResultImage);
 }
+
+cv::Mat readMapFromYmlFile(int idx) {
+    std::string strFileName = WORKING_FOLDER + "RestoreMatrix_" + std::to_string(idx) + ".yml";
+    cv::FileStorage fs(strFileName, cv::FileStorage::READ);
+    if (!fs.isOpened())
+        return cv::Mat();
+
+    cv::FileNode fileNode;
+    fileNode = fs["RestoreMatrix"];
+    cv::Mat matMap;
+    cv::read(fileNode, matMap, cv::Mat());
+    fs.release();
+
+    return matMap;
+}
+
+void TestTableMappingAndCombineImage() {
+    const int TOTAL_TABLE_MAPPING_FRAME = 4;
+    const int DATA_START_ROW = 1;
+
+    PR_TABLE_MAPPING_CMD stCmd;
+    PR_TABLE_MAPPING_RPY stRpy;
+    stCmd.nBezierRankX = 7;
+    stCmd.nBezierRankY = 7;
+    stCmd.fBoardPointDist = 16;
+    stCmd.fFrameBorderPointWeight = 100.f;
+    const int POINTS_PER_ROW = 13;
+
+    for (int i = 1; i <= TOTAL_TABLE_MAPPING_FRAME; ++i) {
+        char chArrFileName[100];
+        _snprintf(chArrFileName, sizeof(chArrFileName), "%d.csv", i);
+        auto vecOfVecFloat = readDataFromFile(WORKING_FOLDER + chArrFileName);
+
+        PR_TABLE_MAPPING_CMD::VectorOfFramePoint vecFramePoint;
+        vecFramePoint.reserve(vecOfVecFloat.size());
+
+        for (int row = DATA_START_ROW; row < vecOfVecFloat.size(); ++row) {
+            PR_TABLE_MAPPING_CMD::FramePoint framePoint;
+            int index = row - DATA_START_ROW;
+            framePoint.targetPoint = cv::Point2f(vecOfVecFloat[row][1], vecOfVecFloat[row][2]);
+            framePoint.actualPoint = cv::Point2f(vecOfVecFloat[row][3], vecOfVecFloat[row][4]);
+            vecFramePoint.push_back(framePoint);
+        }
+
+        stCmd.vecFramePoints.push_back(vecFramePoint);
+    }
+
+    PR_TableMapping(&stCmd, &stRpy);
+    if (VisionStatus::OK != stRpy.enStatus)
+        return;
+
+    std::cout << "XOffsetParam" << std::endl;
+    printfMat<float>(stRpy.matXOffsetParam, 4);
+    std::cout << std::endl;
+
+    std::cout << "YOffsetParam" << std::endl;
+    printfMat<float>(stRpy.matYOffsetParam, 4);
+
+    const int ROWS = 6;
+    const int COLS = 8;
+    const int TOTAL_FRAME = ROWS * COLS;
+    float fResolutionX = 15.88;
+    float fResolutionY = 15.88;
+
+    PR_CALC_RESTORE_IDX_CMD stCalcIdxCmd;
+    PR_CALC_RESTORE_IDX_RPY stCalcIdxRpy;
+
+    stCalcIdxCmd.matXOffsetParam = stRpy.matXOffsetParam;
+    stCalcIdxCmd.matYOffsetParam = stRpy.matYOffsetParam;
+    stCalcIdxCmd.fMinX = stRpy.fMinX;
+    stCalcIdxCmd.fMaxX = stRpy.fMaxX;
+    stCalcIdxCmd.fMinY = stRpy.fMinY;
+    stCalcIdxCmd.fMaxY = stRpy.fMaxY;
+    stCalcIdxCmd.fRestoreMatrixAngleInterval = 0.5f / 2048.f;
+    stCalcIdxCmd.nCenterIdx = 6;
+    stCalcIdxCmd.nBezierRankX = stCmd.nBezierRankX;
+    stCalcIdxCmd.nBezierRankY = stCmd.nBezierRankY;
+
+    auto vecOfVecFloat = readDataFromFile(WORKING_FOLDER + "ScanImagePositions.csv");
+    if (vecOfVecFloat.size() != TOTAL_FRAME) {
+        std::cout << "Number of scan image position " << vecOfVecFloat.size() << " not match with total frame " << TOTAL_FRAME << std::endl;
+        return;
+    }
+
+    int index = 0;
+    for (int row = 0; row < ROWS; ++row) {
+        VectorOfPoint2f vecFrameCtr;
+        for (int col = 0; col < COLS; ++col) {
+            cv::Point2f ptCenter(vecOfVecFloat[index][0], vecOfVecFloat[index][1]);
+            vecFrameCtr.push_back(ptCenter);
+            ++index;
+        }
+        stCalcIdxCmd.vecVecFrameCtr.push_back(vecFrameCtr);
+    }
+
+    PR_CalcRestoreIdx(&stCalcIdxCmd, &stCalcIdxRpy);
+
+    std::cout << "PR_CalcRestoreIdx status " << ToInt32(stCalcIdxRpy.enStatus) << std::endl;
+    if (!stCalcIdxRpy.vecVecRestoreIndex.empty())
+        printfVectorOfVector<int>(stCalcIdxRpy.vecVecRestoreIndex);
+
+    PR_COMBINE_IMG_NEW_CMD stCombineCmd;
+    PR_COMBINE_IMG_NEW_RPY stCombineRpy;
+    if (!readImageFromFolder(stCombineCmd.vecInputImages, vecOfVecFloat))
+        return;
+
+    std::cout << "Success to read image from folder" << std::endl;
+
+    cv::Point2f ptTopLeftFrameTableCtr(vecOfVecFloat[0][0], vecOfVecFloat[0][1]);
+    cv::Point ptTopLeftFrameCtr(IMAGE_WIDTH / 2, IMEGE_HEIGHT / 2);
+
+    index = 0;
+    cv::Mat arrMap[11];
+    for (int row = 0; row < ROWS; ++row) {
+        VectorOfPoint vecFrameCtr;
+        for (int col = 0; col < COLS; ++col) {
+            int idx = stCalcIdxRpy.vecVecRestoreIndex[row][col];
+            if (arrMap[idx - 1].empty()) {
+                arrMap[idx - 1] = readMapFromYmlFile(idx);
+            }
+
+            if (arrMap[idx - 1].empty()) {
+                std::cout << "Distortion map " << idx << " is empty" << std::endl;
+                return;
+            }
+
+            std::cout << "Sucess to read map for idx " << idx << std::endl;
+
+            stCombineCmd.vecInputImages[index] = restoreImageWithMap(stCombineCmd.vecInputImages[index], arrMap[idx - 1]);
+
+            //restoreImageWithMap()
+            cv::Point2f frameTableCtr(vecOfVecFloat[index][0], vecOfVecFloat[index][1]);
+            cv::Point frameCtr;
+            frameCtr.x = ptTopLeftFrameCtr.x + (frameTableCtr.x - ptTopLeftFrameTableCtr.x) * 1000.f / fResolutionX;
+            frameCtr.y = ptTopLeftFrameCtr.y - (frameTableCtr.y - ptTopLeftFrameTableCtr.y) * 1000.f / fResolutionX; // Table direction is reversed with image direction
+            std::cout << "Row " << row << " Col " << col << " frame center " << frameCtr << std::endl;
+            vecFrameCtr.push_back(frameCtr);
+            ++index;
+        }
+        stCombineCmd.vecVecFrameCtr.push_back(vecFrameCtr);
+    }
+
+    stCombineCmd.bDrawFrame = true;
+    stCombineCmd.nCutBorderPixel = 5;
+    PR_CombineImgNew(&stCombineCmd, &stCombineRpy);
+    std::cout << "PR_CombineImgNew status " << ToInt32(stRpy.enStatus) << std::endl;
+    if (!stCombineRpy.matResultImage.empty())
+        cv::imwrite(WORKING_FOLDER + "CombineImageNewResult.png", stCombineRpy.matResultImage);
+}
+

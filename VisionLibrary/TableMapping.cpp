@@ -551,7 +551,7 @@ namespace Vision
     auto vecVecDytT = CalcUtils::matToVector<float>(matdytT);
 #endif
 
-    const int minPointsRequired = pstCmd->nBezierRank * pstCmd->nBezierRank;
+    const int minPointsRequired = pstCmd->nBezierRankX * pstCmd->nBezierRankY;
     if (matchPointNumber < minPointsRequired) {
         pstRpy->enStatus = VisionStatus::TABLE_MAPPING_FAIL;
         std::stringstream ss;
@@ -636,7 +636,7 @@ namespace Vision
         }
     }
 
-    const int minPointsRequired = pstCmd->nBezierRank * pstCmd->nBezierRank;
+    const int minPointsRequired = pstCmd->nBezierRankX * pstCmd->nBezierRankY;
     if (matchPointNumber < minPointsRequired) {
         pstRpy->enStatus = VisionStatus::TABLE_MAPPING_FAIL;
         std::stringstream ss;
@@ -702,8 +702,8 @@ namespace Vision
 
     std::vector<float> vecParamMinMaxXY{pstRpy->fMinX, pstRpy->fMaxX, pstRpy->fMinY, pstRpy->fMaxY};
 
-    pstRpy->matXOffsetParam = _calculatePPz(xtt, ytt, dxt, vecParamMinMaxXY, pstCmd->nBezierRank, pstCmd->nBezierRank);
-    pstRpy->matYOffsetParam = _calculatePPz(xtt, ytt, dyt, vecParamMinMaxXY, pstCmd->nBezierRank, pstCmd->nBezierRank);
+    pstRpy->matXOffsetParam = _calculatePPz(xtt, ytt, dxt, vecParamMinMaxXY, pstCmd->nBezierRankX, pstCmd->nBezierRankY);
+    pstRpy->matYOffsetParam = _calculatePPz(xtt, ytt, dyt, vecParamMinMaxXY, pstCmd->nBezierRankX, pstCmd->nBezierRankY);
 
 #ifdef _DEBUG
     cv::Mat matXOffsetParamT; cv::transpose(pstRpy->matXOffsetParam, matXOffsetParamT);
@@ -737,7 +737,7 @@ namespace Vision
     matY.at<float>(0) = pstCmd->ptTablePos.y;
 
     std::vector<float> vecParamMinMaxXY{pstCmd->fMinX, pstCmd->fMaxX, pstCmd->fMinY, pstCmd->fMaxY};
-    cv::Mat matXX = CalcUtils::generateBezier(matX, matY, vecParamMinMaxXY, pstCmd->nBezierRank, pstCmd->nBezierRank);
+    cv::Mat matXX = CalcUtils::generateBezier(matX, matY, vecParamMinMaxXY, pstCmd->nBezierRankX, pstCmd->nBezierRankY);
 
     if (matXX.cols != pstCmd->matXOffsetParam.rows || matXX.cols != pstCmd->matYOffsetParam.rows) {
         WriteLog("PR_CalcTableOffset: The input calibration result and the input bezier rank not match.");
@@ -763,7 +763,7 @@ namespace Vision
     matY.at<float>(0) = ptPos.y;
 
     std::vector<float> vecParamMinMaxXY{pstCmd->fMinX, pstCmd->fMaxX, pstCmd->fMinY, pstCmd->fMaxY};
-    cv::Mat matXX = CalcUtils::generateBezier(matX, matY, vecParamMinMaxXY, pstCmd->nBezierRank, pstCmd->nBezierRank);
+    cv::Mat matXX = CalcUtils::generateBezier(matX, matY, vecParamMinMaxXY, pstCmd->nBezierRankX, pstCmd->nBezierRankY);
 
     cv::Mat matXOffset = matXX * pstCmd->matXOffsetParam;
     cv::Mat matYOffset = matXX * pstCmd->matYOffsetParam;

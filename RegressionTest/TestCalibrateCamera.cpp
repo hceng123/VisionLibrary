@@ -41,7 +41,7 @@ void TestCalibrateCamera()
     stCmd.fPatternDist = 2;
     stCmd.szBoardPattern = cv::Size(25, 23);
 
-    PR_CalibrateCamera ( &stCmd, &stRpy );
+    PR_CalibrateCamera(&stCmd, &stRpy);
     PrintRpy(stRpy);
 
     std::cout << std::endl << "---------------------------------------------";
@@ -53,7 +53,7 @@ void TestCalibrateCamera()
     stCmd.fPatternDist = 2;
     stCmd.szBoardPattern = cv::Size(8, 5);
 
-    PR_CalibrateCamera ( &stCmd, &stRpy );
+    PR_CalibrateCamera(&stCmd, &stRpy);
     PrintRpy(stRpy);
 
     std::cout << std::endl << "---------------------------------------------";
@@ -65,7 +65,7 @@ void TestCalibrateCamera()
     stCmd.fPatternDist = 2;
     stCmd.szBoardPattern = cv::Size(8, 5);
 
-    PR_CalibrateCamera ( &stCmd, &stRpy );
+    PR_CalibrateCamera(&stCmd, &stRpy);
     PrintRpy(stRpy);
 
     std::cout << std::endl << "---------------------------------------------";
@@ -77,7 +77,7 @@ void TestCalibrateCamera()
     stCmd.fPatternDist = 2;
     stCmd.szBoardPattern = cv::Size(5, 5);
 
-    PR_CalibrateCamera ( &stCmd, &stRpy );
+    PR_CalibrateCamera(&stCmd, &stRpy);
     PrintRpy(stRpy);
 
     std::cout << std::endl << "---------------------------------------------";
@@ -89,7 +89,7 @@ void TestCalibrateCamera()
     stCmd.fPatternDist = 2;
     stCmd.szBoardPattern = cv::Size(16, 16);
 
-    PR_CalibrateCamera ( &stCmd, &stRpy );
+    PR_CalibrateCamera(&stCmd, &stRpy);
     PrintRpy(stRpy);
 
     std::cout << std::endl << "---------------------------------------------";
@@ -101,7 +101,7 @@ void TestCalibrateCamera()
     stCmd.fPatternDist = 2;
     stCmd.szBoardPattern = cv::Size(16, 16);
 
-    PR_CalibrateCamera ( &stCmd, &stRpy );
+    PR_CalibrateCamera(&stCmd, &stRpy);
     PrintRpy(stRpy);
 
     std::cout << std::endl << "---------------------------------------------";
@@ -113,7 +113,7 @@ void TestCalibrateCamera()
     stCmd.fPatternDist = 2;
     stCmd.szBoardPattern = cv::Size(30, 30);
 
-    PR_CalibrateCamera ( &stCmd, &stRpy );
+    PR_CalibrateCamera(&stCmd, &stRpy);
     PrintRpy(stRpy);
 }
 
