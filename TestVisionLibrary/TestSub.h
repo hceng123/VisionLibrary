@@ -7,6 +7,7 @@ void TestAutoLocateLead_2();
 void TestAutoLocateLead_3();
 void TestAutoLocateLeadTmpl_1();
 void TestAutoLocateLeadTmpl_2();
+void TestAutoLocateLeadTmpl_3();
 
 void TestInspBridge();
 void TestInspBridge_1();

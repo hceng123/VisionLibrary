@@ -678,7 +678,7 @@ int _tmain(int argc, _TCHAR* argv[])
     auto fFloorResult = std::floor(fTest);
 
     PR_Init();
-    PR_SetDebugMode(PR_DEBUG_MODE::DISABLED);
+    PR_SetDebugMode(PR_DEBUG_MODE::LOG_FAIL_CASE);
 
     //PR_RunLogCase("./Vision/LogCase/CalibrateCamera_2018_12_21_08_03_14_131.logcase");
     //TestTemplate();
@@ -708,6 +708,7 @@ int _tmain(int argc, _TCHAR* argv[])
     //TestAutoLocateLead();
     //TestAutoLocateLeadTmpl_1();
     //TestAutoLocateLeadTmpl_2();
+    TestAutoLocateLeadTmpl_3();
 
     //TestInspBridge();
     //TestInspBridge_1();
@@ -753,7 +754,7 @@ int _tmain(int argc, _TCHAR* argv[])
     //DynamicCalculateDistortion();
     //TestCalcRestoreIdx();
     //ConvertRestoreCsvToYml();
-    TestTableMappingAndCombineImage();
+    //TestTableMappingAndCombineImage();
 
     //TestIntegrate3DCalibHaoYu();
 
