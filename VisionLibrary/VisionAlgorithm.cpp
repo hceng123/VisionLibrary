@@ -8988,5 +8988,40 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     return pstRpy->enStatus;
 }
 
+/*static*/ VisionStatus VisionAlgorithm::calcRestoreIdx(const PR_CALC_RESTORE_IDX_CMD* const pstCmd, PR_CALC_RESTORE_IDX_RPY* const pstRpy, bool bReplay /*= false*/) {
+    assert(pstCmd != nullptr && pstRpy != nullptr);
+    pstRpy->vecVecRestoreIndex.clear();
+
+    if (pstCmd->matXOffsetParam.empty() || pstCmd->matYOffsetParam.empty()) {
+        WriteLog("Input matXOffsetParam and matYOffsetParam is empty");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    const int bezierParamNum = pstCmd->nBezierRankX * pstCmd->nBezierRankY;
+    if (pstCmd->matXOffsetParam.rows != bezierParamNum) {
+        std::stringstream ss;
+        ss << "The matXOffsetParam rows " << pstCmd->matXOffsetParam.rows << " not match with input bezier rank multiply " << bezierParamNum;
+        WriteLog(ss.str());
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    if (pstCmd->matYOffsetParam.rows != bezierParamNum) {
+        std::stringstream ss;
+        ss << "The matYOffsetParam rows " << pstCmd->matYOffsetParam.rows << " not match with input bezier rank multiply " << bezierParamNum;
+        WriteLog(ss.str());
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    MARK_FUNCTION_START_TIME;
+
+    TableMapping::calcRestoreIdx(pstCmd, pstRpy);
+
+    MARK_FUNCTION_END_TIME;
+    return pstRpy->enStatus;
+}
+
 }
 }

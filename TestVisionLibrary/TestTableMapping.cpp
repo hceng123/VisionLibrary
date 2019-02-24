@@ -17,7 +17,8 @@ void TestTableMapping() {
 
     PR_TABLE_MAPPING_CMD stCmd;
     PR_TABLE_MAPPING_RPY stRpy;
-    stCmd.nBezierRank = 11;
+    stCmd.nBezierRankX = 11;
+    stCmd.nBezierRankY = 11;
 
     for (int i = 1; i <= TOTAL_FRAME; ++ i) {
         char chArrFileName[100];
@@ -67,7 +68,8 @@ void TestTableMapping_1() {
 
     PR_TABLE_MAPPING_CMD stCmd;
     PR_TABLE_MAPPING_RPY stRpy;
-    stCmd.nBezierRank = BEZIER_RANK;
+    stCmd.nBezierRankX = BEZIER_RANK;
+    stCmd.nBezierRankY = BEZIER_RANK;
     stCmd.fBoardPointDist = 16;
 
     for (int i = 1; i <= TOTAL_FRAME; ++ i) {
@@ -102,7 +104,8 @@ void TestTableMapping_1() {
     PR_CALC_TABLE_OFFSET_CMD stCalcOffsetCmd;
     PR_CALC_TABLE_OFFSET_RPY stCalcOffsetRpy;
 
-    stCalcOffsetCmd.nBezierRank = BEZIER_RANK;
+    stCalcOffsetCmd.nBezierRankX = BEZIER_RANK;
+    stCalcOffsetCmd.nBezierRankY = BEZIER_RANK;
     stCalcOffsetCmd.ptTablePos = cv::Point2f(-205, 103);
     //stCalcOffsetCmd.ptTablePos = cv::Point2f(-300, 600);
     stCalcOffsetCmd.matXOffsetParam = stRpy.matXOffsetParam;
@@ -126,7 +129,8 @@ void TestTableMapping_2() {
 
     PR_TABLE_MAPPING_CMD stCmd;
     PR_TABLE_MAPPING_RPY stRpy;
-    stCmd.nBezierRank = BEZIER_RANK;
+    stCmd.nBezierRankX = BEZIER_RANK;
+    stCmd.nBezierRankY = BEZIER_RANK;
     stCmd.fBoardPointDist = 16;
     stCmd.fFrameBorderPointWeight = 100.f;
     const int POINTS_PER_ROW = 13;
@@ -163,7 +167,8 @@ void TestTableMapping_2() {
     PR_CALC_TABLE_OFFSET_CMD stCalcOffsetCmd;
     PR_CALC_TABLE_OFFSET_RPY stCalcOffsetRpy;
 
-    stCalcOffsetCmd.nBezierRank = BEZIER_RANK;
+    stCalcOffsetCmd.nBezierRankX = BEZIER_RANK;
+    stCalcOffsetCmd.nBezierRankY = BEZIER_RANK;
     stCalcOffsetCmd.ptTablePos = cv::Point2f(-205, 103);
     //stCalcOffsetCmd.ptTablePos = cv::Point2f(-300, 600);
     stCalcOffsetCmd.matXOffsetParam = stRpy.matXOffsetParam;
@@ -190,7 +195,8 @@ void TestTableMapping_3() {
 
     PR_TABLE_MAPPING_CMD stCmd;
     PR_TABLE_MAPPING_RPY stRpy;
-    stCmd.nBezierRank = BEZIER_RANK;
+    stCmd.nBezierRankX = BEZIER_RANK;
+    stCmd.nBezierRankY = BEZIER_RANK;
     stCmd.fBoardPointDist = 16;
     stCmd.fFrameBorderPointWeight = 100.f;
     const int POINTS_PER_ROW = 13;
@@ -228,7 +234,8 @@ void TestTableMapping_3() {
     PR_CALC_TABLE_OFFSET_CMD stCalcOffsetCmd;
     PR_CALC_TABLE_OFFSET_RPY stCalcOffsetRpy;
 
-    stCalcOffsetCmd.nBezierRank = BEZIER_RANK;
+    stCalcOffsetCmd.nBezierRankX = BEZIER_RANK;
+    stCalcOffsetCmd.nBezierRankY = BEZIER_RANK;
     stCalcOffsetCmd.ptTablePos = cv::Point2f(-205, 103);
     //stCalcOffsetCmd.ptTablePos = cv::Point2f(-300, 600);
     stCalcOffsetCmd.matXOffsetParam = stRpy.matXOffsetParam;

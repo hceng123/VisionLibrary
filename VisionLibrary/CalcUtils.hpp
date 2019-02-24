@@ -431,6 +431,16 @@ public:
         return matResult;
     }
 
+    template<typename T>
+    static void round(cv::Mat& matInOut) {
+        for (int row = 0; row < matInOut.rows; ++row) {
+            for (int col = 0; col < matInOut.cols; ++col) {
+                auto& value = matInOut.at<T>(row, col);
+                value = std::round(value);
+            }
+        }
+    }
+
     static float ptDisToLine(const cv::Point2f &ptInput, bool bReversedFit, float fSlope, float fIntercept);
     static float lineSlope(const PR_Line2f &line);
     static void lineSlopeIntercept(const PR_Line2f &line, float &fSlope, float &fIntercept);

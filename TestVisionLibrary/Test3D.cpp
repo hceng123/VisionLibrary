@@ -433,13 +433,13 @@ void TestIntegrate3DCalib() {
         ++ i;
     }
 
-    cv::FileStorage fsCalibResultData ( gstrIntegrateCalibResultFile, cv::FileStorage::WRITE );
-    if (!fsCalibResultData.isOpened ()) {
+    cv::FileStorage fsCalibResultData(gstrIntegrateCalibResultFile, cv::FileStorage::WRITE);
+    if (!fsCalibResultData.isOpened()) {
         std::cout << "Failed to open file: " << gstrIntegrateCalibResultFile << std::endl;
         return;
     }
-    cv::write ( fsCalibResultData, "IntegratedK", stRpy.matIntegratedK );
-    cv::write ( fsCalibResultData, "Order3CurveSurface", stRpy.matOrder3CurveSurface );
+    cv::write(fsCalibResultData, "IntegratedK", stRpy.matIntegratedK);
+    cv::write(fsCalibResultData, "Order3CurveSurface", stRpy.matOrder3CurveSurface);
     fsCalibResultData.release();
 }
 
@@ -462,7 +462,7 @@ void TestCalc3DHeight_With_NormalCalibParam() {
     cv::Mat matBaseSurfaceParam;
 
     std::string strResultMatPath = gstrCalibResultFile;
-    cv::FileStorage fs ( strResultMatPath, cv::FileStorage::READ );
+    cv::FileStorage fs(strResultMatPath, cv::FileStorage::READ);
     cv::FileNode fileNode = fs["K1"];
     cv::read ( fileNode, stCmd.matThickToThinK, cv::Mat() );
     fileNode = fs["K2"];
