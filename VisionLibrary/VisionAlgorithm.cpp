@@ -4483,6 +4483,8 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
         pstRpy->vecLeadRecordId.push_back(nLeadRecordId);
 
         _autoLocateLeadOneSide(matGray, rectSubRegion, enDir, matPadTmp, matLeadTmp, nPadRecordId, nLeadRecordId, pstCmd, pstRpy);
+        if (VisionStatus::OK != pstRpy->enStatus)
+            break;
     }
 
     // If some of the process fails, then free all the records.
@@ -4558,6 +4560,13 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
         else if (matBWDiff.at<float>(i) < 0)
             vecIndex2.push_back(i);
     }
+
+    if (vecIndex1.empty() || vecIndex2.empty()) {
+        WriteLog("Failed split image to auto locate lead");
+        pstRpy->enStatus = VisionStatus::AUTO_LOCATE_LEAD_FAIL;
+        return pstRpy->enStatus;
+    }
+
     auto n = vecIndex1.size();
     std::vector<int> vecSegPoint;
     vecSegPoint.push_back(0);
