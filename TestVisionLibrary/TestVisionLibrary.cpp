@@ -708,7 +708,7 @@ int _tmain(int argc, _TCHAR* argv[])
     //TestAutoLocateLead();
     //TestAutoLocateLeadTmpl_1();
     //TestAutoLocateLeadTmpl_2();
-    TestAutoLocateLeadTmpl_3();
+    //TestAutoLocateLeadTmpl_3();
 
     //TestInspBridge();
     //TestInspBridge_1();
@@ -836,6 +836,8 @@ int _tmain(int argc, _TCHAR* argv[])
     //TestCombineImageNew_2();
     //TestCombineMachineImage();
     //FindFramePositionFromBigImage();
+
+    TestGenerateSelectedImage();
 
     PR_DumpTimeLog("./Vision/Time.log");
     std::cout << "Press any key to exit." << std::endl;
