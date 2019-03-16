@@ -107,3 +107,5 @@ void DynamicCalculateDistortion();
 void TestCalcRestoreIdx();
 void ConvertRestoreCsvToYml();
 void TestTableMappingAndCombineImage();
+
+void TestGenerateSelectedImage();
