@@ -665,7 +665,7 @@ struct PR_REMOVE_CC_CMD {
     cv::Rect                rectROI;
     Int16                   nConnectivity;      //connect by 4 or 8 points.
     PR_COMPARE_TYPE         enCompareType;
-    float                   fAreaThreshold;    
+    float                   fAreaThreshold;
 };
 
 struct PR_REMOVE_CC_RPY {
@@ -1628,8 +1628,10 @@ struct PR_LRN_SIMILARITY_RPY {
 };
 
 struct PR_INSP_SIMILARITY_CMD {
+    PR_INSP_SIMILARITY_CMD() :
+        fMinSimilarity  (60.f) {}
     cv::Mat                 matInputImg;
-    cv::Rect                rectSrchWindow;
+    cv::Rect                rectROI;
     std::vector<Int32>      vecRecordId;
     float                   fMinSimilarity;
 };

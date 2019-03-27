@@ -8378,7 +8378,10 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
 
     if (!isAutoMode()) {
         _rotateOcvImageBack(pstCmd->enDirection, matDrawResult);
-        pstRpy->matResultImg = pstCmd->matInputImg.clone();
+        if (pstRpy->matResultImg.empty())
+            pstRpy->matResultImg = pstCmd->matInputImg.clone();
+        if (pstRpy->matResultImg.channels() == 1)
+            cv::cvtColor(pstRpy->matResultImg, pstRpy->matResultImg, CV_GRAY2BGR);
         cv::rectangle(pstRpy->matResultImg, pstCmd->rectROI, BLUE_SCALAR, 2);
         cv::Mat matResultROI(pstRpy->matResultImg, pstCmd->rectROI);
         matDrawResult.copyTo(matResultROI);
@@ -8889,7 +8892,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
         return pstRpy->enStatus;
     }
 
-    pstRpy->enStatus = _checkInputROI(pstCmd->rectSrchWindow, pstCmd->matInputImg, AT);
+    pstRpy->enStatus = _checkInputROI(pstCmd->rectROI, pstCmd->matInputImg, AT);
     if (VisionStatus::OK != pstRpy->enStatus) return pstRpy->enStatus;
 
     if (pstCmd->vecRecordId.empty()) {
@@ -8905,7 +8908,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     pstRpy->vecSimilarity.clear();
     VectorOfRect vecResultRects;
 
-    cv::Mat matROI(pstCmd->matInputImg, pstCmd->rectSrchWindow), matGray;
+    cv::Mat matROI(pstCmd->matInputImg, pstCmd->rectROI), matGray;
     if (matROI.channels() > 1)
         cv::cvtColor(matROI, matGray, CV_BGR2GRAY);
     else
@@ -8929,7 +8932,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
             return pstRpy->enStatus;
         }
 
-        if (ptrRecord->getTmpl().rows >= pstCmd->rectSrchWindow.height || ptrRecord->getTmpl().cols >= pstCmd->rectSrchWindow.width) {
+        if (ptrRecord->getTmpl().rows >= pstCmd->rectROI.height || ptrRecord->getTmpl().cols >= pstCmd->rectROI.width) {
             WriteLog("The inspect ROI size not match with template size.");
             pstRpy->enStatus = VisionStatus::INVALID_PARAM;
             return pstRpy->enStatus;
@@ -8945,8 +8948,8 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
             break;
         }
 
-        pstRpy->vecSimilarity.push_back(fSimilarity);
-        cv::Point ptCtr(ToInt32(ptResult.x) + pstCmd->rectSrchWindow.x, ToInt32(ptResult.y) + pstCmd->rectSrchWindow.y);
+        pstRpy->vecSimilarity.push_back(fSimilarity * ConstToPercentage);
+        cv::Point ptCtr(ToInt32(ptResult.x) + pstCmd->rectROI.x, ToInt32(ptResult.y) + pstCmd->rectROI.y);
         vecResultRects.emplace_back(ptCtr.x - ptrRecord->getTmpl().cols / 2, ptCtr.y - ptrRecord->getTmpl().rows / 2,
             ptrRecord->getTmpl().cols, ptrRecord->getTmpl().rows);
     } 
@@ -8959,7 +8962,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
             if (!isAutoMode()) {
                 assert(pstRpy->vecSimilarity.size() == vecResultRects.size());
                 pstRpy->matResultImg = pstCmd->matInputImg.clone();
-                cv::rectangle(pstRpy->matResultImg, pstCmd->rectSrchWindow, BLUE_SCALAR, 1);
+                cv::rectangle(pstRpy->matResultImg, pstCmd->rectROI, BLUE_SCALAR, 1);
                 auto index = iterMax - pstRpy->vecSimilarity.begin();
                 cv::rectangle(pstRpy->matResultImg, vecResultRects[index], GREEN_SCALAR, 1);
             }
