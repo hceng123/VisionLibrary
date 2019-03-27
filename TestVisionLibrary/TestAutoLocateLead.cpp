@@ -113,3 +113,22 @@ void TestAutoLocateLeadTmpl_2()
     std::cout << "PR_InspLeadTmpl status " << ToInt32(stRpy.enStatus) << std::endl;
     cv::imwrite("./data/InspLeadResult_horizontal.bmp", stInspLeadRpy.matResultImg);
 }
+
+void TestAutoLocateLeadTmpl_3() {
+    PR_AUTO_LOCATE_LEAD_CMD stCmd;
+    PR_AUTO_LOCATE_LEAD_RPY stRpy;
+    stCmd.matInputImg = cv::imread("C:/Data/2019_2_22_Lead_Crash/ZB-2-20/2.png", cv::IMREAD_COLOR);
+    stCmd.enMethod = PR_AUTO_LOCATE_LEAD_METHOD::TEMPLATE_MATCH;
+    stCmd.rectSrchWindow = cv::Rect(1535, 6879, 452, 542);
+    stCmd.rectChipBody =   cv::Rect(1558, 7008, 406, 285);
+    stCmd.rectPadWindow = cv::Rect(1844, 6918, 35, 38);
+    stCmd.rectLeadWindow = cv::Rect(1850, 6957, 26, 65);
+    stCmd.vecSrchLeadDirections.push_back(PR_DIRECTION::UP);
+    stCmd.vecSrchLeadDirections.push_back(PR_DIRECTION::DOWN);
+    PR_AutoLocateLead(&stCmd, &stRpy);
+    std::cout << "PR_AutoLocateLead status " << ToInt32(stRpy.enStatus) << std::endl;
+    if (stRpy.enStatus != VisionStatus::OK)
+        return;
+
+    cv::imwrite("C:/Data/2019_2_22_Lead_Crash/ZB-2-20/AutolocateleadResult.png", stRpy.matResultImg);
+}

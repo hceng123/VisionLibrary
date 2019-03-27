@@ -1,27 +1,17 @@
-#include "CalcUtils.hpp"
-#include "Fitting.hpp"
-#include "Unwrap.h"
 #include <iostream>
 #include <numeric>
 #include <iomanip>
+
+#include "CalcUtils.hpp"
+#include "Fitting.hpp"
+#include "Unwrap.h"
+#include "Auxiliary.hpp"
+
 
 namespace AOI
 {
 namespace Vision
 {
-
-template<class T>
-static void printfMat ( const cv::Mat &mat)
-{
-    for ( short row = 0; row < mat.rows; ++ row )
-    {
-        for ( short col = 0; col < mat.cols; ++ col )
-        {
-            printf ("%.2f ", mat.at<T>(row, col) );
-        }
-        printf("\n");
-    }
-}
 
 template<class T>
 static void printfVector(const std::vector<T> &vecInput)
@@ -66,22 +56,22 @@ static void TestCalcUtilsCumSum() {
             0.9f, 0.8f, 0.6f, 0.5f,
             0.8f, 0.8f, 0.7f, 0.6f
         };
-        cv::Mat matInput ( vecFloat ), matResult;
-        matInput = matInput.reshape ( 1, 4 );
+        cv::Mat matInput(vecFloat), matResult;
+        matInput = matInput.reshape(1, 4);
         std::cout << "INPUT: " << std::endl;
-        printfMat<float> ( matInput );
+        printfMat<float>(matInput);
 
         std::cout << "CALCUTILS CUMSUM ON DIMENSION 0 RESULT: " << std::endl;
-        matResult = CalcUtils::cumsum<float> ( matInput, 0 );
-        printfMat<float> ( matResult );
+        matResult = CalcUtils::cumsum<float>(matInput, 0);
+        printfMat<float>(matResult);
 
         std::cout << "CALCUTILS CUMSUM ON DIMENSION 1 RESULT: " << std::endl;
-        matResult = CalcUtils::cumsum<float> ( matInput, 1 );
-        printfMat<float> ( matResult );
+        matResult = CalcUtils::cumsum<float>(matInput, 1);
+        printfMat<float>(matResult);
     }
 }
 
-static void TestCalcUtilsInternals() {
+static void TestCalcUtilsIntervals() {
     float start = 0.f, interval = 0.f, end = 0.f;
     {
         std::cout << std::endl << "------------------------------------------";
@@ -233,6 +223,39 @@ static void TestCalcUtilsDiff() {
 
         matResult = CalcUtils::diff(matInput, 2, 2);
         std::cout << "Diff recursive time 2, dim 2 result: " << std::endl;
+        printfMat<float>(matResult);
+    }
+}
+
+static void TestCalcUtilsPower() {
+    {
+        std::cout << std::endl << "------------------------------------------";
+        std::cout << std::endl << "CALCUTILS POWER TEST #1 STARTING";
+        std::cout << std::endl << "------------------------------------------";
+        std::cout << std::endl;
+        std::vector<float> vecInput {
+            1,  3,  5,
+            7,  11, 13,
+            17, 19, 23
+        };
+
+        std::vector<float> vecPow {
+            1, 2, 1,
+            2, 1, 1,
+            1, 1, 2
+        };
+
+        cv::Mat matInput(vecInput), matPow(vecPow), matResult;
+        matInput = matInput.reshape(1, 3);
+        std::cout << "INPUT: " << std::endl;
+        printfMat<float>(matInput);
+
+        std::cout << "POWER: " << std::endl;
+        matPow = matPow.reshape(1, 3);
+        printfMat<float>(matPow);
+
+        matResult = CalcUtils::power<float>(matInput, matPow);
+        std::cout << "Power result: " << std::endl;
         printfMat<float>(matResult);
     }
 }
@@ -477,9 +500,10 @@ static void TestBilinearInterpolation() {
 void InternalTest() {
     TestBilinearInterpolation();
     TestCalcUtilsCumSum();
-    TestCalcUtilsInternals();
+    TestCalcUtilsIntervals();
     TestCalcUtilsMeshGrid();
     TestCalcUtilsDiff();
+    TestCalcUtilsPower();
     TestCountOfNan();
     TestFindLargestKItems();
     TestCalcUtilsFloor();

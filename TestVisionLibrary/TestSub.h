@@ -7,6 +7,7 @@ void TestAutoLocateLead_2();
 void TestAutoLocateLead_3();
 void TestAutoLocateLeadTmpl_1();
 void TestAutoLocateLeadTmpl_2();
+void TestAutoLocateLeadTmpl_3();
 
 void TestInspBridge();
 void TestInspBridge_1();
@@ -16,6 +17,9 @@ void TestSrchObj();
 void TestSrchDie();
 void TestCalibCamera_1();
 void TestCalibCamera_2();
+void TestCalibCamera_3();
+void TestRestoreImage();
+
 void TestInspChipHead();
 void TestTemplate();
 void TestInspLead();
@@ -28,6 +32,7 @@ void TestCalib3DHeight_03();
 void TestIntegrate3DCalib();
 void TestCalc3DHeight_With_NormalCalibParam();
 void TestCalc3DHeight_With_IntegrateCalibParam();
+void TestCalibDlpOffset_1();
 
 void TestCalcMTF();
 void TestCalcPD();
@@ -92,4 +97,15 @@ void TestDrawDashRect();
 void TestTableMapping();
 void TestTableMapping_1();
 void TestTableMapping_2();
-void TestTableMapping_4();
+void TestTableMapping_3();
+
+void TestCombineImageNew_1();
+void TestCombineImageNew_2();
+void TestCombineMachineImage();
+void FindFramePositionFromBigImage();
+void DynamicCalculateDistortion();
+void TestCalcRestoreIdx();
+void ConvertRestoreCsvToYml();
+void TestTableMappingAndCombineImage();
+
+void TestGenerateSelectedImage();

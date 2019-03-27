@@ -633,8 +633,27 @@ void addBridgeIfNotExist(VectorOfRect& vecBridgeWindow, const cv::Rect& rectBrid
         vecBridgeWindow.push_back(rectBridge);
 }
 
+void TestReshape() {
+    std::vector<float> vecInput {
+            1,  3,
+            7,  11,
+            17, 19
+        };
+    cv::Mat matInput(vecInput);
+    cv::Mat matReshape1 = matInput.reshape(1, 3);
+    std::cout << "Reshape 1 result: " << std::endl;
+    printfMat<float>(matReshape1);
+
+    matInput = matInput.reshape(1, 1);
+    cv::Mat matReshape2 = matInput.reshape(1, 3);
+    std::cout << "Reshape 2 result: " << std::endl;
+    printfMat<float>(matReshape2);
+}
+
 int _tmain(int argc, _TCHAR* argv[])
 {
+    TestReshape();
+
     cv::Rect rect(1, 5, 10, 10);
     VectorOfRect vecBridgeWindow;
     vecBridgeWindow.push_back(rect);
@@ -659,8 +678,7 @@ int _tmain(int argc, _TCHAR* argv[])
     auto fFloorResult = std::floor(fTest);
 
     PR_Init();
-    PR_SetDebugMode(PR_DEBUG_MODE::SHOW_IMAGE);
-
+    PR_SetDebugMode(PR_DEBUG_MODE::LOG_FAIL_CASE);
 
     //PR_RunLogCase("./Vision/LogCase/CalibrateCamera_2018_12_21_08_03_14_131.logcase");
     //TestTemplate();
@@ -681,6 +699,8 @@ int _tmain(int argc, _TCHAR* argv[])
     //TestCalibCamera();
     //TestCalibCamera_1();
     //TestCalibCamera_2();
+    //TestCalibCamera_3();
+    //TestRestoreImage();
 
     //TestCompareInputAndResult();
     //TestRunRestoreImgLogCase();
@@ -688,8 +708,9 @@ int _tmain(int argc, _TCHAR* argv[])
     //TestAutoLocateLead();
     //TestAutoLocateLeadTmpl_1();
     //TestAutoLocateLeadTmpl_2();
+    //TestAutoLocateLeadTmpl_3();
 
-    TestInspBridge();
+    //TestInspBridge();
     //TestInspBridge_1();
 
     //TestAutoThreshold();
@@ -729,6 +750,11 @@ int _tmain(int argc, _TCHAR* argv[])
 
     //TestCalc3DHeight_With_IntegrateCalibParam();
     //TestMerge3DHeight();
+    //TestCalibDlpOffset_1();
+    //DynamicCalculateDistortion();
+    //TestCalcRestoreIdx();
+    //ConvertRestoreCsvToYml();
+    //TestTableMappingAndCombineImage();
 
     //TestIntegrate3DCalibHaoYu();
 
@@ -804,7 +830,14 @@ int _tmain(int argc, _TCHAR* argv[])
     
     //TestTableMapping_1();
     //TestTableMapping_2();
-	TestTableMapping_4();
+    //TestTableMapping_3();
+    
+    //TestCombineImageNew_1();
+    //TestCombineImageNew_2();
+    //TestCombineMachineImage();
+    //FindFramePositionFromBigImage();
+
+    TestGenerateSelectedImage();
 
     PR_DumpTimeLog("./Vision/Time.log");
     std::cout << "Press any key to exit." << std::endl;

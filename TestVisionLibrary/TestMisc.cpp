@@ -1,10 +1,13 @@
 #include "stdafx.h"
+#include <iostream>
+#include <boost/filesystem.hpp>
+
 #include "../VisionLibrary/VisionAPI.h"
 #include "opencv2/highgui.hpp"
-#include <iostream>
 #include "TestSub.h"
 
 using namespace AOI::Vision;
+namespace fs = boost::filesystem;
 
 void TestCombineImage() {
     PR_COMBINE_IMG_CMD stCmd;
@@ -211,8 +214,8 @@ void drawDashRect(cv::Mat &matImage, int linelength, int dashlength, const cv::R
     int tl_y = rect.y;
 
     int totallength = dashlength + linelength;
-    int nCountX = std::ceil((float)rect.width  / totallength);
-    int nCountY = std::ceil((float)rect.height / totallength);
+    int nCountX = ToInt32(std::ceil((float)rect.width  / totallength));
+    int nCountY = ToInt32(std::ceil((float)rect.height / totallength));
 
     cv::Point start, end;//start and end point of each dash
     //draw the horizontal lines
@@ -271,4 +274,43 @@ void TestDrawDashRect()
     cv::Mat matResult = cv::Mat::ones(500, 500, CV_8UC3) * 255;
     drawDashRect(matResult, 10, 8, cv::Rect(100, 100, 295, 295), cv::Scalar(128,128,128), 2);
     cv::imwrite("./data/TestDashResult.png", matResult);
+}
+
+void TestGenerateSelectedImage() {
+    VectorOfMat vectorOfImage;
+    fs::path p("./data/ButtonImages/");
+
+    if (!is_directory(p))
+        return;
+
+    std::vector<fs::directory_entry> v; // To save the file names in a vector.
+    std::copy(fs::directory_iterator(p), fs::directory_iterator(), back_inserter(v));
+
+    for (std::vector<fs::directory_entry>::const_iterator it = v.begin(); it != v.end(); ++it)
+    {
+        if (!is_regular_file(it->path()))
+            continue;
+
+        auto strFilePath = (*it).path().string();
+        cv::Mat matImage = cv::imread(strFilePath, cv::IMREAD_COLOR);
+        if (matImage.empty()) {
+            std::cout << "Failed to read image " << strFilePath << std::endl;
+            return;
+        }
+
+        cv::resize(matImage, matImage, cv::Size(128, 128));
+        cv::imwrite(strFilePath, matImage);
+
+        const int lineWidth = 5;
+        cv::Point point1(matImage.cols / 2, matImage.rows * 3 / 4);
+        cv::Point point2(point1.x + 20, point1.y + 20);
+        cv::Point point3(point2.x + 40, point2.y - 40);
+        cv::line(matImage, point1, point2, cv::Scalar(0, 255, 0), lineWidth);
+        cv::line(matImage, point2, point3, cv::Scalar(0, 255, 0), lineWidth);
+
+        auto strFileName = (*it).path().filename().string();
+        std::string fileNameWithoutExe = strFileName.substr(0, strFileName.length() - 4);
+        std::string strResultName = "./data/ButtonImagesResult/" + fileNameWithoutExe + "Selected.png";
+        cv::imwrite(strResultName, matImage);
+    }
 }

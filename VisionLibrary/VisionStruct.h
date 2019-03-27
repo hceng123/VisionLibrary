@@ -33,6 +33,8 @@ using VectorOfFloat = std::vector<float>;
 using VectorOfVectorOfFloat = std::vector<VectorOfFloat>;
 using VectorOfDouble = std::vector<double>;
 using VectorOfDirection = std::vector<PR_DIRECTION>;
+using VectorOfInt = std::vector<int>;
+using VectorOfVectorOfInt = std::vector<VectorOfInt>;
 
 template <typename Tp> inline Int32 ToInt32(Tp param) { return static_cast<Int32>(param); }
 template <typename Tp> inline Int16 ToInt16(Tp param) { return static_cast<Int16>(param); }
@@ -663,7 +665,7 @@ struct PR_REMOVE_CC_CMD {
     cv::Rect                rectROI;
     Int16                   nConnectivity;      //connect by 4 or 8 points.
     PR_COMPARE_TYPE         enCompareType;
-    float                   fAreaThreshold;    
+    float                   fAreaThreshold;
 };
 
 struct PR_REMOVE_CC_RPY {
@@ -739,7 +741,7 @@ struct PR_CALIBRATE_CAMERA_RPY {
     cv::Mat                 matDistCoeffs;              //type: CV_64FC1.
     double                  dResolutionX;               //Unit: um/pixel.
     double                  dResolutionY;               //Unit: um/pixel.
-    std::vector<cv::Mat>    vecMatRestoreImage;         //The remap matrix to restore image. vector size is 2, the matrix dimension is same as input image.
+    VectorOfMat             vecMatRestoreMap;           //The remap matrix to restore image. vector size is 2, the matrix dimension is same as input image.
     //Intermediate result.
     cv::Mat                 matCornerPointsImg;
     VectorOfPoint2f         vecImagePoints;
@@ -750,7 +752,7 @@ struct PR_CALIBRATE_CAMERA_RPY {
 
 struct PR_RESTORE_IMG_CMD {
     cv::Mat                 matInputImg;
-    std::vector<cv::Mat>    vecMatRestoreImage;
+    VectorOfMat             vecMatRestoreMap;
 };
 
 struct PR_RESTORE_IMG_RPY {
@@ -766,7 +768,7 @@ struct PR_CALC_UNDISTORT_RECTIFY_MAP_CMD {
 
 struct PR_CALC_UNDISTORT_RECTIFY_MAP_RPY {
     VisionStatus            enStatus;
-    std::vector<cv::Mat>    vecMatRestoreImage;
+    std::vector<cv::Mat>    vecMatRestoreMap;
 };
 
 struct PR_AUTO_LOCATE_LEAD_CMD {
@@ -1216,11 +1218,39 @@ struct PR_MOTOR_CALIB_3D_CMD {
 
 struct PR_MOTOR_CALIB_3D_RPY {
     VisionStatus            enStatus;
+    float                   fMaxPhase;
+    float                   fMinPhase;
     cv::Mat                 matIntegratedK;         //The 12 parameters to calculate height. They are K1~K10 and P1, P2. H = (Phase + P1*Phase^2 + P2*Phase^3) ./ (K(1)*x1.^3 + K(2)*y1.^3 + K(3)*x1.^2.*y1 + K(4)*x1.*y1.^2 + K(5)*x1.^2 + K(6)*y1.^2 + K(7)*x1.*y1 + K(8)*x1 + K(9)*y1 + K(10))
     cv::Mat                 matOrder3CurveSurface;  //The regression 3 order curve surface to convert phase to height. It is calculated by K(1)*x1.^3 + K(2)*y1.^3 + K(3)*x1.^2.*y1 + K(4)*x1.*y1.^2 + K(5)*x1.^2 + K(6)*y1.^2 + K(7)*x1.*y1 + K(8)*x1 + K(9)*y1 + K(10)
     VectorOfMat             vecMatResultImg;
     VectorHeightCalibResult vecHeightCalibResult;
     VectorHeightGridHeights vecHeightGridHeights;
+};
+
+struct PR_MOTOR_CALIB_3D_NEW_RPY {
+    VisionStatus            enStatus;
+    float                   fMaxPhase;
+    float                   fMinPhase;
+    cv::Mat                 mat3DBezierK;           // The 100 3D Bezier parameters. 5 x 5 x 4 = 100
+    cv::Mat                 mat3DBezierSurface;     // The 3D bezier surface calculated from bezier parameters
+    VectorOfMat             vecMatResultImg;
+    VectorHeightCalibResult vecHeightCalibResult;
+    VectorHeightGridHeights vecHeightGridHeights;
+};
+
+struct PR_CALIB_DLP_OFFSET_CMD {
+    int                     nCalibPosRows;
+    int                     nCalibPosCols;
+    float                   fFrameDistX;            // The X distance between frame, unit in mm
+    float                   fFrameDistY;            // The Y distance between frame, unit in mm
+    float                   fResolution;            // Camera resolution
+    VectorOfMat             arrVecDlpH[NUM_OF_DLP]; // The vector size of DLP height should equal to nCalibPosRows * nCalibPosCols
+};
+
+struct PR_CALIB_DLP_OFFSET_RPY {
+    VisionStatus            enStatus;
+    float                   arrOffset[NUM_OF_DLP];
+    cv::Mat                 arrMatRotationSurface[NUM_OF_DLP];
 };
 
 struct PR_CALC_3D_HEIGHT_CMD {
@@ -1256,9 +1286,49 @@ struct PR_CALC_3D_HEIGHT_CMD {
     int                     nRemoveBetaJumpMaxSpan;  //The phase jump span in the specified range of beta phase(the thin pattern) will be removed.
     int                     nRemoveGammaJumpSpanX;   //The phase jump span in X direction under this value in gamma phase(the thinnest pattern) will be removed. It is used only when bUseThinnestPattern is true.
     int                     nRemoveGammaJumpSpanY;   //The phase jump span in Y direction under this value in gamma phase(the thinnest pattern) will be removed. It is used only when bUseThinnestPattern is true.
-    //Below 2 parameters are result of PR_Integrate3DCalib, they are calibrated from positive, negative and H = 5mm surface phase. If these 2 parameters are used, then matPhaseToHeightK will be ignored.
+    //Below 2 parameters are result of PR_MotorCalib3D, they are calibrated from positive, negative and H = 5mm surface phase. If these 2 parameters are used, then matPhaseToHeightK will be ignored.
     cv::Mat                 matIntegratedK;          //The 12 parameters to calculate height. They are K1~K10 and P1, P2. H = (Phase + P1*Phase^2 + P2*Phase^3) ./ (K(1)*x1.^3 + K(2)*y1.^3 + K(3)*x1.^2.*y1 + K(4)*x1.*y1.^2 + K(5)*x1.^2 + K(6)*y1.^2 + K(7)*x1.*y1 + K(8)*x1 + K(9)*y1 + K(10))
     cv::Mat                 matOrder3CurveSurface;   //The regression 3 order curve surface to convert phase to height. It is calculated by K(1)*x1.^3 + K(2)*y1.^3 + K(3)*x1.^2.*y1 + K(4)*x1.*y1.^2 + K(5)*x1.^2 + K(6)*y1.^2 + K(7)*x1.*y1 + K(8)*x1 + K(9)*y1 + K(10)
+};
+
+struct PR_CALC_3D_HEIGHT_NEW_CMD {
+    PR_CALC_3D_HEIGHT_NEW_CMD() :
+        bEnableGaussianFilter(true),
+        bReverseSeq(true),
+        enProjectDir(PR_DIRECTION::LEFT),
+        enScanDir(PR_DIRECTION::DOWN),
+        bUseThinnestPattern(false),
+        fRemoveHarmonicWaveK(0.f),
+        fMinAmplitude(5.f),
+        fPhaseShift(0.f),
+        nRemoveBetaJumpMinSpan(25),
+        nRemoveBetaJumpMaxSpan(80),
+        nRemoveGammaJumpSpanX(23),
+        nRemoveGammaJumpSpanY(4) {}
+    VectorOfMat             vecInputImgs;
+    bool                    bEnableGaussianFilter;
+    bool                    bReverseSeq;             //Change the image sequence.
+    PR_DIRECTION            enProjectDir;            //The DLP project direction. Get it from PR_CALIB_3D_BASE_RPY.
+    PR_DIRECTION            enScanDir;               //The phase correction direction. Get it from PR_CALIB_3D_BASE_RPY.
+    bool                    bUseThinnestPattern;     //Choose to use the thinnest stripe pattern. Otherwise just use the normal thin stripe.
+    float                   fRemoveHarmonicWaveK;    //The factor to remove the harmonic wave in the thick stripe. If it is 0, then this procedure will be skipped.
+    float                   fMinAmplitude;           //In a group of 4 images, if a pixel's gray scale amplitude less than this value, this pixel will be discarded.
+    float                   fPhaseShift;             //Shift the phase measure range. Normal is -1~1, sometimes the H5 surface has corner over this range. So if shift is 0.1, the measure range is -0.9~1.1, so it can measure all the H5 surface.
+    cv::Mat                 matThickToThinK;         //The factor between thick stripe and thin stripe.
+    cv::Mat                 matThickToThinnestK;     //The factor between thick stripe and thinnest stripe.
+    cv::Mat                 matBaseWrappedAlpha;     //The wrapped thick stripe phase.
+    cv::Mat                 matBaseWrappedBeta;      //The wrapped thin stripe phase.
+    cv::Mat                 matBaseWrappedGamma;     //The wrapped thin stripe phase.
+    cv::Mat                 matPhaseToHeightK;       //The factor to convert phase to height. This is the single group of image calibration result.
+    int                     nRemoveBetaJumpMinSpan;  //The phase jump span in the specified range of beta phase(the thin pattern) will be removed.
+    int                     nRemoveBetaJumpMaxSpan;  //The phase jump span in the specified range of beta phase(the thin pattern) will be removed.
+    int                     nRemoveGammaJumpSpanX;   //The phase jump span in X direction under this value in gamma phase(the thinnest pattern) will be removed. It is used only when bUseThinnestPattern is true.
+    int                     nRemoveGammaJumpSpanY;   //The phase jump span in Y direction under this value in gamma phase(the thinnest pattern) will be removed. It is used only when bUseThinnestPattern is true.
+    //Below 2 parameters are result of PR_MotorCalib3D, they are calibrated from positive, negative and H = 5mm surface phase. If these 2 parameters are used, then matPhaseToHeightK will be ignored.
+    float                   fMaxPhase;
+    float                   fMinPhase;
+    cv::Mat                 mat3DBezierK;           // The 100 3D Bezier parameters. 5 x 5 x 4 = 100
+    cv::Mat                 mat3DBezierSurface;     // The 3D bezier surface calculated from bezier parameters
 };
 
 struct PR_CALC_3D_HEIGHT_RPY {
@@ -1347,6 +1417,8 @@ struct PR_CALC_DLP_OFFSET_RPY {
     float                   fOffset4;
 };
 
+// Interpolate the value of point with the already known points values
+// It can be used to calculate 3D height compensation.
 struct PR_CALC_FRAME_VALUE_CMD {
     VectorOfVectorOfPoint2f vecVecRefFrameCenters;
     VectorOfVectorOfFloat   vecVecRefFrameValues;
@@ -1447,6 +1519,21 @@ struct PR_COMBINE_IMG_RPY {
     VectorOfMat             vecResultImages;
 };
 
+struct PR_COMBINE_IMG_NEW_CMD {
+    PR_COMBINE_IMG_NEW_CMD() :
+        nCutBorderPixel(5),
+        bDrawFrame(false) {}
+    VectorOfMat             vecInputImages;
+    VectorOfVectorOfPoint   vecVecFrameCtr;
+    int                     nCutBorderPixel;
+    bool                    bDrawFrame;
+};
+
+struct PR_COMBINE_IMG_NEW_RPY {
+    VisionStatus            enStatus;
+    cv::Mat                 matResultImage;
+};
+
 struct PR_THRESHOLD_CMD {
     PR_THRESHOLD_CMD() :
         bDoubleThreshold    (false),
@@ -1541,8 +1628,10 @@ struct PR_LRN_SIMILARITY_RPY {
 };
 
 struct PR_INSP_SIMILARITY_CMD {
+    PR_INSP_SIMILARITY_CMD() :
+        fMinSimilarity  (60.f) {}
     cv::Mat                 matInputImg;
-    cv::Rect                rectSrchWindow;
+    cv::Rect                rectROI;
     std::vector<Int32>      vecRecordId;
     float                   fMinSimilarity;
 };
@@ -1564,11 +1653,13 @@ struct PR_TABLE_MAPPING_CMD {
 
     PR_TABLE_MAPPING_CMD() :
         fBoardPointDist(5.f),
-        nBezierRank(DEFAULT_TABLE_MAPPING_BEZIER_RANK),
+        nBezierRankX(DEFAULT_TABLE_MAPPING_BEZIER_RANK),
+        nBezierRankY(DEFAULT_TABLE_MAPPING_BEZIER_RANK),
         fFrameBorderPointWeight(100) {}
     VectorOfFramePoints     vecFramePoints;
     float                   fBoardPointDist; // The physical calibration point distance on the chess board. Unit: mm
-    int                     nBezierRank;
+    int                     nBezierRankX;
+    int                     nBezierRankY;
     float                   fFrameBorderPointWeight;
 };
 
@@ -1587,7 +1678,8 @@ struct PR_TABLE_MAPPING_RPY {
 
 struct PR_CALC_TABLE_OFFSET_CMD {
     PR_CALC_TABLE_OFFSET_CMD() :
-        nBezierRank(DEFAULT_TABLE_MAPPING_BEZIER_RANK),
+        nBezierRankX(DEFAULT_TABLE_MAPPING_BEZIER_RANK),
+        nBezierRankY(DEFAULT_TABLE_MAPPING_BEZIER_RANK),
         a(1.f), b(1.f), c(0.f) {}
     cv::Point2f             ptTablePos;
     cv::Mat                 matXOffsetParam;
@@ -1599,13 +1691,38 @@ struct PR_CALC_TABLE_OFFSET_CMD {
     float                   fMaxX;
     float                   fMinY;
     float                   fMaxY;
-    int                     nBezierRank;
+    int                     nBezierRankX;
+    int                     nBezierRankY;
 };
 
 struct PR_CALC_TABLE_OFFSET_RPY {
     float                   fOffsetX;
     float                   fOffsetY;
     VisionStatus            enStatus;
+};
+
+// Use the table mapping result to calculate using which restore matrix to restore the image
+// Because the table offset too big will cause image like rotated.
+struct PR_CALC_RESTORE_IDX_CMD {
+    PR_CALC_RESTORE_IDX_CMD() :
+        nCenterIdx                  (5),
+        fRestoreMatrixAngleInterval (0.5f / 2048.f){}
+    cv::Mat                 matXOffsetParam;
+    cv::Mat                 matYOffsetParam;
+    int                     nBezierRankX;
+    int                     nBezierRankY;
+    float                   fMinX;
+    float                   fMaxX;
+    float                   fMinY;
+    float                   fMaxY;
+    int                     nCenterIdx;
+    float                   fRestoreMatrixAngleInterval;
+    VectorOfVectorOfPoint2f vecVecFrameCtr;
+};
+
+struct PR_CALC_RESTORE_IDX_RPY {
+    VisionStatus            enStatus;
+    VectorOfVectorOfInt     vecVecRestoreIndex;
 };
 
 }

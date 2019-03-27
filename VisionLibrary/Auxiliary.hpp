@@ -20,6 +20,25 @@ struct HOUGH_LINE {
     }
 };
 
+template<class T>
+void printfMat(const cv::Mat &mat, int nPrecision = 2)
+{
+    if (mat.empty()) {
+        std::cout << "The matrix to print is empty" << std::endl;
+        return;
+    }
+
+    std::cout << std::fixed << std::setprecision(nPrecision);
+    for (short row = 0; row < mat.rows; ++row)
+    {
+        for (short col = 0; col < mat.cols; ++col)
+        {
+            std::cout << mat.at<T>(row, col) << " ";
+        }
+        std::cout << std::endl;
+    }
+}
+
 }
 }
 #endif

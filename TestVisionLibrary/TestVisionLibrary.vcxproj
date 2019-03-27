@@ -176,6 +176,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\RegressionTest\UtilityFunc.cpp" />
+    <ClCompile Include="..\VisionLibrary\CalcUtils.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
@@ -184,7 +185,9 @@
     </ClCompile>
     <ClCompile Include="Test3D.cpp" />
     <ClCompile Include="TestAutoLocateLead.cpp" />
-    <ClCompile Include="TestCalib.cpp" />
+    <ClCompile Include="TestCalibCamera.cpp" />
+    <ClCompile Include="TestCombineImage.cpp" />
+    <ClCompile Include="TestComineMachineImage.cpp" />
     <ClCompile Include="TestInspBridge.cpp" />
     <ClCompile Include="TestInspChip.cpp" />
     <ClCompile Include="TestInspLead.cpp" />

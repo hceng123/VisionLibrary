@@ -11,6 +11,7 @@ int _tmain(int argc, _TCHAR* argv[])
 {
     PR_Init();
     PR_EnableAutoMode(true);
+    PR_SetDebugMode(PR_DEBUG_MODE::LOG_ALL_CASE);
 
     /*****************************************
     * Test Vision Library Internal Functions *
@@ -139,6 +140,8 @@ int _tmain(int argc, _TCHAR* argv[])
     Test3D();
 
     TestCalcCameraMTF();
+
+    TestCombineImageNew();
 
     TestTableMapping();
 

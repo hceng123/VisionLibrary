@@ -20,15 +20,16 @@ void printfMat(const cv::Mat &mat, int nPrecision = 1)
 }
 
 template<class T>
-void printfVectorOfVector(const std::vector<std::vector<T>> &vevVecInput)
+void printfVectorOfVector(const std::vector<std::vector<T>> &vevVecInput, int nPrecision = 2)
 {
+    std::cout << std::fixed << std::setprecision(nPrecision);
     for (const auto &vecInput : vevVecInput)
     {
         for (const auto value : vecInput)
         {
-            printf("%.2f ", value);
+            std::cout << value << " ";
         }
-        printf("\n");
+        std::cout << std::endl;
     }
 }
 
@@ -36,7 +37,7 @@ template<typename _Tp>
 inline std::vector<std::vector<_Tp>> matToVector(const cv::Mat &matInputImg) {
     std::vector<std::vector<_Tp>> vecVecArray;
     if ( matInputImg.isContinuous() ) {
-        for ( int row = 0; row < matInputImg.rows; ++ row ) {            
+        for ( int row = 0; row < matInputImg.rows; ++ row ) {
             std::vector<_Tp> vecRow;
             int nRowStart = row * matInputImg.cols;
             vecRow.assign ( (_Tp *)matInputImg.datastart + nRowStart, (_Tp *)matInputImg.datastart + nRowStart + matInputImg.cols );
@@ -50,6 +51,19 @@ inline std::vector<std::vector<_Tp>> matToVector(const cv::Mat &matInputImg) {
         }
     }
     return vecVecArray;
+}
+
+template<typename _Tp>
+static inline cv::Mat vectorToMat(const std::vector<std::vector<_Tp>> &vecVecArray) {
+    cv::Mat matResult(ToInt32(vecVecArray.size()), ToInt32(vecVecArray[0].size()), CV_32FC1);
+    int nRow = 0;
+    for (const auto &vecRow : vecVecArray) {
+        cv::Mat matTarget(matResult, cv::Range(nRow, nRow + 1), cv::Range::all());
+        cv::Mat matSrc(cv::Size(matResult.cols, 1), CV_32FC1, (void *)vecRow.data());
+        matSrc.copyTo(matTarget);
+        ++nRow;
+    }
+    return matResult;
 }
 
 namespace AOI
