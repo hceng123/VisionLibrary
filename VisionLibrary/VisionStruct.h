@@ -1043,6 +1043,8 @@ struct PR_INSP_LEAD_TMPL_CMD {
 struct PR_INSP_LEAD_TMPL_RPY {
     VisionStatus        enStatus;
     cv::Mat             matResultImg;
+    cv::Point2f         ptPadPos;
+    cv::Point2f         ptLeadPos;
     float               fLeadOffsetX;
     float               fLeadOffsetY;
 };
