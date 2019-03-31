@@ -13,8 +13,12 @@
  *
  * Copyright (c) 2016-2018, Xiao Shengguang.  All rights reserved.
  ****************************************************************************/
+
+//2019-03-29 (XSG) Return lead and pad position in PR_InspLeadTmpl.
+#define AOI_VISION_VERSION          "1.00.65"
+
 //2019-03-25 (XSG) Fix inspect similarity the min similarity not correct bug.
-#define AOI_VISION_VERSION          "1.00.64"
+//#define AOI_VISION_VERSION          "1.00.64"
 
 //2019-02-23 (XSG) Develop PR_CalcRestoreIdx function.
 //#define AOI_VISION_VERSION          "1.00.63"
