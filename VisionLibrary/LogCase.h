@@ -764,7 +764,7 @@ class LogCaseInspPolarity : public LogCase
 public:
     explicit LogCaseInspPolarity(const String &strPath, bool bReplay = false) : LogCase(strPath, bReplay) {}
     VisionStatus WriteCmd(const PR_INSP_POLARITY_CMD *const pstCmd);
-    VisionStatus WriteRpy(const PR_INSP_POLARITY_RPY *const pstRpy);
+    VisionStatus WriteRpy(const PR_INSP_POLARITY_CMD *const pstCmd, const PR_INSP_POLARITY_RPY *const pstRpy);
     virtual VisionStatus RunLogCase() override;
     virtual String GetFolderPrefix() const { return StaticGetFolderPrefix(); }
     static String StaticGetFolderPrefix();
