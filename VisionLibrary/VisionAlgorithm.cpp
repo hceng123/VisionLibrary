@@ -6572,7 +6572,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
         }
     }
 
-    FINISH_LOGCASE;
+    FINISH_LOGCASE_EX;
     MARK_FUNCTION_END_TIME;
     return pstRpy->enStatus;
 }

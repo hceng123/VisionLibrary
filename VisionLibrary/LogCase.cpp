@@ -2223,25 +2223,33 @@ VisionStatus LogCaseInspPolarity::WriteCmd(const PR_INSP_POLARITY_CMD *const pst
     CSimpleIni ini(false, false, false);
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile(cmdRpyFilePath.c_str());
-    ini.SetValue(_CMD_SECTION.c_str(), _strKeyInspROI.c_str(), _formatRect(pstCmd->rectInspROI).c_str());
-    ini.SetValue(_CMD_SECTION.c_str(), _strKeyCompareROI.c_str(), _formatRect(pstCmd->rectCompareROI).c_str());
+    VectorOfRect vecRect{pstCmd->rectInspROI, pstCmd->rectCompareROI};
+    auto rectROI = CalcUtils::boundingRect(vecRect);
+    auto rectInspROI(pstCmd->rectInspROI); rectInspROI.x -= rectROI.x; rectInspROI.y -= rectROI.y;
+    auto rectCompareROI(pstCmd->rectCompareROI); rectCompareROI.x -= rectROI.x; rectCompareROI.y -= rectROI.y;
+    ini.SetValue(_CMD_SECTION.c_str(), _strKeyInspROI.c_str(), _formatRect(rectInspROI).c_str());
+    ini.SetValue(_CMD_SECTION.c_str(), _strKeyCompareROI.c_str(), _formatRect(rectCompareROI).c_str());
+    
     ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyAttribute.c_str(), ToInt32(pstCmd->enInspROIAttribute));
     ini.SetLongValue(_CMD_SECTION.c_str(), _strKeyGrayDiffTol.c_str(), pstCmd->nGrayScaleDiffTol);
     ini.SaveFile(cmdRpyFilePath.c_str());
 
-    cv::imwrite(_strLogCasePath + _IMAGE_NAME, pstCmd->matInputImg);
+    cv::imwrite(_strLogCasePath + _IMAGE_NAME, cv::Mat(pstCmd->matInputImg, rectROI));
     return VisionStatus::OK;
 }
 
-VisionStatus LogCaseInspPolarity::WriteRpy(const PR_INSP_POLARITY_RPY *const pstRpy) {
+VisionStatus LogCaseInspPolarity::WriteRpy(const PR_INSP_POLARITY_CMD *const pstCmd, const PR_INSP_POLARITY_RPY *const pstRpy) {
     CSimpleIni ini(false, false, false);
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile(cmdRpyFilePath.c_str());
     ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyStatus.c_str(), ToInt32(pstRpy->enStatus));
     ini.SetLongValue(_RPY_SECTION.c_str(), _strGrayScaleDiff.c_str(), pstRpy->nGrayScaleDiff);
     ini.SaveFile(cmdRpyFilePath.c_str());
-    if (! pstRpy->matResultImg.empty())
-        cv::imwrite(_strLogCasePath + _RESULT_IMAGE_NAME, pstRpy->matResultImg);
+    if (! pstRpy->matResultImg.empty()) {
+        VectorOfRect vecRect{pstCmd->rectInspROI, pstCmd->rectCompareROI};
+        auto rectROI = CalcUtils::boundingRect(vecRect);
+        cv::imwrite(_strLogCasePath + _RESULT_IMAGE_NAME, cv::Mat(pstRpy->matResultImg, rectROI));
+    }
     _zip();
     return VisionStatus::OK;
 }
@@ -2262,7 +2270,7 @@ VisionStatus LogCaseInspPolarity::RunLogCase() {
 
     VisionStatus enStatus = VisionStatus::OK;
     enStatus = VisionAlgorithm::inspPolarity(&stCmd, &stRpy, true);
-    WriteRpy(&stRpy);
+    WriteRpy(&stCmd, &stRpy);
     return enStatus;
 }
 
