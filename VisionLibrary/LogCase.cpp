@@ -343,6 +343,7 @@ VisionStatus LogCaseFindCircle::WriteCmd(const PR_FIND_CIRCLE_CMD *const pstCmd)
 
     cv::RotatedRect rrROI(pstCmd->ptExpectedCircleCtr, cv::Size2f(pstCmd->fMaxSrchRadius * 2.f, pstCmd->fMaxSrchRadius * 2.f), 0.f);
     cv::Rect rectROI = rrROI.boundingRect();
+    CalcUtils::adjustRectROI(rectROI, pstCmd->matInputImg);
 
     CSimpleIni ini(false, false, false);
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
@@ -383,6 +384,7 @@ VisionStatus LogCaseFindCircle::WriteRpy(const PR_FIND_CIRCLE_CMD *const pstCmd,
     if (!pstRpy->matResultImg.empty()) {
         cv::RotatedRect rrROI(pstCmd->ptExpectedCircleCtr, cv::Size2f(pstCmd->fMaxSrchRadius * 2.f, pstCmd->fMaxSrchRadius * 2.f), 0.f);
         cv::Rect rectROI = rrROI.boundingRect();
+        CalcUtils::adjustRectROI(rectROI, pstCmd->matInputImg);
         cv::Mat matResultROI(pstRpy->matResultImg, rectROI);
         cv::imwrite(_strLogCasePath + _RESULT_IMAGE_NAME, matResultROI);
     }
@@ -568,6 +570,7 @@ VisionStatus LogCaseFindLine::WriteCmd(const PR_FIND_LINE_CMD *const pstCmd) {
     }
 
     cv::Rect rectBounding = pstCmd->rectRotatedROI.boundingRect();
+    CalcUtils::adjustRectROI(rectBounding, pstCmd->matInputImg);
     cv::Point2f ptRoiCtr(pstCmd->rectRotatedROI.center.x - rectBounding.x, pstCmd->rectRotatedROI.center.y - rectBounding.y);
 
     CSimpleIni ini(false, false, false);
@@ -623,6 +626,7 @@ VisionStatus LogCaseFindLine::WriteRpy(const PR_FIND_LINE_CMD *const pstCmd, con
     ini.SaveFile(cmdRpyFilePath.c_str());
     if (!pstRpy->matResultImg.empty()) {
         cv::Rect rectBounding = pstCmd->rectRotatedROI.boundingRect();
+        CalcUtils::adjustRectROI(rectBounding, pstCmd->matInputImg);
         cv::Mat matResultROI(pstRpy->matResultImg, rectBounding);
         cv::imwrite(_strLogCasePath + _RESULT_IMAGE_NAME, matResultROI);
     }
