@@ -10,6 +10,26 @@
 
 using namespace AOI::Vision;
 
+void WriteTableMappingResult(const std::string& filePath, const PR_TABLE_MAPPING_CMD& stCmd, const PR_TABLE_MAPPING_RPY& stRpy) {
+    cv::FileStorage fs(filePath, cv::FileStorage::WRITE);
+    if (!fs.isOpened())
+        return;
+
+    cv::write(fs, "MinX", stRpy.fMinX);
+    cv::write(fs, "MaxX", stRpy.fMaxX);
+    cv::write(fs, "MinY", stRpy.fMinY);
+    cv::write(fs, "MaxY", stRpy.fMaxY);
+    cv::write(fs, "a", stRpy.a);
+    cv::write(fs, "b", stRpy.b);
+    cv::write(fs, "c", stRpy.c);
+    cv::write(fs, "XOffsetParam", stRpy.matXOffsetParam);
+    cv::write(fs, "YOffsetParam", stRpy.matYOffsetParam);
+    cv::write(fs, "BezierRankX", stCmd.nBezierRankX);
+    cv::write(fs, "BezierRankY", stCmd.nBezierRankY);
+
+    fs.release();
+}
+
 void TestTableMapping() {
     std::string strDataPath = "./data/TableMappingMergeTest/";
     const int TOTAL_FRAME = 1;
@@ -230,6 +250,8 @@ void TestTableMapping_3() {
 
     std::cout << "YOffsetParam" << std::endl;
     printfMat<float>(stRpy.matYOffsetParam, 4);
+
+    WriteTableMappingResult(strDataPath + "TableMapping.yml", stCmd, stRpy);
 
     PR_CALC_TABLE_OFFSET_CMD stCalcOffsetCmd;
     PR_CALC_TABLE_OFFSET_RPY stCalcOffsetRpy;

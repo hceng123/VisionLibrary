@@ -76,7 +76,10 @@ void TestAutoLocateLeadTmpl_1()
     stInspLeadCmd.fMaxLeadOffsetX = 5;
     stInspLeadCmd.fMaxLeadOffsetY = 5;
     PR_InspLeadTmpl(&stInspLeadCmd, &stInspLeadRpy);
-    std::cout << "PR_InspLeadTmpl status " << ToInt32(stRpy.enStatus) << std::endl;
+    std::cout << "PR_InspLeadTmpl status " << ToInt32(stInspLeadRpy.enStatus) << std::endl;
+    std::cout << "Lead position: " << stInspLeadRpy.ptLeadPos << std::endl;
+    std::cout << "Pad position: " << stInspLeadRpy.ptPadPos << std::endl;
+    std::cout << "Lead offset: " << stInspLeadRpy.fLeadOffsetX << ", " << stInspLeadRpy.fLeadOffsetY << std::endl;
     cv::imwrite("./data/InspLeadResult.bmp", stInspLeadRpy.matResultImg);
 }
 

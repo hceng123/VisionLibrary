@@ -782,6 +782,7 @@ int _tmain(int argc, _TCHAR* argv[])
     //TestCrossSectionArea();
 
     //TestFindCircle();
+    TestFindCircle_1();
 
     //TestCombineImage();
     //TestCombineImage_1();
@@ -837,7 +838,7 @@ int _tmain(int argc, _TCHAR* argv[])
     //TestCombineMachineImage();
     //FindFramePositionFromBigImage();
 
-    TestGenerateSelectedImage();
+    //TestGenerateSelectedImage();
 
     PR_DumpTimeLog("./Vision/Time.log");
     std::cout << "Press any key to exit." << std::endl;
