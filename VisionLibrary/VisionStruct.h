@@ -1301,8 +1301,8 @@ struct PR_CALC_3D_HEIGHT_NEW_CMD {
         fRemoveHarmonicWaveK(0.f),
         fMinAmplitude(5.f),
         fPhaseShift(0.f),
-        nRemoveBetaJumpMinSpan(25),
-        nRemoveBetaJumpMaxSpan(80),
+        nRemoveBetaJumpSpanX(7),
+        nRemoveBetaJumpSpanY(7),
         nRemoveGammaJumpSpanX(23),
         nRemoveGammaJumpSpanY(4) {}
     VectorOfMat             vecInputImgs;
@@ -1320,8 +1320,8 @@ struct PR_CALC_3D_HEIGHT_NEW_CMD {
     cv::Mat                 matBaseWrappedBeta;      //The wrapped thin stripe phase.
     cv::Mat                 matBaseWrappedGamma;     //The wrapped thin stripe phase.
     cv::Mat                 matPhaseToHeightK;       //The factor to convert phase to height. This is the single group of image calibration result.
-    int                     nRemoveBetaJumpMinSpan;  //The phase jump span in the specified range of beta phase(the thin pattern) will be removed.
-    int                     nRemoveBetaJumpMaxSpan;  //The phase jump span in the specified range of beta phase(the thin pattern) will be removed.
+    int                     nRemoveBetaJumpSpanX;    //The phase jump span in X direction under this value in beta phase will be removed.
+    int                     nRemoveBetaJumpSpanY;    //The phase jump span in Y direction under this value in beta phase will be removed.
     int                     nRemoveGammaJumpSpanX;   //The phase jump span in X direction under this value in gamma phase(the thinnest pattern) will be removed. It is used only when bUseThinnestPattern is true.
     int                     nRemoveGammaJumpSpanY;   //The phase jump span in Y direction under this value in gamma phase(the thinnest pattern) will be removed. It is used only when bUseThinnestPattern is true.
     //Below 2 parameters are result of PR_MotorCalib3D, they are calibrated from positive, negative and H = 5mm surface phase. If these 2 parameters are used, then matPhaseToHeightK will be ignored.

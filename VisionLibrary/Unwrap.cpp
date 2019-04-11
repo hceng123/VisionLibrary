@@ -31,7 +31,7 @@ Unwrap::~Unwrap() {
 }
 
 /*static*/ const float Unwrap::GAUSSIAN_FILTER_SIGMA = ToFloat(pow(20, 0.5));
-/*static*/ const float Unwrap::ONE_HALF_CYCLE = ToFloat(1.f);
+/*static*/ const float Unwrap::ONE_HALF_CYCLE = 1.f;
 /*static*/ const float Unwrap::ONE_CYCLE = ONE_HALF_CYCLE * 2;
 /*static*/ const float Unwrap::CALIB_HEIGHT_STEP_USEFUL_PT = 0.8f;
 /*static*/ const float Unwrap::LOW_BASE_PHASE = - ToFloat(CV_PI);
@@ -678,15 +678,11 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
     auto ptrData2 = vecConvertedImgs[2].ptr<uchar>(0);
     auto ptrData3 = vecConvertedImgs[3].ptr<uchar>(0);
     for (int i = 0; i < total; ++ i) {
-        short x = (short)ptrData0[i] - (short)ptrData2[i];
-        short y = (short)ptrData3[i] - (short)ptrData1[i];
-        float fAmplitudeSquare = (x*x + y*y) / 4.f;
-        if (fAmplitudeSquare < fMinimumAlpitudeSquare)
-            matAvgUnderTolIndex.at<uchar>(i) = PR_MAX_GRAY_LEVEL;
+        short x = (short)ptrData0[i] - (short)ptrData2[i];  // x = 2*cos(beta)
+        short y = (short)ptrData3[i] - (short)ptrData1[i];  // y = 2*sin(beta)
+        
         matAlpha.at<float>(i) = vecVecAtan2Table[x + PR_MAX_GRAY_LEVEL][y + PR_MAX_GRAY_LEVEL];
     }
-
-    //_fitHoleInNanMask(matAvgUnderTolIndex, cv::Size(10, 10), 2);
 
     ptrData0 = vecConvertedImgs[4].ptr<uchar>(0);
     ptrData1 = vecConvertedImgs[5].ptr<uchar>(0);
@@ -695,6 +691,9 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
     for (int i = 0; i < total; ++ i) {
         short x = (short)ptrData0[i] - (short)ptrData2[i];  // x = 2*cos(beta)
         short y = (short)ptrData3[i] - (short)ptrData1[i];  // y = 2*sin(beta)
+        float fAmplitudeSquare = (x*x + y*y) / 4.f;
+        if (fAmplitudeSquare < fMinimumAlpitudeSquare)
+            matAvgUnderTolIndex.at<uchar>(i) = PR_MAX_GRAY_LEVEL;
         matBeta.at<float>(i) = vecVecAtan2Table[x + PR_MAX_GRAY_LEVEL][y + PR_MAX_GRAY_LEVEL];
     }
     TimeLog::GetInstance()->addTimeLog("2 lookup phase ", stopWatch.Span());
@@ -730,23 +729,45 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
     _phaseWrapByRefer(matBeta, matBuffer1);
     TimeLog::GetInstance()->addTimeLog("_phaseWrapByRefer.", stopWatch.Span());
 
-    if (pstCmd->nRemoveBetaJumpMinSpan > 0 || pstCmd->nRemoveBetaJumpMaxSpan > 0) {
-        _phasePatch(matBeta, pstCmd->enProjectDir, matAvgUnderTolIndex);
-        phaseCorrectionEx(matBeta, pstCmd->enProjectDir, pstCmd->enScanDir, pstCmd->nRemoveBetaJumpMinSpan, pstCmd->nRemoveBetaJumpMaxSpan);
+    const int dt = 20; // Use one data in every 20 pixels
+    cv::Mat matBetaBase = _pickPointInterval(matBeta, dt);
+    auto matBetaBaseOneRow = matBetaBase.reshape(1, 1);
+    cv::sort(matBetaBaseOneRow, matBetaBaseOneRow, cv::SortFlags::SORT_EVERY_ROW + cv::SortFlags::SORT_ASCENDING);
+    int totalItem = matBetaBaseOneRow.cols;
+    cv::Mat matRange(matBetaBaseOneRow, cv::Range::all(), cv::Range(ToInt32(totalItem * 0.25), ToInt32(totalItem * 0.45)));
+    float betaBase = ToFloat(cv::mean(matRange)[0]);
+
+    const float SHIFT_TO_BASE = 0.2f;
+    
+    cv::Mat matBeta3 = _phaseWarpNoAutoBase(matBeta, betaBase / 2 + SHIFT_TO_BASE); // 0.2 is also shift, means - 0.6~1.4
+    cv::Mat matMask;
+    cv::compare(matBeta3, matBeta, matMask, cv::CmpTypes::CMP_GT);
+    matBeta3.copyTo(matBeta, matMask);
+    matBeta.setTo(betaBase, matAvgUnderTolIndex);
+
+    if (pstCmd->nRemoveBetaJumpSpanX > 0 || pstCmd->nRemoveBetaJumpSpanY > 0) {
+        phaseCorrection(matBeta, matAvgUnderTolIndex, pstCmd->nRemoveBetaJumpSpanX, pstCmd->nRemoveBetaJumpSpanY);
         TimeLog::GetInstance()->addTimeLog("phaseCorrection for beta.", stopWatch.Span());
     }
 
     if (pstCmd->bUseThinnestPattern) {
         auto k1 = pstCmd->matThickToThinK.at<DATA_TYPE>(0);
         auto k2 = pstCmd->matThickToThinnestK.at<DATA_TYPE>(0);
+
+        auto gammaBase = betaBase * k2 / k1;
+        // gamma1  = PhaseWrap02(gamma, base/k1*k2/2 + 0.2);
+        cv::Mat matGamma1 = _phaseWarpNoAutoBase(matGamma, gammaBase / 2 + SHIFT_TO_BASE);
         matBuffer1 = matBeta * k2 / k1;
         _phaseWrapByRefer(matGamma, matBuffer1);
 
-        if (pstCmd->nRemoveGammaJumpSpanX > 0 || pstCmd->nRemoveGammaJumpSpanY > 0) {
-            _phasePatch(matGamma, pstCmd->enProjectDir, matAvgUnderTolIndex);
-            phaseCorrection(matGamma, matAvgUnderTolIndex, pstCmd->nRemoveGammaJumpSpanX, pstCmd->nRemoveGammaJumpSpanY);
-            //Run 2 times, first time remove small jump, second time remove big jump. 2 pass can remove big jump with small jump on its edge.
-            //phaseCorrection(matGamma, matAvgUnderTolIndex, pstCmd->nRemoveGammaJumpSpanX, pstCmd->nRemoveGammaJumpSpanY);
+        matGamma.setTo(gammaBase, matAvgUnderTolIndex);
+        matGamma1.setTo(gammaBase, matAvgUnderTolIndex);
+
+        phaseCorrectionCmp(matGamma, matGamma1, 15);
+        TimeLog::GetInstance()->addTimeLog("phaseCorrectionCmp for gamma.", stopWatch.Span());
+
+        if (pstCmd->nRemoveBetaJumpSpanX > 0 || pstCmd->nRemoveBetaJumpSpanY > 0) {
+            phaseCorrection(matGamma, matAvgUnderTolIndex, pstCmd->nRemoveBetaJumpSpanX, pstCmd->nRemoveBetaJumpSpanY);
             TimeLog::GetInstance()->addTimeLog("phaseCorrection for gamma.", stopWatch.Span());
         }
 
@@ -754,6 +775,9 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
     }
     else
         pstRpy->matPhase = matBeta;
+
+    cv::compare(pstRpy->matPhase, betaBase - 0.1, matMask, cv::CmpTypes::CMP_LT);
+    pstRpy->matPhase.setTo(betaBase, matMask);
 
     cv::medianBlur(pstRpy->matPhase, pstRpy->matPhase, 5);
 
@@ -2374,6 +2398,19 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
     return CalcUtils::vectorToMat(vecVecResult);
 }
 
+/*static*/ cv::Mat Unwrap::_phaseWarpNoAutoBase(const cv::Mat &matPhase, float fShift) {
+    CStopWatch stopWatch;
+    cv::Mat matResult = matPhase / ONE_CYCLE + 0.5 - fShift;
+    TimeLog::GetInstance()->addTimeLog("_phaseWrap Divide and add.", stopWatch.Span());
+
+    CalcUtils::floorByRef<DATA_TYPE>(matResult);
+
+    TimeLog::GetInstance()->addTimeLog("_phaseWrap floor takes.", stopWatch.Span());
+
+    matResult = matPhase - matResult * ONE_CYCLE;
+    return matResult;
+}
+
 /*static*/ void Unwrap::calibDlpOffset(const PR_CALIB_DLP_OFFSET_CMD *const pstCmd, PR_CALIB_DLP_OFFSET_RPY *const pstRpy) {
     CStopWatch stopWatch;
     //[m1, n1] = size(H1_00);
@@ -2807,6 +2844,8 @@ void Unwrap::_turnPhase(cv::Mat &matPhase, cv::Mat &matPhaseDiff, char *ptrSignO
     }
 }
 
+// This phase correction function need to use last row's data used in next row, so not very suitable to use GPU to 
+// implement
 /*static*/ void Unwrap::phaseCorrectionEx(cv::Mat &matPhase, PR_DIRECTION enProjDir, PR_DIRECTION enScanDir, int nMinSpan, int nMaxSpan) {
     CStopWatch stopWatch;
     _phaseSwitch(matPhase, enProjDir, enScanDir);
@@ -2912,6 +2951,102 @@ void Unwrap::_turnPhase(cv::Mat &matPhase, cv::Mat &matPhaseDiff, char *ptrSignO
 
     _phaseSwitchBack(matPhase, enProjDir, enScanDir);
     TimeLog::GetInstance()->addTimeLog("_phaseSwitchBack.", stopWatch.Span());
+}
+
+/*static*/ void Unwrap::phaseCorrectionCmp(cv::Mat& matPhase, cv::Mat& matPhase1, int span) {
+    CStopWatch stopWatch;
+    const int ROWS = matPhase.rows;
+    const int COLS = matPhase.cols;
+
+    cv::Mat matIdx;
+    cv::compare(matPhase, matPhase1, matIdx, cv::CmpTypes::CMP_NE);
+    cv::Mat matMap = cv::Mat::zeros(ROWS, COLS, CV_32FC1);
+    matMap.setTo(1, matIdx);
+
+    auto dMap1 = CalcUtils::diff(matPhase, 1, CalcUtils::DIFF_ON_X_DIR);
+    auto dMap2 = CalcUtils::diff(matPhase, 1, CalcUtils::DIFF_ON_Y_DIR);
+
+    auto dxPhase = CalcUtils::diff(matPhase, 1, CalcUtils::DIFF_ON_X_DIR);
+    auto dyPhase = CalcUtils::diff(matPhase, 1, CalcUtils::DIFF_ON_Y_DIR);
+
+    auto idxl1 = cv::Mat::zeros(ROWS, COLS, CV_8UC1);
+    auto idxl2 = cv::Mat::zeros(ROWS, COLS, CV_8UC1);
+
+    for (int row = 0; row < ROWS; ++row) {
+        cv::Mat matOneRow = dMap1.row(row);
+        std::vector<int> vecIdx1, vecIdx2;
+        for (int i = 0; i < matOneRow.cols; ++i) {
+            const auto& value = matOneRow.at<float>(i);
+            if (value == 1)
+                vecIdx1.push_back(i);
+            else if (value == -1)
+                vecIdx2.push_back(i);
+        }
+
+        if (!vecIdx1.empty() && !vecIdx2.empty()) {
+            if (vecIdx1[0] > vecIdx2[0]) {
+                vecIdx2 = std::vector<int>(vecIdx2.begin() + 1, vecIdx2.end());
+            }
+
+            if (vecIdx1.size() > vecIdx2.size()) {
+                vecIdx1 = std::vector<int>(vecIdx1.begin(), vecIdx1.end() - 1);
+            }
+        }
+
+        std::vector<int> vecIdxT;
+        for (int i = 0; i < vecIdx1.size() && i < vecIdx2.size(); ++i) {
+            if (vecIdx2[i] - vecIdx1[i] < span)
+                vecIdxT.push_back(i);
+        }
+
+        for (auto index : vecIdxT) {
+            if (fabs(dxPhase.at<float>(row, vecIdx1[index])) > 1 && fabs(dxPhase.at<float>(row, vecIdx2[index])) > 1) {
+                cv::Mat matROI(idxl1, cv::Range(row, row + 1), cv::Range(vecIdx1[index], vecIdx2[index] + 1));
+                matROI.setTo(1);
+            }
+        }
+    }
+
+    for (int col = 0; col < COLS; ++col) {
+        cv::Mat matOneCol= dMap2.col(col);
+        std::vector<int> vecIdx1, vecIdx2;
+        for (int i = 0; i < matOneCol.rows; ++i) {
+            const auto& value = matOneCol.at<float>(i);
+            if (value == 1)
+                vecIdx1.push_back(i);
+            else if (value == -1)
+                vecIdx2.push_back(i);
+        }
+
+        if (!vecIdx1.empty() && !vecIdx2.empty()) {
+            if (vecIdx1[0] > vecIdx2[0]) {
+                vecIdx2 = std::vector<int>(vecIdx2.begin() + 1, vecIdx2.end());
+            }
+
+            if (vecIdx1.size() > vecIdx2.size()) {
+                vecIdx1 = std::vector<int>(vecIdx1.begin(), vecIdx1.end() - 1);
+            }
+        }
+
+        std::vector<int> vecIdxT;
+        for (int i = 0; i < vecIdx1.size() && i < vecIdx2.size(); ++i) {
+            if (vecIdx2[i] - vecIdx1[i] < span)
+                vecIdxT.push_back(i);
+        }
+
+        for (auto index : vecIdxT) {
+            if (fabs(dyPhase.at<float>(vecIdx1[index], col)) > 1 && fabs(dyPhase.at<float>(vecIdx2[index], col)) > 1) {
+                cv::Mat matROI(idxl2, cv::Range(vecIdx1[index], vecIdx2[index] + 1), cv::Range(col, col + 1));
+                matROI.setTo(1);
+            }
+        }
+    }
+
+    matIdx = idxl1 & idxl2;
+#ifdef _DEBUG
+    auto vecVecIdx = CalcUtils::matToVector<uchar>(matIdx);
+#endif
+    matPhase1.copyTo(matPhase, matIdx);
 }
 
 /*static*/ cv::Mat Unwrap::_drawAutoThresholdResult(const cv::Mat &matInput, const VectorOfFloat &vecRanges) {

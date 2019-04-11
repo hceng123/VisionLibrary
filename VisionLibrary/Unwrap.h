@@ -47,6 +47,7 @@ public:
     static void calcPD(const PR_CALC_PD_CMD *const pstCmd, PR_CALC_PD_RPY *const pstRpy);
     static void phaseCorrection(cv::Mat &matPhase, const cv::Mat &matIdxNan, int nJumpSpanX, int nJumpSpanY);   //Put it to public to include it in regression test.
     static void phaseCorrectionEx(cv::Mat &matPhase, PR_DIRECTION enProjDir, PR_DIRECTION enScanDir, int nMinSpan, int nMaxSpan);
+    static void phaseCorrectionCmp(cv::Mat& matPhase, cv::Mat& matPhase1, int span);
     static void removeJumpArea(cv::Mat &matHeight, float fAreaLimit);
     static void insp3DSolder(const PR_INSP_3D_SOLDER_CMD *pstCmd, const cv::Mat &matBaseMask, PR_INSP_3D_SOLDER_RPY *const pstRpy);
 
@@ -86,16 +87,18 @@ private:
     static inline void _phaseWrap(cv::Mat &matPhase) {
         CStopWatch stopWatch;
         cv::Mat matNn = matPhase / ONE_CYCLE + 0.5;
-        TimeLog::GetInstance()->addTimeLog( "_phaseWrap Divide and add.", stopWatch.Span());
+        TimeLog::GetInstance()->addTimeLog("_phaseWrap Divide and add.", stopWatch.Span());
 
-        CalcUtils::floorByRef<DATA_TYPE> ( matNn ); //The floor takes about 36ms, need to optimize
+        CalcUtils::floorByRef<DATA_TYPE>(matNn); //The floor takes about 36ms, need to optimize
 
-        TimeLog::GetInstance()->addTimeLog( "_phaseWrap floor takes.", stopWatch.Span() );
+        TimeLog::GetInstance()->addTimeLog("_phaseWrap floor takes.", stopWatch.Span());
 
         matPhase = matPhase - matNn * ONE_CYCLE;
 
-        TimeLog::GetInstance()->addTimeLog( "_phaseWrap multiply and subtract takes.", stopWatch.Span());
+        TimeLog::GetInstance()->addTimeLog("_phaseWrap multiply and subtract takes.", stopWatch.Span());
     }
+
+    static cv::Mat _phaseWarpNoAutoBase(const cv::Mat &matPhase, float fShift = 0.f);
 
     static inline void _phaseWrapBuffer(cv::Mat &matPhase, cv::Mat &matBuffer, float fShift = 0.f) {
         CStopWatch stopWatch;
