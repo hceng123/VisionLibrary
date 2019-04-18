@@ -577,7 +577,7 @@ void TestTableMappingAndCombineImage() {
     PR_TABLE_MAPPING_CMD stCmd;
     PR_TABLE_MAPPING_RPY stRpy;
     stCmd.nBezierRankX = 7;
-    stCmd.nBezierRankY = 7;
+    stCmd.nBezierRankY = 9;
     stCmd.fBoardPointDist = 16;
     stCmd.fFrameBorderPointWeight = 100.f;
     const int POINTS_PER_ROW = 13;
@@ -602,8 +602,10 @@ void TestTableMappingAndCombineImage() {
     }
 
     PR_TableMapping(&stCmd, &stRpy);
-    if (VisionStatus::OK != stRpy.enStatus)
+    if (VisionStatus::OK != stRpy.enStatus) {
+        std::cout << "PR_TableMapping failed, status " << ToInt32(stRpy.enStatus) << std::endl;
         return;
+    }
 
     std::cout << "XOffsetParam" << std::endl;
     printfMat<float>(stRpy.matXOffsetParam, 4);
@@ -612,8 +614,8 @@ void TestTableMappingAndCombineImage() {
     std::cout << "YOffsetParam" << std::endl;
     printfMat<float>(stRpy.matYOffsetParam, 4);
 
-    const int ROWS = 6;
-    const int COLS = 8;
+    const int ROWS = 4;
+    const int COLS = 3;
     const int TOTAL_FRAME = ROWS * COLS;
     float fResolutionX = 15.88;
     float fResolutionY = 15.88;

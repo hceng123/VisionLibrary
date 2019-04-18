@@ -754,7 +754,7 @@ int _tmain(int argc, _TCHAR* argv[])
     //DynamicCalculateDistortion();
     //TestCalcRestoreIdx();
     //ConvertRestoreCsvToYml();
-    //TestTableMappingAndCombineImage();
+    TestTableMappingAndCombineImage();
 
     //TestIntegrate3DCalibHaoYu();
 
@@ -782,7 +782,7 @@ int _tmain(int argc, _TCHAR* argv[])
     //TestCrossSectionArea();
 
     //TestFindCircle();
-    TestFindCircle_1();
+    //TestFindCircle_1();
 
     //TestCombineImage();
     //TestCombineImage_1();
