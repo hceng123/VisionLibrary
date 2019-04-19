@@ -448,6 +448,7 @@ void DynamicCalculateDistortion() {
             cv::Point frameCtr;
             frameCtr.x = ptTopLeftFrameCtr.x + (frameTableCtr.x - ptTopLeftFrameTableCtr.x) * 1000.f / fResolutionX;
             frameCtr.y = ptTopLeftFrameCtr.y - (frameTableCtr.y - ptTopLeftFrameTableCtr.y) * 1000.f / fResolutionX; // Table direction is reversed with image direction
+            
             std::cout << "Row " << row << " Col " << col << " frame center " << frameCtr << std::endl;
             vecFrameCtr.push_back(frameCtr);
             ++index;
@@ -617,8 +618,8 @@ void TestTableMappingAndCombineImage() {
     const int ROWS = 4;
     const int COLS = 3;
     const int TOTAL_FRAME = ROWS * COLS;
-    float fResolutionX = 15.88;
-    float fResolutionY = 15.88;
+    float fResolutionX = 15.883;
+    float fResolutionY = 15.884;
 
     PR_CALC_RESTORE_IDX_CMD stCalcIdxCmd;
     PR_CALC_RESTORE_IDX_RPY stCalcIdxRpy;
@@ -689,8 +690,8 @@ void TestTableMappingAndCombineImage() {
             //restoreImageWithMap()
             cv::Point2f frameTableCtr(vecOfVecFloat[index][0], vecOfVecFloat[index][1]);
             cv::Point frameCtr;
-            frameCtr.x = ptTopLeftFrameCtr.x + (frameTableCtr.x - ptTopLeftFrameTableCtr.x) * 1000.f / fResolutionX;
-            frameCtr.y = ptTopLeftFrameCtr.y - (frameTableCtr.y - ptTopLeftFrameTableCtr.y) * 1000.f / fResolutionX; // Table direction is reversed with image direction
+            frameCtr.x = std::round(ptTopLeftFrameCtr.x + (frameTableCtr.x - ptTopLeftFrameTableCtr.x) * 1000.f / fResolutionX);
+            frameCtr.y = std::round(ptTopLeftFrameCtr.y - (frameTableCtr.y - ptTopLeftFrameTableCtr.y) * 1000.f / fResolutionY); // Table direction is reversed with image direction
             std::cout << "Row " << row << " Col " << col << " frame center " << frameCtr << std::endl;
             vecFrameCtr.push_back(frameCtr);
             ++index;
@@ -698,8 +699,8 @@ void TestTableMappingAndCombineImage() {
         stCombineCmd.vecVecFrameCtr.push_back(vecFrameCtr);
     }
 
-    stCombineCmd.bDrawFrame = true;
-    stCombineCmd.nCutBorderPixel = 5;
+    stCombineCmd.bDrawFrame = false;
+    stCombineCmd.nCutBorderPixel = 40;
     PR_CombineImgNew(&stCombineCmd, &stCombineRpy);
     std::cout << "PR_CombineImgNew status " << ToInt32(stRpy.enStatus) << std::endl;
     if (!stCombineRpy.matResultImage.empty())
