@@ -1216,6 +1216,8 @@ void TestCalc4DLPHeightOffset()
     std::cout << "Run here" << std::endl;
 }
 
+#define CALC_HEIGHT
+
 void TestCalc4DLPHeight()
 {
     std::string strParentFolder = "C:/Data/3D_20190408/PCBFOV20190104/";
@@ -1243,8 +1245,6 @@ void TestCalc4DLPHeight()
         stCalcHeightCmds[nDlp].bUseThinnestPattern = b3DDetectCaliUseThinPattern;
         stCalcHeightCmds[nDlp].fMinAmplitude = 3.f;
         stCalcHeightCmds[nDlp].fPhaseShift = 0.1f;
-        //stCalcHeightCmds[nDlp].nRemoveBetaJumpMaxSpan = 0;
-        //stCalcHeightCmds[nDlp].nRemoveBetaJumpMinSpan = 0;
 
         cv::Mat matBaseSurfaceParam;
         char filePath[100];

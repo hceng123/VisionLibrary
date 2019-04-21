@@ -750,8 +750,8 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
     matBeta3.copyTo(matBeta, matMask);
     matBeta.setTo(betaBase, matAvgUnderTolIndex);
 
-    if (pstCmd->nRemoveBetaJumpSpanX > 0 || pstCmd->nRemoveBetaJumpSpanY > 0) {
-        phaseCorrection(matBeta, matAvgUnderTolIndex, pstCmd->nRemoveBetaJumpSpanX, pstCmd->nRemoveBetaJumpSpanY);
+    if (pstCmd->nRemoveJumpSpan > 0) {
+        phaseCorrection(matBeta, matAvgUnderTolIndex, pstCmd->nRemoveJumpSpan, pstCmd->nRemoveJumpSpan);
         TimeLog::GetInstance()->addTimeLog("phaseCorrection for beta.", stopWatch.Span());
     }
 
@@ -768,11 +768,11 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
         matGamma.setTo(gammaBase, matAvgUnderTolIndex);
         matGamma1.setTo(gammaBase, matAvgUnderTolIndex);
 
-        phaseCorrectionCmp(matGamma, matGamma1, 15);
+        phaseCorrectionCmp(matGamma, matGamma1, pstCmd->nCompareRemoveJumpSpan);
         TimeLog::GetInstance()->addTimeLog("phaseCorrectionCmp for gamma.", stopWatch.Span());
 
-        if (pstCmd->nRemoveBetaJumpSpanX > 0 || pstCmd->nRemoveBetaJumpSpanY > 0) {
-            phaseCorrection(matGamma, matAvgUnderTolIndex, pstCmd->nRemoveBetaJumpSpanX, pstCmd->nRemoveBetaJumpSpanY);
+        if (pstCmd->nRemoveJumpSpan > 0) {
+            phaseCorrection(matGamma, matAvgUnderTolIndex, pstCmd->nRemoveJumpSpan, pstCmd->nRemoveJumpSpan);
             TimeLog::GetInstance()->addTimeLog("phaseCorrection for gamma.", stopWatch.Span());
         }
 

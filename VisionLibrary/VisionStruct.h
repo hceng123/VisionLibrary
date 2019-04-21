@@ -1303,10 +1303,8 @@ struct PR_CALC_3D_HEIGHT_NEW_CMD {
         fRemoveHarmonicWaveK(0.f),
         fMinAmplitude(3.f),
         fPhaseShift(0.f),
-        nRemoveBetaJumpSpanX(7),
-        nRemoveBetaJumpSpanY(7),
-        nRemoveGammaJumpSpanX(23),
-        nRemoveGammaJumpSpanY(4) {}
+        nRemoveJumpSpan(7),
+        nCompareRemoveJumpSpan(15) {}
     VectorOfMat             vecInputImgs;
     bool                    bEnableGaussianFilter;
     bool                    bReverseSeq;             //Change the image sequence.
@@ -1322,10 +1320,8 @@ struct PR_CALC_3D_HEIGHT_NEW_CMD {
     cv::Mat                 matBaseWrappedBeta;      //The wrapped thin stripe phase.
     cv::Mat                 matBaseWrappedGamma;     //The wrapped thin stripe phase.
     cv::Mat                 matPhaseToHeightK;       //The factor to convert phase to height. This is the single group of image calibration result.
-    int                     nRemoveBetaJumpSpanX;    //The phase jump span in X direction under this value in beta phase will be removed.
-    int                     nRemoveBetaJumpSpanY;    //The phase jump span in Y direction under this value in beta phase will be removed.
-    int                     nRemoveGammaJumpSpanX;   //The phase jump span in X direction under this value in gamma phase(the thinnest pattern) will be removed. It is used only when bUseThinnestPattern is true.
-    int                     nRemoveGammaJumpSpanY;   //The phase jump span in Y direction under this value in gamma phase(the thinnest pattern) will be removed. It is used only when bUseThinnestPattern is true.
+    int                     nRemoveJumpSpan;         //The phase jump span in X and Y direction under this value in beta phase will be removed.
+    int                     nCompareRemoveJumpSpan;  //The compared phase jump span in X and Y direction under this value in gamma phase will be removed.
     //Below 2 parameters are result of PR_MotorCalib3D, they are calibrated from positive, negative and H = 5mm surface phase. If these 2 parameters are used, then matPhaseToHeightK will be ignored.
     float                   fMaxPhase;
     float                   fMinPhase;

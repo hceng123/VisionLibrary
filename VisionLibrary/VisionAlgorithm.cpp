@@ -7023,9 +7023,17 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
         return pstRpy->enStatus;
     }
 
-    if (pstCmd->nRemoveBetaJumpSpanX < 0 || pstCmd->nRemoveBetaJumpSpanY < 0) {
+    if (pstCmd->nRemoveJumpSpan < 0) {
         std::stringstream ss;
-        ss << "The nRemoveBetaJumpSpanX " << pstCmd->nRemoveBetaJumpSpanX << " and nRemoveBetaJumpSpanY " << pstCmd->nRemoveBetaJumpSpanY << " is invalid.";
+        ss << "The nRemoveJumpSpan " << pstCmd->nRemoveJumpSpan << " is invalid.";
+        WriteLog(ss.str());
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    if (pstCmd->nCompareRemoveJumpSpan < 0) {
+        std::stringstream ss;
+        ss << "The nRemoveJumpSpan " << pstCmd->nCompareRemoveJumpSpan << " is invalid.";
         WriteLog(ss.str());
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return pstRpy->enStatus;
