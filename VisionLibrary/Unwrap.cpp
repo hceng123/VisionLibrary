@@ -3447,60 +3447,7 @@ void _saveAsGray(const cv::Mat &matHeight, const std::string &strFilePath) {
     auto vecVecHeightTre = CalcUtils::matToVector<DATA_TYPE>(matHeightTre);
     auto vecVecHeightFor = CalcUtils::matToVector<DATA_TYPE>(matHeightFor);
 #endif
-
-    for (int row = 0; row < matHeightFor.rows; ++ row) {
-        cv::Mat matRowOne = matHeightOne.row(row);
-        cv::Mat matRowTwo = matHeightTwo.row(row);
-        cv::Mat matRowTre = matHeightTre.row(row);
-        cv::Mat matRowFor = matHeightFor.row(row);
-
-        cv::Mat matNanMasks = CalcUtils::getNanMask(matRowFor);
-        matNanMasks.convertTo(matNanMasks, CV_32FC1);
-        cv::Mat matDiffAbs = cv::abs(CalcUtils::diff(matNanMasks, 1, CalcUtils::DIFF_ON_X_DIR));
-        std::deque<int> dequeIndex;
-        for (int col = 0; col < matDiffAbs.cols; ++ col)
-            if (matDiffAbs.at<float>(col) > 0)
-                dequeIndex.push_back(col);
-        if (matNanMasks.at<DATA_TYPE>(0) > 0)
-            dequeIndex.push_front(0);
-        if (matNanMasks.at<DATA_TYPE>(matNanMasks.cols - 1) > 0)
-            dequeIndex.push_back(matNanMasks.cols - 1);
-
-        for (int i = 0; i < dequeIndex.size() / 2; ++ i) {
-            int startIndex = dequeIndex[i*2];
-            int endIndex = dequeIndex[i*2+1];
-            VectorOfFloat vecTargetH;
-            if (0 == startIndex && endIndex < matNanMasks.cols - 1)
-                vecTargetH = std::vector<float>(endIndex - startIndex + 1, matRowFor.at<DATA_TYPE>(endIndex + 1));
-            else if (matNanMasks.cols - 1 == endIndex && startIndex >= 0)
-                vecTargetH = std::vector<float>(endIndex - startIndex + 1, matRowFor.at<DATA_TYPE>(startIndex));
-            else if (startIndex >= 0 && endIndex < matNanMasks.cols - 1) {
-                float fInterval = (matRowFor.at<DATA_TYPE>(endIndex + 1) - matRowFor.at<DATA_TYPE>(startIndex)) / (endIndex - startIndex + 1);
-                for (int j = 0; j <= endIndex - startIndex; ++ j) {
-                    vecTargetH.push_back(matRowFor.at<DATA_TYPE>(startIndex) + fInterval * j);
-                }
-            }
-
-            float fAbsDiffSumOne = 0.f, fAbsDiffSumTwo = 0.f, fAbsDiffSumTre = 0.f;
-            for (int index = startIndex, k = 0; index <= endIndex; ++ index, ++ k) {
-                fAbsDiffSumOne += fabs(matRowOne.at<DATA_TYPE>(index) - vecTargetH[k]);
-                fAbsDiffSumTwo += fabs(matRowTwo.at<DATA_TYPE>(index) - vecTargetH[k]);
-                fAbsDiffSumTre += fabs(matRowTre.at<DATA_TYPE>(index) - vecTargetH[k]);
-            }
-
-            cv::Mat matChoose;
-            if (fAbsDiffSumOne <= fAbsDiffSumTwo && fAbsDiffSumOne <= fAbsDiffSumTre)
-                matChoose = matRowOne;
-            else if (fAbsDiffSumTwo <= fAbsDiffSumOne && fAbsDiffSumTwo <= fAbsDiffSumTre)
-                matChoose = matRowTwo;
-            else
-                matChoose = matRowTre;
-
-            cv::Mat matTarget(matHeightFor, cv::Range(row, row + 1), cv::Range(startIndex, endIndex + 1));
-            cv::Mat matSrc(matChoose, cv::Range(0, 1), cv::Range(startIndex, endIndex + 1));
-            matSrc.copyTo(matTarget);
-        }
-    }
+    _mergeHeightIntersectCore(matHeightOne, matHeightTwo, matHeightTre, matHeightFor);
 
     TimeLog::GetInstance()->addTimeLog("_mergeHeightIntersect core.", stopWatch.Span());
 
@@ -3580,12 +3527,28 @@ void _saveAsGray(const cv::Mat &matHeight, const std::string &strFilePath) {
     auto vecVecHeightTre = CalcUtils::matToVector<DATA_TYPE>(matHeightTre);
     auto vecVecHeightFor = CalcUtils::matToVector<DATA_TYPE>(matHeightFor);
 #endif
+    _mergeHeightIntersectCore(matH11, matH22, matHeightTre, matHeightFor);
 
-    for (int row = 0; row < matHeightFor.rows; ++row) {
-        cv::Mat matRowOne = matH11.row(row);
-        cv::Mat matRowTwo = matH22.row(row);
-        cv::Mat matRowTre = matHeightTre.row(row);
-        cv::Mat matRowFor = matHeightFor.row(row);
+    TimeLog::GetInstance()->addTimeLog("_mergeHeightIntersect core.", stopWatch.Span());
+
+    if (PR_DIRECTION::UP == enProjDir || PR_DIRECTION::DOWN == enProjDir) {
+        cv::transpose(matHeightFor, matHeightFor);
+        TimeLog::GetInstance()->addTimeLog("_mergeHeightIntersect. Transpose image back.", stopWatch.Span());
+    }
+
+    return matHeightFor;
+}
+
+/*static*/ void Unwrap::_mergeHeightIntersectCore(
+        const cv::Mat& matOne,
+        const cv::Mat& matTwo,
+        const cv::Mat& matTre,
+        cv::Mat& matFor) {
+    for (int row = 0; row < matFor.rows; ++row) {
+        cv::Mat matRowOne = matOne.row(row);
+        cv::Mat matRowTwo = matTwo.row(row);
+        cv::Mat matRowTre = matTre.row(row);
+        cv::Mat matRowFor = matFor.row(row);
 
         cv::Mat matNanMasks = CalcUtils::getNanMask(matRowFor);
         matNanMasks.convertTo(matNanMasks, CV_32FC1);
@@ -3629,20 +3592,11 @@ void _saveAsGray(const cv::Mat &matHeight, const std::string &strFilePath) {
             else
                 matChoose = matRowTre;
 
-            cv::Mat matTarget(matHeightFor, cv::Range(row, row + 1), cv::Range(startIndex, endIndex + 1));
+            cv::Mat matTarget(matFor, cv::Range(row, row + 1), cv::Range(startIndex, endIndex + 1));
             cv::Mat matSrc(matChoose, cv::Range(0, 1), cv::Range(startIndex, endIndex + 1));
             matSrc.copyTo(matTarget);
         }
     }
-
-    TimeLog::GetInstance()->addTimeLog("_mergeHeightIntersect core.", stopWatch.Span());
-
-    if (PR_DIRECTION::UP == enProjDir || PR_DIRECTION::DOWN == enProjDir) {
-        cv::transpose(matHeightFor, matHeightFor);
-        TimeLog::GetInstance()->addTimeLog("_mergeHeightIntersect. Transpose image back.", stopWatch.Span());
-    }
-
-    return matHeightFor;
 }
 
 /*static*/ cv::Mat Unwrap::_mergeHeightMax(cv::Mat &matHeightOne, const cv::Mat &matNanMaskOne, cv::Mat &matHeightTwo, const cv::Mat &matNanMaskTwo, float fDiffThreshold, PR_DIRECTION enProjDir) {

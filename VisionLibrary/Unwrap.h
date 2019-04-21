@@ -90,6 +90,11 @@ private:
         const cv::Mat& matNanMaskTwo,
         float          fDiffThreshold,
         PR_DIRECTION   enProjDir);
+    static void _mergeHeightIntersectCore(
+        const cv::Mat& matOne,
+        const cv::Mat& matTwo,
+        const cv::Mat& matTre,
+        cv::Mat& matFor);
     static cv::Mat _mergeHeightMax(cv::Mat &matHeightOne, const cv::Mat &matNanMaskOne, cv::Mat &matHeightTwo, const cv::Mat &matNanMaskTwo, float fDiffThreshold, PR_DIRECTION enProjDir);
     static bool _extractSolder(const cv::Mat &matHeightROI, float fCoverage, VectorOfFloat &vecThreshold, cv::Mat &matHighMask, cv::Mat &matMidMask, cv::Mat &matLowMask, int &nTopY, int &nBtmY);
     static float _calcSolderHeightXSG(const cv::Mat &matCheckROI, const cv::Mat &matMidMask);
