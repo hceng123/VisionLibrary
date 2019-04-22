@@ -1043,6 +1043,8 @@ struct PR_INSP_LEAD_TMPL_CMD {
 struct PR_INSP_LEAD_TMPL_RPY {
     VisionStatus        enStatus;
     cv::Mat             matResultImg;
+    cv::Point2f         ptPadPos;
+    cv::Point2f         ptLeadPos;
     float               fLeadOffsetX;
     float               fLeadOffsetY;
 };
@@ -1299,12 +1301,10 @@ struct PR_CALC_3D_HEIGHT_NEW_CMD {
         enScanDir(PR_DIRECTION::DOWN),
         bUseThinnestPattern(false),
         fRemoveHarmonicWaveK(0.f),
-        fMinAmplitude(5.f),
+        fMinAmplitude(3.f),
         fPhaseShift(0.f),
-        nRemoveBetaJumpMinSpan(25),
-        nRemoveBetaJumpMaxSpan(80),
-        nRemoveGammaJumpSpanX(23),
-        nRemoveGammaJumpSpanY(4) {}
+        nRemoveJumpSpan(7),
+        nCompareRemoveJumpSpan(15) {}
     VectorOfMat             vecInputImgs;
     bool                    bEnableGaussianFilter;
     bool                    bReverseSeq;             //Change the image sequence.
@@ -1320,10 +1320,8 @@ struct PR_CALC_3D_HEIGHT_NEW_CMD {
     cv::Mat                 matBaseWrappedBeta;      //The wrapped thin stripe phase.
     cv::Mat                 matBaseWrappedGamma;     //The wrapped thin stripe phase.
     cv::Mat                 matPhaseToHeightK;       //The factor to convert phase to height. This is the single group of image calibration result.
-    int                     nRemoveBetaJumpMinSpan;  //The phase jump span in the specified range of beta phase(the thin pattern) will be removed.
-    int                     nRemoveBetaJumpMaxSpan;  //The phase jump span in the specified range of beta phase(the thin pattern) will be removed.
-    int                     nRemoveGammaJumpSpanX;   //The phase jump span in X direction under this value in gamma phase(the thinnest pattern) will be removed. It is used only when bUseThinnestPattern is true.
-    int                     nRemoveGammaJumpSpanY;   //The phase jump span in Y direction under this value in gamma phase(the thinnest pattern) will be removed. It is used only when bUseThinnestPattern is true.
+    int                     nRemoveJumpSpan;         //The phase jump span in X and Y direction under this value in beta phase will be removed.
+    int                     nCompareRemoveJumpSpan;  //The compared phase jump span in X and Y direction under this value in gamma phase will be removed.
     //Below 2 parameters are result of PR_MotorCalib3D, they are calibrated from positive, negative and H = 5mm surface phase. If these 2 parameters are used, then matPhaseToHeightK will be ignored.
     float                   fMaxPhase;
     float                   fMinPhase;
@@ -1341,14 +1339,12 @@ struct PR_CALC_3D_HEIGHT_RPY {
 struct PR_MERGE_3D_HEIGHT_CMD {
     PR_MERGE_3D_HEIGHT_CMD() :
         enMethod (PR_MERGE_3D_HT_METHOD::SELECT_NEAREST_INTERSECT),
-        fHeightDiffThreshold(0.2f),
-        fRemoveLowerNoiseRatio(0.001f) {}
+        fHeightDiffThreshold(0.2f) {}
     VectorOfMat             vecMatHeight;
     VectorOfMat             vecMatNanMask;
+    VectorOfDirection       vecProjDir;
     PR_MERGE_3D_HT_METHOD   enMethod;
-    PR_DIRECTION            enProjDir;
     float                   fHeightDiffThreshold;   //The height difference threshold. Unit mm. If height difference less than it, the result height is average of the input height. If larger than it, the result height use the small height.
-    float                   fRemoveLowerNoiseRatio; //Remove the lower part of the image as noise, set to their neighbour values.
 };
 
 struct PR_MERGE_3D_HEIGHT_RPY {

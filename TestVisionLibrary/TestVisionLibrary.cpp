@@ -734,23 +734,6 @@ int _tmain(int argc, _TCHAR* argv[])
 
     //TestSrchDie();
 
-    //TestCalib3dBase();
-    //TestCalib3dBase_1();
-  
-    //TestCalib3DHeight_01();
-    //TestCalib3DHeight_02();
-    //TestCalib3DHeight_03();
-    //TestCalc3DHeight();
-    //for (int i = 0; i < 10; ++ i)
-    //    TestFastCalc3DHeight();
-    //TestFastCalc3DHeight_1();
-    
-    //TestIntegrate3DCalib();
-    //TestCalc3DHeight_With_NormalCalibParam();
-
-    //TestCalc3DHeight_With_IntegrateCalibParam();
-    //TestMerge3DHeight();
-    //TestCalibDlpOffset_1();
     //DynamicCalculateDistortion();
     //TestCalcRestoreIdx();
     //ConvertRestoreCsvToYml();
@@ -782,6 +765,7 @@ int _tmain(int argc, _TCHAR* argv[])
     //TestCrossSectionArea();
 
     //TestFindCircle();
+    //TestFindCircle_1();
 
     //TestCombineImage();
     //TestCombineImage_1();
@@ -790,9 +774,29 @@ int _tmain(int argc, _TCHAR* argv[])
 
     //ChangeColor();
 
+    //TestCalib3dBase();
+    //TestCalib3dBase_1();
+
+    //TestCalib3DHeight_01();
+    //TestCalib3DHeight_02();
+    //TestCalib3DHeight_03();
+    //TestCalc3DHeight();
+    //for (int i = 0; i < 10; ++ i)
+    //    TestFastCalc3DHeight();
+    //TestFastCalc3DHeight_1();
+
+    //TestIntegrate3DCalib();
+    //TestCalc3DHeight_With_NormalCalibParam();
+    //TestMotor3DCalibNew();
+
+    //TestCalc3DHeight_With_IntegrateCalibParam();
+    //TestMerge3DHeight();
+    //TestCalibDlpOffset_1();
+
     //TestMotor3DCalib();
 
-    //TestCalc4DLPHeight();
+    //ConvertBaseParamCsvToYml();
+    TestCalc4DLPHeight();
     //TestMergeHeightMax();
 
     //TestInsp3DSolder();
@@ -837,7 +841,7 @@ int _tmain(int argc, _TCHAR* argv[])
     //TestCombineMachineImage();
     //FindFramePositionFromBigImage();
 
-    TestGenerateSelectedImage();
+    //TestGenerateSelectedImage();
 
     PR_DumpTimeLog("./Vision/Time.log");
     std::cout << "Press any key to exit." << std::endl;

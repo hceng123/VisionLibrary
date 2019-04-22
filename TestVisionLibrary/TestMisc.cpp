@@ -257,6 +257,7 @@ void drawDashRect(cv::Mat &matImage, int linelength, int dashlength, const cv::R
         end.x = tl_x;
         cv::line(matImage, start, end, color, thickness);
     }
+
     for (int i = 0; i < nCountY; i++)
     {
         start.x = tl_x + rect.width;

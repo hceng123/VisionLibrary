@@ -30,6 +30,8 @@ void TestCalib3DHeight_01();
 void TestCalib3DHeight_02();
 void TestCalib3DHeight_03();
 void TestIntegrate3DCalib();
+void TestMotor3DCalibNew();
+void ConvertBaseParamCsvToYml();
 void TestCalc3DHeight_With_NormalCalibParam();
 void TestCalc3DHeight_With_IntegrateCalibParam();
 void TestCalibDlpOffset_1();

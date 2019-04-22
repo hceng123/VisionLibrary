@@ -226,7 +226,7 @@ PR_FUNCTION_EXIT
 VisionAPI VisionStatus PR_FitCircleByPoint(const PR_FIT_CIRCLE_BY_POINT_CMD *const pstCmd, PR_FIT_CIRCLE_BY_POINT_RPY *const pstRpy)
 {
 PR_FUNCTION_ENTRY
-    return VisionAlgorithm::fitCircleByPoint ( pstCmd, pstRpy );
+    return VisionAlgorithm::fitCircleByPoint(pstCmd, pstRpy);
 PR_FUNCTION_EXIT
 }
 

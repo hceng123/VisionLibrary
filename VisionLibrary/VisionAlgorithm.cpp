@@ -6343,19 +6343,23 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
         pstRpy->enStatus = VisionStatus::LEAD_OFFSET_OVER_LIMIT;
     }
 
-    if (! isAutoMode()) {
+    pstRpy->ptLeadPos = cv::Point2f(pstCmd->rectROI.x + ptLeadPos.x, pstCmd->rectROI.y + ptLeadPos.y);
+    if (ptrPadRecord != nullptr)
+        pstRpy->ptPadPos = cv::Point2f(pstCmd->rectROI.x + ptPadPos.x, pstCmd->rectROI.y + ptPadPos.y);
+
+    if (!isAutoMode()) {
         if (pstCmd->matInputImg.channels() > 1)
             pstRpy->matResultImg = pstCmd->matInputImg.clone();
         else
             cv::cvtColor(pstCmd->matInputImg, pstRpy->matResultImg, CV_GRAY2BGR);
         if (ptrPadRecord != nullptr) {
             auto matPadTmpl = ptrPadRecord->getTmpl();
-            cv::Rect rectPad(ToInt32(pstCmd->rectROI.x + ptPadPos.x - matPadTmpl.cols / 2), ToInt32(pstCmd->rectROI.y + ptPadPos.y - matPadTmpl.rows / 2), matPadTmpl.cols, matPadTmpl.rows);
+            cv::Rect rectPad(ToInt32(pstRpy->ptPadPos.x - matPadTmpl.cols / 2), ToInt32(pstRpy->ptPadPos.y - matPadTmpl.rows / 2), matPadTmpl.cols, matPadTmpl.rows);
             cv::rectangle(pstRpy->matResultImg, rectPad, GREEN_SCALAR, 2, cv::LineTypes::LINE_8);
         }
 
         auto matLeadTmpl = ptrLeadRecord->getTmpl();
-        cv::Rect rectLead(ToInt32(pstCmd->rectROI.x + ptLeadPos.x - matLeadTmpl.cols / 2), ToInt32(pstCmd->rectROI.y + ptLeadPos.y - matLeadTmpl.rows / 2), matLeadTmpl.cols, matLeadTmpl.rows);
+        cv::Rect rectLead(ToInt32(pstRpy->ptLeadPos.x - matLeadTmpl.cols / 2), ToInt32(pstRpy->ptLeadPos.y - matLeadTmpl.rows / 2), matLeadTmpl.cols, matLeadTmpl.rows);
         cv::rectangle(pstRpy->matResultImg, rectLead, GREEN_SCALAR, 2, cv::LineTypes::LINE_8);
     }
 
@@ -6568,7 +6572,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
         }
     }
 
-    FINISH_LOGCASE;
+    FINISH_LOGCASE_EX;
     MARK_FUNCTION_END_TIME;
     return pstRpy->enStatus;
 }
@@ -7019,9 +7023,17 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
         return pstRpy->enStatus;
     }
 
-    if (pstCmd->nRemoveBetaJumpMaxSpan < 0 || pstCmd->nRemoveBetaJumpMinSpan < 0 || pstCmd->nRemoveBetaJumpMinSpan > pstCmd->nRemoveBetaJumpMaxSpan) {
+    if (pstCmd->nRemoveJumpSpan < 0) {
         std::stringstream ss;
-        ss << "The RemoveBetaJumpMaxSpan " << pstCmd->nRemoveBetaJumpMaxSpan << " and RemoveBetaJumpMinSpan " << pstCmd->nRemoveBetaJumpMinSpan << " is invalid.";
+        ss << "The nRemoveJumpSpan " << pstCmd->nRemoveJumpSpan << " is invalid.";
+        WriteLog(ss.str());
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
+    if (pstCmd->nCompareRemoveJumpSpan < 0) {
+        std::stringstream ss;
+        ss << "The nRemoveJumpSpan " << pstCmd->nCompareRemoveJumpSpan << " is invalid.";
         WriteLog(ss.str());
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;
         return pstRpy->enStatus;
