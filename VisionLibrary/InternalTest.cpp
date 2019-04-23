@@ -227,6 +227,75 @@ static void TestCalcUtilsDiff() {
     }
 }
 
+static void TestCalcUtilsDiffGpu() {
+    {
+        std::cout << std::endl << "------------------------------------------";
+        std::cout << std::endl << "CALCUTILS DIFF GPU TEST #1 STARTING";
+        std::cout << std::endl << "------------------------------------------";
+        std::cout << std::endl;
+        std::vector<float> vecInput{
+            1, 3, 5,
+            7, 11, 13,
+            17, 19, 23
+        };
+        cv::Mat matInput(vecInput), matResult;
+        matInput = matInput.reshape(1, 3);
+        std::cout << "INPUT: " << std::endl;
+        printfMat<float>(matInput);
+
+        cv::cuda::GpuMat matGpuInput(matInput), matGpuOutput;
+
+        matGpuOutput = CalcUtils::diff(matGpuInput, 1, 1);
+        matGpuOutput.download(matResult);
+        std::cout << "Diff recursive time 1, dim 1 result: " << std::endl;
+        printfMat<float>(matResult);
+
+        matGpuOutput = CalcUtils::diff(matGpuInput, 1, 2);
+        matGpuOutput.download(matResult);
+        std::cout << "Diff recursive time 1, dim 2 result: " << std::endl;
+        printfMat<float>(matResult);
+    }
+
+    {
+        std::cout << std::endl << "------------------------------------------";
+        std::cout << std::endl << "CALCUTILS DIFF TEST #2 STARTING";
+        std::cout << std::endl << "------------------------------------------";
+        std::cout << std::endl;
+        std::vector<float> vecInput{
+            1, 3, 5, -6,
+            7, 11, 13, 16,
+            17, 19, 23, -1,
+            -5, -7, 9, -21,
+        };
+        cv::Mat matInput(vecInput), matResult;
+        matInput = matInput.reshape(1, 4);
+        std::cout << "INPUT: " << std::endl;
+        printfMat<float>(matInput);
+
+        cv::cuda::GpuMat matGpuInput(matInput), matGpuOutput;
+
+        matGpuOutput = CalcUtils::diff(matGpuInput, 1, 1);
+        matGpuOutput.download(matResult);
+        std::cout << "Diff recursive time 1, dim 1 result: " << std::endl;
+        printfMat<float>(matResult);
+
+        matGpuOutput = CalcUtils::diff(matGpuInput, 1, 2);
+        matGpuOutput.download(matResult);
+        std::cout << "Diff recursive time 1, dim 2 result: " << std::endl;
+        printfMat<float>(matResult);
+
+        matGpuOutput = CalcUtils::diff(matGpuInput, 2, 1);
+        matGpuOutput.download(matResult);
+        std::cout << "Diff recursive time 2, dim 1 result: " << std::endl;
+        printfMat<float>(matResult);
+
+        matGpuOutput = CalcUtils::diff(matGpuInput, 2, 2);
+        matGpuOutput.download(matResult);
+        std::cout << "Diff recursive time 2, dim 2 result: " << std::endl;
+        printfMat<float>(matResult);
+    }
+}
+
 static void TestCalcUtilsPower() {
     {
         std::cout << std::endl << "------------------------------------------";
@@ -503,6 +572,7 @@ void InternalTest() {
     TestCalcUtilsIntervals();
     TestCalcUtilsMeshGrid();
     TestCalcUtilsDiff();
+    TestCalcUtilsDiffGpu();
     TestCalcUtilsPower();
     TestCountOfNan();
     TestFindLargestKItems();

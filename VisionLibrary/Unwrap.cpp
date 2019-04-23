@@ -803,6 +803,160 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
     pstRpy->enStatus = VisionStatus::OK;
 }
 
+/*static*/ void Unwrap::calc3DHeightGpu(const PR_CALC_3D_HEIGHT_NEW_CMD *const pstCmd, PR_CALC_3D_HEIGHT_RPY *const pstRpy) {
+    CStopWatch stopWatch;
+    std::vector<cv::Mat> vecConvertedImgs;
+    for (auto &mat : pstCmd->vecInputImgs) {
+        cv::Mat matConvert = mat;
+        if (mat.channels() > 1)
+            cv::cvtColor(mat, matConvert, CV_BGR2GRAY);
+        vecConvertedImgs.push_back(matConvert);
+    }
+    TimeLog::GetInstance()->addTimeLog("Convert image to float.", stopWatch.Span());
+
+    if (pstCmd->bReverseSeq) {
+        std::swap(vecConvertedImgs[1], vecConvertedImgs[3]);
+        std::swap(vecConvertedImgs[5], vecConvertedImgs[7]);
+        if (pstCmd->bUseThinnestPattern)
+            std::swap(vecConvertedImgs[9], vecConvertedImgs[11]);
+    }
+
+    auto size = vecConvertedImgs[0].size();
+    auto total = ToInt32(vecConvertedImgs[0].total());
+    cv::Mat matAlpha(size, CV_32FC1), matBeta(size, CV_32FC1), matGamma(size, CV_32FC1), matBuffer1(size, CV_32FC1), matBuffer2(size, CV_32FC1);
+    cv::Mat matAvgUnderTolIndex = cv::Mat::zeros(size, CV_8UC1);
+    float fMinimumAlpitudeSquare = pstCmd->fMinAmplitude * pstCmd->fMinAmplitude;
+
+    auto ptrData0 = vecConvertedImgs[0].ptr<uchar>(0);
+    auto ptrData1 = vecConvertedImgs[1].ptr<uchar>(0);
+    auto ptrData2 = vecConvertedImgs[2].ptr<uchar>(0);
+    auto ptrData3 = vecConvertedImgs[3].ptr<uchar>(0);
+    for (int i = 0; i < total; ++i) {
+        short x = (short)ptrData0[i] - (short)ptrData2[i];  // x = 2*cos(beta)
+        short y = (short)ptrData3[i] - (short)ptrData1[i];  // y = 2*sin(beta)
+
+        matAlpha.at<float>(i) = vecVecAtan2Table[x + PR_MAX_GRAY_LEVEL][y + PR_MAX_GRAY_LEVEL];
+    }
+
+    ptrData0 = vecConvertedImgs[4].ptr<uchar>(0);
+    ptrData1 = vecConvertedImgs[5].ptr<uchar>(0);
+    ptrData2 = vecConvertedImgs[6].ptr<uchar>(0);
+    ptrData3 = vecConvertedImgs[7].ptr<uchar>(0);
+    for (int i = 0; i < total; ++i) {
+        short x = (short)ptrData0[i] - (short)ptrData2[i];  // x = 2*cos(beta)
+        short y = (short)ptrData3[i] - (short)ptrData1[i];  // y = 2*sin(beta)
+        float fAmplitudeSquare = (x*x + y*y) / 4.f;
+        if (fAmplitudeSquare < fMinimumAlpitudeSquare)
+            matAvgUnderTolIndex.at<uchar>(i) = PR_MAX_GRAY_LEVEL;
+        matBeta.at<float>(i) = vecVecAtan2Table[x + PR_MAX_GRAY_LEVEL][y + PR_MAX_GRAY_LEVEL];
+    }
+    TimeLog::GetInstance()->addTimeLog("2 lookup phase ", stopWatch.Span());
+
+    if (pstCmd->bUseThinnestPattern) {
+        ptrData0 = vecConvertedImgs[8].ptr<uchar>(0);
+        ptrData1 = vecConvertedImgs[9].ptr<uchar>(0);
+        ptrData2 = vecConvertedImgs[10].ptr<uchar>(0);
+        ptrData3 = vecConvertedImgs[11].ptr<uchar>(0);
+        for (int i = 0; i < total; ++i) {
+            short x = (short)ptrData0[i] - (short)ptrData2[i];  // x = 2*cos(beta)
+            short y = (short)ptrData3[i] - (short)ptrData1[i];  // y = 2*sin(beta)
+            matGamma.at<float>(i) = vecVecAtan2Table[x + PR_MAX_GRAY_LEVEL][y + PR_MAX_GRAY_LEVEL];
+        }
+        matGamma = matGamma - pstCmd->matBaseWrappedGamma;
+    }
+
+#ifdef _DEBUG
+    auto vecVecAlpha = CalcUtils::matToVector<DATA_TYPE>(matAlpha);
+    auto vecVecBeta = CalcUtils::matToVector<DATA_TYPE>(matBeta);
+#endif
+
+    matAlpha = matAlpha - pstCmd->matBaseWrappedAlpha;
+    matBeta = matBeta - pstCmd->matBaseWrappedBeta;
+    TimeLog::GetInstance()->addTimeLog("2 substract take. ", stopWatch.Span());
+
+#ifdef _DEBUG
+    vecVecAlpha = CalcUtils::matToVector<DATA_TYPE>(matAlpha);
+    vecVecBeta = CalcUtils::matToVector<DATA_TYPE>(matBeta);
+#endif
+
+    _phaseWrapBuffer(matAlpha, matBuffer1, pstCmd->fPhaseShift);
+    TimeLog::GetInstance()->addTimeLog("_phaseWrapBuffer.", stopWatch.Span());
+
+    matBuffer1 = matAlpha * pstCmd->matThickToThinK.at<DATA_TYPE>(0);
+    TimeLog::GetInstance()->addTimeLog("Multiply takes.", stopWatch.Span());
+
+    _phaseWrapByRefer(matBeta, matBuffer1);
+    TimeLog::GetInstance()->addTimeLog("_phaseWrapByRefer.", stopWatch.Span());
+
+    const int dt = 20; // Use one data in every 20 pixels
+    cv::Mat matBetaBase = _pickPointInterval(matBeta, dt);
+    auto matBetaBaseOneRow = matBetaBase.reshape(1, 1);
+    cv::sort(matBetaBaseOneRow, matBetaBaseOneRow, cv::SortFlags::SORT_EVERY_ROW + cv::SortFlags::SORT_ASCENDING);
+    int totalItem = matBetaBaseOneRow.cols;
+    cv::Mat matRange(matBetaBaseOneRow, cv::Range::all(), cv::Range(ToInt32(totalItem * 0.25), ToInt32(totalItem * 0.45)));
+    float betaBase = ToFloat(cv::mean(matRange)[0]);
+
+    const float SHIFT_TO_BASE = 0.2f;
+
+    cv::Mat matBeta3 = _phaseWarpNoAutoBase(matBeta, betaBase / 2 + SHIFT_TO_BASE); // 0.2 is also shift, means - 0.6~1.4
+    cv::Mat matMask;
+    cv::compare(matBeta3, matBeta, matMask, cv::CmpTypes::CMP_GT);
+    matBeta3.copyTo(matBeta, matMask);
+    matBeta.setTo(betaBase, matAvgUnderTolIndex);
+
+    if (pstCmd->nRemoveJumpSpan > 0) {
+        phaseCorrection(matBeta, matAvgUnderTolIndex, pstCmd->nRemoveJumpSpan, pstCmd->nRemoveJumpSpan);
+        TimeLog::GetInstance()->addTimeLog("phaseCorrection for beta.", stopWatch.Span());
+    }
+
+    if (pstCmd->bUseThinnestPattern) {
+        auto k1 = pstCmd->matThickToThinK.at<DATA_TYPE>(0);
+        auto k2 = pstCmd->matThickToThinnestK.at<DATA_TYPE>(0);
+
+        auto gammaBase = betaBase * k2 / k1;
+        // gamma1  = PhaseWrap02(gamma, base/k1*k2/2 + 0.2);
+        cv::Mat matGamma1 = _phaseWarpNoAutoBase(matGamma, gammaBase / 2 + SHIFT_TO_BASE);
+        matBuffer1 = matBeta * k2 / k1;
+        _phaseWrapByRefer(matGamma, matBuffer1);
+
+        matGamma.setTo(gammaBase, matAvgUnderTolIndex);
+        matGamma1.setTo(gammaBase, matAvgUnderTolIndex);
+
+        phaseCorrectionCmp(matGamma, matGamma1, pstCmd->nCompareRemoveJumpSpan);
+        TimeLog::GetInstance()->addTimeLog("phaseCorrectionCmp for gamma.", stopWatch.Span());
+
+        if (pstCmd->nRemoveJumpSpan > 0) {
+            phaseCorrection(matGamma, matAvgUnderTolIndex, pstCmd->nRemoveJumpSpan, pstCmd->nRemoveJumpSpan);
+            TimeLog::GetInstance()->addTimeLog("phaseCorrection for gamma.", stopWatch.Span());
+        }
+
+        pstRpy->matPhase = matGamma * k1 / k2;
+    }
+    else
+        pstRpy->matPhase = matBeta;
+
+    cv::compare(pstRpy->matPhase, betaBase - 0.1, matMask, cv::CmpTypes::CMP_LT);
+    pstRpy->matPhase.setTo(betaBase, matMask);
+
+    cv::medianBlur(pstRpy->matPhase, pstRpy->matPhase, 5);
+
+    if (pstCmd->bEnableGaussianFilter)
+        cv::GaussianBlur(pstRpy->matPhase, pstRpy->matPhase, cv::Size(5, 5), 5, 5, cv::BorderTypes::BORDER_REPLICATE);
+
+    pstRpy->matNanMask = matAvgUnderTolIndex;
+
+    if (!pstCmd->mat3DBezierK.empty() && !pstCmd->mat3DBezierSurface.empty()) {
+        std::vector<float> vecParamMinMaxXY{ 1.f, ToFloat(pstRpy->matPhase.cols), 1.f, ToFloat(pstRpy->matPhase.rows),
+            ToFloat(pstCmd->fMinPhase), ToFloat(pstCmd->fMaxPhase) };
+        pstRpy->matHeight = _calculateSurfaceConvert3D(pstRpy->matPhase, vecParamMinMaxXY, 4, pstCmd->mat3DBezierSurface);
+    }
+    else
+        pstRpy->matHeight = pstRpy->matPhase;
+
+    TimeLog::GetInstance()->addTimeLog("_calcHeightFromPhase.", stopWatch.Span());
+    pstRpy->enStatus = VisionStatus::OK;
+}
+
 /*static*/ void Unwrap::merge3DHeight(const PR_MERGE_3D_HEIGHT_CMD *const pstCmd, PR_MERGE_3D_HEIGHT_RPY *const pstRpy) {
     if (pstCmd->vecMatHeight.size() == 2) {
         cv::Mat matHeightOne = pstCmd->vecMatHeight[0], matHeightTwo = pstCmd->vecMatHeight[1];
@@ -3029,6 +3183,8 @@ void Unwrap::_turnPhase(cv::Mat &matPhase, cv::Mat &matPhaseDiff, char *ptrSignO
     auto idxl1 = cv::Mat::zeros(ROWS, COLS, CV_8UC1);
     auto idxl2 = cv::Mat::zeros(ROWS, COLS, CV_8UC1);
 
+    TimeLog::GetInstance()->addTimeLog("prepare for phaseCorrectionCmp", stopWatch.Span());
+
     for (int row = 0; row < ROWS; ++row) {
         cv::Mat matOneRow = dMap1.row(row);
         std::vector<int> vecIdx1, vecIdx2;
@@ -3098,6 +3254,8 @@ void Unwrap::_turnPhase(cv::Mat &matPhase, cv::Mat &matPhaseDiff, char *ptrSignO
             }
         }
     }
+
+    TimeLog::GetInstance()->addTimeLog("Finish search for position need to change", stopWatch.Span());
 
     matIdx = idxl1 & idxl2;
 #ifdef _DEBUG

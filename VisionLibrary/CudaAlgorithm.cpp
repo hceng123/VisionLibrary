@@ -10,6 +10,9 @@ namespace AOI
 namespace Vision
 {
 
+cv::cuda::GpuMat phaseCorrectionCmp(const cv::cuda::GpuMat& matPhase, const cv::cuda::GpuMat& matPhase1, int span) {
+}
+
 cv::Mat CudaAlgorithm::mergeHeightIntersect(cv::Mat matHeightOne, cv::Mat matNanMaskOne, cv::Mat matHeightTwo, cv::Mat matNanMaskTwo, float fDiffThreshold, PR_DIRECTION enProjDir) {
     CStopWatch stopWatch;
     auto start = stopWatch.AbsNowInMicro();

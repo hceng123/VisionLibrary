@@ -1,9 +1,11 @@
 #ifndef _CALC_UTILS_H_
 #define _CALC_UTILS_H_
 
+#include <math.h>
+
 #include "BaseType.h"
 #include "VisionHeader.h"
-#include <math.h>
+#include "opencv2/core/cuda.hpp"
 
 namespace AOI
 {
@@ -325,26 +327,6 @@ public:
         DIFF_ON_X_DIR = 2,
     };
 
-    static inline cv::Mat diff(const cv::Mat &matInput, int nRecersiveTime, int nDimension) {
-        assert(DIFF_ON_X_DIR == nDimension || DIFF_ON_Y_DIR == nDimension);
-        if (nRecersiveTime > 1)
-            return diff(diff(matInput, nRecersiveTime - 1, nDimension), 1, nDimension);
-
-        cv::Mat matKernel;
-        if (DIFF_ON_X_DIR == nDimension)
-            matKernel = (cv::Mat_<float>(1, 2) << -1, 1);
-        else if (DIFF_ON_Y_DIR == nDimension)
-            matKernel = (cv::Mat_<float>(2, 1) << -1, 1);
-
-        cv::Mat matResult;
-        cv::filter2D(matInput, matResult, -1, matKernel, cv::Point(-1, -1), 0.0, cv::BORDER_CONSTANT);
-        if (DIFF_ON_X_DIR == nDimension)
-            return cv::Mat(matResult, cv::Rect(1, 0, matResult.cols - 1, matResult.rows));
-        else if (DIFF_ON_Y_DIR == nDimension)
-            return cv::Mat(matResult, cv::Rect(0, 1, matResult.cols, matResult.rows - 1));
-        return cv::Mat();
-    }
-
     template<typename _tp>
     static cv::Mat repeatInX(const cv::Mat &matInput, int nx) {
         cv::Mat matResult(matInput.rows, nx, matInput.type());
@@ -441,6 +423,8 @@ public:
         }
     }
 
+    static cv::Mat diff(const cv::Mat &matInput, int nRecersiveTime, int nDimension);
+    static cv::cuda::GpuMat diff(const cv::cuda::GpuMat& matInput, int nRecersiveTime, int nDimension);
     static float ptDisToLine(const cv::Point2f &ptInput, bool bReversedFit, float fSlope, float fIntercept);
     static float lineSlope(const PR_Line2f &line);
     static void lineSlopeIntercept(const PR_Line2f &line, float &fSlope, float &fIntercept);
