@@ -3164,6 +3164,40 @@ void Unwrap::_turnPhase(cv::Mat &matPhase, cv::Mat &matPhaseDiff, char *ptrSignO
     TimeLog::GetInstance()->addTimeLog("_phaseSwitchBack.", stopWatch.Span());
 }
 
+/*static*/ void Unwrap::selectCmpPoint(const cv::Mat& dMap, const cv::Mat& dPhase, int span, cv::Mat& matResult) {
+    for (int row = 0; row < dMap.rows; ++row) {
+        cv::Mat matOneRow = dMap.row(row);
+        std::vector<int> vecIdx1, vecIdx2;
+        for (int i = 0; i < matOneRow.cols; ++i) {
+            const auto& value = matOneRow.at<float>(i);
+            if (value == 1)
+                vecIdx1.push_back(i);
+            else if (value == -1)
+                vecIdx2.push_back(i);
+        }
+
+        if (!vecIdx1.empty() && !vecIdx2.empty()) {
+            // If start of index1 larger than index 2, then remove beginning element of index2
+            if (vecIdx1[0] > vecIdx2[0]) {
+                vecIdx2 = std::vector<int>(vecIdx2.begin() + 1, vecIdx2.end());
+            }
+
+            if (vecIdx1.size() > vecIdx2.size()) {
+                vecIdx1 = std::vector<int>(vecIdx1.begin(), vecIdx1.end() - 1);
+            }
+        }
+
+        for (int i = 0; i < vecIdx1.size() && i < vecIdx2.size(); ++i) {
+            if (vecIdx2[i] - vecIdx1[i] < span) {
+                if (fabs(dPhase.at<float>(row, vecIdx1[i])) > 1 && fabs(dPhase.at<float>(row, vecIdx2[i])) > 1) {
+                    cv::Mat matROI(matResult, cv::Range(row, row + 1), cv::Range(vecIdx1[i], vecIdx2[i] + 1));
+                    matROI.setTo(1);
+                }
+            }
+        }
+    }
+}
+
 /*static*/ void Unwrap::phaseCorrectionCmp(cv::Mat& matPhase, cv::Mat& matPhase1, int span) {
     CStopWatch stopWatch;
     const int ROWS = matPhase.rows;
@@ -3175,86 +3209,26 @@ void Unwrap::_turnPhase(cv::Mat &matPhase, cv::Mat &matPhaseDiff, char *ptrSignO
     matMap.setTo(1, matIdx);
 
     auto dMap1 = CalcUtils::diff(matMap, 1, CalcUtils::DIFF_ON_X_DIR);
-    auto dMap2 = CalcUtils::diff(matMap, 1, CalcUtils::DIFF_ON_Y_DIR);
-
     auto dxPhase = CalcUtils::diff(matPhase, 1, CalcUtils::DIFF_ON_X_DIR);
-    auto dyPhase = CalcUtils::diff(matPhase, 1, CalcUtils::DIFF_ON_Y_DIR);
-
-    auto idxl1 = cv::Mat::zeros(ROWS, COLS, CV_8UC1);
-    auto idxl2 = cv::Mat::zeros(ROWS, COLS, CV_8UC1);
+    cv::Mat idxl1 = cv::Mat::zeros(ROWS, COLS, CV_8UC1);
 
     TimeLog::GetInstance()->addTimeLog("prepare for phaseCorrectionCmp", stopWatch.Span());
 
-    for (int row = 0; row < ROWS; ++row) {
-        cv::Mat matOneRow = dMap1.row(row);
-        std::vector<int> vecIdx1, vecIdx2;
-        for (int i = 0; i < matOneRow.cols; ++i) {
-            const auto& value = matOneRow.at<float>(i);
-            if (value == 1)
-                vecIdx1.push_back(i);
-            else if (value == -1)
-                vecIdx2.push_back(i);
-        }
+    // Select in X direction
+    selectCmpPoint(dMap1, dxPhase, span, idxl1);
 
-        if (!vecIdx1.empty() && !vecIdx2.empty()) {
-            if (vecIdx1[0] > vecIdx2[0]) {
-                vecIdx2 = std::vector<int>(vecIdx2.begin() + 1, vecIdx2.end());
-            }
+    // Select in Y direction, transpose the matrix to accelerate
+    cv::transpose(matMap, matMap);
+    cv::Mat matPhaseT;
+    cv::transpose(matPhase, matPhaseT);
 
-            if (vecIdx1.size() > vecIdx2.size()) {
-                vecIdx1 = std::vector<int>(vecIdx1.begin(), vecIdx1.end() - 1);
-            }
-        }
+    auto dMap2 = CalcUtils::diff(matMap, 1, CalcUtils::DIFF_ON_X_DIR);
+    auto dyPhase = CalcUtils::diff(matPhaseT, 1, CalcUtils::DIFF_ON_X_DIR);
+    cv::Mat idxl2 = cv::Mat::zeros(COLS, ROWS, CV_8UC1);    // Note the indl2 is tranposed result, so the ROWS and COLS are changed
 
-        std::vector<int> vecIdxT;
-        for (int i = 0; i < vecIdx1.size() && i < vecIdx2.size(); ++i) {
-            if (vecIdx2[i] - vecIdx1[i] < span)
-                vecIdxT.push_back(i);
-        }
-
-        for (auto index : vecIdxT) {
-            if (fabs(dxPhase.at<float>(row, vecIdx1[index])) > 1 && fabs(dxPhase.at<float>(row, vecIdx2[index])) > 1) {
-                cv::Mat matROI(idxl1, cv::Range(row, row + 1), cv::Range(vecIdx1[index], vecIdx2[index] + 1));
-                matROI.setTo(1);
-            }
-        }
-    }
-
-    for (int col = 0; col < COLS; ++col) {
-        cv::Mat matOneCol= dMap2.col(col);
-        std::vector<int> vecIdx1, vecIdx2;
-        for (int i = 0; i < matOneCol.rows; ++i) {
-            const auto& value = matOneCol.at<float>(i);
-            if (value == 1)
-                vecIdx1.push_back(i);
-            else if (value == -1)
-                vecIdx2.push_back(i);
-        }
-
-        if (!vecIdx1.empty() && !vecIdx2.empty()) {
-            if (vecIdx1[0] > vecIdx2[0]) {
-                vecIdx2 = std::vector<int>(vecIdx2.begin() + 1, vecIdx2.end());
-            }
-
-            if (vecIdx1.size() > vecIdx2.size()) {
-                vecIdx1 = std::vector<int>(vecIdx1.begin(), vecIdx1.end() - 1);
-            }
-        }
-
-        std::vector<int> vecIdxT;
-        for (int i = 0; i < vecIdx1.size() && i < vecIdx2.size(); ++i) {
-            if (vecIdx2[i] - vecIdx1[i] < span)
-                vecIdxT.push_back(i);
-        }
-
-        for (auto index : vecIdxT) {
-            if (fabs(dyPhase.at<float>(vecIdx1[index], col)) > 1 && fabs(dyPhase.at<float>(vecIdx2[index], col)) > 1) {
-                cv::Mat matROI(idxl2, cv::Range(vecIdx1[index], vecIdx2[index] + 1), cv::Range(col, col + 1));
-                matROI.setTo(1);
-            }
-        }
-    }
-
+    selectCmpPoint(dMap2, dyPhase, span, idxl2);
+    cv::transpose(idxl2, idxl2);
+    
     TimeLog::GetInstance()->addTimeLog("Finish search for position need to change", stopWatch.Span());
 
     matIdx = idxl1 & idxl2;

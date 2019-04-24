@@ -2,15 +2,45 @@
 #include "../VisionLibrary/StopWatch.h"
 #include "opencv2/core.hpp"
 #include "opencv2/core/cuda.hpp"
+#include "opencv2/cudaarithm.hpp"
 #include "CudaFunc.h"
 #include "TimeLog.h"
+#include "CalcUtils.hpp"
 
 namespace AOI
 {
 namespace Vision
 {
 
-cv::cuda::GpuMat phaseCorrectionCmp(const cv::cuda::GpuMat& matPhase, const cv::cuda::GpuMat& matPhase1, int span) {
+void phaseCorrectionCmp(cv::cuda::GpuMat& matPhase, const cv::cuda::GpuMat& matPhase1, int span) {
+    CStopWatch stopWatch;
+    const int ROWS = matPhase.rows;
+    const int COLS = matPhase.cols;
+
+    cv::Mat matIdx;
+    cv::cuda::compare(matPhase, matPhase1, matIdx, cv::CmpTypes::CMP_NE);
+    cv::Mat matMapCpu = cv::Mat::zeros(ROWS, COLS, CV_32FC1);
+    cv::cuda::GpuMat matMap(matMapCpu);
+    matMap.setTo(1, matIdx);
+
+    auto dMap1 = CalcUtils::diff(matMap, 1, CalcUtils::DIFF_ON_X_DIR);
+    auto dMap2 = CalcUtils::diff(matMap, 1, CalcUtils::DIFF_ON_Y_DIR);
+
+    auto dxPhase = CalcUtils::diff(matPhase, 1, CalcUtils::DIFF_ON_X_DIR);
+    auto dyPhase = CalcUtils::diff(matPhase, 1, CalcUtils::DIFF_ON_Y_DIR);
+
+    auto idxl1 = cv::Mat::zeros(ROWS, COLS, CV_8UC1);
+    auto idxl2 = cv::Mat::zeros(ROWS, COLS, CV_8UC1);
+
+    TimeLog::GetInstance()->addTimeLog("prepare for phaseCorrectionCmp", stopWatch.Span());
+
+    TimeLog::GetInstance()->addTimeLog("Finish search for position need to change", stopWatch.Span());
+
+    matIdx = idxl1 & idxl2;
+#ifdef _DEBUG
+    auto vecVecIdx = CalcUtils::matToVector<uchar>(matIdx);
+#endif
+    matPhase1.copyTo(matPhase, matIdx);
 }
 
 cv::Mat CudaAlgorithm::mergeHeightIntersect(cv::Mat matHeightOne, cv::Mat matNanMaskOne, cv::Mat matHeightTwo, cv::Mat matNanMaskTwo, float fDiffThreshold, PR_DIRECTION enProjDir) {

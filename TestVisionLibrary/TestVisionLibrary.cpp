@@ -797,6 +797,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
     //ConvertBaseParamCsvToYml();
     TestCalc4DLPHeight();
+    CompareHeightSame();
     //TestMergeHeightMax();
 
     //TestInsp3DSolder();

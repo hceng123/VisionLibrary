@@ -13,4 +13,12 @@ void run_kernel_merge_height_intersect(
     int cols,
     float fDiffThreshold);
 
+void run_kernel_select_cmp_point(
+    uint32_t gridSize,
+    uint32_t blockSize,
+    float* dPhase,
+    float* dMap,
+    const int ROWS,
+    const int COLS);
+
 #endif

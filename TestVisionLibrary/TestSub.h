@@ -77,6 +77,7 @@ void TestCalcFrameValue_1();
 void TestCalcFrameValue_2();
 
 void TestCalc4DLPHeight();
+void CompareHeightSame();
 void TestMergeHeightMax();
 void TestQueryDlpOffset();
 

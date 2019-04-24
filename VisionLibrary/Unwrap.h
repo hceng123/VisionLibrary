@@ -48,6 +48,7 @@ public:
     static void calcPD(const PR_CALC_PD_CMD *const pstCmd, PR_CALC_PD_RPY *const pstRpy);
     static void phaseCorrection(cv::Mat &matPhase, const cv::Mat &matIdxNan, int nJumpSpanX, int nJumpSpanY);   //Put it to public to include it in regression test.
     static void phaseCorrectionEx(cv::Mat &matPhase, PR_DIRECTION enProjDir, PR_DIRECTION enScanDir, int nMinSpan, int nMaxSpan);
+    static void selectCmpPoint(const cv::Mat& dMap, const cv::Mat& dPhase, int span, cv::Mat& matResult);
     static void phaseCorrectionCmp(cv::Mat& matPhase, cv::Mat& matPhase1, int span);
     static void removeJumpArea(cv::Mat &matHeight, float fAreaLimit);
     static void insp3DSolder(const PR_INSP_3D_SOLDER_CMD *pstCmd, const cv::Mat &matBaseMask, PR_INSP_3D_SOLDER_RPY *const pstRpy);

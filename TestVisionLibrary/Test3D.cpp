@@ -1361,12 +1361,30 @@ void TestCalc4DLPHeight()
     PR_HEIGHT_TO_GRAY_RPY stRpy;
     stCmd.matHeight = stMerge3DRpy.matHeight;
     PR_HeightToGray(&stCmd, &stRpy);
-
     cv::imwrite(strResultFolder + "Final_HeightGray.png", stRpy.matGray);
+
+    cv::imwrite(strResultFolder + "Final_HeightGray_Grid.png", _drawHeightGrid(stMerge3DRpy.matHeight, 10, 10));
     if (!stMerge3DRpy.matNanMask.empty())
         cv::imwrite(strResultFolder + "Final_NanMask.png", stMerge3DRpy.matNanMask);
 
     std::cout << "Success to calculate 4 DLP height" << std::endl;
+}
+
+void CompareHeightSame() {
+    std::string strWorkingFolder("C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/");
+    cv::Mat matHeight1 = readMatFromCsvFile(strWorkingFolder + "Final_Height_0.csv");
+    cv::Mat matHeight2 = readMatFromCsvFile(strWorkingFolder + "Final_Height.csv");
+
+    if (matHeight1.size() != matHeight2.size()) {
+        std::cout << "Height1 size " << matHeight1.size() << " not match height 2 size " << matHeight2.size() << std::endl;
+        return;
+    }
+
+    cv::Mat matDiff;
+    cv::absdiff(matHeight1, matHeight2, matDiff);
+
+    cv::Mat matMask = matDiff > 0.01f;
+    cv::imwrite(strWorkingFolder + "CompareDiffMask.png", matMask);
 }
 
 void TestMergeHeightMax() {
