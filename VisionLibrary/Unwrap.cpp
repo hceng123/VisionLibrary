@@ -11,6 +11,7 @@
 #include "Log.h"
 #include "Config.h"
 #include "Auxiliary.hpp"
+#include "CudaAlgorithm.h"
 
 
 #define MARK_FUNCTION_START_TIME    CStopWatch      stopWatch; __int64 functionStart = stopWatch.AbsNow()
@@ -922,7 +923,10 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
         matGamma.setTo(gammaBase, matAvgUnderTolIndex);
         matGamma1.setTo(gammaBase, matAvgUnderTolIndex);
 
-        phaseCorrectionCmp(matGamma, matGamma1, pstCmd->nCompareRemoveJumpSpan);
+        //CudaAlgorithm::phaseCorrectionCmp(matGamma, matGamma1, pstCmd->nCompareRemoveJumpSpan);
+        cv::cuda::GpuMat matGammaGpu(matGamma), matGammaGpu1(matGamma1);
+        CudaAlgorithm::phaseCorrectionCmp(matGammaGpu, matGammaGpu1, pstCmd->nCompareRemoveJumpSpan);
+        matGammaGpu.download(matGamma);
         TimeLog::GetInstance()->addTimeLog("phaseCorrectionCmp for gamma.", stopWatch.Span());
 
         if (pstCmd->nRemoveJumpSpan > 0) {
@@ -3189,9 +3193,9 @@ void Unwrap::_turnPhase(cv::Mat &matPhase, cv::Mat &matPhaseDiff, char *ptrSignO
 
         for (int i = 0; i < vecIdx1.size() && i < vecIdx2.size(); ++i) {
             if (vecIdx2[i] - vecIdx1[i] < span) {
-                if (fabs(dPhase.at<float>(row, vecIdx1[i])) > 1 && fabs(dPhase.at<float>(row, vecIdx2[i])) > 1) {
+                if (fabs(dPhase.at<float>(row, vecIdx1[i])) > 1.f && fabs(dPhase.at<float>(row, vecIdx2[i])) > 1.f) {
                     cv::Mat matROI(matResult, cv::Range(row, row + 1), cv::Range(vecIdx1[i], vecIdx2[i] + 1));
-                    matROI.setTo(1);
+                    matROI.setTo(PR_MAX_GRAY_LEVEL);
                 }
             }
         }
@@ -3217,6 +3221,11 @@ void Unwrap::_turnPhase(cv::Mat &matPhase, cv::Mat &matPhaseDiff, char *ptrSignO
     // Select in X direction
     selectCmpPoint(dMap1, dxPhase, span, idxl1);
 
+    static int time = 0;
+    ++ time;
+    cv::imwrite(std::string("C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/PhaseCorrectionCmpMask1_") + std::to_string(time) + ".png", idxl1);
+    int nonZeroCount1 = cv::countNonZero(idxl1);
+
     // Select in Y direction, transpose the matrix to accelerate
     cv::transpose(matMap, matMap);
     cv::Mat matPhaseT;
@@ -3227,11 +3236,20 @@ void Unwrap::_turnPhase(cv::Mat &matPhase, cv::Mat &matPhaseDiff, char *ptrSignO
     cv::Mat idxl2 = cv::Mat::zeros(COLS, ROWS, CV_8UC1);    // Note the indl2 is tranposed result, so the ROWS and COLS are changed
 
     selectCmpPoint(dMap2, dyPhase, span, idxl2);
+
+    cv::imwrite(std::string("C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/PhaseCorrectionCmpMask2_") + std::to_string(time) + ".png", idxl2);
+    int nonZeroCount2 = cv::countNonZero(idxl2);
+
     cv::transpose(idxl2, idxl2);
     
     TimeLog::GetInstance()->addTimeLog("Finish search for position need to change", stopWatch.Span());
 
     matIdx = idxl1 & idxl2;
+
+    int nonZeroFinal = cv::countNonZero(matIdx);
+
+    std::cout << "phaseCorrectionCmp point count1 " << nonZeroCount1 << " count2 " << nonZeroCount2 << " final cout " << nonZeroFinal << std::endl;
+
 #ifdef _DEBUG
     auto vecVecIdx = CalcUtils::matToVector<uchar>(matIdx);
 #endif

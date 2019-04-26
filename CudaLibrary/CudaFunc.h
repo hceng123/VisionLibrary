@@ -16,9 +16,11 @@ void run_kernel_merge_height_intersect(
 void run_kernel_select_cmp_point(
     uint32_t gridSize,
     uint32_t blockSize,
-    float* dPhase,
     float* dMap,
+    float* dPhase,
+    uint8_t* matResult,
     const int ROWS,
-    const int COLS);
+    const int COLS,
+    const int span);
 
 #endif

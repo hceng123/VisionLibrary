@@ -7152,7 +7152,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     //The Calc3DHeight logcase need to log 12 images, which is too slow when log always, and not useful right now, so disable it first.
     //SETUP_LOGCASE(LogCaseCalc3DHeight);
 
-    Unwrap::calc3DHeightNew(pstCmd, pstRpy);
+    Unwrap::calc3DHeightGpu(pstCmd, pstRpy);
 
     //FINISH_LOGCASE;
     MARK_FUNCTION_END_TIME;

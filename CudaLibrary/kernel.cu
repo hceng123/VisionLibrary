@@ -117,9 +117,9 @@ void run_kernel_merge_height_intersect(
 
 __global__
 void kernel_select_cmp_point(
-    float* dPhase,
     float* dMap,
-    float* matResult,
+    float* dPhase,
+    uint8_t* matResult,
     const int ROWS,
     const int COLS,
     const int span) {
@@ -130,12 +130,12 @@ void kernel_select_cmp_point(
     int *arrayIdx2 = (int *)malloc(COLS / 4 * sizeof(int));
 
     for (int row = start; row < ROWS; row += stride) {
-        int offset = row * COLS;
-        int offsetOfDiffResult = row * (COLS - 1);
+        int offsetOfInput = row * COLS;
+        int offsetOfResult = row * COLS;
 
-        float *dMapRow = dMap + offsetOfDiffResult;
-        float *dPhaseRow = dPhase + offsetOfDiffResult;
-        float *matResultRow = matResult + offset;
+        float* dMapRow = dMap + offsetOfInput;
+        float* dPhaseRow = dPhase + offsetOfInput;
+        uint8_t* matResultRow = matResult + offsetOfResult;
 
         int countOfIdx1 = 0, countOfIdx2 = 0;
         for (int i = 0; i < COLS - 1; ++ i) {
@@ -163,19 +163,82 @@ void kernel_select_cmp_point(
             if (arrayIdx2[i] - arrayIdx1[i] < span) {
                 if (fabs(dPhaseRow[arrayIdx1[i]]) > 1.f && fabs(dPhaseRow[arrayIdx2[i]]) > 1.f) {
                     for (int k = arrayIdx1[i]; k <= arrayIdx2[i]; ++k)
-                        matResultRow[k] = 1;
+                        matResultRow[k] = 255;
                 }
             }
         }
     }
+
+    free(arrayIdx1);
+    free(arrayIdx2);
+}
+
+void test_kernel_select_cmp_point(
+    float* dMap,
+    float* dPhase,
+    uint8_t* matResult,
+    const int ROWS,
+    const int COLS,
+    const int span) {
+    int start = 0;
+    int stride = 1;
+
+    int *arrayIdx1 = (int *)malloc(COLS / 4 * sizeof(int));
+    int *arrayIdx2 = (int *)malloc(COLS / 4 * sizeof(int));
+
+    for (int row = start; row < ROWS; row += stride) {
+        int offsetOfInput = row * COLS;
+        int offsetOfResult = row * COLS;
+
+        float* dMapRow = dMap + offsetOfInput;
+        float* dPhaseRow = dPhase + offsetOfInput;
+        uint8_t* matResultRow = matResult + offsetOfResult;
+
+        int countOfIdx1 = 0, countOfIdx2 = 0;
+        for (int i = 0; i < COLS - 1; ++ i) {
+            const auto& value = dMapRow[i];
+            if (value == 1.f)
+                arrayIdx1[countOfIdx1++] = i;
+            else if (value == -1.f)
+                arrayIdx2[countOfIdx2++] = i;
+        }
+
+        if (countOfIdx1 > 0 && countOfIdx2 > 0) {
+            // If start of index1 larger than index 2, then remove beginning element of index2
+            if (arrayIdx1[0] > arrayIdx2[0]) {
+                countOfIdx2--;
+                for (int i = 0; i < countOfIdx2; ++i)
+                    arrayIdx2[i] = arrayIdx2[i + 1];
+            }
+
+            if (countOfIdx1 > countOfIdx2) {
+                countOfIdx1--;
+            }
+        }
+
+        for (int i = 0; i < countOfIdx1 && i < countOfIdx2; ++i) {
+            if (arrayIdx2[i] - arrayIdx1[i] < span) {
+                if (fabs(dPhaseRow[arrayIdx1[i]]) > 1.f && fabs(dPhaseRow[arrayIdx2[i]]) > 1.f) {
+                    for (int k = arrayIdx1[i]; k <= arrayIdx2[i]; ++k)
+                        matResultRow[k] = 255;
+                }
+            }
+        }
+    }
+
+    free(arrayIdx1);
+    free(arrayIdx2);
 }
 
 void run_kernel_select_cmp_point(
     uint32_t gridSize,
     uint32_t blockSize,
-    float* dPhase,
     float* dMap,
+    float* dPhase,
+    uint8_t* matResult,
     const int ROWS,
-    const int COLS) {
-
+    const int COLS,
+    const int span) {
+    kernel_select_cmp_point<<<gridSize, blockSize>>>(dMap, dPhase, matResult, ROWS, COLS, span);
+    //test_kernel_select_cmp_point(dMap, dPhase, matResult, ROWS, COLS, span);
 }

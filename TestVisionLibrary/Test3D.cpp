@@ -1305,7 +1305,7 @@ void TestCalc4DLPHeight()
         fsIntegrated.release();
 
         stCalcHeightCmds[nDlp].vecInputImgs = VectorOfMat(vecImages.begin() + nDlp * IMAGE_COUNT, vecImages.begin() + (nDlp + 1) * IMAGE_COUNT);
-        PR_Calc3DHeightNew(&stCalcHeightCmds[nDlp], &stCalcHeightRpys[nDlp]);
+        PR_Calc3DHeightGpu(&stCalcHeightCmds[nDlp], &stCalcHeightRpys[nDlp]);
         stCalcHeightRpys[nDlp].matHeight = stCalcHeightRpys[nDlp].matHeight + dlpOffset[nDlp];
 
         PrintMinMaxLoc(stCalcHeightRpys[nDlp].matHeight, "DLP_" + std::to_string(nDlp + 1) + "_result");
@@ -1384,7 +1384,23 @@ void CompareHeightSame() {
     cv::absdiff(matHeight1, matHeight2, matDiff);
 
     cv::Mat matMask = matDiff > 0.01f;
-    cv::imwrite(strWorkingFolder + "CompareDiffMask.png", matMask);
+    cv::imwrite(strWorkingFolder + "CompareHeightDiffMask.png", matMask);
+}
+
+void CompareMask() {
+    std::string strWorkingFolder("C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/");
+    cv::Mat matMask1 = cv::imread(strWorkingFolder + "Old_Alg_Mask1/PhaseCorrectionCmpMask1_1.png", cv::IMREAD_GRAYSCALE);
+    cv::Mat matMask2 = cv::imread(strWorkingFolder + "PhaseCorrectionCmpMask1_1.png", cv::IMREAD_GRAYSCALE);
+
+    if (matMask1.size() != matMask2.size()) {
+        std::cout << "Mask1 size " << matMask1.size() << " not match Mask2 size " << matMask2.size() << std::endl;
+        return;
+    }
+
+    cv::Mat matDiff;
+    cv::compare(matMask1, matMask2, matDiff, cv::CmpTypes::CMP_NE);
+
+    cv::imwrite(strWorkingFolder + "CompareMaskDiffMask.png", matDiff);
 }
 
 void TestMergeHeightMax() {
