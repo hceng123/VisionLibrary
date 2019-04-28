@@ -14,8 +14,11 @@
  * Copyright (c) 2016-2018, Xiao Shengguang.  All rights reserved.
  ****************************************************************************/
 
+//2019-04-21 (XSG) Fix pick color may choose different color problem.
+#define AOI_VISION_VERSION          "1.00.66"
+
 //2019-03-29 (XSG) Return lead and pad position in PR_InspLeadTmpl.
-#define AOI_VISION_VERSION          "1.00.65"
+//#define AOI_VISION_VERSION          "1.00.65"
 
 //2019-03-25 (XSG) Fix inspect similarity the min similarity not correct bug.
 //#define AOI_VISION_VERSION          "1.00.64"

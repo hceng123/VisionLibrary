@@ -35,6 +35,7 @@ using VectorOfDouble = std::vector<double>;
 using VectorOfDirection = std::vector<PR_DIRECTION>;
 using VectorOfInt = std::vector<int>;
 using VectorOfVectorOfInt = std::vector<VectorOfInt>;
+using VectorOfRtRect = std::vector<cv::RotatedRect>;
 
 template <typename Tp> inline Int32 ToInt32(Tp param) { return static_cast<Int32>(param); }
 template <typename Tp> inline Int16 ToInt16(Tp param) { return static_cast<Int16>(param); }

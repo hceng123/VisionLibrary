@@ -3851,10 +3851,10 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     std::vector<size_t> vecExcludedIndex{0, 1, 2};
     vecExcludedIndex.erase(vecExcludedIndex.begin() + maxIndex);
     cv::Mat matResultMask = cv::Mat::zeros(matColor.size(), CV_8UC1);
-    int diffLowerLimit1 = vecValue[maxIndex] - vecValue[vecExcludedIndex[0]] - nColorDiff;
+    int diffLowerLimit1 = std::max(1, vecValue[maxIndex] - vecValue[vecExcludedIndex[0]] - nColorDiff);
     int diffUpLimit1    = vecValue[maxIndex] - vecValue[vecExcludedIndex[0]] + nColorDiff;
 
-    int diffLowerLimit2 = vecValue[maxIndex] - vecValue[vecExcludedIndex[1]] - nColorDiff;
+    int diffLowerLimit2 = std::max(1, vecValue[maxIndex] - vecValue[vecExcludedIndex[1]] - nColorDiff);
     int diffUpLimit2    = vecValue[maxIndex] - vecValue[vecExcludedIndex[1]] + nColorDiff;
 
     nPointCountOut = 0;
