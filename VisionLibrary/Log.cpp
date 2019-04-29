@@ -36,7 +36,7 @@ void Log::Write(const String &strMsg, const char *filename, int line)
     if ( strLocalMsg.length() < STANDARD_MSG_LENGTH )
         strLocalMsg.resize ( STANDARD_MSG_LENGTH, ' ');
 
-    file << strLocalMsg << "\t" << CStopWatch::GetLocalTimeStr() << "\t" << filename << "\t" << line << "\n";
+    file << strLocalMsg << "\t" << CStopWatch::GetLocalTimeStr() << "\t" << filename << "\t" << line << std::endl;
     file.close();
 }
 

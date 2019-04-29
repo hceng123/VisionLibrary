@@ -1379,9 +1379,10 @@ struct PR_CALC_3D_HEIGHT_DIFF_RPY {
 
 struct PR_INSP_3D_SOLDER_CMD {
     PR_INSP_3D_SOLDER_CMD() :
-        nBaseColorDiff  (20),
-        nBaseGrayDiff   (20),
-        nWettingWidth   (8) {}
+        nBaseColorDiff              (20),
+        nBaseGrayDiff               (20),
+        nWettingWidth               (8),
+        fHeightVariationCoverage    (0.75f) {}
     cv::Mat                 matHeight;
     cv::Mat                 matColorImg;
     cv::Rect                rectDeviceROI;
@@ -1390,6 +1391,7 @@ struct PR_INSP_3D_SOLDER_CMD {
     Int16                   nBaseGrayDiff;
     VectorOfRect            vecRectCheckROIs;
     int                     nWettingWidth;
+    float                   fHeightVariationCoverage; // When find the solder area, the highest variation part of the solder is choosen.
 };
 
 struct PR_INSP_3D_SOLDER_RPY {

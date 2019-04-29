@@ -10,7 +10,7 @@ using namespace AOI::Vision;
 int _tmain(int argc, _TCHAR* argv[])
 {
     PR_Init();
-    PR_EnableAutoMode(true);
+    PR_EnableAutoMode(false);
     PR_SetDebugMode(PR_DEBUG_MODE::LOG_ALL_CASE);
 
     /*****************************************

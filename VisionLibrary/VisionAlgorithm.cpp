@@ -7192,6 +7192,14 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
         return pstRpy->enStatus;
     }
 
+    if (pstCmd->fHeightVariationCoverage > 0.95f || pstCmd->fHeightVariationCoverage < 0.1f) {
+        std::stringstream ss;
+        ss << "The fHeightVariationCoverage " << pstCmd->fHeightVariationCoverage << " is invalid, it should between [0.1, 0.95]";
+        WriteLog(ss.str());
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
+
     pstRpy->enStatus = _checkInputROI(pstCmd->rectDeviceROI, pstCmd->matHeight, AT);
     if (VisionStatus::OK != pstRpy->enStatus) return pstRpy->enStatus;
 
@@ -7202,12 +7210,20 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     }
 
     for (const auto &roiCheck : pstCmd->vecRectCheckROIs) {
+        if (roiCheck.area() <= 10.f) {
+            std::stringstream ss;
+            ss << "Check ROI " << roiCheck << " is invalid";
+            WriteLog(ss.str());
+            pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+            return pstRpy->enStatus; 
+        }
+
         if (!CalcUtils::isRectInRect(roiCheck, pstCmd->rectDeviceROI)) {
             std::stringstream ss;
             ss << "Check ROI " << roiCheck << " is not inside device ROI " << pstCmd->rectDeviceROI << std::endl;
             WriteLog(ss.str());
             pstRpy->enStatus = VisionStatus::INVALID_PARAM;
-            return pstRpy->enStatus; 
+            return pstRpy->enStatus;
         }
     }
 
