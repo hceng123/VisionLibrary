@@ -723,6 +723,7 @@ void TestCalc3DHeightDiff_1() {
 }
 
 static void PrintInsp3DSolderResult(const PR_INSP_3D_SOLDER_RPY &stRpy) {
+    std::cout << std::fixed << std::setprecision(3);
     std::cout << "PR_Insp3DSolder status " << ToInt32(stRpy.enStatus) << std::endl;
     if (VisionStatus::OK == stRpy.enStatus) {
         for (const auto &result : stRpy.vecResults) {
@@ -757,6 +758,7 @@ void TestInsp3DSolder_1() {
     cv::Rect rectBase(400, 200, 200, 200);
     cv::Mat matBaseRef(stCmd.matColorImg, rectBase);
     stCmd.scalarBaseColor = cv::mean(matBaseRef);
+    stCmd.fHeightVariationCoverage = 0.75f;
 
     PR_Insp3DSolder(&stCmd, &stRpy);
     PrintInsp3DSolderResult(stRpy);
@@ -790,9 +792,10 @@ void TestInsp3DSolder_2() {
     stCmd.vecRectCheckROIs.push_back(cv::Rect(94, 14, 35, 47));
 
     stCmd.nBaseColorDiff = 20;
-    stCmd.nBaseGrayDiff = 20;
-    
+    stCmd.nBaseGrayDiff = 20;    
     stCmd.scalarBaseColor = cv::Scalar(37, 22, 5);
+
+    stCmd.fHeightVariationCoverage = 0.75f;
 
     PR_Insp3DSolder(&stCmd, &stRpy);
     PrintInsp3DSolderResult(stRpy);
@@ -825,9 +828,10 @@ void TestInsp3DSolder_3() {
     stCmd.vecRectCheckROIs.push_back(cv::Rect(26, 223, 138, 122));
 
     stCmd.nBaseColorDiff = 20;
-    stCmd.nBaseGrayDiff = 20;
-    
+    stCmd.nBaseGrayDiff = 20;    
     stCmd.scalarBaseColor = cv::Scalar(42, 25, 7);
+
+    stCmd.fHeightVariationCoverage = 0.75f;
 
     PR_Insp3DSolder(&stCmd, &stRpy);
     PrintInsp3DSolderResult(stRpy);

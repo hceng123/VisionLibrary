@@ -3375,13 +3375,12 @@ void _saveAsGray(const cv::Mat &matHeight, const std::string &strFilePath) {
             rectCheckROI = cv::Rect(rectCheckROI.y, rectCheckROI.x, rectCheckROI.height, rectCheckROI.width);
     }
 
-    const float COVERAGE = 0.75f;
     for (const auto &rectCheckROI : vecRectCheckROIs) {
         cv::Mat matCheckROI(matHeightROI, rectCheckROI), matHighMask, matMidMask, matLowMask;
         auto matCheckROIClone = matCheckROI.clone();
         VectorOfFloat vecThreshold;
         int nTopY = 0, nBtmY = 0;
-        bool bResult = _extractSolder(matCheckROIClone, COVERAGE, vecThreshold, matHighMask, matMidMask, matLowMask, nTopY, nBtmY);
+        bool bResult = _extractSolder(matCheckROIClone, pstCmd->fHeightVariationCoverage, vecThreshold, matHighMask, matMidMask, matLowMask, nTopY, nBtmY);
         if (!bResult)
             continue;
         if (ConfigInstance->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE) {
@@ -3442,6 +3441,8 @@ void _saveAsGray(const cv::Mat &matHeight, const std::string &strFilePath) {
                 cv::transpose(matDrawROIClone, matDrawROIClone);
                 cv::flip(matDrawROIClone, matDrawROIClone, 1); //transpose+flip(1)=CW
             }
+            matDrawROIClone.setTo(VisionAlgorithm::GREEN_SCALAR, matBaseMask);
+
             if (ConfigInstance->getDebugMode() == PR_DEBUG_MODE::SHOW_IMAGE) {
                 VisionAlgorithm::showImage("Result Image", pstRpy->matResultImg);
                 VisionAlgorithm::showImage("Copy source image", matDrawROIClone);
