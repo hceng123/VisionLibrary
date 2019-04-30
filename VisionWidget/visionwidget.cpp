@@ -1024,3 +1024,17 @@ void VisionWidget::on_btnRead2DCode_clicked() {
         QMessageBox::critical(nullptr, "Read 2D Code", stErrStrRpy.achErrorStr, "Quit");
     }
 }
+
+void VisionWidget::on_btnCountNonZero_clicked() {
+    if (_sourceImagePath.empty()) {
+        QMessageBox::information(this, "Vision Widget", "Please select an image first!", "Quit");
+        return;
+    }
+    ui.visionView->setState(VisionView::VISION_VIEW_STATE::TEST_VISION_LIBRARY);
+    ui.visionView->applyIntermediateResult();
+    cv::Mat matImage = ui.visionView->getMat();
+    if (matImage.channels() > 1)
+        cv::cvtColor(matImage, matImage, CV_BGR2GRAY);
+    int nonZeroCount = cv::countNonZero(matImage);
+    ui.lineEditNonZeroCount->setText(std::to_string(nonZeroCount).c_str());
+}

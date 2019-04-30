@@ -31,69 +31,50 @@ namespace Vision
     // Note even the size of Mat ix ROW * (COL - 1), but actually the background memory size is still ROW * COL
     cv::cuda::GpuMat dMap1 = CalcUtils::diff(matMap, 1, CalcUtils::DIFF_ON_X_DIR);
     cv::cuda::GpuMat dxPhase = CalcUtils::diff(matPhase, 1, CalcUtils::DIFF_ON_X_DIR);
-    
-    if (time == 1) {
-        cv::Mat matDMapCpu1, dxPhaseCpu;
-        dMap1.download(matDMapCpu1);
-        dxPhase.download(dxPhaseCpu);
-        CalcUtils::saveMatToCsv(matDMapCpu1, "C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/PhaseCorrectionCmpDMap1Gpu.csv");
-        CalcUtils::saveMatToCsv(dxPhaseCpu, "C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/PhaseCorrectionCmpDXPhaseGpu.csv");
-    }
 
     cv::cuda::GpuMat idxl1(ROWS, COLS, CV_8UC1);
     idxl1.setTo(0);
 
-    TimeLog::GetInstance()->addTimeLog("prepare for phaseCorrectionCmp X", stopWatch.Span());
+    TimeLog::GetInstance()->addTimeLog("prepare data for phaseCorrectionCmp X", stopWatch.Span());
 
     // Select in X direction
     run_kernel_select_cmp_point(2, 256,
         reinterpret_cast<float *>(dMap1.data),
         reinterpret_cast<float *>(dxPhase.data),
         idxl1.data,
+        dMap1.step1(),
         ROWS, COLS, span);
-    cudaDeviceSynchronize();
+
     TimeLog::GetInstance()->addTimeLog("run_kernel_select_cmp_point X", stopWatch.Span());
 
-    cv::Mat matIdxCpu1;
-    idxl1.download(matIdxCpu1);
-    cv::imwrite(std::string("C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/PhaseCorrectionCmpMask1_") + std::to_string(time) + ".png", matIdxCpu1);
-    int nonZeroCount1 = cv::cuda::countNonZero(idxl1);
-
     // Select in Y direction, transpose the matrix to accelerate
-    cv::cuda::GpuMat matMapT;
-    cv::cuda::transpose(matMap, matMapT);
+    cv::cuda::transpose(matMap, matMap);
     cv::cuda::GpuMat matPhaseT;
     cv::cuda::transpose(matPhase, matPhaseT);
 
-    cv::cuda::GpuMat dMap2 = CalcUtils::diff(matMapT, 1, CalcUtils::DIFF_ON_X_DIR);
+    cv::cuda::GpuMat dMap2 = CalcUtils::diff(matMap, 1, CalcUtils::DIFF_ON_X_DIR);
     cv::cuda::GpuMat dyPhase = CalcUtils::diff(matPhaseT, 1, CalcUtils::DIFF_ON_X_DIR);
     cv::cuda::GpuMat idxl2(COLS, ROWS, CV_8UC1);    // Note the indl2 is tranposed result, so the ROWS and COLS are changed
     idxl2.setTo(0);
 
-    TimeLog::GetInstance()->addTimeLog("run_kernel_select_cmp_point Y", stopWatch.Span());
+    TimeLog::GetInstance()->addTimeLog("prepare data for phaseCorrectionCmp Y", stopWatch.Span());
 
     // Select in Y direction
     run_kernel_select_cmp_point(2, 256,
         reinterpret_cast<float *>(dMap2.data),
         reinterpret_cast<float *>(dyPhase.data),
         idxl2.data,
+        dMap2.step1(),
         COLS, ROWS, span);
-    cudaDeviceSynchronize();
-    cv::Mat matIdxCpu2;
-    idxl2.download(matIdxCpu2);
-    cv::imwrite(std::string("C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/PhaseCorrectionCmpMask2_") + std::to_string(time) + ".png", matIdxCpu2);
-    int nonZeroCount2 = cv::cuda::countNonZero(idxl2);
 
     cv::cuda::transpose(idxl2, idxl2);
 
     TimeLog::GetInstance()->addTimeLog("run_kernel_select_cmp_point Y", stopWatch.Span());
 
     cv::cuda::bitwise_and(idxl1, idxl2, idxl1);
-    int nonZeroFinal = cv::cuda::countNonZero(idxl1);
-
-    std::cout << "phaseCorrectionCmp point count1 " << nonZeroCount1 << " count2 " << nonZeroCount2 << " final cout " << nonZeroFinal << std::endl;
-
     matPhase1.copyTo(matPhase, idxl1);
+
+    TimeLog::GetInstance()->addTimeLog("bitwise_and and copy data", stopWatch.Span());
 }
 
 /*static*/ void CudaAlgorithm::phaseCorrectionCmp(cv::Mat& matPhase, const cv::Mat& matPhase1, int span) {
@@ -127,6 +108,7 @@ namespace Vision
         reinterpret_cast<float *>(dMap1.data),
         reinterpret_cast<float *>(dxPhase.data),
         idxl1.data,
+        dMap1.step1(),
         ROWS, COLS, span);
     TimeLog::GetInstance()->addTimeLog("run_kernel_select_cmp_point X", stopWatch.Span());
 
@@ -156,6 +138,7 @@ namespace Vision
         reinterpret_cast<float *>(dMap2.data),
         reinterpret_cast<float *>(dyPhase.data),
         idxl2.data,
+        dMap2.step1(),
         COLS, ROWS, span);
 
     cv::imwrite(std::string("C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/PhaseCorrectionCmpMask2_") + std::to_string(time) + ".png", idxl2);

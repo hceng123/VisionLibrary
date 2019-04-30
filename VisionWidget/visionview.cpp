@@ -725,7 +725,7 @@ cv::Mat VisionView::getMask() const
 
 void VisionView::applyIntermediateResult()
 {
-    if ( !_matArray[ToInt32(DISPLAY_SOURCE::INTERMEDIATE)].empty() )
+    if (!_matArray[ToInt32(DISPLAY_SOURCE::INTERMEDIATE)].empty())
         _matArray[ToInt32(DISPLAY_SOURCE::ORIGINAL)] = _matArray[ToInt32(DISPLAY_SOURCE::INTERMEDIATE)];
 }
 

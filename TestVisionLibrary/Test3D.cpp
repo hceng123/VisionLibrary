@@ -1389,7 +1389,7 @@ void CompareHeightSame() {
 
 void CompareMask() {
     std::string strWorkingFolder("C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/");
-    cv::Mat matMask1 = cv::imread(strWorkingFolder + "Old_Alg_Mask1/PhaseCorrectionCmpMask1_1.png", cv::IMREAD_GRAYSCALE);
+    cv::Mat matMask1 = cv::imread(strWorkingFolder + "Old_Alg_Mask/PhaseCorrectionCmpMask1_1.png", cv::IMREAD_GRAYSCALE);
     cv::Mat matMask2 = cv::imread(strWorkingFolder + "PhaseCorrectionCmpMask1_1.png", cv::IMREAD_GRAYSCALE);
 
     if (matMask1.size() != matMask2.size()) {

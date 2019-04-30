@@ -19,6 +19,7 @@ void run_kernel_select_cmp_point(
     float* dMap,
     float* dPhase,
     uint8_t* matResult,
+    uint32_t step,
     const int ROWS,
     const int COLS,
     const int span);

@@ -48,6 +48,7 @@ private slots:
     void on_btnGridAvgGrayScale_clicked();
     void on_btnCameraMTF_clicked();
     void on_btnRead2DCode_clicked();
+    void on_btnCountNonZero_clicked();
 
 protected:
     bool checkDisplayImage();

@@ -120,6 +120,7 @@ void kernel_select_cmp_point(
     float* dMap,
     float* dPhase,
     uint8_t* matResult,
+    uint32_t step,
     const int ROWS,
     const int COLS,
     const int span) {
@@ -130,8 +131,8 @@ void kernel_select_cmp_point(
     int *arrayIdx2 = (int *)malloc(COLS / 4 * sizeof(int));
 
     for (int row = start; row < ROWS; row += stride) {
-        int offsetOfInput = row * COLS;
-        int offsetOfResult = row * COLS;
+        int offsetOfInput = row * step;
+        int offsetOfResult = row * step;
 
         float* dMapRow = dMap + offsetOfInput;
         float* dPhaseRow = dPhase + offsetOfInput;
@@ -162,8 +163,10 @@ void kernel_select_cmp_point(
         for (int i = 0; i < countOfIdx1 && i < countOfIdx2; ++i) {
             if (arrayIdx2[i] - arrayIdx1[i] < span) {
                 if (fabs(dPhaseRow[arrayIdx1[i]]) > 1.f && fabs(dPhaseRow[arrayIdx2[i]]) > 1.f) {
-                    for (int k = arrayIdx1[i]; k <= arrayIdx2[i]; ++k)
+                    for (int k = arrayIdx1[i]; k <= arrayIdx2[i]; ++k) {
                         matResultRow[k] = 255;
+                    }
+
                 }
             }
         }
@@ -236,9 +239,10 @@ void run_kernel_select_cmp_point(
     float* dMap,
     float* dPhase,
     uint8_t* matResult,
+    uint32_t step,
     const int ROWS,
     const int COLS,
     const int span) {
-    kernel_select_cmp_point<<<gridSize, blockSize>>>(dMap, dPhase, matResult, ROWS, COLS, span);
+    kernel_select_cmp_point<<<gridSize, blockSize>>>(dMap, dPhase, matResult, step, ROWS, COLS, span);
     //test_kernel_select_cmp_point(dMap, dPhase, matResult, ROWS, COLS, span);
 }

@@ -73,7 +73,7 @@
      </rect>
     </property>
     <property name="currentIndex">
-     <number>6</number>
+     <number>0</number>
     </property>
     <widget class="QWidget" name="tabPreProcess">
      <attribute name="title">
@@ -2936,6 +2936,64 @@
        </property>
        <property name="text">
         <string>30</string>
+       </property>
+      </widget>
+     </widget>
+     <widget class="QGroupBox" name="groupBoxCountNonZero">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>400</y>
+        <width>611</width>
+        <height>61</height>
+       </rect>
+      </property>
+      <property name="title">
+       <string>Count Non Zero</string>
+      </property>
+      <widget class="QPushButton" name="btnCountNonZero">
+       <property name="geometry">
+        <rect>
+         <x>460</x>
+         <y>30</y>
+         <width>141</width>
+         <height>23</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Count non zero count</string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="labelNonZeroCount">
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>30</y>
+         <width>91</width>
+         <height>16</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Non zero count</string>
+       </property>
+      </widget>
+      <widget class="QLineEdit" name="lineEditNonZeroCount">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
+       <property name="geometry">
+        <rect>
+         <x>100</x>
+         <y>30</y>
+         <width>121</width>
+         <height>20</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string/>
+       </property>
+       <property name="readOnly">
+        <bool>true</bool>
        </property>
       </widget>
      </widget>
