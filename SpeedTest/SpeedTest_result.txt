@@ -1,0 +1,8 @@
+START VISION LIBRARY SPEED TEST, TIME UNIT: ms
+
+------------------------------------------
+MATCH TEMPLATE SPEED TEST #1 STARTING
+------------------------------------------
+Template size: [1910 x 1007]
+Search size: [2500 x 1500]
+Repeat 10 times. Total time: 383, average time: 38

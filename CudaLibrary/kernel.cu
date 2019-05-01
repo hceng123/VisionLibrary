@@ -246,3 +246,294 @@ void run_kernel_select_cmp_point(
     kernel_select_cmp_point<<<gridSize, blockSize>>>(dMap, dPhase, matResult, step, ROWS, COLS, span);
     //test_kernel_select_cmp_point(dMap, dPhase, matResult, ROWS, COLS, span);
 }
+
+__device__
+void swapValue(int& value1, int &value2) {
+    value1 = value1 + value2;
+    value2 = value1 - value2;
+    value1 = value1 - value2;
+}
+
+__device__
+void kernel_sort_index_value(int* values, int size, int *sortedIndex) {
+    for (int i = 0; i < size; ++ i)
+        sortedIndex[i] = i;
+
+    for(int i = 0; i < size - 1; ++ i) {
+        for (int j = i + 1; j < size; ++j) {
+            if (values[i] > values[j]) {
+                swapValue(values[i], values[j]);
+                swapValue(sortedIndex[i], sortedIndex[j]);
+            }
+        }
+    }
+}
+
+__global__
+void kernel_phase_correction(
+    float* phaseDiff,
+    float* phase,
+    uint32_t step,
+    const int ROWS,
+    const int COLS,
+    const int span) {
+    int start = blockIdx.x * blockDim.x + threadIdx.x;
+    int stride = blockDim.x * gridDim.x;
+
+    const float ONE_HALF_CYCLE = 1.f;
+    const float ONE_CYCLE = 2.f;
+
+    char* vecSignOfRow = (char*)malloc(COLS * sizeof(char));
+    char* vecAmplOfRow = (char*)malloc(COLS * sizeof(char));
+    int* vecJumpCol = (int*)malloc(COLS / 4 * sizeof(int));
+    int* vecJumpSpan = (int*)malloc(COLS / 4 * sizeof(int));
+    int* vecSortedJumpSpanIdx = (int*)malloc(COLS / 4 * sizeof(int));
+    int* vecJumpIdxNeedToHandle = (int*)malloc(COLS / 4 * sizeof(int));
+
+    for (int row = start; row < ROWS; row += stride) {
+        int offsetOfData = row * step;
+
+        bool bRowWithPosJump = false, bRowWithNegJump = false;
+        memset(vecSignOfRow, 0, COLS);
+        memset(vecAmplOfRow, 0, COLS);
+
+        float* phaseDiffRow = phaseDiff + offsetOfData;
+        float* phaseRow = phase + offsetOfData;
+
+        for (int col = 0; col < COLS - 1; ++col) {
+            auto value = phaseDiffRow[col];
+            if (value > ONE_HALF_CYCLE) {
+                vecSignOfRow[col] = 1;
+                bRowWithPosJump = true;
+
+                char nJumpAmplitude = static_cast<char> (ceil(fabs(value) / 2.f) * 2);
+                vecAmplOfRow[col] = nJumpAmplitude;
+            }
+
+            else if (value < -ONE_HALF_CYCLE) {
+                vecSignOfRow[col] = -1;
+                bRowWithNegJump = true;
+
+                char nJumpAmplitude = static_cast<char> (std::ceil(std::abs(value) / 2.f) * 2);
+                vecAmplOfRow[col] = nJumpAmplitude;
+            }
+        }
+
+        if (!bRowWithPosJump || !bRowWithNegJump)
+            continue;
+
+        for (int kk = 0; kk < 2; ++ kk) {
+            int jumpColCount = 0, jumpSpanCount = 0, jumpIdxNeedToHandleCount = 0;
+            for (int col = 0; col < COLS; ++col) {
+                if (vecSignOfRow[col] != 0)
+                    vecJumpCol[jumpColCount++] = col;
+            }
+            if (jumpColCount < 2)
+                continue;
+
+            for (size_t i = 1; i < jumpColCount; ++i)
+                vecJumpSpan[jumpSpanCount++] = vecJumpCol[i] - vecJumpCol[i - 1];
+            kernel_sort_index_value(vecJumpSpan, jumpSpanCount, vecSortedJumpSpanIdx);
+            for (int i = 0; i < jumpSpanCount; ++i) {
+                if (vecJumpSpan[i] < span)
+                    vecJumpIdxNeedToHandle[jumpIdxNeedToHandleCount++] = i;
+            }
+
+            for (size_t jj = 0; jj < jumpIdxNeedToHandleCount; ++jj) {
+                auto nStart = vecJumpCol[vecSortedJumpSpanIdx[jj]];
+                auto nEnd = vecJumpCol[vecSortedJumpSpanIdx[jj] + 1];
+                char chSignFirst = vecSignOfRow[nStart];        //The index is hard to understand. Use the sorted span index to find the original column.
+                char chSignSecond = vecSignOfRow[nEnd];
+
+                char chAmplFirst = vecAmplOfRow[nStart];
+                char chAmplSecond = vecAmplOfRow[nEnd];
+                char chTurnAmpl = min(chAmplFirst, chAmplSecond) / 2;
+                if (chSignFirst * chSignSecond == -1) { //it is a pair
+                    char chAmplNew = chAmplFirst - 2 * chTurnAmpl;
+                    vecAmplOfRow[nStart] = chAmplNew;
+                    if (chAmplNew <= 0)
+                        vecSignOfRow[nStart] = 0;  // Remove the sign of jump flag.
+
+                    chAmplNew = chAmplSecond - 2 * chTurnAmpl;
+                    vecAmplOfRow[nEnd] = chAmplNew;
+                    if (chAmplNew <= 0)
+                        vecSignOfRow[nEnd] = 0;
+
+                    auto startValue = phaseRow[nStart];
+                    for (int col = nStart + 1; col <= nEnd; ++col) {
+                        phaseRow[col] -= chSignFirst * ONE_CYCLE * chTurnAmpl;
+                        if (chSignFirst > 0 && phaseRow[col] < startValue) { //Jump up, need to roll down, but can not over roll
+                            phaseRow[col] = startValue;
+                        }
+                        else if (chSignFirst < 0 && phaseRow[col] > startValue) { //Jump down, need to roll up
+                            phaseRow[col] = startValue;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    free(vecSignOfRow);
+    free(vecAmplOfRow);
+    free(vecJumpCol);
+    free(vecJumpSpan);
+    free(vecSortedJumpSpanIdx);
+    free(vecJumpIdxNeedToHandle);
+}
+
+void cpuSwapValue(int& value1, int &value2) {
+    value1 = value1 + value2;
+    value2 = value1 - value2;
+    value1 = value1 - value2;
+}
+
+void cpu_sort_index_value(int* values, int size, int *sortedIndex) {
+    for (int i = 0; i < size; ++ i)
+        sortedIndex[i] = i;
+
+    for(int i = 0; i < size - 1; ++ i) {
+        for (int j = i + 1; j < size; ++j) {
+            if (values[i] > values[j]) {
+                cpuSwapValue(values[i], values[j]);
+                cpuSwapValue(sortedIndex[i], sortedIndex[j]);
+            }
+        }
+    }
+}
+
+void cpu_kernel_phase_correction(
+    float* phaseDiff,
+    float* phase,
+    uint32_t step,
+    const int ROWS,
+    const int COLS,
+    const int span) {
+    int start = 0;
+    int stride = 1;
+
+    const float ONE_HALF_CYCLE = 1.f;
+    const float ONE_CYCLE = 2.f;
+
+    char* vecSignOfRow = (char*)malloc(COLS * sizeof(char));
+    char* vecAmplOfRow = (char*)malloc(COLS * sizeof(char));
+    int* vecJumpCol = (int*)malloc(COLS / 4 * sizeof(int));
+    int* vecJumpSpan = (int*)malloc(COLS / 4 * sizeof(int));
+    int* vecSortedJumpSpanIdx = (int*)malloc(COLS / 4 * sizeof(int));
+    int* vecJumpIdxNeedToHandle = (int*)malloc(COLS / 4 * sizeof(int));
+
+    const int DEBUG_ROW = 1588;
+
+    for (int row = start; row < ROWS; row += stride) {
+        int offsetOfData = row * step;
+
+        bool bRowWithPosJump = false, bRowWithNegJump = false;
+        memset(vecSignOfRow, 0, COLS);
+        memset(vecAmplOfRow, 0, COLS);
+
+        float* phaseDiffRow = phaseDiff + offsetOfData;
+        float* phaseRow = phase + row * COLS;
+
+        for (int col = 0; col < COLS - 1; ++col) {
+            auto value = phaseDiffRow[col];
+            if (value > ONE_HALF_CYCLE) {
+                vecSignOfRow[col] = 1;
+                bRowWithPosJump = true;
+
+                char nJumpAmplitude = static_cast<char> (ceil(fabs(value) / 2.f) * 2);
+                vecAmplOfRow[col] = nJumpAmplitude;
+            }
+
+            else if (value < -ONE_HALF_CYCLE) {
+                vecSignOfRow[col] = -1;
+                bRowWithNegJump = true;
+
+                char nJumpAmplitude = static_cast<char> (std::ceil(std::abs(value) / 2.f) * 2);
+                vecAmplOfRow[col] = nJumpAmplitude;
+            }
+        }
+
+        if (!bRowWithPosJump || !bRowWithNegJump)
+            continue;
+
+        for (int kk = 0; kk < 2; ++ kk) {
+            int jumpColCount = 0, jumpSpanCount = 0, jumpIdxNeedToHandleCount = 0;
+            for (int col = 0; col < COLS; ++col) {
+                if (vecSignOfRow[col] != 0)
+                    vecJumpCol[jumpColCount++] = col;
+            }
+            if (jumpColCount < 2)
+                continue;
+
+            for (size_t i = 1; i < jumpColCount; ++i)
+                vecJumpSpan[jumpSpanCount++] = vecJumpCol[i] - vecJumpCol[i - 1];
+            cpu_sort_index_value(vecJumpSpan, jumpSpanCount, vecSortedJumpSpanIdx);
+            for (int i = 0; i < jumpSpanCount; ++i) {
+                if (vecJumpSpan[i] < span)
+                    vecJumpIdxNeedToHandle[jumpIdxNeedToHandleCount++] = i;
+            }
+
+            if (DEBUG_ROW == row) {
+                printf("jumpColCount = %d, jumpSpanCount = %d, jumpIdxNeedToHandleCount = %d\n", jumpColCount, jumpSpanCount, jumpIdxNeedToHandleCount);
+                for (size_t jj = 0; jj < jumpIdxNeedToHandleCount; ++jj) {
+                    auto nStart = vecJumpCol[vecSortedJumpSpanIdx[jj]];
+                    auto nEnd = vecJumpCol[vecSortedJumpSpanIdx[jj] + 1];
+                    printf("%d %d\n", nStart, nEnd);
+                }
+            }
+
+            for (size_t jj = 0; jj < jumpIdxNeedToHandleCount; ++jj) {
+                auto nStart = vecJumpCol[vecSortedJumpSpanIdx[jj]];
+                auto nEnd = vecJumpCol[vecSortedJumpSpanIdx[jj] + 1];
+                char chSignFirst = vecSignOfRow[nStart];        //The index is hard to understand. Use the sorted span index to find the original column.
+                char chSignSecond = vecSignOfRow[nEnd];
+
+                char chAmplFirst = vecAmplOfRow[nStart];
+                char chAmplSecond = vecAmplOfRow[nEnd];
+                char chTurnAmpl = min(chAmplFirst, chAmplSecond) / 2;
+                if (chSignFirst * chSignSecond == -1) { //it is a pair
+                    char chAmplNew = chAmplFirst - 2 * chTurnAmpl;
+                    vecAmplOfRow[nStart] = chAmplNew;
+                    if (chAmplNew <= 0)
+                        vecSignOfRow[nStart] = 0;  // Remove the sign of jump flag.
+
+                    chAmplNew = chAmplSecond - 2 * chTurnAmpl;
+                    vecAmplOfRow[nEnd] = chAmplNew;
+                    if (chAmplNew <= 0)
+                        vecSignOfRow[nEnd] = 0;
+
+                    auto startValue = phaseRow[nStart];
+                    for (int col = nStart + 1; col <= nEnd; ++col) {
+                        phaseRow[col] -= chSignFirst * ONE_CYCLE * chTurnAmpl;
+                        if (chSignFirst > 0 && phaseRow[col] < startValue) { //Jump up, need to roll down, but can not over roll
+                            phaseRow[col] = startValue;
+                        }
+                        else if (chSignFirst < 0 && phaseRow[col] > startValue) { //Jump down, need to roll up
+                            phaseRow[col] = startValue;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    free(vecSignOfRow);
+    free(vecAmplOfRow);
+    free(vecJumpCol);
+    free(vecJumpSpan);
+    free(vecSortedJumpSpanIdx);
+    free(vecJumpIdxNeedToHandle);
+}
+
+void run_kernel_phase_correction(
+    uint32_t gridSize,
+    uint32_t blockSize,
+    float* phaseDiff,
+    float* phase,
+    uint32_t step,
+    const int ROWS,
+    const int COLS,
+    const int span) {
+    kernel_phase_correction<<<gridSize, blockSize>>>(phaseDiff, phase, step, ROWS, COLS, span);
+    //cpu_kernel_phase_correction(phaseDiff, phase, step, ROWS, COLS, span);
+}

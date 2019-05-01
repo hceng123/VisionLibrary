@@ -113,3 +113,5 @@ void ConvertRestoreCsvToYml();
 void TestTableMappingAndCombineImage();
 
 void TestGenerateSelectedImage();
+
+void TestSortIndexValue();

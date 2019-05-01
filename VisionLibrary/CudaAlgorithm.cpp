@@ -16,6 +16,8 @@ namespace AOI
 namespace Vision
 {
 
+///*static*/ cv::cuda::Stream CudaAlgorithm::m_cudaStreams[NUM_OF_DLP];
+
 /*static*/ void CudaAlgorithm::phaseCorrectionCmp(cv::cuda::GpuMat& matPhase, const cv::cuda::GpuMat& matPhase1, int span) {
     CStopWatch stopWatch;
     const int ROWS = matPhase.rows;
@@ -154,6 +156,326 @@ namespace Vision
     std::cout << "phaseCorrectionCmp point count1 " << nonZeroCount1 << " count2 " << nonZeroCount2 << " final cout " << nonZeroFinal << std::endl;
 
     matPhase1.copyTo(matPhase, idxl1);
+}
+
+/*static*/ void CudaAlgorithm::phaseCorrection(cv::cuda::GpuMat &matPhase, int nJumpSpanX, int nJumpSpanY) {
+    CStopWatch stopWatch;
+    const int ROWS = matPhase.rows;
+    const int COLS = matPhase.cols;
+    
+    //X direction
+    if (nJumpSpanX > 0) {
+        cv::cuda::GpuMat matPhaseDiff = CalcUtils::diff(matPhase, 1, CalcUtils::DIFF_ON_X_DIR);
+        run_kernel_phase_correction(2, 256,
+            reinterpret_cast<float *>(matPhaseDiff.data),
+            reinterpret_cast<float *>(matPhase.data),
+            matPhaseDiff.step1(),
+            ROWS, COLS, nJumpSpanX);
+        TimeLog::GetInstance()->addTimeLog("run_kernel_phase_correction for X", stopWatch.Span());
+    }
+
+    // Y direction
+    if (nJumpSpanY > 0) {
+        cv::cuda::transpose(matPhase, matPhase);
+        TimeLog::GetInstance()->addTimeLog("cv::cuda::transpose for Y", stopWatch.Span());
+        cv::cuda::GpuMat matPhaseDiff = CalcUtils::diff(matPhase, 1, CalcUtils::DIFF_ON_X_DIR);
+        run_kernel_phase_correction(2, 256,
+            reinterpret_cast<float *>(matPhaseDiff.data),
+            reinterpret_cast<float *>(matPhase.data),
+            matPhaseDiff.step1(),
+            COLS, ROWS, nJumpSpanY);
+        TimeLog::GetInstance()->addTimeLog("run_kernel_phase_correction for Y", stopWatch.Span());
+
+        cv::cuda::transpose(matPhase, matPhase);
+        TimeLog::GetInstance()->addTimeLog("cv::cuda::transpose back", stopWatch.Span());
+    }
+}
+
+///*static*/ void CudaAlgorithm::phaseCorrection(cv::Mat &matPhase, int nJumpSpanX, int nJumpSpanY) {
+//    CStopWatch stopWatch;
+//    const int ROWS = matPhase.rows;
+//    const int COLS = matPhase.cols;
+//    
+//    static int time = 0;
+//    time ++;
+//
+//    //X direction
+//    if (nJumpSpanX > 0) {
+//        cv::Mat matPhaseClone = matPhase.clone();
+//
+//        cv::Mat matPhaseDiff = CalcUtils::diff(matPhase, 1, CalcUtils::DIFF_ON_X_DIR);
+//        std::cout << "matPhaseDiff step " << matPhaseDiff.step1() << ", matPhase step " << matPhase.step1() << std::endl;
+//        run_kernel_phase_correction(2, 256,
+//            reinterpret_cast<float *>(matPhaseDiff.data),
+//            reinterpret_cast<float *>(matPhase.data),
+//            matPhaseDiff.step1(),
+//            ROWS, COLS, nJumpSpanX);
+//        TimeLog::GetInstance()->addTimeLog("phaseCorrection in x direction.", stopWatch.Span());
+//
+//        if (time == 1) {
+//            cv::Mat matDiff;
+//            cv::absdiff(matPhase, matPhaseClone, matDiff);
+//            cv::Mat matMask = matDiff > 0.01f;
+//            cv::imwrite("C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/CompareXPhaseCorrectionResultCpu1.png", matMask);
+//        }
+//    }
+//
+//    // Y direction
+//    if (nJumpSpanY > 0) {
+//        cv::Mat matPhaseClone = matPhase.clone();
+//
+//        cv::transpose(matPhase, matPhase);
+//        cv::Mat matPhaseDiff = CalcUtils::diff(matPhase, 1, CalcUtils::DIFF_ON_X_DIR);
+//        std::cout << "matPhaseDiff step " << matPhaseDiff.step1() << ", matPhase step " << matPhase.step1() << std::endl;
+//        run_kernel_phase_correction(2, 256,
+//            reinterpret_cast<float *>(matPhaseDiff.data),
+//            reinterpret_cast<float *>(matPhase.data),
+//            matPhaseDiff.step1(),
+//            COLS, ROWS, nJumpSpanY);
+//        cv::transpose(matPhase, matPhase);
+//        TimeLog::GetInstance()->addTimeLog("phaseCorrection in y direction.", stopWatch.Span());
+//
+//        if (time == 1) {
+//            cv::Mat matDiff;
+//            cv::absdiff(matPhase, matPhaseClone, matDiff);
+//            cv::Mat matMask = matDiff > 0.01f;
+//            cv::imwrite("C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/CompareYPhaseCorrectionResultCpu1.png", matMask);
+//        }
+//    }
+//}
+
+/*static*/ void CudaAlgorithm::phaseCorrection(cv::Mat &matPhase, int nJumpSpanX, int nJumpSpanY) {
+    CStopWatch stopWatch;
+    const int ROWS = matPhase.rows;
+    const int COLS = matPhase.cols;
+
+    const float ONE_HALF_CYCLE = 1.f;
+    const float ONE_CYCLE = ONE_HALF_CYCLE * 2;
+    const int DEBUG_ROW = 1588;
+
+    static int time = 0;
+    time++;
+
+    //X direction
+    if (nJumpSpanX > 0) {
+        cv::Mat matPhaseClone = matPhase.clone();
+
+        cv::Mat matPhaseDiff = CalcUtils::diff(matPhase, 1, 2);
+        std::vector<char> vecSignOfRow(COLS, 0);
+        std::vector<char> vecAmplOfRow(COLS, 0);
+#ifdef _DEBUG
+        //CalcUtils::saveMatToCsv ( matPhase, "./data/HaoYu_20171114/test1/NewLens2/BeforePhaseCorrectionX.csv");
+        auto vecVecPhase = CalcUtils::matToVector<float>(matPhase);
+        auto vecVecPhaseDiff = CalcUtils::matToVector<float>(matPhaseDiff);
+#endif
+        std::vector<int> vecRowsWithJump;
+        for (int row = 0; row < matPhaseDiff.rows; ++ row) {
+            bool bRowWithPosJump = false, bRowWithNegJump = false;
+            std::fill(vecSignOfRow.begin(), vecSignOfRow.end(), 0);
+            std::fill(vecAmplOfRow.begin(), vecAmplOfRow.end(), 0);
+
+            for (int col = 0; col < matPhaseDiff.cols; ++col) {
+                auto value = matPhaseDiff.at<float>(row, col);
+                if (value > ONE_HALF_CYCLE) {
+                    vecSignOfRow[col] = 1;
+                    bRowWithPosJump = true;
+
+                    char nJumpAmplitude = static_cast<char> (std::ceil(std::abs(value) / 2.f) * 2);
+                    vecAmplOfRow[col] = nJumpAmplitude;
+                }
+                else if (value < -ONE_HALF_CYCLE) {
+                    vecSignOfRow[col] = -1;
+                    bRowWithNegJump = true;
+
+                    char nJumpAmplitude = static_cast<char> (std::ceil(std::abs(value) / 2.f) * 2);
+                    vecAmplOfRow[col] = nJumpAmplitude;
+                }
+            }
+
+            if (!bRowWithPosJump || !bRowWithNegJump)
+                continue;
+
+            for (int kk = 0; kk < 2; ++ kk) {
+                std::vector<int> vecJumpCol, vecJumpSpan, vecJumpIdxNeedToHandle;
+                vecJumpCol.reserve(20);
+                for (int col = 0; col < COLS; ++col) {
+                    if (vecSignOfRow[col] != 0)
+                        vecJumpCol.push_back(col);
+                }
+                if (vecJumpCol.size() < 2)
+                    continue;
+                vecJumpSpan.reserve(vecJumpCol.size() - 1);
+                for (size_t i = 1; i < vecJumpCol.size(); ++ i)
+                    vecJumpSpan.push_back(vecJumpCol[i] - vecJumpCol[i - 1]);
+                auto vecSortedJumpSpanIdx = CalcUtils::sort_index_value<int>(vecJumpSpan);
+                for (int i = 0; i < ToInt32(vecJumpSpan.size()); ++i) {
+                    if (vecJumpSpan[i] < nJumpSpanX)
+                        vecJumpIdxNeedToHandle.push_back(i);
+                }
+
+                if (DEBUG_ROW == row) {
+                    printf("jumpColCount = %d, jumpSpanCount = %d, jumpIdxNeedToHandleCount = %d\n", vecJumpCol.size(), vecJumpSpan.size(), vecJumpIdxNeedToHandle.size());
+                    for (size_t jj = 0; jj < vecJumpIdxNeedToHandle.size(); ++jj) {
+                        auto nStart = vecJumpCol[vecSortedJumpSpanIdx[jj]];
+                        auto nEnd = vecJumpCol[vecSortedJumpSpanIdx[jj] + 1];
+                        printf("%d %d\n", nStart, nEnd);
+                    }
+                }
+
+                for (size_t jj = 0; jj < vecJumpIdxNeedToHandle.size(); ++ jj) {
+                    auto nStart = vecJumpCol[vecSortedJumpSpanIdx[jj]];
+                    auto nEnd = vecJumpCol[vecSortedJumpSpanIdx[jj] + 1];
+                    char chSignFirst = vecSignOfRow[nStart];        //The index is hard to understand. Use the sorted span index to find the original column.
+                    char chSignSecond = vecSignOfRow[nEnd];
+
+                    char chAmplFirst = vecAmplOfRow[nStart];
+                    char chAmplSecond = vecAmplOfRow[nEnd];
+                    char chTurnAmpl = std::min(chAmplFirst, chAmplSecond) / 2;
+                    if (chSignFirst * chSignSecond == -1) { //it is a pair
+                        char chAmplNew = chAmplFirst - 2 * chTurnAmpl;
+                        vecAmplOfRow[nStart] = chAmplNew;
+                        if (chAmplNew <= 0)
+                            vecSignOfRow[nStart] = 0;  // Remove the sign of jump flag.
+
+                        chAmplNew = chAmplSecond - 2 * chTurnAmpl;
+                        vecAmplOfRow[nEnd] = chAmplNew;
+                        if (chAmplNew <= 0)
+                            vecSignOfRow[nEnd] = 0;
+
+                        auto startValue = matPhase.at<float>(row, nStart);
+                        for (int col = nStart + 1; col <= nEnd; ++ col) {
+                            auto &value = matPhase.at<float>(row, col);
+                            value -= chSignFirst * ONE_CYCLE * chTurnAmpl;
+                            if (chSignFirst > 0 && value < startValue) { //Jump up, need to roll down, but can not over roll
+                                value = startValue;
+                            }
+                            else if (chSignFirst < 0 && value > startValue) { //Jump down, need to roll up
+                                value = startValue;
+                            }
+                            else {
+                                auto i = value; //Just for debug, no usage.
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        TimeLog::GetInstance()->addTimeLog("phaseCorrection in x direction.", stopWatch.Span());
+
+        if (time == 1) {
+            cv::Mat matDiff;
+            cv::absdiff(matPhase, matPhaseClone, matDiff);
+            cv::Mat matMask = matDiff > 0.01f;
+            cv::imwrite("C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/CompareXPhaseCorrectionResultCpu.png", matMask);
+        }
+    }
+
+    // Y direction
+    if (nJumpSpanY > 0) {
+        cv::Mat matPhaseClone = matPhase.clone();
+
+        cv::Mat matPhaseDiff = CalcUtils::diff(matPhase, 1, 1);
+#ifdef _DEBUG
+        //CalcUtils::saveMatToCsv ( matPhase, "./data/HaoYu_20171114/test5/NewLens2/BeforePhaseCorrectionY.csv");
+        auto vecVecPhase = CalcUtils::matToVector<float>(matPhase);
+        auto vecVecPhaseDiff = CalcUtils::matToVector<float>(matPhaseDiff);
+#endif
+        cv::Mat matDiffSign = cv::Mat::zeros(ROWS, COLS, CV_8SC1);
+        cv::Mat matDiffAmpl = cv::Mat::zeros(ROWS, COLS, CV_8SC1);
+        std::vector<int> vecColsWithJump;
+        for (int col = 0; col < matPhaseDiff.cols; ++ col) {
+            bool bColWithPosJump = false, bColWithNegJump = false;
+            for (int row = 0; row < matPhaseDiff.rows; ++row) {
+                auto value = matPhaseDiff.at<float>(row, col);
+                if (value > ONE_HALF_CYCLE) {
+                    matDiffSign.at<char>(row, col) = 1;
+                    bColWithPosJump = true;
+                }
+                else if (value < -ONE_HALF_CYCLE) {
+                    matDiffSign.at<char>(row, col) = -1;
+                    bColWithNegJump = true;
+                }
+
+                if (std::abs(value) > ONE_HALF_CYCLE) {
+                    char nJumpAmplitude = static_cast<char> (std::ceil(std::abs(value) / 2.f) * 2);
+                    matDiffAmpl.at<char>(row, col) = nJumpAmplitude;
+                }
+            }
+
+            if (!bColWithPosJump && !bColWithNegJump)
+                continue;
+
+            cv::Mat matSignOfCol = cv::Mat(matDiffSign, cv::Range::all(), cv::Range(col, col + 1)).clone();
+            char *ptrSignOfCol = matSignOfCol.ptr<char>(0);
+            cv::Mat matAmplOfCol = cv::Mat(matDiffAmpl, cv::Range::all(), cv::Range(col, col + 1)).clone();
+            char *ptrAmplOfCol = matAmplOfCol.ptr<char>(0);
+
+            for (int kk = 0; kk < 2; ++ kk) {
+                std::vector<int> vecJumpRow, vecJumpSpan, vecJumpIdxNeedToHandle;
+                vecJumpRow.reserve(20);
+                for (int row = 0; row < ROWS; ++row) {
+                    if (ptrSignOfCol[row] != 0)
+                        vecJumpRow.push_back(row);
+                }
+                if (vecJumpRow.size() < 2)
+                    continue;
+                vecJumpSpan.reserve(vecJumpRow.size() - 1);
+                for (size_t i = 1; i < vecJumpRow.size(); ++ i)
+                    vecJumpSpan.push_back(vecJumpRow[i] - vecJumpRow[i - 1]);
+                auto vecSortedJumpSpanIdx = CalcUtils::sort_index_value<int>(vecJumpSpan);
+                for (int i = 0; i < ToInt32(vecJumpSpan.size()); ++i) {
+                    if (vecJumpSpan[i] < nJumpSpanY)
+                        vecJumpIdxNeedToHandle.push_back(i);
+                }
+
+                for (size_t jj = 0; jj < vecJumpIdxNeedToHandle.size(); ++ jj) {
+                    auto nStart = vecJumpRow[vecSortedJumpSpanIdx[jj]];
+                    auto nEnd = vecJumpRow[vecSortedJumpSpanIdx[jj] + 1];
+                    char chSignFirst = ptrSignOfCol[nStart];        //The index is hard to understand. Use the sorted span index to find the original column.
+                    char chSignSecond = ptrSignOfCol[nEnd];
+
+                    char chAmplFirst = ptrAmplOfCol[nStart];
+                    char chAmplSecond = ptrAmplOfCol[nEnd];
+                    char chTurnAmpl = std::min(chAmplFirst, chAmplSecond) / 2;
+                    if (chSignFirst * chSignSecond == -1) { //it is a pair
+                        char chAmplNew = chAmplFirst - 2 * chTurnAmpl;
+                        ptrAmplOfCol[nStart] = chAmplNew;
+                        if (chAmplNew <= 0)
+                            ptrSignOfCol[nStart] = 0;  // Remove the sign of jump flag.
+
+                        chAmplNew = chAmplSecond - 2 * chTurnAmpl;
+                        ptrAmplOfCol[nEnd] = chAmplNew;
+                        if (chAmplNew <= 0)
+                            ptrSignOfCol[nEnd] = 0;
+
+                        auto startValue = matPhase.at<float>(nStart, col);
+                        for (int row = nStart + 1; row <= nEnd; ++row) {
+                            auto &value = matPhase.at<float>(row, col);
+                            value -= chSignFirst * ONE_CYCLE * chTurnAmpl;
+                            if (chSignFirst > 0 && value < startValue) { //Jump up, need to roll down, but can not over roll
+                                value = startValue;
+                            }
+                            else if (chSignFirst < 0 && value > startValue) { //Jump down, need to roll up
+                                value = startValue;
+                            }
+                            else {
+                                auto i = value; //Just for debug, no usage.
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        TimeLog::GetInstance()->addTimeLog("phaseCorrection in y direction.", stopWatch.Span());
+
+         if (time == 1) {
+            cv::Mat matDiff;
+            cv::absdiff(matPhase, matPhaseClone, matDiff);
+            cv::Mat matMask = matDiff > 0.01f;
+            cv::imwrite("C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/CompareYPhaseCorrectionResultCpu.png", matMask);
+        }
+    }
 }
 
 /*static*/ cv::Mat CudaAlgorithm::mergeHeightIntersect(cv::Mat matHeightOne, cv::Mat matNanMaskOne, cv::Mat matHeightTwo, cv::Mat matNanMaskTwo, float fDiffThreshold, PR_DIRECTION enProjDir) {

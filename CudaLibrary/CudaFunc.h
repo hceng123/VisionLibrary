@@ -24,4 +24,14 @@ void run_kernel_select_cmp_point(
     const int COLS,
     const int span);
 
+void run_kernel_phase_correction(
+    uint32_t gridSize,
+    uint32_t blockSize,
+    float* phaseDiff,
+    float* phase,
+    uint32_t step,
+    const int ROWS,
+    const int COLS,
+    const int span);
+
 #endif

@@ -315,3 +315,57 @@ void TestGenerateSelectedImage() {
         cv::imwrite(strResultName, matImage);
     }
 }
+
+template<typename T>
+static std::vector<size_t> sort_index_value(std::vector<T> &v) {
+    // initialize original index locations
+    std::vector<size_t> idx(v.size());
+    std::iota(idx.begin(), idx.end(), 0);
+
+    // sort indexes based on comparing values in v
+    sort(idx.begin(), idx.end(),
+        [&v](size_t i1, size_t i2) { return v[i1] < v[i2]; });
+
+    std::vector<T> vClone(v);
+    for (size_t i = 0; i < idx.size(); ++i)
+        v[i] = vClone[idx[i]];
+    return idx;
+}
+
+void swapValue(int& value1, int &value2) {
+    value1 = value1 + value2;
+    value2 = value1 - value2;
+    value1 = value1 - value2;
+}
+
+void kernel_sort_index_value(int* values, int size, int *sortedIndex) {
+    for (int i = 0; i < size; ++ i)
+        sortedIndex[i] = i;
+
+    for(int i = 0; i < size - 1; ++ i) {
+        for (int j = i + 1; j < size; ++j) {
+            if (values[i] > values[j]) {
+                swapValue(values[i], values[j]);
+                swapValue(sortedIndex[i], sortedIndex[j]);
+            }
+        }
+    }
+}
+
+void TestSortIndexValue() {
+    const int SIZE = 10;
+    int values[SIZE] = {5,3,8,12,7,67,15,40,9,2};
+    int sortedIndex[SIZE];
+    kernel_sort_index_value(values, SIZE, sortedIndex);
+
+    std::cout << "kernel_sort_index_value test result: " << std::endl;
+    for (int i = 0; i < SIZE; ++i) {
+        std::cout << values[i] << " ";
+    }
+    std::cout << std::endl;
+
+    for (int i = 0; i < SIZE; ++i) {
+        std::cout << sortedIndex[i] << " ";
+    }
+    std::cout << std::endl;
+}

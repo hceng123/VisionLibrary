@@ -473,7 +473,7 @@ static void TestPhaseCorrection() {
     cv::Mat matPhase = CalcUtils::vectorToMat<float>(vecVecPhase);
     std::cout << "Phase Correction input: " << std::endl;
     printfMat<float>(matPhase);
-    Unwrap::phaseCorrection(matPhase, cv::Mat(), 5, 5);
+    Unwrap::phaseCorrection(matPhase, 5, 5);
     std::cout << "Phase Correction result: " << std::endl;
     printfMat<float>(matPhase);
 }

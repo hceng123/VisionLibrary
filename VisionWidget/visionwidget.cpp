@@ -90,8 +90,8 @@ bool VisionWidget::checkDisplayImage() {
     return true;
 }
 
-void VisionWidget::on_selectImageBtn_clicked() {
-    QFileDialog dialog(this);
+QString VisionWidget::_selectImage() {
+     QFileDialog dialog(this);
     dialog.setFileMode(QFileDialog::AnyFile);
     dialog.setAcceptMode(QFileDialog::AcceptOpen);
     dialog.setNameFilter(tr("Image Files (*.png *.jpg *.bmp)"));
@@ -101,10 +101,17 @@ void VisionWidget::on_selectImageBtn_clicked() {
         fileNames = dialog.selectedFiles();
     }
     else
+        return "";
+    return fileNames[0];
+}
+
+void VisionWidget::on_selectImageBtn_clicked() {
+    auto selectedImage = _selectImage();
+    if (selectedImage.isEmpty())
         return;
 
-    _sourceImagePath = fileNames[0].toStdString();
-    ui.imagePathEdit->setText(fileNames[0]);
+    _sourceImagePath = selectedImage.toStdString();
+    ui.imagePathEdit->setText(selectedImage);
 
     on_checkBoxByerFormat_clicked(ui.checkBoxByerFormat->isChecked());
 }
@@ -1026,15 +1033,44 @@ void VisionWidget::on_btnRead2DCode_clicked() {
 }
 
 void VisionWidget::on_btnCountNonZero_clicked() {
-    if (_sourceImagePath.empty()) {
-        QMessageBox::information(this, "Vision Widget", "Please select an image first!", "Quit");
-        return;
-    }
-    ui.visionView->setState(VisionView::VISION_VIEW_STATE::TEST_VISION_LIBRARY);
-    ui.visionView->applyIntermediateResult();
     cv::Mat matImage = ui.visionView->getMat();
     if (matImage.channels() > 1)
         cv::cvtColor(matImage, matImage, CV_BGR2GRAY);
     int nonZeroCount = cv::countNonZero(matImage);
     ui.lineEditNonZeroCount->setText(std::to_string(nonZeroCount).c_str());
+}
+
+void VisionWidget::on_selectCmpImageBtn1_clicked() {
+    auto selectedImage = _selectImage();
+    if (selectedImage.isEmpty())
+        return;
+
+    ui.lineEditCmpImagePath1->setText(selectedImage);
+}
+
+void VisionWidget::on_selectCmpImageBtn2_clicked() {
+    auto selectedImage = _selectImage();
+    if (selectedImage.isEmpty())
+        return;
+
+    ui.lineEditCmpImagePath2->setText(selectedImage);
+}
+
+void VisionWidget::on_btnCmpImage_clicked() {
+    cv::Mat matImage1 = cv::imread(ui.lineEditCmpImagePath1->text().toStdString(), cv::IMREAD_GRAYSCALE);
+    if (matImage1.empty()) {
+         QMessageBox::critical(nullptr, "Compare Image", "Failed to read image 1", "Quit");
+         return;
+    }
+
+    cv::Mat matImage2 = cv::imread(ui.lineEditCmpImagePath2->text().toStdString(), cv::IMREAD_GRAYSCALE);
+    if (matImage2.empty()) {
+         QMessageBox::critical(nullptr, "Compare Image", "Failed to read image 2", "Quit");
+         return;
+    }
+
+    cv::Mat matDiff;
+    cv::compare(matImage1, matImage2, matDiff, cv::CmpTypes::CMP_NE);
+    cv::cvtColor(matDiff, matDiff, CV_GRAY2BGR);
+    ui.visionView->setMat(VisionView::DISPLAY_SOURCE::ORIGINAL, matDiff);
 }

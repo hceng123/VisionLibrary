@@ -46,7 +46,7 @@ public:
     static void calc3DHeightDiff(const PR_CALC_3D_HEIGHT_DIFF_CMD *const pstCmd, PR_CALC_3D_HEIGHT_DIFF_RPY *const pstRpy);
     static void calcMTF(const PR_CALC_MTF_CMD *const pstCmd, PR_CALC_MTF_RPY *const pstRpy);
     static void calcPD(const PR_CALC_PD_CMD *const pstCmd, PR_CALC_PD_RPY *const pstRpy);
-    static void phaseCorrection(cv::Mat &matPhase, const cv::Mat &matIdxNan, int nJumpSpanX, int nJumpSpanY);   //Put it to public to include it in regression test.
+    static void phaseCorrection(cv::Mat &matPhase, int nJumpSpanX, int nJumpSpanY);   //Put it to public to include it in regression test.
     static void phaseCorrectionEx(cv::Mat &matPhase, PR_DIRECTION enProjDir, PR_DIRECTION enScanDir, int nMinSpan, int nMaxSpan);
     static void selectCmpPoint(const cv::Mat& dMap, const cv::Mat& dPhase, int span, cv::Mat& matResult);
     static void phaseCorrectionCmp(cv::Mat& matPhase, cv::Mat& matPhase1, int span);

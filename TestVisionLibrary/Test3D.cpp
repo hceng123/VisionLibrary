@@ -1383,7 +1383,7 @@ void CompareHeightSame() {
     cv::Mat matDiff;
     cv::absdiff(matHeight1, matHeight2, matDiff);
 
-    cv::Mat matMask = matDiff > 0.01f;
+    cv::Mat matMask = matDiff > 0.1f;
     cv::imwrite(strWorkingFolder + "CompareHeightDiffMask.png", matMask);
 }
 
