@@ -35,6 +35,7 @@ using VectorOfDouble = std::vector<double>;
 using VectorOfDirection = std::vector<PR_DIRECTION>;
 using VectorOfInt = std::vector<int>;
 using VectorOfVectorOfInt = std::vector<VectorOfInt>;
+using VectorOfRtRect = std::vector<cv::RotatedRect>;
 
 template <typename Tp> inline Int32 ToInt32(Tp param) { return static_cast<Int32>(param); }
 template <typename Tp> inline Int16 ToInt16(Tp param) { return static_cast<Int16>(param); }
@@ -1372,9 +1373,10 @@ struct PR_CALC_3D_HEIGHT_DIFF_RPY {
 
 struct PR_INSP_3D_SOLDER_CMD {
     PR_INSP_3D_SOLDER_CMD() :
-        nBaseColorDiff  (20),
-        nBaseGrayDiff   (20),
-        nWettingWidth   (8) {}
+        nBaseColorDiff              (20),
+        nBaseGrayDiff               (20),
+        nWettingWidth               (8),
+        fHeightVariationCoverage    (0.75f) {}
     cv::Mat                 matHeight;
     cv::Mat                 matColorImg;
     cv::Rect                rectDeviceROI;
@@ -1383,6 +1385,7 @@ struct PR_INSP_3D_SOLDER_CMD {
     Int16                   nBaseGrayDiff;
     VectorOfRect            vecRectCheckROIs;
     int                     nWettingWidth;
+    float                   fHeightVariationCoverage; // When find the solder area, the highest variation part of the solder is choosen.
 };
 
 struct PR_INSP_3D_SOLDER_RPY {

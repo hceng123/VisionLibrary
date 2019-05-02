@@ -8,6 +8,7 @@ namespace Vision
 {
 
 void MatchTmplSpeedTest();
+void TestTransposeSpeed();
 
 }
 }

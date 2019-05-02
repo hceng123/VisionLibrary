@@ -14,6 +14,8 @@ int _tmain(int argc, _TCHAR* argv[])
 
     MatchTmplSpeedTest();
 
+    TestTransposeSpeed();
+
     PR_FreeAllRecord();
 	return 0;
 }

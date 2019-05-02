@@ -24,8 +24,8 @@ void MatchTmplSpeedTest_1()
     stLrnCmd.matInputImg = cv::imread("./data/CapsLock_1.png");
     stLrnCmd.rectROI = cv::Rect (0, 0, stLrnCmd.matInputImg.cols, stLrnCmd.matInputImg.rows );
     stLrnCmd.enAlgorithm = PR_MATCH_TMPL_ALGORITHM::HIERARCHICAL_EDGE;
-    PR_LrnTmpl ( &stLrnCmd, &stLrnRpy );
-    if ( stLrnRpy.enStatus != VisionStatus::OK ) {
+    PR_LrnTmpl(&stLrnCmd, &stLrnRpy);
+    if (stLrnRpy.enStatus != VisionStatus::OK) {
         std::cout << "Failed to learn template." << std::endl;
         return;
     }
