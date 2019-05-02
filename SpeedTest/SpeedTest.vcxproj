@@ -172,6 +172,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="MatchTmplSpeed.cpp" />
+    <ClCompile Include="OpenCvAlgoSpeed.cpp" />
     <ClCompile Include="SpeedTest.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
