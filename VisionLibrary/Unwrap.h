@@ -4,6 +4,7 @@
 #include "VisionHeader.h"
 #include "CalcUtils.hpp"
 #include "TimeLog.h"
+#include "Constants.h"
 
 namespace AOI
 {
@@ -173,8 +174,6 @@ private:
     static const int CHECK_RS_WIN           = 50;
 
     static const float GAUSSIAN_FILTER_SIGMA;
-    static const float ONE_HALF_CYCLE;
-    static const float ONE_CYCLE;
     static const float CALIB_HEIGHT_STEP_USEFUL_PT;
     static const float LOW_BASE_PHASE;
     static VectorOfVectorOfFloat vecVecAtan2Table;

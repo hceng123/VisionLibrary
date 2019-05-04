@@ -12,7 +12,8 @@
 #include "Config.h"
 #include "Auxiliary.hpp"
 #include "CudaAlgorithm.h"
-
+#include "opencv2/cudaarithm.hpp"
+#include "opencv2/cudafilters.hpp"
 
 #define MARK_FUNCTION_START_TIME    CStopWatch      stopWatch; __int64 functionStart = stopWatch.AbsNow()
 #define MARK_FUNCTION_END_TIME      TimeLog::GetInstance()->addTimeLog( __FUNCTION__, stopWatch.AbsNow() - functionStart)
@@ -32,8 +33,6 @@ Unwrap::~Unwrap() {
 }
 
 /*static*/ const float Unwrap::GAUSSIAN_FILTER_SIGMA = ToFloat(pow(20, 0.5));
-/*static*/ const float Unwrap::ONE_HALF_CYCLE = 1.f;
-/*static*/ const float Unwrap::ONE_CYCLE = ONE_HALF_CYCLE * 2;
 /*static*/ const float Unwrap::CALIB_HEIGHT_STEP_USEFUL_PT = 0.8f;
 /*static*/ const float Unwrap::LOW_BASE_PHASE = - ToFloat(CV_PI);
 /*static*/ VectorOfVectorOfFloat Unwrap::vecVecAtan2Table(PR_MAX_GRAY_LEVEL * 2 + 1, VectorOfFloat(PR_MAX_GRAY_LEVEL * 2 + 1, 0));
@@ -806,6 +805,8 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
 
 /*static*/ void Unwrap::calc3DHeightGpu(const PR_CALC_3D_HEIGHT_NEW_CMD *const pstCmd, PR_CALC_3D_HEIGHT_RPY *const pstRpy) {
     CStopWatch stopWatch;
+    cv::cuda::Stream myCudaStream;
+
     std::vector<cv::Mat> vecConvertedImgs;
     for (auto &mat : pstCmd->vecInputImgs) {
         cv::Mat matConvert = mat;
@@ -822,7 +823,9 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
             std::swap(vecConvertedImgs[9], vecConvertedImgs[11]);
     }
 
-    auto size = vecConvertedImgs[0].size();
+    const auto size = vecConvertedImgs[0].size();
+    const int ROWS = vecConvertedImgs[0].rows;
+    const int COLS = vecConvertedImgs[0].cols;
     auto total = ToInt32(vecConvertedImgs[0].total());
     cv::Mat matAlpha(size, CV_32FC1), matBeta(size, CV_32FC1), matGamma(size, CV_32FC1), matBuffer1(size, CV_32FC1), matBuffer2(size, CV_32FC1);
     cv::Mat matAvgUnderTolIndex = cv::Mat::zeros(size, CV_8UC1);
@@ -880,68 +883,96 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
     vecVecBeta = CalcUtils::matToVector<DATA_TYPE>(matBeta);
 #endif
 
-    _phaseWrapBuffer(matAlpha, matBuffer1, pstCmd->fPhaseShift);
-    TimeLog::GetInstance()->addTimeLog("_phaseWrapBuffer.", stopWatch.Span());
+    cv::cuda::GpuMat matBufferGpu(matAlpha.rows, matAlpha.cols, CV_32FC1);
+    cv::cuda::GpuMat matAlphaGpu(matAlpha);
+    cv::cuda::GpuMat matBetaGpu(matBeta);
+    cv::cuda::GpuMat matGammaGpu(matGamma);
+    cv::cuda::GpuMat matAvgUnderTolIndexGpu(matAvgUnderTolIndex);
 
-    matBuffer1 = matAlpha * pstCmd->matThickToThinK.at<DATA_TYPE>(0);
+    TimeLog::GetInstance()->addTimeLog("Upload data to GPU", stopWatch.Span());
+
+    CudaAlgorithm::phaseWrapBuffer(matAlphaGpu, matBufferGpu, pstCmd->fPhaseShift);
+    
+    TimeLog::GetInstance()->addTimeLog("CudaAlgorithm::phaseWrapBuffer", stopWatch.Span());
+
+    //matBuffer1 = matAlpha * pstCmd->matThickToThinK.at<DATA_TYPE>(0);
+    cv::cuda::multiply(matAlphaGpu, pstCmd->matThickToThinK.at<DATA_TYPE>(0), matBufferGpu);
     TimeLog::GetInstance()->addTimeLog("Multiply takes.", stopWatch.Span());
 
-    _phaseWrapByRefer(matBeta, matBuffer1);
-    TimeLog::GetInstance()->addTimeLog("_phaseWrapByRefer.", stopWatch.Span());
+    CudaAlgorithm::phaseWrapByRefer(matBetaGpu, matBufferGpu);
+    TimeLog::GetInstance()->addTimeLog("CudaAlgorithm::phaseWrapByRefer.", stopWatch.Span());
 
     const int dt = 20; // Use one data in every 20 pixels
-    cv::Mat matBetaBase = _pickPointInterval(matBeta, dt);
-    auto matBetaBaseOneRow = matBetaBase.reshape(1, 1);
-    cv::sort(matBetaBaseOneRow, matBetaBaseOneRow, cv::SortFlags::SORT_EVERY_ROW + cv::SortFlags::SORT_ASCENDING);
-    int totalItem = matBetaBaseOneRow.cols;
-    cv::Mat matRange(matBetaBaseOneRow, cv::Range::all(), cv::Range(ToInt32(totalItem * 0.25), ToInt32(totalItem * 0.45)));
-    float betaBase = ToFloat(cv::mean(matRange)[0]);
+    //cv::Mat matBetaBase = _pickPointInterval(matBeta, dt);
+    //auto matBetaBaseOneRow = matBetaBase.reshape(1, 1);
+    //cv::sort(matBetaBaseOneRow, matBetaBaseOneRow, cv::SortFlags::SORT_EVERY_ROW + cv::SortFlags::SORT_ASCENDING);
+    //int totalItem = matBetaBaseOneRow.cols;
+    //cv::Mat matRange(matBetaBaseOneRow, cv::Range::all(), cv::Range(ToInt32(totalItem * 0.25), ToInt32(totalItem * 0.45)));
+    //float betaBase = ToFloat(cv::mean(matRange)[0]);
+    float betaBase =  CudaAlgorithm::intervalRangeAverage(matBetaGpu, dt, 0.25f, 0.45f);
+    std::cout << "betaBase " << betaBase << std::endl;
 
     const float SHIFT_TO_BASE = 0.2f;
 
-    cv::Mat matBeta3 = _phaseWarpNoAutoBase(matBeta, betaBase / 2 + SHIFT_TO_BASE); // 0.2 is also shift, means - 0.6~1.4
-    cv::Mat matMask;
-    cv::compare(matBeta3, matBeta, matMask, cv::CmpTypes::CMP_GT);
-    matBeta3.copyTo(matBeta, matMask);
-    matBeta.setTo(betaBase, matAvgUnderTolIndex);
+    //cv::Mat matBeta3 = _phaseWarpNoAutoBase(matBeta, betaBase / 2 + SHIFT_TO_BASE); // 0.2 is also shift, means - 0.6~1.4
+    CudaAlgorithm::phaseWarpNoAutoBase(matBetaGpu, matBufferGpu, betaBase / 2 + SHIFT_TO_BASE);
+    cv::cuda::GpuMat matMaskGpu;
+    cv::cuda::compare(matBufferGpu, matBetaGpu, matMaskGpu, cv::CmpTypes::CMP_GT);
+    matBufferGpu.copyTo(matBetaGpu, matMaskGpu);
+    matBetaGpu.setTo(betaBase, matAvgUnderTolIndexGpu);
+
+    cv::cuda::GpuMat matPhaseT(matAlpha.cols, matAlpha.rows, CV_32FC1);
 
     if (pstCmd->nRemoveJumpSpan > 0) {
-        phaseCorrection(matBeta, pstCmd->nRemoveJumpSpan, pstCmd->nRemoveJumpSpan);
+        CudaAlgorithm::phaseCorrection(matBetaGpu, matPhaseT, pstCmd->nRemoveJumpSpan, pstCmd->nRemoveJumpSpan);
         TimeLog::GetInstance()->addTimeLog("phaseCorrection for beta.", stopWatch.Span());
     }
+
+    //matBetaGpu.download(matBeta);
+    cv::cuda::GpuMat matResultGpu;
 
     if (pstCmd->bUseThinnestPattern) {
         auto k1 = pstCmd->matThickToThinK.at<DATA_TYPE>(0);
         auto k2 = pstCmd->matThickToThinnestK.at<DATA_TYPE>(0);
 
-        auto gammaBase = betaBase * k2 / k1;
-        // gamma1  = PhaseWrap02(gamma, base/k1*k2/2 + 0.2);
-        cv::Mat matGamma1 = _phaseWarpNoAutoBase(matGamma, gammaBase / 2 + SHIFT_TO_BASE);
-        matBuffer1 = matBeta * k2 / k1;
-        _phaseWrapByRefer(matGamma, matBuffer1);
+        float gammaBase = betaBase * k2 / k1;
+        //cv::Mat matGamma1 = _phaseWarpNoAutoBase(matGamma, gammaBase / 2 + SHIFT_TO_BASE);
+        cv::cuda::GpuMat matGammaGpu1(ROWS, COLS, CV_32FC1);
+        CudaAlgorithm::phaseWarpNoAutoBase(matGammaGpu, matGammaGpu1, gammaBase / 2 + SHIFT_TO_BASE);
+        //matBuffer1 = matBeta * k2 / k1;
+        cv::cuda::multiply(matBetaGpu, k2 / k1, matBufferGpu);
 
-        matGamma.setTo(gammaBase, matAvgUnderTolIndex);
-        matGamma1.setTo(gammaBase, matAvgUnderTolIndex);
+        //_phaseWrapByRefer(matGamma, matBuffer1);
+        CudaAlgorithm::phaseWrapByRefer(matGammaGpu, matBufferGpu);
+
+        matGammaGpu.setTo(gammaBase, matAvgUnderTolIndexGpu);
+        matGammaGpu1.setTo(gammaBase, matAvgUnderTolIndexGpu);
 
         //CudaAlgorithm::phaseCorrectionCmp(matGamma, matGamma1, pstCmd->nCompareRemoveJumpSpan);
-        cv::cuda::GpuMat matGammaGpu(matGamma), matGammaGpu1(matGamma1);
-        CudaAlgorithm::phaseCorrectionCmp(matGammaGpu, matGammaGpu1, pstCmd->nCompareRemoveJumpSpan);
+        //cv::cuda::GpuMat matGammaGpu(matGamma), matGammaGpu1(matGamma1);
+
+        TimeLog::GetInstance()->addTimeLog("Parepare data for phaseCorrectionCmp for gamma.", stopWatch.Span());
+
+        CudaAlgorithm::phaseCorrectionCmp(matGammaGpu, matGammaGpu1, matPhaseT, pstCmd->nCompareRemoveJumpSpan);
         
         TimeLog::GetInstance()->addTimeLog("phaseCorrectionCmp for gamma.", stopWatch.Span());
 
         if (pstCmd->nRemoveJumpSpan > 0) {
-            CudaAlgorithm::phaseCorrection(matGammaGpu, pstCmd->nRemoveJumpSpan, pstCmd->nRemoveJumpSpan);
+            CudaAlgorithm::phaseCorrection(matGammaGpu, matPhaseT, pstCmd->nRemoveJumpSpan, pstCmd->nRemoveJumpSpan);
             TimeLog::GetInstance()->addTimeLog("phaseCorrection for gamma.", stopWatch.Span());
         }
 
-        matGammaGpu.download(matGamma);
-        pstRpy->matPhase = matGamma * k1 / k2;
+        //matGammaGpu.download(matGamma);
+        matResultGpu = matGammaGpu;
+        cv::cuda::multiply(matResultGpu, k1 / k2, matResultGpu);
     }
     else
-        pstRpy->matPhase = matBeta;
+        matResultGpu = matBetaGpu;
 
-    cv::compare(pstRpy->matPhase, betaBase - 0.1, matMask, cv::CmpTypes::CMP_LT);
-    pstRpy->matPhase.setTo(betaBase, matMask);
+    cv::cuda::compare(matResultGpu, betaBase - 0.1, matMaskGpu, cv::CmpTypes::CMP_LT);
+    matResultGpu.setTo(betaBase, matMaskGpu);
+
+    matResultGpu.download(pstRpy->matPhase);
 
     cv::medianBlur(pstRpy->matPhase, pstRpy->matPhase, 5);
 

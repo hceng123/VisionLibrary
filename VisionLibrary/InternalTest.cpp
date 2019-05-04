@@ -6,6 +6,7 @@
 #include "Fitting.hpp"
 #include "Unwrap.h"
 #include "Auxiliary.hpp"
+#include "CudaAlgorithm.h"
 
 
 namespace AOI
@@ -566,6 +567,66 @@ static void TestBilinearInterpolation() {
     }
 }
 
+static void TestGpuMatFloor() {
+    std::cout << std::endl << "------------------------------------------------";
+    std::cout << std::endl << "CUDA GPU FLOOR TEST #1 STARTING";
+    std::cout << std::endl << "------------------------------------------------";
+    std::cout << std::endl;
+
+    cv::Mat matDataCpu(2048, 2040, CV_32FC1);
+    matDataCpu = 1.7f;
+
+    cv::cuda::GpuMat matDataGpu;
+    matDataGpu.upload(matDataCpu);
+
+    CudaAlgorithm::floor(matDataGpu);
+    matDataGpu.download(matDataCpu);
+
+    cv::Mat matDiff = matDataCpu != 1.f;
+    int notCorrectCount = cv::countNonZero(matDiff);
+    if (notCorrectCount == 0) {
+        std::cout << "Test passed" << std::endl;
+    }else {
+        std::cout << "Test failed, failed count " << notCorrectCount << std::endl;
+    }
+}
+
+static void TestIntervalAverage() {
+    std::cout << std::endl << "------------------------------------------------";
+    std::cout << std::endl << "CUDA GPU AVERAGE INTERVAL TEST #1 STARTING";
+    std::cout << std::endl << "------------------------------------------------";
+    std::cout << std::endl;
+
+    cv::Mat matDataCpu(2048, 2040, CV_32FC1);
+    matDataCpu = 1.7f;
+
+    cv::cuda::GpuMat matDataGpu;
+    matDataGpu.upload(matDataCpu);
+
+    float result = CudaAlgorithm::intervalAverage(matDataGpu, 20);
+    
+    std::cout << "Average result " << result << std::endl;
+}
+
+static void TestRangeIntervalAverage() {
+    std::cout << std::endl << "------------------------------------------------";
+    std::cout << std::endl << "CUDA GPU AVERAGE RANGE INTERVAL TEST #1 STARTING";
+    std::cout << std::endl << "------------------------------------------------";
+    std::cout << std::endl;
+
+    cv::Mat matDataCpu(2048, 2040, CV_32FC1);
+    matDataCpu = 1.5f;
+    cv::Mat matHalf(matDataCpu, cv::Range::all(), cv::Range(1020, 2040));
+    matHalf = 2.5f;
+
+    cv::cuda::GpuMat matDataGpu;
+    matDataGpu.upload(matDataCpu);
+
+    float result = CudaAlgorithm::intervalRangeAverage(matDataGpu, 10, 0.4f, 0.6f);
+    
+    std::cout << "Average result " << result << std::endl;
+}
+
 void InternalTest() {
     TestBilinearInterpolation();
     TestCalcUtilsCumSum();
@@ -582,6 +643,9 @@ void InternalTest() {
     TestCalcUtilsScaleRect();
     TestPhaseCorrection();
     TestFitCircle();
+    TestGpuMatFloor();
+    TestIntervalAverage();
+    TestRangeIntervalAverage();
 }
 
 }

@@ -2,6 +2,7 @@
 #define _CUDA_FUNC_H_
 
 #include <stdint.h>
+#include "cuda_runtime.h"
 
 void run_kernel_merge_height_intersect(
     uint32_t gridSize,
@@ -33,5 +34,31 @@ void run_kernel_phase_correction(
     const int ROWS,
     const int COLS,
     const int span);
+
+void run_kernel_floor(
+    dim3 grid,
+    dim3 threads,
+    float *data,
+    uint32_t step,
+    const int ROWS,
+    const int COLS);
+
+void run_kernel_interval_average(
+    float *data,
+    uint32_t step,
+    const int ROWS,
+    const int COLS,
+    int interval,
+    float *result);
+
+void run_kernel_range_interval_average(
+    const float *data,
+    uint32_t step,
+    const int ROWS,
+    const int COLS,
+    int interval,
+    const float rangeStart,
+    const float rangeEnd,
+    float *result);
 
 #endif

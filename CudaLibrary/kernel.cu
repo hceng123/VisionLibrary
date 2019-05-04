@@ -1,8 +1,120 @@
 #include <stdio.h>
 
-#include "cuda_runtime.h"
 #include "device_launch_parameters.h"
 #include "CudaFunc.h"
+
+#define MAX_DEPTH       16
+#define INSERTION_SORT  32
+
+template<typename T>
+__device__ void selection_sort(T *data, int left, int right)
+{
+    for (int i = left ; i <= right ; ++i)
+    {
+        unsigned min_val = data[i];
+        int min_idx = i;
+
+        // Find the smallest value in the range [left, right].
+        for (int j = i+1 ; j <= right ; ++j)
+        {
+            unsigned val_j = data[j];
+
+            if (val_j < min_val)
+            {
+                min_idx = j;
+                min_val = val_j;
+            }
+        }
+
+        // Swap the values.
+        if (i != min_idx)
+        {
+            data[min_idx] = data[i];
+            data[i] = min_val;
+        }
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Very basic quicksort algorithm, recursively launching the next level.
+////////////////////////////////////////////////////////////////////////////////
+template<typename T>
+__global__ void cdp_simple_quicksort(T *data, int left, int right, int depth)
+{
+    // If we're too deep or there are few elements left, we use an insertion sort...
+    if (depth >= MAX_DEPTH || right-left <= INSERTION_SORT)
+    {
+        selection_sort(data, left, right);
+        return;
+    }
+
+    T *lptr = data+left;
+    T *rptr = data+right;
+    T  pivot = data[(left+right)/2];
+
+    // Do the partitioning.
+    while (lptr <= rptr)
+    {
+        // Find the next left- and right-hand values to swap
+        T lval = *lptr;
+        T rval = *rptr;
+
+        // Move the left pointer as long as the pointed element is smaller than the pivot.
+        while (lval < pivot)
+        {
+            lptr++;
+            lval = *lptr;
+        }
+
+        // Move the right pointer as long as the pointed element is larger than the pivot.
+        while (rval > pivot)
+        {
+            rptr--;
+            rval = *rptr;
+        }
+
+        // If the swap points are valid, do the swap!
+        if (lptr <= rptr)
+        {
+            *lptr++ = rval;
+            *rptr-- = lval;
+        }
+    }
+
+    // Now the recursive part
+    int nright = rptr - data;
+    int nleft  = lptr - data;
+
+    // Launch a new block to sort the left part.
+    if (left < (rptr-data))
+    {
+        cudaStream_t s;
+        cudaStreamCreateWithFlags(&s, cudaStreamNonBlocking);
+        cdp_simple_quicksort<<< 1, 1, 0, s >>>(data, left, nright, depth+1);
+        cudaStreamDestroy(s);
+    }
+
+    // Launch a new block to sort the right part.
+    if ((lptr-data) < right)
+    {
+        cudaStream_t s1;
+        cudaStreamCreateWithFlags(&s1, cudaStreamNonBlocking);
+        cdp_simple_quicksort<<< 1, 1, 0, s1 >>>(data, nleft, right, depth+1);
+        cudaStreamDestroy(s1);
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Call the quicksort kernel from the host.
+////////////////////////////////////////////////////////////////////////////////
+template<typename T>
+void run_qsort(T *data, unsigned int nitems)
+{
+    // Launch on device
+    int left = 0;
+    int right = nitems-1;
+    cdp_simple_quicksort<<< 1, 1 >>>(data, left, right, 0);
+}
 
 __global__
 void kernel_merge_height_intersect(float* matOne, float *matTwo, float *d_result, int rows, int cols, float fDiffThreshold) {
@@ -536,4 +648,176 @@ void run_kernel_phase_correction(
     const int span) {
     kernel_phase_correction<<<gridSize, blockSize>>>(phaseDiff, phase, step, ROWS, COLS, span);
     //cpu_kernel_phase_correction(phaseDiff, phase, step, ROWS, COLS, span);
+}
+
+__global__
+void kernel_floor(
+     float *data,
+     uint32_t step,
+     const int ROWS,
+     const int COLS) {
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    int j = blockIdx.y * blockDim.y + threadIdx.y;
+    if (i < COLS && j < ROWS) {
+        auto pValue = data + j * step + i;
+        *pValue = floor(*pValue);
+    }
+}
+
+void run_kernel_floor(
+    dim3 grid,
+    dim3 threads,
+    float *data,
+    uint32_t step,
+    const int ROWS,
+    const int COLS) {
+    kernel_floor<<<grid, threads >>>(data, step, ROWS, COLS);
+}
+
+__global__
+void kernel_interval_average(
+    float *data,
+    uint32_t step,
+    const int ROWS,
+    const int COLS,
+    int interval,
+    float *result) {
+    float fSum = 0.f, fCount = 0.f;
+    for (int row = 0; row < ROWS; row += interval) {
+        for (int col = 0; col < COLS; col += interval) {
+            auto pValue = data + row * step + col;
+            fSum += *pValue;
+            ++ fCount;
+        }
+    }
+    *result = fSum / fCount;
+}
+
+void run_kernel_interval_average(
+    float *data,
+    uint32_t step,
+    const int ROWS,
+    const int COLS,
+    int interval,
+    float *result) {
+
+    float* d_result;
+    cudaMalloc(&d_result, sizeof(float));
+    kernel_interval_average <<<1, 1 >>>(data, step, ROWS, COLS, interval, d_result);
+
+    cudaMemcpy(result, d_result, sizeof(float), cudaMemcpyDeviceToHost);
+    cudaFree(d_result);
+}
+
+//__device__ unsigned int count = 0;
+//__shared__ bool isLastBlockDone;
+//
+//__global__
+//void kernel_range_interval_average(
+//    float *data,
+//    uint32_t step,
+//    const int ROWS,
+//    const int COLS,
+//    const int interval,
+//    const float rangeStart,
+//    const float rangeEnd,
+//    float *result) {
+//    extern __shared__ float sharedMemory[];
+//
+//    const int startX = threadIdx.x * interval;
+//    const int strideX = blockDim.x * interval;
+//    const int startY = threadIdx.y * interval;
+//    const int strideY = blockDim.y * interval;
+//    const int RESULT_COLS = COLS / interval;
+//    const int size = (ROWS / interval) * (COLS / interval);
+//
+//    if (threadIdx.x == 4 && threadIdx.y == 4) {
+//        printf("startX = %d, strideX = %d, startY = %d, strideY = %d\n", startX, strideX, startY, strideY);
+//        printf("ROWS = %d, COLS = %d\n", ROWS, COLS);
+//    }
+//
+//    for (int i = startX; i < COLS; i += strideX) {
+//        for (int j = startY; j < ROWS; j += strideY) {
+//            auto pValue = data + j * step + i;
+//
+//            int resultOffset = j / interval * RESULT_COLS + i / interval;
+//            auto pResult = sharedMemory + resultOffset;
+//            *pResult = *pValue;
+//
+//            // Thread 0 signals that it is done.
+//            unsigned int value = atomicInc(&count, size);
+//
+//            // Thread 0 determines if its block is the last
+//            // block to be done.
+//            isLastBlockDone = (value == (size - 1));
+//
+//            if (threadIdx.x == 4 && threadIdx.y == 4)
+//                printf("i = %d, j = %d, result offset %d, value %.2f\n", i, j, resultOffset, *pResult);
+//        }
+//    }
+//    __syncthreads();
+//
+//    if (threadIdx.x == 0 && threadIdx.y == 0 && isLastBlockDone) {
+//        printf("Before sort\n");
+//
+//        //kernel_sort(sharedMemory, size);
+//        int start = static_cast<int>(rangeStart * size);
+//        int end = static_cast<int>(rangeEnd * size);
+//        printf("start = %d, end = %d\n", start, end);
+//        float fSum = 0;
+//        for (int k = start; k < end; ++k)
+//            fSum += sharedMemory[k];
+//        *result = fSum / (end - start);
+//    }
+//}
+
+__global__
+void kernel_interval_pick_data(
+    const float *data,
+    uint32_t step,
+    const int ROWS,
+    const int COLS,
+    const int interval,
+    float *result) {
+    int count = 0;
+    for (int row = 0; row < ROWS; row += interval) {
+        for (int col = 0; col < COLS; col += interval) {
+            auto pValue = data + row * step + col;
+            result[count ++] = *pValue;
+        }
+    }
+}
+
+__global__
+void kernel_range_average(float *data, const int size, float rangeStart, float rangeEnd) {
+    int start = static_cast<int>(rangeStart * size);
+    int end = static_cast<int>(rangeEnd * size);
+    float fSum = 0;
+    for (int k = start; k < end; ++k)
+        fSum += data[k];
+    data[0] = fSum / (end - start);
+}
+
+void run_kernel_range_interval_average(
+    const float *data,
+    uint32_t step,
+    const int ROWS,
+    const int COLS,
+    int interval,
+    const float rangeStart,
+    const float rangeEnd,
+    float *result) {
+
+    float* d_result;
+    const int RESULT_ROWS = static_cast<int>(ceil((float)ROWS / interval));
+    const int RESULT_COLS = static_cast<int>(ceil((float)COLS / interval));
+    const int SIZE = RESULT_ROWS * RESULT_COLS;
+
+    cudaMalloc(&d_result, SIZE * sizeof(float));
+    kernel_interval_pick_data <<<1, 1>>>(data, step, ROWS, COLS, interval, d_result);
+
+    run_qsort(d_result, SIZE);
+    kernel_range_average<<<1, 1>>>(d_result, SIZE, rangeStart, rangeEnd);
+    cudaMemcpy(result, d_result, sizeof(float), cudaMemcpyDeviceToHost);
+    cudaFree(d_result);
 }

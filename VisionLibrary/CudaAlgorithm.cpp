@@ -9,7 +9,7 @@
 #include "CudaFunc.h"
 #include "TimeLog.h"
 #include "CalcUtils.hpp"
-#include "CudaAlgorithm.h"
+#include "Constants.h"
 
 namespace AOI
 {
@@ -18,7 +18,123 @@ namespace Vision
 
 ///*static*/ cv::cuda::Stream CudaAlgorithm::m_cudaStreams[NUM_OF_DLP];
 
-/*static*/ void CudaAlgorithm::phaseCorrectionCmp(cv::cuda::GpuMat& matPhase, const cv::cuda::GpuMat& matPhase1, int span) {
+//cv::cuda::Stream m_cudaStreams[NUM_OF_DLP];
+
+static int divUp(int total, int grain)
+{
+    return (total + grain - 1) / grain;
+}
+
+/*static*/ bool CudaAlgorithm::initCuda() {
+    size_t size = 0;
+    cudaDeviceGetLimit(&size, cudaLimitMallocHeapSize);
+    cudaDeviceSetLimit(cudaLimitMallocHeapSize, size * 10);
+    cudaDeviceGetLimit(&size, cudaLimitMallocHeapSize);
+
+    //cudaDeviceGetLimit(&size, cudaLimitStackSize);
+    //cudaDeviceSetLimit(cudaLimitStackSize, size * 100);
+    //cudaDeviceGetLimit(&size, cudaLimitStackSize);
+    //std::cout  << "cudaLimitStackSize " << size << std::endl;
+
+    cudaDeviceSetLimit(cudaLimitDevRuntimeSyncDepth, 16);
+
+    int value = 0;
+    cudaDeviceGetAttribute(&value, cudaDeviceAttr::cudaDevAttrKernelExecTimeout, 0);
+    std::cout << "value of cudaDevAttrKernelExecTimeout " << value << std::endl;
+    return true;
+}
+
+/*static*/ void CudaAlgorithm::floor(cv::cuda::GpuMat &matInOut) {
+    dim3 threads(16, 16);
+    dim3 grid(divUp(matInOut.cols, threads.x), divUp(matInOut.rows, threads.y));
+    run_kernel_floor(grid, threads, 
+        reinterpret_cast<float *>(matInOut.data),
+        matInOut.step1(),
+        matInOut.rows,
+        matInOut.cols);
+}
+
+/*static*/ float CudaAlgorithm::intervalAverage(const cv::cuda::GpuMat &matInput, int interval) {
+    float result = 0;
+    run_kernel_interval_average( reinterpret_cast<float *>(matInput.data),
+        matInput.step1(),
+        matInput.rows,
+        matInput.cols,
+        interval,
+        &result);
+    return result;
+}
+
+/*static*/ float CudaAlgorithm::intervalRangeAverage(const cv::cuda::GpuMat& matInput, int interval, float rangeStart, float rangeEnd) {
+    float result = 0;
+    run_kernel_range_interval_average(
+        reinterpret_cast<float *>(matInput.data),
+        matInput.step1(),
+        matInput.rows,
+        matInput.cols,
+        interval,
+        rangeStart,
+        rangeEnd,
+        &result);
+    return result;
+}
+
+/*static*/ void CudaAlgorithm::phaseWrapBuffer(cv::cuda::GpuMat& matPhase, cv::cuda::GpuMat& matBuffer, float fShift/* = 0.f*/) {
+    CStopWatch stopWatch;
+    // matBuffer = matPhase / ONE_CYCLE + 0.5f- fShift;
+    cv::cuda::addWeighted(matPhase, 1.f / ONE_CYCLE, matBuffer, 0.f, 0.5f - fShift, matBuffer);
+    TimeLog::GetInstance()->addTimeLog("phaseWrapBuffer Divide and add.", stopWatch.Span());
+
+    floor(matBuffer);
+
+    TimeLog::GetInstance()->addTimeLog("phaseWrapBuffer floor takes.", stopWatch.Span());
+
+    //matBuffer = matPhase - matBuffer * ONE_CYCLE;
+    cv::cuda::addWeighted(matPhase, 1, matBuffer, -ONE_CYCLE, 0, matBuffer);
+
+    TimeLog::GetInstance()->addTimeLog("_phaseWrap multiply and subtract takes.", stopWatch.Span());
+
+    float fMean = intervalAverage(matBuffer, 20);
+
+    //matBuffer = matPhase / ONE_CYCLE + 0.5 - fShift - fMean / 2.f;
+    cv::cuda::addWeighted(matPhase, 1.f / ONE_CYCLE, matBuffer, 0.f, 0.5f - fShift - fMean / 2.f, matBuffer);
+    floor(matBuffer);
+
+    TimeLog::GetInstance()->addTimeLog("_phaseWrap floor takes.", stopWatch.Span());
+
+    //matPhase = matPhase - matBuffer * ONE_CYCLE;
+    cv::cuda::addWeighted(matPhase, 1, matBuffer, -ONE_CYCLE, 0, matPhase);
+}
+
+/*static*/ void CudaAlgorithm::phaseWrapByRefer(cv::cuda::GpuMat& matPhase, cv::cuda::GpuMat& matRef) {
+    CStopWatch stopWatch;
+    //matRef = (matPhase - matRef) / ONE_CYCLE + 0.5;  //Use matResult to store the substract result to reduce memory allocate time.
+    cv::cuda::addWeighted(matPhase, 1.f / ONE_CYCLE, matRef, -1.f / ONE_CYCLE, 0.5, matRef);
+    TimeLog::GetInstance()->addTimeLog("_phaseWrapByRefer Divide and add.", stopWatch.Span());
+
+    floor(matRef);
+    TimeLog::GetInstance()->addTimeLog("_phaseWrapByRefer floor takes.", stopWatch.Span());
+
+    //matPhase = matPhase - matRef * ONE_CYCLE;
+    cv::cuda::addWeighted(matPhase, 1.f, matRef, -ONE_CYCLE, 0, matPhase);
+    TimeLog::GetInstance()->addTimeLog("_phaseWrapByRefer multiply and subtract takes.", stopWatch.Span());
+}
+
+/*static*/ void CudaAlgorithm::phaseWarpNoAutoBase(const cv::cuda::GpuMat& matPhase, cv::cuda::GpuMat& matResult, float fShift) {
+    CStopWatch stopWatch;
+    //cv::Mat matResult = matPhase / ONE_CYCLE + 0.5 - fShift;
+    cv::cuda::addWeighted(matPhase, 1.f / ONE_CYCLE, matResult, 0, 0.5 - fShift, matResult);
+    TimeLog::GetInstance()->addTimeLog("_phaseWrap Divide and add.", stopWatch.Span());
+
+    floor(matResult);
+
+    TimeLog::GetInstance()->addTimeLog("_phaseWrap floor takes.", stopWatch.Span());
+
+    //matResult = matPhase - matResult * ONE_CYCLE;
+    cv::cuda::addWeighted(matPhase, 1.f, matResult, -ONE_CYCLE, 0, matResult);
+}
+
+/*static*/ void CudaAlgorithm::phaseCorrectionCmp(cv::cuda::GpuMat& matPhase, const cv::cuda::GpuMat& matPhase1, cv::cuda::GpuMat& matPhaseT, int span) {
     CStopWatch stopWatch;
     const int ROWS = matPhase.rows;
     const int COLS = matPhase.cols;
@@ -51,7 +167,6 @@ namespace Vision
 
     // Select in Y direction, transpose the matrix to accelerate
     cv::cuda::transpose(matMap, matMap);
-    cv::cuda::GpuMat matPhaseT;
     cv::cuda::transpose(matPhase, matPhaseT);
 
     cv::cuda::GpuMat dMap2 = CalcUtils::diff(matMap, 1, CalcUtils::DIFF_ON_X_DIR);
@@ -158,7 +273,7 @@ namespace Vision
     matPhase1.copyTo(matPhase, idxl1);
 }
 
-/*static*/ void CudaAlgorithm::phaseCorrection(cv::cuda::GpuMat &matPhase, int nJumpSpanX, int nJumpSpanY) {
+/*static*/ void CudaAlgorithm::phaseCorrection(cv::cuda::GpuMat &matPhase, cv::cuda::GpuMat& matPhaseT, int nJumpSpanX, int nJumpSpanY) {
     CStopWatch stopWatch;
     const int ROWS = matPhase.rows;
     const int COLS = matPhase.cols;
@@ -166,27 +281,29 @@ namespace Vision
     //X direction
     if (nJumpSpanX > 0) {
         cv::cuda::GpuMat matPhaseDiff = CalcUtils::diff(matPhase, 1, CalcUtils::DIFF_ON_X_DIR);
-        run_kernel_phase_correction(2, 256,
+        run_kernel_phase_correction(2, 1024,
             reinterpret_cast<float *>(matPhaseDiff.data),
             reinterpret_cast<float *>(matPhase.data),
             matPhaseDiff.step1(),
             ROWS, COLS, nJumpSpanX);
+        cudaDeviceSynchronize();
         TimeLog::GetInstance()->addTimeLog("run_kernel_phase_correction for X", stopWatch.Span());
     }
 
     // Y direction
     if (nJumpSpanY > 0) {
-        cv::cuda::transpose(matPhase, matPhase);
+        cv::cuda::transpose(matPhase, matPhaseT);
         TimeLog::GetInstance()->addTimeLog("cv::cuda::transpose for Y", stopWatch.Span());
-        cv::cuda::GpuMat matPhaseDiff = CalcUtils::diff(matPhase, 1, CalcUtils::DIFF_ON_X_DIR);
-        run_kernel_phase_correction(2, 256,
+        cv::cuda::GpuMat matPhaseDiff = CalcUtils::diff(matPhaseT, 1, CalcUtils::DIFF_ON_X_DIR);
+        run_kernel_phase_correction(2, 1024,
             reinterpret_cast<float *>(matPhaseDiff.data),
-            reinterpret_cast<float *>(matPhase.data),
+            reinterpret_cast<float *>(matPhaseT.data),
             matPhaseDiff.step1(),
             COLS, ROWS, nJumpSpanY);
+        cudaDeviceSynchronize();
         TimeLog::GetInstance()->addTimeLog("run_kernel_phase_correction for Y", stopWatch.Span());
 
-        cv::cuda::transpose(matPhase, matPhase);
+        cv::cuda::transpose(matPhaseT, matPhase);
         TimeLog::GetInstance()->addTimeLog("cv::cuda::transpose back", stopWatch.Span());
     }
 }
@@ -249,8 +366,6 @@ namespace Vision
     const int ROWS = matPhase.rows;
     const int COLS = matPhase.cols;
 
-    const float ONE_HALF_CYCLE = 1.f;
-    const float ONE_CYCLE = ONE_HALF_CYCLE * 2;
     const int DEBUG_ROW = 1588;
 
     static int time = 0;

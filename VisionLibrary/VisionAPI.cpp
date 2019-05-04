@@ -13,6 +13,7 @@
 #include "CalcUtils.hpp"
 #include "Unwrap.h"
 #include "TableMapping.h"
+#include "CudaAlgorithm.h"
 
 #define PR_FUNCTION_ENTRY   \
 try \
@@ -41,6 +42,7 @@ VisionAPI VisionStatus PR_Init()
 {
     try {
         Unwrap::initAtan2Table();
+        CudaAlgorithm::initCuda();
         return RecordManager::getInstance()->load();
     }catch (std::exception &e) {
         WriteLog(e.what());
