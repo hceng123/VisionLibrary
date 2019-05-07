@@ -21,16 +21,16 @@ void TestRunLogcase()
 
     std::string strInputLogCase(".\\Logcase\\AutoThreshold_Success.logcase");
     std::string strCloneLogCase(".\\Logcase\\AutoThreshold_Clone.logcase");
-    bfs::copy_file ( strInputLogCase, strCloneLogCase );
+    bfs::copy_file(strInputLogCase, strCloneLogCase);
 
     VisionStatus enStatus = VisionStatus::OK;
     enStatus = PR_RunLogCase(".\\Logcase\\AutoThreshold_Clone.logcase");
-    std::cout << "Run logcase result " << static_cast<int> ( enStatus ) << std::endl;
+    std::cout << "Run logcase result " << static_cast<int> (enStatus) << std::endl;
 
     enStatus = PR_RunLogCase("./Logcase/AutoThreshold_Clone.logcase");
-    std::cout << "Run logcase result " << static_cast<int> ( enStatus ) << std::endl;
+    std::cout << "Run logcase result " << static_cast<int> (enStatus) << std::endl;
 
-    bfs::remove ( strCloneLogCase );
+    bfs::remove(strCloneLogCase);
 }
 
 }

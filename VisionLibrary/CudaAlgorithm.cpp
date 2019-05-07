@@ -28,19 +28,10 @@ static int divUp(int total, int grain)
 /*static*/ bool CudaAlgorithm::initCuda() {
     size_t size = 0;
     cudaDeviceGetLimit(&size, cudaLimitMallocHeapSize);
-    cudaDeviceSetLimit(cudaLimitMallocHeapSize, size * 10);
+    cudaDeviceSetLimit(cudaLimitMallocHeapSize, size * 40);
     cudaDeviceGetLimit(&size, cudaLimitMallocHeapSize);
 
-    //cudaDeviceGetLimit(&size, cudaLimitStackSize);
-    //cudaDeviceSetLimit(cudaLimitStackSize, size * 100);
-    //cudaDeviceGetLimit(&size, cudaLimitStackSize);
-    //std::cout  << "cudaLimitStackSize " << size << std::endl;
-
     cudaDeviceSetLimit(cudaLimitDevRuntimeSyncDepth, 16);
-
-    int value = 0;
-    cudaDeviceGetAttribute(&value, cudaDeviceAttr::cudaDevAttrKernelExecTimeout, 0);
-    std::cout << "value of cudaDevAttrKernelExecTimeout " << value << std::endl;
     return true;
 }
 
@@ -274,38 +265,38 @@ static int divUp(int total, int grain)
 }
 
 /*static*/ void CudaAlgorithm::phaseCorrection(cv::cuda::GpuMat &matPhase, cv::cuda::GpuMat& matPhaseT, int nJumpSpanX, int nJumpSpanY) {
-    CStopWatch stopWatch;
-    const int ROWS = matPhase.rows;
-    const int COLS = matPhase.cols;
-    
-    //X direction
-    if (nJumpSpanX > 0) {
-        cv::cuda::GpuMat matPhaseDiff = CalcUtils::diff(matPhase, 1, CalcUtils::DIFF_ON_X_DIR);
-        run_kernel_phase_correction(2, 1024,
-            reinterpret_cast<float *>(matPhaseDiff.data),
-            reinterpret_cast<float *>(matPhase.data),
-            matPhaseDiff.step1(),
-            ROWS, COLS, nJumpSpanX);
-        cudaDeviceSynchronize();
-        TimeLog::GetInstance()->addTimeLog("run_kernel_phase_correction for X", stopWatch.Span());
-    }
+    //CStopWatch stopWatch;
+    //const int ROWS = matPhase.rows;
+    //const int COLS = matPhase.cols;
+    //
+    ////X direction
+    //if (nJumpSpanX > 0) {
+    //    cv::cuda::GpuMat matPhaseDiff = CalcUtils::diff(matPhase, 1, CalcUtils::DIFF_ON_X_DIR);
+    //    run_kernel_phase_correction(2, 1024,
+    //        reinterpret_cast<float *>(matPhaseDiff.data),
+    //        reinterpret_cast<float *>(matPhase.data),
+    //        matPhaseDiff.step1(),
+    //        ROWS, COLS, nJumpSpanX);
+    //    cudaDeviceSynchronize();
+    //    TimeLog::GetInstance()->addTimeLog("run_kernel_phase_correction for X", stopWatch.Span());
+    //}
 
-    // Y direction
-    if (nJumpSpanY > 0) {
-        cv::cuda::transpose(matPhase, matPhaseT);
-        TimeLog::GetInstance()->addTimeLog("cv::cuda::transpose for Y", stopWatch.Span());
-        cv::cuda::GpuMat matPhaseDiff = CalcUtils::diff(matPhaseT, 1, CalcUtils::DIFF_ON_X_DIR);
-        run_kernel_phase_correction(2, 1024,
-            reinterpret_cast<float *>(matPhaseDiff.data),
-            reinterpret_cast<float *>(matPhaseT.data),
-            matPhaseDiff.step1(),
-            COLS, ROWS, nJumpSpanY);
-        cudaDeviceSynchronize();
-        TimeLog::GetInstance()->addTimeLog("run_kernel_phase_correction for Y", stopWatch.Span());
+    //// Y direction
+    //if (nJumpSpanY > 0) {
+    //    cv::cuda::transpose(matPhase, matPhaseT);
+    //    TimeLog::GetInstance()->addTimeLog("cv::cuda::transpose for Y", stopWatch.Span());
+    //    cv::cuda::GpuMat matPhaseDiff = CalcUtils::diff(matPhaseT, 1, CalcUtils::DIFF_ON_X_DIR);
+    //    run_kernel_phase_correction(2, 1024,
+    //        reinterpret_cast<float *>(matPhaseDiff.data),
+    //        reinterpret_cast<float *>(matPhaseT.data),
+    //        matPhaseDiff.step1(),
+    //        COLS, ROWS, nJumpSpanY);
+    //    cudaDeviceSynchronize();
+    //    TimeLog::GetInstance()->addTimeLog("run_kernel_phase_correction for Y", stopWatch.Span());
 
-        cv::cuda::transpose(matPhaseT, matPhase);
-        TimeLog::GetInstance()->addTimeLog("cv::cuda::transpose back", stopWatch.Span());
-    }
+    //    cv::cuda::transpose(matPhaseT, matPhase);
+    //    TimeLog::GetInstance()->addTimeLog("cv::cuda::transpose back", stopWatch.Span());
+    //}
 }
 
 ///*static*/ void CudaAlgorithm::phaseCorrection(cv::Mat &matPhase, int nJumpSpanX, int nJumpSpanY) {
@@ -591,6 +582,92 @@ static int divUp(int total, int grain)
             cv::imwrite("C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/CompareYPhaseCorrectionResultCpu.png", matMask);
         }
     }
+}
+
+/*static*/ void CudaAlgorithm::calculateSurfaceConvert3D(
+    const cv::cuda::GpuMat& matPhase,
+    cv::cuda::GpuMat& matPhaseT,
+    cv::cuda::GpuMat& matBufferGpu,
+    const VectorOfFloat& param,
+    int ss,
+    const cv::cuda::GpuMat& xxt1)
+{
+    CStopWatch stopWatch;
+    const int ROWS = matPhase.rows;
+    const int COLS = matPhase.cols;
+    const int TOTAL = ROWS * COLS;
+
+    auto zmin = param[4];
+    auto zmax = param[5];
+    cv::cuda::transpose(matPhase, matPhaseT);
+
+    cv::cuda::addWeighted(matPhaseT, 1 / (zmax - zmin), matPhaseT, 0, - zmin / (zmax - zmin), matPhaseT);
+
+    cv::cuda::GpuMat zInLine = matPhaseT.reshape(1, 1);
+    
+    int len = zInLine.cols;
+
+    assert(len == TOTAL);
+
+    auto matPolyParass = CalcUtils::paraFromPolyNomial(ss);
+    cv::cuda::GpuMat matPolyParassGpu(matPolyParass);
+
+    dim3 threads(16, 4);
+    dim3 grid(256, 1, 1);
+    float* d_P3;
+    cudaMalloc(&d_P3, len * ss * sizeof(float));
+    run_kernel_phase_to_height_3d(grid, threads,
+        reinterpret_cast<float*>(zInLine.data),
+        reinterpret_cast<float*>(matPolyParassGpu.data),
+        reinterpret_cast<float*>(xxt1.data),
+        xxt1.step1(),
+        len, ss,
+        d_P3);
+
+    calcSumAndConvertMatrix(d_P3, ss, matPhaseT);
+
+    cudaFree(d_P3);
+
+    TimeLog::GetInstance()->addTimeLog("calculateSurfaceConvert3D run kernel", stopWatch.Span());
+    cv::cuda::transpose(matPhaseT, matBufferGpu);
+
+    TimeLog::GetInstance()->addTimeLog("_calculateSurfaceConvert3D final process", stopWatch.Span());
+}
+
+/*static*/ void CudaAlgorithm::phaseToHeight3D(
+    const cv::cuda::GpuMat& zInLine,
+    const cv::cuda::GpuMat& matPolyParassGpu,
+    const float* d_xxt,
+    const int xxtStep,
+    const int len,
+    const int ss,
+    float* d_P3) {
+    dim3 threads(16, 4);
+    dim3 grid(256, 1, 1);
+    run_kernel_phase_to_height_3d(grid, threads,
+        reinterpret_cast<float*>(zInLine.data),
+        reinterpret_cast<float*>(matPolyParassGpu.data),
+        d_xxt,
+        xxtStep,
+        len, ss,
+        d_P3);
+}
+
+/*static*/ void CudaAlgorithm::calcSumAndConvertMatrix(
+    float* d_pInputData,
+    int ss,
+    cv::cuda::GpuMat& matResult) {
+    dim3 threads(16, 16);
+    dim3 grid(divUp(matResult.cols, threads.x), divUp(matResult.rows, threads.y));
+    matResult.setTo(0);
+    run_kernel_calc_sum_and_convert_matrix(
+        grid, threads,
+        d_pInputData,
+        ss,
+        reinterpret_cast<float*>(matResult.data),
+        matResult.step1(),
+        matResult.rows,
+        matResult.cols);
 }
 
 /*static*/ cv::Mat CudaAlgorithm::mergeHeightIntersect(cv::Mat matHeightOne, cv::Mat matNanMaskOne, cv::Mat matHeightTwo, cv::Mat matNanMaskTwo, float fDiffThreshold, PR_DIRECTION enProjDir) {

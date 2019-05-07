@@ -903,12 +903,6 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
     TimeLog::GetInstance()->addTimeLog("CudaAlgorithm::phaseWrapByRefer.", stopWatch.Span());
 
     const int dt = 20; // Use one data in every 20 pixels
-    //cv::Mat matBetaBase = _pickPointInterval(matBeta, dt);
-    //auto matBetaBaseOneRow = matBetaBase.reshape(1, 1);
-    //cv::sort(matBetaBaseOneRow, matBetaBaseOneRow, cv::SortFlags::SORT_EVERY_ROW + cv::SortFlags::SORT_ASCENDING);
-    //int totalItem = matBetaBaseOneRow.cols;
-    //cv::Mat matRange(matBetaBaseOneRow, cv::Range::all(), cv::Range(ToInt32(totalItem * 0.25), ToInt32(totalItem * 0.45)));
-    //float betaBase = ToFloat(cv::mean(matRange)[0]);
     float betaBase =  CudaAlgorithm::intervalRangeAverage(matBetaGpu, dt, 0.25f, 0.45f);
     std::cout << "betaBase " << betaBase << std::endl;
 
@@ -972,22 +966,24 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
     cv::cuda::compare(matResultGpu, betaBase - 0.1, matMaskGpu, cv::CmpTypes::CMP_LT);
     matResultGpu.setTo(betaBase, matMaskGpu);
 
-    matResultGpu.download(pstRpy->matPhase);
-
-    cv::medianBlur(pstRpy->matPhase, pstRpy->matPhase, 5);
-
-    if (pstCmd->bEnableGaussianFilter)
-        cv::GaussianBlur(pstRpy->matPhase, pstRpy->matPhase, cv::Size(5, 5), 5, 5, cv::BorderTypes::BORDER_REPLICATE);
-
     pstRpy->matNanMask = matAvgUnderTolIndex;
 
     if (!pstCmd->mat3DBezierK.empty() && !pstCmd->mat3DBezierSurface.empty()) {
         std::vector<float> vecParamMinMaxXY{ 1.f, ToFloat(pstRpy->matPhase.cols), 1.f, ToFloat(pstRpy->matPhase.rows),
             ToFloat(pstCmd->fMinPhase), ToFloat(pstCmd->fMaxPhase) };
+        //cv::cuda::GpuMat mat3DBezierSurfaceGpu(pstCmd->mat3DBezierSurface);
+        //CudaAlgorithm::calculateSurfaceConvert3D(matResultGpu, matPhaseT, matBufferGpu, vecParamMinMaxXY, 4, mat3DBezierSurfaceGpu);
+        //matBufferGpu.download(pstRpy->matHeight);
+        matResultGpu.download(pstRpy->matPhase);
         pstRpy->matHeight = _calculateSurfaceConvert3D(pstRpy->matPhase, vecParamMinMaxXY, 4, pstCmd->mat3DBezierSurface);
     }
     else
         pstRpy->matHeight = pstRpy->matPhase;
+
+    cv::medianBlur(pstRpy->matHeight, pstRpy->matHeight, 5);
+
+    if (pstCmd->bEnableGaussianFilter)
+        cv::GaussianBlur(pstRpy->matHeight, pstRpy->matHeight, cv::Size(5, 5), 5, 5, cv::BorderTypes::BORDER_REPLICATE);
 
     TimeLog::GetInstance()->addTimeLog("_calcHeightFromPhase.", stopWatch.Span());
     pstRpy->enStatus = VisionStatus::OK;
@@ -2503,7 +2499,7 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
 }
 
 /*static*/ cv::Mat Unwrap::_calculateSurfaceConvert3D(const cv::Mat& z1, const VectorOfFloat& param, int ss, const cv::Mat& xxt1) {
-    MARK_FUNCTION_START_TIME;
+    CStopWatch stopWatch;
 
     auto zmin = param[4];
     auto zmax = param[5];
@@ -2521,6 +2517,8 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
 
     auto matPolyParass = CalcUtils::paraFromPolyNomial(ss);
 
+    TimeLog::GetInstance()->addTimeLog("_calculateSurfaceConvert3D prepare data", stopWatch.Span());
+
 #ifdef _DEBUG
     auto vecVecPolyParass = CalcUtils::matToVector<float>(matPolyParass);
 #endif
@@ -2529,6 +2527,8 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
     cv::Mat matTmpPmPow, P3;
     cv::multiply(CalcUtils::power<float>(Ps3, Ps1), CalcUtils::power<float>(Ps4, Ps2), matTmpPmPow);
     cv::multiply(matTmpPmPow, cv::repeat(matPolyParass, len, 1), P3);
+
+    TimeLog::GetInstance()->addTimeLog("_calculateSurfaceConvert3D power and multiply", stopWatch.Span());
 
     // Matlab: zp1 = sum(xxt1.*P3, 2);
     cv::multiply(xxt1, P3, P3);
@@ -2546,7 +2546,7 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
     auto vecVecFinalResult = CalcUtils::matToVector<float>(matResult);
 #endif
 
-    MARK_FUNCTION_END_TIME;
+    TimeLog::GetInstance()->addTimeLog("_calculateSurfaceConvert3D final process", stopWatch.Span());
     return matResult;
 }
 

@@ -7,7 +7,9 @@
 #include "Unwrap.h"
 #include "Auxiliary.hpp"
 #include "CudaAlgorithm.h"
-
+#include "cuda_runtime.h"
+#include "opencv2/highgui.hpp"
+#include "opencv2/cudaarithm.hpp"
 
 namespace AOI
 {
@@ -627,6 +629,104 @@ static void TestRangeIntervalAverage() {
     std::cout << "Average result " << result << std::endl;
 }
 
+static void TestCudaPhaseToHeight3D() {
+    std::cout << std::endl << "----------------------------------------------------------";
+    std::cout << std::endl << "CUDA PHASE TO HEIGHT 3D INTERVAL TEST #1 STARTING";
+    std::cout << std::endl << "----------------------------------------------------------";
+    std::cout << std::endl;
+
+    const int ROWS = 2040;
+    const int COLS = 2048;
+    const int TOTAL = ROWS * COLS;
+    const int ss = 4;
+
+    cv::cuda::GpuMat zInLine(1, TOTAL, CV_32FC1);
+    zInLine.setTo(0.5f);
+    auto matPolyParass = CalcUtils::paraFromPolyNomial(ss);
+    std::cout << "matPolyParass " << ss << std::endl;
+    printfMat<float>(matPolyParass, 2);
+
+    cv::cuda::GpuMat matPolyParassGpu(matPolyParass);
+
+    //cv::cuda::GpuMat xxt(TOTAL, ss, CV_32FC1);
+    //xxt.setTo(3);
+    const int MEM_SIZE = TOTAL * ss * sizeof(float);
+    float* h_xxt = (float *)malloc(MEM_SIZE);
+    for (int i = 0; i < TOTAL * ss; ++i)
+        h_xxt[i] = 3.f;
+
+    float* d_xxt;
+    cudaMalloc(reinterpret_cast<void **>(&d_xxt), MEM_SIZE);
+    cudaMemcpy(d_xxt, h_xxt, MEM_SIZE, cudaMemcpyHostToDevice);
+    
+    float* d_P3;
+    cudaMalloc(reinterpret_cast<void **>(&d_P3), MEM_SIZE);
+
+    std::cout << "xxt step " << ss << std::endl;
+
+    CudaAlgorithm::phaseToHeight3D(
+        zInLine,
+        matPolyParassGpu,
+        d_xxt,
+        ss,
+        TOTAL, ss,
+        d_P3);
+
+    cudaDeviceSynchronize();
+
+    float* h_data = (float *)malloc(MEM_SIZE);
+    cudaMemcpy(h_data, d_P3, MEM_SIZE, cudaMemcpyDeviceToHost);
+
+    std::cout << "Check result data " << std::endl;
+    for (int i = 0; i < TOTAL; i += 10000) {
+        float* pRow = h_data + i * ss;
+        for (int col = 0; col < ss; ++ col) {
+            std::cout << pRow[col] << " ";
+        }
+        std::cout << std::endl;
+    }
+
+    free(h_data);
+    free(h_xxt);
+    cudaFree(d_P3);
+    cudaFree(d_xxt);
+}
+
+static void TestCalcSumAndConvertMatrix() {
+    std::cout << std::endl << "----------------------------------------------------------";
+    std::cout << std::endl << "CUDA CALC SUM AND CONVERT MATRIX INTERVAL TEST #1 STARTING";
+    std::cout << std::endl << "----------------------------------------------------------";
+    std::cout << std::endl;
+    const int ROWS = 2040;
+    const int COLS = 2048;
+    const int TOTAL = ROWS * COLS;
+    const int ss = 4;
+    const int MEM_SIZE = TOTAL * ss * sizeof(float);
+    float* h_data = (float *)malloc(MEM_SIZE);
+    for (int row = 0; row < TOTAL; ++ row) {
+        float* pResultRow = h_data + row * ss;
+        for (int col = 0; col < ss; ++ col) {
+            pResultRow[col] = 50.f;
+        }
+    }
+
+    float* d_data;
+    cudaMalloc(reinterpret_cast<void **>(&d_data), MEM_SIZE);
+    cudaMemcpy(d_data, h_data, MEM_SIZE, cudaMemcpyHostToDevice);
+
+    cv::cuda::GpuMat matResultGpu(ROWS, COLS, CV_32FC1);
+    CudaAlgorithm::calcSumAndConvertMatrix(d_data, ss, matResultGpu);
+    cudaDeviceSynchronize();
+
+    cv::Mat matResult;
+    matResultGpu.download(matResult);
+    std::cout << "Mean of result " << cv::mean(matResult)[0] << std::endl;
+    matResult.convertTo(matResult, CV_8UC1);
+
+    free(h_data);
+    cudaFree(d_data);
+}
+
 void InternalTest() {
     TestBilinearInterpolation();
     TestCalcUtilsCumSum();
@@ -646,6 +746,8 @@ void InternalTest() {
     TestGpuMatFloor();
     TestIntervalAverage();
     TestRangeIntervalAverage();
+    TestCudaPhaseToHeight3D();
+    TestCalcSumAndConvertMatrix();
 }
 
 }

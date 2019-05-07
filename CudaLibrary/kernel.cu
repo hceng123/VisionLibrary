@@ -821,3 +821,78 @@ void run_kernel_range_interval_average(
     cudaMemcpy(result, d_result, sizeof(float), cudaMemcpyDeviceToHost);
     cudaFree(d_result);
 }
+
+__global__
+void kernel_phase_to_height_3d(
+    const float* pZInRow, // len x 1
+    const float* pPolyParamsInput, // 1 x ss
+    const float* xxt, // len x ss
+    const int xxtStep,
+    const int len,
+    const int ss,
+    float* pResult// len x ss
+    ) {
+    int start = blockIdx.x * blockDim.x + threadIdx.x;
+    int stride = blockDim.x * gridDim.x;
+    int col = threadIdx.y;
+
+    if (col >= ss)
+        return;
+
+    for(int row = start; row < len; row += stride) {
+        float* pResultRow = pResult + row * ss;
+        const float* xxtRow = xxt + row * xxtStep;
+        float value = pZInRow[row];
+        float ps3Power = pow(value, col);
+        float ps4Power = pow(1.f - value, ss - col - 1);
+        pResultRow[col] = ps3Power * ps4Power * pPolyParamsInput[col] * xxtRow[col];
+    }
+}
+
+void run_kernel_phase_to_height_3d(
+    dim3 grid,
+    dim3 threads,
+    const float* pZInRow, // len x 1
+    const float* pPolyParamsInput, // 1 x ss
+    const float* xxt, // len x ss
+    const int xxtStep,
+    const int len,
+    const int ss,
+    float* pResult // len x ss
+    )
+{
+    kernel_phase_to_height_3d<<<grid, threads>>>(pZInRow, pPolyParamsInput, xxt, xxtStep, len, ss, pResult);
+}
+
+__global__
+void kernel_calc_sum_and_convert_matrix(
+    float* pInputData,
+    const int ss,
+    float* pOutput,
+    const int step,
+    const int ROWS,
+    const int COLS) {
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    int j = blockIdx.y * blockDim.y + threadIdx.y;
+    if (i < COLS && j < ROWS) {
+        int index = j * COLS + i;
+        float* pSum = pOutput + j * step + i;
+        int start = index * ss;
+        int end = start + ss;
+        for (int k = start; k < end; ++ k) {
+            *pSum += pInputData[k];
+        }
+    }
+}
+
+void run_kernel_calc_sum_and_convert_matrix(
+    dim3 grid,
+    dim3 threads,
+    float* pInputData,
+    const int ss,
+    float* pOutput,
+    const int step,
+    const int ROWS,
+    const int COLS) {
+    kernel_calc_sum_and_convert_matrix<<<grid, threads>>>(pInputData, ss, pOutput, step, ROWS, COLS);
+}

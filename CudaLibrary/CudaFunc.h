@@ -61,4 +61,26 @@ void run_kernel_range_interval_average(
     const float rangeEnd,
     float *result);
 
+void run_kernel_phase_to_height_3d(
+    dim3 grid,
+    dim3 threads,
+    const float* pZInRow, // len x 1
+    const float* pPolyParamsInput, // 1 x ss
+    const float* xxt, // len x ss
+    const int xxtStep,
+    const int len,
+    const int ss,
+    float* pResult // len x ss
+    );
+
+void run_kernel_calc_sum_and_convert_matrix(
+    dim3 grid,
+    dim3 threads,
+    float* pInputData,
+    const int ss,
+    float* pOutput,
+    const int ROWS,
+    const int COLS,
+    const int step);
+
 #endif

@@ -24,6 +24,28 @@ public:
     static void phaseCorrectionCmp(cv::Mat& matPhase, const cv::Mat& matPhase1, int span);
     static void phaseCorrection(cv::cuda::GpuMat &matPhase, cv::cuda::GpuMat& matPhaseT, int nJumpSpanX, int nJumpSpanY);
     static void phaseCorrection(cv::Mat &matPhase, int nJumpSpanX, int nJumpSpanY);
+    static void calculateSurfaceConvert3D(
+        const cv::cuda::GpuMat& matPhase,
+        cv::cuda::GpuMat& matPhaseT,
+        cv::cuda::GpuMat& matBufferGpu,
+        const VectorOfFloat& param,
+        int ss,
+        const cv::cuda::GpuMat& xxt1);
+
+    static void phaseToHeight3D(
+        const cv::cuda::GpuMat& zInLine,
+        const cv::cuda::GpuMat& matPolyParassGpu,
+        const float* d_xxt,
+        const int xxtStep,
+        const int len,
+        const int ss,
+        float* d_P3);
+
+    static void calcSumAndConvertMatrix(
+        float* d_pInputData,
+        int ss,
+        cv::cuda::GpuMat& matResult);
+
     static cv::Mat mergeHeightIntersect(cv::Mat matHeightOne, cv::Mat matNanMaskOne, cv::Mat matHeightTwo, cv::Mat matNanMaskTwo, float fDiffThreshold, PR_DIRECTION enProjDir);
 };
 
