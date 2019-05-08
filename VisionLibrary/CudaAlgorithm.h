@@ -11,9 +11,11 @@ class CudaAlgorithm
 {
     CudaAlgorithm() = delete;
     ~CudaAlgorithm() = delete;
+    static float* m_dlp3DBezierSurface[NUM_OF_DLP];
 
 public:
     static bool initCuda();
+    static VisionStatus setDlpParams(const PR_SET_DLP_PARAMS_TO_GPU_CMD* const pstCmd, PR_SET_DLP_PARAMS_TO_GPU_RPY* const pstRpy);
     static void floor(cv::cuda::GpuMat &matInOut);
     static float intervalAverage(const cv::cuda::GpuMat& matInput, int interval);
     static float intervalRangeAverage(const cv::cuda::GpuMat& matInput, int interval, float rangeStart, float rangeEnd);
@@ -29,8 +31,8 @@ public:
         cv::cuda::GpuMat& matPhaseT,
         cv::cuda::GpuMat& matBufferGpu,
         const VectorOfFloat& param,
-        int ss,
-        const cv::cuda::GpuMat& xxt1);
+        const int ss,
+        const int nDlpNo);
 
     static void phaseToHeight3D(
         const cv::cuda::GpuMat& zInLine,

@@ -1240,11 +1240,35 @@ void TestCalc4DLPHeight()
     //float dlpOffset[4] = {0.0193f, -0.0032f, -0.0899, 0};
     float dlpOffset[4] = {0.f, 0.f, 0.f, 0.f};
 
-    for (int nDlp = 0; nDlp < 4; ++ nDlp) {
+    {
+        PR_SET_DLP_PARAMS_TO_GPU_CMD stSetDlpCmd;
+        PR_SET_DLP_PARAMS_TO_GPU_RPY stSetDlpRpy;
+        for (int nDlp = 0; nDlp < NUM_OF_DLP; ++nDlp) {
+            char filePath[100];
+            _snprintf(filePath, sizeof(filePath), "./data/3D/Config/IntegrateCalibResult%d_new3D.yml", nDlp + 1);
+            cv::FileStorage fsIntegrated(filePath, cv::FileStorage::READ);
+
+            cv::FileNode fileNode = fsIntegrated["BezierSurface"];
+            cv::read(fileNode, stSetDlpCmd.vec3DBezierSurface[nDlp], cv::Mat());
+
+            fsIntegrated.release();
+        }
+
+        PR_SetDlpParamsToGpu(&stSetDlpCmd, &stSetDlpRpy);
+        if (stSetDlpRpy.enStatus != VisionStatus::OK) {
+            std::cout << "PR_SetDlpParamsToGpu failed" << std::endl;
+            return;
+        }
+
+        std::cout << "PR_SetDlpParamsToGpu success" << std::endl;
+    }
+
+    for (int nDlp = 0; nDlp < NUM_OF_DLP; ++ nDlp) {
         stCalcHeightCmds[nDlp].bEnableGaussianFilter = b3DDetectGaussionFilter;
         stCalcHeightCmds[nDlp].bUseThinnestPattern = b3DDetectCaliUseThinPattern;
         stCalcHeightCmds[nDlp].fMinAmplitude = 3.f;
         stCalcHeightCmds[nDlp].fPhaseShift = 0.1f;
+        stCalcHeightCmds[nDlp].nDlpNo = nDlp;
 
         cv::Mat matBaseSurfaceParam;
         char filePath[100];

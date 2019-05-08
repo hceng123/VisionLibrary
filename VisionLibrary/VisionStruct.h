@@ -1296,6 +1296,7 @@ struct PR_CALC_3D_HEIGHT_CMD {
 
 struct PR_CALC_3D_HEIGHT_NEW_CMD {
     PR_CALC_3D_HEIGHT_NEW_CMD() :
+        nDlpNo(0),
         bEnableGaussianFilter(true),
         bReverseSeq(true),
         enProjectDir(PR_DIRECTION::LEFT),
@@ -1306,7 +1307,9 @@ struct PR_CALC_3D_HEIGHT_NEW_CMD {
         fPhaseShift(0.f),
         nRemoveJumpSpan(7),
         nCompareRemoveJumpSpan(15) {}
+
     VectorOfMat             vecInputImgs;
+    int                     nDlpNo;
     bool                    bEnableGaussianFilter;
     bool                    bReverseSeq;             //Change the image sequence.
     PR_DIRECTION            enProjectDir;            //The DLP project direction. Get it from PR_CALIB_3D_BASE_RPY.
@@ -1335,6 +1338,14 @@ struct PR_CALC_3D_HEIGHT_RPY {
     cv::Mat                 matPhase;
     cv::Mat                 matHeight;
     cv::Mat                 matNanMask;
+};
+
+struct PR_SET_DLP_PARAMS_TO_GPU_CMD {
+    cv::Mat                 vec3DBezierSurface[NUM_OF_DLP];
+};
+
+struct PR_SET_DLP_PARAMS_TO_GPU_RPY {
+    VisionStatus            enStatus;
 };
 
 struct PR_MERGE_3D_HEIGHT_CMD {

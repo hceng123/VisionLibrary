@@ -20,6 +20,8 @@ namespace Vision
 
 //cv::cuda::Stream m_cudaStreams[NUM_OF_DLP];
 
+/*static*/ float* CudaAlgorithm::m_dlp3DBezierSurface[NUM_OF_DLP] = {nullptr};
+
 static int divUp(int total, int grain)
 {
     return (total + grain - 1) / grain;
@@ -33,6 +35,47 @@ static int divUp(int total, int grain)
 
     cudaDeviceSetLimit(cudaLimitDevRuntimeSyncDepth, 16);
     return true;
+}
+
+/*static*/ VisionStatus CudaAlgorithm::setDlpParams(const PR_SET_DLP_PARAMS_TO_GPU_CMD* const pstCmd, PR_SET_DLP_PARAMS_TO_GPU_RPY* const pstRpy) {
+    pstRpy->enStatus = VisionStatus::OK;
+
+    const int MEM_SIZE = pstCmd->vec3DBezierSurface[0].total() * sizeof(float);
+    float* h_buffer = (float*)malloc(MEM_SIZE);
+    const int ROWS = pstCmd->vec3DBezierSurface[0].rows;
+    const int COLS = pstCmd->vec3DBezierSurface[0].cols;
+
+    for (int dlp = 0; dlp < NUM_OF_DLP; ++dlp) {
+        cudaError_t err = cudaMalloc(reinterpret_cast<void **>(&m_dlp3DBezierSurface[dlp]), MEM_SIZE);
+        if (err != cudaSuccess) {
+            pstRpy->enStatus = VisionStatus::CUDA_MEMORY_ERROR;
+            return pstRpy->enStatus;
+        }
+
+        for (int row = 0; row < ROWS; ++ row) {
+            for (int col = 0; col < COLS; ++ col) {
+                h_buffer[row * COLS + col] = pstCmd->vec3DBezierSurface[dlp].at<float>(row, col);
+            }
+        }
+
+        cudaMemcpy(m_dlp3DBezierSurface[dlp], h_buffer, MEM_SIZE, cudaMemcpyHostToDevice);
+
+        //err = cudaMemcpy2D(
+        //    m_dlp3DBezierSurface[dlp],
+        //    COLS * sizeof(float),
+        //    pstCmd->vec3DBezierSurface[dlp].data,
+        //    pstCmd->vec3DBezierSurface[dlp].step1() * sizeof(float),
+        //    COLS * sizeof(float),
+        //    pstCmd->vec3DBezierSurface[dlp].rows,
+        //    cudaMemcpyHostToDevice);
+        //if (err != cudaSuccess) {
+        //    pstRpy->enStatus = VisionStatus::CUDA_MEMORY_ERROR;
+        //    return pstRpy->enStatus;
+        //}
+    }
+    free(h_buffer);
+
+    return pstRpy->enStatus;
 }
 
 /*static*/ void CudaAlgorithm::floor(cv::cuda::GpuMat &matInOut) {
@@ -129,8 +172,8 @@ static int divUp(int total, int grain)
     CStopWatch stopWatch;
     const int ROWS = matPhase.rows;
     const int COLS = matPhase.cols;
-    static int time = 0;
-    ++ time;
+    const int gridSize = 64;
+    const int threadSize = 32;
 
     cv::cuda::GpuMat matIdx;
     cv::cuda::compare(matPhase, matPhase1, matIdx, cv::CmpTypes::CMP_NE);
@@ -147,7 +190,7 @@ static int divUp(int total, int grain)
     TimeLog::GetInstance()->addTimeLog("prepare data for phaseCorrectionCmp X", stopWatch.Span());
 
     // Select in X direction
-    run_kernel_select_cmp_point(2, 256,
+    run_kernel_select_cmp_point(gridSize, threadSize,
         reinterpret_cast<float *>(dMap1.data),
         reinterpret_cast<float *>(dxPhase.data),
         idxl1.data,
@@ -168,7 +211,7 @@ static int divUp(int total, int grain)
     TimeLog::GetInstance()->addTimeLog("prepare data for phaseCorrectionCmp Y", stopWatch.Span());
 
     // Select in Y direction
-    run_kernel_select_cmp_point(2, 256,
+    run_kernel_select_cmp_point(gridSize, threadSize,
         reinterpret_cast<float *>(dMap2.data),
         reinterpret_cast<float *>(dyPhase.data),
         idxl2.data,
@@ -268,11 +311,13 @@ static int divUp(int total, int grain)
     CStopWatch stopWatch;
     const int ROWS = matPhase.rows;
     const int COLS = matPhase.cols;
+    const int gridSize = 64;
+    const int threadSize = 32;
     
     //X direction
     if (nJumpSpanX > 0) {
         cv::cuda::GpuMat matPhaseDiff = CalcUtils::diff(matPhase, 1, CalcUtils::DIFF_ON_X_DIR);
-        run_kernel_phase_correction(2, 1024,
+        run_kernel_phase_correction(gridSize, threadSize,
             reinterpret_cast<float *>(matPhaseDiff.data),
             reinterpret_cast<float *>(matPhase.data),
             matPhaseDiff.step1(),
@@ -286,7 +331,7 @@ static int divUp(int total, int grain)
         cv::cuda::transpose(matPhase, matPhaseT);
         TimeLog::GetInstance()->addTimeLog("cv::cuda::transpose for Y", stopWatch.Span());
         cv::cuda::GpuMat matPhaseDiff = CalcUtils::diff(matPhaseT, 1, CalcUtils::DIFF_ON_X_DIR);
-        run_kernel_phase_correction(2, 1024,
+        run_kernel_phase_correction(gridSize, threadSize,
             reinterpret_cast<float *>(matPhaseDiff.data),
             reinterpret_cast<float *>(matPhaseT.data),
             matPhaseDiff.step1(),
@@ -357,11 +402,6 @@ static int divUp(int total, int grain)
     const int ROWS = matPhase.rows;
     const int COLS = matPhase.cols;
 
-    const int DEBUG_ROW = 1588;
-
-    static int time = 0;
-    time++;
-
     //X direction
     if (nJumpSpanX > 0) {
         cv::Mat matPhaseClone = matPhase.clone();
@@ -419,15 +459,6 @@ static int divUp(int total, int grain)
                         vecJumpIdxNeedToHandle.push_back(i);
                 }
 
-                if (DEBUG_ROW == row) {
-                    printf("jumpColCount = %d, jumpSpanCount = %d, jumpIdxNeedToHandleCount = %d\n", vecJumpCol.size(), vecJumpSpan.size(), vecJumpIdxNeedToHandle.size());
-                    for (size_t jj = 0; jj < vecJumpIdxNeedToHandle.size(); ++jj) {
-                        auto nStart = vecJumpCol[vecSortedJumpSpanIdx[jj]];
-                        auto nEnd = vecJumpCol[vecSortedJumpSpanIdx[jj] + 1];
-                        printf("%d %d\n", nStart, nEnd);
-                    }
-                }
-
                 for (size_t jj = 0; jj < vecJumpIdxNeedToHandle.size(); ++ jj) {
                     auto nStart = vecJumpCol[vecSortedJumpSpanIdx[jj]];
                     auto nEnd = vecJumpCol[vecSortedJumpSpanIdx[jj] + 1];
@@ -468,13 +499,6 @@ static int divUp(int total, int grain)
         }
 
         TimeLog::GetInstance()->addTimeLog("phaseCorrection in x direction.", stopWatch.Span());
-
-        if (time == 1) {
-            cv::Mat matDiff;
-            cv::absdiff(matPhase, matPhaseClone, matDiff);
-            cv::Mat matMask = matDiff > 0.01f;
-            cv::imwrite("C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/CompareXPhaseCorrectionResultCpu.png", matMask);
-        }
     }
 
     // Y direction
@@ -574,13 +598,6 @@ static int divUp(int total, int grain)
             }
         }
         TimeLog::GetInstance()->addTimeLog("phaseCorrection in y direction.", stopWatch.Span());
-
-         if (time == 1) {
-            cv::Mat matDiff;
-            cv::absdiff(matPhase, matPhaseClone, matDiff);
-            cv::Mat matMask = matDiff > 0.01f;
-            cv::imwrite("C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/CompareYPhaseCorrectionResultCpu.png", matMask);
-        }
     }
 }
 
@@ -589,8 +606,8 @@ static int divUp(int total, int grain)
     cv::cuda::GpuMat& matPhaseT,
     cv::cuda::GpuMat& matBufferGpu,
     const VectorOfFloat& param,
-    int ss,
-    const cv::cuda::GpuMat& xxt1)
+    const int ss,
+    const int nDlpNo)
 {
     CStopWatch stopWatch;
     const int ROWS = matPhase.rows;
@@ -619,8 +636,8 @@ static int divUp(int total, int grain)
     run_kernel_phase_to_height_3d(grid, threads,
         reinterpret_cast<float*>(zInLine.data),
         reinterpret_cast<float*>(matPolyParassGpu.data),
-        reinterpret_cast<float*>(xxt1.data),
-        xxt1.step1(),
+        m_dlp3DBezierSurface[nDlpNo],
+        ss,
         len, ss,
         d_P3);
 

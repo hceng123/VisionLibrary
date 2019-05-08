@@ -526,6 +526,11 @@ PR_FUNCTION_ENTRY
 PR_FUNCTION_EXIT
 }
 
+VisionAPI VisionStatus PR_SetDlpParamsToGpu(const PR_SET_DLP_PARAMS_TO_GPU_CMD* const pstCmd, PR_SET_DLP_PARAMS_TO_GPU_RPY* const pstRpy)
+{
+    return CudaAlgorithm::setDlpParams(pstCmd, pstRpy);
+}
+
 VisionAPI VisionStatus PR_Calc3DHeightGpu(const PR_CALC_3D_HEIGHT_NEW_CMD *const pstCmd, PR_CALC_3D_HEIGHT_RPY *const pstRpy)
 {
 //PR_FUNCTION_ENTRY

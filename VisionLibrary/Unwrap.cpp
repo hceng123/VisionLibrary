@@ -904,7 +904,6 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
 
     const int dt = 20; // Use one data in every 20 pixels
     float betaBase =  CudaAlgorithm::intervalRangeAverage(matBetaGpu, dt, 0.25f, 0.45f);
-    std::cout << "betaBase " << betaBase << std::endl;
 
     const float SHIFT_TO_BASE = 0.2f;
 
@@ -988,9 +987,9 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
     if (!pstCmd->mat3DBezierK.empty() && !pstCmd->mat3DBezierSurface.empty()) {
         std::vector<float> vecParamMinMaxXY{ 1.f, ToFloat(pstRpy->matPhase.cols), 1.f, ToFloat(pstRpy->matPhase.rows),
             ToFloat(pstCmd->fMinPhase), ToFloat(pstCmd->fMaxPhase) };
-        cv::cuda::GpuMat mat3DBezierSurfaceGpu(pstCmd->mat3DBezierSurface);
+
         TimeLog::GetInstance()->addTimeLog("Before CudaAlgorithm::calculateSurfaceConvert3D", stopWatch.Span());
-        CudaAlgorithm::calculateSurfaceConvert3D(matResultGpu, matPhaseT, matBufferGpu, vecParamMinMaxXY, 4, mat3DBezierSurfaceGpu);
+        CudaAlgorithm::calculateSurfaceConvert3D(matResultGpu, matPhaseT, matBufferGpu, vecParamMinMaxXY, 4, pstCmd->nDlpNo);
         TimeLog::GetInstance()->addTimeLog("After CudaAlgorithm::calculateSurfaceConvert3D", stopWatch.Span());
         matBufferGpu.download(pstRpy->matHeight);
         //matResultGpu.download(pstRpy->matPhase);
