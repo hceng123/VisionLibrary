@@ -265,38 +265,38 @@ static int divUp(int total, int grain)
 }
 
 /*static*/ void CudaAlgorithm::phaseCorrection(cv::cuda::GpuMat &matPhase, cv::cuda::GpuMat& matPhaseT, int nJumpSpanX, int nJumpSpanY) {
-    //CStopWatch stopWatch;
-    //const int ROWS = matPhase.rows;
-    //const int COLS = matPhase.cols;
-    //
-    ////X direction
-    //if (nJumpSpanX > 0) {
-    //    cv::cuda::GpuMat matPhaseDiff = CalcUtils::diff(matPhase, 1, CalcUtils::DIFF_ON_X_DIR);
-    //    run_kernel_phase_correction(2, 1024,
-    //        reinterpret_cast<float *>(matPhaseDiff.data),
-    //        reinterpret_cast<float *>(matPhase.data),
-    //        matPhaseDiff.step1(),
-    //        ROWS, COLS, nJumpSpanX);
-    //    cudaDeviceSynchronize();
-    //    TimeLog::GetInstance()->addTimeLog("run_kernel_phase_correction for X", stopWatch.Span());
-    //}
+    CStopWatch stopWatch;
+    const int ROWS = matPhase.rows;
+    const int COLS = matPhase.cols;
+    
+    //X direction
+    if (nJumpSpanX > 0) {
+        cv::cuda::GpuMat matPhaseDiff = CalcUtils::diff(matPhase, 1, CalcUtils::DIFF_ON_X_DIR);
+        run_kernel_phase_correction(2, 1024,
+            reinterpret_cast<float *>(matPhaseDiff.data),
+            reinterpret_cast<float *>(matPhase.data),
+            matPhaseDiff.step1(),
+            ROWS, COLS, nJumpSpanX);
+        cudaDeviceSynchronize();
+        TimeLog::GetInstance()->addTimeLog("run_kernel_phase_correction for X", stopWatch.Span());
+    }
 
-    //// Y direction
-    //if (nJumpSpanY > 0) {
-    //    cv::cuda::transpose(matPhase, matPhaseT);
-    //    TimeLog::GetInstance()->addTimeLog("cv::cuda::transpose for Y", stopWatch.Span());
-    //    cv::cuda::GpuMat matPhaseDiff = CalcUtils::diff(matPhaseT, 1, CalcUtils::DIFF_ON_X_DIR);
-    //    run_kernel_phase_correction(2, 1024,
-    //        reinterpret_cast<float *>(matPhaseDiff.data),
-    //        reinterpret_cast<float *>(matPhaseT.data),
-    //        matPhaseDiff.step1(),
-    //        COLS, ROWS, nJumpSpanY);
-    //    cudaDeviceSynchronize();
-    //    TimeLog::GetInstance()->addTimeLog("run_kernel_phase_correction for Y", stopWatch.Span());
+    // Y direction
+    if (nJumpSpanY > 0) {
+        cv::cuda::transpose(matPhase, matPhaseT);
+        TimeLog::GetInstance()->addTimeLog("cv::cuda::transpose for Y", stopWatch.Span());
+        cv::cuda::GpuMat matPhaseDiff = CalcUtils::diff(matPhaseT, 1, CalcUtils::DIFF_ON_X_DIR);
+        run_kernel_phase_correction(2, 1024,
+            reinterpret_cast<float *>(matPhaseDiff.data),
+            reinterpret_cast<float *>(matPhaseT.data),
+            matPhaseDiff.step1(),
+            COLS, ROWS, nJumpSpanY);
+        cudaDeviceSynchronize();
+        TimeLog::GetInstance()->addTimeLog("run_kernel_phase_correction for Y", stopWatch.Span());
 
-    //    cv::cuda::transpose(matPhaseT, matPhase);
-    //    TimeLog::GetInstance()->addTimeLog("cv::cuda::transpose back", stopWatch.Span());
-    //}
+        cv::cuda::transpose(matPhaseT, matPhase);
+        TimeLog::GetInstance()->addTimeLog("cv::cuda::transpose back", stopWatch.Span());
+    }
 }
 
 ///*static*/ void CudaAlgorithm::phaseCorrection(cv::Mat &matPhase, int nJumpSpanX, int nJumpSpanY) {
@@ -630,8 +630,7 @@ static int divUp(int total, int grain)
 
     TimeLog::GetInstance()->addTimeLog("calculateSurfaceConvert3D run kernel", stopWatch.Span());
     cv::cuda::transpose(matPhaseT, matBufferGpu);
-
-    TimeLog::GetInstance()->addTimeLog("_calculateSurfaceConvert3D final process", stopWatch.Span());
+    TimeLog::GetInstance()->addTimeLog("cv::cuda::transpose back data", stopWatch.Span());
 }
 
 /*static*/ void CudaAlgorithm::phaseToHeight3D(

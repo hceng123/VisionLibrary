@@ -966,24 +966,43 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
     cv::cuda::compare(matResultGpu, betaBase - 0.1, matMaskGpu, cv::CmpTypes::CMP_LT);
     matResultGpu.setTo(betaBase, matMaskGpu);
 
+    TimeLog::GetInstance()->addTimeLog("Before median filter.", stopWatch.Span());
+
+    cv::Mat matResult;
+    matResultGpu.download(matResult);
+    TimeLog::GetInstance()->addTimeLog("Before cv::medianBlur", stopWatch.Span());
+    cv::medianBlur(matResult, matResult, 5);
+    TimeLog::GetInstance()->addTimeLog("After cv::medianBlur", stopWatch.Span());
+    matResultGpu.upload(matResult);
+
+    TimeLog::GetInstance()->addTimeLog("After median filter.", stopWatch.Span());
+
+    if (pstCmd->bEnableGaussianFilter) {
+        auto ptrFilter = cv::cuda::createGaussianFilter(CV_32FC1, CV_32FC1, cv::Size(5, 5), 5, 5, cv::BorderTypes::BORDER_REPLICATE);
+        ptrFilter->apply(matResultGpu, matResultGpu);
+        //cv::GaussianBlur(pstRpy->matPhase, pstRpy->matPhase, cv::Size(5, 5), 5, 5, cv::BorderTypes::BORDER_REPLICATE);
+    }
+
     pstRpy->matNanMask = matAvgUnderTolIndex;
 
     if (!pstCmd->mat3DBezierK.empty() && !pstCmd->mat3DBezierSurface.empty()) {
         std::vector<float> vecParamMinMaxXY{ 1.f, ToFloat(pstRpy->matPhase.cols), 1.f, ToFloat(pstRpy->matPhase.rows),
             ToFloat(pstCmd->fMinPhase), ToFloat(pstCmd->fMaxPhase) };
-        //cv::cuda::GpuMat mat3DBezierSurfaceGpu(pstCmd->mat3DBezierSurface);
-        //CudaAlgorithm::calculateSurfaceConvert3D(matResultGpu, matPhaseT, matBufferGpu, vecParamMinMaxXY, 4, mat3DBezierSurfaceGpu);
-        //matBufferGpu.download(pstRpy->matHeight);
-        matResultGpu.download(pstRpy->matPhase);
-        pstRpy->matHeight = _calculateSurfaceConvert3D(pstRpy->matPhase, vecParamMinMaxXY, 4, pstCmd->mat3DBezierSurface);
+        cv::cuda::GpuMat mat3DBezierSurfaceGpu(pstCmd->mat3DBezierSurface);
+        TimeLog::GetInstance()->addTimeLog("Before CudaAlgorithm::calculateSurfaceConvert3D", stopWatch.Span());
+        CudaAlgorithm::calculateSurfaceConvert3D(matResultGpu, matPhaseT, matBufferGpu, vecParamMinMaxXY, 4, mat3DBezierSurfaceGpu);
+        TimeLog::GetInstance()->addTimeLog("After CudaAlgorithm::calculateSurfaceConvert3D", stopWatch.Span());
+        matBufferGpu.download(pstRpy->matHeight);
+        //matResultGpu.download(pstRpy->matPhase);
+        //pstRpy->matHeight = _calculateSurfaceConvert3D(pstRpy->matPhase, vecParamMinMaxXY, 4, pstCmd->mat3DBezierSurface);
     }
     else
         pstRpy->matHeight = pstRpy->matPhase;
 
-    cv::medianBlur(pstRpy->matHeight, pstRpy->matHeight, 5);
+    //cv::medianBlur(pstRpy->matHeight, pstRpy->matHeight, 5);
 
-    if (pstCmd->bEnableGaussianFilter)
-        cv::GaussianBlur(pstRpy->matHeight, pstRpy->matHeight, cv::Size(5, 5), 5, 5, cv::BorderTypes::BORDER_REPLICATE);
+    //if (pstCmd->bEnableGaussianFilter)
+    //    cv::GaussianBlur(pstRpy->matHeight, pstRpy->matHeight, cv::Size(5, 5), 5, 5, cv::BorderTypes::BORDER_REPLICATE);
 
     TimeLog::GetInstance()->addTimeLog("_calcHeightFromPhase.", stopWatch.Span());
     pstRpy->enStatus = VisionStatus::OK;
