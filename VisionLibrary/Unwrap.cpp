@@ -892,12 +892,12 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
 
     TimeLog::GetInstance()->addTimeLog("Upload data to GPU", stopWatch.Span());
 
-    CudaAlgorithm::phaseWrapBuffer(matAlphaGpu, matBufferGpu, pstCmd->fPhaseShift);
+    CudaAlgorithm::phaseWrapBuffer(matAlphaGpu, matBufferGpu, pstCmd->fPhaseShift, stream);
     
     TimeLog::GetInstance()->addTimeLog("CudaAlgorithm::phaseWrapBuffer", stopWatch.Span());
 
     //matBuffer1 = matAlpha * pstCmd->matThickToThinK.at<DATA_TYPE>(0);
-    cv::cuda::multiply(matAlphaGpu, pstCmd->matThickToThinK.at<DATA_TYPE>(0), matBufferGpu);
+    cv::cuda::multiply(matAlphaGpu, pstCmd->matThickToThinK.at<DATA_TYPE>(0), matBufferGpu, 1, -1, stream);
     TimeLog::GetInstance()->addTimeLog("Multiply takes.", stopWatch.Span());
 
     CudaAlgorithm::phaseWrapByRefer(matBetaGpu, matBufferGpu, stream);
@@ -909,16 +909,16 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
     const float SHIFT_TO_BASE = 0.2f;
 
     //cv::Mat matBeta3 = _phaseWarpNoAutoBase(matBeta, betaBase / 2 + SHIFT_TO_BASE); // 0.2 is also shift, means - 0.6~1.4
-    CudaAlgorithm::phaseWarpNoAutoBase(matBetaGpu, matBufferGpu, betaBase / 2 + SHIFT_TO_BASE);
+    CudaAlgorithm::phaseWarpNoAutoBase(matBetaGpu, matBufferGpu, betaBase / 2 + SHIFT_TO_BASE, stream);
     cv::cuda::GpuMat matMaskGpu;
-    cv::cuda::compare(matBufferGpu, matBetaGpu, matMaskGpu, cv::CmpTypes::CMP_GT);
-    matBufferGpu.copyTo(matBetaGpu, matMaskGpu);
-    matBetaGpu.setTo(betaBase, matAvgUnderTolIndexGpu);
+    cv::cuda::compare(matBufferGpu, matBetaGpu, matMaskGpu, cv::CmpTypes::CMP_GT, stream);
+    matBufferGpu.copyTo(matBetaGpu, matMaskGpu, stream);
+    matBetaGpu.setTo(betaBase, matAvgUnderTolIndexGpu, stream);
 
     cv::cuda::GpuMat matPhaseT(matAlpha.cols, matAlpha.rows, CV_32FC1);
 
     if (pstCmd->nRemoveJumpSpan > 0) {
-        CudaAlgorithm::phaseCorrection(matBetaGpu, matPhaseT, pstCmd->nRemoveJumpSpan, pstCmd->nRemoveJumpSpan);
+        CudaAlgorithm::phaseCorrection(matBetaGpu, matPhaseT, pstCmd->nRemoveJumpSpan, pstCmd->nRemoveJumpSpan, stream);
         TimeLog::GetInstance()->addTimeLog("phaseCorrection for beta.", stopWatch.Span());
     }
 
@@ -947,12 +947,12 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
 
         TimeLog::GetInstance()->addTimeLog("Parepare data for phaseCorrectionCmp for gamma.", stopWatch.Span());
 
-        CudaAlgorithm::phaseCorrectionCmp(matGammaGpu, matGammaGpu1, matPhaseT, pstCmd->nCompareRemoveJumpSpan);
+        CudaAlgorithm::phaseCorrectionCmp(matGammaGpu, matGammaGpu1, matPhaseT, pstCmd->nCompareRemoveJumpSpan, stream);
         
         TimeLog::GetInstance()->addTimeLog("phaseCorrectionCmp for gamma.", stopWatch.Span());
 
         if (pstCmd->nRemoveJumpSpan > 0) {
-            CudaAlgorithm::phaseCorrection(matGammaGpu, matPhaseT, pstCmd->nRemoveJumpSpan, pstCmd->nRemoveJumpSpan);
+            CudaAlgorithm::phaseCorrection(matGammaGpu, matPhaseT, pstCmd->nRemoveJumpSpan, pstCmd->nRemoveJumpSpan, stream);
             TimeLog::GetInstance()->addTimeLog("phaseCorrection for gamma.", stopWatch.Span());
         }
 
@@ -990,9 +990,9 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
             ToFloat(pstCmd->fMinPhase), ToFloat(pstCmd->fMaxPhase) };
 
         TimeLog::GetInstance()->addTimeLog("Before CudaAlgorithm::calculateSurfaceConvert3D", stopWatch.Span());
-        CudaAlgorithm::calculateSurfaceConvert3D(matResultGpu, matPhaseT, matBufferGpu, vecParamMinMaxXY, 4, pstCmd->nDlpNo);
+        CudaAlgorithm::calculateSurfaceConvert3D(matResultGpu, matPhaseT, matBufferGpu, vecParamMinMaxXY, 4, pstCmd->nDlpNo, stream);
         TimeLog::GetInstance()->addTimeLog("After CudaAlgorithm::calculateSurfaceConvert3D", stopWatch.Span());
-        matBufferGpu.download(pstRpy->matHeight);
+        matBufferGpu.download(pstRpy->matHeight, stream);
         //matResultGpu.download(pstRpy->matPhase);
         //pstRpy->matHeight = _calculateSurfaceConvert3D(pstRpy->matPhase, vecParamMinMaxXY, 4, pstCmd->mat3DBezierSurface);
     }

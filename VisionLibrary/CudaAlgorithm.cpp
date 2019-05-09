@@ -675,7 +675,7 @@ static int divUp(int total, int grain)
         len, ss,
         d_P3);
 
-    calcSumAndConvertMatrix(d_P3, ss, matPhaseT);
+    calcSumAndConvertMatrix(d_P3, ss, matPhaseT, stream);
 
     cudaFree(d_P3);
 
