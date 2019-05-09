@@ -7,6 +7,7 @@
 void run_kernel_merge_height_intersect(
     uint32_t gridSize,
     uint32_t blockSize,
+    cudaStream_t cudaStream,
     float* matOne,
     float *matTwo,
     float *d_result,
@@ -17,6 +18,7 @@ void run_kernel_merge_height_intersect(
 void run_kernel_select_cmp_point(
     uint32_t gridSize,
     uint32_t blockSize,
+    cudaStream_t cudaStream,
     float* dMap,
     float* dPhase,
     uint8_t* matResult,
@@ -28,6 +30,7 @@ void run_kernel_select_cmp_point(
 void run_kernel_phase_correction(
     uint32_t gridSize,
     uint32_t blockSize,
+    cudaStream_t cudaStream,
     float* phaseDiff,
     float* phase,
     uint32_t step,
@@ -38,12 +41,14 @@ void run_kernel_phase_correction(
 void run_kernel_floor(
     dim3 grid,
     dim3 threads,
+    cudaStream_t cudaStream,
     float *data,
     uint32_t step,
     const int ROWS,
     const int COLS);
 
 void run_kernel_interval_average(
+    cudaStream_t cudaStream,
     float *data,
     uint32_t step,
     const int ROWS,
@@ -52,6 +57,7 @@ void run_kernel_interval_average(
     float *result);
 
 void run_kernel_range_interval_average(
+    cudaStream_t cudaStream,
     const float *data,
     uint32_t step,
     const int ROWS,
@@ -64,6 +70,7 @@ void run_kernel_range_interval_average(
 void run_kernel_phase_to_height_3d(
     dim3 grid,
     dim3 threads,
+    cudaStream_t cudaStream,
     const float* pZInRow, // len x 1
     const float* pPolyParamsInput, // 1 x ss
     const float* xxt, // len x ss
@@ -76,6 +83,7 @@ void run_kernel_phase_to_height_3d(
 void run_kernel_calc_sum_and_convert_matrix(
     dim3 grid,
     dim3 threads,
+    cudaStream_t cudaStream,
     float* pInputData,
     const int ss,
     float* pOutput,

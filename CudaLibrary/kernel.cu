@@ -108,12 +108,12 @@ __global__ void cdp_simple_quicksort(T *data, int left, int right, int depth)
 // Call the quicksort kernel from the host.
 ////////////////////////////////////////////////////////////////////////////////
 template<typename T>
-void run_qsort(T *data, unsigned int nitems)
+void run_qsort(T *data, unsigned int nitems, cudaStream_t cudaStream)
 {
     // Launch on device
     int left = 0;
     int right = nitems-1;
-    cdp_simple_quicksort<<< 1, 1 >>>(data, left, right, 0);
+    cdp_simple_quicksort<<< 1, 1, 0, cudaStream>>>(data, left, right, 0);
 }
 
 __global__
@@ -218,13 +218,14 @@ void kernel_merge_height_intersect(float* matOne, float *matTwo, float *d_result
 void run_kernel_merge_height_intersect(
     uint32_t gridSize,
     uint32_t blockSize,
+    cudaStream_t cudaStream,
     float* matOne,
     float *matTwo,
     float *d_result,
     int rows,
     int cols,
     float fDiffThreshold) {
-    kernel_merge_height_intersect<<<gridSize, blockSize>>>(matOne, matTwo, d_result, rows, cols, fDiffThreshold);
+    kernel_merge_height_intersect<<<gridSize, blockSize, 0, cudaStream>>>(matOne, matTwo, d_result, rows, cols, fDiffThreshold);
 }
 
 __global__
@@ -351,6 +352,7 @@ void test_kernel_select_cmp_point(
 void run_kernel_select_cmp_point(
     uint32_t gridSize,
     uint32_t blockSize,
+    cudaStream_t cudaStream,
     float* dMap,
     float* dPhase,
     uint8_t* matResult,
@@ -358,7 +360,7 @@ void run_kernel_select_cmp_point(
     const int ROWS,
     const int COLS,
     const int span) {
-    kernel_select_cmp_point<<<gridSize, blockSize>>>(dMap, dPhase, matResult, step, ROWS, COLS, span);
+    kernel_select_cmp_point<<<gridSize, blockSize, 0, cudaStream>>>(dMap, dPhase, matResult, step, ROWS, COLS, span);
     //test_kernel_select_cmp_point(dMap, dPhase, matResult, ROWS, COLS, span);
 }
 
@@ -646,13 +648,14 @@ void cpu_kernel_phase_correction(
 void run_kernel_phase_correction(
     uint32_t gridSize,
     uint32_t blockSize,
+    cudaStream_t cudaStream,
     float* phaseDiff,
     float* phase,
     uint32_t step,
     const int ROWS,
     const int COLS,
     const int span) {
-    kernel_phase_correction<<<gridSize, blockSize>>>(phaseDiff, phase, step, ROWS, COLS, span);
+    kernel_phase_correction<<<gridSize, blockSize, 0, cudaStream>>>(phaseDiff, phase, step, ROWS, COLS, span);
     //cpu_kernel_phase_correction(phaseDiff, phase, step, ROWS, COLS, span);
 }
 
@@ -673,11 +676,12 @@ void kernel_floor(
 void run_kernel_floor(
     dim3 grid,
     dim3 threads,
+    cudaStream_t cudaStream,
     float *data,
     uint32_t step,
     const int ROWS,
     const int COLS) {
-    kernel_floor<<<grid, threads >>>(data, step, ROWS, COLS);
+    kernel_floor<<<grid, threads, 0, cudaStream>>>(data, step, ROWS, COLS);
 }
 
 __global__
@@ -700,6 +704,7 @@ void kernel_interval_average(
 }
 
 void run_kernel_interval_average(
+    cudaStream_t cudaStream,
     float *data,
     uint32_t step,
     const int ROWS,
@@ -709,7 +714,7 @@ void run_kernel_interval_average(
 
     float* d_result;
     cudaMalloc(&d_result, sizeof(float));
-    kernel_interval_average <<<1, 1 >>>(data, step, ROWS, COLS, interval, d_result);
+    kernel_interval_average<<<1, 1, 0, cudaStream>>>(data, step, ROWS, COLS, interval, d_result);
 
     cudaMemcpy(result, d_result, sizeof(float), cudaMemcpyDeviceToHost);
     cudaFree(d_result);
@@ -805,6 +810,7 @@ void kernel_range_average(float *data, const int size, float rangeStart, float r
 }
 
 void run_kernel_range_interval_average(
+    cudaStream_t cudaStream,
     const float *data,
     uint32_t step,
     const int ROWS,
@@ -820,10 +826,10 @@ void run_kernel_range_interval_average(
     const int SIZE = RESULT_ROWS * RESULT_COLS;
 
     cudaMalloc(&d_result, SIZE * sizeof(float));
-    kernel_interval_pick_data <<<1, 1>>>(data, step, ROWS, COLS, interval, d_result);
+    kernel_interval_pick_data <<<1, 1, 0, cudaStream>>>(data, step, ROWS, COLS, interval, d_result);
 
-    run_qsort(d_result, SIZE);
-    kernel_range_average<<<1, 1>>>(d_result, SIZE, rangeStart, rangeEnd);
+    run_qsort(d_result, SIZE, cudaStream);
+    kernel_range_average<<<1, 1, 0, cudaStream>>>(d_result, SIZE, rangeStart, rangeEnd);
     cudaMemcpy(result, d_result, sizeof(float), cudaMemcpyDeviceToHost);
     cudaFree(d_result);
 }
@@ -858,6 +864,7 @@ void kernel_phase_to_height_3d(
 void run_kernel_phase_to_height_3d(
     dim3 grid,
     dim3 threads,
+    cudaStream_t cudaStream,
     const float* pZInRow, // len x 1
     const float* pPolyParamsInput, // 1 x ss
     const float* xxt, // len x ss
@@ -867,7 +874,7 @@ void run_kernel_phase_to_height_3d(
     float* pResult // len x ss
     )
 {
-    kernel_phase_to_height_3d<<<grid, threads>>>(pZInRow, pPolyParamsInput, xxt, xxtStep, len, ss, pResult);
+    kernel_phase_to_height_3d<<<grid, threads, 0, cudaStream>>>(pZInRow, pPolyParamsInput, xxt, xxtStep, len, ss, pResult);
 }
 
 __global__
@@ -894,11 +901,12 @@ void kernel_calc_sum_and_convert_matrix(
 void run_kernel_calc_sum_and_convert_matrix(
     dim3 grid,
     dim3 threads,
+    cudaStream_t cudaStream,
     float* pInputData,
     const int ss,
     float* pOutput,
     const int step,
     const int ROWS,
     const int COLS) {
-    kernel_calc_sum_and_convert_matrix<<<grid, threads>>>(pInputData, ss, pOutput, step, ROWS, COLS);
+    kernel_calc_sum_and_convert_matrix<<<grid, threads, 0, cudaStream>>>(pInputData, ss, pOutput, step, ROWS, COLS);
 }

@@ -248,12 +248,12 @@ static void TestCalcUtilsDiffGpu() {
 
         cv::cuda::GpuMat matGpuInput(matInput), matGpuOutput;
 
-        matGpuOutput = CalcUtils::diff(matGpuInput, 1, 1);
+        matGpuOutput = CudaAlgorithm::diff(matGpuInput, 1, 1);
         matGpuOutput.download(matResult);
         std::cout << "Diff recursive time 1, dim 1 result: " << std::endl;
         printfMat<float>(matResult);
 
-        matGpuOutput = CalcUtils::diff(matGpuInput, 1, 2);
+        matGpuOutput = CudaAlgorithm::diff(matGpuInput, 1, 2);
         matGpuOutput.download(matResult);
         std::cout << "Diff recursive time 1, dim 2 result: " << std::endl;
         printfMat<float>(matResult);
@@ -277,22 +277,22 @@ static void TestCalcUtilsDiffGpu() {
 
         cv::cuda::GpuMat matGpuInput(matInput), matGpuOutput;
 
-        matGpuOutput = CalcUtils::diff(matGpuInput, 1, 1);
+        matGpuOutput = CudaAlgorithm::diff(matGpuInput, 1, 1);
         matGpuOutput.download(matResult);
         std::cout << "Diff recursive time 1, dim 1 result: " << std::endl;
         printfMat<float>(matResult);
 
-        matGpuOutput = CalcUtils::diff(matGpuInput, 1, 2);
+        matGpuOutput = CudaAlgorithm::diff(matGpuInput, 1, 2);
         matGpuOutput.download(matResult);
         std::cout << "Diff recursive time 1, dim 2 result: " << std::endl;
         printfMat<float>(matResult);
 
-        matGpuOutput = CalcUtils::diff(matGpuInput, 2, 1);
+        matGpuOutput = CudaAlgorithm::diff(matGpuInput, 2, 1);
         matGpuOutput.download(matResult);
         std::cout << "Diff recursive time 2, dim 1 result: " << std::endl;
         printfMat<float>(matResult);
 
-        matGpuOutput = CalcUtils::diff(matGpuInput, 2, 2);
+        matGpuOutput = CudaAlgorithm::diff(matGpuInput, 2, 2);
         matGpuOutput.download(matResult);
         std::cout << "Diff recursive time 2, dim 2 result: " << std::endl;
         printfMat<float>(matResult);

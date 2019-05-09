@@ -14,6 +14,7 @@
 #include "CudaAlgorithm.h"
 #include "opencv2/cudaarithm.hpp"
 #include "opencv2/cudafilters.hpp"
+#include "opencv2/core/cuda_stream_accessor.hpp"
 
 #define MARK_FUNCTION_START_TIME    CStopWatch      stopWatch; __int64 functionStart = stopWatch.AbsNow()
 #define MARK_FUNCTION_END_TIME      TimeLog::GetInstance()->addTimeLog( __FUNCTION__, stopWatch.AbsNow() - functionStart)
@@ -805,7 +806,7 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
 
 /*static*/ void Unwrap::calc3DHeightGpu(const PR_CALC_3D_HEIGHT_NEW_CMD *const pstCmd, PR_CALC_3D_HEIGHT_RPY *const pstRpy) {
     CStopWatch stopWatch;
-    cv::cuda::Stream myCudaStream;
+    cv::cuda::Stream stream;
 
     std::vector<cv::Mat> vecConvertedImgs;
     for (auto &mat : pstCmd->vecInputImgs) {
@@ -884,10 +885,10 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
 #endif
 
     cv::cuda::GpuMat matBufferGpu(matAlpha.rows, matAlpha.cols, CV_32FC1);
-    cv::cuda::GpuMat matAlphaGpu(matAlpha);
-    cv::cuda::GpuMat matBetaGpu(matBeta);
-    cv::cuda::GpuMat matGammaGpu(matGamma);
-    cv::cuda::GpuMat matAvgUnderTolIndexGpu(matAvgUnderTolIndex);
+    cv::cuda::GpuMat matAlphaGpu; matAlphaGpu.upload(matAlpha, stream);
+    cv::cuda::GpuMat matBetaGpu; matBetaGpu.upload(matBeta, stream);
+    cv::cuda::GpuMat matGammaGpu; matGammaGpu.upload(matGamma, stream);
+    cv::cuda::GpuMat matAvgUnderTolIndexGpu; matAvgUnderTolIndexGpu.upload(matAvgUnderTolIndex, stream);
 
     TimeLog::GetInstance()->addTimeLog("Upload data to GPU", stopWatch.Span());
 
@@ -899,11 +900,11 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
     cv::cuda::multiply(matAlphaGpu, pstCmd->matThickToThinK.at<DATA_TYPE>(0), matBufferGpu);
     TimeLog::GetInstance()->addTimeLog("Multiply takes.", stopWatch.Span());
 
-    CudaAlgorithm::phaseWrapByRefer(matBetaGpu, matBufferGpu);
+    CudaAlgorithm::phaseWrapByRefer(matBetaGpu, matBufferGpu, stream);
     TimeLog::GetInstance()->addTimeLog("CudaAlgorithm::phaseWrapByRefer.", stopWatch.Span());
 
     const int dt = 20; // Use one data in every 20 pixels
-    float betaBase =  CudaAlgorithm::intervalRangeAverage(matBetaGpu, dt, 0.25f, 0.45f);
+    float betaBase = CudaAlgorithm::intervalRangeAverage(matBetaGpu, dt, 0.25f, 0.45f, stream);
 
     const float SHIFT_TO_BASE = 0.2f;
 
@@ -931,15 +932,15 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
         float gammaBase = betaBase * k2 / k1;
         //cv::Mat matGamma1 = _phaseWarpNoAutoBase(matGamma, gammaBase / 2 + SHIFT_TO_BASE);
         cv::cuda::GpuMat matGammaGpu1(ROWS, COLS, CV_32FC1);
-        CudaAlgorithm::phaseWarpNoAutoBase(matGammaGpu, matGammaGpu1, gammaBase / 2 + SHIFT_TO_BASE);
+        CudaAlgorithm::phaseWarpNoAutoBase(matGammaGpu, matGammaGpu1, gammaBase / 2 + SHIFT_TO_BASE, stream);
         //matBuffer1 = matBeta * k2 / k1;
-        cv::cuda::multiply(matBetaGpu, k2 / k1, matBufferGpu);
+        cv::cuda::multiply(matBetaGpu, k2 / k1, matBufferGpu, 1, -1, stream);
 
         //_phaseWrapByRefer(matGamma, matBuffer1);
-        CudaAlgorithm::phaseWrapByRefer(matGammaGpu, matBufferGpu);
+        CudaAlgorithm::phaseWrapByRefer(matGammaGpu, matBufferGpu, stream);
 
-        matGammaGpu.setTo(gammaBase, matAvgUnderTolIndexGpu);
-        matGammaGpu1.setTo(gammaBase, matAvgUnderTolIndexGpu);
+        matGammaGpu.setTo(gammaBase, matAvgUnderTolIndexGpu, stream);
+        matGammaGpu1.setTo(gammaBase, matAvgUnderTolIndexGpu, stream);
 
         //CudaAlgorithm::phaseCorrectionCmp(matGamma, matGamma1, pstCmd->nCompareRemoveJumpSpan);
         //cv::cuda::GpuMat matGammaGpu(matGamma), matGammaGpu1(matGamma1);
@@ -957,28 +958,28 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
 
         //matGammaGpu.download(matGamma);
         matResultGpu = matGammaGpu;
-        cv::cuda::multiply(matResultGpu, k1 / k2, matResultGpu);
+        cv::cuda::multiply(matResultGpu, k1 / k2, matResultGpu, 1, -1, stream);
     }
     else
         matResultGpu = matBetaGpu;
 
-    cv::cuda::compare(matResultGpu, betaBase - 0.1, matMaskGpu, cv::CmpTypes::CMP_LT);
-    matResultGpu.setTo(betaBase, matMaskGpu);
+    cv::cuda::compare(matResultGpu, betaBase - 0.1, matMaskGpu, cv::CmpTypes::CMP_LT, stream);
+    matResultGpu.setTo(betaBase, matMaskGpu, stream);
 
     TimeLog::GetInstance()->addTimeLog("Before median filter.", stopWatch.Span());
 
     cv::Mat matResult;
-    matResultGpu.download(matResult);
+    matResultGpu.download(matResult, stream);
     TimeLog::GetInstance()->addTimeLog("Before cv::medianBlur", stopWatch.Span());
     cv::medianBlur(matResult, matResult, 5);
     TimeLog::GetInstance()->addTimeLog("After cv::medianBlur", stopWatch.Span());
-    matResultGpu.upload(matResult);
+    matResultGpu.upload(matResult, stream);
 
     TimeLog::GetInstance()->addTimeLog("After median filter.", stopWatch.Span());
 
     if (pstCmd->bEnableGaussianFilter) {
         auto ptrFilter = cv::cuda::createGaussianFilter(CV_32FC1, CV_32FC1, cv::Size(5, 5), 5, 5, cv::BorderTypes::BORDER_REPLICATE);
-        ptrFilter->apply(matResultGpu, matResultGpu);
+        ptrFilter->apply(matResultGpu, matResultGpu, stream);
         //cv::GaussianBlur(pstRpy->matPhase, pstRpy->matPhase, cv::Size(5, 5), 5, 5, cv::BorderTypes::BORDER_REPLICATE);
     }
 
