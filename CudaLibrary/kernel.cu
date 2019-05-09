@@ -239,6 +239,9 @@ void kernel_select_cmp_point(
     int start = blockIdx.x * blockDim.x + threadIdx.x;
     int stride = blockDim.x * gridDim.x;
 
+    if (start >= ROWS)
+        return;
+
     int *arrayIdx1 = (int *)malloc(COLS / 4 * sizeof(int));
     int *arrayIdx2 = (int *)malloc(COLS / 4 * sizeof(int));
 
@@ -391,6 +394,9 @@ void kernel_phase_correction(
     const int span) {
     int start = blockIdx.x * blockDim.x + threadIdx.x;
     int stride = blockDim.x * gridDim.x;
+
+    if (start >= ROWS)
+        return;
 
     const float ONE_HALF_CYCLE = 1.f;
     const float ONE_CYCLE = 2.f;
