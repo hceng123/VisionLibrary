@@ -54,6 +54,7 @@ void run_kernel_interval_average(
     const int ROWS,
     const int COLS,
     int interval,
+    float *d_result,
     float *result);
 
 void run_kernel_range_interval_average(
@@ -65,6 +66,7 @@ void run_kernel_range_interval_average(
     int interval,
     const float rangeStart,
     const float rangeEnd,
+    float* d_result,
     float *result);
 
 void run_kernel_phase_to_height_3d(

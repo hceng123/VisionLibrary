@@ -22,6 +22,7 @@ namespace Vision
 //cv::cuda::Stream m_cudaStreams[NUM_OF_DLP];
 
 /*static*/ float* CudaAlgorithm::m_dlp3DBezierSurface[NUM_OF_DLP] = {nullptr};
+/*static*/ Calc3DHeightVars CudaAlgorithm::m_arrCalc3DHeightVars[NUM_OF_DLP];
 
 static int divUp(int total, int grain)
 {
@@ -61,18 +62,22 @@ static int divUp(int total, int grain)
 
         cudaMemcpy(m_dlp3DBezierSurface[dlp], h_buffer, MEM_SIZE, cudaMemcpyHostToDevice);
 
-        //err = cudaMemcpy2D(
-        //    m_dlp3DBezierSurface[dlp],
-        //    COLS * sizeof(float),
-        //    pstCmd->vec3DBezierSurface[dlp].data,
-        //    pstCmd->vec3DBezierSurface[dlp].step1() * sizeof(float),
-        //    COLS * sizeof(float),
-        //    pstCmd->vec3DBezierSurface[dlp].rows,
-        //    cudaMemcpyHostToDevice);
-        //if (err != cudaSuccess) {
-        //    pstRpy->enStatus = VisionStatus::CUDA_MEMORY_ERROR;
-        //    return pstRpy->enStatus;
-        //}
+        err = cudaMalloc(reinterpret_cast<void **>(&m_arrCalc3DHeightVars[dlp].d_p3), MEM_SIZE);
+        if (err != cudaSuccess) {
+            pstRpy->enStatus = VisionStatus::CUDA_MEMORY_ERROR;
+            return pstRpy->enStatus;
+        }
+
+        err = cudaMalloc(reinterpret_cast<void **>(&m_arrCalc3DHeightVars[dlp].d_tmpResult), sizeof(float));
+        if (err != cudaSuccess) {
+            pstRpy->enStatus = VisionStatus::CUDA_MEMORY_ERROR;
+            return pstRpy->enStatus;
+        }
+
+        m_arrCalc3DHeightVars[dlp].matBufferGpu = cv::cuda::GpuMat(2048, 2040, CV_32FC1);
+        m_arrCalc3DHeightVars[dlp].matBufferGpuT = cv::cuda::GpuMat(2040, 2048, CV_32FC1);
+        m_arrCalc3DHeightVars[dlp].matMaskGpu = cv::cuda::GpuMat(2048, 2040, CV_8UC1);
+        m_arrCalc3DHeightVars[dlp].matMaskGpuT = cv::cuda::GpuMat(2040, 2048, CV_8UC1);
     }
     free(h_buffer);
 
@@ -110,7 +115,7 @@ static int divUp(int total, int grain)
     return cv::cuda::GpuMat();
 }
 
-/*static*/ float CudaAlgorithm::intervalAverage(const cv::cuda::GpuMat &matInput, int interval, cv::cuda::Stream& stream /*= cv::cuda::Stream::Null()*/) {
+/*static*/ float CudaAlgorithm::intervalAverage(const cv::cuda::GpuMat &matInput, int interval, float *d_result,  cv::cuda::Stream& stream /*= cv::cuda::Stream::Null()*/) {
     float result = 0;
     run_kernel_interval_average(
         cv::cuda::StreamAccessor::getStream(stream),
@@ -119,11 +124,12 @@ static int divUp(int total, int grain)
         matInput.rows,
         matInput.cols,
         interval,
+        d_result,
         &result);
     return result;
 }
 
-/*static*/ float CudaAlgorithm::intervalRangeAverage(const cv::cuda::GpuMat& matInput, int interval, float rangeStart, float rangeEnd,
+/*static*/ float CudaAlgorithm::intervalRangeAverage(const cv::cuda::GpuMat& matInput, int interval, float rangeStart, float rangeEnd, float* d_result,
     cv::cuda::Stream& stream /*= cv::cuda::Stream::Null()*/) {
     float result = 0;
     run_kernel_range_interval_average(
@@ -135,12 +141,14 @@ static int divUp(int total, int grain)
         interval,
         rangeStart,
         rangeEnd,
+        d_result,
         &result);
     return result;
 }
 
 /*static*/ void CudaAlgorithm::phaseWrapBuffer(cv::cuda::GpuMat& matPhase,
     cv::cuda::GpuMat& matBuffer,
+    float* d_tmpVar,
     float fShift/* = 0.f*/,
     cv::cuda::Stream& stream /*= cv::cuda::Stream::Null()*/) {
     CStopWatch stopWatch;
@@ -152,12 +160,11 @@ static int divUp(int total, int grain)
 
     TimeLog::GetInstance()->addTimeLog("phaseWrapBuffer floor takes.", stopWatch.Span());
 
-    //matBuffer = matPhase - matBuffer * ONE_CYCLE;
     cv::cuda::addWeighted(matPhase, 1, matBuffer, -ONE_CYCLE, 0, matBuffer, -1, stream);
 
     TimeLog::GetInstance()->addTimeLog("_phaseWrap multiply and subtract takes.", stopWatch.Span());
 
-    float fMean = intervalAverage(matBuffer, 20, stream);
+    float fMean = intervalAverage(matBuffer, 20, d_tmpVar, stream);
 
     //matBuffer = matPhase / ONE_CYCLE + 0.5 - fShift - fMean / 2.f;
     cv::cuda::addWeighted(matPhase, 1.f / ONE_CYCLE, matBuffer, 0.f, 0.5f - fShift - fMean / 2.f, matBuffer, -1, stream);
@@ -201,7 +208,10 @@ static int divUp(int total, int grain)
 /*static*/ void CudaAlgorithm::phaseCorrectionCmp(
     cv::cuda::GpuMat& matPhase,
     const cv::cuda::GpuMat& matPhase1,
-    cv::cuda::GpuMat& matPhaseT,
+    cv::cuda::GpuMat& matBufferGpu,
+    cv::cuda::GpuMat& matBufferGpuT,
+    cv::cuda::GpuMat& matMaskGpu,
+    cv::cuda::GpuMat& matMaskGpuT,
     int span,
     cv::cuda::Stream& stream /*= cv::cuda::Stream::Null()*/) {
     CStopWatch stopWatch;
@@ -210,17 +220,15 @@ static int divUp(int total, int grain)
     const int gridSize = 64;
     const int threadSize = 32;
 
-    cv::cuda::GpuMat matIdx;
-    cv::cuda::compare(matPhase, matPhase1, matIdx, cv::CmpTypes::CMP_NE, stream);
-    cv::cuda::GpuMat matMap(ROWS, COLS, CV_32FC1);
-    matMap.setTo(1, matIdx);
+    cv::cuda::compare(matPhase, matPhase1, matMaskGpu, cv::CmpTypes::CMP_NE, stream);
+    matBufferGpu.setTo(0, stream);
+    matBufferGpu.setTo(1, matMaskGpu, stream);
 
     // Note even the size of Mat ix ROW * (COL - 1), but actually the background memory size is still ROW * COL
-    cv::cuda::GpuMat dMap1 = diff(matMap, 1, CalcUtils::DIFF_ON_X_DIR, stream);
+    cv::cuda::GpuMat dMap1 = diff(matBufferGpu, 1, CalcUtils::DIFF_ON_X_DIR, stream);
     cv::cuda::GpuMat dxPhase = diff(matPhase, 1, CalcUtils::DIFF_ON_X_DIR, stream);
 
-    cv::cuda::GpuMat idxl1(ROWS, COLS, CV_8UC1);
-    idxl1.setTo(0);
+    matMaskGpu.setTo(0, stream);
 
     TimeLog::GetInstance()->addTimeLog("prepare data for phaseCorrectionCmp X", stopWatch.Span());
 
@@ -228,20 +236,19 @@ static int divUp(int total, int grain)
     run_kernel_select_cmp_point(gridSize, threadSize, cv::cuda::StreamAccessor::getStream(stream),
         reinterpret_cast<float *>(dMap1.data),
         reinterpret_cast<float *>(dxPhase.data),
-        idxl1.data,
+        matMaskGpu.data,
         dMap1.step1(),
         ROWS, COLS, span);
 
     TimeLog::GetInstance()->addTimeLog("run_kernel_select_cmp_point X", stopWatch.Span());
 
     // Select in Y direction, transpose the matrix to accelerate
-    cv::cuda::transpose(matMap, matMap, stream);
-    cv::cuda::transpose(matPhase, matPhaseT, stream);
+    cv::cuda::transpose(matBufferGpu, matBufferGpu, stream);
+    cv::cuda::transpose(matPhase, matBufferGpuT, stream);
 
-    cv::cuda::GpuMat dMap2 = diff(matMap, 1, CalcUtils::DIFF_ON_X_DIR, stream);
-    cv::cuda::GpuMat dyPhase = diff(matPhaseT, 1, CalcUtils::DIFF_ON_X_DIR, stream);
-    cv::cuda::GpuMat idxl2(COLS, ROWS, CV_8UC1);    // Note the indl2 is tranposed result, so the ROWS and COLS are changed
-    idxl2.setTo(0);
+    cv::cuda::GpuMat dMap2 = diff(matBufferGpu, 1, CalcUtils::DIFF_ON_X_DIR, stream);
+    cv::cuda::GpuMat dyPhase = diff(matBufferGpuT, 1, CalcUtils::DIFF_ON_X_DIR, stream);
+    matMaskGpuT.setTo(0, stream);
 
     TimeLog::GetInstance()->addTimeLog("prepare data for phaseCorrectionCmp Y", stopWatch.Span());
 
@@ -249,16 +256,16 @@ static int divUp(int total, int grain)
     run_kernel_select_cmp_point(gridSize, threadSize, cv::cuda::StreamAccessor::getStream(stream),
         reinterpret_cast<float *>(dMap2.data),
         reinterpret_cast<float *>(dyPhase.data),
-        idxl2.data,
+        matMaskGpuT.data,
         dMap2.step1(),
         COLS, ROWS, span);
 
-    cv::cuda::transpose(idxl2, idxl2, stream);
+    cv::cuda::transpose(matMaskGpuT, matMaskGpuT, stream);
 
     TimeLog::GetInstance()->addTimeLog("run_kernel_select_cmp_point Y", stopWatch.Span());
 
-    cv::cuda::bitwise_and(idxl1, idxl2, idxl1, cv::cuda::GpuMat(), stream);
-    matPhase1.copyTo(matPhase, idxl1, stream);
+    cv::cuda::bitwise_and(matMaskGpu, matMaskGpuT, matMaskGpu, cv::cuda::GpuMat(), stream);
+    matPhase1.copyTo(matPhase, matMaskGpu, stream);
 
     TimeLog::GetInstance()->addTimeLog("bitwise_and and copy data", stopWatch.Span());
 }
@@ -665,19 +672,17 @@ static int divUp(int total, int grain)
 
     dim3 threads(16, 4);
     dim3 grid(256, 1, 1);
-    float* d_P3;
-    cudaMalloc(&d_P3, len * ss * sizeof(float));
+    float* d_p3 = m_arrCalc3DHeightVars[nDlpNo].d_p3;
+
     run_kernel_phase_to_height_3d(grid, threads, cv::cuda::StreamAccessor::getStream(stream),
         reinterpret_cast<float*>(zInLine.data),
         reinterpret_cast<float*>(matPolyParassGpu.data),
         m_dlp3DBezierSurface[nDlpNo],
         ss,
         len, ss,
-        d_P3);
+        d_p3);
 
-    calcSumAndConvertMatrix(d_P3, ss, matPhaseT, stream);
-
-    cudaFree(d_P3);
+    calcSumAndConvertMatrix(d_p3, ss, matPhaseT, stream);
 
     TimeLog::GetInstance()->addTimeLog("calculateSurfaceConvert3D run kernel", stopWatch.Span());
     cv::cuda::transpose(matPhaseT, matBufferGpu, stream);
@@ -711,7 +716,7 @@ static int divUp(int total, int grain)
     cv::cuda::Stream& stream /*= cv::cuda::Stream::Null()*/) {
     dim3 threads(16, 16);
     dim3 grid(divUp(matResult.cols, threads.x), divUp(matResult.rows, threads.y));
-    matResult.setTo(0);
+    matResult.setTo(0, stream);
     run_kernel_calc_sum_and_convert_matrix(
         grid, threads, cv::cuda::StreamAccessor::getStream(stream),
         d_pInputData,

@@ -605,8 +605,11 @@ static void TestIntervalAverage() {
     cv::cuda::GpuMat matDataGpu;
     matDataGpu.upload(matDataCpu);
 
-    float result = CudaAlgorithm::intervalAverage(matDataGpu, 20);
-    
+    float* d_result;
+    cudaMalloc(reinterpret_cast<void **>(&d_result), sizeof(float));
+    float result = CudaAlgorithm::intervalAverage(matDataGpu, 20, d_result);
+    cudaFree(d_result);
+
     std::cout << "Average result " << result << std::endl;
 }
 
@@ -624,8 +627,11 @@ static void TestRangeIntervalAverage() {
     cv::cuda::GpuMat matDataGpu;
     matDataGpu.upload(matDataCpu);
 
-    float result = CudaAlgorithm::intervalRangeAverage(matDataGpu, 10, 0.4f, 0.6f);
-    
+    float* d_result;
+    cudaMalloc(reinterpret_cast<void **>(&d_result), sizeof(float));
+    float result = CudaAlgorithm::intervalRangeAverage(matDataGpu, 10, 0.4f, 0.6f, d_result);
+    cudaFree(d_result);
+
     std::cout << "Average result " << result << std::endl;
 }
 

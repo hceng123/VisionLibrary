@@ -6,6 +6,9 @@
 #define MAX_DEPTH       16
 #define INSERTION_SORT  32
 
+__constant__ float ONE_HALF_CYCLE = 1.f;
+__constant__ float ONE_CYCLE = 2.f;
+
 template<typename T>
 __device__ void selection_sort(T *data, int left, int right)
 {
@@ -400,9 +403,6 @@ void kernel_phase_correction(
     if (start >= ROWS)
         return;
 
-    const float ONE_HALF_CYCLE = 1.f;
-    const float ONE_CYCLE = 2.f;
-
     char* vecSignOfRow = (char*)malloc(COLS * sizeof(char));
     char* vecAmplOfRow = (char*)malloc(COLS * sizeof(char));
     int* vecJumpCol = (int*)malloc(COLS / 4 * sizeof(int));
@@ -426,7 +426,7 @@ void kernel_phase_correction(
                 vecSignOfRow[col] = 1;
                 bRowWithPosJump = true;
 
-                char nJumpAmplitude = static_cast<char> (ceil(fabs(value) / 2.f) * 2);
+                char nJumpAmplitude = static_cast<char> (std::ceil(std::fabs(value) / 2.f) * 2);
                 vecAmplOfRow[col] = nJumpAmplitude;
             }
 
@@ -465,10 +465,11 @@ void kernel_phase_correction(
                 char chSignFirst = vecSignOfRow[nStart];        //The index is hard to understand. Use the sorted span index to find the original column.
                 char chSignSecond = vecSignOfRow[nEnd];
 
-                char chAmplFirst = vecAmplOfRow[nStart];
-                char chAmplSecond = vecAmplOfRow[nEnd];
-                char chTurnAmpl = min(chAmplFirst, chAmplSecond) / 2;
                 if (chSignFirst * chSignSecond == -1) { //it is a pair
+                    char chAmplFirst = vecAmplOfRow[nStart];
+                    char chAmplSecond = vecAmplOfRow[nEnd];
+                    char chTurnAmpl = min(chAmplFirst, chAmplSecond) / 2;
+
                     char chAmplNew = chAmplFirst - 2 * chTurnAmpl;
                     vecAmplOfRow[nStart] = chAmplNew;
                     if (chAmplNew <= 0)
@@ -710,14 +711,10 @@ void run_kernel_interval_average(
     const int ROWS,
     const int COLS,
     int interval,
+    float *d_result,
     float *result) {
-
-    float* d_result;
-    cudaMalloc(&d_result, sizeof(float));
     kernel_interval_average<<<1, 1, 0, cudaStream>>>(data, step, ROWS, COLS, interval, d_result);
-
     cudaMemcpy(result, d_result, sizeof(float), cudaMemcpyDeviceToHost);
-    cudaFree(d_result);
 }
 
 //__device__ unsigned int count = 0;
@@ -818,20 +815,17 @@ void run_kernel_range_interval_average(
     int interval,
     const float rangeStart,
     const float rangeEnd,
-    float *result) {
-
-    float* d_result;
+    float* d_result,
+    float* result) {
     const int RESULT_ROWS = static_cast<int>(ceil((float)ROWS / interval));
     const int RESULT_COLS = static_cast<int>(ceil((float)COLS / interval));
     const int SIZE = RESULT_ROWS * RESULT_COLS;
 
-    cudaMalloc(&d_result, SIZE * sizeof(float));
     kernel_interval_pick_data <<<1, 1, 0, cudaStream>>>(data, step, ROWS, COLS, interval, d_result);
 
     run_qsort(d_result, SIZE, cudaStream);
     kernel_range_average<<<1, 1, 0, cudaStream>>>(d_result, SIZE, rangeStart, rangeEnd);
     cudaMemcpy(result, d_result, sizeof(float), cudaMemcpyDeviceToHost);
-    cudaFree(d_result);
 }
 
 __global__
