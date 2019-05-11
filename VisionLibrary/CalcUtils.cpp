@@ -2,7 +2,6 @@
 
 #include "CalcUtils.hpp"
 #include "spline.h"
-#include "opencv2/cudafilters.hpp"
 
 namespace AOI
 {
@@ -27,26 +26,6 @@ namespace Vision
     else if (DIFF_ON_Y_DIR == nDimension)
         return cv::Mat(matResult, cv::Rect(0, 1, matResult.cols, matResult.rows - 1));
     return cv::Mat();
-}
-
-/*static*/ cv::cuda::GpuMat CalcUtils::diff(const cv::cuda::GpuMat& matInput, int nRecersiveTime, int nDimension) {
-    assert(DIFF_ON_X_DIR == nDimension || DIFF_ON_Y_DIR == nDimension);
-    if (nRecersiveTime > 1)
-        return diff(diff(matInput, nRecersiveTime - 1, nDimension), 1, nDimension);
-
-    cv::Mat matKernel;
-    if (DIFF_ON_X_DIR == nDimension)
-        matKernel = (cv::Mat_<float>(1, 2) << -1, 1);
-    else if (DIFF_ON_Y_DIR == nDimension)
-        matKernel = (cv::Mat_<float>(2, 1) << -1, 1);
-    auto filter = cv::cuda::createLinearFilter(CV_32FC1, CV_32FC1, matKernel, cv::Point(-1, -1), cv::BORDER_CONSTANT);
-    cv::cuda::GpuMat matResult;
-    filter->apply(matInput, matResult);
-    if (DIFF_ON_X_DIR == nDimension)
-        return cv::cuda::GpuMat(matResult, cv::Rect(1, 0, matResult.cols - 1, matResult.rows));
-    else if (DIFF_ON_Y_DIR == nDimension)
-        return cv::cuda::GpuMat(matResult, cv::Rect(0, 1, matResult.cols, matResult.rows - 1));
-    return cv::cuda::GpuMat();
 }
 
 /*static*/ float CalcUtils::ptDisToLine(const cv::Point2f &ptInput, bool bReversedFit, float fSlope, float fIntercept) {

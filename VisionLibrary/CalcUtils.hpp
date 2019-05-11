@@ -6,7 +6,6 @@
 
 #include "BaseType.h"
 #include "VisionHeader.h"
-#include "opencv2/core/cuda.hpp"
 
 namespace AOI
 {
@@ -425,7 +424,6 @@ public:
     }
 
     static cv::Mat diff(const cv::Mat &matInput, int nRecersiveTime, int nDimension);
-    static cv::cuda::GpuMat diff(const cv::cuda::GpuMat& matInput, int nRecersiveTime, int nDimension);
     static float ptDisToLine(const cv::Point2f &ptInput, bool bReversedFit, float fSlope, float fIntercept);
     static float lineSlope(const PR_Line2f &line);
     static void lineSlopeIntercept(const PR_Line2f &line, float &fSlope, float &fIntercept);

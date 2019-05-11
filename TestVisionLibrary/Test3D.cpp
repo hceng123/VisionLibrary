@@ -6,6 +6,8 @@
 #include <algorithm>
 #include <string>
 #include <fstream>
+#include <thread>
+#include <atomic>
 #include "TestSub.h"
 #include "../RegressionTest/UtilityFunc.h"
 #include "../VisionLibrary/CalcUtils.hpp"
@@ -1329,20 +1331,64 @@ void TestCalc4DLPHeight()
         fsIntegrated.release();
 
         stCalcHeightCmds[nDlp].vecInputImgs = VectorOfMat(vecImages.begin() + nDlp * IMAGE_COUNT, vecImages.begin() + (nDlp + 1) * IMAGE_COUNT);
-        PR_Calc3DHeightGpu(&stCalcHeightCmds[nDlp], &stCalcHeightRpys[nDlp]);
-        stCalcHeightRpys[nDlp].matHeight = stCalcHeightRpys[nDlp].matHeight + dlpOffset[nDlp];
 
-        PrintMinMaxLoc(stCalcHeightRpys[nDlp].matHeight, "DLP_" + std::to_string(nDlp + 1) + "_result");
+        //PR_Calc3DHeightGpu(&stCalcHeightCmds[nDlp], &stCalcHeightRpys[nDlp]);
+        //stCalcHeightRpys[nDlp].matHeight = stCalcHeightRpys[nDlp].matHeight + dlpOffset[nDlp];
 
-        PR_HEIGHT_TO_GRAY_CMD stCmd;
-        PR_HEIGHT_TO_GRAY_RPY stRpy;
-        stCmd.matHeight = stCalcHeightRpys[nDlp].matHeight;
-        PR_HeightToGray(&stCmd, &stRpy);
+        //PrintMinMaxLoc(stCalcHeightRpys[nDlp].matHeight, "DLP_" + std::to_string(nDlp + 1) + "_result");
 
-        cv::imwrite(strResultFolder + "Dlp_" + std::to_string(nDlp + 1) + "_HeightGray.png", stRpy.matGray);
-        cv::imwrite(strResultFolder + "Dlp_" + std::to_string(nDlp + 1) + "_NanMask.png", stCalcHeightRpys[nDlp].matNanMask);
-        saveMatToYml(stCalcHeightRpys[nDlp].matHeight, strResultFolder + "Dlp_" + std::to_string(nDlp + 1) + "_Height.yml", "Height");
+        //PR_HEIGHT_TO_GRAY_CMD stCmd;
+        //PR_HEIGHT_TO_GRAY_RPY stRpy;
+        //stCmd.matHeight = stCalcHeightRpys[nDlp].matHeight;
+        //PR_HeightToGray(&stCmd, &stRpy);
+
+        //cv::imwrite(strResultFolder + "Dlp_" + std::to_string(nDlp + 1) + "_HeightGray.png", stRpy.matGray);
+        //cv::imwrite(strResultFolder + "Dlp_" + std::to_string(nDlp + 1) + "_NanMask.png", stCalcHeightRpys[nDlp].matNanMask);
+        //saveMatToYml(stCalcHeightRpys[nDlp].matHeight, strResultFolder + "Dlp_" + std::to_string(nDlp + 1) + "_Height.yml", "Height");
     }
+
+    for (int nDlp = 0; nDlp < NUM_OF_DLP; ++nDlp) {
+        PR_Calc3DHeightGpu(&stCalcHeightCmds[nDlp], &stCalcHeightRpys[nDlp]);
+        //stCalcHeightRpys[nDlp].matHeight = stCalcHeightRpys[nDlp].matHeight + dlpOffset[nDlp];
+
+        //PrintMinMaxLoc(stCalcHeightRpys[myIndex].matHeight, "DLP_" + std::to_string(myIndex + 1) + "_result");
+
+        //PR_HEIGHT_TO_GRAY_CMD stCmd;
+        //PR_HEIGHT_TO_GRAY_RPY stRpy;
+        //stCmd.matHeight = stCalcHeightRpys[myIndex].matHeight;
+        //PR_HeightToGray(&stCmd, &stRpy);
+
+        //cv::imwrite(strResultFolder + "Dlp_" + std::to_string(myIndex + 1) + "_HeightGray.png", stRpy.matGray);
+        //cv::imwrite(strResultFolder + "Dlp_" + std::to_string(myIndex + 1) + "_NanMask.png", stCalcHeightRpys[myIndex].matNanMask);
+        //saveMatToYml(stCalcHeightRpys[myIndex].matHeight, strResultFolder + "Dlp_" + std::to_string(myIndex + 1) + "_Height.yml", "Height");
+    }
+
+    //std::atomic<int> nThread = 0;
+    //std::vector<std::unique_ptr<std::thread>> vecThread;
+    //for (int nDlp = 0; nDlp < NUM_OF_DLP; ++ nDlp) {
+    //    auto ptrThread = std::make_unique<std::thread>([&] {
+    //        int myIndex = nThread ++;
+    //        PR_Calc3DHeightGpu(&stCalcHeightCmds[myIndex], &stCalcHeightRpys[myIndex]);
+    //        stCalcHeightRpys[myIndex].matHeight = stCalcHeightRpys[myIndex].matHeight + dlpOffset[myIndex];
+
+    //        PrintMinMaxLoc(stCalcHeightRpys[myIndex].matHeight, "DLP_" + std::to_string(myIndex + 1) + "_result");
+
+    //        PR_HEIGHT_TO_GRAY_CMD stCmd;
+    //        PR_HEIGHT_TO_GRAY_RPY stRpy;
+    //        stCmd.matHeight = stCalcHeightRpys[myIndex].matHeight;
+    //        PR_HeightToGray(&stCmd, &stRpy);
+
+    //        cv::imwrite(strResultFolder + "Dlp_" + std::to_string(myIndex + 1) + "_HeightGray.png", stRpy.matGray);
+    //        cv::imwrite(strResultFolder + "Dlp_" + std::to_string(myIndex + 1) + "_NanMask.png", stCalcHeightRpys[myIndex].matNanMask);
+    //        saveMatToYml(stCalcHeightRpys[myIndex].matHeight, strResultFolder + "Dlp_" + std::to_string(myIndex + 1) + "_Height.yml", "Height");
+    //    });
+    //    vecThread.push_back(std::move(ptrThread));
+    //}
+
+    //std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+
+    //for (auto &ptrThread : vecThread)
+    //    ptrThread->join();
 
 #else
 
