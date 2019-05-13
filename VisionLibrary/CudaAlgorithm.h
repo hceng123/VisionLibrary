@@ -9,6 +9,11 @@ namespace Vision
 {
 
 struct Calc3DHeightVars {
+    cv::cuda::GpuMat matAlpha;
+    cv::cuda::GpuMat matBeta;
+    cv::cuda::GpuMat matGamma;
+    cv::cuda::GpuMat matGamma1;
+    cv::cuda::GpuMat matAvgUnderTolIndex;
     cv::cuda::GpuMat matBufferGpu;
     cv::cuda::GpuMat matBufferGpuT;
     cv::cuda::GpuMat matMaskGpu;
@@ -17,19 +22,43 @@ struct Calc3DHeightVars {
     float* d_tmpResult;
 };
 
+struct DlpCalibResult {
+    cv::cuda::GpuMat matAlphaBase;
+    cv::cuda::GpuMat matBetaBase;
+    cv::cuda::GpuMat matGammaBase;
+    float* pDlp3DBezierSurface;
+};
+
 class CudaAlgorithm
 {
     CudaAlgorithm() = delete;
     ~CudaAlgorithm() = delete;
-    static float* m_dlp3DBezierSurface[NUM_OF_DLP];
+    static DlpCalibResult m_dlpCalibData[NUM_OF_DLP];
     static Calc3DHeightVars m_arrCalc3DHeightVars[NUM_OF_DLP];
 
 public:
+    static DlpCalibResult& getDlpCalibData(int nDlp) { return m_dlpCalibData[nDlp]; }
     static Calc3DHeightVars& getCalc3DHeightVars(int nDLp) { return m_arrCalc3DHeightVars[nDLp]; }
     static bool initCuda();
     static VisionStatus setDlpParams(const PR_SET_DLP_PARAMS_TO_GPU_CMD* const pstCmd, PR_SET_DLP_PARAMS_TO_GPU_RPY* const pstRpy);
     static cv::cuda::GpuMat diff(const cv::cuda::GpuMat& matInput, int nRecersiveTime, int nDimension, cv::cuda::Stream& stream = cv::cuda::Stream::Null());
     static void floor(cv::cuda::GpuMat &matInOut, cv::cuda::Stream& stream = cv::cuda::Stream::Null());
+    static void calcPhase(
+        const cv::cuda::GpuMat& matInput0,
+        const cv::cuda::GpuMat& matInput1,
+        const cv::cuda::GpuMat& matInput2,
+        const cv::cuda::GpuMat& matInput3,
+        cv::cuda::GpuMat& matPhase,
+        cv::cuda::Stream& stream = cv::cuda::Stream::Null());
+    static void calcPhaseAndMask(
+        const cv::cuda::GpuMat& matInput0,
+        const cv::cuda::GpuMat& matInput1,
+        const cv::cuda::GpuMat& matInput2,
+        const cv::cuda::GpuMat& matInput3,
+        cv::cuda::GpuMat& matPhase,
+        cv::cuda::GpuMat& matMask,
+        float fMinimumAlpitudeSquare,
+        cv::cuda::Stream& stream = cv::cuda::Stream::Null());
     static float intervalAverage(const cv::cuda::GpuMat& matInput, int interval, float *d_result, cv::cuda::Stream& stream = cv::cuda::Stream::Null());
     static float intervalRangeAverage(const cv::cuda::GpuMat& matInput, int interval, float rangeStart, float rangeEnd, float* d_result,
         cv::cuda::Stream& stream = cv::cuda::Stream::Null());
