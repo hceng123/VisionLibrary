@@ -18,6 +18,10 @@ struct Calc3DHeightVars {
     cv::cuda::GpuMat matBufferGpuT;
     cv::cuda::GpuMat matMaskGpu;
     cv::cuda::GpuMat matMaskGpuT;
+    cv::cuda::GpuMat matDiffResult;
+    cv::cuda::GpuMat matDiffResultT;
+    cv::cuda::GpuMat matDiffResult_1;
+    cv::cuda::GpuMat matDiffResultT_1;
     float* d_p3;
     float* d_tmpResult;
 };
@@ -42,6 +46,10 @@ public:
     static bool initCuda();
     static VisionStatus setDlpParams(const PR_SET_DLP_PARAMS_TO_GPU_CMD* const pstCmd, PR_SET_DLP_PARAMS_TO_GPU_RPY* const pstRpy);
     static cv::cuda::GpuMat diff(const cv::cuda::GpuMat& matInput, int nRecersiveTime, int nDimension, cv::cuda::Stream& stream = cv::cuda::Stream::Null());
+    static void diff(const cv::cuda::GpuMat& matInput,
+        cv::cuda::GpuMat& matResult,
+        int nDimension,
+        cv::cuda::Stream& stream = cv::cuda::Stream::Null());
     static void floor(cv::cuda::GpuMat &matInOut, cv::cuda::Stream& stream = cv::cuda::Stream::Null());
     static void calcPhase(
         const cv::cuda::GpuMat& matInput0,
@@ -65,16 +73,27 @@ public:
     static void phaseWrapBuffer(cv::cuda::GpuMat& matPhase, cv::cuda::GpuMat& matBuffer, float* d_tmpVar, float fShift = 0.f, cv::cuda::Stream& stream = cv::cuda::Stream::Null());
     static void phaseWrapByRefer(cv::cuda::GpuMat& matPhase, cv::cuda::GpuMat& matRef, cv::cuda::Stream& stream = cv::cuda::Stream::Null());
     static void phaseWarpNoAutoBase(const cv::cuda::GpuMat& matPhase, cv::cuda::GpuMat& matResult, float fShift, cv::cuda::Stream& stream = cv::cuda::Stream::Null());
-    static void phaseCorrectionCmp(cv::cuda::GpuMat& matPhase,
+    static void phaseCorrectionCmp(
+        cv::cuda::GpuMat& matPhase,
         const cv::cuda::GpuMat& matPhase1,
         cv::cuda::GpuMat& matBufferGpu,
         cv::cuda::GpuMat& matBufferGpuT,
+        cv::cuda::GpuMat& matDiffMapX,
+        cv::cuda::GpuMat& matDiffMapY,
+        cv::cuda::GpuMat& matDiffPhaseX,
+        cv::cuda::GpuMat& matDiffPhaseY,
         cv::cuda::GpuMat& matMaskGpu,
         cv::cuda::GpuMat& matMaskGpuT,
         int span,
         cv::cuda::Stream& stream = cv::cuda::Stream::Null());
-    static void phaseCorrectionCmp(cv::Mat& matPhase, const cv::Mat& matPhase1, int span);
-    static void phaseCorrection(cv::cuda::GpuMat &matPhase, cv::cuda::GpuMat& matPhaseT, int nJumpSpanX, int nJumpSpanY, cv::cuda::Stream& stream = cv::cuda::Stream::Null());
+    static void phaseCorrection(
+        cv::cuda::GpuMat& matPhase,
+        cv::cuda::GpuMat& matPhaseT,
+        cv::cuda::GpuMat& matDiffResult,
+        cv::cuda::GpuMat& matDiffResultT,
+        int nJumpSpanX,
+        int nJumpSpanY,
+        cv::cuda::Stream& stream = cv::cuda::Stream::Null());
     static void phaseCorrection(cv::Mat &matPhase, int nJumpSpanX, int nJumpSpanY);
     static void calculateSurfaceConvert3D(
         const cv::cuda::GpuMat& matPhase,

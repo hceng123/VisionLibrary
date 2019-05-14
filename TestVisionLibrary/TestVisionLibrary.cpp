@@ -847,9 +847,6 @@ int _tmain(int argc, _TCHAR* argv[])
     //TestGenerateSelectedImage();
 
     PR_DumpTimeLog("./Vision/Time.log");
-    std::cout << "Press any key to exit." << std::endl;
-    getchar();
-
     return 0;
 }
 

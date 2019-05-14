@@ -87,6 +87,10 @@ static int divUp(int total, int grain)
         m_arrCalc3DHeightVars[dlp].matBufferGpuT = cv::cuda::GpuMat(2040, 2048, CV_32FC1);
         m_arrCalc3DHeightVars[dlp].matMaskGpu = cv::cuda::GpuMat(2048, 2040, CV_8UC1);
         m_arrCalc3DHeightVars[dlp].matMaskGpuT = cv::cuda::GpuMat(2040, 2048, CV_8UC1);
+        m_arrCalc3DHeightVars[dlp].matDiffResult = cv::cuda::GpuMat(2048, 2040, CV_32FC1);
+        m_arrCalc3DHeightVars[dlp].matDiffResultT = cv::cuda::GpuMat(2040, 2048, CV_32FC1);
+        m_arrCalc3DHeightVars[dlp].matDiffResult_1 = cv::cuda::GpuMat(2048, 2040, CV_32FC1);
+        m_arrCalc3DHeightVars[dlp].matDiffResultT_1 = cv::cuda::GpuMat(2040, 2048, CV_32FC1);
     }
     free(h_buffer);
 
@@ -166,6 +170,26 @@ static int divUp(int total, int grain)
     else if (CalcUtils::DIFF_ON_Y_DIR == nDimension)
         return cv::cuda::GpuMat(matResult, cv::Rect(0, 1, matResult.cols, matResult.rows - 1));
     return cv::cuda::GpuMat();
+}
+
+/*static*/ void CudaAlgorithm::diff(
+    const cv::cuda::GpuMat& matInput,
+    cv::cuda::GpuMat& matResult,
+    int nDimension,
+    cv::cuda::Stream& stream /*= cv::cuda::Stream::Null()*/) {
+    assert(CalcUtils::DIFF_ON_X_DIR == nDimension || CalcUtils::DIFF_ON_Y_DIR == nDimension);
+
+    cv::Mat matKernel;
+    if (CalcUtils::DIFF_ON_X_DIR == nDimension)
+        matKernel = (cv::Mat_<float>(1, 2) << -1, 1);
+    else if (CalcUtils::DIFF_ON_Y_DIR == nDimension)
+        matKernel = (cv::Mat_<float>(2, 1) << -1, 1);
+    auto filter = cv::cuda::createLinearFilter(CV_32FC1, CV_32FC1, matKernel, cv::Point(-1, -1), cv::BORDER_CONSTANT);
+    filter->apply(matInput, matResult, stream);
+    if (CalcUtils::DIFF_ON_X_DIR == nDimension)
+        matResult = cv::cuda::GpuMat(matResult, cv::Rect(1, 0, matResult.cols - 1, matResult.rows));
+    else if (CalcUtils::DIFF_ON_Y_DIR == nDimension)
+        matResult = cv::cuda::GpuMat(matResult, cv::Rect(0, 1, matResult.cols, matResult.rows - 1));
 }
 
 /*static*/ float CudaAlgorithm::intervalAverage(const cv::cuda::GpuMat &matInput, int interval, float *d_result,  cv::cuda::Stream& stream /*= cv::cuda::Stream::Null()*/) {
@@ -258,11 +282,17 @@ static int divUp(int total, int grain)
     cv::cuda::addWeighted(matPhase, 1.f, matResult, -ONE_CYCLE, 0, matResult, -1, stream);
 }
 
+// matBufferGpu, matBufferGpuT, matDiffMapX, matDiffMapY, matDiffPhaseX, matDiffPhaseY, matMaskGpu, matMaskGpuT are reusable buffers,
+// use them to avoid allocating memory every time. They are not passed out for any usage.
 /*static*/ void CudaAlgorithm::phaseCorrectionCmp(
     cv::cuda::GpuMat& matPhase,
     const cv::cuda::GpuMat& matPhase1,
     cv::cuda::GpuMat& matBufferGpu,
     cv::cuda::GpuMat& matBufferGpuT,
+    cv::cuda::GpuMat& matDiffMapX,
+    cv::cuda::GpuMat& matDiffMapY,
+    cv::cuda::GpuMat& matDiffPhaseX,
+    cv::cuda::GpuMat& matDiffPhaseY,
     cv::cuda::GpuMat& matMaskGpu,
     cv::cuda::GpuMat& matMaskGpuT,
     int span,
@@ -278,131 +308,49 @@ static int divUp(int total, int grain)
     matBufferGpu.setTo(1, matMaskGpu, stream);
 
     // Note even the size of Mat ix ROW * (COL - 1), but actually the background memory size is still ROW * COL
-    cv::cuda::GpuMat dMap1 = diff(matBufferGpu, 1, CalcUtils::DIFF_ON_X_DIR, stream);
-    cv::cuda::GpuMat dxPhase = diff(matPhase, 1, CalcUtils::DIFF_ON_X_DIR, stream);
+    diff(matBufferGpu, matDiffMapX, CalcUtils::DIFF_ON_X_DIR, stream);
+    diff(matPhase, matDiffPhaseX, CalcUtils::DIFF_ON_X_DIR, stream);
 
     matMaskGpu.setTo(0, stream);
 
-    TimeLog::GetInstance()->addTimeLog("prepare data for phaseCorrectionCmp X", stopWatch.Span());
-
     // Select in X direction
     run_kernel_select_cmp_point(gridSize, threadSize, cv::cuda::StreamAccessor::getStream(stream),
-        reinterpret_cast<float *>(dMap1.data),
-        reinterpret_cast<float *>(dxPhase.data),
+        reinterpret_cast<float *>(matDiffMapX.data),
+        reinterpret_cast<float *>(matDiffPhaseX.data),
         matMaskGpu.data,
-        dMap1.step1(),
+        matDiffMapX.step1(),
         ROWS, COLS, span);
-
-    TimeLog::GetInstance()->addTimeLog("run_kernel_select_cmp_point X", stopWatch.Span());
 
     // Select in Y direction, transpose the matrix to accelerate
     cv::cuda::transpose(matBufferGpu, matBufferGpu, stream);
     cv::cuda::transpose(matPhase, matBufferGpuT, stream);
 
-    cv::cuda::GpuMat dMap2 = diff(matBufferGpu, 1, CalcUtils::DIFF_ON_X_DIR, stream);
-    cv::cuda::GpuMat dyPhase = diff(matBufferGpuT, 1, CalcUtils::DIFF_ON_X_DIR, stream);
+    diff(matBufferGpu, matDiffMapY, CalcUtils::DIFF_ON_X_DIR, stream);
+    diff(matBufferGpuT, matDiffPhaseY, CalcUtils::DIFF_ON_X_DIR, stream);
     matMaskGpuT.setTo(0, stream);
-
-    TimeLog::GetInstance()->addTimeLog("prepare data for phaseCorrectionCmp Y", stopWatch.Span());
 
     // Select in Y direction
     run_kernel_select_cmp_point(gridSize, threadSize, cv::cuda::StreamAccessor::getStream(stream),
-        reinterpret_cast<float *>(dMap2.data),
-        reinterpret_cast<float *>(dyPhase.data),
+        reinterpret_cast<float *>(matDiffMapY.data),
+        reinterpret_cast<float *>(matDiffPhaseY.data),
         matMaskGpuT.data,
-        dMap2.step1(),
+        matDiffMapY.step1(),
         COLS, ROWS, span);
 
     cv::cuda::transpose(matMaskGpuT, matMaskGpuT, stream);
 
-    TimeLog::GetInstance()->addTimeLog("run_kernel_select_cmp_point Y", stopWatch.Span());
-
     cv::cuda::bitwise_and(matMaskGpu, matMaskGpuT, matMaskGpu, cv::cuda::GpuMat(), stream);
     matPhase1.copyTo(matPhase, matMaskGpu, stream);
-
-    TimeLog::GetInstance()->addTimeLog("bitwise_and and copy data", stopWatch.Span());
 }
 
-/*static*/ void CudaAlgorithm::phaseCorrectionCmp(cv::Mat& matPhase, const cv::Mat& matPhase1, int span) {
-    //CStopWatch stopWatch;
-    //const int ROWS = matPhase.rows;
-    //const int COLS = matPhase.cols;
-    //static int time = 0;
-    //++ time;
-
-    //cv::Mat matIdx;
-    //cv::compare(matPhase, matPhase1, matIdx, cv::CmpTypes::CMP_NE);
-    //cv::Mat matMap = cv::Mat::zeros(ROWS, COLS, CV_32FC1);
-    //matMap.setTo(1, matIdx);
-
-    //// Note even the size of Mat ix ROW * (COL - 1), but actually the background memory size is still ROW * COL
-    //cv::Mat dMap1 = CalcUtils::diff(matMap, 1, CalcUtils::DIFF_ON_X_DIR);
-    //cv::Mat dxPhase = CalcUtils::diff(matPhase, 1, CalcUtils::DIFF_ON_X_DIR);
-
-    //if (time == 1) {
-    //    CalcUtils::saveMatToCsv(dMap1, "C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/PhaseCorrectionCmpDMap1Cpu.csv");
-    //    CalcUtils::saveMatToCsv(dxPhase, "C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/PhaseCorrectionCmpDXPhaseCpu.csv");
-    //}
-
-    //cv::Mat idxl1(ROWS, COLS, CV_8UC1);
-    //idxl1.setTo(0);
-
-    //TimeLog::GetInstance()->addTimeLog("prepare for phaseCorrectionCmp X", stopWatch.Span());
-
-    //// Select in X direction
-    //run_kernel_select_cmp_point(2, 256,
-    //    reinterpret_cast<float *>(dMap1.data),
-    //    reinterpret_cast<float *>(dxPhase.data),
-    //    idxl1.data,
-    //    dMap1.step1(),
-    //    ROWS, COLS, span);
-    //TimeLog::GetInstance()->addTimeLog("run_kernel_select_cmp_point X", stopWatch.Span());
-
-    //cv::imwrite(std::string("C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/PhaseCorrectionCmpMask1_") + std::to_string(time) + ".png", idxl1);
-    //int nonZeroCount1 = cv::countNonZero(idxl1);
-
-    //// Select in Y direction, transpose the matrix to accelerate
-    //cv::Mat matMapT;
-    //cv::transpose(matMap, matMapT);
-    //cv::Mat matPhaseT;
-    //cv::transpose(matPhase, matPhaseT);
-
-    //cv::Mat dMap2 = CalcUtils::diff(matMapT, 1, CalcUtils::DIFF_ON_X_DIR);
-    //cv::Mat dyPhase = CalcUtils::diff(matPhaseT, 1, CalcUtils::DIFF_ON_X_DIR);
-    //cv::Mat idxl2(COLS, ROWS, CV_8UC1);    // Note the indl2 is tranposed result, so the ROWS and COLS are changed
-    //idxl2.setTo(0);
-
-    //TimeLog::GetInstance()->addTimeLog("run_kernel_select_cmp_point Y", stopWatch.Span());
-
-    //if (time == 1) {
-    //    CalcUtils::saveMatToCsv(dMap2, "C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/PhaseCorrectionCmpDMap2.csv");
-    //    CalcUtils::saveMatToCsv(dyPhase, "C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/PhaseCorrectionCmpDYPhase.csv");
-    //}
-
-    //// Select in Y direction
-    //run_kernel_select_cmp_point(2, 256,
-    //    reinterpret_cast<float *>(dMap2.data),
-    //    reinterpret_cast<float *>(dyPhase.data),
-    //    idxl2.data,
-    //    dMap2.step1(),
-    //    COLS, ROWS, span);
-
-    //cv::imwrite(std::string("C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/PhaseCorrectionCmpMask2_") + std::to_string(time) + ".png", idxl2);
-    //int nonZeroCount2 = cv::countNonZero(idxl2);
-
-    //cv::transpose(idxl2, idxl2);
-
-    //TimeLog::GetInstance()->addTimeLog("run_kernel_select_cmp_point Y", stopWatch.Span());
-
-    //cv::bitwise_and(idxl1, idxl2, idxl1);
-    //int nonZeroFinal = cv::countNonZero(idxl1);
-
-    //std::cout << "phaseCorrectionCmp point count1 " << nonZeroCount1 << " count2 " << nonZeroCount2 << " final cout " << nonZeroFinal << std::endl;
-
-    //matPhase1.copyTo(matPhase, idxl1);
-}
-
-/*static*/ void CudaAlgorithm::phaseCorrection(cv::cuda::GpuMat &matPhase, cv::cuda::GpuMat& matPhaseT, int nJumpSpanX, int nJumpSpanY, cv::cuda::Stream& stream/* = cv::cuda::Stream::Null()*/) {
+/*static*/ void CudaAlgorithm::phaseCorrection(
+    cv::cuda::GpuMat &matPhase,
+    cv::cuda::GpuMat& matPhaseT,
+    cv::cuda::GpuMat& matDiffResult,
+    cv::cuda::GpuMat& matDiffResultT,
+    int nJumpSpanX,
+    int nJumpSpanY,
+    cv::cuda::Stream& stream/* = cv::cuda::Stream::Null()*/) {
     CStopWatch stopWatch;
     const int ROWS = matPhase.rows;
     const int COLS = matPhase.cols;
@@ -411,11 +359,11 @@ static int divUp(int total, int grain)
     
     //X direction
     if (nJumpSpanX > 0) {
-        cv::cuda::GpuMat matPhaseDiff = diff(matPhase, 1, CalcUtils::DIFF_ON_X_DIR, stream);
+        diff(matPhase, matDiffResult, CalcUtils::DIFF_ON_X_DIR, stream);
         run_kernel_phase_correction(gridSize, threadSize, cv::cuda::StreamAccessor::getStream(stream),
-            reinterpret_cast<float *>(matPhaseDiff.data),
+            reinterpret_cast<float *>(matDiffResult.data),
             reinterpret_cast<float *>(matPhase.data),
-            matPhaseDiff.step1(),
+            matDiffResult.step1(),
             ROWS, COLS, nJumpSpanX);
         TimeLog::GetInstance()->addTimeLog("run_kernel_phase_correction for X", stopWatch.Span());
     }
@@ -424,11 +372,11 @@ static int divUp(int total, int grain)
     if (nJumpSpanY > 0) {
         cv::cuda::transpose(matPhase, matPhaseT, stream);
         TimeLog::GetInstance()->addTimeLog("cv::cuda::transpose for Y", stopWatch.Span());
-        cv::cuda::GpuMat matPhaseDiff = diff(matPhaseT, 1, CalcUtils::DIFF_ON_X_DIR, stream);
+        diff(matPhaseT, matDiffResultT, CalcUtils::DIFF_ON_X_DIR, stream);
         run_kernel_phase_correction(gridSize, threadSize, cv::cuda::StreamAccessor::getStream(stream),
-            reinterpret_cast<float *>(matPhaseDiff.data),
+            reinterpret_cast<float *>(matDiffResultT.data),
             reinterpret_cast<float *>(matPhaseT.data),
-            matPhaseDiff.step1(),
+            matDiffResultT.step1(),
             COLS, ROWS, nJumpSpanY);
         TimeLog::GetInstance()->addTimeLog("run_kernel_phase_correction for Y", stopWatch.Span());
 
