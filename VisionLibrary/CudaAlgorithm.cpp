@@ -780,6 +780,22 @@ static int divUp(int total, int grain)
         matResult.cols);
 }
 
+/*static*/ void CudaAlgorithm::medianFilter(
+        const cv::cuda::GpuMat& matInput,
+        cv::cuda::GpuMat& matOutput,
+        const int windowSize,
+        cv::cuda::Stream& stream /*= cv::cuda::Stream::Null()*/) {
+    dim3 threads(16, 16);
+    dim3 grid(divUp(matInput.cols, threads.x), divUp(matInput.rows, threads.y));
+    run_median_filter(grid, threads, cv::cuda::StreamAccessor::getStream(stream),
+        reinterpret_cast<float*>(matInput.data),
+        reinterpret_cast<float*>(matOutput.data),
+        matInput.rows,
+        matInput.cols,
+        matInput.step1(),
+        windowSize);
+}
+
 /*static*/ cv::Mat CudaAlgorithm::mergeHeightIntersect(cv::Mat matHeightOne,
     cv::Mat matNanMaskOne, cv::Mat matHeightTwo,
     cv::Mat matNanMaskTwo,

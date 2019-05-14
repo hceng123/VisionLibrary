@@ -90,6 +90,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <CudaCompile Include="kernel.cu" />
+    <CudaCompile Include="MedianFilter.cu" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CudaFunc.h" />

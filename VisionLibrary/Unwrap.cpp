@@ -947,24 +947,17 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
     cv::cuda::compare(matBufferGpu, betaBase - 0.1, matMaskGpu, cv::CmpTypes::CMP_LT, stream);
     matBufferGpu.setTo(betaBase, matMaskGpu, stream);
 
-    TimeLog::GetInstance()->addTimeLog("Before median filter.", stopWatch.Span());
+    //TimeLog::GetInstance()->addTimeLog("Before median filter.", stopWatch.Span());
 
-    cv::Mat matResult;
-    matBufferGpu.download(matResult, stream);
-    TimeLog::GetInstance()->addTimeLog("Before cv::medianBlur", stopWatch.Span());
-    cv::medianBlur(matResult, matResult, 5);
-    TimeLog::GetInstance()->addTimeLog("After cv::medianBlur", stopWatch.Span());
-    matBufferGpu.upload(matResult, stream);
+    CudaAlgorithm::medianFilter(matBufferGpu, matAlphaGpu, 5, stream);
 
-    TimeLog::GetInstance()->addTimeLog("After median filter.", stopWatch.Span());
+    //TimeLog::GetInstance()->addTimeLog("After median filter.", stopWatch.Span());
 
     if (pstCmd->bEnableGaussianFilter) {
         auto ptrFilter = cv::cuda::createGaussianFilter(CV_32FC1, CV_32FC1, cv::Size(5, 5), 5, 5, cv::BorderTypes::BORDER_REPLICATE);
-        ptrFilter->apply(matBufferGpu, matBufferGpu, stream);
+        ptrFilter->apply(matAlphaGpu, matBufferGpu, stream);
         //cv::GaussianBlur(pstRpy->matPhase, pstRpy->matPhase, cv::Size(5, 5), 5, 5, cv::BorderTypes::BORDER_REPLICATE);
     }
-
-    matAvgUnderTolIndexGpu.download(pstRpy->matNanMask, stream);
 
     if (!pstCmd->mat3DBezierK.empty() && !pstCmd->mat3DBezierSurface.empty()) {
         std::vector<float> vecParamMinMaxXY{ 1.f, ToFloat(pstRpy->matPhase.cols), 1.f, ToFloat(pstRpy->matPhase.rows),
@@ -980,12 +973,8 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
     else
         pstRpy->matHeight = pstRpy->matPhase;
 
-    //cv::medianBlur(pstRpy->matHeight, pstRpy->matHeight, 5);
-
-    //if (pstCmd->bEnableGaussianFilter)
-    //    cv::GaussianBlur(pstRpy->matHeight, pstRpy->matHeight, cv::Size(5, 5), 5, 5, cv::BorderTypes::BORDER_REPLICATE);
-
-    TimeLog::GetInstance()->addTimeLog("_calcHeightFromPhase.", stopWatch.Span());
+    matAvgUnderTolIndexGpu.download(pstRpy->matNanMask, stream);
+    TimeLog::GetInstance()->addTimeLog("Download data from GPU", stopWatch.Span());
     pstRpy->enStatus = VisionStatus::OK;
 }
 

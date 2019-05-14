@@ -101,6 +101,12 @@ public:
         cv::cuda::GpuMat& matResult,
         cv::cuda::Stream& stream = cv::cuda::Stream::Null());
 
+    static void medianFilter(
+        const cv::cuda::GpuMat& matInput,
+        cv::cuda::GpuMat& matOutput,
+        const int windowSize,
+        cv::cuda::Stream& stream = cv::cuda::Stream::Null());
+
     static cv::Mat mergeHeightIntersect(cv::Mat matHeightOne,
         cv::Mat matNanMaskOne,
         cv::Mat matHeightTwo,
@@ -108,6 +114,7 @@ public:
         float fDiffThreshold,
         PR_DIRECTION enProjDir,
         cv::cuda::Stream& stream = cv::cuda::Stream::Null());
+
 };
 
 }

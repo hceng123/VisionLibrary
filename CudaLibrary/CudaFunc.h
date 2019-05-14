@@ -121,4 +121,15 @@ void run_kernel_merge_height_intersect(
     int cols,
     float fDiffThreshold);
 
+void run_median_filter(
+    dim3 grid,
+    dim3 threads,
+    cudaStream_t cudaStream,
+    const float *src,
+    float *dst,
+    const int ROWS,
+    const int COLS,
+    const int step,
+    const int winSize);
+
 #endif
