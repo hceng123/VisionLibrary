@@ -21,7 +21,7 @@ namespace Vision
 
 //cv::cuda::Stream m_cudaStreams[NUM_OF_DLP];
 
-/*static*/ float* CudaAlgorithm::m_dlp3DBezierSurface[NUM_OF_DLP] = {nullptr};
+/*static*/ DlpCalibResult CudaAlgorithm::m_dlpCalibData[NUM_OF_DLP];
 /*static*/ Calc3DHeightVars CudaAlgorithm::m_arrCalc3DHeightVars[NUM_OF_DLP];
 
 static int divUp(int total, int grain)
@@ -48,7 +48,7 @@ static int divUp(int total, int grain)
     const int COLS = pstCmd->vec3DBezierSurface[0].cols;
 
     for (int dlp = 0; dlp < NUM_OF_DLP; ++dlp) {
-        cudaError_t err = cudaMalloc(reinterpret_cast<void **>(&m_dlp3DBezierSurface[dlp]), MEM_SIZE);
+        cudaError_t err = cudaMalloc(reinterpret_cast<void **>(&m_dlpCalibData[dlp].pDlp3DBezierSurface), MEM_SIZE);
         if (err != cudaSuccess) {
             pstRpy->enStatus = VisionStatus::CUDA_MEMORY_ERROR;
             return pstRpy->enStatus;
@@ -60,7 +60,11 @@ static int divUp(int total, int grain)
             }
         }
 
-        cudaMemcpy(m_dlp3DBezierSurface[dlp], h_buffer, MEM_SIZE, cudaMemcpyHostToDevice);
+        cudaMemcpy(m_dlpCalibData[dlp].pDlp3DBezierSurface, h_buffer, MEM_SIZE, cudaMemcpyHostToDevice);
+
+        m_dlpCalibData[dlp].matAlphaBase.upload(pstCmd->vecMatAlphaBase[dlp]);
+        m_dlpCalibData[dlp].matBetaBase.upload(pstCmd->vecMatBetaBase[dlp]);
+        m_dlpCalibData[dlp].matGammaBase.upload(pstCmd->vecMatGammaBase[dlp]);
 
         err = cudaMalloc(reinterpret_cast<void **>(&m_arrCalc3DHeightVars[dlp].d_p3), MEM_SIZE);
         if (err != cudaSuccess) {
@@ -74,6 +78,11 @@ static int divUp(int total, int grain)
             return pstRpy->enStatus;
         }
 
+        m_arrCalc3DHeightVars[dlp].matAlpha = cv::cuda::GpuMat(2048, 2040, CV_32FC1);
+        m_arrCalc3DHeightVars[dlp].matBeta = cv::cuda::GpuMat(2048, 2040, CV_32FC1);
+        m_arrCalc3DHeightVars[dlp].matGamma = cv::cuda::GpuMat(2048, 2040, CV_32FC1);
+        m_arrCalc3DHeightVars[dlp].matGamma1 = cv::cuda::GpuMat(2048, 2040, CV_32FC1);
+        m_arrCalc3DHeightVars[dlp].matAvgUnderTolIndex = cv::cuda::GpuMat(2048, 2040, CV_8UC1);
         m_arrCalc3DHeightVars[dlp].matBufferGpu = cv::cuda::GpuMat(2048, 2040, CV_32FC1);
         m_arrCalc3DHeightVars[dlp].matBufferGpuT = cv::cuda::GpuMat(2040, 2048, CV_32FC1);
         m_arrCalc3DHeightVars[dlp].matMaskGpu = cv::cuda::GpuMat(2048, 2040, CV_8UC1);
@@ -92,6 +101,50 @@ static int divUp(int total, int grain)
         matInOut.step1(),
         matInOut.rows,
         matInOut.cols);
+}
+
+/*static*/ void CudaAlgorithm::calcPhase(
+    const cv::cuda::GpuMat& matInput0,
+        const cv::cuda::GpuMat& matInput1,
+        const cv::cuda::GpuMat& matInput2,
+        const cv::cuda::GpuMat& matInput3,
+        cv::cuda::GpuMat& matPhase,
+        cv::cuda::Stream& stream /*= cv::cuda::Stream::Null()*/) {
+    dim3 threads(16, 16);
+    dim3 grid(divUp(matInput0.cols, threads.x), divUp(matInput0.rows, threads.y));
+    run_kernel_calc_phase(grid, threads, cv::cuda::StreamAccessor::getStream(stream),
+        matInput0.data,
+        matInput1.data,
+        matInput2.data,
+        matInput3.data,
+        reinterpret_cast<float *>(matPhase.data),
+        matInput0.rows,
+        matInput0.cols,
+        matInput0.step1());
+}
+
+/*static*/ void CudaAlgorithm::calcPhaseAndMask(
+    const cv::cuda::GpuMat& matInput0,
+    const cv::cuda::GpuMat& matInput1,
+    const cv::cuda::GpuMat& matInput2,
+    const cv::cuda::GpuMat& matInput3,
+    cv::cuda::GpuMat& matPhase,
+    cv::cuda::GpuMat& matMask,
+    float fMinimumAlpitudeSquare,
+    cv::cuda::Stream& stream /*= cv::cuda::Stream::Null()*/) {
+    dim3 threads(16, 16);
+    dim3 grid(divUp(matInput0.cols, threads.x), divUp(matInput0.rows, threads.y));
+    run_kernel_calc_phase_and_dark_mask(grid, threads, cv::cuda::StreamAccessor::getStream(stream),
+        matInput0.data,
+        matInput1.data,
+        matInput2.data,
+        matInput3.data,
+        reinterpret_cast<float *>(matPhase.data),
+        matMask.data,
+        fMinimumAlpitudeSquare,
+        matInput0.rows,
+        matInput0.cols,
+        matInput0.step1());
 }
 
 /*static*/ cv::cuda::GpuMat CudaAlgorithm::diff(const cv::cuda::GpuMat& matInput, int nRecersiveTime, int nDimension,
@@ -677,7 +730,7 @@ static int divUp(int total, int grain)
     run_kernel_phase_to_height_3d(grid, threads, cv::cuda::StreamAccessor::getStream(stream),
         reinterpret_cast<float*>(zInLine.data),
         reinterpret_cast<float*>(matPolyParassGpu.data),
-        m_dlp3DBezierSurface[nDlpNo],
+        m_dlpCalibData[nDlpNo].pDlp3DBezierSurface,
         ss,
         len, ss,
         d_p3);
@@ -725,6 +778,22 @@ static int divUp(int total, int grain)
         matResult.step1(),
         matResult.rows,
         matResult.cols);
+}
+
+/*static*/ void CudaAlgorithm::medianFilter(
+        const cv::cuda::GpuMat& matInput,
+        cv::cuda::GpuMat& matOutput,
+        const int windowSize,
+        cv::cuda::Stream& stream /*= cv::cuda::Stream::Null()*/) {
+    dim3 threads(16, 16);
+    dim3 grid(divUp(matInput.cols, threads.x), divUp(matInput.rows, threads.y));
+    run_median_filter(grid, threads, cv::cuda::StreamAccessor::getStream(stream),
+        reinterpret_cast<float*>(matInput.data),
+        reinterpret_cast<float*>(matOutput.data),
+        matInput.rows,
+        matInput.cols,
+        matInput.step1(),
+        windowSize);
 }
 
 /*static*/ cv::Mat CudaAlgorithm::mergeHeightIntersect(cv::Mat matHeightOne,

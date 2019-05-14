@@ -4,16 +4,33 @@
 #include <stdint.h>
 #include "cuda_runtime.h"
 
-void run_kernel_merge_height_intersect(
-    uint32_t gridSize,
-    uint32_t blockSize,
+void run_kernel_calc_phase(
+    dim3 grid,
+    dim3 threads,
     cudaStream_t cudaStream,
-    float* matOne,
-    float *matTwo,
-    float *d_result,
-    int rows,
-    int cols,
-    float fDiffThreshold);
+    const unsigned char* pInput0,
+    const unsigned char* pInput1,
+    const unsigned char* pInput2,
+    const unsigned char* pInput3,
+    float* pResult,
+    const int ROWS,
+    const int COLS,
+    const int step);
+
+void run_kernel_calc_phase_and_dark_mask(
+    dim3 grid,
+    dim3 threads,
+    cudaStream_t cudaStream,
+    const unsigned char* pInput0,
+    const unsigned char* pInput1,
+    const unsigned char* pInput2,
+    const unsigned char* pInput3,
+    float* pResult,
+    unsigned char* pMask,
+    float fMinimumAlpitudeSquare,
+    const int ROWS,
+    const int COLS,
+    const int step);
 
 void run_kernel_select_cmp_point(
     uint32_t gridSize,
@@ -92,5 +109,27 @@ void run_kernel_calc_sum_and_convert_matrix(
     const int ROWS,
     const int COLS,
     const int step);
+
+void run_kernel_merge_height_intersect(
+    uint32_t gridSize,
+    uint32_t blockSize,
+    cudaStream_t cudaStream,
+    float* matOne,
+    float *matTwo,
+    float *d_result,
+    int rows,
+    int cols,
+    float fDiffThreshold);
+
+void run_median_filter(
+    dim3 grid,
+    dim3 threads,
+    cudaStream_t cudaStream,
+    const float *src,
+    float *dst,
+    const int ROWS,
+    const int COLS,
+    const int step,
+    const int winSize);
 
 #endif

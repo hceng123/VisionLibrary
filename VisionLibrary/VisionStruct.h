@@ -1342,6 +1342,9 @@ struct PR_CALC_3D_HEIGHT_RPY {
 
 struct PR_SET_DLP_PARAMS_TO_GPU_CMD {
     cv::Mat                 vec3DBezierSurface[NUM_OF_DLP];
+    cv::Mat                 vecMatAlphaBase[NUM_OF_DLP];
+    cv::Mat                 vecMatBetaBase[NUM_OF_DLP];
+    cv::Mat                 vecMatGammaBase[NUM_OF_DLP];
 };
 
 struct PR_SET_DLP_PARAMS_TO_GPU_RPY {
