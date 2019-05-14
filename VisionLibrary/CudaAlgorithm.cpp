@@ -354,7 +354,7 @@ static int divUp(int total, int grain)
     CStopWatch stopWatch;
     const int ROWS = matPhase.rows;
     const int COLS = matPhase.cols;
-    const int gridSize = 64;
+    const int gridSize = 16;
     const int threadSize = 32;
     
     //X direction

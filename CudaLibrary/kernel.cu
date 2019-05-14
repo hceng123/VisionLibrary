@@ -122,7 +122,7 @@ __device__ void selection_sort(T *data, int left, int right)
 // Very basic quicksort algorithm, recursively launching the next level.
 ////////////////////////////////////////////////////////////////////////////////
 template<typename T>
-__global__ void cdp_simple_quicksort(T *data, int left, int right, int depth)
+__device__ void cdp_simple_quicksort(T *data, int left, int right, int depth)
 {
     // If we're too deep or there are few elements left, we use an insertion sort...
     if (depth >= MAX_DEPTH || right-left <= INSERTION_SORT)
@@ -171,19 +171,13 @@ __global__ void cdp_simple_quicksort(T *data, int left, int right, int depth)
     // Launch a new block to sort the left part.
     if (left < (rptr-data))
     {
-        cudaStream_t s;
-        cudaStreamCreateWithFlags(&s, cudaStreamNonBlocking);
-        cdp_simple_quicksort<<< 1, 1, 0, s >>>(data, left, nright, depth+1);
-        cudaStreamDestroy(s);
+        cdp_simple_quicksort(data, left, nright, depth+1);
     }
 
     // Launch a new block to sort the right part.
     if ((lptr-data) < right)
     {
-        cudaStream_t s1;
-        cudaStreamCreateWithFlags(&s1, cudaStreamNonBlocking);
-        cdp_simple_quicksort<<< 1, 1, 0, s1 >>>(data, nleft, right, depth+1);
-        cudaStreamDestroy(s1);
+        cdp_simple_quicksort(data, nleft, right, depth+1);
     }
 }
 
@@ -191,12 +185,12 @@ __global__ void cdp_simple_quicksort(T *data, int left, int right, int depth)
 // Call the quicksort kernel from the host.
 ////////////////////////////////////////////////////////////////////////////////
 template<typename T>
-void run_qsort(T *data, unsigned int nitems, cudaStream_t cudaStream)
+__global__ void kernel_qsort(T *data, unsigned int nitems)
 {
     // Launch on device
     int left = 0;
-    int right = nitems-1;
-    cdp_simple_quicksort<<< 1, 1, 0, cudaStream>>>(data, left, right, 0);
+    int right = nitems - 1;
+    cdp_simple_quicksort(data, left, right, 0);
 }
 
 __global__
@@ -791,7 +785,7 @@ void run_kernel_range_interval_average(
 
     kernel_interval_pick_data <<<1, 1, 0, cudaStream>>>(data, step, ROWS, COLS, interval, d_result);
 
-    run_qsort(d_result, SIZE, cudaStream);
+    kernel_qsort<<<1, 1, 0, cudaStream >>>(d_result, SIZE);
     kernel_range_average<<<1, 1, 0, cudaStream>>>(d_result, SIZE, rangeStart, rangeEnd);
     cudaMemcpy(result, d_result, sizeof(float), cudaMemcpyDeviceToHost);
 }
