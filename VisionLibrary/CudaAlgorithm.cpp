@@ -91,6 +91,8 @@ static int divUp(int total, int grain)
         m_arrCalc3DHeightVars[dlp].matDiffResultT = cv::cuda::GpuMat(2040, 2048, CV_32FC1);
         m_arrCalc3DHeightVars[dlp].matDiffResult_1 = cv::cuda::GpuMat(2048, 2040, CV_32FC1);
         m_arrCalc3DHeightVars[dlp].matDiffResultT_1 = cv::cuda::GpuMat(2040, 2048, CV_32FC1);
+        m_arrCalc3DHeightVars[dlp].matBufferSign = cv::cuda::GpuMat(2048, 2048, CV_8SC1);
+        m_arrCalc3DHeightVars[dlp].matBufferAmpl = cv::cuda::GpuMat(2048, 2048, CV_8SC1);
     }
     free(h_buffer);
 
@@ -348,13 +350,15 @@ static int divUp(int total, int grain)
     cv::cuda::GpuMat& matPhaseT,
     cv::cuda::GpuMat& matDiffResult,
     cv::cuda::GpuMat& matDiffResultT,
+    cv::cuda::GpuMat& matBufferSign,
+    cv::cuda::GpuMat& matBufferAmpl,
     int nJumpSpanX,
     int nJumpSpanY,
     cv::cuda::Stream& stream/* = cv::cuda::Stream::Null()*/) {
     CStopWatch stopWatch;
     const int ROWS = matPhase.rows;
     const int COLS = matPhase.cols;
-    const int gridSize = 16;
+    const int gridSize = 64;
     const int threadSize = 32;
     
     //X direction
@@ -363,6 +367,8 @@ static int divUp(int total, int grain)
         run_kernel_phase_correction(gridSize, threadSize, cv::cuda::StreamAccessor::getStream(stream),
             reinterpret_cast<float *>(matDiffResult.data),
             reinterpret_cast<float *>(matPhase.data),
+            reinterpret_cast<char *>(matBufferSign.data),
+            reinterpret_cast<char *>(matBufferAmpl.data),
             matDiffResult.step1(),
             ROWS, COLS, nJumpSpanX);
         TimeLog::GetInstance()->addTimeLog("run_kernel_phase_correction for X", stopWatch.Span());
@@ -376,6 +382,8 @@ static int divUp(int total, int grain)
         run_kernel_phase_correction(gridSize, threadSize, cv::cuda::StreamAccessor::getStream(stream),
             reinterpret_cast<float *>(matDiffResultT.data),
             reinterpret_cast<float *>(matPhaseT.data),
+            reinterpret_cast<char *>(matBufferSign.data),
+            reinterpret_cast<char *>(matBufferAmpl.data),
             matDiffResultT.step1(),
             COLS, ROWS, nJumpSpanY);
         TimeLog::GetInstance()->addTimeLog("run_kernel_phase_correction for Y", stopWatch.Span());

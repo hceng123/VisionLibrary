@@ -905,7 +905,10 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
     matBetaGpu.setTo(betaBase, matAvgUnderTolIndexGpu, stream);
 
     if (pstCmd->nRemoveJumpSpan > 0) {
-        CudaAlgorithm::phaseCorrection(matBetaGpu, matPhaseGpuT, calc3DHeightVar.matDiffResult, calc3DHeightVar.matDiffResultT, pstCmd->nRemoveJumpSpan, pstCmd->nRemoveJumpSpan, stream);
+        CudaAlgorithm::phaseCorrection(matBetaGpu, matPhaseGpuT,
+            calc3DHeightVar.matDiffResult, calc3DHeightVar.matDiffResultT,
+            calc3DHeightVar.matBufferSign, calc3DHeightVar.matBufferAmpl,
+            pstCmd->nRemoveJumpSpan, pstCmd->nRemoveJumpSpan, stream);
         //TimeLog::GetInstance()->addTimeLog("phaseCorrection for beta.", stopWatch.Span());
     }
 
@@ -936,7 +939,10 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
         //TimeLog::GetInstance()->addTimeLog("phaseCorrectionCmp for gamma.", stopWatch.Span());
 
         if (pstCmd->nRemoveJumpSpan > 0) {
-            CudaAlgorithm::phaseCorrection(matGammaGpu, matPhaseGpuT, calc3DHeightVar.matDiffResult, calc3DHeightVar.matDiffResultT, pstCmd->nRemoveJumpSpan, pstCmd->nRemoveJumpSpan, stream);
+            CudaAlgorithm::phaseCorrection(matGammaGpu, matPhaseGpuT,
+                calc3DHeightVar.matDiffResult, calc3DHeightVar.matDiffResultT,
+                calc3DHeightVar.matBufferSign, calc3DHeightVar.matBufferAmpl,
+                pstCmd->nRemoveJumpSpan, pstCmd->nRemoveJumpSpan, stream);
             //TimeLog::GetInstance()->addTimeLog("phaseCorrection for gamma.", stopWatch.Span());
         }
 

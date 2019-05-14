@@ -50,6 +50,8 @@ void run_kernel_phase_correction(
     cudaStream_t cudaStream,
     float* phaseDiff,
     float* phase,
+    char* pBufferSign,
+    char* pBufferAmpl,
     uint32_t step,
     const int ROWS,
     const int COLS,

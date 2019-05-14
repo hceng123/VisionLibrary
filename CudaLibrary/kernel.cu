@@ -355,6 +355,8 @@ __global__
 void kernel_phase_correction(
     float* phaseDiff,
     float* phase,
+    char* pBufferSign,
+    char* pBufferAmpl,
     uint32_t step,
     const int ROWS,
     const int COLS,
@@ -365,22 +367,23 @@ void kernel_phase_correction(
     if (start >= ROWS)
         return;
 
-    char* vecSignOfRow = (char*)malloc(COLS * sizeof(char));
-    char* vecAmplOfRow = (char*)malloc(COLS * sizeof(char));
-    int* vecJumpCol = (int*)malloc(COLS / 4 * sizeof(int));
-    int* vecJumpSpan = (int*)malloc(COLS / 4 * sizeof(int));
-    int* vecSortedJumpSpanIdx = (int*)malloc(COLS / 4 * sizeof(int));
-    int* vecJumpIdxNeedToHandle = (int*)malloc(COLS / 4 * sizeof(int));
+    int* vecJumpCol = NULL;
+    int* vecJumpSpan = NULL;
+    int* vecSortedJumpSpanIdx = NULL;
+    int* vecJumpIdxNeedToHandle = NULL;
 
     for (int row = start; row < ROWS; row += stride) {
         int offsetOfData = row * step;
 
         bool bRowWithPosJump = false, bRowWithNegJump = false;
-        memset(vecSignOfRow, 0, COLS);
-        memset(vecAmplOfRow, 0, COLS);
 
         float* phaseDiffRow = phaseDiff + offsetOfData;
         float* phaseRow = phase + offsetOfData;
+        char* vecSignOfRow = pBufferSign + offsetOfData;
+        char* vecAmplOfRow = pBufferAmpl + offsetOfData;
+
+        memset(vecSignOfRow, 0, COLS);
+        memset(vecAmplOfRow, 0, COLS);
 
         for (int col = 0; col < COLS - 1; ++col) {
             auto value = phaseDiffRow[col];
@@ -403,6 +406,15 @@ void kernel_phase_correction(
 
         if (!bRowWithPosJump || !bRowWithNegJump)
             continue;
+
+        if (NULL == vecJumpCol)
+            vecJumpCol = (int*)malloc(COLS / 4 * sizeof(int));
+        if (NULL == vecJumpSpan)
+            vecJumpSpan = (int*)malloc(COLS / 4 * sizeof(int));
+        if (NULL == vecSortedJumpSpanIdx)
+            vecSortedJumpSpanIdx = (int*)malloc(COLS / 4 * sizeof(int));
+        if (NULL == vecJumpIdxNeedToHandle)
+            vecJumpIdxNeedToHandle = (int*)malloc(COLS / 4 * sizeof(int));
 
         for (int kk = 0; kk < 2; ++ kk) {
             int jumpColCount = 0, jumpSpanCount = 0, jumpIdxNeedToHandleCount = 0;
@@ -457,12 +469,14 @@ void kernel_phase_correction(
         }
     }
 
-    free(vecSignOfRow);
-    free(vecAmplOfRow);
-    free(vecJumpCol);
-    free(vecJumpSpan);
-    free(vecSortedJumpSpanIdx);
-    free(vecJumpIdxNeedToHandle);
+    if (vecJumpCol != NULL)
+        free(vecJumpCol);
+    if (vecJumpSpan != NULL)
+        free(vecJumpSpan);
+    if (vecSortedJumpSpanIdx != NULL)
+        free(vecSortedJumpSpanIdx);
+    if (vecJumpIdxNeedToHandle != NULL)
+        free(vecJumpIdxNeedToHandle);
 }
 
 void cpuSwapValue(int& value1, int &value2) {
@@ -614,11 +628,13 @@ void run_kernel_phase_correction(
     cudaStream_t cudaStream,
     float* phaseDiff,
     float* phase,
+    char* pBufferSign,
+    char* pBufferAmpl,
     uint32_t step,
     const int ROWS,
     const int COLS,
     const int span) {
-    kernel_phase_correction<<<gridSize, blockSize, 0, cudaStream>>>(phaseDiff, phase, step, ROWS, COLS, span);
+    kernel_phase_correction<<<gridSize, blockSize, 0, cudaStream>>>(phaseDiff, phase, pBufferSign, pBufferAmpl, step, ROWS, COLS, span);
     //cpu_kernel_phase_correction(phaseDiff, phase, step, ROWS, COLS, span);
 }
 
