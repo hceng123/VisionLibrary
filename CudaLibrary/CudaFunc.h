@@ -45,8 +45,8 @@ void run_kernel_select_cmp_point(
     const int span);
 
 void run_kernel_phase_correction(
-    uint32_t gridSize,
-    uint32_t blockSize,
+    dim3 grid,
+    dim3 threads,
     cudaStream_t cudaStream,
     float* phaseDiff,
     float* phase,

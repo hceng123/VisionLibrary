@@ -32,7 +32,7 @@ static int divUp(int total, int grain)
 /*static*/ bool CudaAlgorithm::initCuda() {
     size_t size = 0;
     cudaDeviceGetLimit(&size, cudaLimitMallocHeapSize);
-    cudaDeviceSetLimit(cudaLimitMallocHeapSize, size * 40);
+    cudaDeviceSetLimit(cudaLimitMallocHeapSize, size * 60);
     cudaDeviceGetLimit(&size, cudaLimitMallocHeapSize);
 
     cudaDeviceSetLimit(cudaLimitDevRuntimeSyncDepth, 16);
@@ -358,13 +358,15 @@ static int divUp(int total, int grain)
     CStopWatch stopWatch;
     const int ROWS = matPhase.rows;
     const int COLS = matPhase.cols;
-    const int gridSize = 64;
-    const int threadSize = 32;
     
     //X direction
     if (nJumpSpanX > 0) {
         diff(matPhase, matDiffResult, CalcUtils::DIFF_ON_X_DIR, stream);
-        run_kernel_phase_correction(gridSize, threadSize, cv::cuda::StreamAccessor::getStream(stream),
+        dim3 threads(16, 16);
+        dim3 grid(divUp(matPhase.cols, threads.x), divUp(matPhase.rows, threads.y));
+        matBufferSign.setTo(0, stream);
+        matBufferAmpl.setTo(0, stream);
+        run_kernel_phase_correction(grid, threads, cv::cuda::StreamAccessor::getStream(stream),
             reinterpret_cast<float *>(matDiffResult.data),
             reinterpret_cast<float *>(matPhase.data),
             reinterpret_cast<char *>(matBufferSign.data),
@@ -379,7 +381,11 @@ static int divUp(int total, int grain)
         cv::cuda::transpose(matPhase, matPhaseT, stream);
         TimeLog::GetInstance()->addTimeLog("cv::cuda::transpose for Y", stopWatch.Span());
         diff(matPhaseT, matDiffResultT, CalcUtils::DIFF_ON_X_DIR, stream);
-        run_kernel_phase_correction(gridSize, threadSize, cv::cuda::StreamAccessor::getStream(stream),
+        dim3 threads(16, 16);
+        dim3 grid(divUp(matPhaseT.cols, threads.x), divUp(matPhaseT.rows, threads.y));
+        matBufferSign.setTo(0, stream);
+        matBufferAmpl.setTo(0, stream);
+        run_kernel_phase_correction(grid, threads, cv::cuda::StreamAccessor::getStream(stream),
             reinterpret_cast<float *>(matDiffResultT.data),
             reinterpret_cast<float *>(matPhaseT.data),
             reinterpret_cast<char *>(matBufferSign.data),
