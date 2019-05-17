@@ -78,6 +78,31 @@ static int divUp(int total, int grain)
             return pstRpy->enStatus;
         }
 
+        const int PhaseCorrectionBufferSize = 2048 * 512 * sizeof(int);
+        err = cudaMalloc(reinterpret_cast<void **>(&m_arrCalc3DHeightVars[dlp].pBufferJumpSpan), PhaseCorrectionBufferSize);
+        if (err != cudaSuccess) {
+            pstRpy->enStatus = VisionStatus::CUDA_MEMORY_ERROR;
+            return pstRpy->enStatus;
+        }
+
+        err = cudaMalloc(reinterpret_cast<void **>(&m_arrCalc3DHeightVars[dlp].pBufferJumpStart), PhaseCorrectionBufferSize);
+        if (err != cudaSuccess) {
+            pstRpy->enStatus = VisionStatus::CUDA_MEMORY_ERROR;
+            return pstRpy->enStatus;
+        }
+
+        err = cudaMalloc(reinterpret_cast<void **>(&m_arrCalc3DHeightVars[dlp].pBufferJumpEnd), PhaseCorrectionBufferSize);
+        if (err != cudaSuccess) {
+            pstRpy->enStatus = VisionStatus::CUDA_MEMORY_ERROR;
+            return pstRpy->enStatus;
+        }
+
+        err = cudaMalloc(reinterpret_cast<void **>(&m_arrCalc3DHeightVars[dlp].pBufferSortedJumpSpanIdx), PhaseCorrectionBufferSize);
+        if (err != cudaSuccess) {
+            pstRpy->enStatus = VisionStatus::CUDA_MEMORY_ERROR;
+            return pstRpy->enStatus;
+        }
+
         m_arrCalc3DHeightVars[dlp].matAlpha = cv::cuda::GpuMat(2048, 2040, CV_32FC1);
         m_arrCalc3DHeightVars[dlp].matBeta = cv::cuda::GpuMat(2048, 2040, CV_32FC1);
         m_arrCalc3DHeightVars[dlp].matGamma = cv::cuda::GpuMat(2048, 2040, CV_32FC1);
@@ -352,6 +377,10 @@ static int divUp(int total, int grain)
     cv::cuda::GpuMat& matDiffResultT,
     cv::cuda::GpuMat& matBufferSign,
     cv::cuda::GpuMat& matBufferAmpl,
+    int* pBufferJumpSpan,
+    int* pBufferJumpStart,
+    int* pBufferJumpEnd,
+    int* pBufferSortedJumpSpanIdx,
     int nJumpSpanX,
     int nJumpSpanY,
     cv::cuda::Stream& stream/* = cv::cuda::Stream::Null()*/) {
@@ -371,6 +400,10 @@ static int divUp(int total, int grain)
             reinterpret_cast<float *>(matPhase.data),
             reinterpret_cast<char *>(matBufferSign.data),
             reinterpret_cast<char *>(matBufferAmpl.data),
+            pBufferJumpSpan,
+            pBufferJumpStart,
+            pBufferJumpEnd,
+            pBufferSortedJumpSpanIdx,
             matDiffResult.step1(),
             ROWS, COLS, nJumpSpanX);
         TimeLog::GetInstance()->addTimeLog("run_kernel_phase_correction for X", stopWatch.Span());
@@ -390,6 +423,10 @@ static int divUp(int total, int grain)
             reinterpret_cast<float *>(matPhaseT.data),
             reinterpret_cast<char *>(matBufferSign.data),
             reinterpret_cast<char *>(matBufferAmpl.data),
+            pBufferJumpSpan,
+            pBufferJumpStart,
+            pBufferJumpEnd,
+            pBufferSortedJumpSpanIdx,
             matDiffResultT.step1(),
             COLS, ROWS, nJumpSpanY);
         TimeLog::GetInstance()->addTimeLog("run_kernel_phase_correction for Y", stopWatch.Span());
