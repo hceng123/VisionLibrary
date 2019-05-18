@@ -621,13 +621,12 @@ void run_kernel_phase_correction(
     const int ROWS,
     const int COLS,
     const int span) {
-    kernel_phase_correction << <grid, threads, 0, cudaStream >> >(phaseDiff, phase, pBufferSign, pBufferAmpl,
+    kernel_phase_correction<<<grid, threads, 0, cudaStream>>>(phaseDiff, phase, pBufferSign, pBufferAmpl,
         pBufferJumpSpan,
         pBufferJumpStart,
         pBufferJumpEnd,
         pBufferSortedJumpSpanIdx,
         step, ROWS, COLS, span);
-    //cpu_kernel_phase_correction(phaseDiff, phase, step, ROWS, COLS, span);
 }
 
 __global__
@@ -683,8 +682,15 @@ void run_kernel_interval_average(
     int interval,
     float *d_result,
     float *result) {
+    cudaEvent_t eventDone;
+    cudaEventCreate(&eventDone);
+
     kernel_interval_average<<<1, 1, 0, cudaStream>>>(data, step, ROWS, COLS, interval, d_result);
-    cudaMemcpy(result, d_result, sizeof(float), cudaMemcpyDeviceToHost);
+    cudaMemcpyAsync(result, d_result, sizeof(float), cudaMemcpyDeviceToHost, cudaStream);
+
+    cudaEventRecord(eventDone, NULL);
+    cudaEventSynchronize(eventDone);
+    cudaEventDestroy(eventDone);
 }
 
 //__device__ unsigned int count = 0;
@@ -791,11 +797,18 @@ void run_kernel_range_interval_average(
     const int RESULT_COLS = static_cast<int>(ceil((float)COLS / interval));
     const int SIZE = RESULT_ROWS * RESULT_COLS;
 
+    cudaEvent_t eventDone;
+    cudaEventCreate(&eventDone);
+
     kernel_interval_pick_data <<<1, 1, 0, cudaStream>>>(data, step, ROWS, COLS, interval, d_result);
 
     kernel_qsort<<<1, 1, 0, cudaStream >>>(d_result, SIZE);
     kernel_range_average<<<1, 1, 0, cudaStream>>>(d_result, SIZE, rangeStart, rangeEnd);
-    cudaMemcpy(result, d_result, sizeof(float), cudaMemcpyDeviceToHost);
+    cudaMemcpyAsync(result, d_result, sizeof(float), cudaMemcpyDeviceToHost, cudaStream);
+
+    cudaEventRecord(eventDone, NULL);
+    cudaEventSynchronize(eventDone);
+    cudaEventDestroy(eventDone);
 }
 
 __global__
