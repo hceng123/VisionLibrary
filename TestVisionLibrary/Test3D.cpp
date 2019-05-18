@@ -1226,7 +1226,7 @@ void TestCalc4DLPHeight()
     std::string strImageFolder = strParentFolder + "0104191933/";
     std::string strResultFolder = strParentFolder + "Frame_1_Result/";
 
-    PR_CALC_3D_HEIGHT_NEW_CMD stCalcHeightCmds[4];
+    PR_CALC_3D_HEIGHT_GPU_CMD stCalcHeightCmds[4];
     PR_CALC_3D_HEIGHT_RPY stCalcHeightRpys[4];
 
 #ifdef CALC_HEIGHT
@@ -1315,25 +1315,10 @@ void TestCalc4DLPHeight()
             fs.release();
         }
 
-        {
-            _snprintf(filePath, sizeof(filePath), "./data/3D/Config/CalibPP_Matlab_dlp%d.yml", nDlp + 1);
-            cv::FileStorage fs(filePath, cv::FileStorage::READ);
-
-            cv::FileNode fileNode = fs["BaseWrappedAlpha"];
-            cv::read(fileNode, stCalcHeightCmds[nDlp].matBaseWrappedAlpha, cv::Mat());
-            fileNode = fs["BaseWrappedBeta"];
-            cv::read(fileNode, stCalcHeightCmds[nDlp].matBaseWrappedBeta, cv::Mat());
-            fileNode = fs["BaseWrappedGamma"];
-            cv::read(fileNode, stCalcHeightCmds[nDlp].matBaseWrappedGamma, cv::Mat());
-            fs.release();
-        }
-
         _snprintf(filePath, sizeof(filePath), "./data/3D/Config/IntegrateCalibResult%d_new3D.yml", nDlp + 1);
         cv::FileStorage fsIntegrated(filePath, cv::FileStorage::READ);
         cv::FileNode fileNodeIntegrated = fsIntegrated["BezierK"];
         cv::read(fileNodeIntegrated, stCalcHeightCmds[nDlp].mat3DBezierK, cv::Mat());
-        fileNodeIntegrated = fsIntegrated["BezierSurface"];
-        cv::read(fileNodeIntegrated, stCalcHeightCmds[nDlp].mat3DBezierSurface, cv::Mat());
         fileNodeIntegrated = fsIntegrated["MaxPhase"];
         cv::read(fileNodeIntegrated, stCalcHeightCmds[nDlp].fMaxPhase, 6.f);
         fileNodeIntegrated = fsIntegrated["MinPhase"];

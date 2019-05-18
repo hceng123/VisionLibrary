@@ -7071,7 +7071,7 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     return pstRpy->enStatus;
 }
 
-/*static*/ VisionStatus VisionAlgorithm::calc3DHeightGpu(const PR_CALC_3D_HEIGHT_NEW_CMD *const pstCmd, PR_CALC_3D_HEIGHT_RPY *const pstRpy, bool bReplay /*= false*/) {
+/*static*/ VisionStatus VisionAlgorithm::calc3DHeightGpu(const PR_CALC_3D_HEIGHT_GPU_CMD *const pstCmd, PR_CALC_3D_HEIGHT_RPY *const pstRpy, bool bReplay /*= false*/) {
     assert(pstCmd != nullptr && pstRpy != nullptr);
 
     if (pstCmd->vecInputImgs.size() < 8) {
@@ -7094,24 +7094,6 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
         return pstRpy->enStatus;
     }
 
-    if (pstCmd->matBaseWrappedAlpha.empty()) {
-        WriteLog("matBaseWrappedAlpha is empty.");
-        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
-        return pstRpy->enStatus;
-    }
-
-    if (pstCmd->matBaseWrappedAlpha.size() != pstCmd->vecInputImgs[0].size()) {
-        WriteLog("The size of matBaseWrappedAlpha is not match with the input image size..");
-        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
-        return pstRpy->enStatus;
-    }
-
-    if (pstCmd->matBaseWrappedBeta.empty()) {
-        WriteLog("matBaseWrappedBeta is empty.");
-        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
-        return pstRpy->enStatus;
-    }
-
     if (pstCmd->nRemoveJumpSpan < 0) {
         std::stringstream ss;
         ss << "The nRemoveJumpSpan " << pstCmd->nRemoveJumpSpan << " is invalid.";
@@ -7129,12 +7111,6 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     }
 
     if (pstCmd->bUseThinnestPattern) {
-        if (pstCmd->matBaseWrappedGamma.empty()) {
-            WriteLog("matBaseWrappedGamma is empty.");
-            pstRpy->enStatus = VisionStatus::INVALID_PARAM;
-            return pstRpy->enStatus;
-        }
-
         if (pstCmd->matThickToThinnestK.empty()) {
             WriteLog("matThickToThinnestK is empty.");
             pstRpy->enStatus = VisionStatus::INVALID_PARAM;

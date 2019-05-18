@@ -531,11 +531,11 @@ VisionAPI VisionStatus PR_SetDlpParamsToGpu(const PR_SET_DLP_PARAMS_TO_GPU_CMD* 
     return CudaAlgorithm::setDlpParams(pstCmd, pstRpy);
 }
 
-VisionAPI VisionStatus PR_Calc3DHeightGpu(const PR_CALC_3D_HEIGHT_NEW_CMD *const pstCmd, PR_CALC_3D_HEIGHT_RPY *const pstRpy)
+VisionAPI VisionStatus PR_Calc3DHeightGpu(const PR_CALC_3D_HEIGHT_GPU_CMD *const pstCmd, PR_CALC_3D_HEIGHT_RPY *const pstRpy)
 {
-//PR_FUNCTION_ENTRY
+PR_FUNCTION_ENTRY
     return VisionAlgorithm::calc3DHeightGpu(pstCmd, pstRpy);
-//PR_FUNCTION_EXIT
+PR_FUNCTION_EXIT
 }
 
 VisionAPI VisionStatus PR_Merge3DHeight(const PR_MERGE_3D_HEIGHT_CMD *const pstCmd, PR_MERGE_3D_HEIGHT_RPY *const pstRpy)

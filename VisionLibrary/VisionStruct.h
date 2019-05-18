@@ -1296,7 +1296,6 @@ struct PR_CALC_3D_HEIGHT_CMD {
 
 struct PR_CALC_3D_HEIGHT_NEW_CMD {
     PR_CALC_3D_HEIGHT_NEW_CMD() :
-        nDlpNo(0),
         bEnableGaussianFilter(true),
         bReverseSeq(true),
         enProjectDir(PR_DIRECTION::LEFT),
@@ -1307,9 +1306,7 @@ struct PR_CALC_3D_HEIGHT_NEW_CMD {
         fPhaseShift(0.f),
         nRemoveJumpSpan(7),
         nCompareRemoveJumpSpan(15) {}
-
     VectorOfMat             vecInputImgs;
-    int                     nDlpNo;
     bool                    bEnableGaussianFilter;
     bool                    bReverseSeq;             //Change the image sequence.
     PR_DIRECTION            enProjectDir;            //The DLP project direction. Get it from PR_CALIB_3D_BASE_RPY.
@@ -1349,6 +1346,40 @@ struct PR_SET_DLP_PARAMS_TO_GPU_CMD {
 
 struct PR_SET_DLP_PARAMS_TO_GPU_RPY {
     VisionStatus            enStatus;
+};
+
+struct PR_CALC_3D_HEIGHT_GPU_CMD {
+    PR_CALC_3D_HEIGHT_GPU_CMD() :
+        nDlpNo(0),
+        bEnableGaussianFilter(true),
+        bReverseSeq(true),
+        enProjectDir(PR_DIRECTION::LEFT),
+        enScanDir(PR_DIRECTION::DOWN),
+        bUseThinnestPattern(false),
+        fRemoveHarmonicWaveK(0.f),
+        fMinAmplitude(3.f),
+        fPhaseShift(0.f),
+        nRemoveJumpSpan(7),
+        nCompareRemoveJumpSpan(15) {}
+    VectorOfMat             vecInputImgs;
+    int                     nDlpNo;
+    bool                    bEnableGaussianFilter;
+    bool                    bReverseSeq;             //Change the image sequence.
+    PR_DIRECTION            enProjectDir;            //The DLP project direction. Get it from PR_CALIB_3D_BASE_RPY.
+    PR_DIRECTION            enScanDir;               //The phase correction direction. Get it from PR_CALIB_3D_BASE_RPY.
+    bool                    bUseThinnestPattern;     //Choose to use the thinnest stripe pattern. Otherwise just use the normal thin stripe.
+    float                   fRemoveHarmonicWaveK;    //The factor to remove the harmonic wave in the thick stripe. If it is 0, then this procedure will be skipped.
+    float                   fMinAmplitude;           //In a group of 4 images, if a pixel's gray scale amplitude less than this value, this pixel will be discarded.
+    float                   fPhaseShift;             //Shift the phase measure range. Normal is -1~1, sometimes the H5 surface has corner over this range. So if shift is 0.1, the measure range is -0.9~1.1, so it can measure all the H5 surface.
+    cv::Mat                 matThickToThinK;         //The factor between thick stripe and thin stripe.
+    cv::Mat                 matThickToThinnestK;     //The factor between thick stripe and thinnest stripe.
+    cv::Mat                 matPhaseToHeightK;       //The factor to convert phase to height. This is the single group of image calibration result.
+    int                     nRemoveJumpSpan;         //The phase jump span in X and Y direction under this value in beta phase will be removed.
+    int                     nCompareRemoveJumpSpan;  //The compared phase jump span in X and Y direction under this value in gamma phase will be removed.
+    //Below 2 parameters are result of PR_MotorCalib3D, they are calibrated from positive, negative and H = 5mm surface phase. If these 2 parameters are used, then matPhaseToHeightK will be ignored.
+    float                   fMaxPhase;
+    float                   fMinPhase;
+    cv::Mat                 mat3DBezierK;           // The 100 3D Bezier parameters. 5 x 5 x 4 = 100
 };
 
 struct PR_MERGE_3D_HEIGHT_CMD {
