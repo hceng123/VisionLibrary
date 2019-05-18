@@ -1,5 +1,8 @@
 #include <stdio.h>
 
+#include <cuda_runtime_api.h>
+#include <cuda.h>
+#include <cooperative_groups.h>
 #include "device_launch_parameters.h"
 #include "CudaFunc.h"
 
@@ -357,126 +360,106 @@ void kernel_phase_correction(
     float* phase,
     char* pBufferSign,
     char* pBufferAmpl,
+    int* pBufferJumpSpan,
+    int* pBufferJumpStart,
+    int* pBufferJumpEnd,
+    int* pBufferSortedJumpSpanIdx,
     uint32_t step,
     const int ROWS,
     const int COLS,
-    const int span) {
-    int start = blockIdx.x * blockDim.x + threadIdx.x;
-    int stride = blockDim.x * gridDim.x;
+    const int spanThres) {
+    int c = blockIdx.x * blockDim.x + threadIdx.x;
+    int r = blockIdx.y * blockDim.y + threadIdx.y;
 
-    if (start >= ROWS)
+    if (c >= COLS - 1 || r >= ROWS)
         return;
 
-    int* vecJumpCol = NULL;
-    int* vecJumpSpan = NULL;
-    int* vecSortedJumpSpanIdx = NULL;
-    int* vecJumpIdxNeedToHandle = NULL;
+    int dataRowOffset = r * step;
+    float* phaseDiffRow = phaseDiff + dataRowOffset;
+    char* vecSignOfRow = pBufferSign + dataRowOffset;
+    char* vecAmplOfRow = pBufferAmpl + dataRowOffset;
 
-    for (int row = start; row < ROWS; row += stride) {
-        int offsetOfData = row * step;
+    auto value = phaseDiffRow[c];
+    if (value > ONE_HALF_CYCLE) {
+        vecSignOfRow[c] = 1;
+        vecAmplOfRow[c] = static_cast<char> (std::ceil(std::fabs(value) / 2.f) * 2);
+    }
+    else if (value < -ONE_HALF_CYCLE) {
+        vecSignOfRow[c] = -1;
+        vecAmplOfRow[c] = static_cast<char> (std::ceil(std::abs(value) / 2.f) * 2);
+    }
 
-        bool bRowWithPosJump = false, bRowWithNegJump = false;
+    cooperative_groups::grid_group grp = cooperative_groups::this_grid();
+    grp.sync();
 
-        float* phaseDiffRow = phaseDiff + offsetOfData;
-        float* phaseRow = phase + offsetOfData;
-        char* vecSignOfRow = pBufferSign + offsetOfData;
-        char* vecAmplOfRow = pBufferAmpl + offsetOfData;
+    if (c > 0)
+        return;
 
-        memset(vecSignOfRow, 0, COLS);
-        memset(vecAmplOfRow, 0, COLS);
+    int offsetOfBuffer = r * 512;
+    int* vecJumpSpan = pBufferJumpSpan + offsetOfBuffer;
+    int* vecJumpStart = pBufferJumpStart + offsetOfBuffer;
+    int* vecJumpEnd = pBufferJumpEnd + offsetOfBuffer;
+    int* vecSortedJumpSpanIdx = pBufferSortedJumpSpanIdx + offsetOfBuffer;
 
+    float* phaseRow = phase + dataRowOffset;
+
+    for (int kk = 0; kk < 2; ++kk) {
+        int jumpSpanCount = 0;
+        char lastSign = 0;
+        int lastCol = 0;
         for (int col = 0; col < COLS - 1; ++col) {
-            auto value = phaseDiffRow[col];
-            if (value > ONE_HALF_CYCLE) {
-                vecSignOfRow[col] = 1;
-                bRowWithPosJump = true;
+            if (vecSignOfRow[col] != 0) {
+                if (col - lastCol < spanThres && vecSignOfRow[col] * lastSign == -1) {
+                    vecJumpSpan[jumpSpanCount] = col - lastCol;
+                    vecJumpStart[jumpSpanCount] = lastCol;
+                    vecJumpEnd[jumpSpanCount] = col;
+                    ++jumpSpanCount;
+                }
 
-                char nJumpAmplitude = static_cast<char> (std::ceil(std::fabs(value) / 2.f) * 2);
-                vecAmplOfRow[col] = nJumpAmplitude;
-            }
-
-            else if (value < -ONE_HALF_CYCLE) {
-                vecSignOfRow[col] = -1;
-                bRowWithNegJump = true;
-
-                char nJumpAmplitude = static_cast<char> (std::ceil(std::abs(value) / 2.f) * 2);
-                vecAmplOfRow[col] = nJumpAmplitude;
+                lastCol = col;
+                lastSign = vecSignOfRow[col];
             }
         }
 
-        if (!bRowWithPosJump || !bRowWithNegJump)
-            continue;
+        if (jumpSpanCount <= 0)
+            break;
 
-        if (NULL == vecJumpCol)
-            vecJumpCol = (int*)malloc(COLS / 4 * sizeof(int));
-        if (NULL == vecJumpSpan)
-            vecJumpSpan = (int*)malloc(COLS / 4 * sizeof(int));
-        if (NULL == vecSortedJumpSpanIdx)
-            vecSortedJumpSpanIdx = (int*)malloc(COLS / 4 * sizeof(int));
-        if (NULL == vecJumpIdxNeedToHandle)
-            vecJumpIdxNeedToHandle = (int*)malloc(COLS / 4 * sizeof(int));
+        kernel_sort_index_value(vecJumpSpan, jumpSpanCount, vecSortedJumpSpanIdx);
 
-        for (int kk = 0; kk < 2; ++ kk) {
-            int jumpColCount = 0, jumpSpanCount = 0, jumpIdxNeedToHandleCount = 0;
-            for (int col = 0; col < COLS; ++col) {
-                if (vecSignOfRow[col] != 0)
-                    vecJumpCol[jumpColCount++] = col;
-            }
-            if (jumpColCount < 2)
-                continue;
+        for (int jj = 0; jj < jumpSpanCount; ++jj) {
+            auto nStart = vecJumpStart[vecSortedJumpSpanIdx[jj]];
+            auto nEnd = vecJumpEnd[vecSortedJumpSpanIdx[jj]];
+            char chSignFirst = vecSignOfRow[nStart];        //The index is hard to understand. Use the sorted span index to find the original column.
+            char chSignSecond = vecSignOfRow[nEnd];
 
-            for (size_t i = 1; i < jumpColCount; ++i)
-                vecJumpSpan[jumpSpanCount++] = vecJumpCol[i] - vecJumpCol[i - 1];
-            kernel_sort_index_value(vecJumpSpan, jumpSpanCount, vecSortedJumpSpanIdx);
-            for (int i = 0; i < jumpSpanCount; ++i) {
-                if (vecJumpSpan[i] < span)
-                    vecJumpIdxNeedToHandle[jumpIdxNeedToHandleCount++] = i;
-            }
+            if (chSignFirst * chSignSecond == -1) { //it is a pair
+                char chAmplFirst = vecAmplOfRow[nStart];
+                char chAmplSecond = vecAmplOfRow[nEnd];
+                char chTurnAmpl = min(chAmplFirst, chAmplSecond) / 2;
 
-            for (size_t jj = 0; jj < jumpIdxNeedToHandleCount; ++jj) {
-                auto nStart = vecJumpCol[vecSortedJumpSpanIdx[jj]];
-                auto nEnd = vecJumpCol[vecSortedJumpSpanIdx[jj] + 1];
-                char chSignFirst = vecSignOfRow[nStart];        //The index is hard to understand. Use the sorted span index to find the original column.
-                char chSignSecond = vecSignOfRow[nEnd];
+                char chAmplNew = chAmplFirst - 2 * chTurnAmpl;
+                vecAmplOfRow[nStart] = chAmplNew;
+                if (chAmplNew <= 0)
+                    vecSignOfRow[nStart] = 0;  // Remove the sign of jump flag.
 
-                if (chSignFirst * chSignSecond == -1) { //it is a pair
-                    char chAmplFirst = vecAmplOfRow[nStart];
-                    char chAmplSecond = vecAmplOfRow[nEnd];
-                    char chTurnAmpl = min(chAmplFirst, chAmplSecond) / 2;
+                chAmplNew = chAmplSecond - 2 * chTurnAmpl;
+                vecAmplOfRow[nEnd] = chAmplNew;
+                if (chAmplNew <= 0)
+                    vecSignOfRow[nEnd] = 0;
 
-                    char chAmplNew = chAmplFirst - 2 * chTurnAmpl;
-                    vecAmplOfRow[nStart] = chAmplNew;
-                    if (chAmplNew <= 0)
-                        vecSignOfRow[nStart] = 0;  // Remove the sign of jump flag.
-
-                    chAmplNew = chAmplSecond - 2 * chTurnAmpl;
-                    vecAmplOfRow[nEnd] = chAmplNew;
-                    if (chAmplNew <= 0)
-                        vecSignOfRow[nEnd] = 0;
-
-                    auto startValue = phaseRow[nStart];
-                    for (int col = nStart + 1; col <= nEnd; ++col) {
-                        phaseRow[col] -= chSignFirst * ONE_CYCLE * chTurnAmpl;
-                        if (chSignFirst > 0 && phaseRow[col] < startValue) { //Jump up, need to roll down, but can not over roll
-                            phaseRow[col] = startValue;
-                        }
-                        else if (chSignFirst < 0 && phaseRow[col] > startValue) { //Jump down, need to roll up
-                            phaseRow[col] = startValue;
-                        }
+                auto startValue = phaseRow[nStart];
+                for (int col = nStart + 1; col <= nEnd; ++col) {
+                    phaseRow[col] -= chSignFirst * ONE_CYCLE * chTurnAmpl;
+                    if (chSignFirst > 0 && phaseRow[col] < startValue) { //Jump up, need to roll down, but can not over roll
+                        phaseRow[col] = startValue;
+                    }
+                    else if (chSignFirst < 0 && phaseRow[col] > startValue) { //Jump down, need to roll up
+                        phaseRow[col] = startValue;
                     }
                 }
             }
         }
     }
-
-    if (vecJumpCol != NULL)
-        free(vecJumpCol);
-    if (vecJumpSpan != NULL)
-        free(vecJumpSpan);
-    if (vecSortedJumpSpanIdx != NULL)
-        free(vecSortedJumpSpanIdx);
-    if (vecJumpIdxNeedToHandle != NULL)
-        free(vecJumpIdxNeedToHandle);
 }
 
 void cpuSwapValue(int& value1, int &value2) {
@@ -623,18 +606,27 @@ void cpu_kernel_phase_correction(
 }
 
 void run_kernel_phase_correction(
-    uint32_t gridSize,
-    uint32_t blockSize,
+    dim3 grid,
+    dim3 threads,
     cudaStream_t cudaStream,
     float* phaseDiff,
     float* phase,
     char* pBufferSign,
     char* pBufferAmpl,
+    int* pBufferJumpSpan,
+    int* pBufferJumpStart,
+    int* pBufferJumpEnd,
+    int* pBufferSortedJumpSpanIdx,
     uint32_t step,
     const int ROWS,
     const int COLS,
     const int span) {
-    kernel_phase_correction<<<gridSize, blockSize, 0, cudaStream>>>(phaseDiff, phase, pBufferSign, pBufferAmpl, step, ROWS, COLS, span);
+    kernel_phase_correction << <grid, threads, 0, cudaStream >> >(phaseDiff, phase, pBufferSign, pBufferAmpl,
+        pBufferJumpSpan,
+        pBufferJumpStart,
+        pBufferJumpEnd,
+        pBufferSortedJumpSpanIdx,
+        step, ROWS, COLS, span);
     //cpu_kernel_phase_correction(phaseDiff, phase, step, ROWS, COLS, span);
 }
 

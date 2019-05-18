@@ -32,7 +32,7 @@ static int divUp(int total, int grain)
 /*static*/ bool CudaAlgorithm::initCuda() {
     size_t size = 0;
     cudaDeviceGetLimit(&size, cudaLimitMallocHeapSize);
-    cudaDeviceSetLimit(cudaLimitMallocHeapSize, size * 40);
+    cudaDeviceSetLimit(cudaLimitMallocHeapSize, size * 60);
     cudaDeviceGetLimit(&size, cudaLimitMallocHeapSize);
 
     cudaDeviceSetLimit(cudaLimitDevRuntimeSyncDepth, 16);
@@ -73,6 +73,31 @@ static int divUp(int total, int grain)
         }
 
         err = cudaMalloc(reinterpret_cast<void **>(&m_arrCalc3DHeightVars[dlp].d_tmpResult), sizeof(float));
+        if (err != cudaSuccess) {
+            pstRpy->enStatus = VisionStatus::CUDA_MEMORY_ERROR;
+            return pstRpy->enStatus;
+        }
+
+        const int PhaseCorrectionBufferSize = 2048 * 512 * sizeof(int);
+        err = cudaMalloc(reinterpret_cast<void **>(&m_arrCalc3DHeightVars[dlp].pBufferJumpSpan), PhaseCorrectionBufferSize);
+        if (err != cudaSuccess) {
+            pstRpy->enStatus = VisionStatus::CUDA_MEMORY_ERROR;
+            return pstRpy->enStatus;
+        }
+
+        err = cudaMalloc(reinterpret_cast<void **>(&m_arrCalc3DHeightVars[dlp].pBufferJumpStart), PhaseCorrectionBufferSize);
+        if (err != cudaSuccess) {
+            pstRpy->enStatus = VisionStatus::CUDA_MEMORY_ERROR;
+            return pstRpy->enStatus;
+        }
+
+        err = cudaMalloc(reinterpret_cast<void **>(&m_arrCalc3DHeightVars[dlp].pBufferJumpEnd), PhaseCorrectionBufferSize);
+        if (err != cudaSuccess) {
+            pstRpy->enStatus = VisionStatus::CUDA_MEMORY_ERROR;
+            return pstRpy->enStatus;
+        }
+
+        err = cudaMalloc(reinterpret_cast<void **>(&m_arrCalc3DHeightVars[dlp].pBufferSortedJumpSpanIdx), PhaseCorrectionBufferSize);
         if (err != cudaSuccess) {
             pstRpy->enStatus = VisionStatus::CUDA_MEMORY_ERROR;
             return pstRpy->enStatus;
@@ -352,26 +377,36 @@ static int divUp(int total, int grain)
     cv::cuda::GpuMat& matDiffResultT,
     cv::cuda::GpuMat& matBufferSign,
     cv::cuda::GpuMat& matBufferAmpl,
+    int* pBufferJumpSpan,
+    int* pBufferJumpStart,
+    int* pBufferJumpEnd,
+    int* pBufferSortedJumpSpanIdx,
     int nJumpSpanX,
     int nJumpSpanY,
     cv::cuda::Stream& stream/* = cv::cuda::Stream::Null()*/) {
     CStopWatch stopWatch;
     const int ROWS = matPhase.rows;
     const int COLS = matPhase.cols;
-    const int gridSize = 64;
-    const int threadSize = 32;
     
     //X direction
     if (nJumpSpanX > 0) {
         diff(matPhase, matDiffResult, CalcUtils::DIFF_ON_X_DIR, stream);
-        run_kernel_phase_correction(gridSize, threadSize, cv::cuda::StreamAccessor::getStream(stream),
+        dim3 threads(16, 16);
+        dim3 grid(divUp(matPhase.cols, threads.x), divUp(matPhase.rows, threads.y));
+        matBufferSign.setTo(0, stream);
+        matBufferAmpl.setTo(0, stream);
+        run_kernel_phase_correction(grid, threads, cv::cuda::StreamAccessor::getStream(stream),
             reinterpret_cast<float *>(matDiffResult.data),
             reinterpret_cast<float *>(matPhase.data),
             reinterpret_cast<char *>(matBufferSign.data),
             reinterpret_cast<char *>(matBufferAmpl.data),
+            pBufferJumpSpan,
+            pBufferJumpStart,
+            pBufferJumpEnd,
+            pBufferSortedJumpSpanIdx,
             matDiffResult.step1(),
             ROWS, COLS, nJumpSpanX);
-        TimeLog::GetInstance()->addTimeLog("run_kernel_phase_correction for X", stopWatch.Span());
+        //TimeLog::GetInstance()->addTimeLog("run_kernel_phase_correction for X", stopWatch.Span());
     }
 
     // Y direction
@@ -379,17 +414,25 @@ static int divUp(int total, int grain)
         cv::cuda::transpose(matPhase, matPhaseT, stream);
         TimeLog::GetInstance()->addTimeLog("cv::cuda::transpose for Y", stopWatch.Span());
         diff(matPhaseT, matDiffResultT, CalcUtils::DIFF_ON_X_DIR, stream);
-        run_kernel_phase_correction(gridSize, threadSize, cv::cuda::StreamAccessor::getStream(stream),
+        dim3 threads(16, 16);
+        dim3 grid(divUp(matPhaseT.cols, threads.x), divUp(matPhaseT.rows, threads.y));
+        matBufferSign.setTo(0, stream);
+        matBufferAmpl.setTo(0, stream);
+        run_kernel_phase_correction(grid, threads, cv::cuda::StreamAccessor::getStream(stream),
             reinterpret_cast<float *>(matDiffResultT.data),
             reinterpret_cast<float *>(matPhaseT.data),
             reinterpret_cast<char *>(matBufferSign.data),
             reinterpret_cast<char *>(matBufferAmpl.data),
+            pBufferJumpSpan,
+            pBufferJumpStart,
+            pBufferJumpEnd,
+            pBufferSortedJumpSpanIdx,
             matDiffResultT.step1(),
             COLS, ROWS, nJumpSpanY);
-        TimeLog::GetInstance()->addTimeLog("run_kernel_phase_correction for Y", stopWatch.Span());
+        //TimeLog::GetInstance()->addTimeLog("run_kernel_phase_correction for Y", stopWatch.Span());
 
         cv::cuda::transpose(matPhaseT, matPhase, stream);
-        TimeLog::GetInstance()->addTimeLog("cv::cuda::transpose back", stopWatch.Span());
+        //TimeLog::GetInstance()->addTimeLog("cv::cuda::transpose back", stopWatch.Span());
     }
 }
 

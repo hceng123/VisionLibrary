@@ -26,6 +26,10 @@ struct Calc3DHeightVars {
     cv::cuda::GpuMat matBufferAmpl;     // Buffer to use in phase correction
     float* d_p3;
     float* d_tmpResult;
+    int* pBufferJumpSpan;
+    int* pBufferJumpStart;
+    int* pBufferJumpEnd;
+    int* pBufferSortedJumpSpanIdx;
 };
 
 struct DlpCalibResult {
@@ -95,6 +99,10 @@ public:
         cv::cuda::GpuMat& matDiffResultT,
         cv::cuda::GpuMat& matBufferSign,
         cv::cuda::GpuMat& matBufferAmpl,
+        int* pBufferJumpSpan,
+        int* pBufferJumpStart,
+        int* pBufferJumpEnd,
+        int* pBufferSortedJumpSpanIdx,
         int nJumpSpanX,
         int nJumpSpanY,
         cv::cuda::Stream& stream = cv::cuda::Stream::Null());
