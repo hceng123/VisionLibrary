@@ -44,6 +44,7 @@ public:
     static void calc3DHeightNew(const PR_CALC_3D_HEIGHT_NEW_CMD *const pstCmd, PR_CALC_3D_HEIGHT_RPY *const pstRpy);
     static void calc3DHeightGpu(const PR_CALC_3D_HEIGHT_GPU_CMD *const pstCmd, PR_CALC_3D_HEIGHT_RPY *const pstRpy);
     static void merge3DHeight(const PR_MERGE_3D_HEIGHT_CMD *const pstCmd, PR_MERGE_3D_HEIGHT_RPY *const pstRpy);
+    static void calcMerge4DlpHeight(const PR_CALC_MERGE_4_DLP_HEIGHT_CMD *const pstCmd, PR_CALC_MERGE_4_DLP_HEIGHT_RPY *const pstRpy);
     static void calc3DHeightDiff(const PR_CALC_3D_HEIGHT_DIFF_CMD *const pstCmd, PR_CALC_3D_HEIGHT_DIFF_RPY *const pstRpy);
     static void calcMTF(const PR_CALC_MTF_CMD *const pstCmd, PR_CALC_MTF_RPY *const pstRpy);
     static void calcPD(const PR_CALC_PD_CMD *const pstCmd, PR_CALC_PD_RPY *const pstRpy);
@@ -105,6 +106,16 @@ private:
     static void _calculatePPzConvert3D(const cv::Mat& z1, const cv::Mat& matH, const VectorOfFloat& param, int ss, const cv::Mat& xxt, cv::Mat& matSum1, cv::Mat& matSum2);
     static cv::Mat _calculateSurfaceConvert3D(const cv::Mat& z1, const VectorOfFloat& param, int ss, const cv::Mat& xxt1);
     static cv::Mat _pickPointInterval(const cv::Mat& matInput, int interval);
+    static cv::cuda::GpuMat _calcHeightGpuCore(
+        const PR_CALC_3D_HEIGHT_GPU_CMD *const pstCmd,
+        const std::vector<cv::cuda::GpuMat>& vecGpuImages,
+        cv::cuda::GpuMat& matNanMask,
+        cv::cuda::Stream& stream);
+    static cv::Mat _merge4DlpHeightCore(
+        const VectorOfMat&       vecMatHeight,
+        const VectorOfMat&       vecMatNanMask,
+        const VectorOfDirection& vecProjDir,
+        float                    fHeightDiffThreshold);
 
     static inline void _phaseWrap(cv::Mat &matPhase) {
         CStopWatch stopWatch;

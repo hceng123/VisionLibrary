@@ -7174,6 +7174,70 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     return pstRpy->enStatus;
 }
 
+/*static*/ VisionStatus VisionAlgorithm::calcMerge4DlpHeight(const PR_CALC_MERGE_4_DLP_HEIGHT_CMD *const pstCmd, PR_CALC_MERGE_4_DLP_HEIGHT_RPY *const pstRpy) {
+    assert(pstCmd != nullptr && pstRpy != nullptr);
+
+    for (int dlp = 0; dlp < NUM_OF_DLP; ++dlp) {
+        const auto& stCmd = pstCmd->arrCalcHeightCmd[dlp];
+        if (stCmd.vecInputImgs.size() < 8) {
+            WriteLog("The input image count is less than 8.");
+            pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+            return pstRpy->enStatus;
+        }
+
+        for (const auto &mat : stCmd.vecInputImgs) {
+            if (mat.empty()) {
+                WriteLog("The input image is empty.");
+                pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+                return pstRpy->enStatus;
+            }
+        }
+
+        if (stCmd.matThickToThinK.empty()) {
+            WriteLog("The matThickToThinK is empty.");
+            pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+            return pstRpy->enStatus;
+        }
+
+        if (stCmd.nRemoveJumpSpan < 0) {
+            std::stringstream ss;
+            ss << "The nRemoveJumpSpan " << stCmd.nRemoveJumpSpan << " is invalid.";
+            WriteLog(ss.str());
+            pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+            return pstRpy->enStatus;
+        }
+
+        if (stCmd.nCompareRemoveJumpSpan < 0) {
+            std::stringstream ss;
+            ss << "The nRemoveJumpSpan " << stCmd.nCompareRemoveJumpSpan << " is invalid.";
+            WriteLog(ss.str());
+            pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+            return pstRpy->enStatus;
+        }
+
+        if (stCmd.bUseThinnestPattern) {
+            if (stCmd.matThickToThinnestK.empty()) {
+                WriteLog("matThickToThinnestK is empty.");
+                pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+                return pstRpy->enStatus;
+            }
+
+            if (stCmd.vecInputImgs.size() != 3 * PR_GROUP_TEXTURE_IMG_COUNT) {
+                WriteLog("Please input 12 images if using the thinnest pattern.");
+                pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+                return pstRpy->enStatus;
+            }
+        }
+    }
+
+    MARK_FUNCTION_START_TIME;
+
+    Unwrap::calcMerge4DlpHeight(pstCmd, pstRpy);
+
+    MARK_FUNCTION_END_TIME;
+    return pstRpy->enStatus;
+}
+
 /*static*/ VisionStatus VisionAlgorithm::calc3DHeightDiff(const PR_CALC_3D_HEIGHT_DIFF_CMD *const pstCmd, PR_CALC_3D_HEIGHT_DIFF_RPY *const pstRpy, bool bReplay /*= false*/) {
     assert(pstCmd != nullptr && pstRpy != nullptr);
     if (pstCmd->matHeight.empty()) {

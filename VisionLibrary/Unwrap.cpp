@@ -1013,53 +1013,275 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
         }
     }
     else if (pstCmd->vecMatHeight.size() == 4) {
-        cv::Mat matHeightOne = pstCmd->vecMatHeight[0], matHeightTwo = pstCmd->vecMatHeight[1],
-            matHeightTre = pstCmd->vecMatHeight[2], matHeightFor = pstCmd->vecMatHeight[3];
-        cv::Mat matNan1, matNan2;
-        cv::Mat matHm1 = _mergeHeightIntersect(
-            matHeightOne,
-            pstCmd->vecMatNanMask[0],
-            matHeightTre,
-            pstCmd->vecMatNanMask[2],
-            pstCmd->fHeightDiffThreshold,
-            pstCmd->vecProjDir[0], matNan1);
-        cv::Mat matHm2 = _mergeHeightIntersect(
-            matHeightTwo,
-            pstCmd->vecMatNanMask[1],
-            matHeightFor,
-            pstCmd->vecMatNanMask[3],
-            pstCmd->fHeightDiffThreshold,
-            pstCmd->vecProjDir[1], matNan2);
-        matHm1.setTo(NAN, matNan1);
-        matHm2.setTo(NAN, matNan2);
-
-        //cv::imwrite("C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/Nan1.png", matNan1);
-        //cv::imwrite("C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/Nan2.png", matNan2);
-
-        //PR_HEIGHT_TO_GRAY_CMD stHeightToGrayCmd;
-        //PR_HEIGHT_TO_GRAY_RPY stHeightToGrayRpy;
-        //stHeightToGrayCmd.matHeight = matHm1;
-        //Vision::VisionAlgorithm::heightToGray(&stHeightToGrayCmd, &stHeightToGrayRpy);
-        //cv::imwrite("C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/HmGray1.png", stHeightToGrayRpy.matGray);
-
-        //stHeightToGrayCmd.matHeight = matHm2;
-        //Vision::VisionAlgorithm::heightToGray(&stHeightToGrayCmd, &stHeightToGrayRpy);
-        //cv::imwrite("C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/HmGray2.png", stHeightToGrayRpy.matGray);
-
-        auto matHm3 = _mergeHeightIntersect06(matHm1, matNan1, matHm2, matNan2, pstCmd->fHeightDiffThreshold * 2.f, pstCmd->vecProjDir[0]);
-        auto matHm4 = _mergeHeightIntersect06(matHm1, matNan1, matHm2, matNan2, pstCmd->fHeightDiffThreshold * 2.f, pstCmd->vecProjDir[1]);
-
-        //stHeightToGrayCmd.matHeight = matHm3;
-        //Vision::VisionAlgorithm::heightToGray(&stHeightToGrayCmd, &stHeightToGrayRpy);
-        //cv::imwrite("C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/HmGray3.png", stHeightToGrayRpy.matGray);
-
-        //stHeightToGrayCmd.matHeight = matHm4;
-        //Vision::VisionAlgorithm::heightToGray(&stHeightToGrayCmd, &stHeightToGrayRpy);
-        //cv::imwrite("C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/HmGray4.png", stHeightToGrayRpy.matGray);
-
-        pstRpy->matHeight = (matHm3 + matHm4) / 2;
+        pstRpy->matHeight = _merge4DlpHeightCore(pstCmd->vecMatHeight, pstCmd->vecMatNanMask, pstCmd->vecProjDir, pstCmd->fHeightDiffThreshold);
     }
     
+    pstRpy->enStatus = VisionStatus::OK;
+}
+
+/*static*/ cv::cuda::GpuMat Unwrap::_calcHeightGpuCore(
+    const PR_CALC_3D_HEIGHT_GPU_CMD *const pstCmd,
+    const std::vector<cv::cuda::GpuMat>& vecGpuImages,
+    cv::cuda::GpuMat& matNanMask,
+    cv::cuda::Stream& stream) {
+        float fMinimumAlpitudeSquare = pstCmd->fMinAmplitude * pstCmd->fMinAmplitude;
+
+    Calc3DHeightVars& calc3DHeightVar = CudaAlgorithm::getCalc3DHeightVars(pstCmd->nDlpNo);
+    DlpCalibResult& dlpCalibData = CudaAlgorithm::getDlpCalibData(pstCmd->nDlpNo);
+
+    cv::cuda::GpuMat matAlphaGpu = calc3DHeightVar.matAlpha;
+    cv::cuda::GpuMat matBetaGpu  = calc3DHeightVar.matBeta;
+    cv::cuda::GpuMat matGammaGpu = calc3DHeightVar.matGamma;
+    cv::cuda::GpuMat matGammaGpu1 = calc3DHeightVar.matGamma1;
+    cv::cuda::GpuMat matAvgUnderTolIndexGpu = calc3DHeightVar.matAvgUnderTolIndex;
+
+    cv::cuda::GpuMat matBufferGpu = calc3DHeightVar.matBufferGpu;
+    cv::cuda::GpuMat matMaskGpu = calc3DHeightVar.matMaskGpu;
+    cv::cuda::GpuMat matPhaseGpuT = calc3DHeightVar.matBufferGpuT;
+
+    CudaAlgorithm::calcPhase(
+        vecGpuImages[0],
+        vecGpuImages[1],
+        vecGpuImages[2],
+        vecGpuImages[3],
+        matAlphaGpu, stream);
+    cv::cuda::subtract(matAlphaGpu, dlpCalibData.matAlphaBase, matAlphaGpu, cv::cuda::GpuMat(), -1, stream);
+
+    matAvgUnderTolIndexGpu.setTo(0, stream);
+    CudaAlgorithm::calcPhaseAndMask(
+        vecGpuImages[4],
+        vecGpuImages[5],
+        vecGpuImages[6],
+        vecGpuImages[7],
+        matBetaGpu, matAvgUnderTolIndexGpu, fMinimumAlpitudeSquare, stream);
+    cv::cuda::subtract(matBetaGpu, dlpCalibData.matBetaBase, matBetaGpu, cv::cuda::GpuMat(), -1, stream);
+
+    if (pstCmd->bUseThinnestPattern) {
+        CudaAlgorithm::calcPhase(
+            vecGpuImages[8],
+            vecGpuImages[9],
+            vecGpuImages[10],
+            vecGpuImages[11],
+            matGammaGpu, stream);
+        cv::cuda::subtract(matGammaGpu, dlpCalibData.matGammaBase, matGammaGpu, cv::cuda::GpuMat(), -1, stream);
+    }
+
+    CudaAlgorithm::phaseWrapBuffer(matAlphaGpu, matBufferGpu, calc3DHeightVar.d_tmpResult, pstCmd->fPhaseShift, stream);
+
+    //TimeLog::GetInstance()->addTimeLog("CudaAlgorithm::phaseWrapBuffer", stopWatch.Span());
+
+    //matBuffer1 = matAlpha * pstCmd->matThickToThinK.at<DATA_TYPE>(0);
+    cv::cuda::multiply(matAlphaGpu, pstCmd->matThickToThinK.at<DATA_TYPE>(0), matBufferGpu, 1, -1, stream);
+
+    CudaAlgorithm::phaseWrapByRefer(matBetaGpu, matBufferGpu, stream);
+    //TimeLog::GetInstance()->addTimeLog("CudaAlgorithm::phaseWrapByRefer.", stopWatch.Span());
+
+    const int dt = 80; // Use one data in every dt pixels
+    float betaBase = CudaAlgorithm::intervalRangeAverage(matBetaGpu, dt, 0.25f, 0.45f, calc3DHeightVar.d_tmpResult, stream);
+
+    const float SHIFT_TO_BASE = 0.2f;
+
+    //cv::Mat matBeta3 = _phaseWarpNoAutoBase(matBeta, betaBase / 2 + SHIFT_TO_BASE); // 0.2 is also shift, means - 0.6~1.4
+    CudaAlgorithm::phaseWarpNoAutoBase(matBetaGpu, matBufferGpu, betaBase / 2 + SHIFT_TO_BASE, stream);
+    cv::cuda::compare(matBufferGpu, matBetaGpu, matMaskGpu, cv::CmpTypes::CMP_GT, stream);
+    matBufferGpu.copyTo(matBetaGpu, matMaskGpu, stream);
+    matBetaGpu.setTo(betaBase, matAvgUnderTolIndexGpu, stream);
+
+    if (pstCmd->nRemoveJumpSpan > 0) {
+        CudaAlgorithm::phaseCorrection(matBetaGpu, matPhaseGpuT,
+            calc3DHeightVar.matDiffResult, calc3DHeightVar.matDiffResultT,
+            calc3DHeightVar.matBufferSign, calc3DHeightVar.matBufferAmpl,
+            calc3DHeightVar.pBufferJumpSpan,
+            calc3DHeightVar.pBufferJumpStart,
+            calc3DHeightVar.pBufferJumpEnd,
+            calc3DHeightVar.pBufferSortedJumpSpanIdx,
+            pstCmd->nRemoveJumpSpan, pstCmd->nRemoveJumpSpan, stream);
+    }
+
+    if (pstCmd->bUseThinnestPattern) {
+        auto k1 = pstCmd->matThickToThinK.at<DATA_TYPE>(0);
+        auto k2 = pstCmd->matThickToThinnestK.at<DATA_TYPE>(0);
+
+        float gammaBase = betaBase * k2 / k1;
+        //cv::Mat matGamma1 = _phaseWarpNoAutoBase(matGamma, gammaBase / 2 + SHIFT_TO_BASE);
+        CudaAlgorithm::phaseWarpNoAutoBase(matGammaGpu, matGammaGpu1, gammaBase / 2 + SHIFT_TO_BASE, stream);
+        //matBuffer1 = matBeta * k2 / k1;
+        cv::cuda::multiply(matBetaGpu, k2 / k1, matBufferGpu, 1, -1, stream);
+
+        //_phaseWrapByRefer(matGamma, matBuffer1);
+        CudaAlgorithm::phaseWrapByRefer(matGammaGpu, matBufferGpu, stream);
+
+        matGammaGpu.setTo(gammaBase, matAvgUnderTolIndexGpu, stream);
+        matGammaGpu1.setTo(gammaBase, matAvgUnderTolIndexGpu, stream);
+
+        //TimeLog::GetInstance()->addTimeLog("Parepare data for phaseCorrectionCmp for gamma.", stopWatch.Span());
+
+        CudaAlgorithm::phaseCorrectionCmp(matGammaGpu, matGammaGpu1,
+            matBufferGpu, matPhaseGpuT,
+            calc3DHeightVar.matDiffResult, calc3DHeightVar.matDiffResultT,
+            calc3DHeightVar.matDiffResult_1, calc3DHeightVar.matDiffResultT_1,
+            calc3DHeightVar.matMaskGpu, calc3DHeightVar.matMaskGpuT, pstCmd->nCompareRemoveJumpSpan, stream);
+
+        //TimeLog::GetInstance()->addTimeLog("phaseCorrectionCmp for gamma.", stopWatch.Span());
+
+        if (pstCmd->nRemoveJumpSpan > 0) {
+            CudaAlgorithm::phaseCorrection(matGammaGpu, matPhaseGpuT,
+                calc3DHeightVar.matDiffResult, calc3DHeightVar.matDiffResultT,
+                calc3DHeightVar.matBufferSign, calc3DHeightVar.matBufferAmpl,
+                calc3DHeightVar.pBufferJumpSpan,
+                calc3DHeightVar.pBufferJumpStart,
+                calc3DHeightVar.pBufferJumpEnd,
+                calc3DHeightVar.pBufferSortedJumpSpanIdx,
+                pstCmd->nRemoveJumpSpan, pstCmd->nRemoveJumpSpan, stream);
+            //TimeLog::GetInstance()->addTimeLog("phaseCorrection for gamma.", stopWatch.Span());
+        }
+
+        //matGammaGpu.download(matGamma);
+        //matResultGpu = matGammaGpu;
+        cv::cuda::multiply(matGammaGpu, k1 / k2, matBufferGpu, 1, -1, stream);
+    }
+    else
+        matBufferGpu = matBetaGpu;
+
+    cv::cuda::compare(matBufferGpu, betaBase - 0.1, matMaskGpu, cv::CmpTypes::CMP_LT, stream);
+    matBufferGpu.setTo(betaBase, matMaskGpu, stream);
+
+    //TimeLog::GetInstance()->addTimeLog("Before median filter.", stopWatch.Span());
+
+    CudaAlgorithm::medianFilter(matBufferGpu, matAlphaGpu, 5, stream);
+
+    //TimeLog::GetInstance()->addTimeLog("After median filter.", stopWatch.Span());
+
+    if (pstCmd->bEnableGaussianFilter) {
+        auto ptrFilter = cv::cuda::createGaussianFilter(CV_32FC1, CV_32FC1, cv::Size(5, 5), 5, 5, cv::BorderTypes::BORDER_REPLICATE);
+        ptrFilter->apply(matAlphaGpu, matBufferGpu, stream);
+        //cv::GaussianBlur(pstRpy->matPhase, pstRpy->matPhase, cv::Size(5, 5), 5, 5, cv::BorderTypes::BORDER_REPLICATE);
+    }
+
+    if (!pstCmd->mat3DBezierK.empty()) {
+        std::vector<float> vecParamMinMaxXY{ 1.f, ToFloat(matAlphaGpu.cols), 1.f, ToFloat(matAlphaGpu.rows),
+            ToFloat(pstCmd->fMinPhase), ToFloat(pstCmd->fMaxPhase) };
+        CudaAlgorithm::calculateSurfaceConvert3D(matBufferGpu, matPhaseGpuT, matBufferGpu, vecParamMinMaxXY, 4, pstCmd->nDlpNo, stream);
+    }
+
+    matNanMask = matAvgUnderTolIndexGpu;
+    return matBufferGpu;
+}
+
+/*static*/ cv::Mat Unwrap::_merge4DlpHeightCore(
+    const VectorOfMat&       vecMatHeight,
+    const VectorOfMat&       vecMatNanMask,
+    const VectorOfDirection& vecProjDir,
+    float                    fHeightDiffThreshold) {
+    cv::Mat matHeightOne = vecMatHeight[0], matHeightTwo = vecMatHeight[1],
+        matHeightTre = vecMatHeight[2], matHeightFor = vecMatHeight[3];
+    cv::Mat matNan1, matNan2;
+    cv::Mat matHm1 = _mergeHeightIntersect(
+        matHeightOne,
+        vecMatNanMask[0],
+        matHeightTre,
+        vecMatNanMask[2],
+        fHeightDiffThreshold,
+        vecProjDir[0], matNan1);
+    cv::Mat matHm2 = _mergeHeightIntersect(
+        matHeightTwo,
+        vecMatNanMask[1],
+        matHeightFor,
+        vecMatNanMask[3],
+        fHeightDiffThreshold,
+        vecProjDir[1], matNan2);
+    matHm1.setTo(NAN, matNan1);
+    matHm2.setTo(NAN, matNan2);
+
+    //cv::imwrite("C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/Nan1.png", matNan1);
+    //cv::imwrite("C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/Nan2.png", matNan2);
+
+    //PR_HEIGHT_TO_GRAY_CMD stHeightToGrayCmd;
+    //PR_HEIGHT_TO_GRAY_RPY stHeightToGrayRpy;
+    //stHeightToGrayCmd.matHeight = matHm1;
+    //Vision::VisionAlgorithm::heightToGray(&stHeightToGrayCmd, &stHeightToGrayRpy);
+    //cv::imwrite("C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/HmGray1.png", stHeightToGrayRpy.matGray);
+
+    //stHeightToGrayCmd.matHeight = matHm2;
+    //Vision::VisionAlgorithm::heightToGray(&stHeightToGrayCmd, &stHeightToGrayRpy);
+    //cv::imwrite("C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/HmGray2.png", stHeightToGrayRpy.matGray);
+
+    auto matHm3 = _mergeHeightIntersect06(matHm1, matNan1, matHm2, matNan2, fHeightDiffThreshold * 2.f, vecProjDir[0]);
+    auto matHm4 = _mergeHeightIntersect06(matHm1, matNan1, matHm2, matNan2, fHeightDiffThreshold * 2.f, vecProjDir[1]);
+
+    //stHeightToGrayCmd.matHeight = matHm3;
+    //Vision::VisionAlgorithm::heightToGray(&stHeightToGrayCmd, &stHeightToGrayRpy);
+    //cv::imwrite("C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/HmGray3.png", stHeightToGrayRpy.matGray);
+
+    //stHeightToGrayCmd.matHeight = matHm4;
+    //Vision::VisionAlgorithm::heightToGray(&stHeightToGrayCmd, &stHeightToGrayRpy);
+    //cv::imwrite("C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/HmGray4.png", stHeightToGrayRpy.matGray);
+
+    return (matHm3 + matHm4) / 2;
+}
+
+/*static*/ void Unwrap::calcMerge4DlpHeight(const PR_CALC_MERGE_4_DLP_HEIGHT_CMD *const pstCmd, PR_CALC_MERGE_4_DLP_HEIGHT_RPY *const pstRpy) {
+    CStopWatch stopWatch;
+    cv::cuda::Stream stream;
+
+    std::vector<cv::Mat> vecConvertedImgs[NUM_OF_DLP];
+    for (int dlp = 0; dlp < NUM_OF_DLP; ++dlp) {
+        const auto& stCmd = pstCmd->arrCalcHeightCmd[dlp];
+        for (auto &mat : stCmd.vecInputImgs) {
+            cv::Mat matConvert = mat;
+            if (mat.channels() > 1)
+                cv::cvtColor(mat, matConvert, CV_BGR2GRAY);
+            vecConvertedImgs[dlp].push_back(matConvert);
+        }
+
+        if (stCmd.bReverseSeq) {
+            std::swap(vecConvertedImgs[dlp][1], vecConvertedImgs[dlp][3]);
+            std::swap(vecConvertedImgs[dlp][5], vecConvertedImgs[dlp][7]);
+            if (stCmd.bUseThinnestPattern)
+                std::swap(vecConvertedImgs[dlp][9], vecConvertedImgs[dlp][11]);
+        }
+    }
+
+    std::vector<cv::cuda::GpuMat> vecGpuImages[NUM_OF_DLP] = {
+        std::vector<cv::cuda::GpuMat>(vecConvertedImgs[0].size()),
+        std::vector<cv::cuda::GpuMat>(vecConvertedImgs[0].size()),
+        std::vector<cv::cuda::GpuMat>(vecConvertedImgs[0].size()),
+        std::vector<cv::cuda::GpuMat>(vecConvertedImgs[0].size()) };
+    
+    cv::cuda::Stream arrStreams[NUM_OF_DLP];
+    for (int dlp = 0; dlp < NUM_OF_DLP; ++dlp)
+        for (size_t i = 0; i < vecConvertedImgs[dlp].size(); ++i)
+            vecGpuImages[dlp][i].upload(vecConvertedImgs[dlp][i], arrStreams[dlp]);
+
+    cv::cuda::GpuMat vecGpuHeights[NUM_OF_DLP], vecGpuNanMasks[NUM_OF_DLP];
+    for (int dlp = 0; dlp < NUM_OF_DLP; ++dlp) {
+        vecGpuHeights[dlp] = _calcHeightGpuCore(&pstCmd->arrCalcHeightCmd[dlp], vecGpuImages[dlp], vecGpuNanMasks[dlp], arrStreams[dlp]);
+    }
+
+    TimeLog::GetInstance()->addTimeLog("After calculate 4 DLP height", stopWatch.Span());
+
+    VectorOfMat vecHeights(NUM_OF_DLP), vecNanMasks(NUM_OF_DLP);
+    VectorOfDirection vecProjDir;
+    for (int dlp = 0; dlp < NUM_OF_DLP; ++dlp) {
+        vecGpuHeights[dlp].download(vecHeights[dlp]);
+        vecGpuNanMasks[dlp].download(vecNanMasks[dlp]);
+        vecProjDir.push_back(pstCmd->arrCalcHeightCmd[dlp].enProjectDir);
+    }
+
+    cudaDeviceSynchronize();
+
+    TimeLog::GetInstance()->addTimeLog("After download 4 DLP height and nan mask", stopWatch.Span());
+    for (int dlp = 0; dlp < NUM_OF_DLP; ++dlp) {
+        PR_HEIGHT_TO_GRAY_CMD stCmd;
+        PR_HEIGHT_TO_GRAY_RPY stRpy;
+        stCmd.matHeight = vecHeights[dlp];
+        VisionAlgorithm::heightToGray(&stCmd, &stRpy);
+        std::string strResultFolder("C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/");
+        cv::imwrite(strResultFolder + "Dlp_" + std::to_string(dlp + 1) + "_HeightGray.png", stRpy.matGray);
+        cv::imwrite(strResultFolder + "Dlp_" + std::to_string(dlp + 1) + "_NanMask.png", vecNanMasks[dlp]);
+    }
+
+    pstRpy->matHeight = _merge4DlpHeightCore(vecHeights, vecNanMasks, vecProjDir, pstCmd->fHeightDiffThreshold);
     pstRpy->enStatus = VisionStatus::OK;
 }
 

@@ -545,6 +545,13 @@ PR_FUNCTION_ENTRY
 PR_FUNCTION_EXIT
 }
 
+VisionAPI VisionStatus PR_CalcMerge4DlpHeight(const PR_CALC_MERGE_4_DLP_HEIGHT_CMD *const pstCmd, PR_CALC_MERGE_4_DLP_HEIGHT_RPY *const pstRpy)
+{
+PR_FUNCTION_ENTRY
+    return VisionAlgorithm::calcMerge4DlpHeight(pstCmd, pstRpy);
+PR_FUNCTION_EXIT
+}
+
 VisionAPI VisionStatus PR_Calc3DHeightDiff(const PR_CALC_3D_HEIGHT_DIFF_CMD *const pstCmd, PR_CALC_3D_HEIGHT_DIFF_RPY *const pstRpy)
 {
 PR_FUNCTION_ENTRY
