@@ -406,7 +406,7 @@ static int divUp(int total, int grain)
             pBufferSortedJumpSpanIdx,
             matDiffResult.step1(),
             ROWS, COLS, nJumpSpanX);
-        TimeLog::GetInstance()->addTimeLog("run_kernel_phase_correction for X", stopWatch.Span());
+        //TimeLog::GetInstance()->addTimeLog("run_kernel_phase_correction for X", stopWatch.Span());
     }
 
     // Y direction
@@ -429,10 +429,10 @@ static int divUp(int total, int grain)
             pBufferSortedJumpSpanIdx,
             matDiffResultT.step1(),
             COLS, ROWS, nJumpSpanY);
-        TimeLog::GetInstance()->addTimeLog("run_kernel_phase_correction for Y", stopWatch.Span());
+        //TimeLog::GetInstance()->addTimeLog("run_kernel_phase_correction for Y", stopWatch.Span());
 
         cv::cuda::transpose(matPhaseT, matPhase, stream);
-        TimeLog::GetInstance()->addTimeLog("cv::cuda::transpose back", stopWatch.Span());
+        //TimeLog::GetInstance()->addTimeLog("cv::cuda::transpose back", stopWatch.Span());
     }
 }
 
