@@ -1,5 +1,8 @@
 #include <stdio.h>
 
+#include <cuda_runtime_api.h>
+#include <cuda.h>
+#include <cooperative_groups.h>
 #include "device_launch_parameters.h"
 #include "CudaFunc.h"
 
@@ -122,7 +125,7 @@ __device__ void selection_sort(T *data, int left, int right)
 // Very basic quicksort algorithm, recursively launching the next level.
 ////////////////////////////////////////////////////////////////////////////////
 template<typename T>
-__global__ void cdp_simple_quicksort(T *data, int left, int right, int depth)
+__device__ void cdp_simple_quicksort(T *data, int left, int right, int depth)
 {
     // If we're too deep or there are few elements left, we use an insertion sort...
     if (depth >= MAX_DEPTH || right-left <= INSERTION_SORT)
@@ -171,19 +174,13 @@ __global__ void cdp_simple_quicksort(T *data, int left, int right, int depth)
     // Launch a new block to sort the left part.
     if (left < (rptr-data))
     {
-        cudaStream_t s;
-        cudaStreamCreateWithFlags(&s, cudaStreamNonBlocking);
-        cdp_simple_quicksort<<< 1, 1, 0, s >>>(data, left, nright, depth+1);
-        cudaStreamDestroy(s);
+        cdp_simple_quicksort(data, left, nright, depth+1);
     }
 
     // Launch a new block to sort the right part.
     if ((lptr-data) < right)
     {
-        cudaStream_t s1;
-        cudaStreamCreateWithFlags(&s1, cudaStreamNonBlocking);
-        cdp_simple_quicksort<<< 1, 1, 0, s1 >>>(data, nleft, right, depth+1);
-        cudaStreamDestroy(s1);
+        cdp_simple_quicksort(data, nleft, right, depth+1);
     }
 }
 
@@ -191,12 +188,12 @@ __global__ void cdp_simple_quicksort(T *data, int left, int right, int depth)
 // Call the quicksort kernel from the host.
 ////////////////////////////////////////////////////////////////////////////////
 template<typename T>
-void run_qsort(T *data, unsigned int nitems, cudaStream_t cudaStream)
+__global__ void kernel_qsort(T *data, unsigned int nitems)
 {
     // Launch on device
     int left = 0;
-    int right = nitems-1;
-    cdp_simple_quicksort<<< 1, 1, 0, cudaStream>>>(data, left, right, 0);
+    int right = nitems - 1;
+    cdp_simple_quicksort(data, left, right, 0);
 }
 
 __global__
@@ -361,114 +358,108 @@ __global__
 void kernel_phase_correction(
     float* phaseDiff,
     float* phase,
+    char* pBufferSign,
+    char* pBufferAmpl,
+    int* pBufferJumpSpan,
+    int* pBufferJumpStart,
+    int* pBufferJumpEnd,
+    int* pBufferSortedJumpSpanIdx,
     uint32_t step,
     const int ROWS,
     const int COLS,
-    const int span) {
-    int start = blockIdx.x * blockDim.x + threadIdx.x;
-    int stride = blockDim.x * gridDim.x;
+    const int spanThres) {
+    int c = blockIdx.x * blockDim.x + threadIdx.x;
+    int r = blockIdx.y * blockDim.y + threadIdx.y;
 
-    if (start >= ROWS)
+    if (c >= COLS - 1 || r >= ROWS)
         return;
 
-    char* vecSignOfRow = (char*)malloc(COLS * sizeof(char));
-    char* vecAmplOfRow = (char*)malloc(COLS * sizeof(char));
-    int* vecJumpCol = (int*)malloc(COLS / 4 * sizeof(int));
-    int* vecJumpSpan = (int*)malloc(COLS / 4 * sizeof(int));
-    int* vecSortedJumpSpanIdx = (int*)malloc(COLS / 4 * sizeof(int));
-    int* vecJumpIdxNeedToHandle = (int*)malloc(COLS / 4 * sizeof(int));
+    int dataRowOffset = r * step;
+    float* phaseDiffRow = phaseDiff + dataRowOffset;
+    char* vecSignOfRow = pBufferSign + dataRowOffset;
+    char* vecAmplOfRow = pBufferAmpl + dataRowOffset;
 
-    for (int row = start; row < ROWS; row += stride) {
-        int offsetOfData = row * step;
+    auto value = phaseDiffRow[c];
+    if (value > ONE_HALF_CYCLE) {
+        vecSignOfRow[c] = 1;
+        vecAmplOfRow[c] = static_cast<char> (std::ceil(std::fabs(value) / 2.f) * 2);
+    }
+    else if (value < -ONE_HALF_CYCLE) {
+        vecSignOfRow[c] = -1;
+        vecAmplOfRow[c] = static_cast<char> (std::ceil(std::abs(value) / 2.f) * 2);
+    }
 
-        bool bRowWithPosJump = false, bRowWithNegJump = false;
-        memset(vecSignOfRow, 0, COLS);
-        memset(vecAmplOfRow, 0, COLS);
+    cooperative_groups::grid_group grp = cooperative_groups::this_grid();
+    grp.sync();
 
-        float* phaseDiffRow = phaseDiff + offsetOfData;
-        float* phaseRow = phase + offsetOfData;
+    if (c > 0)
+        return;
 
+    int offsetOfBuffer = r * 512;
+    int* vecJumpSpan = pBufferJumpSpan + offsetOfBuffer;
+    int* vecJumpStart = pBufferJumpStart + offsetOfBuffer;
+    int* vecJumpEnd = pBufferJumpEnd + offsetOfBuffer;
+    int* vecSortedJumpSpanIdx = pBufferSortedJumpSpanIdx + offsetOfBuffer;
+
+    float* phaseRow = phase + dataRowOffset;
+
+    for (int kk = 0; kk < 2; ++kk) {
+        int jumpSpanCount = 0;
+        char lastSign = 0;
+        int lastCol = 0;
         for (int col = 0; col < COLS - 1; ++col) {
-            auto value = phaseDiffRow[col];
-            if (value > ONE_HALF_CYCLE) {
-                vecSignOfRow[col] = 1;
-                bRowWithPosJump = true;
+            if (vecSignOfRow[col] != 0) {
+                if (col - lastCol < spanThres && vecSignOfRow[col] * lastSign == -1) {
+                    vecJumpSpan[jumpSpanCount] = col - lastCol;
+                    vecJumpStart[jumpSpanCount] = lastCol;
+                    vecJumpEnd[jumpSpanCount] = col;
+                    ++jumpSpanCount;
+                }
 
-                char nJumpAmplitude = static_cast<char> (std::ceil(std::fabs(value) / 2.f) * 2);
-                vecAmplOfRow[col] = nJumpAmplitude;
-            }
-
-            else if (value < -ONE_HALF_CYCLE) {
-                vecSignOfRow[col] = -1;
-                bRowWithNegJump = true;
-
-                char nJumpAmplitude = static_cast<char> (std::ceil(std::abs(value) / 2.f) * 2);
-                vecAmplOfRow[col] = nJumpAmplitude;
+                lastCol = col;
+                lastSign = vecSignOfRow[col];
             }
         }
 
-        if (!bRowWithPosJump || !bRowWithNegJump)
-            continue;
+        if (jumpSpanCount <= 0)
+            break;
 
-        for (int kk = 0; kk < 2; ++ kk) {
-            int jumpColCount = 0, jumpSpanCount = 0, jumpIdxNeedToHandleCount = 0;
-            for (int col = 0; col < COLS; ++col) {
-                if (vecSignOfRow[col] != 0)
-                    vecJumpCol[jumpColCount++] = col;
-            }
-            if (jumpColCount < 2)
-                continue;
+        kernel_sort_index_value(vecJumpSpan, jumpSpanCount, vecSortedJumpSpanIdx);
 
-            for (size_t i = 1; i < jumpColCount; ++i)
-                vecJumpSpan[jumpSpanCount++] = vecJumpCol[i] - vecJumpCol[i - 1];
-            kernel_sort_index_value(vecJumpSpan, jumpSpanCount, vecSortedJumpSpanIdx);
-            for (int i = 0; i < jumpSpanCount; ++i) {
-                if (vecJumpSpan[i] < span)
-                    vecJumpIdxNeedToHandle[jumpIdxNeedToHandleCount++] = i;
-            }
+        for (int jj = 0; jj < jumpSpanCount; ++jj) {
+            auto nStart = vecJumpStart[vecSortedJumpSpanIdx[jj]];
+            auto nEnd = vecJumpEnd[vecSortedJumpSpanIdx[jj]];
+            char chSignFirst = vecSignOfRow[nStart];        //The index is hard to understand. Use the sorted span index to find the original column.
+            char chSignSecond = vecSignOfRow[nEnd];
 
-            for (size_t jj = 0; jj < jumpIdxNeedToHandleCount; ++jj) {
-                auto nStart = vecJumpCol[vecSortedJumpSpanIdx[jj]];
-                auto nEnd = vecJumpCol[vecSortedJumpSpanIdx[jj] + 1];
-                char chSignFirst = vecSignOfRow[nStart];        //The index is hard to understand. Use the sorted span index to find the original column.
-                char chSignSecond = vecSignOfRow[nEnd];
+            if (chSignFirst * chSignSecond == -1) { //it is a pair
+                char chAmplFirst = vecAmplOfRow[nStart];
+                char chAmplSecond = vecAmplOfRow[nEnd];
+                char chTurnAmpl = min(chAmplFirst, chAmplSecond) / 2;
 
-                if (chSignFirst * chSignSecond == -1) { //it is a pair
-                    char chAmplFirst = vecAmplOfRow[nStart];
-                    char chAmplSecond = vecAmplOfRow[nEnd];
-                    char chTurnAmpl = min(chAmplFirst, chAmplSecond) / 2;
+                char chAmplNew = chAmplFirst - 2 * chTurnAmpl;
+                vecAmplOfRow[nStart] = chAmplNew;
+                if (chAmplNew <= 0)
+                    vecSignOfRow[nStart] = 0;  // Remove the sign of jump flag.
 
-                    char chAmplNew = chAmplFirst - 2 * chTurnAmpl;
-                    vecAmplOfRow[nStart] = chAmplNew;
-                    if (chAmplNew <= 0)
-                        vecSignOfRow[nStart] = 0;  // Remove the sign of jump flag.
+                chAmplNew = chAmplSecond - 2 * chTurnAmpl;
+                vecAmplOfRow[nEnd] = chAmplNew;
+                if (chAmplNew <= 0)
+                    vecSignOfRow[nEnd] = 0;
 
-                    chAmplNew = chAmplSecond - 2 * chTurnAmpl;
-                    vecAmplOfRow[nEnd] = chAmplNew;
-                    if (chAmplNew <= 0)
-                        vecSignOfRow[nEnd] = 0;
-
-                    auto startValue = phaseRow[nStart];
-                    for (int col = nStart + 1; col <= nEnd; ++col) {
-                        phaseRow[col] -= chSignFirst * ONE_CYCLE * chTurnAmpl;
-                        if (chSignFirst > 0 && phaseRow[col] < startValue) { //Jump up, need to roll down, but can not over roll
-                            phaseRow[col] = startValue;
-                        }
-                        else if (chSignFirst < 0 && phaseRow[col] > startValue) { //Jump down, need to roll up
-                            phaseRow[col] = startValue;
-                        }
+                auto startValue = phaseRow[nStart];
+                for (int col = nStart + 1; col <= nEnd; ++col) {
+                    phaseRow[col] -= chSignFirst * ONE_CYCLE * chTurnAmpl;
+                    if (chSignFirst > 0 && phaseRow[col] < startValue) { //Jump up, need to roll down, but can not over roll
+                        phaseRow[col] = startValue;
+                    }
+                    else if (chSignFirst < 0 && phaseRow[col] > startValue) { //Jump down, need to roll up
+                        phaseRow[col] = startValue;
                     }
                 }
             }
         }
     }
-
-    free(vecSignOfRow);
-    free(vecAmplOfRow);
-    free(vecJumpCol);
-    free(vecJumpSpan);
-    free(vecSortedJumpSpanIdx);
-    free(vecJumpIdxNeedToHandle);
 }
 
 void cpuSwapValue(int& value1, int &value2) {
@@ -615,17 +606,27 @@ void cpu_kernel_phase_correction(
 }
 
 void run_kernel_phase_correction(
-    uint32_t gridSize,
-    uint32_t blockSize,
+    dim3 grid,
+    dim3 threads,
     cudaStream_t cudaStream,
     float* phaseDiff,
     float* phase,
+    char* pBufferSign,
+    char* pBufferAmpl,
+    int* pBufferJumpSpan,
+    int* pBufferJumpStart,
+    int* pBufferJumpEnd,
+    int* pBufferSortedJumpSpanIdx,
     uint32_t step,
     const int ROWS,
     const int COLS,
     const int span) {
-    kernel_phase_correction<<<gridSize, blockSize, 0, cudaStream>>>(phaseDiff, phase, step, ROWS, COLS, span);
-    //cpu_kernel_phase_correction(phaseDiff, phase, step, ROWS, COLS, span);
+    kernel_phase_correction<<<grid, threads, 0, cudaStream>>>(phaseDiff, phase, pBufferSign, pBufferAmpl,
+        pBufferJumpSpan,
+        pBufferJumpStart,
+        pBufferJumpEnd,
+        pBufferSortedJumpSpanIdx,
+        step, ROWS, COLS, span);
 }
 
 __global__
@@ -681,8 +682,15 @@ void run_kernel_interval_average(
     int interval,
     float *d_result,
     float *result) {
+    cudaEvent_t eventDone;
+    cudaEventCreate(&eventDone);
+
     kernel_interval_average<<<1, 1, 0, cudaStream>>>(data, step, ROWS, COLS, interval, d_result);
-    cudaMemcpy(result, d_result, sizeof(float), cudaMemcpyDeviceToHost);
+    cudaMemcpyAsync(result, d_result, sizeof(float), cudaMemcpyDeviceToHost, cudaStream);
+
+    cudaEventRecord(eventDone, NULL);
+    cudaEventSynchronize(eventDone);
+    cudaEventDestroy(eventDone);
 }
 
 //__device__ unsigned int count = 0;
@@ -789,11 +797,18 @@ void run_kernel_range_interval_average(
     const int RESULT_COLS = static_cast<int>(ceil((float)COLS / interval));
     const int SIZE = RESULT_ROWS * RESULT_COLS;
 
+    cudaEvent_t eventDone;
+    cudaEventCreate(&eventDone);
+
     kernel_interval_pick_data <<<1, 1, 0, cudaStream>>>(data, step, ROWS, COLS, interval, d_result);
 
-    run_qsort(d_result, SIZE, cudaStream);
+    kernel_qsort<<<1, 1, 0, cudaStream >>>(d_result, SIZE);
     kernel_range_average<<<1, 1, 0, cudaStream>>>(d_result, SIZE, rangeStart, rangeEnd);
-    cudaMemcpy(result, d_result, sizeof(float), cudaMemcpyDeviceToHost);
+    cudaMemcpyAsync(result, d_result, sizeof(float), cudaMemcpyDeviceToHost, cudaStream);
+
+    cudaEventRecord(eventDone, NULL);
+    cudaEventSynchronize(eventDone);
+    cudaEventDestroy(eventDone);
 }
 
 __global__
