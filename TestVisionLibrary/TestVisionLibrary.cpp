@@ -796,8 +796,8 @@ int _tmain(int argc, _TCHAR* argv[])
     //TestMotor3DCalib();
 
     //ConvertBaseParamCsvToYml();
-    //TestCalc4DLPHeight();
 
+    //TestCalc4DLPHeight();
     TestCalc4DLPHeightOnePass();
     CompareHeightSame();
     //CompareMask();
