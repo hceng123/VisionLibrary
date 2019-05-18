@@ -804,7 +804,7 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
     pstRpy->enStatus = VisionStatus::OK;
 }
 
-/*static*/ void Unwrap::calc3DHeightGpu(const PR_CALC_3D_HEIGHT_NEW_CMD *const pstCmd, PR_CALC_3D_HEIGHT_RPY *const pstRpy) {
+/*static*/ void Unwrap::calc3DHeightGpu(const PR_CALC_3D_HEIGHT_GPU_CMD *const pstCmd, PR_CALC_3D_HEIGHT_RPY *const pstRpy) {
     CStopWatch stopWatch;
     cv::cuda::Stream stream;
 
@@ -974,22 +974,17 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
         //cv::GaussianBlur(pstRpy->matPhase, pstRpy->matPhase, cv::Size(5, 5), 5, 5, cv::BorderTypes::BORDER_REPLICATE);
     }
 
-    if (!pstCmd->mat3DBezierK.empty() && !pstCmd->mat3DBezierSurface.empty()) {
+    if (!pstCmd->mat3DBezierK.empty()) {
         std::vector<float> vecParamMinMaxXY{ 1.f, ToFloat(pstRpy->matPhase.cols), 1.f, ToFloat(pstRpy->matPhase.rows),
             ToFloat(pstCmd->fMinPhase), ToFloat(pstCmd->fMaxPhase) };
 
-        //TimeLog::GetInstance()->addTimeLog("Before CudaAlgorithm::calculateSurfaceConvert3D", stopWatch.Span());
         CudaAlgorithm::calculateSurfaceConvert3D(matBufferGpu, matPhaseGpuT, matBufferGpu, vecParamMinMaxXY, 4, pstCmd->nDlpNo, stream);
-        //TimeLog::GetInstance()->addTimeLog("After CudaAlgorithm::calculateSurfaceConvert3D", stopWatch.Span());
         matBufferGpu.download(pstRpy->matHeight, stream);
-        //matResultGpu.download(pstRpy->matPhase);
-        //pstRpy->matHeight = _calculateSurfaceConvert3D(pstRpy->matPhase, vecParamMinMaxXY, 4, pstCmd->mat3DBezierSurface);
     }
     else
         pstRpy->matHeight = pstRpy->matPhase;
 
     matAvgUnderTolIndexGpu.download(pstRpy->matNanMask, stream);
-    //TimeLog::GetInstance()->addTimeLog("Download data from GPU", stopWatch.Span());
     pstRpy->enStatus = VisionStatus::OK;
 }
 
