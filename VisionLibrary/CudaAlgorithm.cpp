@@ -1,5 +1,3 @@
-#include <cuda_runtime.h>
-
 #include "CudaAlgorithm.h"
 #include "../VisionLibrary/StopWatch.h"
 #include "opencv2/core.hpp"
@@ -17,10 +15,6 @@ namespace AOI
 namespace Vision
 {
 
-///*static*/ cv::cuda::Stream CudaAlgorithm::m_cudaStreams[NUM_OF_DLP];
-
-//cv::cuda::Stream m_cudaStreams[NUM_OF_DLP];
-
 /*static*/ DlpCalibResult CudaAlgorithm::m_dlpCalibData[NUM_OF_DLP];
 /*static*/ Calc3DHeightVars CudaAlgorithm::m_arrCalc3DHeightVars[NUM_OF_DLP];
 
@@ -31,6 +25,8 @@ static int divUp(int total, int grain)
 
 /*static*/ bool CudaAlgorithm::initCuda() {
     size_t size = 0;
+    cudaDeviceReset();
+
     cudaDeviceGetLimit(&size, cudaLimitMallocHeapSize);
     cudaDeviceSetLimit(cudaLimitMallocHeapSize, size * 60);
     cudaDeviceGetLimit(&size, cudaLimitMallocHeapSize);
@@ -118,6 +114,12 @@ static int divUp(int total, int grain)
         m_arrCalc3DHeightVars[dlp].matDiffResultT_1 = cv::cuda::GpuMat(2040, 2048, CV_32FC1);
         m_arrCalc3DHeightVars[dlp].matBufferSign = cv::cuda::GpuMat(2048, 2048, CV_8SC1);
         m_arrCalc3DHeightVars[dlp].matBufferAmpl = cv::cuda::GpuMat(2048, 2048, CV_8SC1);
+
+        err = cudaEventCreate(&m_arrCalc3DHeightVars[dlp].eventDone);
+        if (err != cudaSuccess) {
+            pstRpy->enStatus = VisionStatus::CUDA_MEMORY_ERROR;
+            return pstRpy->enStatus;
+        }
     }
     free(h_buffer);
 
@@ -219,9 +221,11 @@ static int divUp(int total, int grain)
         matResult = cv::cuda::GpuMat(matResult, cv::Rect(0, 1, matResult.cols, matResult.rows - 1));
 }
 
-/*static*/ float CudaAlgorithm::intervalAverage(const cv::cuda::GpuMat &matInput, int interval, float *d_result,  cv::cuda::Stream& stream /*= cv::cuda::Stream::Null()*/) {
+/*static*/ float CudaAlgorithm::intervalAverage(const cv::cuda::GpuMat &matInput, int interval, float *d_result, 
+    cudaEvent_t& eventDone, cv::cuda::Stream& stream /*= cv::cuda::Stream::Null()*/) {
     float result = 0;
     run_kernel_interval_average(
+        eventDone,
         cv::cuda::StreamAccessor::getStream(stream),
         reinterpret_cast<float *>(matInput.data),
         matInput.step1(),
@@ -234,9 +238,11 @@ static int divUp(int total, int grain)
 }
 
 /*static*/ float CudaAlgorithm::intervalRangeAverage(const cv::cuda::GpuMat& matInput, int interval, float rangeStart, float rangeEnd, float* d_result,
+    cudaEvent_t& eventDone,
     cv::cuda::Stream& stream /*= cv::cuda::Stream::Null()*/) {
     float result = 0;
     run_kernel_range_interval_average(
+        eventDone,
         cv::cuda::StreamAccessor::getStream(stream),
         reinterpret_cast<float *>(matInput.data),
         matInput.step1(),
@@ -253,57 +259,42 @@ static int divUp(int total, int grain)
 /*static*/ void CudaAlgorithm::phaseWrapBuffer(cv::cuda::GpuMat& matPhase,
     cv::cuda::GpuMat& matBuffer,
     float* d_tmpVar,
-    float fShift/* = 0.f*/,
+    float fShift,
+    cudaEvent_t& eventDone,
     cv::cuda::Stream& stream /*= cv::cuda::Stream::Null()*/) {
-    CStopWatch stopWatch;
     // matBuffer = matPhase / ONE_CYCLE + 0.5f- fShift;
     cv::cuda::addWeighted(matPhase, 1.f / ONE_CYCLE, matBuffer, 0.f, 0.5f - fShift, matBuffer, -1, stream); // -1 means the dest type is same as src type
-    TimeLog::GetInstance()->addTimeLog("phaseWrapBuffer Divide and add.", stopWatch.Span());
 
     floor(matBuffer, stream);
 
-    TimeLog::GetInstance()->addTimeLog("phaseWrapBuffer floor takes.", stopWatch.Span());
-
     cv::cuda::addWeighted(matPhase, 1, matBuffer, -ONE_CYCLE, 0, matBuffer, -1, stream);
 
-    TimeLog::GetInstance()->addTimeLog("_phaseWrap multiply and subtract takes.", stopWatch.Span());
-
-    float fMean = intervalAverage(matBuffer, 20, d_tmpVar, stream);
+    float fMean = intervalAverage(matBuffer, 40, d_tmpVar, eventDone, stream);
 
     //matBuffer = matPhase / ONE_CYCLE + 0.5 - fShift - fMean / 2.f;
     cv::cuda::addWeighted(matPhase, 1.f / ONE_CYCLE, matBuffer, 0.f, 0.5f - fShift - fMean / 2.f, matBuffer, -1, stream);
     floor(matBuffer, stream);
-
-    TimeLog::GetInstance()->addTimeLog("_phaseWrap floor takes.", stopWatch.Span());
 
     //matPhase = matPhase - matBuffer * ONE_CYCLE;
     cv::cuda::addWeighted(matPhase, 1, matBuffer, -ONE_CYCLE, 0, matPhase, -1, stream);
 }
 
 /*static*/ void CudaAlgorithm::phaseWrapByRefer(cv::cuda::GpuMat& matPhase, cv::cuda::GpuMat& matRef, cv::cuda::Stream& stream/* = cv::cuda::Stream::Null()*/) {
-    CStopWatch stopWatch;
     //matRef = (matPhase - matRef) / ONE_CYCLE + 0.5;  //Use matResult to store the substract result to reduce memory allocate time.
     cv::cuda::addWeighted(matPhase, 1.f / ONE_CYCLE, matRef, -1.f / ONE_CYCLE, 0.5, matRef, -1, stream);
-    TimeLog::GetInstance()->addTimeLog("_phaseWrapByRefer Divide and add.", stopWatch.Span());
 
     floor(matRef, stream);
-    TimeLog::GetInstance()->addTimeLog("_phaseWrapByRefer floor takes.", stopWatch.Span());
 
     //matPhase = matPhase - matRef * ONE_CYCLE;
     cv::cuda::addWeighted(matPhase, 1.f, matRef, -ONE_CYCLE, 0, matPhase, -1, stream);
-    TimeLog::GetInstance()->addTimeLog("_phaseWrapByRefer multiply and subtract takes.", stopWatch.Span());
 }
 
 /*static*/ void CudaAlgorithm::phaseWarpNoAutoBase(const cv::cuda::GpuMat& matPhase, cv::cuda::GpuMat& matResult, float fShift,
     cv::cuda::Stream& stream /*= cv::cuda::Stream::Null()*/) {
-    CStopWatch stopWatch;
     //cv::Mat matResult = matPhase / ONE_CYCLE + 0.5 - fShift;
     cv::cuda::addWeighted(matPhase, 1.f / ONE_CYCLE, matResult, 0, 0.5 - fShift, matResult, -1, stream);
-    TimeLog::GetInstance()->addTimeLog("_phaseWrap Divide and add.", stopWatch.Span());
 
     floor(matResult, stream);
-
-    TimeLog::GetInstance()->addTimeLog("_phaseWrap floor takes.", stopWatch.Span());
 
     //matResult = matPhase - matResult * ONE_CYCLE;
     cv::cuda::addWeighted(matPhase, 1.f, matResult, -ONE_CYCLE, 0, matResult, -1, stream);

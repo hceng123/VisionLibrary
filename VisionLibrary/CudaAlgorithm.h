@@ -1,4 +1,6 @@
 #pragma once
+
+#include <cuda_runtime.h>
 #include "opencv2/core.hpp"
 #include "VisionHeader.h"
 #include "opencv2/core/cuda.hpp"
@@ -30,6 +32,7 @@ struct Calc3DHeightVars {
     int* pBufferJumpStart;
     int* pBufferJumpEnd;
     int* pBufferSortedJumpSpanIdx;
+    cudaEvent_t eventDone;
 };
 
 struct DlpCalibResult {
@@ -73,10 +76,14 @@ public:
         cv::cuda::GpuMat& matMask,
         float fMinimumAlpitudeSquare,
         cv::cuda::Stream& stream = cv::cuda::Stream::Null());
-    static float intervalAverage(const cv::cuda::GpuMat& matInput, int interval, float *d_result, cv::cuda::Stream& stream = cv::cuda::Stream::Null());
-    static float intervalRangeAverage(const cv::cuda::GpuMat& matInput, int interval, float rangeStart, float rangeEnd, float* d_result,
+    static float intervalAverage(const cv::cuda::GpuMat& matInput, int interval, float *d_result, cudaEvent_t& eventDone,
         cv::cuda::Stream& stream = cv::cuda::Stream::Null());
-    static void phaseWrapBuffer(cv::cuda::GpuMat& matPhase, cv::cuda::GpuMat& matBuffer, float* d_tmpVar, float fShift = 0.f, cv::cuda::Stream& stream = cv::cuda::Stream::Null());
+    static float intervalRangeAverage(const cv::cuda::GpuMat& matInput, int interval, float rangeStart, float rangeEnd, float* d_result,
+        cudaEvent_t& eventDone,
+        cv::cuda::Stream& stream = cv::cuda::Stream::Null());
+    static void phaseWrapBuffer(cv::cuda::GpuMat& matPhase, cv::cuda::GpuMat& matBuffer, float* d_tmpVar, float fShift,
+        cudaEvent_t& eventDone,
+        cv::cuda::Stream& stream = cv::cuda::Stream::Null());
     static void phaseWrapByRefer(cv::cuda::GpuMat& matPhase, cv::cuda::GpuMat& matRef, cv::cuda::Stream& stream = cv::cuda::Stream::Null());
     static void phaseWarpNoAutoBase(const cv::cuda::GpuMat& matPhase, cv::cuda::GpuMat& matResult, float fShift, cv::cuda::Stream& stream = cv::cuda::Stream::Null());
     static void phaseCorrectionCmp(
@@ -145,7 +152,6 @@ public:
         float fDiffThreshold,
         PR_DIRECTION enProjDir,
         cv::cuda::Stream& stream = cv::cuda::Stream::Null());
-
 };
 
 }

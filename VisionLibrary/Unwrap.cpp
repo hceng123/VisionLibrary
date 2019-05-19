@@ -917,7 +917,8 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
         cv::cuda::subtract(matGammaGpu, dlpCalibData.matGammaBase, matGammaGpu, cv::cuda::GpuMat(), -1, stream);
     }
 
-    CudaAlgorithm::phaseWrapBuffer(matAlphaGpu, matBufferGpu, calc3DHeightVar.d_tmpResult, pstCmd->fPhaseShift, stream);
+    CudaAlgorithm::phaseWrapBuffer(matAlphaGpu, matBufferGpu, calc3DHeightVar.d_tmpResult, pstCmd->fPhaseShift,
+        calc3DHeightVar.eventDone, stream);
 
     //TimeLog::GetInstance()->addTimeLog("CudaAlgorithm::phaseWrapBuffer", stopWatch.Span());
 
@@ -928,7 +929,8 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
     //TimeLog::GetInstance()->addTimeLog("CudaAlgorithm::phaseWrapByRefer.", stopWatch.Span());
 
     const int dt = 80; // Use one data in every dt pixels
-    float betaBase = CudaAlgorithm::intervalRangeAverage(matBetaGpu, dt, 0.25f, 0.45f, calc3DHeightVar.d_tmpResult, stream);
+    float betaBase = CudaAlgorithm::intervalRangeAverage(matBetaGpu, dt, 0.25f, 0.45f, calc3DHeightVar.d_tmpResult,
+        calc3DHeightVar.eventDone, stream);
 
     const float SHIFT_TO_BASE = 0.2f;
 
@@ -987,8 +989,6 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
             //TimeLog::GetInstance()->addTimeLog("phaseCorrection for gamma.", stopWatch.Span());
         }
 
-        //matGammaGpu.download(matGamma);
-        //matResultGpu = matGammaGpu;
         cv::cuda::multiply(matGammaGpu, k1 / k2, matBufferGpu, 1, -1, stream);
     }
     else
@@ -1015,6 +1015,7 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
         CudaAlgorithm::calculateSurfaceConvert3D(matBufferGpu, matPhaseGpuT, matBufferGpu, vecParamMinMaxXY, 4, pstCmd->nDlpNo, stream);
     }
 
+    matBufferGpu.setTo(NAN, matAvgUnderTolIndexGpu, stream);
     matNanMask = matAvgUnderTolIndexGpu;
     return matBufferGpu;
 }
@@ -1097,31 +1098,38 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
         std::vector<cv::cuda::GpuMat>(vecConvertedImgs[1].size()),
         std::vector<cv::cuda::GpuMat>(vecConvertedImgs[2].size()),
         std::vector<cv::cuda::GpuMat>(vecConvertedImgs[3].size()) };
+
+    for (int dlp = 0; dlp < NUM_OF_DLP; ++dlp) {
+        for (size_t i = 0; i < vecConvertedImgs[dlp].size(); ++i) {
+            cv::cuda::registerPageLocked(vecConvertedImgs[dlp][i]);
+        }
+    }
     
     cv::cuda::Stream arrStreams[NUM_OF_DLP];
-    for (int dlp = 0; dlp < NUM_OF_DLP; ++dlp)
-        for (size_t i = 0; i < vecConvertedImgs[dlp].size(); ++i)
-            vecGpuImages[dlp][i].upload(vecConvertedImgs[dlp][i], arrStreams[dlp]);
-
     cv::cuda::GpuMat vecGpuHeights[NUM_OF_DLP], vecGpuNanMasks[NUM_OF_DLP];
+    VectorOfMat vecHeights(NUM_OF_DLP), vecNanMasks(NUM_OF_DLP);
+    VectorOfDirection vecProjDir;
+
     for (int dlp = 0; dlp < NUM_OF_DLP; ++dlp) {
-        vecGpuHeights[dlp] = _calcHeightGpuCore(&pstCmd->arrCalcHeightCmd[dlp],
+        for (size_t i = 0; i < vecConvertedImgs[dlp].size(); ++i) {
+            vecGpuImages[dlp][i].upload(vecConvertedImgs[dlp][i], arrStreams[dlp]);
+        }
+    }
+
+    for (int dlp = 0; dlp < NUM_OF_DLP; ++dlp) {
+        vecGpuHeights[dlp] = _calcHeightGpuCore(
+            &pstCmd->arrCalcHeightCmd[dlp],
             vecGpuImages[dlp],
             vecGpuNanMasks[dlp],
             arrStreams[dlp]);
-    }
 
-    TimeLog::GetInstance()->addTimeLog("After calculate 4 DLP height", stopWatch.Span());
-
-    VectorOfMat vecHeights(NUM_OF_DLP), vecNanMasks(NUM_OF_DLP);
-    VectorOfDirection vecProjDir;
-    for (int dlp = 0; dlp < NUM_OF_DLP; ++dlp) {
         vecGpuHeights[dlp].download(vecHeights[dlp], arrStreams[dlp]);
         vecGpuNanMasks[dlp].download(vecNanMasks[dlp], arrStreams[dlp]);
         vecProjDir.push_back(pstCmd->arrCalcHeightCmd[dlp].enProjectDir);
     }
 
     cudaDeviceSynchronize();
+    TimeLog::GetInstance()->addTimeLog("After calculate 4 DLP height", stopWatch.Span());
 
     TimeLog::GetInstance()->addTimeLog("After download 4 DLP height and nan mask", stopWatch.Span());
     for (int dlp = 0; dlp < NUM_OF_DLP; ++dlp) {

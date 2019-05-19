@@ -2,7 +2,7 @@
 #define _CUDA_FUNC_H_
 
 #include <stdint.h>
-#include "cuda_runtime.h"
+#include <cuda_runtime.h>
 
 void run_kernel_calc_phase(
     dim3 grid,
@@ -71,6 +71,7 @@ void run_kernel_floor(
     const int COLS);
 
 void run_kernel_interval_average(
+    cudaEvent_t& eventDone,
     cudaStream_t cudaStream,
     float *data,
     uint32_t step,
@@ -81,6 +82,7 @@ void run_kernel_interval_average(
     float *result);
 
 void run_kernel_range_interval_average(
+    cudaEvent_t& eventDone,
     cudaStream_t cudaStream,
     const float *data,
     uint32_t step,

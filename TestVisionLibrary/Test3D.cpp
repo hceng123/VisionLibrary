@@ -1,6 +1,5 @@
 ﻿#include "stdafx.h"
-#include "../VisionLibrary/VisionAPI.h"
-#include "opencv2/highgui.hpp"
+#include <cuda_runtime.h>
 #include <iostream>
 #include <sstream>
 #include <algorithm>
@@ -9,6 +8,9 @@
 #include <thread>
 #include <atomic>
 #include "TestSub.h"
+
+#include "../VisionLibrary/VisionAPI.h"
+#include "opencv2/highgui.hpp"
 #include "../RegressionTest/UtilityFunc.h"
 #include "../VisionLibrary/CalcUtils.hpp"
 
@@ -16,13 +18,13 @@ void TestCalc3DHeightDiff(const cv::Mat &matHeight);
 
 using namespace AOI::Vision;
 
-void saveMatToCsv(const cv::Mat &matrix, std::string filename){
+void saveMatToCsv(const cv::Mat &matrix, std::string filename) {
     std::ofstream outputFile(filename);
     outputFile << cv::format(matrix, cv::Formatter::FMT_CSV);
     outputFile.close();
 }
 
-void saveMatToYml(const cv::Mat &matrix, const std::string& filename, const std::string& key){
+void saveMatToYml(const cv::Mat &matrix, const std::string& filename, const std::string& key) {
     cv::FileStorage fs(filename, cv::FileStorage::WRITE);
     if (!fs.isOpened())
         return;
@@ -1407,7 +1409,6 @@ void TestCalc4DLPHeight()
     PR_MERGE_3D_HEIGHT_RPY stMerge3DRpy;
 
     for (int i = 0; i < 4; ++i) {
-        stCalcHeightRpys[i].matHeight.setTo(NAN, stCalcHeightRpys[i].matNanMask);
         stMerge3DCmd.vecMatHeight.push_back(stCalcHeightRpys[i].matHeight);
         stMerge3DCmd.vecMatNanMask.push_back(stCalcHeightRpys[i].matNanMask);
         stMerge3DCmd.vecProjDir.push_back(stCalcHeightCmds[i].enProjectDir);
@@ -1555,6 +1556,8 @@ void TestCalc4DLPHeightOnePass()
         std::cout << "PR_Merge3DHeight failed, status " << ToInt32(stCalc4DlpHeightRpy.enStatus) << " at line " << __LINE__ << std::endl;
         return;
     }
+
+    cudaDeviceReset();
 
     saveMatToCsv(stCalc4DlpHeightRpy.matHeight, strResultFolder + "Final_Height.csv");
 
