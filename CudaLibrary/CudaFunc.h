@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 #include <cuda_runtime.h>
+#include "../VisionLibrary/VisionType.h"
+using namespace AOI::Vision;
 
 void run_kernel_calc_phase(
     dim3 grid,
@@ -118,17 +120,6 @@ void run_kernel_calc_sum_and_convert_matrix(
     const int COLS,
     const int step);
 
-void run_kernel_merge_height_intersect(
-    uint32_t gridSize,
-    uint32_t blockSize,
-    cudaStream_t cudaStream,
-    float* matOne,
-    float *matTwo,
-    float *d_result,
-    int rows,
-    int cols,
-    float fDiffThreshold);
-
 void run_median_filter(
     dim3 grid,
     dim3 threads,
@@ -139,5 +130,42 @@ void run_median_filter(
     const int COLS,
     const int step,
     const int winSize);
+
+void run_kernel_phase_patch(
+    dim3 grid,
+    dim3 threads,
+    cudaStream_t cudaStream,
+    float *pInOutData,
+    const unsigned char* pNanMask,
+    const int ROWS,
+    const int COLS,
+    const int step,
+    PR_DIRECTION enProjDir);
+
+void run_kernel_merge_height_intersect(
+    uint32_t gridSize,
+    uint32_t blockSize,
+    cudaStream_t cudaStream,
+    float* matOne,
+    float *matTwo,
+    float *matTre,
+    float *matFor,
+    float* matMask,
+    const int ROWS,
+    const int COLS,
+    const int step,
+    float fDiffThreshold);
+
+void run_kernel_choose_min_value_for_mask(
+    dim3 grid,
+    dim3 threads,
+    cudaStream_t cudaStream,
+    float *matH1,
+    float *matH2,
+    float *matH3,
+    unsigned char* matMask,
+    const int ROWS,
+    const int COLS,
+    const int step);
 
 #endif

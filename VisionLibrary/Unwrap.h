@@ -117,6 +117,14 @@ private:
         const VectorOfDirection& vecProjDir,
         float                    fHeightDiffThreshold);
 
+    static cv::cuda::GpuMat _merge4DlpHeightCore(
+        VectorOfGpuMat&          vecGpuMatHeight,
+        VectorOfGpuMat&          vecGpuMatNanMask,
+        const VectorOfDirection& vecProjDir,
+        float                    fHeightDiffThreshold,
+        cv::cuda::Stream&        stream1, 
+        cv::cuda::Stream&        stream2);
+
     static inline void _phaseWrap(cv::Mat &matPhase) {
         CStopWatch stopWatch;
         cv::Mat matNn = matPhase / ONE_CYCLE + 0.5;

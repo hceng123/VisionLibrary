@@ -99,6 +99,7 @@ public:
         cv::cuda::GpuMat& matMaskGpuT,
         int span,
         cv::cuda::Stream& stream = cv::cuda::Stream::Null());
+
     static void phaseCorrection(
         cv::cuda::GpuMat& matPhase,
         cv::cuda::GpuMat& matPhaseT,
@@ -113,7 +114,9 @@ public:
         int nJumpSpanX,
         int nJumpSpanY,
         cv::cuda::Stream& stream = cv::cuda::Stream::Null());
+
     static void phaseCorrection(cv::Mat &matPhase, int nJumpSpanX, int nJumpSpanY);
+
     static void calculateSurfaceConvert3D(
         const cv::cuda::GpuMat& matPhase,
         cv::cuda::GpuMat& matPhaseT,
@@ -145,13 +148,57 @@ public:
         const int windowSize,
         cv::cuda::Stream& stream = cv::cuda::Stream::Null());
 
-    static cv::Mat mergeHeightIntersect(cv::Mat matHeightOne,
-        cv::Mat matNanMaskOne,
-        cv::Mat matHeightTwo,
-        cv::Mat matNanMaskTwo,
-        float fDiffThreshold,
+    static void phasePatch(
+        cv::cuda::GpuMat& matInOut,
+        const cv::cuda::GpuMat& matNanMask,
         PR_DIRECTION enProjDir,
         cv::cuda::Stream& stream = cv::cuda::Stream::Null());
+
+    static void getNanMask(
+        cv::cuda::GpuMat& matInput,
+        cv::cuda::GpuMat& matNanMask,
+        cv::cuda::Stream& stream = cv::cuda::Stream::Null());
+
+    static cv::cuda::GpuMat mergeHeightIntersect(
+        cv::cuda::GpuMat& matHeightOne,
+        cv::cuda::GpuMat& matNanMaskOne,
+        cv::cuda::GpuMat& matHeightTwo,
+        cv::cuda::GpuMat& matNanMaskTwo,
+        cv::cuda::GpuMat& matBufferGpu1,
+        cv::cuda::GpuMat& matBufferGpu2,
+        cv::cuda::GpuMat& matBufferGpu3,
+        cv::cuda::GpuMat& matBufferGpu4,
+        cv::cuda::GpuMat& matMaskGpu1,
+        cv::cuda::GpuMat& matMaskGpu2,
+        cv::cuda::GpuMat& matDiffResult,
+        float fDiffThreshold,
+        PR_DIRECTION enProjDir,
+        cv::cuda::GpuMat& matResultNan,
+        cv::cuda::Stream& stream = cv::cuda::Stream::Null());
+
+    static cv::cuda::GpuMat mergeHeightIntersect06(
+        cv::cuda::GpuMat&       matHeightOne,
+        const cv::cuda::GpuMat& matNanMaskOne,
+        cv::cuda::GpuMat&       matHeightTwo,
+        const cv::cuda::GpuMat& matNanMaskTwo,
+        cv::cuda::GpuMat&       matBufferGpu1,
+        cv::cuda::GpuMat&       matBufferGpu2,
+        cv::cuda::GpuMat&       matBufferGpu3,
+        cv::cuda::GpuMat&       matBufferGpu4,
+        cv::cuda::GpuMat&       matBufferGpu5,
+        cv::cuda::GpuMat&       matMaskGpu1,
+        cv::cuda::GpuMat&       matMaskGpu2,
+        cv::cuda::GpuMat&       matDiffResult,
+        float                   fDiffThreshold,
+        PR_DIRECTION            enProjDir,
+        cv::cuda::Stream&       stream = cv::cuda::Stream::Null());
+
+    static void chooseMinValueForMask(
+        cv::cuda::GpuMat&       matH1,
+        cv::cuda::GpuMat&       matH2,
+        cv::cuda::GpuMat&       matH3,
+        const cv::cuda::GpuMat& matMask,
+        cv::cuda::Stream&       stream = cv::cuda::Stream::Null());
 };
 
 }

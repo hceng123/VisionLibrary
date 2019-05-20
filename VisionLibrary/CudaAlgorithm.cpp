@@ -786,144 +786,196 @@ static int divUp(int total, int grain)
         windowSize);
 }
 
-/*static*/ cv::Mat CudaAlgorithm::mergeHeightIntersect(cv::Mat matHeightOne,
-    cv::Mat matNanMaskOne, cv::Mat matHeightTwo,
-    cv::Mat matNanMaskTwo,
-    float fDiffThreshold,
-    PR_DIRECTION enProjDir,
+/*static*/ void CudaAlgorithm::phasePatch(
+        cv::cuda::GpuMat& matInOut,
+        const cv::cuda::GpuMat& matNanMask,
+        PR_DIRECTION enProjDir,
+        cv::cuda::Stream& stream /*= cv::cuda::Stream::Null()*/) {
+    dim3 threads(32, 32);
+    dim3 grid(divUp(matInOut.cols, threads.x), divUp(matInOut.rows, threads.y));
+    run_kernel_phase_patch(grid, threads, cv::cuda::StreamAccessor::getStream(stream),
+        reinterpret_cast<float*>(matInOut.data),
+        matNanMask.data,
+        matInOut.rows,
+        matInOut.cols,
+        matInOut.step1(),
+        enProjDir);
+}
+
+/*static*/ void CudaAlgorithm::getNanMask(
+    cv::cuda::GpuMat& matInput,
+    cv::cuda::GpuMat& matNanMask,
     cv::cuda::Stream& stream /*= cv::cuda::Stream::Null()*/) {
-    CStopWatch stopWatch;
-    auto start = stopWatch.AbsNowInMicro();
+    cv::cuda::compare(matInput, matInput, matNanMask, cv::CmpTypes::CMP_EQ, stream);
+    cv::cuda::bitwise_not(matNanMask, matNanMask, cv::cuda::GpuMat(), stream);
+}
 
-    matHeightTwo.copyTo(matHeightOne, matNanMaskOne);
-    matHeightOne.copyTo(matHeightTwo, matNanMaskTwo);
+/*static*/ cv::cuda::GpuMat CudaAlgorithm::mergeHeightIntersect(
+        cv::cuda::GpuMat& matHeightOne,
+        cv::cuda::GpuMat& matNanMaskOne,
+        cv::cuda::GpuMat& matHeightTwo,
+        cv::cuda::GpuMat& matNanMaskTwo,
+        cv::cuda::GpuMat& matBufferGpu1,
+        cv::cuda::GpuMat& matBufferGpu2,
+        cv::cuda::GpuMat& matBufferGpu3,
+        cv::cuda::GpuMat& matBufferGpu4,
+        cv::cuda::GpuMat& matMaskGpu1,
+        cv::cuda::GpuMat& matMaskGpu2,
+        cv::cuda::GpuMat& matDiffResult,
+        float fDiffThreshold,
+        PR_DIRECTION enProjDir,
+        cv::cuda::GpuMat& matResultNan,
+        cv::cuda::Stream& stream /*= cv::cuda::Stream::Null()*/) {
+    PR_DIRECTION enProjDir2;
+    if (ToInt32(enProjDir) >= 2)
+        enProjDir2 = static_cast<PR_DIRECTION>(5 - ToInt32(enProjDir));
+    else
+        enProjDir2 = static_cast<PR_DIRECTION>(1 - ToInt32(enProjDir));
 
+    matHeightOne.copyTo(matBufferGpu1); // matBufferGpu1 is matH13
+    CudaAlgorithm::phasePatch(matBufferGpu1, matNanMaskOne, enProjDir2, stream);
+
+    matHeightTwo.copyTo(matBufferGpu2); // matBufferGpu2 is matH23
+    CudaAlgorithm::phasePatch(matBufferGpu2, matNanMaskTwo, enProjDir, stream);
+
+    // Matlab: idxh2 = find(H22(idxnan1) - H13(idxnan1) > 0.05);
+    //         idxh1 = find(H11(idxnan2) - H23(idxnan2) > 0.05);
+    cv::cuda::add(matBufferGpu1, 0.05f, matBufferGpu1, cv::cuda::GpuMat(), -1, stream);
+    cv::cuda::add(matBufferGpu2, 0.05f, matBufferGpu2, cv::cuda::GpuMat(), -1, stream);
+    
+    //idxh2 = (matHeightTwo - matH13) > 0.05f; idxh2 = idxh2 & matNanMaskOne;
+    //idxh1 = (matHeightOne - matH23) > 0.05f; idxh1 = idxh1 & matNanMaskTwo;
+    cv::cuda::compare(matHeightTwo, matBufferGpu1, matMaskGpu2, cv::CmpTypes::CMP_GT, stream);
+    cv::cuda::bitwise_and(matMaskGpu2, matNanMaskOne, matMaskGpu2, cv::cuda::GpuMat(), stream);
+
+    cv::cuda::compare(matHeightOne, matBufferGpu2, matMaskGpu1, cv::CmpTypes::CMP_GT, stream);
+    cv::cuda::bitwise_and(matMaskGpu1, matNanMaskTwo, matMaskGpu1, cv::cuda::GpuMat(), stream);
+
+    matNanMaskOne.setTo(PR_MAX_GRAY_LEVEL, matMaskGpu1, stream);
+    matNanMaskTwo.setTo(PR_MAX_GRAY_LEVEL, matMaskGpu2, stream);
+    
     if (PR_DIRECTION::UP == enProjDir || PR_DIRECTION::DOWN == enProjDir) {
-        cv::transpose(matHeightOne, matHeightOne);
-        cv::transpose(matHeightTwo, matHeightTwo);
-
-        TimeLog::GetInstance()->addTimeLog("_mergeHeightIntersect. Transpose image.", stopWatch.Span());
+        cv::cuda::transpose(matHeightOne, matHeightOne, stream);
+        cv::cuda::transpose(matHeightTwo, matHeightTwo, stream);
+        cv::cuda::transpose(matMaskGpu1, matMaskGpu1, stream);
+        cv::cuda::transpose(matMaskGpu2, matMaskGpu2, stream);
     }
 
-    //#ifdef _DEBUG
-    //    auto vecVecHeightOne = matToVector<float>(matHeightOne);
-    //    auto vecVecHeightTwo = matToVector<float>(matHeightTwo);
-    //    auto vecVecHeightTre = matToVector<float>(matHeightTre);
-    //    auto vecVecHeightFor = matToVector<float>(matHeightFor);
-    //#endif
+    cv::cuda::addWeighted(matHeightOne, 0.5f, matHeightTwo, 0.5f, 0, matBufferGpu1, -1, stream); // matBufferGpu1 is matHeightTre
+    matHeightTwo.copyTo(matBufferGpu1, matMaskGpu1, stream);
+    matHeightOne.copyTo(matBufferGpu1, matMaskGpu2, stream);
 
-    std::cout << "Prepare data " << stopWatch.SpanInMicro() << std::endl;
+    matBufferGpu1.copyTo(matBufferGpu2, stream); // matBufferGpu2 is matHeightFor
 
-    //matHeightOne = matHeightOne.reshape(1, 1);
-    //matHeightTwo = matHeightTwo.reshape(1, 1);
-    //matHeightTre = matHeightTre.reshape(1, 1);
-    //matHeightFor = matHeightFor.reshape(1, 1);
-    cv::cuda::GpuMat matHeightOneGpu, matHeightTwoGpu;
-    //float *d_result = NULL;
-    //cudaMalloc(&d_result, matHeightOne.step * matHeightOne.rows);
-    //auto size = matHeightOne.step * matHeightOne.rows;
+    cv::cuda::absdiff(matHeightOne, matHeightTwo, matBufferGpu3, stream);
+    cv::cuda::compare(matBufferGpu3, fDiffThreshold, matMaskGpu1, cv::CmpTypes::CMP_GT, stream);
+    matBufferGpu2.setTo(NAN, matMaskGpu1, stream);
 
-    //float *d_One = NULL, *d_Two = NULL, *d_Tre = NULL, *d_For = NULL, *d_Mask = NULL;
+    getNanMask(matBufferGpu2, matMaskGpu1, stream);
+    matMaskGpu1.convertTo(matBufferGpu3, CV_32FC1);
+    diff(matBufferGpu3, matDiffResult, CalcUtils::DIFF_ON_X_DIR, stream);
+    cv::cuda::abs(matDiffResult, matDiffResult, stream);
 
-    //int status = cudaHostRegister(matHeightOne.data, size, cudaHostRegisterPortable);
-    cv::cuda::registerPageLocked(matHeightOne);
-    std::cout << "Register matrix one " << stopWatch.SpanInMicro() << std::endl;
-
-    matHeightOneGpu.upload(matHeightOne);
-    //printf("Copy input data from the host memory to the CUDA device\n");
-    //err = cudaMemcpy(d_One, matHeightOne.data, size, cudaMemcpyHostToDevice);
-    //if (err != cudaSuccess)
-    //{
-    //    fprintf(stderr, "Failed to copy vector one from host to device (error code %s)!\n", cudaGetErrorString(err));
-    //    exit(EXIT_FAILURE);
-    //}
-    std::cout << "Upload matrix one " << stopWatch.SpanInMicro() << std::endl;
-
-    cv::cuda::registerPageLocked(matHeightTwo);
-    //cudaHostRegister(matHeightTwo.data, matHeightTwo.step * matHeightTwo.rows, cudaHostRegisterPortable);
-    std::cout << "Register matrix two " << stopWatch.SpanInMicro() << std::endl;
-
-    matHeightTwoGpu.upload(matHeightTwo);
-    //err = cudaMemcpy(d_Two, matHeightTwo.data, size, cudaMemcpyHostToDevice);
-    //if (err != cudaSuccess)
-    //{
-    //    fprintf(stderr, "Failed to copy vector two from host to device (error code %s)!\n", cudaGetErrorString(err));
-    //    exit(EXIT_FAILURE);
-    //}
-    std::cout << "Upload matrix two " << stopWatch.SpanInMicro() << std::endl;
-
-    //cv::cuda::registerPageLocked(matHeightTre); matHeightTreGpu.upload(matHeightTre);
-    //cv::cuda::registerPageLocked(matNanMask);   matNanMaskGpu.upload(matNanMask);
-
-    //cv::cuda::registerPageLocked(matHeightFor); matHeightForGpu.upload(matHeightFor);
-
-    //err = cudaMemcpy(d_Tre, matHeightTre.data, size, cudaMemcpyHostToDevice);
-    //if (err != cudaSuccess)
-    //{
-    //    fprintf(stderr, "Failed to copy vector three from host to device (error code %s)!\n", cudaGetErrorString(err));
-    //    exit(EXIT_FAILURE);
-    //}
-
-    //err = cudaMemcpy(d_For, matHeightTre.data, size, cudaMemcpyHostToDevice);
-    //if (err != cudaSuccess)
-    //{
-    //    fprintf(stderr, "Failed to copy vector four from host to device (error code %s)!\n", cudaGetErrorString(err));
-    //    exit(EXIT_FAILURE);
-    //}
-
-    //err = cudaMemcpy(d_Mask, matNanMask.data, size, cudaMemcpyHostToDevice);
-    //if (err != cudaSuccess)
-    //{
-    //    fprintf(stderr, "Failed to copy vector four from host to device (error code %s)!\n", cudaGetErrorString(err));
-    //    exit(EXIT_FAILURE);
-    //}
-    // matHeightTwoGpu.upload(matHeightTwo);
-    // matHeightTreGpu.upload(matHeightTre);
-    // matHeightForGpu.upload(matHeightFor);
-    //matNanMaskGpu.upload(matNanMask);
-
-    cv::cuda::GpuMat matHeightForGpu(matHeightOne.size(), matHeightOne.type());
-
-    std::cout << "Upload data " << stopWatch.SpanInMicro() << std::endl;
-    std::cout << "rows " << matHeightOne.rows << " cols " << matHeightOne.cols << std::endl;
-    int gnBlockNumber = 2;
-    int gnThreadNumber = 256;
-    run_kernel_merge_height_intersect(
-        gnBlockNumber,
-        gnThreadNumber,
-        cv::cuda::StreamAccessor::getStream(stream),
-        reinterpret_cast<float *>(matHeightOneGpu.data),
-        reinterpret_cast<float *>(matHeightTwoGpu.data),
-        reinterpret_cast<float *>(matHeightForGpu.data),
+    uint32_t threads = 32;
+    uint32_t grid = divUp(matHeightOne.rows, threads);
+    run_kernel_merge_height_intersect(grid, threads, cv::cuda::StreamAccessor::getStream(stream),
+        reinterpret_cast<float*>(matHeightOne.data),
+        reinterpret_cast<float*>(matHeightTwo.data),
+        reinterpret_cast<float*>(matBufferGpu1.data),
+        reinterpret_cast<float*>(matBufferGpu2.data),
+        reinterpret_cast<float*>(matDiffResult.data),
         matHeightOne.rows,
         matHeightOne.cols,
+        matHeightOne.step1(),
         fDiffThreshold);
+    if (PR_DIRECTION::UP == enProjDir || PR_DIRECTION::DOWN == enProjDir) {
+        cv::cuda::transpose(matBufferGpu2, matBufferGpu2, stream);
+    }
 
-    std::cout << "kernel_merge_height " << stopWatch.SpanInMicro() << std::endl;
+     // matResultNan = idxnant1 & idxnant2;
+    cv::cuda::bitwise_and(matNanMaskOne, matNanMaskTwo, matResultNan, cv::cuda::GpuMat(), stream);
+    return matBufferGpu2;
+}
 
-    cv::Mat matResult;
-    matHeightForGpu.download(matResult);
-    //err = cudaMemcpy(matHeightFor.data, d_For, size, cudaMemcpyDeviceToHost);
-    //if (err != cudaSuccess)
-    //{
-    //    fprintf(stderr, "Failed to copy vector four from device to host (error code %s)!\n", cudaGetErrorString(err));
-    //    exit(EXIT_FAILURE);
-    //}
+/*static*/ cv::cuda::GpuMat CudaAlgorithm::mergeHeightIntersect06(
+        cv::cuda::GpuMat&       matHeightOne,
+        const cv::cuda::GpuMat& matNanMaskOne,
+        cv::cuda::GpuMat&       matHeightTwo,
+        const cv::cuda::GpuMat& matNanMaskTwo,
+        cv::cuda::GpuMat&       matBufferGpu1,
+        cv::cuda::GpuMat&       matBufferGpu2,
+        cv::cuda::GpuMat&       matBufferGpu3,
+        cv::cuda::GpuMat&       matBufferGpu4,
+        cv::cuda::GpuMat&       matBufferGpu5,
+        cv::cuda::GpuMat&       matMaskGpu1,
+        cv::cuda::GpuMat&       matMaskGpu2,
+        cv::cuda::GpuMat&       matDiffResult,
+        float                   fDiffThreshold,
+        PR_DIRECTION            enProjDir,
+        cv::cuda::Stream&       stream /*= cv::cuda::Stream::Null()*/) {
+    matHeightOne.copyTo(matBufferGpu1, stream); // matBufferGpu1 is matH11
+    CudaAlgorithm::phasePatch(matBufferGpu1, matNanMaskOne, PR_DIRECTION::UP,   stream);
+    CudaAlgorithm::phasePatch(matHeightOne,  matNanMaskOne, PR_DIRECTION::DOWN, stream); // matHeightOne is matH10
 
-    std::cout << "Download data " << stopWatch.SpanInMicro() << std::endl;
+    matHeightTwo.copyTo(matBufferGpu2, stream); // matBufferGpu2 is matH22
+    CudaAlgorithm::phasePatch(matBufferGpu2, matNanMaskTwo, PR_DIRECTION::LEFT,  stream);
+    CudaAlgorithm::phasePatch(matHeightTwo,  matNanMaskTwo, PR_DIRECTION::RIGHT, stream); // matHeightTwo is matH20
 
-    cv::cuda::unregisterPageLocked(matHeightOne);
-    cv::cuda::unregisterPageLocked(matHeightTwo);
+    chooseMinValueForMask(matBufferGpu1, matHeightOne, matBufferGpu2, matNanMaskOne, stream);
+    chooseMinValueForMask(matBufferGpu2, matHeightTwo, matBufferGpu1, matNanMaskOne, stream);
 
-    //if (PR_DIRECTION::UP == enProjDir || PR_DIRECTION::DOWN == enProjDir) {
-    //    cv::transpose(matHeightFor, matHeightFor);
-    //    TimeLog::GetInstance()->addTimeLog("_mergeHeightIntersect. Transpose image back.", stopWatch.Span());
-    //}
+    if (PR_DIRECTION::UP == enProjDir || PR_DIRECTION::DOWN == enProjDir) {
+        cv::cuda::transpose(matBufferGpu1, matBufferGpu1, stream);
+        cv::cuda::transpose(matBufferGpu2, matBufferGpu2, stream);
+    }
 
-    auto total = stopWatch.AbsNowInMicro() - start;
-    std::cout << "Total time: " << total << std::endl;
+    cv::cuda::addWeighted(matBufferGpu1, 0.5f, matBufferGpu2, 0.5f, 0, matBufferGpu3, -1, stream); // matBufferGpu1 is matHeightTre
+    matBufferGpu3.copyTo(matBufferGpu4); // Equal to cv::Mat matHeightFor = matHeightTre.clone();
 
-    return matResult;
+    cv::cuda::absdiff(matBufferGpu1, matBufferGpu2, matBufferGpu5, stream);
+    cv::cuda::compare(matBufferGpu5, fDiffThreshold, matMaskGpu1, cv::CmpTypes::CMP_GT, stream);
+    matBufferGpu4.setTo(NAN, matMaskGpu1);
+
+    getNanMask(matBufferGpu4, matMaskGpu1, stream);
+    matMaskGpu1.convertTo(matBufferGpu5, CV_32FC1);
+    diff(matBufferGpu5, matDiffResult, CalcUtils::DIFF_ON_X_DIR, stream);
+    cv::cuda::abs(matDiffResult, matDiffResult, stream);
+
+    uint32_t threads = 32;
+    uint32_t grid = divUp(matHeightOne.rows, threads);
+    run_kernel_merge_height_intersect(grid, threads, cv::cuda::StreamAccessor::getStream(stream),
+        reinterpret_cast<float*>(matBufferGpu1.data),
+        reinterpret_cast<float*>(matBufferGpu2.data),
+        reinterpret_cast<float*>(matBufferGpu3.data),
+        reinterpret_cast<float*>(matBufferGpu4.data),
+        reinterpret_cast<float*>(matDiffResult.data),
+        matHeightOne.rows,
+        matHeightOne.cols,
+        matHeightOne.step1(),
+        fDiffThreshold);
+    if (PR_DIRECTION::UP == enProjDir || PR_DIRECTION::DOWN == enProjDir) {
+        cv::cuda::transpose(matBufferGpu4, matBufferGpu4, stream);
+    }
+
+    return matBufferGpu4;
+}
+
+/*static*/ void CudaAlgorithm::chooseMinValueForMask(
+        cv::cuda::GpuMat&       matH1,
+        cv::cuda::GpuMat&       matH2,
+        cv::cuda::GpuMat&       matH3,
+        const cv::cuda::GpuMat& matMask,
+        cv::cuda::Stream&       stream /*= cv::cuda::Stream::Null()*/) {
+    dim3 threads(32, 32);
+    dim3 grid(divUp(matH1.cols, threads.x), divUp(matH1.rows, threads.y));
+    run_kernel_choose_min_value_for_mask(grid, threads, cv::cuda::StreamAccessor::getStream(stream),
+        reinterpret_cast<float*>(matH1.data),
+        reinterpret_cast<float*>(matH2.data),
+        reinterpret_cast<float*>(matH3.data),
+        matMask.data,
+        matH1.rows,
+        matH1.cols,
+        matH1.step1());
 }
 
 }

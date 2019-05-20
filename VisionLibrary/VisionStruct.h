@@ -4,6 +4,7 @@
 #include "VisionType.h"
 #include "VisionStatus.h"
 #include "opencv2/core.hpp"
+#include "opencv2/core/cuda.hpp"
 #include "opencv2/imgproc.hpp"
 #include "BaseType.h"
 #include <list>
@@ -29,6 +30,7 @@ using VectorOfListOfPoint = std::vector<ListOfPoint>;
 using VectorOfSize2f = std::vector<cv::Size2f>;
 using VectorOfMat = std::vector<cv::Mat>;
 using VectorOfVectorOfMat = std::vector<VectorOfMat>;
+using VectorOfGpuMat = std::vector<cv::cuda::GpuMat>;
 using VectorOfFloat = std::vector<float>;
 using VectorOfVectorOfFloat = std::vector<VectorOfFloat>;
 using VectorOfDouble = std::vector<double>;

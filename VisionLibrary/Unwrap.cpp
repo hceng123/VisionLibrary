@@ -1072,6 +1072,121 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
     return (matHm3 + matHm4) / 2;
 }
 
+/*static*/ cv::cuda::GpuMat Unwrap::_merge4DlpHeightCore(
+    VectorOfGpuMat&          vecGpuMatHeight,
+    VectorOfGpuMat&          vecGpuMatNanMask,
+    const VectorOfDirection& vecProjDir,
+    float                    fHeightDiffThreshold,
+    cv::cuda::Stream&        stream1,
+    cv::cuda::Stream&        stream2) {
+    
+    Calc3DHeightVars& calc3DHeightVar0 = CudaAlgorithm::getCalc3DHeightVars(0);
+    Calc3DHeightVars& calc3DHeightVar1 = CudaAlgorithm::getCalc3DHeightVars(1);
+    Calc3DHeightVars& calc3DHeightVar2 = CudaAlgorithm::getCalc3DHeightVars(2);
+    Calc3DHeightVars& calc3DHeightVar3 = CudaAlgorithm::getCalc3DHeightVars(3);
+
+    cv::cuda::GpuMat& matBufferGpu1 = calc3DHeightVar0.matAlpha;
+    cv::cuda::GpuMat& matBufferGpu2 = calc3DHeightVar0.matBeta;
+    cv::cuda::GpuMat& matBufferGpu3 = calc3DHeightVar0.matGamma;
+    cv::cuda::GpuMat& matBufferGpu4 = calc3DHeightVar2.matAlpha;
+    cv::cuda::GpuMat& matBufferGpu5 = calc3DHeightVar2.matBeta;
+    cv::cuda::GpuMat& matBufferGpu6 = calc3DHeightVar2.matGamma;
+    cv::cuda::GpuMat& matMaskGpu1 = calc3DHeightVar0.matMaskGpu;
+    cv::cuda::GpuMat& matMaskGpu2 = calc3DHeightVar2.matMaskGpu;
+    cv::cuda::GpuMat& matDiffReult1 = calc3DHeightVar0.matDiffResult;
+    cv::cuda::GpuMat& matNan1 = calc3DHeightVar0.matMaskGpu; // Reuse the buffer with matMaskGpu1
+    matBufferGpu6 = CudaAlgorithm::mergeHeightIntersect(
+        vecGpuMatHeight[0],
+        vecGpuMatNanMask[0],
+        vecGpuMatHeight[2],
+        vecGpuMatNanMask[2],
+        matBufferGpu1,
+        matBufferGpu2,
+        matBufferGpu3,
+        matBufferGpu4,
+        matMaskGpu1,
+        matMaskGpu2,
+        matDiffReult1,
+        fHeightDiffThreshold,
+        vecProjDir[0],
+        matNan1,
+        stream1);
+    matBufferGpu6.setTo(NAN, matNan1, stream1);
+
+    cv::cuda::GpuMat& matBufferGpu7  = calc3DHeightVar1.matAlpha;
+    cv::cuda::GpuMat& matBufferGpu8  = calc3DHeightVar1.matBeta;
+    cv::cuda::GpuMat& matBufferGpu9  = calc3DHeightVar1.matGamma;
+    cv::cuda::GpuMat& matBufferGpu10 = calc3DHeightVar3.matAlpha;
+    cv::cuda::GpuMat& matBufferGpu11 = calc3DHeightVar3.matBeta;
+    cv::cuda::GpuMat& matBufferGpu12 = calc3DHeightVar3.matGamma;
+    cv::cuda::GpuMat& matMaskGpu3 = calc3DHeightVar1.matMaskGpu;
+    cv::cuda::GpuMat& matMaskGpu4 = calc3DHeightVar3.matMaskGpu;
+    cv::cuda::GpuMat& matDiffReult2 = calc3DHeightVar1.matDiffResult;
+    cv::cuda::GpuMat& matNan2 = calc3DHeightVar1.matMaskGpu; // Reuse the buffer with matMaskGpu3
+    matBufferGpu12 = CudaAlgorithm::mergeHeightIntersect(
+        vecGpuMatHeight[1],
+        vecGpuMatNanMask[1],
+        vecGpuMatHeight[3],
+        vecGpuMatNanMask[3],
+        matBufferGpu7,
+        matBufferGpu8,
+        matBufferGpu9,
+        matBufferGpu10,
+        matMaskGpu3,
+        matMaskGpu4,
+        matDiffReult2,
+        fHeightDiffThreshold,
+        vecProjDir[1],
+        matNan2,
+        stream2);
+    
+    matBufferGpu12.setTo(NAN, matNan2, stream2);
+
+    cudaDeviceSynchronize();
+    //auto matHm3 = _mergeHeightIntersect06(matHm1, matNan1, matHm2, matNan2, fHeightDiffThreshold * 2.f, vecProjDir[0]);
+    //auto matHm4 = _mergeHeightIntersect06(matHm1, matNan1, matHm2, matNan2, fHeightDiffThreshold * 2.f, vecProjDir[1]);
+
+    matBufferGpu6 = CudaAlgorithm::mergeHeightIntersect06(
+        matBufferGpu6,
+        matNan1,
+        matBufferGpu12,
+        matNan2,
+        matBufferGpu1,
+        matBufferGpu2,
+        matBufferGpu3,
+        matBufferGpu4,
+        matBufferGpu5,
+        matMaskGpu1,
+        matMaskGpu2,
+        matDiffReult1,
+        fHeightDiffThreshold * 2.f,
+        vecProjDir[0],
+        stream1);
+
+    matBufferGpu12 = CudaAlgorithm::mergeHeightIntersect06(
+        matBufferGpu6,
+        matNan1,
+        matBufferGpu12,
+        matNan2,
+        matBufferGpu7,
+        matBufferGpu8,
+        matBufferGpu9,
+        matBufferGpu10,
+        matBufferGpu11,
+        matMaskGpu3,
+        matMaskGpu4,
+        matDiffReult2,
+        fHeightDiffThreshold * 2.f,
+        vecProjDir[1],
+        stream1);
+
+    cudaDeviceSynchronize();
+
+    cv::cuda::addWeighted(matBufferGpu6, 0.5f, matBufferGpu12, 0.5f, 0, matBufferGpu1);
+
+    return matBufferGpu1;
+}
+
 /*static*/ void Unwrap::calcMerge4DlpHeight(const PR_CALC_MERGE_4_DLP_HEIGHT_CMD *const pstCmd, PR_CALC_MERGE_4_DLP_HEIGHT_RPY *const pstRpy) {
     CStopWatch stopWatch;
 
@@ -1106,7 +1221,7 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
     }
     
     cv::cuda::Stream arrStreams[NUM_OF_DLP];
-    cv::cuda::GpuMat vecGpuHeights[NUM_OF_DLP], vecGpuNanMasks[NUM_OF_DLP];
+    VectorOfGpuMat vecGpuHeights(NUM_OF_DLP), vecGpuNanMasks(NUM_OF_DLP);
     VectorOfMat vecHeights(NUM_OF_DLP), vecNanMasks(NUM_OF_DLP);
     VectorOfDirection vecProjDir;
 
@@ -1142,7 +1257,10 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
         cv::imwrite(strResultFolder + "Dlp_" + std::to_string(dlp + 1) + "_NanMask.png", vecNanMasks[dlp]);
     }
 
-    pstRpy->matHeight = _merge4DlpHeightCore(vecHeights, vecNanMasks, vecProjDir, pstCmd->fHeightDiffThreshold);
+    //pstRpy->matHeight = _merge4DlpHeightCore(vecHeights, vecNanMasks, vecProjDir, pstCmd->fHeightDiffThreshold);
+    auto matResultGpu = _merge4DlpHeightCore(vecGpuHeights, vecGpuNanMasks, vecProjDir, pstCmd->fHeightDiffThreshold,
+        arrStreams[0], arrStreams[1]);
+    matResultGpu.download(pstRpy->matHeight);
     pstRpy->enStatus = VisionStatus::OK;
 }
 
