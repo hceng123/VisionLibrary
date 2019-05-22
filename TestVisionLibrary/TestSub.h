@@ -80,6 +80,8 @@ void TestCalc4DLPHeight();
 void TestCalc4DLPHeightOnePass();
 
 void VeryHeightMergeResult();
+void ComparePatchPhaseResult();
+
 void CompareHeightSame();
 void CompareMask();
 void TestMergeHeightMax();

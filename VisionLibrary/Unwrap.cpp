@@ -1046,6 +1046,8 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
         "C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/Cpu_MergeResult_1.yml", "result");
     CalcUtils::saveMatToYml(matHm2,
         "C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/Cpu_MergeResult_2.yml", "result");
+    cv::imwrite("C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/Cpu_MergeResult_Nan_1.png", matNan1);
+    cv::imwrite("C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/Cpu_MergeResult_Nan_2.png", matNan2);
     matHm1.setTo(NAN, matNan1);
     matHm2.setTo(NAN, matNan2);
 
@@ -1064,7 +1066,10 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
 
     auto matHm3 = _mergeHeightIntersect06(matHm1, matNan1, matHm2, matNan2, fHeightDiffThreshold * 2.f, vecProjDir[0]);
     auto matHm4 = _mergeHeightIntersect06(matHm1, matNan1, matHm2, matNan2, fHeightDiffThreshold * 2.f, vecProjDir[1]);
-
+    CalcUtils::saveMatToYml(matHm3,
+        "C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/Cpu_MergeResult_3.yml", "result");
+    CalcUtils::saveMatToYml(matHm4,
+        "C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/Cpu_MergeResult_4.yml", "result");
     //stHeightToGrayCmd.matHeight = matHm3;
     //Vision::VisionAlgorithm::heightToGray(&stHeightToGrayCmd, &stHeightToGrayRpy);
     //cv::imwrite("C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/HmGray3.png", stHeightToGrayRpy.matGray);
@@ -1083,122 +1088,91 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
     float                    fHeightDiffThreshold,
     cv::cuda::Stream&        stream1,
     cv::cuda::Stream&        stream2) {
-    
-    Calc3DHeightVars& calc3DHeightVar0 = CudaAlgorithm::getCalc3DHeightVars(0);
-    Calc3DHeightVars& calc3DHeightVar1 = CudaAlgorithm::getCalc3DHeightVars(1);
-    Calc3DHeightVars& calc3DHeightVar2 = CudaAlgorithm::getCalc3DHeightVars(2);
-    Calc3DHeightVars& calc3DHeightVar3 = CudaAlgorithm::getCalc3DHeightVars(3);
+    cv::cuda::GpuMat matMerge1, matMerge2, matResultNan1, matResultNan2;
 
-    cv::cuda::GpuMat& matBufferGpu1 = calc3DHeightVar0.matAlpha;
-    cv::cuda::GpuMat& matBufferGpu2 = calc3DHeightVar0.matBeta;
-    cv::cuda::GpuMat& matBufferGpu3 = calc3DHeightVar0.matGamma;
-    cv::cuda::GpuMat& matBufferGpu4 = calc3DHeightVar2.matAlpha;
-    cv::cuda::GpuMat& matBufferGpu5 = calc3DHeightVar2.matBeta;
-    //cv::cuda::GpuMat& matBufferGpu6 = calc3DHeightVar2.matGamma;
-    cv::cuda::GpuMat& matMaskGpu1 = calc3DHeightVar0.matMaskGpu;
-    cv::cuda::GpuMat& matMaskGpu2 = calc3DHeightVar2.matMaskGpu;
-    cv::cuda::GpuMat& matDiffReult1 = calc3DHeightVar0.matDiffResult;
-    cv::cuda::GpuMat matNan1;// = calc3DHeightVar0.matMaskGpu; // Reuse the buffer with matMaskGpu1
-    auto matBufferGpu6 = CudaAlgorithm::mergeHeightIntersect(
+    matMerge1 = CudaAlgorithm::runMergeHeightIntersect(
         vecGpuMatHeight[0],
         vecGpuMatNanMask[0],
         vecGpuMatHeight[2],
         vecGpuMatNanMask[2],
-        matBufferGpu1,
-        matBufferGpu2,
-        matBufferGpu3,
-        matBufferGpu4,
-        matMaskGpu1,
-        matMaskGpu2,
-        matDiffReult1,
+        CudaAlgorithm::getCalc3DHeightVars(0),
+        CudaAlgorithm::getCalc3DHeightVars(2),
         fHeightDiffThreshold,
         vecProjDir[0],
-        matNan1,
+        matResultNan1,
         stream1);
-    cv::Mat matTmp1;
-    matBufferGpu6.download(matTmp1);
-    CalcUtils::saveMatToYml(matTmp1,
-        "C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/Gpu_MergeResult_1.yml", "result");
 
-    matBufferGpu6.setTo(NAN, matNan1, stream1);
+    //cv::Mat matTmp1, matNanMaskCpu1;
+    //matMerge1.download(matTmp1);
+    //CalcUtils::saveMatToYml(matTmp1,
+    //    "C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/Gpu_MergeResult_1.yml", "result");
+    //matResultNan1.download(matNanMaskCpu1);
+    //cv::imwrite("C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/Gpu_MergeResult_Nan_1.png", matNanMaskCpu1);
 
-    cv::cuda::GpuMat& matBufferGpu7  = calc3DHeightVar1.matAlpha;
-    cv::cuda::GpuMat& matBufferGpu8  = calc3DHeightVar1.matBeta;
-    cv::cuda::GpuMat& matBufferGpu9  = calc3DHeightVar1.matGamma;
-    cv::cuda::GpuMat& matBufferGpu10 = calc3DHeightVar3.matAlpha;
-    cv::cuda::GpuMat& matBufferGpu11 = calc3DHeightVar3.matBeta;
-    //cv::cuda::GpuMat& matBufferGpu12 = calc3DHeightVar3.matGamma;
-    cv::cuda::GpuMat& matMaskGpu3 = calc3DHeightVar1.matMaskGpu;
-    cv::cuda::GpuMat& matMaskGpu4 = calc3DHeightVar3.matMaskGpu;
-    cv::cuda::GpuMat& matDiffReult2 = calc3DHeightVar1.matDiffResult;
-    cv::cuda::GpuMat matNan2; // = calc3DHeightVar1.matMaskGpu; // Reuse the buffer with matMaskGpu3
-    auto matBufferGpu12 = CudaAlgorithm::mergeHeightIntersect(
+    matMerge1.setTo(NAN, matResultNan1, stream1);
+
+    matMerge2 = CudaAlgorithm::runMergeHeightIntersect(
         vecGpuMatHeight[1],
         vecGpuMatNanMask[1],
         vecGpuMatHeight[3],
         vecGpuMatNanMask[3],
-        matBufferGpu7,
-        matBufferGpu8,
-        matBufferGpu9,
-        matBufferGpu10,
-        matMaskGpu3,
-        matMaskGpu4,
-        matDiffReult2,
+        CudaAlgorithm::getCalc3DHeightVars(1),
+        CudaAlgorithm::getCalc3DHeightVars(3),
         fHeightDiffThreshold,
         vecProjDir[1],
-        matNan2,
+        matResultNan2,
         stream2);
 
-    cv::Mat matTmp2;
-    matBufferGpu12.download(matTmp2);
-    CalcUtils::saveMatToYml(matTmp2,
-        "C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/Gpu_MergeResult_2.yml", "result");
-    
-    matBufferGpu12.setTo(NAN, matNan2, stream2);
+    //cv::Mat matTmp2, matNanMaskCpu2;
+    //matMerge2.download(matTmp2);
+    //CalcUtils::saveMatToYml(matTmp2,
+    //    "C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/Gpu_MergeResult_2.yml", "result");
+    //matResultNan2.download(matNanMaskCpu2);
+    //cv::imwrite("C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/Gpu_MergeResult_Nan_2.png", matNanMaskCpu2);
+
+    matMerge2.setTo(NAN, matResultNan2, stream2);
 
     cudaDeviceSynchronize();
     //auto matHm3 = _mergeHeightIntersect06(matHm1, matNan1, matHm2, matNan2, fHeightDiffThreshold * 2.f, vecProjDir[0]);
     //auto matHm4 = _mergeHeightIntersect06(matHm1, matNan1, matHm2, matNan2, fHeightDiffThreshold * 2.f, vecProjDir[1]);
 
-    matBufferGpu6 = CudaAlgorithm::mergeHeightIntersect06(
-        matBufferGpu6,
-        matNan1,
-        matBufferGpu12,
-        matNan2,
-        matBufferGpu1,
-        matBufferGpu2,
-        matBufferGpu3,
-        matBufferGpu4,
-        matBufferGpu5,
-        matMaskGpu1,
-        matMaskGpu2,
-        matDiffReult1,
+    auto matMerge3 = CudaAlgorithm::runMergeHeightIntersect06(
+        matMerge1,
+        matResultNan1,
+        matMerge2,
+        matResultNan2,
+        CudaAlgorithm::getCalc3DHeightVars(0),
+        CudaAlgorithm::getCalc3DHeightVars(2),
         fHeightDiffThreshold * 2.f,
         vecProjDir[0],
         stream1);
 
-    matBufferGpu12 = CudaAlgorithm::mergeHeightIntersect06(
-        matBufferGpu6,
-        matNan1,
-        matBufferGpu12,
-        matNan2,
-        matBufferGpu7,
-        matBufferGpu8,
-        matBufferGpu9,
-        matBufferGpu10,
-        matBufferGpu11,
-        matMaskGpu3,
-        matMaskGpu4,
-        matDiffReult2,
+    auto matMerge4 = CudaAlgorithm::runMergeHeightIntersect06(
+        matMerge1,
+        matResultNan1,
+        matMerge2,
+        matResultNan2,
+        CudaAlgorithm::getCalc3DHeightVars(1),
+        CudaAlgorithm::getCalc3DHeightVars(3),
         fHeightDiffThreshold * 2.f,
         vecProjDir[1],
         stream1);
 
     cudaDeviceSynchronize();
 
-    cv::cuda::addWeighted(matBufferGpu6, 0.5f, matBufferGpu12, 0.5f, 0, matBufferGpu1);
+    //cv::Mat matTmp3;
+    //matMerge3.download(matTmp3);
+    //CalcUtils::saveMatToYml(matTmp3,
+    //    "C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/Gpu_MergeResult_3.yml", "result");
 
-    return matBufferGpu1;
+    //cv::Mat matTmp4;
+    //matMerge4.download(matTmp4);
+    //CalcUtils::saveMatToYml(matTmp4,
+    //    "C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/Gpu_MergeResult_4.yml", "result");
+
+    cv::cuda::addWeighted(matMerge3, 0.5f, matMerge4, 0.5f, 0, matMerge1);
+
+    return matMerge1;
 }
 
 /*static*/ void Unwrap::calcMerge4DlpHeight(const PR_CALC_MERGE_4_DLP_HEIGHT_CMD *const pstCmd, PR_CALC_MERGE_4_DLP_HEIGHT_RPY *const pstRpy) {
@@ -1256,24 +1230,24 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
             vecGpuNanMasks[dlp],
             arrStreams[dlp]);
 
-        vecGpuHeights[dlp].download(vecHeights[dlp], arrStreams[dlp]);
-        vecGpuNanMasks[dlp].download(vecNanMasks[dlp], arrStreams[dlp]);
+        //vecGpuHeights[dlp].download(vecHeights[dlp], arrStreams[dlp]);
+        //vecGpuNanMasks[dlp].download(vecNanMasks[dlp], arrStreams[dlp]);
         vecProjDir.push_back(pstCmd->arrCalcHeightCmd[dlp].enProjectDir);
     }
 
     cudaDeviceSynchronize();
     TimeLog::GetInstance()->addTimeLog("After calculate 4 DLP height", stopWatch.Span());
 
-    TimeLog::GetInstance()->addTimeLog("After download 4 DLP height and nan mask", stopWatch.Span());
-    for (int dlp = 0; dlp < NUM_OF_DLP; ++dlp) {
-        PR_HEIGHT_TO_GRAY_CMD stCmd;
-        PR_HEIGHT_TO_GRAY_RPY stRpy;
-        stCmd.matHeight = vecHeights[dlp];
-        VisionAlgorithm::heightToGray(&stCmd, &stRpy);
-        std::string strResultFolder("C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/");
-        cv::imwrite(strResultFolder + "Dlp_" + std::to_string(dlp + 1) + "_HeightGray.png", stRpy.matGray);
-        cv::imwrite(strResultFolder + "Dlp_" + std::to_string(dlp + 1) + "_NanMask.png", vecNanMasks[dlp]);
-    }
+    //TimeLog::GetInstance()->addTimeLog("After download 4 DLP height and nan mask", stopWatch.Span());
+    //for (int dlp = 0; dlp < NUM_OF_DLP; ++dlp) {
+    //    PR_HEIGHT_TO_GRAY_CMD stCmd;
+    //    PR_HEIGHT_TO_GRAY_RPY stRpy;
+    //    stCmd.matHeight = vecHeights[dlp];
+    //    VisionAlgorithm::heightToGray(&stCmd, &stRpy);
+    //    std::string strResultFolder("C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/");
+    //    cv::imwrite(strResultFolder + "Dlp_" + std::to_string(dlp + 1) + "_HeightGray.png", stRpy.matGray);
+    //    cv::imwrite(strResultFolder + "Dlp_" + std::to_string(dlp + 1) + "_NanMask.png", vecNanMasks[dlp]);
+    //}
 
     //pstRpy->matHeight = _merge4DlpHeightCore(vecHeights, vecNanMasks, vecProjDir, pstCmd->fHeightDiffThreshold);
     auto matResultGpu = _merge4DlpHeightCore(vecGpuHeights, vecGpuNanMasks, vecProjDir, pstCmd->fHeightDiffThreshold,
@@ -3888,6 +3862,21 @@ void _saveAsGray(const cv::Mat &matHeight, const std::string &strFilePath) {
     cv::Mat matH22 = matHeightTwo.clone(), matH20 = matHeightTwo.clone();
     _phasePatch(matH22, PR_DIRECTION::LEFT,  matNanMaskTwo);
     _phasePatch(matH20, PR_DIRECTION::RIGHT, matNanMaskTwo);
+
+    static int times = 0;
+    ++ times;
+    if (1 == times) {
+        char fileName[200];
+        _snprintf(fileName, sizeof(fileName), "C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/Cpu_PatchPhaseResult_%d.yml", times);
+        cv::FileStorage fs(fileName, cv::FileStorage::WRITE);
+        if (fs.isOpened()) {
+            cv::write(fs, "H11", matH11);
+            cv::write(fs, "H10", matH10);
+            cv::write(fs, "H22", matH22);
+            cv::write(fs, "H20", matH20);
+            fs.release();
+        }
+    }
 
     AOI::Vision::VectorOfPoint vecPtLocations;
     cv::findNonZero(matNanMaskOne, vecPtLocations);

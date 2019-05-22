@@ -1179,13 +1179,6 @@ void kernel_merge_height_intersect(
         if (matNanRow[COLS - 1] > 0)
             arrayIndexs[count++] = COLS - 1;
 
-        if (590 == row) {
-            printf("Row %d, need to merge indexs:\n", row);
-            for (int i = 0; i < count; ++ i)
-                printf("%d ", arrayIndexs[i]);
-            printf("\n");
-        }
-
         for (int i = 0; i < count / 2; ++i) {
             int startIndex = arrayIndexs[i * 2];
             int endIndex = arrayIndexs[i * 2 + 1];

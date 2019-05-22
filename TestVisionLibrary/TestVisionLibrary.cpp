@@ -799,8 +799,9 @@ int _tmain(int argc, _TCHAR* argv[])
 
     //TestCalc4DLPHeight();
     TestCalc4DLPHeightOnePass();
-    //CompareHeightSame();
-    VeryHeightMergeResult();
+    CompareHeightSame();
+    //VeryHeightMergeResult();
+    //ComparePatchPhaseResult();
     //CompareMask();
     //TestMergeHeightMax();
     //TestSortIndexValue();

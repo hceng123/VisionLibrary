@@ -1588,15 +1588,7 @@ void CompareHeightSame() {
     cv::imwrite(strWorkingFolder + "CompareHeightDiffMask.png", matMask);
 }
 
-void CompareHeightFromYml(
-    const std::string& fileName1,
-    const std::string& key1,
-    const std::string& fileName2,
-    const std::string& key2,
-    const std::string& resultImageName) {
-    cv::Mat matHeight1 = readMatFromYml(fileName1, key1);
-    cv::Mat matHeight2 = readMatFromYml(fileName2, key2);
-
+void CompareHeightOutputDiffMask(const cv::Mat& matHeight1, const cv::Mat& matHeight2, const std::string& resultImageName) {
     if (matHeight1.size() != matHeight2.size()) {
         std::cout << "Height1 size " << matHeight1.size() << " not match height 2 size " << matHeight2.size() << std::endl;
         return;
@@ -1609,29 +1601,91 @@ void CompareHeightFromYml(
     cv::imwrite(resultImageName, matMask);
 }
 
+void CompareHeightFromYml(
+    const std::string& fileName1,
+    const std::string& key1,
+    const std::string& fileName2,
+    const std::string& key2,
+    const std::string& resultImageName) {
+    cv::Mat matHeight1 = readMatFromYml(fileName1, key1);
+    cv::Mat matHeight2 = readMatFromYml(fileName2, key2);
+
+    CompareHeightOutputDiffMask(matHeight1, matHeight2, resultImageName);
+}
+
 void VeryHeightMergeResult() {
     std::string strWorkingFolder("C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/");
 
     cv::Mat matNanMask = readMatFromYml(strWorkingFolder + "Gpu_BeforeMergeHeightResult_1.yml", "Mask");
     cv::imwrite(strWorkingFolder + "GpuMergeNanMask_1.png", matNanMask);
 
-    CompareHeightFromYml(strWorkingFolder + "Cpu_BeforeMergeHeightResult_1.yml",
+    CompareHeightFromYml(
+        strWorkingFolder + "Cpu_BeforeMergeHeightResult_1.yml",
         "H3",
         strWorkingFolder + "Gpu_BeforeMergeHeightResult_1.yml",
         "H3",
         strWorkingFolder + "CompareBeforeMergeHeightResult_H3.png");
 
-    CompareHeightFromYml(strWorkingFolder + "Cpu_MergeResult_1.yml",
+    CompareHeightFromYml(
+        strWorkingFolder + "Cpu_MergeResult_1.yml",
         "result",
         strWorkingFolder + "Gpu_MergeResult_1.yml",
         "result",
         strWorkingFolder + "CompareMergeHeightResult_1.png");
 
-    CompareHeightFromYml(strWorkingFolder + "Cpu_MergeResult_2.yml",
+    CompareHeightFromYml(
+        strWorkingFolder + "Cpu_MergeResult_2.yml",
         "result",
         strWorkingFolder + "Gpu_MergeResult_2.yml",
         "result",
         strWorkingFolder + "CompareMergeHeightResult_2.png");
+
+    CompareHeightFromYml(
+        strWorkingFolder + "Cpu_MergeResult_3.yml",
+        "result",
+        strWorkingFolder + "Gpu_MergeResult_3.yml",
+        "result",
+        strWorkingFolder + "CompareMergeHeightResult_3.png");
+
+    CompareHeightFromYml(
+        strWorkingFolder + "Cpu_MergeResult_4.yml",
+        "result",
+        strWorkingFolder + "Gpu_MergeResult_4.yml",
+        "result",
+        strWorkingFolder + "CompareMergeHeightResult_4.png");
+}
+
+void ReadPhasePatchResult(const std::string& fileName, cv::Mat& matH11, cv::Mat& matH10, cv::Mat& matH22, cv::Mat& matH20) {
+    cv::FileStorage fs(fileName, cv::FileStorage::READ);
+    if (!fs.isOpened())
+        return;
+
+    cv::FileNode fileNode = fs["H11"];
+    cv::read(fileNode, matH11, cv::Mat());
+    fileNode = fs["H10"];
+    cv::read(fileNode, matH10, cv::Mat());
+    fileNode = fs["H22"];
+    cv::read(fileNode, matH22, cv::Mat());
+    fileNode = fs["H20"];
+    cv::read(fileNode, matH20, cv::Mat());
+    fs.release();
+}
+
+void ComparePatchPhaseResult() {
+    std::string strWorkingFolder("C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/");
+
+    cv::Mat matCpuH11, matCpuH10, matCpuH22, matCpuH20;
+    ReadPhasePatchResult(strWorkingFolder + "Cpu_PatchPhaseResult_1.yml",
+        matCpuH11, matCpuH10, matCpuH22, matCpuH20);
+
+    cv::Mat matGpuH11, matGpuH10, matGpuH22, matGpuH20;
+    ReadPhasePatchResult(strWorkingFolder + "Gpu_PatchPhaseResult_1.yml",
+        matGpuH11, matGpuH10, matGpuH22, matGpuH20);
+
+    CompareHeightOutputDiffMask(matCpuH11, matGpuH11, strWorkingFolder + "PhasePatch_H11_Diff.png");
+    CompareHeightOutputDiffMask(matCpuH10, matGpuH10, strWorkingFolder + "PhasePatch_H10_Diff.png");
+    CompareHeightOutputDiffMask(matCpuH22, matGpuH22, strWorkingFolder + "PhasePatch_H22_Diff.png");
+    CompareHeightOutputDiffMask(matCpuH20, matGpuH20, strWorkingFolder + "PhasePatch_H20_Diff.png");
 }
 
 void CompareMask() {
