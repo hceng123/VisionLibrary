@@ -143,18 +143,19 @@ void run_kernel_phase_patch(
     PR_DIRECTION enProjDir);
 
 void run_kernel_merge_height_intersect(
-    uint32_t gridSize,
-    uint32_t blockSize,
-    cudaStream_t cudaStream,
-    float* matOne,
-    float *matTwo,
-    float *matTre,
-    float *matFor,
-    float* matMask,
-    const int ROWS,
-    const int COLS,
-    const int step,
-    float fDiffThreshold);
+    uint32_t       gridSize,
+    uint32_t       blockSize,
+    cudaStream_t   cudaStream,
+    float*         matOne,
+    float*         matTwo,
+    float*         matTre,
+    float*         matFor,
+    unsigned char* matMask,
+    float*         matMaskDiffResult,
+    const int      ROWS,
+    const int      COLS,
+    const int      step,
+    float          fDiffThreshold);
 
 void run_kernel_choose_min_value_for_mask(
     dim3 grid,

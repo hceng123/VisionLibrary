@@ -440,6 +440,7 @@ public:
     static float calcFrequency(const cv::Mat &matInput);
     static VectorOfDouble interp1(const VectorOfDouble &vecX, const VectorOfDouble &vecV, const VectorOfDouble &vecXq, bool bSpine = false);
     static void saveMatToCsv(const cv::Mat &matrix, std::string filename);
+    static void saveMatToYml(const cv::Mat &matrix, const std::string& filename, const std::string& key);
     static int twoLineIntersect(const PR_Line2f &line1, const PR_Line2f &line2, cv::Point2f &ptResult);
     static int twoLineIntersect(bool bReverseFit1, float fSlope1, float fIntercept1, bool bReverseFit2, float fSlope2, float fIntercept2, cv::Point2f &ptResult);
     static float calc2LineAngle(const PR_Line2f &line1, const PR_Line2f &line2);

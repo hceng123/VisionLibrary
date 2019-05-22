@@ -1042,6 +1042,10 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
         vecMatNanMask[3],
         fHeightDiffThreshold,
         vecProjDir[1], matNan2);
+    CalcUtils::saveMatToYml(matHm1,
+        "C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/Cpu_MergeResult_1.yml", "result");
+    CalcUtils::saveMatToYml(matHm2,
+        "C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/Cpu_MergeResult_2.yml", "result");
     matHm1.setTo(NAN, matNan1);
     matHm2.setTo(NAN, matNan2);
 
@@ -1090,12 +1094,12 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
     cv::cuda::GpuMat& matBufferGpu3 = calc3DHeightVar0.matGamma;
     cv::cuda::GpuMat& matBufferGpu4 = calc3DHeightVar2.matAlpha;
     cv::cuda::GpuMat& matBufferGpu5 = calc3DHeightVar2.matBeta;
-    cv::cuda::GpuMat& matBufferGpu6 = calc3DHeightVar2.matGamma;
+    //cv::cuda::GpuMat& matBufferGpu6 = calc3DHeightVar2.matGamma;
     cv::cuda::GpuMat& matMaskGpu1 = calc3DHeightVar0.matMaskGpu;
     cv::cuda::GpuMat& matMaskGpu2 = calc3DHeightVar2.matMaskGpu;
     cv::cuda::GpuMat& matDiffReult1 = calc3DHeightVar0.matDiffResult;
-    cv::cuda::GpuMat& matNan1 = calc3DHeightVar0.matMaskGpu; // Reuse the buffer with matMaskGpu1
-    matBufferGpu6 = CudaAlgorithm::mergeHeightIntersect(
+    cv::cuda::GpuMat matNan1;// = calc3DHeightVar0.matMaskGpu; // Reuse the buffer with matMaskGpu1
+    auto matBufferGpu6 = CudaAlgorithm::mergeHeightIntersect(
         vecGpuMatHeight[0],
         vecGpuMatNanMask[0],
         vecGpuMatHeight[2],
@@ -1111,6 +1115,11 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
         vecProjDir[0],
         matNan1,
         stream1);
+    cv::Mat matTmp1;
+    matBufferGpu6.download(matTmp1);
+    CalcUtils::saveMatToYml(matTmp1,
+        "C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/Gpu_MergeResult_1.yml", "result");
+
     matBufferGpu6.setTo(NAN, matNan1, stream1);
 
     cv::cuda::GpuMat& matBufferGpu7  = calc3DHeightVar1.matAlpha;
@@ -1118,12 +1127,12 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
     cv::cuda::GpuMat& matBufferGpu9  = calc3DHeightVar1.matGamma;
     cv::cuda::GpuMat& matBufferGpu10 = calc3DHeightVar3.matAlpha;
     cv::cuda::GpuMat& matBufferGpu11 = calc3DHeightVar3.matBeta;
-    cv::cuda::GpuMat& matBufferGpu12 = calc3DHeightVar3.matGamma;
+    //cv::cuda::GpuMat& matBufferGpu12 = calc3DHeightVar3.matGamma;
     cv::cuda::GpuMat& matMaskGpu3 = calc3DHeightVar1.matMaskGpu;
     cv::cuda::GpuMat& matMaskGpu4 = calc3DHeightVar3.matMaskGpu;
     cv::cuda::GpuMat& matDiffReult2 = calc3DHeightVar1.matDiffResult;
-    cv::cuda::GpuMat& matNan2 = calc3DHeightVar1.matMaskGpu; // Reuse the buffer with matMaskGpu3
-    matBufferGpu12 = CudaAlgorithm::mergeHeightIntersect(
+    cv::cuda::GpuMat matNan2; // = calc3DHeightVar1.matMaskGpu; // Reuse the buffer with matMaskGpu3
+    auto matBufferGpu12 = CudaAlgorithm::mergeHeightIntersect(
         vecGpuMatHeight[1],
         vecGpuMatNanMask[1],
         vecGpuMatHeight[3],
@@ -1139,6 +1148,11 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
         vecProjDir[1],
         matNan2,
         stream2);
+
+    cv::Mat matTmp2;
+    matBufferGpu12.download(matTmp2);
+    CalcUtils::saveMatToYml(matTmp2,
+        "C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/Gpu_MergeResult_2.yml", "result");
     
     matBufferGpu12.setTo(NAN, matNan2, stream2);
 
@@ -1232,6 +1246,10 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
     }
 
     for (int dlp = 0; dlp < NUM_OF_DLP; ++dlp) {
+        //for (size_t i = 0; i < vecConvertedImgs[dlp].size(); ++i) {
+        //    vecGpuImages[dlp][i].upload(vecConvertedImgs[dlp][i], arrStreams[dlp]);
+        //}
+
         vecGpuHeights[dlp] = _calcHeightGpuCore(
             &pstCmd->arrCalcHeightCmd[dlp],
             vecGpuImages[dlp],
@@ -3827,6 +3845,22 @@ void _saveAsGray(const cv::Mat &matHeight, const std::string &strFilePath) {
     auto vecVecHeightTre = CalcUtils::matToVector<DATA_TYPE>(matHeightTre);
     auto vecVecHeightFor = CalcUtils::matToVector<DATA_TYPE>(matHeightFor);
 #endif
+    static int times = 0;
+    ++ times;
+    if (1 == times) {
+        char fileName[200];
+        _snprintf(fileName, sizeof(fileName), "C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/Cpu_BeforeMergeHeightResult_%d.yml", times);
+        cv::FileStorage fs(fileName, cv::FileStorage::WRITE);
+        if (!fs.isOpened())
+            return matHeightFor;
+
+        cv::write(fs, "H1", matHeightOne);
+        cv::write(fs, "H2", matHeightTwo);
+        cv::write(fs, "H3", matHeightTre);
+        cv::write(fs, "H4", matHeightFor);
+        fs.release();
+    }
+
     _mergeHeightIntersectCore(matHeightOne, matHeightTwo, matHeightTre, matHeightFor);
 
     TimeLog::GetInstance()->addTimeLog("_mergeHeightIntersect core.", stopWatch.Span());
@@ -3941,6 +3975,13 @@ void _saveAsGray(const cv::Mat &matHeight, const std::string &strFilePath) {
             dequeIndex.push_front(0);
         if (matNanMasks.at<DATA_TYPE>(matNanMasks.cols - 1) > 0)
             dequeIndex.push_back(matNanMasks.cols - 1);
+
+        if (590 == row) {
+            std::cout << "Row " << row << ", need to merge indexs:" << std::endl;
+            for (auto value : dequeIndex)
+                std::cout << value << " ";
+            std::cout << std::endl;
+        }
 
         for (int i = 0; i < dequeIndex.size() / 2; ++i) {
             int startIndex = dequeIndex[i * 2];

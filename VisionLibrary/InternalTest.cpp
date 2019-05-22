@@ -10,6 +10,7 @@
 #include "cuda_runtime.h"
 #include "opencv2/highgui.hpp"
 #include "opencv2/cudaarithm.hpp"
+#include "CudaFunc.h"
 
 namespace AOI
 {
@@ -833,8 +834,55 @@ static void TestChooseMinValueForMask() {
     std::cout << "Expected result diff point " << diffResult << std::endl;
 }
 
+static void TestMergeHeightIntersect() {
+    std::string fileName("C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/Gpu_BeforeMergeHeightResult_2.yml");
+    cv::FileStorage fs(fileName, cv::FileStorage::READ);
+    if (!fs.isOpened()) {
+        std::cout << "Failed to open file " << fileName << std::endl;
+        return;
+    }
+    cv::Mat matCpuH1, matCpuH2, matCpuH3, matCpuH4, matCpuMask, matCpuMaskDiffResult;
+    cv::FileNode fileNode = fs["H1"];
+    cv::read(fileNode, matCpuH1, cv::Mat());
+    fileNode = fs["H2"];
+    cv::read(fileNode, matCpuH2, cv::Mat());
+    fileNode = fs["H3"];
+    cv::read(fileNode, matCpuH3, cv::Mat());
+    fileNode = fs["H4"];
+    cv::read(fileNode, matCpuH4, cv::Mat());
+    fileNode = fs["Mask"];
+    cv::read(fileNode, matCpuMask, cv::Mat());
+    fileNode = fs["MaskDiff"];
+    cv::read(fileNode, matCpuMaskDiffResult, cv::Mat());
+    fs.release();
+
+    cv::cuda::GpuMat matGpuH1, matGpuH2, matGpuH3, matGpuH4, matGpuMask, matGpuMaskDiffResult;
+    matGpuH1.upload(matCpuH1);
+    matGpuH2.upload(matCpuH2);
+    matGpuH3.upload(matCpuH3);
+    matGpuH4.upload(matCpuH4);
+    matGpuMask.upload(matCpuMask);
+    matGpuMaskDiffResult.upload(matCpuMaskDiffResult);
+    
+    CudaAlgorithm::mergeHeightIntersectCore(matGpuH1, matGpuH2, matGpuH3, matGpuH4, matGpuMask, matGpuMaskDiffResult, 0.1f);
+    cv::cuda::transpose(matGpuH4, matGpuH4);
+    //run_kernel_merge_height_intersect(1, 1, NULL,
+    //    reinterpret_cast<float*>(matCpuH1.data),
+    //    reinterpret_cast<float*>(matCpuH2.data),
+    //    reinterpret_cast<float*>(matCpuH3.data),
+    //    reinterpret_cast<float*>(matCpuH4.data),
+    //    matCpuMask.data,
+    //    reinterpret_cast<float*>(matCpuMaskDiffResult.data),
+    //    matCpuH1.rows,
+    //    matCpuH1.cols,
+    //    matCpuH1.step1(),
+    //    0.1f);
+    
+    matGpuH4.download(matCpuH4);
+}
+
 void InternalTest() {
-    TestChooseMinValueForMask();
+    TestMergeHeightIntersect();
     TestBilinearInterpolation();
     TestCalcUtilsCumSum();
     TestCalcUtilsIntervals();
@@ -857,6 +905,7 @@ void InternalTest() {
     TestCalcSumAndConvertMatrix();
     TestCudaPhasePatch();
     TestCudaGetNanMask();
+    TestChooseMinValueForMask();
 }
 
 }

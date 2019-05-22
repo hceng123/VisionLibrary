@@ -1142,65 +1142,155 @@ void run_kernel_phase_patch(
 
 __global__
 void kernel_merge_height_intersect(
-    float* matOne,
-    float *matTwo,
-    float *matTre,
-    float *matFor,
-    float* matMask,
-    const int ROWS,
-    const int COLS,
-    const int step,
-    float fDiffThreshold) {
+    float*         matOne,
+    float*         matTwo,
+    float*         matTre,
+    float*         matFor,
+    unsigned char* matMask,
+    float*         matMaskDiffResult,
+    const int      ROWS,
+    const int      COLS,
+    const int      step,
+    float          fDiffThreshold) {
     int start = blockIdx.x * blockDim.x + threadIdx.x;
     int stride = blockDim.x * gridDim.x;
 
     int *arrayIndexs = (int *)malloc(COLS / 2 * sizeof(int));
-    float *arrayTargetH = (float *)malloc(COLS / 2 * sizeof(float));
+    float *arrayTargetH = (float *)malloc(COLS * sizeof(float));
 
     for (int row = start; row < ROWS; row += stride) {
         int offset = row * step;
-        float* matOneRow = matOne + offset;
-        float* matTwoRow = matTwo + offset;
-        float* matTreRow = matTre + offset;
-        float* matForRow = matFor + offset;
-        float* matNanRow = matMask + offset;
+        auto matOneRow = matOne + offset;
+        auto matTwoRow = matTwo + offset;
+        auto matTreRow = matTre + offset;
+        auto matForRow = matFor + offset;
+        auto matNanRow = matMask + offset;
+        auto matMaskDiffRow = matMaskDiffResult + offset;
 
         int count = 0;
         if (matNanRow[0] > 0)
             arrayIndexs[count++] = 0;
 
-        if (matNanRow[0] > 0)
-            arrayIndexs[count++] = 0;
-
         for (int col = 0; col < COLS - 1; ++col) {
-            if (fabsf(matNanRow[col + 1] - matNanRow[col]) > 0)
+            if (matMaskDiffRow[col] > 0)
                 arrayIndexs[count++] = col;
         }
 
         if (matNanRow[COLS - 1] > 0)
             arrayIndexs[count++] = COLS - 1;
 
+        if (590 == row) {
+            printf("Row %d, need to merge indexs:\n", row);
+            for (int i = 0; i < count; ++ i)
+                printf("%d ", arrayIndexs[i]);
+            printf("\n");
+        }
+
         for (int i = 0; i < count / 2; ++i) {
             int startIndex = arrayIndexs[i * 2];
             int endIndex = arrayIndexs[i * 2 + 1];
 
             if (0 == startIndex && endIndex < COLS - 1) {
-                for (int i = 0; i < endIndex - startIndex; ++i)
+                for (int i = 0; i <= endIndex - startIndex; ++i)
                     arrayTargetH[i] = matForRow[endIndex + 1];
             }
             else if (COLS - 1 == endIndex && startIndex >= 0) {
-                for (int i = 0; i < endIndex - startIndex; ++i)
+                for (int i = 0; i <= endIndex - startIndex; ++i)
                     arrayTargetH[i] = matForRow[startIndex];
             }
             else if (startIndex >= 0 && endIndex < COLS - 1) {
                 float fInterval = (matForRow[endIndex + 1] - matForRow[startIndex]) / (endIndex - startIndex + 1);
-                for (int i = 0; i < endIndex - startIndex; ++i) {
+                for (int i = 0; i <= endIndex - startIndex; ++i) {
                     arrayTargetH[i] = matForRow[startIndex] + fInterval * i;
                 }
             }
 
             float fAbsDiffSumOne = 0.f, fAbsDiffSumTwo = 0.f, fAbsDiffSumTre = 0.f;
-            for (int index = startIndex, k = 0; index < endIndex; ++index, ++k) {
+            for (int index = startIndex, k = 0; index <= endIndex; ++index, ++k) {
+                fAbsDiffSumOne += fabsf(matOneRow[index] - arrayTargetH[k]);
+                fAbsDiffSumTwo += fabsf(matTwoRow[index] - arrayTargetH[k]);
+                fAbsDiffSumTre += fabsf(matTreRow[index] - arrayTargetH[k]);
+            }
+
+            float *matChoose;
+            if (fAbsDiffSumOne <= fAbsDiffSumTwo && fAbsDiffSumOne <= fAbsDiffSumTre)
+                matChoose = matOneRow;
+            else if (fAbsDiffSumTwo <= fAbsDiffSumOne && fAbsDiffSumTwo <= fAbsDiffSumTre)
+                matChoose = matTwoRow;
+            else
+                matChoose = matTreRow;
+
+            for (int col = startIndex; col <= endIndex; ++col) {
+                matForRow[col] = matChoose[col];
+            }
+        }
+    }
+
+    free(arrayTargetH);
+    free(arrayIndexs);
+}
+
+void cpu_kernel_merge_height_intersect(
+    float*         matOne,
+    float*         matTwo,
+    float*         matTre,
+    float*         matFor,
+    unsigned char* matMask,
+    float*         matMaskDiffResult,
+    const int      ROWS,
+    const int      COLS,
+    const int      step,
+    float          fDiffThreshold) {
+    int start = 0;
+    int stride = 1;
+
+    int *arrayIndexs = (int *)malloc(COLS / 2 * sizeof(int));
+    float *arrayTargetH = (float *)malloc(COLS * sizeof(float));
+
+    for (int row = start; row < ROWS; row += stride) {
+        int offset = row * step;
+        auto matOneRow = matOne + offset;
+        auto matTwoRow = matTwo + offset;
+        auto matTreRow = matTre + offset;
+        auto matForRow = matFor + offset;
+        auto matNanRow = matMask + offset;
+        auto matMaskDiffRow = matMaskDiffResult + row * (step - 1);
+
+        int count = 0;
+        if (matNanRow[0] > 0)
+            arrayIndexs[count++] = 0;
+
+        for (int col = count; col < COLS - 1; ++col) {
+            if (matMaskDiffRow[col] > 0)
+                arrayIndexs[count++] = col;
+        }
+
+        if (matNanRow[COLS - 1] > 0)
+            arrayIndexs[count++] = COLS - 1;
+
+        printf("row = %d count = %d\n", row, count);
+
+        for (int i = 0; i < count / 2; ++i) {
+            int startIndex = arrayIndexs[i * 2];
+            int endIndex = arrayIndexs[i * 2 + 1];
+
+            if (0 == startIndex && endIndex < COLS - 1) {
+                for (int i = 0; i <= endIndex - startIndex; ++i)
+                    arrayTargetH[i] = matForRow[endIndex + 1];
+            }
+            else if (COLS - 1 == endIndex && startIndex >= 0) {
+                for (int i = 0; i <= endIndex - startIndex; ++i)
+                    arrayTargetH[i] = matForRow[startIndex];
+            }
+            else if (startIndex >= 0 && endIndex < COLS - 1) {
+                float fInterval = (matForRow[endIndex + 1] - matForRow[startIndex]) / (endIndex - startIndex + 1);
+                for (int i = 0; i <= endIndex - startIndex; ++i) {
+                    arrayTargetH[i] = matForRow[startIndex] + fInterval * i;
+                }
+            }
+
+            float fAbsDiffSumOne = 0.f, fAbsDiffSumTwo = 0.f, fAbsDiffSumTre = 0.f;
+            for (int index = startIndex, k = 0; index <= endIndex; ++index, ++k) {
                 fAbsDiffSumOne += fabsf(matOneRow[index] - arrayTargetH[k]);
                 fAbsDiffSumTwo += fabsf(matTwoRow[index] - arrayTargetH[k]);
                 fAbsDiffSumTre += fabsf(matTreRow[index] - arrayTargetH[k]);
@@ -1225,28 +1315,41 @@ void kernel_merge_height_intersect(
 }
 
 void run_kernel_merge_height_intersect(
-    uint32_t gridSize,
-    uint32_t blockSize,
-    cudaStream_t cudaStream,
-    float* matOne,
-    float *matTwo,
-    float *matTre,
-    float *matFor,
-    float* matMask,
-    const int ROWS,
-    const int COLS,
-    const int step,
-    float fDiffThreshold) {
+    uint32_t       gridSize,
+    uint32_t       blockSize,
+    cudaStream_t   cudaStream,
+    float*         matOne,
+    float*         matTwo,
+    float*         matTre,
+    float*         matFor,
+    unsigned char* matMask,
+    float*         matMaskDiffResult,
+    const int      ROWS,
+    const int      COLS,
+    const int      step,
+    float          fDiffThreshold) {
     kernel_merge_height_intersect<<<gridSize, blockSize, 0, cudaStream>>>(
         matOne,
         matTwo,
         matTre,
         matFor,
         matMask,
+        matMaskDiffResult,
         ROWS,
         COLS,
         step,
         fDiffThreshold);
+    //cpu_kernel_merge_height_intersect(
+    //    matOne,
+    //    matTwo,
+    //    matTre,
+    //    matFor,
+    //    matMask,
+    //    matMaskDiffResult,
+    //    ROWS,
+    //    COLS,
+    //    step,
+    //    fDiffThreshold);
 }
 
 __global__

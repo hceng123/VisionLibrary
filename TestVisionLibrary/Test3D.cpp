@@ -1506,7 +1506,7 @@ void TestCalc4DLPHeightOnePass()
         char filePath[100];
         // read config file
         {
-            _snprintf(filePath, sizeof(filePath), "./data/3D/Config/calibration3D_dlp%d.yml", nDlp + 1);
+            _snprintf(filePath, sizeof(filePath), "./data/3D/Config/calibration3D_dlp%d_simple.yml", nDlp + 1);
             cv::FileStorage fs(filePath, cv::FileStorage::READ);
             cv::FileNode fileNode = fs["K1"];
             cv::read(fileNode, stCalc4DlpHeightCmd.arrCalcHeightCmd[nDlp].matThickToThinK, cv::Mat());
@@ -1586,6 +1586,52 @@ void CompareHeightSame() {
 
     cv::Mat matMask = matDiff > 0.1f;
     cv::imwrite(strWorkingFolder + "CompareHeightDiffMask.png", matMask);
+}
+
+void CompareHeightFromYml(
+    const std::string& fileName1,
+    const std::string& key1,
+    const std::string& fileName2,
+    const std::string& key2,
+    const std::string& resultImageName) {
+    cv::Mat matHeight1 = readMatFromYml(fileName1, key1);
+    cv::Mat matHeight2 = readMatFromYml(fileName2, key2);
+
+    if (matHeight1.size() != matHeight2.size()) {
+        std::cout << "Height1 size " << matHeight1.size() << " not match height 2 size " << matHeight2.size() << std::endl;
+        return;
+    }
+
+    cv::Mat matDiff;
+    cv::absdiff(matHeight1, matHeight2, matDiff);
+
+    cv::Mat matMask = matDiff > 0.01f;
+    cv::imwrite(resultImageName, matMask);
+}
+
+void VeryHeightMergeResult() {
+    std::string strWorkingFolder("C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/");
+
+    cv::Mat matNanMask = readMatFromYml(strWorkingFolder + "Gpu_BeforeMergeHeightResult_1.yml", "Mask");
+    cv::imwrite(strWorkingFolder + "GpuMergeNanMask_1.png", matNanMask);
+
+    CompareHeightFromYml(strWorkingFolder + "Cpu_BeforeMergeHeightResult_1.yml",
+        "H3",
+        strWorkingFolder + "Gpu_BeforeMergeHeightResult_1.yml",
+        "H3",
+        strWorkingFolder + "CompareBeforeMergeHeightResult_H3.png");
+
+    CompareHeightFromYml(strWorkingFolder + "Cpu_MergeResult_1.yml",
+        "result",
+        strWorkingFolder + "Gpu_MergeResult_1.yml",
+        "result",
+        strWorkingFolder + "CompareMergeHeightResult_1.png");
+
+    CompareHeightFromYml(strWorkingFolder + "Cpu_MergeResult_2.yml",
+        "result",
+        strWorkingFolder + "Gpu_MergeResult_2.yml",
+        "result",
+        strWorkingFolder + "CompareMergeHeightResult_2.png");
 }
 
 void CompareMask() {

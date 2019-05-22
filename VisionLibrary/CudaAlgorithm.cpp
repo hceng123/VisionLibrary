@@ -810,6 +810,30 @@ static int divUp(int total, int grain)
     cv::cuda::bitwise_not(matNanMask, matNanMask, cv::cuda::GpuMat(), stream);
 }
 
+/*static*/ void CudaAlgorithm::mergeHeightIntersectCore(
+        cv::cuda::GpuMat& matHGpu1,
+        cv::cuda::GpuMat& matHGpu2,
+        cv::cuda::GpuMat& matHGpu3,
+        cv::cuda::GpuMat& matHGpu4,
+        cv::cuda::GpuMat& matNanMask,
+        cv::cuda::GpuMat& matNanMaskDiff,
+        float fDiffThreshold,
+        cv::cuda::Stream& stream /*= cv::cuda::Stream::Null()*/) {
+    uint32_t threads = 32;
+    uint32_t grid = divUp(matHGpu1.rows, threads);
+    run_kernel_merge_height_intersect(grid, threads, cv::cuda::StreamAccessor::getStream(stream),
+        reinterpret_cast<float*>(matHGpu1.data),
+        reinterpret_cast<float*>(matHGpu2.data),
+        reinterpret_cast<float*>(matHGpu3.data),
+        reinterpret_cast<float*>(matHGpu4.data),
+        matNanMask.data,
+        reinterpret_cast<float*>(matNanMaskDiff.data),
+        matHGpu1.rows,
+        matHGpu1.cols,
+        matHGpu1.step1(),
+        fDiffThreshold);
+}
+
 /*static*/ cv::cuda::GpuMat CudaAlgorithm::mergeHeightIntersect(
         cv::cuda::GpuMat& matHeightOne,
         cv::cuda::GpuMat& matNanMaskOne,
@@ -851,50 +875,83 @@ static int divUp(int total, int grain)
     cv::cuda::compare(matHeightOne, matBufferGpu2, matMaskGpu1, cv::CmpTypes::CMP_GT, stream);
     cv::cuda::bitwise_and(matMaskGpu1, matNanMaskTwo, matMaskGpu1, cv::cuda::GpuMat(), stream);
 
-    matNanMaskOne.setTo(PR_MAX_GRAY_LEVEL, matMaskGpu1, stream);
-    matNanMaskTwo.setTo(PR_MAX_GRAY_LEVEL, matMaskGpu2, stream);
+    //cv::Mat idxnant1 = matNanMaskOne.clone(); idxnant1.setTo(255, idxh1);
+    auto idxnant1 = matNanMaskOne.clone(); idxnant1.setTo(255, matMaskGpu1, stream);
+    //cv::Mat idxnant2 = matNanMaskTwo.clone(); idxnant2.setTo(255, idxh2);
+    auto idxnant2 = matNanMaskTwo.clone(); idxnant2.setTo(255, matMaskGpu2, stream);
+
+    //matNanMaskOne.setTo(PR_MAX_GRAY_LEVEL, matMaskGpu1, stream);
+    //matNanMaskTwo.setTo(PR_MAX_GRAY_LEVEL, matMaskGpu2, stream);
+
+    // matResultNan = idxnant1 & idxnant2;
+    cv::cuda::bitwise_and(idxnant1, matNanMaskTwo, matResultNan, cv::cuda::GpuMat(), stream);
     
     if (PR_DIRECTION::UP == enProjDir || PR_DIRECTION::DOWN == enProjDir) {
         cv::cuda::transpose(matHeightOne, matHeightOne, stream);
         cv::cuda::transpose(matHeightTwo, matHeightTwo, stream);
-        cv::cuda::transpose(matMaskGpu1, matMaskGpu1, stream);
-        cv::cuda::transpose(matMaskGpu2, matMaskGpu2, stream);
+        cv::cuda::transpose(idxnant1, idxnant1, stream);
+        cv::cuda::transpose(idxnant2, idxnant2, stream);
+        std::cout << "Transposed" << std::endl;
+    }else {
+        std::cout << "Without transpose" << std::endl;
     }
 
-    cv::cuda::addWeighted(matHeightOne, 0.5f, matHeightTwo, 0.5f, 0, matBufferGpu1, -1, stream); // matBufferGpu1 is matHeightTre
-    matHeightTwo.copyTo(matBufferGpu1, matMaskGpu1, stream);
-    matHeightOne.copyTo(matBufferGpu1, matMaskGpu2, stream);
+    cv::cuda::GpuMat matHeightTre, matHeightFor;
+    cv::cuda::addWeighted(matHeightOne, 0.5f, matHeightTwo, 0.5f, 0, matHeightTre, -1, stream); // matBufferGpu1 is matHeightTre
+    matHeightTwo.copyTo(matHeightTre, idxnant1, stream);
+    matHeightOne.copyTo(matHeightTre, idxnant2, stream);
 
-    matBufferGpu1.copyTo(matBufferGpu2, stream); // matBufferGpu2 is matHeightFor
+    matHeightFor = matHeightTre.clone(); // matBufferGpu2 is matHeightFor
 
-    cv::cuda::absdiff(matHeightOne, matHeightTwo, matBufferGpu3, stream);
-    cv::cuda::compare(matBufferGpu3, fDiffThreshold, matMaskGpu1, cv::CmpTypes::CMP_GT, stream);
-    matBufferGpu2.setTo(NAN, matMaskGpu1, stream);
+    cv::cuda::GpuMat matAbsDiff, matBigDiffMask, matBigDiffMaskFloat, matDiffResultLocal;
+    cv::cuda::absdiff(matHeightOne, matHeightTwo, matAbsDiff, stream);
+    cv::cuda::compare(matAbsDiff, fDiffThreshold, matBigDiffMask, cv::CmpTypes::CMP_GT, stream);
+    matHeightFor.setTo(NAN, matBigDiffMask, stream);
 
-    getNanMask(matBufferGpu2, matMaskGpu1, stream);
-    matMaskGpu1.convertTo(matBufferGpu3, CV_32FC1);
-    diff(matBufferGpu3, matDiffResult, CalcUtils::DIFF_ON_X_DIR, stream);
-    cv::cuda::abs(matDiffResult, matDiffResult, stream);
+    getNanMask(matHeightFor, matBigDiffMask, stream);
+    matBigDiffMask.convertTo(matBigDiffMaskFloat, CV_32FC1, stream);
+    diff(matBigDiffMaskFloat, matDiffResultLocal, CalcUtils::DIFF_ON_X_DIR, stream);
+    cv::cuda::abs(matDiffResultLocal, matDiffResultLocal, stream);
 
-    uint32_t threads = 32;
-    uint32_t grid = divUp(matHeightOne.rows, threads);
-    run_kernel_merge_height_intersect(grid, threads, cv::cuda::StreamAccessor::getStream(stream),
-        reinterpret_cast<float*>(matHeightOne.data),
-        reinterpret_cast<float*>(matHeightTwo.data),
-        reinterpret_cast<float*>(matBufferGpu1.data),
-        reinterpret_cast<float*>(matBufferGpu2.data),
-        reinterpret_cast<float*>(matDiffResult.data),
-        matHeightOne.rows,
-        matHeightOne.cols,
-        matHeightOne.step1(),
+    static int times = 0;
+    ++ times;
+    cv::Mat matCpuH1, matCpuH2, matCpuH3, matCpuH4, matCpuMask, matCpuMaskDiffResult;
+    matHeightOne.download(matCpuH1);
+    matHeightTwo.download(matCpuH2);
+    matHeightTre.download(matCpuH3);
+    matHeightFor.download(matCpuH4);
+    matBigDiffMask.download(matCpuMask);
+    matDiffResultLocal.download(matCpuMaskDiffResult);
+    char fileName[200];
+    _snprintf(fileName, sizeof(fileName), "C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/Gpu_BeforeMergeHeightResult_%d.yml", times);
+    cv::FileStorage fs(fileName, cv::FileStorage::WRITE);
+    if (!fs.isOpened())
+        return matBufferGpu2;
+
+    cv::write(fs, "H1", matCpuH1);
+    cv::write(fs, "H2", matCpuH2);
+    cv::write(fs, "H3", matCpuH3);
+    cv::write(fs, "H4", matCpuH4);
+    cv::write(fs, "Mask", matCpuMask);
+    cv::write(fs, "MaskDiff", matCpuMaskDiffResult);
+    fs.release();
+
+    mergeHeightIntersectCore(
+        matHeightOne,
+        matHeightTwo,
+        matHeightTre,
+        matHeightFor,
+        matBigDiffMask,
+        matDiffResultLocal,
         fDiffThreshold);
+
+    std::cout << "After mergeHeightIntersectCore at " << __FILE__ << __LINE__ << std::endl;
     if (PR_DIRECTION::UP == enProjDir || PR_DIRECTION::DOWN == enProjDir) {
-        cv::cuda::transpose(matBufferGpu2, matBufferGpu2, stream);
+        cv::cuda::transpose(matHeightFor, matHeightFor, stream);
+        std::cout << "After cv::cuda::transpose at " << __FILE__ << __LINE__ << std::endl;
     }
 
-     // matResultNan = idxnant1 & idxnant2;
-    cv::cuda::bitwise_and(matNanMaskOne, matNanMaskTwo, matResultNan, cv::cuda::GpuMat(), stream);
-    return matBufferGpu2;
+    return matHeightFor;
 }
 
 /*static*/ cv::cuda::GpuMat CudaAlgorithm::mergeHeightIntersect06(
@@ -948,6 +1005,7 @@ static int divUp(int total, int grain)
         reinterpret_cast<float*>(matBufferGpu2.data),
         reinterpret_cast<float*>(matBufferGpu3.data),
         reinterpret_cast<float*>(matBufferGpu4.data),
+        matMaskGpu1.data,
         reinterpret_cast<float*>(matDiffResult.data),
         matHeightOne.rows,
         matHeightOne.cols,

@@ -159,6 +159,16 @@ public:
         cv::cuda::GpuMat& matNanMask,
         cv::cuda::Stream& stream = cv::cuda::Stream::Null());
 
+    static void mergeHeightIntersectCore(
+        cv::cuda::GpuMat& matHGpu1,
+        cv::cuda::GpuMat& matHGpu2,
+        cv::cuda::GpuMat& matHGpu3,
+        cv::cuda::GpuMat& matHGpu4,
+        cv::cuda::GpuMat& matNanMask,
+        cv::cuda::GpuMat& matNanMaskDiff,
+        float fDiffThreshold,
+        cv::cuda::Stream& stream = cv::cuda::Stream::Null());
+
     static cv::cuda::GpuMat mergeHeightIntersect(
         cv::cuda::GpuMat& matHeightOne,
         cv::cuda::GpuMat& matNanMaskOne,
