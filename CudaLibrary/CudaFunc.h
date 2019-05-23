@@ -155,6 +155,8 @@ void run_kernel_merge_height_intersect(
     const int      ROWS,
     const int      COLS,
     const int      step,
+    int*           pMergeIndexBuffer,
+    float*         pCmpTargetBuffer,
     float          fDiffThreshold);
 
 void run_kernel_choose_min_value_for_mask(

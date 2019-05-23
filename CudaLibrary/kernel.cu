@@ -1151,12 +1151,11 @@ void kernel_merge_height_intersect(
     const int      ROWS,
     const int      COLS,
     const int      step,
+    int*           pMergeIndexBuffer,
+    float*         pCmpTargetBuffer,
     float          fDiffThreshold) {
     int start = blockIdx.x * blockDim.x + threadIdx.x;
     int stride = blockDim.x * gridDim.x;
-
-    int *arrayIndexs = (int *)malloc(COLS / 2 * sizeof(int));
-    float *arrayTargetH = (float *)malloc(COLS * sizeof(float));
 
     for (int row = start; row < ROWS; row += stride) {
         int offset = row * step;
@@ -1166,6 +1165,9 @@ void kernel_merge_height_intersect(
         auto matForRow = matFor + offset;
         auto matNanRow = matMask + offset;
         auto matMaskDiffRow = matMaskDiffResult + offset;
+
+        int* arrayIndexs = pMergeIndexBuffer + offset;
+        float* arrayTargetH = pCmpTargetBuffer + offset;
 
         int count = 0;
         if (matNanRow[0] > 0)
@@ -1218,9 +1220,6 @@ void kernel_merge_height_intersect(
             }
         }
     }
-
-    free(arrayTargetH);
-    free(arrayIndexs);
 }
 
 void cpu_kernel_merge_height_intersect(
@@ -1320,6 +1319,8 @@ void run_kernel_merge_height_intersect(
     const int      ROWS,
     const int      COLS,
     const int      step,
+    int*           pMergeIndexBuffer,
+    float*         pCmpTargetBuffer,
     float          fDiffThreshold) {
     kernel_merge_height_intersect<<<gridSize, blockSize, 0, cudaStream>>>(
         matOne,
@@ -1331,6 +1332,8 @@ void run_kernel_merge_height_intersect(
         ROWS,
         COLS,
         step,
+        pMergeIndexBuffer,
+        pCmpTargetBuffer,
         fDiffThreshold);
     //cpu_kernel_merge_height_intersect(
     //    matOne,

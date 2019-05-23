@@ -864,8 +864,8 @@ static void TestMergeHeightIntersect() {
     matGpuMask.upload(matCpuMask);
     matGpuMaskDiffResult.upload(matCpuMaskDiffResult);
     
-    CudaAlgorithm::mergeHeightIntersectCore(matGpuH1, matGpuH2, matGpuH3, matGpuH4, matGpuMask, matGpuMaskDiffResult, 0.1f);
-    cv::cuda::transpose(matGpuH4, matGpuH4);
+    //CudaAlgorithm::mergeHeightIntersectGpu(matGpuH1, matGpuH2, matGpuH3, matGpuH4, matGpuMask, matGpuMaskDiffResult, 0.1f);
+    //cv::cuda::transpose(matGpuH4, matGpuH4);
     //run_kernel_merge_height_intersect(1, 1, NULL,
     //    reinterpret_cast<float*>(matCpuH1.data),
     //    reinterpret_cast<float*>(matCpuH2.data),
@@ -878,7 +878,7 @@ static void TestMergeHeightIntersect() {
     //    matCpuH1.step1(),
     //    0.1f);
     
-    matGpuH4.download(matCpuH4);
+    //matGpuH4.download(matCpuH4);
 }
 
 void InternalTest() {

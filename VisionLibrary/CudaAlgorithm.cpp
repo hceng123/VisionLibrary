@@ -815,13 +815,15 @@ static int divUp(int total, int grain)
     cv::cuda::bitwise_not(matNanMask, matNanMask, cv::cuda::GpuMat(), stream);
 }
 
-/*static*/ void CudaAlgorithm::mergeHeightIntersectCore(
+/*static*/ void CudaAlgorithm::mergeHeightIntersectGpu(
         cv::cuda::GpuMat& matHGpu1,
         cv::cuda::GpuMat& matHGpu2,
         cv::cuda::GpuMat& matHGpu3,
         cv::cuda::GpuMat& matHGpu4,
         cv::cuda::GpuMat& matNanMask,
         cv::cuda::GpuMat& matNanMaskDiff,
+        int*           pMergeIndexBuffer,
+        float*         pCmpTargetBuffer,
         float fDiffThreshold,
         cv::cuda::Stream& stream /*= cv::cuda::Stream::Null()*/) {
     uint32_t threads = 32;
@@ -836,6 +838,8 @@ static int divUp(int total, int grain)
         matHGpu1.rows,
         matHGpu1.cols,
         matHGpu1.step1(),
+        pMergeIndexBuffer,
+        pCmpTargetBuffer,
         fDiffThreshold);
 }
 
@@ -858,6 +862,8 @@ static int divUp(int total, int grain)
         cv::cuda::GpuMat& matBigDiffMask,
         cv::cuda::GpuMat& matBigDiffMaskFloat,
         cv::cuda::GpuMat& matDiffResultDiff,
+        int*           pMergeIndexBuffer,
+        float*         pCmpTargetBuffer,
         float fDiffThreshold,
         PR_DIRECTION enProjDir,
         cv::cuda::GpuMat& matMergeResult,
@@ -948,16 +954,18 @@ static int divUp(int total, int grain)
     //cv::write(fs, "MaskDiff", matCpuMaskDiffResult);
     //fs.release();
 
-    mergeHeightIntersectCore(
+    mergeHeightIntersectGpu(
         matHeightOne,
         matHeightTwo,
         matHeightTre,
         matHeightFor,
         matBigDiffMask,
         matDiffResultDiff,
+        pMergeIndexBuffer,
+        pCmpTargetBuffer,
         fDiffThreshold);
 
-    std::cout << "After mergeHeightIntersectCore at " << __FILE__ << __LINE__ << std::endl;
+    std::cout << "After mergeHeightIntersectGpu at " << __FILE__ << __LINE__ << std::endl;
     if (PR_DIRECTION::UP == enProjDir || PR_DIRECTION::DOWN == enProjDir) {
         cv::cuda::transpose(matHeightFor, matMergeResult, stream);
         std::cout << "After cv::cuda::transpose at " << __FILE__ << __LINE__ << std::endl;
@@ -1013,6 +1021,8 @@ static int divUp(int total, int grain)
         matBigDiffMaskFloat = calc3DHeightVar1.matDiffResult;
         matDiffResultDiff = calc3DHeightVar0.matDiffResult_1;
     }
+    int* pMergeIndexBuffer = reinterpret_cast<int*>(calc3DHeightVar0.d_p3);
+    float* pCmpTargetBuffer = calc3DHeightVar1.d_p3;
 
     mergeHeightIntersect(
         matHeightOneInput,
@@ -1033,6 +1043,8 @@ static int divUp(int total, int grain)
         matBigDiffMask,
         matBigDiffMaskFloat,
         matDiffResultDiff,
+        pMergeIndexBuffer,
+        pCmpTargetBuffer,
         fDiffThreshold,
         enProjDir,
         matMergeResult,
@@ -1074,6 +1086,8 @@ static int divUp(int total, int grain)
         cv::cuda::GpuMat& matBigDiffMask,
         cv::cuda::GpuMat& matBigDiffMaskFloat,
         cv::cuda::GpuMat& matDiffResultDiff,
+        int*           pMergeIndexBuffer,
+        float*         pCmpTargetBuffer,
         float             fDiffThreshold,
         PR_DIRECTION      enProjDir,
         cv::cuda::GpuMat& matMergeResult,
@@ -1129,13 +1143,15 @@ static int divUp(int total, int grain)
     diff(matBigDiffMaskFloat, matDiffResultDiff, CalcUtils::DIFF_ON_X_DIR, stream);
     cv::cuda::abs(matDiffResultDiff, matDiffResultDiff, stream);
 
-    mergeHeightIntersectCore(
+    mergeHeightIntersectGpu(
         matHeightOne,
         matHeightTwo,
         matHeightTre,
         matHeightFor,
         matBigDiffMask,
         matDiffResultDiff,
+        pMergeIndexBuffer,
+        pCmpTargetBuffer,
         fDiffThreshold);
 
     if (PR_DIRECTION::UP == enProjDir || PR_DIRECTION::DOWN == enProjDir) {
@@ -1182,6 +1198,9 @@ static int divUp(int total, int grain)
         matDiffResultDiff = calc3DHeightVar0.matDiffResult_1;
     }
 
+    int* pMergeIndexBuffer = reinterpret_cast<int*>(calc3DHeightVar0.d_p3);
+    float* pCmpTargetBuffer = calc3DHeightVar1.d_p3;
+
     mergeHeightIntersect06(
         matHeightOneInput,
         matNanMaskOne,
@@ -1197,6 +1216,8 @@ static int divUp(int total, int grain)
         matBigDiffMask,
         matBigDiffMaskFloat,
         matDiffResultDiff,
+        pMergeIndexBuffer,
+        pCmpTargetBuffer,
         fDiffThreshold,
         enProjDir,
         matMergeResult,
