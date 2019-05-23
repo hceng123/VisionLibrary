@@ -59,6 +59,8 @@ class CudaAlgorithm
 
 public:
     static cv::Ptr<cv::cuda::Filter> m_ptrGaussianFilter;
+    static VectorOfGpuMat m_arrVecGpuMat[NUM_OF_DLP];
+
     static DlpCalibResult& getDlpCalibData(int nDlp) { return m_dlpCalibData[nDlp]; }
     static Calc3DHeightVars& getCalc3DHeightVars(int nDLp) { return m_arrCalc3DHeightVars[nDLp]; }
     static bool initCuda();

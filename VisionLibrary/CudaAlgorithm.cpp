@@ -19,6 +19,7 @@ namespace Vision
 /*static*/ cv::Ptr<cv::cuda::Filter> CudaAlgorithm::m_ptrXDiffFilter;
 /*static*/ cv::Ptr<cv::cuda::Filter> CudaAlgorithm::m_ptrYDiffFilter;
 /*static*/ cv::Ptr<cv::cuda::Filter> CudaAlgorithm::m_ptrGaussianFilter;
+/*static*/ VectorOfGpuMat CudaAlgorithm::m_arrVecGpuMat[NUM_OF_DLP];
 
 static int divUp(int total, int grain)
 {
@@ -134,6 +135,10 @@ static int divUp(int total, int grain)
         if (err != cudaSuccess) {
             pstRpy->enStatus = VisionStatus::CUDA_MEMORY_ERROR;
             return pstRpy->enStatus;
+        }
+
+        for (int i = 0; i < 12; ++i) {
+            m_arrVecGpuMat[dlp].push_back(cv::cuda::GpuMat(2048, 2040, CV_8UC1));
         }
     }
     free(h_buffer);

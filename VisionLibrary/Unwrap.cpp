@@ -1153,7 +1153,7 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
         CudaAlgorithm::getCalc3DHeightVars(3),
         fHeightDiffThreshold * 2.f,
         vecProjDir[1],
-        stream1);
+        stream2);
 
     cudaDeviceSynchronize();
 
@@ -1193,26 +1193,21 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
         }
     }
 
-    std::vector<cv::cuda::GpuMat> vecGpuImages[NUM_OF_DLP] = {
-        std::vector<cv::cuda::GpuMat>(vecConvertedImgs[0].size()),
-        std::vector<cv::cuda::GpuMat>(vecConvertedImgs[1].size()),
-        std::vector<cv::cuda::GpuMat>(vecConvertedImgs[2].size()),
-        std::vector<cv::cuda::GpuMat>(vecConvertedImgs[3].size()) };
-
+    VectorOfDirection vecProjDir;
     for (int dlp = 0; dlp < NUM_OF_DLP; ++dlp) {
         for (size_t i = 0; i < vecConvertedImgs[dlp].size(); ++i) {
             cv::cuda::registerPageLocked(vecConvertedImgs[dlp][i]);
         }
+        vecProjDir.push_back(pstCmd->arrCalcHeightCmd[dlp].enProjectDir);
     }
     
     cv::cuda::Stream arrStreams[NUM_OF_DLP];
     VectorOfGpuMat vecGpuHeights(NUM_OF_DLP), vecGpuNanMasks(NUM_OF_DLP);
     VectorOfMat vecHeights(NUM_OF_DLP), vecNanMasks(NUM_OF_DLP);
-    VectorOfDirection vecProjDir;
 
     for (int dlp = 0; dlp < NUM_OF_DLP; ++dlp) {
         for (size_t i = 0; i < vecConvertedImgs[dlp].size(); ++i) {
-            vecGpuImages[dlp][i].upload(vecConvertedImgs[dlp][i], arrStreams[dlp]);
+            CudaAlgorithm::m_arrVecGpuMat[dlp][i].upload(vecConvertedImgs[dlp][i], arrStreams[dlp]);
         }
     }
 
@@ -1223,13 +1218,12 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
 
         vecGpuHeights[dlp] = _calcHeightGpuCore(
             &pstCmd->arrCalcHeightCmd[dlp],
-            vecGpuImages[dlp],
+            CudaAlgorithm::m_arrVecGpuMat[dlp],
             vecGpuNanMasks[dlp],
             arrStreams[dlp]);
 
         //vecGpuHeights[dlp].download(vecHeights[dlp], arrStreams[dlp]);
         //vecGpuNanMasks[dlp].download(vecNanMasks[dlp], arrStreams[dlp]);
-        vecProjDir.push_back(pstCmd->arrCalcHeightCmd[dlp].enProjectDir);
     }
 
     cudaDeviceSynchronize();
