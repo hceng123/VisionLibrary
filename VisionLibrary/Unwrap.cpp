@@ -1003,11 +1003,8 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
 
     //TimeLog::GetInstance()->addTimeLog("After median filter.", stopWatch.Span());
 
-    if (pstCmd->bEnableGaussianFilter) {
-        auto ptrFilter = cv::cuda::createGaussianFilter(CV_32FC1, CV_32FC1, cv::Size(5, 5), 5, 5, cv::BorderTypes::BORDER_REPLICATE);
-        ptrFilter->apply(matAlphaGpu, matBufferGpu, stream);
-        //cv::GaussianBlur(pstRpy->matPhase, pstRpy->matPhase, cv::Size(5, 5), 5, 5, cv::BorderTypes::BORDER_REPLICATE);
-    }
+    if (pstCmd->bEnableGaussianFilter) 
+        CudaAlgorithm::m_ptrGaussianFilter->apply(matAlphaGpu, matBufferGpu, stream);
 
     if (!pstCmd->mat3DBezierK.empty()) {
         std::vector<float> vecParamMinMaxXY{ 1.f, ToFloat(matAlphaGpu.cols), 1.f, ToFloat(matAlphaGpu.rows),

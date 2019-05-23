@@ -4,6 +4,7 @@
 #include "opencv2/core.hpp"
 #include "VisionHeader.h"
 #include "opencv2/core/cuda.hpp"
+#include "opencv2/cudafilters.hpp"
 
 namespace AOI
 {
@@ -53,8 +54,11 @@ class CudaAlgorithm
     ~CudaAlgorithm() = delete;
     static DlpCalibResult m_dlpCalibData[NUM_OF_DLP];
     static Calc3DHeightVars m_arrCalc3DHeightVars[NUM_OF_DLP];
+    static cv::Ptr<cv::cuda::Filter> m_ptrXDiffFilter;
+    static cv::Ptr<cv::cuda::Filter> m_ptrYDiffFilter;
 
 public:
+    static cv::Ptr<cv::cuda::Filter> m_ptrGaussianFilter;
     static DlpCalibResult& getDlpCalibData(int nDlp) { return m_dlpCalibData[nDlp]; }
     static Calc3DHeightVars& getCalc3DHeightVars(int nDLp) { return m_arrCalc3DHeightVars[nDLp]; }
     static bool initCuda();

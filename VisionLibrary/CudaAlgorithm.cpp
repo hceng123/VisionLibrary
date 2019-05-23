@@ -3,7 +3,6 @@
 #include "opencv2/core.hpp"
 #include "opencv2/core/cuda_stream_accessor.hpp"
 #include "opencv2/cudaarithm.hpp"
-#include "opencv2/cudafilters.hpp"
 #include "opencv2/highgui.hpp"
 #include "CudaFunc.h"
 #include "TimeLog.h"
@@ -17,6 +16,9 @@ namespace Vision
 
 /*static*/ DlpCalibResult CudaAlgorithm::m_dlpCalibData[NUM_OF_DLP];
 /*static*/ Calc3DHeightVars CudaAlgorithm::m_arrCalc3DHeightVars[NUM_OF_DLP];
+/*static*/ cv::Ptr<cv::cuda::Filter> CudaAlgorithm::m_ptrXDiffFilter;
+/*static*/ cv::Ptr<cv::cuda::Filter> CudaAlgorithm::m_ptrYDiffFilter;
+/*static*/ cv::Ptr<cv::cuda::Filter> CudaAlgorithm::m_ptrGaussianFilter;
 
 static int divUp(int total, int grain)
 {
@@ -32,6 +34,14 @@ static int divUp(int total, int grain)
     cudaDeviceGetLimit(&size, cudaLimitMallocHeapSize);
 
     cudaDeviceSetLimit(cudaLimitDevRuntimeSyncDepth, 16);
+
+    cv::Mat matKernelX = (cv::Mat_<float>(1, 2) << -1, 1);
+    m_ptrXDiffFilter = cv::cuda::createLinearFilter(CV_32FC1, CV_32FC1, matKernelX, cv::Point(-1, -1), cv::BORDER_CONSTANT);
+
+    cv::Mat matKernelY = (cv::Mat_<float>(2, 1) << -1, 1);
+    m_ptrYDiffFilter = cv::cuda::createLinearFilter(CV_32FC1, CV_32FC1, matKernelY, cv::Point(-1, -1), cv::BORDER_CONSTANT);
+
+    m_ptrGaussianFilter = cv::cuda::createGaussianFilter(CV_32FC1, CV_32FC1, cv::Size(5, 5), 5, 5, cv::BorderTypes::BORDER_REPLICATE);
     return true;
 }
 
@@ -191,14 +201,12 @@ static int divUp(int total, int grain)
     if (nRecersiveTime > 1)
         return diff(diff(matInput, nRecersiveTime - 1, nDimension), 1, nDimension);
 
-    cv::Mat matKernel;
-    if (CalcUtils::DIFF_ON_X_DIR == nDimension)
-        matKernel = (cv::Mat_<float>(1, 2) << -1, 1);
-    else if (CalcUtils::DIFF_ON_Y_DIR == nDimension)
-        matKernel = (cv::Mat_<float>(2, 1) << -1, 1);
-    auto filter = cv::cuda::createLinearFilter(CV_32FC1, CV_32FC1, matKernel, cv::Point(-1, -1), cv::BORDER_CONSTANT);
     cv::cuda::GpuMat matResult;
-    filter->apply(matInput, matResult, stream);
+    if (CalcUtils::DIFF_ON_X_DIR == nDimension)
+        m_ptrXDiffFilter->apply(matInput, matResult, stream);
+    else if (CalcUtils::DIFF_ON_Y_DIR == nDimension)
+        m_ptrYDiffFilter->apply(matInput, matResult, stream);
+
     if (CalcUtils::DIFF_ON_X_DIR == nDimension)
         return cv::cuda::GpuMat(matResult, cv::Rect(1, 0, matResult.cols - 1, matResult.rows));
     else if (CalcUtils::DIFF_ON_Y_DIR == nDimension)
@@ -213,13 +221,18 @@ static int divUp(int total, int grain)
     cv::cuda::Stream& stream /*= cv::cuda::Stream::Null()*/) {
     assert(CalcUtils::DIFF_ON_X_DIR == nDimension || CalcUtils::DIFF_ON_Y_DIR == nDimension);
 
-    cv::Mat matKernel;
     if (CalcUtils::DIFF_ON_X_DIR == nDimension)
-        matKernel = (cv::Mat_<float>(1, 2) << -1, 1);
+        m_ptrXDiffFilter->apply(matInput, matResult, stream);
     else if (CalcUtils::DIFF_ON_Y_DIR == nDimension)
-        matKernel = (cv::Mat_<float>(2, 1) << -1, 1);
-    auto filter = cv::cuda::createLinearFilter(CV_32FC1, CV_32FC1, matKernel, cv::Point(-1, -1), cv::BORDER_CONSTANT);
-    filter->apply(matInput, matResult, stream);
+        m_ptrYDiffFilter->apply(matInput, matResult, stream);
+    //cv::Mat matKernel;
+    //if (CalcUtils::DIFF_ON_X_DIR == nDimension)
+    //    matKernel = (cv::Mat_<float>(1, 2) << -1, 1);
+    //else if (CalcUtils::DIFF_ON_Y_DIR == nDimension)
+    //    matKernel = (cv::Mat_<float>(2, 1) << -1, 1);
+    //auto filter = cv::cuda::createLinearFilter(CV_32FC1, CV_32FC1, matKernel, cv::Point(-1, -1), cv::BORDER_CONSTANT);
+    //filter->apply(matInput, matResult, stream);
+
     if (CalcUtils::DIFF_ON_X_DIR == nDimension)
         matResult = cv::cuda::GpuMat(matResult, cv::Rect(1, 0, matResult.cols - 1, matResult.rows));
     else if (CalcUtils::DIFF_ON_Y_DIR == nDimension)
@@ -920,7 +933,7 @@ static int divUp(int total, int grain)
     matHeightTwo.copyTo(matHeightTre, matMaskGpu3, stream);
     matHeightOne.copyTo(matHeightTre, matMaskGpu4, stream);
 
-    matHeightFor = matHeightTre.clone(); // matBufferGpu2 is matHeightFor
+    matHeightTre.copyTo(matHeightFor); // Equal to cv::Mat matHeightFor = matHeightTre.clone();
 
     cv::cuda::absdiff(matHeightOne, matHeightTwo, matAbsDiff, stream);
     cv::cuda::compare(matAbsDiff, fDiffThreshold, matBigDiffMask, cv::CmpTypes::CMP_GT, stream);
@@ -1136,7 +1149,7 @@ static int divUp(int total, int grain)
 
     cv::cuda::absdiff(matHeightOne, matHeightTwo, matAbsDiff, stream);
     cv::cuda::compare(matAbsDiff, fDiffThreshold, matBigDiffMask, cv::CmpTypes::CMP_GT, stream);
-    matHeightFor.setTo(NAN, matBigDiffMask);
+    matHeightFor.setTo(NAN, matBigDiffMask, stream);
 
     getNanMask(matHeightFor, matBigDiffMask, stream);
     matBigDiffMask.convertTo(matBigDiffMaskFloat, CV_32FC1, stream);
