@@ -1553,7 +1553,7 @@ void TestCalc4DLPHeightOnePass()
     PR_CalcMerge4DlpHeight(&stCalc4DlpHeightCmd, &stCalc4DlpHeightRpy);
     if (stCalc4DlpHeightRpy.enStatus != VisionStatus::OK)
     {
-        std::cout << "PR_Merge3DHeight failed, status " << ToInt32(stCalc4DlpHeightRpy.enStatus) << " at line " << __LINE__ << std::endl;
+        std::cout << "PR_CalcMerge4DlpHeight failed, status " << ToInt32(stCalc4DlpHeightRpy.enStatus) << " at line " << __LINE__ << std::endl;
         return;
     }
 

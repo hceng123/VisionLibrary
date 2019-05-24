@@ -108,6 +108,9 @@ public:
         cv::cuda::GpuMat& matDiffPhaseY,
         cv::cuda::GpuMat& matMaskGpu,
         cv::cuda::GpuMat& matMaskGpuT,
+        cv::cuda::GpuMat& matMaskGpu_1,
+        int* pBufferArrayIdx1,
+        int* pBufferArrayIdx2,
         int span,
         cv::cuda::Stream& stream = cv::cuda::Stream::Null());
 

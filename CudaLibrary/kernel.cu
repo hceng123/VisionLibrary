@@ -196,6 +196,11 @@ __global__ void kernel_qsort(T *data, unsigned int nitems)
     cdp_simple_quicksort(data, left, right, 0);
 }
 
+// The dMap and dPhase is the X diff of Map and Phase
+// Their size suppose to be ROW x (COL - 1)
+// But to reuse the GPU buffer, their size is not redefined
+// So their size still ROW X COL, so the COL index should start
+// to from 1 to make the result same as ROW x (COL - 1)
 __global__
 void kernel_select_cmp_point(
     float* dMap,
@@ -204,6 +209,8 @@ void kernel_select_cmp_point(
     uint32_t step,
     const int ROWS,
     const int COLS,
+    int* pBufferArrayIdx1,
+    int* pBufferArrayIdx2,
     const int span) {
     int start = blockIdx.x * blockDim.x + threadIdx.x;
     int stride = blockDim.x * gridDim.x;
@@ -211,20 +218,18 @@ void kernel_select_cmp_point(
     if (start >= ROWS)
         return;
 
-    int *arrayIdx1 = (int *)malloc(COLS / 4 * sizeof(int));
-    int *arrayIdx2 = (int *)malloc(COLS / 4 * sizeof(int));
-
     for (int row = start; row < ROWS; row += stride) {
-        int offsetOfInput = row * step;
-        int offsetOfResult = row * step;
+        int rowDataOffset = row * step;
+        int* arrayIdx1 = pBufferArrayIdx1 + row * 512;
+        int* arrayIdx2 = pBufferArrayIdx2 + row * 512;
 
-        float* dMapRow = dMap + offsetOfInput;
-        float* dPhaseRow = dPhase + offsetOfInput;
-        uint8_t* matResultRow = matResult + offsetOfResult;
+        float* dMapRow = dMap + rowDataOffset;
+        float* dPhaseRow = dPhase + rowDataOffset;
+        uint8_t* matResultRow = matResult + rowDataOffset;
 
         int countOfIdx1 = 0, countOfIdx2 = 0;
         for (int i = 0; i < COLS - 1; ++ i) {
-            const auto& value = dMapRow[i];
+            const auto& value = dMapRow[i + 1];
             if (value == 1.f)
                 arrayIdx1[countOfIdx1++] = i;
             else if (value == -1.f)
@@ -246,7 +251,7 @@ void kernel_select_cmp_point(
 
         for (int i = 0; i < countOfIdx1 && i < countOfIdx2; ++i) {
             if (arrayIdx2[i] - arrayIdx1[i] < span) {
-                if (fabs(dPhaseRow[arrayIdx1[i]]) > 1.f && fabs(dPhaseRow[arrayIdx2[i]]) > 1.f) {
+                if (fabs(dPhaseRow[arrayIdx1[i] + 1]) > 1.f && fabs(dPhaseRow[arrayIdx2[i] + 1]) > 1.f) {
                     for (int k = arrayIdx1[i]; k <= arrayIdx2[i]; ++k) {
                         matResultRow[k] = 255;
                     }
@@ -255,9 +260,6 @@ void kernel_select_cmp_point(
             }
         }
     }
-
-    free(arrayIdx1);
-    free(arrayIdx2);
 }
 
 void test_kernel_select_cmp_point(
@@ -327,8 +329,19 @@ void run_kernel_select_cmp_point(
     uint32_t step,
     const int ROWS,
     const int COLS,
+    int* pBufferArrayIdx1,
+    int* pBufferArrayIdx2,
     const int span) {
-    kernel_select_cmp_point<<<gridSize, blockSize, 0, cudaStream>>>(dMap, dPhase, matResult, step, ROWS, COLS, span);
+    kernel_select_cmp_point<<<gridSize, blockSize, 0, cudaStream>>>(
+        dMap,
+        dPhase,
+        matResult,
+        step,
+        ROWS,
+        COLS,
+        pBufferArrayIdx1,
+        pBufferArrayIdx2,
+        span);
     //test_kernel_select_cmp_point(dMap, dPhase, matResult, ROWS, COLS, span);
 }
 
@@ -379,7 +392,7 @@ void kernel_phase_correction(
     char* vecSignOfRow = pBufferSign + dataRowOffset;
     char* vecAmplOfRow = pBufferAmpl + dataRowOffset;
 
-    auto value = phaseDiffRow[c];
+    auto value = phaseDiffRow[c + 1];
     if (value > ONE_HALF_CYCLE) {
         vecSignOfRow[c] = 1;
         vecAmplOfRow[c] = static_cast<char> (std::ceil(std::fabs(value) / 2.f) * 2);
@@ -1174,7 +1187,7 @@ void kernel_merge_height_intersect(
             arrayIndexs[count++] = 0;
 
         for (int col = 0; col < COLS - 1; ++col) {
-            if (matMaskDiffRow[col] > 0)
+            if (matMaskDiffRow[col + 1] > 0)
                 arrayIndexs[count++] = col;
         }
 
@@ -1390,7 +1403,7 @@ void run_kernel_choose_min_value_for_mask(
     const int ROWS,
     const int COLS,
     const int step) {
-    kernel_choose_min_value_for_mask << <grid, threads, 0, cudaStream >> >(
+    kernel_choose_min_value_for_mask<<<grid, threads, 0, cudaStream>>>(
         matH1,
         matH2,
         matH3,

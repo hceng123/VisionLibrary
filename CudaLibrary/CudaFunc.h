@@ -44,6 +44,8 @@ void run_kernel_select_cmp_point(
     uint32_t step,
     const int ROWS,
     const int COLS,
+    int* pBufferArrayIdx1,
+    int* pBufferArrayIdx2,
     const int span);
 
 void run_kernel_phase_correction(

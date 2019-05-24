@@ -973,7 +973,9 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
             matBufferGpu, matPhaseGpuT,
             calc3DHeightVar.matDiffResult, calc3DHeightVar.matDiffResultT,
             calc3DHeightVar.matDiffResult_1, calc3DHeightVar.matDiffResultT_1,
-            calc3DHeightVar.matMaskGpu, calc3DHeightVar.matMaskGpuT, pstCmd->nCompareRemoveJumpSpan, stream);
+            calc3DHeightVar.matMaskGpu, calc3DHeightVar.matMaskGpuT, calc3DHeightVar.matMaskGpu_1,
+            calc3DHeightVar.pBufferJumpStart, calc3DHeightVar.pBufferJumpEnd, //Reuease the phase jump buffer
+            pstCmd->nCompareRemoveJumpSpan, stream);
 
         //TimeLog::GetInstance()->addTimeLog("phaseCorrectionCmp for gamma.", stopWatch.Span());
 

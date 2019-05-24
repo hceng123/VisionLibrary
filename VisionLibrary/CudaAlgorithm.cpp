@@ -230,18 +230,6 @@ static int divUp(int total, int grain)
         m_ptrXDiffFilter->apply(matInput, matResult, stream);
     else if (CalcUtils::DIFF_ON_Y_DIR == nDimension)
         m_ptrYDiffFilter->apply(matInput, matResult, stream);
-    //cv::Mat matKernel;
-    //if (CalcUtils::DIFF_ON_X_DIR == nDimension)
-    //    matKernel = (cv::Mat_<float>(1, 2) << -1, 1);
-    //else if (CalcUtils::DIFF_ON_Y_DIR == nDimension)
-    //    matKernel = (cv::Mat_<float>(2, 1) << -1, 1);
-    //auto filter = cv::cuda::createLinearFilter(CV_32FC1, CV_32FC1, matKernel, cv::Point(-1, -1), cv::BORDER_CONSTANT);
-    //filter->apply(matInput, matResult, stream);
-
-    if (CalcUtils::DIFF_ON_X_DIR == nDimension)
-        matResult = cv::cuda::GpuMat(matResult, cv::Rect(1, 0, matResult.cols - 1, matResult.rows));
-    else if (CalcUtils::DIFF_ON_Y_DIR == nDimension)
-        matResult = cv::cuda::GpuMat(matResult, cv::Rect(0, 1, matResult.cols, matResult.rows - 1));
 }
 
 /*static*/ float CudaAlgorithm::intervalAverage(const cv::cuda::GpuMat &matInput, int interval, float *d_result, 
@@ -336,6 +324,9 @@ static int divUp(int total, int grain)
     cv::cuda::GpuMat& matDiffPhaseY,
     cv::cuda::GpuMat& matMaskGpu,
     cv::cuda::GpuMat& matMaskGpuT,
+    cv::cuda::GpuMat& matMaskGpu_1,
+    int* pBufferArrayIdx1,
+    int* pBufferArrayIdx2,
     int span,
     cv::cuda::Stream& stream /*= cv::cuda::Stream::Null()*/) {
     CStopWatch stopWatch;
@@ -360,7 +351,10 @@ static int divUp(int total, int grain)
         reinterpret_cast<float *>(matDiffPhaseX.data),
         matMaskGpu.data,
         matDiffMapX.step1(),
-        ROWS, COLS, span);
+        ROWS, COLS,
+        pBufferArrayIdx1,
+        pBufferArrayIdx2,
+        span);
 
     // Select in Y direction, transpose the matrix to accelerate
     cv::cuda::transpose(matBufferGpu, matBufferGpu, stream);
@@ -376,11 +370,12 @@ static int divUp(int total, int grain)
         reinterpret_cast<float *>(matDiffPhaseY.data),
         matMaskGpuT.data,
         matDiffMapY.step1(),
-        COLS, ROWS, span);
+        COLS, ROWS,
+        pBufferArrayIdx1, pBufferArrayIdx2, span);
 
-    cv::cuda::transpose(matMaskGpuT, matMaskGpuT, stream);
+    cv::cuda::transpose(matMaskGpuT, matMaskGpu_1, stream);
 
-    cv::cuda::bitwise_and(matMaskGpu, matMaskGpuT, matMaskGpu, cv::cuda::GpuMat(), stream);
+    cv::cuda::bitwise_and(matMaskGpu, matMaskGpu_1, matMaskGpu, cv::cuda::GpuMat(), stream);
     matPhase1.copyTo(matPhase, matMaskGpu, stream);
 }
 
