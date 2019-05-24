@@ -50,7 +50,8 @@ static int divUp(int total, int grain)
     pstRpy->enStatus = VisionStatus::OK;
 
     const size_t MEM_SIZE = pstCmd->vec3DBezierSurface[0].total() * sizeof(float);
-    float* h_buffer = (float*)malloc(MEM_SIZE);
+    float* h_buffer;
+    cudaMallocHost(&h_buffer, MEM_SIZE);
     const int ROWS = pstCmd->vec3DBezierSurface[0].rows;
     const int COLS = pstCmd->vec3DBezierSurface[0].cols;
 
@@ -141,7 +142,7 @@ static int divUp(int total, int grain)
             m_arrVecGpuMat[dlp].push_back(cv::cuda::GpuMat(2048, 2040, CV_8UC1));
         }
     }
-    free(h_buffer);
+    cudaFreeHost(h_buffer);
 
     return pstRpy->enStatus;
 }
@@ -318,6 +319,7 @@ static int divUp(int total, int grain)
     const cv::cuda::GpuMat& matPhase1,
     cv::cuda::GpuMat& matBufferGpu,
     cv::cuda::GpuMat& matBufferGpuT,
+    cv::cuda::GpuMat& matBufferGpuT_1,
     cv::cuda::GpuMat& matDiffMapX,
     cv::cuda::GpuMat& matDiffMapY,
     cv::cuda::GpuMat& matDiffPhaseX,
@@ -357,10 +359,10 @@ static int divUp(int total, int grain)
         span);
 
     // Select in Y direction, transpose the matrix to accelerate
-    cv::cuda::transpose(matBufferGpu, matBufferGpu, stream);
+    cv::cuda::transpose(matBufferGpu, matBufferGpuT_1, stream);
     cv::cuda::transpose(matPhase, matBufferGpuT, stream);
 
-    diff(matBufferGpu, matDiffMapY, CalcUtils::DIFF_ON_X_DIR, stream);
+    diff(matBufferGpuT_1, matDiffMapY, CalcUtils::DIFF_ON_X_DIR, stream);
     diff(matBufferGpuT, matDiffPhaseY, CalcUtils::DIFF_ON_X_DIR, stream);
     matMaskGpuT.setTo(0, stream);
 
@@ -380,7 +382,7 @@ static int divUp(int total, int grain)
 }
 
 /*static*/ void CudaAlgorithm::phaseCorrection(
-    cv::cuda::GpuMat &matPhase,
+    cv::cuda::GpuMat& matPhase,
     cv::cuda::GpuMat& matPhaseT,
     cv::cuda::GpuMat& matDiffResult,
     cv::cuda::GpuMat& matDiffResultT,
@@ -920,13 +922,11 @@ static int divUp(int total, int grain)
         cv::cuda::transpose(matHeightTwoInput, matHeightTwo, stream);
         cv::cuda::transpose(matNanMaskOne, matMaskGpu3, stream);
         cv::cuda::transpose(matNanMaskTwo, matMaskGpu4, stream);
-        std::cout << "Transposed" << std::endl;
     }else {
         matHeightOneInput.copyTo(matHeightOne, stream);
         matHeightTwoInput.copyTo(matHeightTwo, stream);
         matNanMaskOne.copyTo(matMaskGpu3);
         matNanMaskTwo.copyTo(matMaskGpu4);
-        std::cout << "Without transpose" << std::endl;
     }
 
     cv::cuda::addWeighted(matHeightOne, 0.5f, matHeightTwo, 0.5f, 0, matHeightTre, -1, stream); // matBufferGpu1 is matHeightTre
@@ -978,10 +978,8 @@ static int divUp(int total, int grain)
         pCmpTargetBuffer,
         fDiffThreshold);
 
-    std::cout << "After mergeHeightIntersectGpu at " << __FILE__ << __LINE__ << std::endl;
     if (PR_DIRECTION::UP == enProjDir || PR_DIRECTION::DOWN == enProjDir) {
         cv::cuda::transpose(matHeightFor, matMergeResult, stream);
-        std::cout << "After cv::cuda::transpose at " << __FILE__ << __LINE__ << std::endl;
     }else {
         matHeightFor.copyTo(matMergeResult);
     }

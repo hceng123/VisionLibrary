@@ -880,15 +880,15 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
     Calc3DHeightVars& calc3DHeightVar = CudaAlgorithm::getCalc3DHeightVars(pstCmd->nDlpNo);
     DlpCalibResult& dlpCalibData = CudaAlgorithm::getDlpCalibData(pstCmd->nDlpNo);
 
-    cv::cuda::GpuMat matAlphaGpu = calc3DHeightVar.matAlpha;
-    cv::cuda::GpuMat matBetaGpu  = calc3DHeightVar.matBeta;
-    cv::cuda::GpuMat matGammaGpu = calc3DHeightVar.matGamma;
-    cv::cuda::GpuMat matGammaGpu1 = calc3DHeightVar.matGamma1;
-    cv::cuda::GpuMat matAvgUnderTolIndexGpu = calc3DHeightVar.matAvgUnderTolIndex;
+    cv::cuda::GpuMat& matAlphaGpu = calc3DHeightVar.matAlpha;
+    cv::cuda::GpuMat& matBetaGpu  = calc3DHeightVar.matBeta;
+    cv::cuda::GpuMat& matGammaGpu = calc3DHeightVar.matGamma;
+    cv::cuda::GpuMat& matGammaGpu1 = calc3DHeightVar.matGamma1;
+    cv::cuda::GpuMat& matAvgUnderTolIndexGpu = calc3DHeightVar.matAvgUnderTolIndex;
 
-    cv::cuda::GpuMat matBufferGpu = calc3DHeightVar.matBufferGpu;
-    cv::cuda::GpuMat matMaskGpu = calc3DHeightVar.matMaskGpu;
-    cv::cuda::GpuMat matPhaseGpuT = calc3DHeightVar.matBufferGpuT;
+    cv::cuda::GpuMat& matBufferGpu = calc3DHeightVar.matBufferGpu;
+    cv::cuda::GpuMat& matMaskGpu = calc3DHeightVar.matMaskGpu;
+    cv::cuda::GpuMat& matPhaseGpuT = calc3DHeightVar.matBufferGpuT;
 
     CudaAlgorithm::calcPhase(
         vecGpuImages[0],
@@ -970,7 +970,7 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
         //TimeLog::GetInstance()->addTimeLog("Parepare data for phaseCorrectionCmp for gamma.", stopWatch.Span());
 
         CudaAlgorithm::phaseCorrectionCmp(matGammaGpu, matGammaGpu1,
-            matBufferGpu, matPhaseGpuT,
+            matBufferGpu, matPhaseGpuT, calc3DHeightVar.matBufferGpuT_1,
             calc3DHeightVar.matDiffResult, calc3DHeightVar.matDiffResultT,
             calc3DHeightVar.matDiffResult_1, calc3DHeightVar.matDiffResultT_1,
             calc3DHeightVar.matMaskGpu, calc3DHeightVar.matMaskGpuT, calc3DHeightVar.matMaskGpu_1,

@@ -102,6 +102,7 @@ public:
         const cv::cuda::GpuMat& matPhase1,
         cv::cuda::GpuMat& matBufferGpu,
         cv::cuda::GpuMat& matBufferGpuT,
+        cv::cuda::GpuMat& matBufferGpuT_1,
         cv::cuda::GpuMat& matDiffMapX,
         cv::cuda::GpuMat& matDiffMapY,
         cv::cuda::GpuMat& matDiffPhaseX,

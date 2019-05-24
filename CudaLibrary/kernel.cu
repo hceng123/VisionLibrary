@@ -255,7 +255,6 @@ void kernel_select_cmp_point(
                     for (int k = arrayIdx1[i]; k <= arrayIdx2[i]; ++k) {
                         matResultRow[k] = 255;
                     }
-
                 }
             }
         }
