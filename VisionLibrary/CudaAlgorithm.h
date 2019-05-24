@@ -232,13 +232,18 @@ public:
         const cv::cuda::GpuMat& matMask,
         cv::cuda::Stream&       stream = cv::cuda::Stream::Null());
 
+    static void patchNanBeforeMergeHeight(
+        cv::cuda::GpuMat&       matHeightOneInput,
+        const cv::cuda::GpuMat& matNanMaskOne,
+        cv::cuda::GpuMat&       matHeightTwoInput,
+        const cv::cuda::GpuMat& matNanMaskTwo,
+        cv::cuda::GpuMat&       matPatchedResult1,
+        cv::cuda::GpuMat&       matPatchedResult2,
+        cv::cuda::Stream&       stream = cv::cuda::Stream::Null());
+
     static void mergeHeightIntersect06(
-        cv::cuda::GpuMat& matHeightOneInput,
-        cv::cuda::GpuMat& matNanMaskOne,
-        cv::cuda::GpuMat& matHeightTwoInput,
-        cv::cuda::GpuMat& matNanMaskTwo,
-        cv::cuda::GpuMat& matBufferGpu1,
-        cv::cuda::GpuMat& matBufferGpu2,
+        const cv::cuda::GpuMat& matBufferGpu1,
+        const cv::cuda::GpuMat& matBufferGpu2,
         cv::cuda::GpuMat& matHeightOne,
         cv::cuda::GpuMat& matHeightTwo,
         cv::cuda::GpuMat& matHeightTre,
@@ -255,10 +260,8 @@ public:
         cv::cuda::Stream& stream = cv::cuda::Stream::Null());
 
     static cv::cuda::GpuMat runMergeHeightIntersect06(
-        cv::cuda::GpuMat& matHeightOneInput,
-        cv::cuda::GpuMat& matNanMaskOne,
-        cv::cuda::GpuMat& matHeightTwoInput,
-        cv::cuda::GpuMat& matNanMaskTwo,
+        const cv::cuda::GpuMat& matBufferGpu1,
+        const cv::cuda::GpuMat& matBufferGpu2,
         Calc3DHeightVars& calc3DHeightVar0,
         Calc3DHeightVars& calc3DHeightVar1,
         float fDiffThreshold,

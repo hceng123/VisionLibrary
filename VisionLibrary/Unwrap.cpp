@@ -1135,11 +1135,24 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
     //auto matHm3 = _mergeHeightIntersect06(matHm1, matNan1, matHm2, matNan2, fHeightDiffThreshold * 2.f, vecProjDir[0]);
     //auto matHm4 = _mergeHeightIntersect06(matHm1, matNan1, matHm2, matNan2, fHeightDiffThreshold * 2.f, vecProjDir[1]);
 
-    auto matMerge3 = CudaAlgorithm::runMergeHeightIntersect06(
+    auto& calc3DHeightVar0 = CudaAlgorithm::getCalc3DHeightVars(0);
+    cv::cuda::GpuMat& matBufferGpu1 = calc3DHeightVar0.matAlpha;
+    cv::cuda::GpuMat& matBufferGpu2 = calc3DHeightVar0.matBeta;
+
+    CudaAlgorithm::patchNanBeforeMergeHeight(
         matMerge1,
         matResultNan1,
         matMerge2,
         matResultNan2,
+        matBufferGpu1,
+        matBufferGpu2,
+        stream1);
+
+    cudaDeviceSynchronize();
+
+    auto matMerge3 = CudaAlgorithm::runMergeHeightIntersect06(
+        matBufferGpu1,
+        matBufferGpu2,
         CudaAlgorithm::getCalc3DHeightVars(0),
         CudaAlgorithm::getCalc3DHeightVars(2),
         fHeightDiffThreshold * 2.f,
@@ -1147,10 +1160,8 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
         stream1);
 
     auto matMerge4 = CudaAlgorithm::runMergeHeightIntersect06(
-        matMerge1,
-        matResultNan1,
-        matMerge2,
-        matResultNan2,
+        matBufferGpu1,
+        matBufferGpu2,
         CudaAlgorithm::getCalc3DHeightVars(1),
         CudaAlgorithm::getCalc3DHeightVars(3),
         fHeightDiffThreshold * 2.f,
