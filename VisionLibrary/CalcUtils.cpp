@@ -224,6 +224,15 @@ float CalcUtils::calcPointToContourDist(const cv::Point &ptInput, const VectorOf
     outputFile.close();
 }
 
+/*static*/ void CalcUtils::saveMatToYml(const cv::Mat &matrix, const std::string& filename, const std::string& key) {
+    cv::FileStorage fs(filename, cv::FileStorage::WRITE);
+    if (!fs.isOpened())
+        return;
+
+    cv::write(fs, key, matrix);
+    fs.release();
+}
+
 /*static*/ int CalcUtils::twoLineIntersect(const PR_Line2f &line1, const PR_Line2f &line2, cv::Point2f &ptResult) {
     const auto Precision = std::numeric_limits<float>::epsilon();
     const auto VerticalLineSlopeThreshold = 100.f;  //If the slope the line large than this value, consider it is vertical.

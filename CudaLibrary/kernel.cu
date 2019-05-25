@@ -196,6 +196,11 @@ __global__ void kernel_qsort(T *data, unsigned int nitems)
     cdp_simple_quicksort(data, left, right, 0);
 }
 
+// The dMap and dPhase is the X diff of Map and Phase
+// Their size suppose to be ROW x (COL - 1)
+// But to reuse the GPU buffer, their size is not redefined
+// So their size still ROW X COL, so the COL index should start
+// to from 1 to make the result same as ROW x (COL - 1)
 __global__
 void kernel_select_cmp_point(
     float* dMap,
@@ -204,6 +209,8 @@ void kernel_select_cmp_point(
     uint32_t step,
     const int ROWS,
     const int COLS,
+    int* pBufferArrayIdx1,
+    int* pBufferArrayIdx2,
     const int span) {
     int start = blockIdx.x * blockDim.x + threadIdx.x;
     int stride = blockDim.x * gridDim.x;
@@ -211,20 +218,18 @@ void kernel_select_cmp_point(
     if (start >= ROWS)
         return;
 
-    int *arrayIdx1 = (int *)malloc(COLS / 4 * sizeof(int));
-    int *arrayIdx2 = (int *)malloc(COLS / 4 * sizeof(int));
-
     for (int row = start; row < ROWS; row += stride) {
-        int offsetOfInput = row * step;
-        int offsetOfResult = row * step;
+        int rowDataOffset = row * step;
+        int* arrayIdx1 = pBufferArrayIdx1 + row * 512;
+        int* arrayIdx2 = pBufferArrayIdx2 + row * 512;
 
-        float* dMapRow = dMap + offsetOfInput;
-        float* dPhaseRow = dPhase + offsetOfInput;
-        uint8_t* matResultRow = matResult + offsetOfResult;
+        float* dMapRow = dMap + rowDataOffset;
+        float* dPhaseRow = dPhase + rowDataOffset;
+        uint8_t* matResultRow = matResult + rowDataOffset;
 
         int countOfIdx1 = 0, countOfIdx2 = 0;
         for (int i = 0; i < COLS - 1; ++ i) {
-            const auto& value = dMapRow[i];
+            const auto& value = dMapRow[i + 1];
             if (value == 1.f)
                 arrayIdx1[countOfIdx1++] = i;
             else if (value == -1.f)
@@ -246,18 +251,14 @@ void kernel_select_cmp_point(
 
         for (int i = 0; i < countOfIdx1 && i < countOfIdx2; ++i) {
             if (arrayIdx2[i] - arrayIdx1[i] < span) {
-                if (fabs(dPhaseRow[arrayIdx1[i]]) > 1.f && fabs(dPhaseRow[arrayIdx2[i]]) > 1.f) {
+                if (fabs(dPhaseRow[arrayIdx1[i] + 1]) > 1.f && fabs(dPhaseRow[arrayIdx2[i] + 1]) > 1.f) {
                     for (int k = arrayIdx1[i]; k <= arrayIdx2[i]; ++k) {
                         matResultRow[k] = 255;
                     }
-
                 }
             }
         }
     }
-
-    free(arrayIdx1);
-    free(arrayIdx2);
 }
 
 void test_kernel_select_cmp_point(
@@ -327,8 +328,19 @@ void run_kernel_select_cmp_point(
     uint32_t step,
     const int ROWS,
     const int COLS,
+    int* pBufferArrayIdx1,
+    int* pBufferArrayIdx2,
     const int span) {
-    kernel_select_cmp_point<<<gridSize, blockSize, 0, cudaStream>>>(dMap, dPhase, matResult, step, ROWS, COLS, span);
+    kernel_select_cmp_point<<<gridSize, blockSize, 0, cudaStream>>>(
+        dMap,
+        dPhase,
+        matResult,
+        step,
+        ROWS,
+        COLS,
+        pBufferArrayIdx1,
+        pBufferArrayIdx2,
+        span);
     //test_kernel_select_cmp_point(dMap, dPhase, matResult, ROWS, COLS, span);
 }
 
@@ -379,7 +391,7 @@ void kernel_phase_correction(
     char* vecSignOfRow = pBufferSign + dataRowOffset;
     char* vecAmplOfRow = pBufferAmpl + dataRowOffset;
 
-    auto value = phaseDiffRow[c];
+    auto value = phaseDiffRow[c + 1];
     if (value > ONE_HALF_CYCLE) {
         vecSignOfRow[c] = 1;
         vecAmplOfRow[c] = static_cast<char> (std::ceil(std::fabs(value) / 2.f) * 2);
@@ -674,6 +686,7 @@ void kernel_interval_average(
 }
 
 void run_kernel_interval_average(
+    cudaEvent_t& eventDone,
     cudaStream_t cudaStream,
     float *data,
     uint32_t step,
@@ -682,15 +695,11 @@ void run_kernel_interval_average(
     int interval,
     float *d_result,
     float *result) {
-    cudaEvent_t eventDone;
-    cudaEventCreate(&eventDone);
-
     kernel_interval_average<<<1, 1, 0, cudaStream>>>(data, step, ROWS, COLS, interval, d_result);
     cudaMemcpyAsync(result, d_result, sizeof(float), cudaMemcpyDeviceToHost, cudaStream);
 
-    cudaEventRecord(eventDone, NULL);
+    cudaEventRecord(eventDone, cudaStream);
     cudaEventSynchronize(eventDone);
-    cudaEventDestroy(eventDone);
 }
 
 //__device__ unsigned int count = 0;
@@ -783,6 +792,7 @@ void kernel_range_average(float *data, const int size, float rangeStart, float r
 }
 
 void run_kernel_range_interval_average(
+    cudaEvent_t& eventDone,
     cudaStream_t cudaStream,
     const float *data,
     uint32_t step,
@@ -797,18 +807,14 @@ void run_kernel_range_interval_average(
     const int RESULT_COLS = static_cast<int>(ceil((float)COLS / interval));
     const int SIZE = RESULT_ROWS * RESULT_COLS;
 
-    cudaEvent_t eventDone;
-    cudaEventCreate(&eventDone);
-
     kernel_interval_pick_data <<<1, 1, 0, cudaStream>>>(data, step, ROWS, COLS, interval, d_result);
 
     kernel_qsort<<<1, 1, 0, cudaStream >>>(d_result, SIZE);
     kernel_range_average<<<1, 1, 0, cudaStream>>>(d_result, SIZE, rangeStart, rangeEnd);
     cudaMemcpyAsync(result, d_result, sizeof(float), cudaMemcpyDeviceToHost, cudaStream);
 
-    cudaEventRecord(eventDone, NULL);
+    cudaEventRecord(eventDone, cudaStream);
     cudaEventSynchronize(eventDone);
-    cudaEventDestroy(eventDone);
 }
 
 __global__
@@ -987,15 +993,421 @@ void kernel_merge_height_intersect(float* matOne, float *matTwo, float *d_result
     free(matNanMaskRow);
 }
 
-void run_kernel_merge_height_intersect(
-    uint32_t gridSize,
-    uint32_t blockSize,
+__device__
+bool patch_up_side_value(
+    float *pInOutData,
+    const unsigned char* pNanMask,
+    int step,
+    int row,
+    int col,
+    const int ROWS,
+    const int COLS) {
+    int patchRow = row - 1;
+    unsigned char maskValue = *(pNanMask + patchRow * step + col);
+    while (maskValue != 0 && patchRow > 0) {
+        patchRow--;
+        maskValue = *(pNanMask + patchRow * step + col);
+    }
+
+    if (maskValue == 0 && patchRow >= 0) {
+        *(pInOutData + row * step + col) = *(pInOutData + patchRow * step + col);
+        return true;
+    }
+    return false;
+}
+
+__device__
+bool patch_down_side_value(
+    float *pInOutData,
+    const unsigned char* pNanMask,
+    int step,
+    int row,
+    int col,
+    const int ROWS,
+    const int COLS) {
+    int patchRow = row + 1;
+    unsigned char maskValue = *(pNanMask + patchRow * step + col);
+    while (maskValue != 0 && patchRow < ROWS - 1) {
+        patchRow++;
+        maskValue = *(pNanMask + patchRow * step + col);
+    }
+    if (maskValue == 0 && patchRow < ROWS) {
+        *(pInOutData + row * step + col) = *(pInOutData + patchRow * step + col);
+        return true;
+    }
+    return false;
+}
+
+__device__
+bool patch_left_side_value(
+    float *pInOutData,
+    const unsigned char* pNanMask,
+    int step,
+    int row,
+    int col,
+    const int ROWS,
+    const int COLS) {
+    int patchCol = col - 1;
+    unsigned char maskValue = *(pNanMask + row * step + patchCol);
+    while (maskValue != 0 && patchCol > 0) {
+        patchCol--;
+        maskValue = *(pNanMask + row * step + patchCol);
+    }
+
+    if (maskValue == 0 && patchCol >= 0) {
+        *(pInOutData + row * step + col) = *(pInOutData + row * step + patchCol);
+        return true;
+    }
+    return false;
+}
+
+__device__
+bool patch_right_side_value(
+    float *pInOutData,
+    const unsigned char* pNanMask,
+    int step,
+    int row,
+    int col,
+    const int ROWS,
+    const int COLS) {
+    int patchCol = col + 1;
+    unsigned char maskValue = *(pNanMask + row * step + patchCol);
+    while (maskValue != 0 && patchCol < COLS - 1) {
+        patchCol++;
+        maskValue = *(pNanMask + row * step + patchCol);
+    }
+
+    if (maskValue == 0 && patchCol < COLS) {
+        *(pInOutData + row * step + col) = *(pInOutData + row * step + patchCol);
+        return true;
+    }
+    return false;
+}
+
+__global__
+void kernel_phase_patch(float *pInOutData,
+    const unsigned char* pNanMask,
+    const int ROWS,
+    const int COLS,
+    int step,
+    PR_DIRECTION enProjDir) {
+    int col = blockIdx.x * blockDim.x + threadIdx.x;
+    int row = blockIdx.y * blockDim.y + threadIdx.y;
+    if (col >= COLS || row >= ROWS)
+        return;
+
+    int dataOffset = step * row;
+    auto pRowOfNanMask = pNanMask + dataOffset;
+    if (pRowOfNanMask[col] == 0)
+        return;
+
+    if (row == ROWS - 1 && col == COLS - 1) {
+        patch_up_side_value(pInOutData, pNanMask, step, row, col, ROWS, COLS);
+        return;
+    }else if (row == 0 && col == 0) {
+        patch_down_side_value(pInOutData, pNanMask, step, row, col, ROWS, COLS);
+        return;
+    }
+    // Projection up to down, patch down to up
+    if (PR_DIRECTION::UP == enProjDir) {
+        if (row < ROWS - 1) {
+            patch_down_side_value(pInOutData, pNanMask, step, row, col, ROWS, COLS);
+        }else if (col < COLS - 1) {
+            patch_right_side_value(pInOutData, pNanMask, step, row, col, ROWS, COLS);
+        }
+    }
+    // Projection down to up, patch up to down
+    else if (PR_DIRECTION::DOWN == enProjDir) {
+        if (row > 0)
+            patch_up_side_value(pInOutData, pNanMask, step, row, col, ROWS, COLS);
+        else if (col > 0)
+            patch_left_side_value(pInOutData, pNanMask, step, row, col, ROWS, COLS);
+    }
+    // Projection left to right, patch right to left
+    else if (PR_DIRECTION::LEFT == enProjDir) {
+        if (col < COLS - 1)
+            patch_right_side_value(pInOutData, pNanMask, step, row, col, ROWS, COLS);
+        else if (row < ROWS - 1)
+            patch_down_side_value(pInOutData, pNanMask, step, row, col, ROWS, COLS);
+    }
+    // Projection right to left, patch left to right
+    else if (PR_DIRECTION::RIGHT == enProjDir) {
+        if (col > 0)
+            patch_left_side_value(pInOutData, pNanMask, step, row, col, ROWS, COLS);
+        else if (row > 0)
+            patch_up_side_value(pInOutData, pNanMask, step, row, col, ROWS, COLS);
+    }
+}
+
+void run_kernel_phase_patch(
+    dim3 grid,
+    dim3 threads,
     cudaStream_t cudaStream,
-    float* matOne,
-    float *matTwo,
-    float *d_result,
-    int rows,
-    int cols,
-    float fDiffThreshold) {
-    kernel_merge_height_intersect<<<gridSize, blockSize, 0, cudaStream>>>(matOne, matTwo, d_result, rows, cols, fDiffThreshold);
+    float *pInOutData,
+    const unsigned char* pNanMask,
+    const int ROWS,
+    const int COLS,
+    int step,
+    PR_DIRECTION enProjDir) {
+    kernel_phase_patch<<<grid, threads, 0, cudaStream>>>(pInOutData, pNanMask, ROWS, COLS, step, enProjDir);
+}
+
+__global__
+void kernel_merge_height_intersect(
+    float*         matOne,
+    float*         matTwo,
+    float*         matTre,
+    float*         matFor,
+    unsigned char* matMask,
+    float*         matMaskDiffResult,
+    const int      ROWS,
+    const int      COLS,
+    const int      step,
+    int*           pMergeIndexBuffer,
+    float*         pCmpTargetBuffer,
+    float          fDiffThreshold) {
+    int start = blockIdx.x * blockDim.x + threadIdx.x;
+    int stride = blockDim.x * gridDim.x;
+
+    for (int row = start; row < ROWS; row += stride) {
+        int offset = row * step;
+        auto matOneRow = matOne + offset;
+        auto matTwoRow = matTwo + offset;
+        auto matTreRow = matTre + offset;
+        auto matForRow = matFor + offset;
+        auto matNanRow = matMask + offset;
+        auto matMaskDiffRow = matMaskDiffResult + offset;
+
+        int* arrayIndexs = pMergeIndexBuffer + offset;
+        float* arrayTargetH = pCmpTargetBuffer + offset;
+
+        int count = 0;
+        if (matNanRow[0] > 0)
+            arrayIndexs[count++] = 0;
+
+        for (int col = 0; col < COLS - 1; ++col) {
+            if (matMaskDiffRow[col + 1] > 0)
+                arrayIndexs[count++] = col;
+        }
+
+        if (matNanRow[COLS - 1] > 0)
+            arrayIndexs[count++] = COLS - 1;
+
+        for (int i = 0; i < count / 2; ++i) {
+            int startIndex = arrayIndexs[i * 2];
+            int endIndex = arrayIndexs[i * 2 + 1];
+
+            if (0 == startIndex && endIndex < COLS - 1) {
+                for (int i = 0; i <= endIndex - startIndex; ++i)
+                    arrayTargetH[i] = matForRow[endIndex + 1];
+            }
+            else if (COLS - 1 == endIndex && startIndex >= 0) {
+                for (int i = 0; i <= endIndex - startIndex; ++i)
+                    arrayTargetH[i] = matForRow[startIndex];
+            }
+            else if (startIndex >= 0 && endIndex < COLS - 1) {
+                float fInterval = (matForRow[endIndex + 1] - matForRow[startIndex]) / (endIndex - startIndex + 1);
+                for (int i = 0; i <= endIndex - startIndex; ++i) {
+                    arrayTargetH[i] = matForRow[startIndex] + fInterval * i;
+                }
+            }
+
+            float fAbsDiffSumOne = 0.f, fAbsDiffSumTwo = 0.f, fAbsDiffSumTre = 0.f;
+            for (int index = startIndex, k = 0; index <= endIndex; ++index, ++k) {
+                fAbsDiffSumOne += fabsf(matOneRow[index] - arrayTargetH[k]);
+                fAbsDiffSumTwo += fabsf(matTwoRow[index] - arrayTargetH[k]);
+                fAbsDiffSumTre += fabsf(matTreRow[index] - arrayTargetH[k]);
+            }
+
+            float *matChoose;
+            if (fAbsDiffSumOne <= fAbsDiffSumTwo && fAbsDiffSumOne <= fAbsDiffSumTre)
+                matChoose = matOneRow;
+            else if (fAbsDiffSumTwo <= fAbsDiffSumOne && fAbsDiffSumTwo <= fAbsDiffSumTre)
+                matChoose = matTwoRow;
+            else
+                matChoose = matTreRow;
+
+            for (int col = startIndex; col <= endIndex; ++col) {
+                matForRow[col] = matChoose[col];
+            }
+        }
+    }
+}
+
+void cpu_kernel_merge_height_intersect(
+    float*         matOne,
+    float*         matTwo,
+    float*         matTre,
+    float*         matFor,
+    unsigned char* matMask,
+    float*         matMaskDiffResult,
+    const int      ROWS,
+    const int      COLS,
+    const int      step,
+    float          fDiffThreshold) {
+    int start = 0;
+    int stride = 1;
+
+    int *arrayIndexs = (int *)malloc(COLS / 2 * sizeof(int));
+    float *arrayTargetH = (float *)malloc(COLS * sizeof(float));
+
+    for (int row = start; row < ROWS; row += stride) {
+        int offset = row * step;
+        auto matOneRow = matOne + offset;
+        auto matTwoRow = matTwo + offset;
+        auto matTreRow = matTre + offset;
+        auto matForRow = matFor + offset;
+        auto matNanRow = matMask + offset;
+        auto matMaskDiffRow = matMaskDiffResult + row * (step - 1);
+
+        int count = 0;
+        if (matNanRow[0] > 0)
+            arrayIndexs[count++] = 0;
+
+        for (int col = count; col < COLS - 1; ++col) {
+            if (matMaskDiffRow[col] > 0)
+                arrayIndexs[count++] = col;
+        }
+
+        if (matNanRow[COLS - 1] > 0)
+            arrayIndexs[count++] = COLS - 1;
+
+        printf("row = %d count = %d\n", row, count);
+
+        for (int i = 0; i < count / 2; ++i) {
+            int startIndex = arrayIndexs[i * 2];
+            int endIndex = arrayIndexs[i * 2 + 1];
+
+            if (0 == startIndex && endIndex < COLS - 1) {
+                for (int i = 0; i <= endIndex - startIndex; ++i)
+                    arrayTargetH[i] = matForRow[endIndex + 1];
+            }
+            else if (COLS - 1 == endIndex && startIndex >= 0) {
+                for (int i = 0; i <= endIndex - startIndex; ++i)
+                    arrayTargetH[i] = matForRow[startIndex];
+            }
+            else if (startIndex >= 0 && endIndex < COLS - 1) {
+                float fInterval = (matForRow[endIndex + 1] - matForRow[startIndex]) / (endIndex - startIndex + 1);
+                for (int i = 0; i <= endIndex - startIndex; ++i) {
+                    arrayTargetH[i] = matForRow[startIndex] + fInterval * i;
+                }
+            }
+
+            float fAbsDiffSumOne = 0.f, fAbsDiffSumTwo = 0.f, fAbsDiffSumTre = 0.f;
+            for (int index = startIndex, k = 0; index <= endIndex; ++index, ++k) {
+                fAbsDiffSumOne += fabsf(matOneRow[index] - arrayTargetH[k]);
+                fAbsDiffSumTwo += fabsf(matTwoRow[index] - arrayTargetH[k]);
+                fAbsDiffSumTre += fabsf(matTreRow[index] - arrayTargetH[k]);
+            }
+
+            float *matChoose;
+            if (fAbsDiffSumOne <= fAbsDiffSumTwo && fAbsDiffSumOne <= fAbsDiffSumTre)
+                matChoose = matOneRow;
+            else if (fAbsDiffSumTwo <= fAbsDiffSumOne && fAbsDiffSumTwo <= fAbsDiffSumTre)
+                matChoose = matTwoRow;
+            else
+                matChoose = matTreRow;
+
+            for (int col = startIndex; col <= endIndex; ++col) {
+                matForRow[col] = matChoose[col];
+            }
+        }
+    }
+
+    free(arrayTargetH);
+    free(arrayIndexs);
+}
+
+void run_kernel_merge_height_intersect(
+    uint32_t       gridSize,
+    uint32_t       blockSize,
+    cudaStream_t   cudaStream,
+    float*         matOne,
+    float*         matTwo,
+    float*         matTre,
+    float*         matFor,
+    unsigned char* matMask,
+    float*         matMaskDiffResult,
+    const int      ROWS,
+    const int      COLS,
+    const int      step,
+    int*           pMergeIndexBuffer,
+    float*         pCmpTargetBuffer,
+    float          fDiffThreshold) {
+    kernel_merge_height_intersect<<<gridSize, blockSize, 0, cudaStream>>>(
+        matOne,
+        matTwo,
+        matTre,
+        matFor,
+        matMask,
+        matMaskDiffResult,
+        ROWS,
+        COLS,
+        step,
+        pMergeIndexBuffer,
+        pCmpTargetBuffer,
+        fDiffThreshold);
+    //cpu_kernel_merge_height_intersect(
+    //    matOne,
+    //    matTwo,
+    //    matTre,
+    //    matFor,
+    //    matMask,
+    //    matMaskDiffResult,
+    //    ROWS,
+    //    COLS,
+    //    step,
+    //    fDiffThreshold);
+}
+
+__global__
+void kernel_choose_min_value_for_mask(
+    float *matH1,
+    float *matH2,
+    float *matH3,
+    unsigned char* matMask,
+    const int ROWS,
+    const int COLS,
+    const int step) {
+    int col = blockIdx.x * blockDim.x + threadIdx.x;
+    int row = blockIdx.y * blockDim.y + threadIdx.y;
+
+    if (col >= COLS || row >= ROWS)
+        return;
+
+    int dataRowOffset = row * step;
+    auto matMaskRow = matMask + dataRowOffset;
+    if (matMaskRow[col] == 0)
+        return;
+
+    auto matH1Row = matH1 + dataRowOffset;
+    auto matH2Row = matH2 + dataRowOffset;
+    auto matH3Row = matH3 + dataRowOffset;
+
+    if (matH2Row[col] < matH1Row[col])
+        matH1Row[col] = matH2Row[col];
+    
+    if (matH3Row[col] < matH1Row[col])
+        matH1Row[col] = matH3Row[col];
+}
+
+void run_kernel_choose_min_value_for_mask(
+    dim3 grid,
+    dim3 threads,
+    cudaStream_t cudaStream,
+    float *matH1,
+    float *matH2,
+    float *matH3,
+    unsigned char* matMask,
+    const int ROWS,
+    const int COLS,
+    const int step) {
+    kernel_choose_min_value_for_mask<<<grid, threads, 0, cudaStream>>>(
+        matH1,
+        matH2,
+        matH3,
+        matMask,
+        ROWS,
+        COLS,
+        step);
 }

@@ -4,6 +4,7 @@
 #include "VisionType.h"
 #include "VisionStatus.h"
 #include "opencv2/core.hpp"
+#include "opencv2/core/cuda.hpp"
 #include "opencv2/imgproc.hpp"
 #include "BaseType.h"
 #include <list>
@@ -29,6 +30,7 @@ using VectorOfListOfPoint = std::vector<ListOfPoint>;
 using VectorOfSize2f = std::vector<cv::Size2f>;
 using VectorOfMat = std::vector<cv::Mat>;
 using VectorOfVectorOfMat = std::vector<VectorOfMat>;
+using VectorOfGpuMat = std::vector<cv::cuda::GpuMat>;
 using VectorOfFloat = std::vector<float>;
 using VectorOfVectorOfFloat = std::vector<VectorOfFloat>;
 using VectorOfDouble = std::vector<double>;
@@ -1356,7 +1358,6 @@ struct PR_CALC_3D_HEIGHT_GPU_CMD {
         enProjectDir(PR_DIRECTION::LEFT),
         enScanDir(PR_DIRECTION::DOWN),
         bUseThinnestPattern(false),
-        fRemoveHarmonicWaveK(0.f),
         fMinAmplitude(3.f),
         fPhaseShift(0.f),
         nRemoveJumpSpan(7),
@@ -1368,7 +1369,6 @@ struct PR_CALC_3D_HEIGHT_GPU_CMD {
     PR_DIRECTION            enProjectDir;            //The DLP project direction. Get it from PR_CALIB_3D_BASE_RPY.
     PR_DIRECTION            enScanDir;               //The phase correction direction. Get it from PR_CALIB_3D_BASE_RPY.
     bool                    bUseThinnestPattern;     //Choose to use the thinnest stripe pattern. Otherwise just use the normal thin stripe.
-    float                   fRemoveHarmonicWaveK;    //The factor to remove the harmonic wave in the thick stripe. If it is 0, then this procedure will be skipped.
     float                   fMinAmplitude;           //In a group of 4 images, if a pixel's gray scale amplitude less than this value, this pixel will be discarded.
     float                   fPhaseShift;             //Shift the phase measure range. Normal is -1~1, sometimes the H5 surface has corner over this range. So if shift is 0.1, the measure range is -0.9~1.1, so it can measure all the H5 surface.
     cv::Mat                 matThickToThinK;         //The factor between thick stripe and thin stripe.
@@ -1397,6 +1397,16 @@ struct PR_MERGE_3D_HEIGHT_RPY {
     VisionStatus            enStatus;
     cv::Mat                 matHeight;
     cv::Mat                 matNanMask;
+};
+
+struct PR_CALC_MERGE_4_DLP_HEIGHT_CMD {
+    PR_CALC_3D_HEIGHT_GPU_CMD arrCalcHeightCmd[NUM_OF_DLP];
+    float                   fHeightDiffThreshold;   //The height difference threshold. Unit mm. If height difference less than it, the result height is average of the input height. If larger than it, the result height use the small height.
+};
+
+struct PR_CALC_MERGE_4_DLP_HEIGHT_RPY {
+    VisionStatus            enStatus;
+    cv::Mat                 matHeight;
 };
 
 struct PR_CALC_3D_HEIGHT_DIFF_CMD {

@@ -1,6 +1,5 @@
 ﻿#include "stdafx.h"
-#include "../VisionLibrary/VisionAPI.h"
-#include "opencv2/highgui.hpp"
+#include <cuda_runtime.h>
 #include <iostream>
 #include <sstream>
 #include <algorithm>
@@ -9,6 +8,9 @@
 #include <thread>
 #include <atomic>
 #include "TestSub.h"
+
+#include "../VisionLibrary/VisionAPI.h"
+#include "opencv2/highgui.hpp"
 #include "../RegressionTest/UtilityFunc.h"
 #include "../VisionLibrary/CalcUtils.hpp"
 
@@ -16,13 +18,13 @@ void TestCalc3DHeightDiff(const cv::Mat &matHeight);
 
 using namespace AOI::Vision;
 
-void saveMatToCsv(const cv::Mat &matrix, std::string filename){
+void saveMatToCsv(const cv::Mat &matrix, std::string filename) {
     std::ofstream outputFile(filename);
     outputFile << cv::format(matrix, cv::Formatter::FMT_CSV);
     outputFile.close();
 }
 
-void saveMatToYml(const cv::Mat &matrix, const std::string& filename, const std::string& key){
+void saveMatToYml(const cv::Mat &matrix, const std::string& filename, const std::string& key) {
     cv::FileStorage fs(filename, cv::FileStorage::WRITE);
     if (!fs.isOpened())
         return;
@@ -1407,7 +1409,6 @@ void TestCalc4DLPHeight()
     PR_MERGE_3D_HEIGHT_RPY stMerge3DRpy;
 
     for (int i = 0; i < 4; ++i) {
-        stCalcHeightRpys[i].matHeight.setTo(NAN, stCalcHeightRpys[i].matNanMask);
         stMerge3DCmd.vecMatHeight.push_back(stCalcHeightRpys[i].matHeight);
         stMerge3DCmd.vecMatNanMask.push_back(stCalcHeightRpys[i].matNanMask);
         stMerge3DCmd.vecProjDir.push_back(stCalcHeightCmds[i].enProjectDir);
@@ -1438,6 +1439,138 @@ void TestCalc4DLPHeight()
     std::cout << "Success to calculate 4 DLP height" << std::endl;
 }
 
+void TestCalc4DLPHeightOnePass()
+{
+    std::string strParentFolder = "C:/Data/3D_20190408/PCBFOV20190104/";
+    std::string strImageFolder = strParentFolder + "0104191933/";
+    std::string strResultFolder = strParentFolder + "Frame_1_Result/";
+
+    PR_CALC_MERGE_4_DLP_HEIGHT_CMD stCalc4DlpHeightCmd;
+    PR_CALC_MERGE_4_DLP_HEIGHT_RPY stCalc4DlpHeightRpy;
+
+    auto vecImages = ReadFrameImage(strImageFolder);
+    if (vecImages.empty())
+        return;
+    
+    bool b3DDetectCaliUseThinPattern = true;
+    bool b3DDetectGaussionFilter = true;
+
+    //float dlpOffset[4] = {5.3551e-04, -0.0014f, 0.0694, 0};
+    //float dlpOffset[4] = {0.0193f, -0.0032f, -0.0899, 0};
+    float dlpOffset[4] = {0.f, 0.f, 0.f, 0.f};
+
+    {
+        PR_SET_DLP_PARAMS_TO_GPU_CMD stSetDlpCmd;
+        PR_SET_DLP_PARAMS_TO_GPU_RPY stSetDlpRpy;
+        for (int nDlp = 0; nDlp < NUM_OF_DLP; ++nDlp) {
+            char filePath[100];
+            _snprintf(filePath, sizeof(filePath), "./data/3D/Config/IntegrateCalibResult%d_new3D.yml", nDlp + 1);
+            cv::FileStorage fsIntegrated(filePath, cv::FileStorage::READ);
+
+            cv::FileNode fileNode = fsIntegrated["BezierSurface"];
+            cv::read(fileNode, stSetDlpCmd.vec3DBezierSurface[nDlp], cv::Mat());
+
+            fsIntegrated.release();
+
+            {
+                _snprintf(filePath, sizeof(filePath), "./data/3D/Config/CalibPP_Matlab_dlp%d.yml", nDlp + 1);
+                cv::FileStorage fs(filePath, cv::FileStorage::READ);
+
+                cv::FileNode fileNode = fs["BaseWrappedAlpha"];
+                cv::read(fileNode, stSetDlpCmd.vecMatAlphaBase[nDlp], cv::Mat());
+                fileNode = fs["BaseWrappedBeta"];
+                cv::read(fileNode, stSetDlpCmd.vecMatBetaBase[nDlp], cv::Mat());
+                fileNode = fs["BaseWrappedGamma"];
+                cv::read(fileNode, stSetDlpCmd.vecMatGammaBase[nDlp], cv::Mat());
+                fs.release();
+            }
+        }
+
+        PR_SetDlpParamsToGpu(&stSetDlpCmd, &stSetDlpRpy);
+        if (stSetDlpRpy.enStatus != VisionStatus::OK) {
+            std::cout << "PR_SetDlpParamsToGpu failed" << std::endl;
+            return;
+        }
+
+        std::cout << "PR_SetDlpParamsToGpu success" << std::endl;
+    }
+
+    for (int nDlp = 0; nDlp < NUM_OF_DLP; ++ nDlp) {
+        stCalc4DlpHeightCmd.arrCalcHeightCmd[nDlp].bEnableGaussianFilter = b3DDetectGaussionFilter;
+        stCalc4DlpHeightCmd.arrCalcHeightCmd[nDlp].bUseThinnestPattern = b3DDetectCaliUseThinPattern;
+        stCalc4DlpHeightCmd.arrCalcHeightCmd[nDlp].fMinAmplitude = 3.f;
+        stCalc4DlpHeightCmd.arrCalcHeightCmd[nDlp].fPhaseShift = 0.1f;
+        stCalc4DlpHeightCmd.arrCalcHeightCmd[nDlp].nDlpNo = nDlp;
+
+        cv::Mat matBaseSurfaceParam;
+        char filePath[100];
+        // read config file
+        {
+            _snprintf(filePath, sizeof(filePath), "./data/3D/Config/calibration3D_dlp%d_simple.yml", nDlp + 1);
+            cv::FileStorage fs(filePath, cv::FileStorage::READ);
+            cv::FileNode fileNode = fs["K1"];
+            cv::read(fileNode, stCalc4DlpHeightCmd.arrCalcHeightCmd[nDlp].matThickToThinK, cv::Mat());
+            fileNode = fs["K2"];
+            cv::read(fileNode, stCalc4DlpHeightCmd.arrCalcHeightCmd[nDlp].matThickToThinnestK, cv::Mat());
+
+            Int32 projectDir, scanDir;
+            fileNode = fs["ProjectDir"];
+            cv::read(fileNode, projectDir, 0);
+            stCalc4DlpHeightCmd.arrCalcHeightCmd[nDlp].enProjectDir = static_cast<PR_DIRECTION>(projectDir);
+            fileNode = fs["ScanDir"];
+            cv::read(fileNode, scanDir, 0);
+            stCalc4DlpHeightCmd.arrCalcHeightCmd[nDlp].enScanDir = static_cast<PR_DIRECTION>(scanDir);
+
+            //fileNode = fs["BaseWrappedAlpha"];
+            //cv::read(fileNode, stCalcHeightCmds[nDlp].matBaseWrappedAlpha, cv::Mat());
+            //fileNode = fs["BaseWrappedBeta"];
+            //cv::read(fileNode, stCalcHeightCmds[nDlp].matBaseWrappedBeta, cv::Mat());
+            //fileNode = fs["BaseWrappedGamma"];
+            //cv::read(fileNode, stCalcHeightCmds[nDlp].matBaseWrappedGamma, cv::Mat());
+            fileNode = fs["ReverseSeq"];
+            cv::read(fileNode, stCalc4DlpHeightCmd.arrCalcHeightCmd[nDlp].bReverseSeq, 0);
+            fs.release();
+        }
+
+        _snprintf(filePath, sizeof(filePath), "./data/3D/Config/IntegrateCalibResult%d_new3D.yml", nDlp + 1);
+        cv::FileStorage fsIntegrated(filePath, cv::FileStorage::READ);
+        cv::FileNode fileNodeIntegrated = fsIntegrated["BezierK"];
+        cv::read(fileNodeIntegrated, stCalc4DlpHeightCmd.arrCalcHeightCmd[nDlp].mat3DBezierK, cv::Mat());
+        fileNodeIntegrated = fsIntegrated["MaxPhase"];
+        cv::read(fileNodeIntegrated, stCalc4DlpHeightCmd.arrCalcHeightCmd[nDlp].fMaxPhase, 6.f);
+        fileNodeIntegrated = fsIntegrated["MinPhase"];
+        cv::read(fileNodeIntegrated, stCalc4DlpHeightCmd.arrCalcHeightCmd[nDlp].fMinPhase, -6.f);
+        stCalc4DlpHeightCmd.arrCalcHeightCmd[nDlp].fMaxPhase = 6.f;
+        stCalc4DlpHeightCmd.arrCalcHeightCmd[nDlp].fMinPhase = -6.f;
+        
+        fsIntegrated.release();
+
+        stCalc4DlpHeightCmd.arrCalcHeightCmd[nDlp].vecInputImgs = VectorOfMat(vecImages.begin() + nDlp * IMAGE_COUNT, vecImages.begin() + (nDlp + 1) * IMAGE_COUNT);
+    }
+
+    stCalc4DlpHeightCmd.fHeightDiffThreshold = 0.1f;
+
+    PR_CalcMerge4DlpHeight(&stCalc4DlpHeightCmd, &stCalc4DlpHeightRpy);
+    if (stCalc4DlpHeightRpy.enStatus != VisionStatus::OK)
+    {
+        std::cout << "PR_CalcMerge4DlpHeight failed, status " << ToInt32(stCalc4DlpHeightRpy.enStatus) << " at line " << __LINE__ << std::endl;
+        return;
+    }
+
+    cudaDeviceReset();
+
+    saveMatToCsv(stCalc4DlpHeightRpy.matHeight, strResultFolder + "Final_Height.csv");
+
+    PR_HEIGHT_TO_GRAY_CMD stCmd;
+    PR_HEIGHT_TO_GRAY_RPY stRpy;
+    stCmd.matHeight = stCalc4DlpHeightRpy.matHeight;
+    PR_HeightToGray(&stCmd, &stRpy);
+    cv::imwrite(strResultFolder + "Final_HeightGray.png", stRpy.matGray);
+
+    cv::imwrite(strResultFolder + "Final_HeightGray_Grid.png", _drawHeightGrid(stCalc4DlpHeightRpy.matHeight, 10, 10));
+    std::cout << "Success to calculate 4 DLP height" << std::endl;
+}
+
 void CompareHeightSame() {
     std::string strWorkingFolder("C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/");
     cv::Mat matHeight1 = readMatFromCsvFile(strWorkingFolder + "Final_Height_0.csv");
@@ -1453,6 +1586,106 @@ void CompareHeightSame() {
 
     cv::Mat matMask = matDiff > 0.1f;
     cv::imwrite(strWorkingFolder + "CompareHeightDiffMask.png", matMask);
+}
+
+void CompareHeightOutputDiffMask(const cv::Mat& matHeight1, const cv::Mat& matHeight2, const std::string& resultImageName) {
+    if (matHeight1.size() != matHeight2.size()) {
+        std::cout << "Height1 size " << matHeight1.size() << " not match height 2 size " << matHeight2.size() << std::endl;
+        return;
+    }
+
+    cv::Mat matDiff;
+    cv::absdiff(matHeight1, matHeight2, matDiff);
+
+    cv::Mat matMask = matDiff > 0.01f;
+    cv::imwrite(resultImageName, matMask);
+}
+
+void CompareHeightFromYml(
+    const std::string& fileName1,
+    const std::string& key1,
+    const std::string& fileName2,
+    const std::string& key2,
+    const std::string& resultImageName) {
+    cv::Mat matHeight1 = readMatFromYml(fileName1, key1);
+    cv::Mat matHeight2 = readMatFromYml(fileName2, key2);
+
+    CompareHeightOutputDiffMask(matHeight1, matHeight2, resultImageName);
+}
+
+void VeryHeightMergeResult() {
+    std::string strWorkingFolder("C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/");
+
+    cv::Mat matNanMask = readMatFromYml(strWorkingFolder + "Gpu_BeforeMergeHeightResult_1.yml", "Mask");
+    cv::imwrite(strWorkingFolder + "GpuMergeNanMask_1.png", matNanMask);
+
+    CompareHeightFromYml(
+        strWorkingFolder + "Cpu_BeforeMergeHeightResult_1.yml",
+        "H3",
+        strWorkingFolder + "Gpu_BeforeMergeHeightResult_1.yml",
+        "H3",
+        strWorkingFolder + "CompareBeforeMergeHeightResult_H3.png");
+
+    CompareHeightFromYml(
+        strWorkingFolder + "Cpu_MergeResult_1.yml",
+        "result",
+        strWorkingFolder + "Gpu_MergeResult_1.yml",
+        "result",
+        strWorkingFolder + "CompareMergeHeightResult_1.png");
+
+    CompareHeightFromYml(
+        strWorkingFolder + "Cpu_MergeResult_2.yml",
+        "result",
+        strWorkingFolder + "Gpu_MergeResult_2.yml",
+        "result",
+        strWorkingFolder + "CompareMergeHeightResult_2.png");
+
+    CompareHeightFromYml(
+        strWorkingFolder + "Cpu_MergeResult_3.yml",
+        "result",
+        strWorkingFolder + "Gpu_MergeResult_3.yml",
+        "result",
+        strWorkingFolder + "CompareMergeHeightResult_3.png");
+
+    CompareHeightFromYml(
+        strWorkingFolder + "Cpu_MergeResult_4.yml",
+        "result",
+        strWorkingFolder + "Gpu_MergeResult_4.yml",
+        "result",
+        strWorkingFolder + "CompareMergeHeightResult_4.png");
+}
+
+void ReadPhasePatchResult(const std::string& fileName, cv::Mat& matH11, cv::Mat& matH10, cv::Mat& matH22, cv::Mat& matH20) {
+    cv::FileStorage fs(fileName, cv::FileStorage::READ);
+    if (!fs.isOpened())
+        return;
+
+    cv::FileNode fileNode = fs["H11"];
+    cv::read(fileNode, matH11, cv::Mat());
+    fileNode = fs["H10"];
+    cv::read(fileNode, matH10, cv::Mat());
+    fileNode = fs["H22"];
+    cv::read(fileNode, matH22, cv::Mat());
+    fileNode = fs["H20"];
+    cv::read(fileNode, matH20, cv::Mat());
+    fs.release();
+}
+
+void ComparePatchPhaseResult() {
+    std::string strWorkingFolder("C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/");
+
+    cv::Mat matCpuH11, matCpuH10, matCpuH22, matCpuH20;
+    ReadPhasePatchResult(strWorkingFolder + "Cpu_PatchPhaseResult_1.yml",
+        matCpuH11, matCpuH10, matCpuH22, matCpuH20);
+
+    cv::Mat matGpuH11, matGpuH10, matGpuH22, matGpuH20;
+    ReadPhasePatchResult(strWorkingFolder + "Gpu_PatchPhaseResult_1.yml",
+        matGpuH11, matGpuH10, matGpuH22, matGpuH20);
+
+    CompareHeightOutputDiffMask(matCpuH11, matGpuH11, strWorkingFolder + "PhasePatch_H11_Diff.png");
+    CompareHeightOutputDiffMask(matCpuH10, matGpuH10, strWorkingFolder + "PhasePatch_H10_Diff.png");
+    CompareHeightOutputDiffMask(matCpuH22, matGpuH22, strWorkingFolder + "PhasePatch_H22_Diff.png");
+    CompareHeightOutputDiffMask(matCpuH20, matGpuH20, strWorkingFolder + "PhasePatch_H20_Diff.png");
 }
 
 void CompareMask() {

@@ -1,7 +1,10 @@
 #pragma once
+
+#include <cuda_runtime.h>
 #include "opencv2/core.hpp"
 #include "VisionHeader.h"
 #include "opencv2/core/cuda.hpp"
+#include "opencv2/cudafilters.hpp"
 
 namespace AOI
 {
@@ -16,8 +19,13 @@ struct Calc3DHeightVars {
     cv::cuda::GpuMat matAvgUnderTolIndex;
     cv::cuda::GpuMat matBufferGpu;
     cv::cuda::GpuMat matBufferGpuT;
+    cv::cuda::GpuMat matBufferGpuT_1;
     cv::cuda::GpuMat matMaskGpu;
     cv::cuda::GpuMat matMaskGpuT;
+    cv::cuda::GpuMat matMaskGpu_1;
+    cv::cuda::GpuMat matMaskGpuT_1;
+    cv::cuda::GpuMat matMaskGpu_2;
+    cv::cuda::GpuMat matMaskGpuT_2;
     cv::cuda::GpuMat matDiffResult;
     cv::cuda::GpuMat matDiffResultT;
     cv::cuda::GpuMat matDiffResult_1;
@@ -30,6 +38,7 @@ struct Calc3DHeightVars {
     int* pBufferJumpStart;
     int* pBufferJumpEnd;
     int* pBufferSortedJumpSpanIdx;
+    cudaEvent_t eventDone;
 };
 
 struct DlpCalibResult {
@@ -45,8 +54,13 @@ class CudaAlgorithm
     ~CudaAlgorithm() = delete;
     static DlpCalibResult m_dlpCalibData[NUM_OF_DLP];
     static Calc3DHeightVars m_arrCalc3DHeightVars[NUM_OF_DLP];
+    static cv::Ptr<cv::cuda::Filter> m_ptrXDiffFilter;
+    static cv::Ptr<cv::cuda::Filter> m_ptrYDiffFilter;
 
 public:
+    static cv::Ptr<cv::cuda::Filter> m_ptrGaussianFilter;
+    static VectorOfGpuMat m_arrVecGpuMat[NUM_OF_DLP];
+
     static DlpCalibResult& getDlpCalibData(int nDlp) { return m_dlpCalibData[nDlp]; }
     static Calc3DHeightVars& getCalc3DHeightVars(int nDLp) { return m_arrCalc3DHeightVars[nDLp]; }
     static bool initCuda();
@@ -73,10 +87,14 @@ public:
         cv::cuda::GpuMat& matMask,
         float fMinimumAlpitudeSquare,
         cv::cuda::Stream& stream = cv::cuda::Stream::Null());
-    static float intervalAverage(const cv::cuda::GpuMat& matInput, int interval, float *d_result, cv::cuda::Stream& stream = cv::cuda::Stream::Null());
-    static float intervalRangeAverage(const cv::cuda::GpuMat& matInput, int interval, float rangeStart, float rangeEnd, float* d_result,
+    static float intervalAverage(const cv::cuda::GpuMat& matInput, int interval, float *d_result, cudaEvent_t& eventDone,
         cv::cuda::Stream& stream = cv::cuda::Stream::Null());
-    static void phaseWrapBuffer(cv::cuda::GpuMat& matPhase, cv::cuda::GpuMat& matBuffer, float* d_tmpVar, float fShift = 0.f, cv::cuda::Stream& stream = cv::cuda::Stream::Null());
+    static float intervalRangeAverage(const cv::cuda::GpuMat& matInput, int interval, float rangeStart, float rangeEnd, float* d_result,
+        cudaEvent_t& eventDone,
+        cv::cuda::Stream& stream = cv::cuda::Stream::Null());
+    static void phaseWrapBuffer(cv::cuda::GpuMat& matPhase, cv::cuda::GpuMat& matBuffer, float* d_tmpVar, float fShift,
+        cudaEvent_t& eventDone,
+        cv::cuda::Stream& stream = cv::cuda::Stream::Null());
     static void phaseWrapByRefer(cv::cuda::GpuMat& matPhase, cv::cuda::GpuMat& matRef, cv::cuda::Stream& stream = cv::cuda::Stream::Null());
     static void phaseWarpNoAutoBase(const cv::cuda::GpuMat& matPhase, cv::cuda::GpuMat& matResult, float fShift, cv::cuda::Stream& stream = cv::cuda::Stream::Null());
     static void phaseCorrectionCmp(
@@ -84,14 +102,19 @@ public:
         const cv::cuda::GpuMat& matPhase1,
         cv::cuda::GpuMat& matBufferGpu,
         cv::cuda::GpuMat& matBufferGpuT,
+        cv::cuda::GpuMat& matBufferGpuT_1,
         cv::cuda::GpuMat& matDiffMapX,
         cv::cuda::GpuMat& matDiffMapY,
         cv::cuda::GpuMat& matDiffPhaseX,
         cv::cuda::GpuMat& matDiffPhaseY,
         cv::cuda::GpuMat& matMaskGpu,
         cv::cuda::GpuMat& matMaskGpuT,
+        cv::cuda::GpuMat& matMaskGpu_1,
+        int* pBufferArrayIdx1,
+        int* pBufferArrayIdx2,
         int span,
         cv::cuda::Stream& stream = cv::cuda::Stream::Null());
+
     static void phaseCorrection(
         cv::cuda::GpuMat& matPhase,
         cv::cuda::GpuMat& matPhaseT,
@@ -106,7 +129,9 @@ public:
         int nJumpSpanX,
         int nJumpSpanY,
         cv::cuda::Stream& stream = cv::cuda::Stream::Null());
+
     static void phaseCorrection(cv::Mat &matPhase, int nJumpSpanX, int nJumpSpanY);
+
     static void calculateSurfaceConvert3D(
         const cv::cuda::GpuMat& matPhase,
         cv::cuda::GpuMat& matPhaseT,
@@ -138,14 +163,110 @@ public:
         const int windowSize,
         cv::cuda::Stream& stream = cv::cuda::Stream::Null());
 
-    static cv::Mat mergeHeightIntersect(cv::Mat matHeightOne,
-        cv::Mat matNanMaskOne,
-        cv::Mat matHeightTwo,
-        cv::Mat matNanMaskTwo,
-        float fDiffThreshold,
+    static void phasePatch(
+        cv::cuda::GpuMat& matInOut,
+        const cv::cuda::GpuMat& matNanMask,
         PR_DIRECTION enProjDir,
         cv::cuda::Stream& stream = cv::cuda::Stream::Null());
 
+    static void getNanMask(
+        cv::cuda::GpuMat& matInput,
+        cv::cuda::GpuMat& matNanMask,
+        cv::cuda::Stream& stream = cv::cuda::Stream::Null());
+
+    static void mergeHeightIntersectGpu(
+        cv::cuda::GpuMat& matHGpu1,
+        cv::cuda::GpuMat& matHGpu2,
+        cv::cuda::GpuMat& matHGpu3,
+        cv::cuda::GpuMat& matHGpu4,
+        cv::cuda::GpuMat& matNanMask,
+        cv::cuda::GpuMat& matNanMaskDiff,
+        int*           pMergeIndexBuffer,
+        float*         pCmpTargetBuffer,
+        float fDiffThreshold,
+        cv::cuda::Stream& stream = cv::cuda::Stream::Null());
+
+    static void mergeHeightIntersect(
+        cv::cuda::GpuMat& matHeightOneInput,
+        cv::cuda::GpuMat& matNanMaskOne,
+        cv::cuda::GpuMat& matHeightTwoInput,
+        cv::cuda::GpuMat& matNanMaskTwo,
+        cv::cuda::GpuMat& matBufferGpu1,
+        cv::cuda::GpuMat& matBufferGpu2,
+        cv::cuda::GpuMat& matHeightOne,
+        cv::cuda::GpuMat& matHeightTwo,
+        cv::cuda::GpuMat& matHeightTre,
+        cv::cuda::GpuMat& matHeightFor,
+        cv::cuda::GpuMat& matMaskGpu1,
+        cv::cuda::GpuMat& matMaskGpu2,
+        cv::cuda::GpuMat& matMaskGpu3,
+        cv::cuda::GpuMat& matMaskGpu4,
+        cv::cuda::GpuMat& matAbsDiff, //Float
+        cv::cuda::GpuMat& matBigDiffMask,
+        cv::cuda::GpuMat& matBigDiffMaskFloat,
+        cv::cuda::GpuMat& matDiffResultDiff,
+        int*           pMergeIndexBuffer,
+        float*         pCmpTargetBuffer,
+        float fDiffThreshold,
+        PR_DIRECTION enProjDir,
+        cv::cuda::GpuMat& matMergeResult,
+        cv::cuda::GpuMat& matResultNan,
+        cv::cuda::Stream& stream = cv::cuda::Stream::Null());
+
+    static cv::cuda::GpuMat runMergeHeightIntersect(
+        cv::cuda::GpuMat& matHeightOneInput,
+        cv::cuda::GpuMat& matNanMaskOne,
+        cv::cuda::GpuMat& matHeightTwoInput,
+        cv::cuda::GpuMat& matNanMaskTwo,
+        Calc3DHeightVars& calc3DHeightVar0,
+        Calc3DHeightVars& calc3DHeightVar1,
+        float fDiffThreshold,
+        PR_DIRECTION enProjDir,
+        cv::cuda::GpuMat& matResultNan,
+        cv::cuda::Stream& stream = cv::cuda::Stream::Null());
+
+    static void chooseMinValueForMask(
+        cv::cuda::GpuMat&       matH1,
+        cv::cuda::GpuMat&       matH2,
+        cv::cuda::GpuMat&       matH3,
+        const cv::cuda::GpuMat& matMask,
+        cv::cuda::Stream&       stream = cv::cuda::Stream::Null());
+
+    static void patchNanBeforeMergeHeight(
+        cv::cuda::GpuMat&       matHeightOneInput,
+        const cv::cuda::GpuMat& matNanMaskOne,
+        cv::cuda::GpuMat&       matHeightTwoInput,
+        const cv::cuda::GpuMat& matNanMaskTwo,
+        cv::cuda::GpuMat&       matPatchedResult1,
+        cv::cuda::GpuMat&       matPatchedResult2,
+        cv::cuda::Stream&       stream = cv::cuda::Stream::Null());
+
+    static void mergeHeightIntersect06(
+        const cv::cuda::GpuMat& matBufferGpu1,
+        const cv::cuda::GpuMat& matBufferGpu2,
+        cv::cuda::GpuMat& matHeightOne,
+        cv::cuda::GpuMat& matHeightTwo,
+        cv::cuda::GpuMat& matHeightTre,
+        cv::cuda::GpuMat& matHeightFor,
+        cv::cuda::GpuMat& matAbsDiff, //Float
+        cv::cuda::GpuMat& matBigDiffMask,
+        cv::cuda::GpuMat& matBigDiffMaskFloat,
+        cv::cuda::GpuMat& matDiffResultDiff,
+        int*           pMergeIndexBuffer,
+        float*         pCmpTargetBuffer,
+        float             fDiffThreshold,
+        PR_DIRECTION      enProjDir,
+        cv::cuda::GpuMat& matMergeResult,
+        cv::cuda::Stream& stream = cv::cuda::Stream::Null());
+
+    static cv::cuda::GpuMat runMergeHeightIntersect06(
+        const cv::cuda::GpuMat& matBufferGpu1,
+        const cv::cuda::GpuMat& matBufferGpu2,
+        Calc3DHeightVars& calc3DHeightVar0,
+        Calc3DHeightVars& calc3DHeightVar1,
+        float fDiffThreshold,
+        PR_DIRECTION enProjDir,
+        cv::cuda::Stream& stream = cv::cuda::Stream::Null());
 };
 
 }
