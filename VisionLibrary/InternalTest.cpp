@@ -689,7 +689,7 @@ static void TestCudaPhaseToHeight3D() {
     cudaMemcpy(h_data, d_P3, MEM_SIZE, cudaMemcpyDeviceToHost);
 
     std::cout << "Check result data " << std::endl;
-    for (int i = 0; i < TOTAL; i += 10000) {
+    for (int i = 0; i < TOTAL; i += 100000) {
         float* pRow = h_data + i * ss;
         for (int col = 0; col < ss; ++ col) {
             std::cout << pRow[col] << " ";

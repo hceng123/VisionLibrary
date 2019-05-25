@@ -18,8 +18,6 @@ int _tmain(int argc, _TCHAR* argv[])
     *****************************************/
     _PR_InternalTest();
 
-    return;
-
     TestOCV();
 
     /*************************

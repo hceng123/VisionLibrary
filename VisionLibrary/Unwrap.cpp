@@ -3969,13 +3969,6 @@ void _saveAsGray(const cv::Mat &matHeight, const std::string &strFilePath) {
         if (matNanMasks.at<DATA_TYPE>(matNanMasks.cols - 1) > 0)
             dequeIndex.push_back(matNanMasks.cols - 1);
 
-        if (590 == row) {
-            std::cout << "Row " << row << ", need to merge indexs:" << std::endl;
-            for (auto value : dequeIndex)
-                std::cout << value << " ";
-            std::cout << std::endl;
-        }
-
         for (int i = 0; i < dequeIndex.size() / 2; ++i) {
             int startIndex = dequeIndex[i * 2];
             int endIndex = dequeIndex[i * 2 + 1];
