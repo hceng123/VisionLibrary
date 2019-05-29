@@ -27,6 +27,11 @@ static int divUp(int total, int grain)
 }
 
 /*static*/ bool CudaAlgorithm::initCuda() {
+    int deviceCount = 0;
+    cudaGetDeviceCount(&deviceCount);
+    if (deviceCount <= 0)
+        return false;
+
     size_t size = 0;
     cudaDeviceReset();
 

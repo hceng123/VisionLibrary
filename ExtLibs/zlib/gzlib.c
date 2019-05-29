@@ -253,8 +253,9 @@ local gzFile gz_open(path, fd, mode)
 
     /* save the current position for rewinding (only if reading) */
     if (state->mode == GZ_READ) {
-        state->start = LSEEK(state->fd, 0, SEEK_CUR);
-        if (state->start == -1) state->start = 0;
+        //state->start = LSEEK(state->fd, 0, SEEK_CUR);
+        //if (state->start == -1) state->start = 0;
+        state->start = 0;
     }
 
     /* initialize stream */
