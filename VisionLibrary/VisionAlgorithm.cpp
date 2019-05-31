@@ -7905,6 +7905,14 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
         return pstRpy->enStatus;
     }
 
+    for (const auto& matImage : pstCmd->vecInputImages) {
+        if (matImage.empty()) {
+            WriteLog("Input image matrix is empty");
+            pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+            return pstRpy->enStatus;
+        }
+    }
+
     if (pstCmd->vecVecFrameCtr.empty()) {
         WriteLog("Input image frame center is empty");
         pstRpy->enStatus = VisionStatus::INVALID_PARAM;

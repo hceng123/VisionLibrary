@@ -872,7 +872,7 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
 
 /*static*/ cv::cuda::GpuMat Unwrap::_calcHeightGpuCore(
     const PR_CALC_3D_HEIGHT_GPU_CMD *const pstCmd,
-    const std::vector<cv::cuda::GpuMat>& vecGpuImages,
+    const VectorOfGpuMat& vecGpuImages,
     cv::cuda::GpuMat& matNanMask,
     cv::cuda::Stream& stream) {
         float fMinimumAlpitudeSquare = pstCmd->fMinAmplitude * pstCmd->fMinAmplitude;

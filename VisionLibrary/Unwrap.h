@@ -108,7 +108,7 @@ private:
     static cv::Mat _pickPointInterval(const cv::Mat& matInput, int interval);
     static cv::cuda::GpuMat _calcHeightGpuCore(
         const PR_CALC_3D_HEIGHT_GPU_CMD *const pstCmd,
-        const std::vector<cv::cuda::GpuMat>& vecGpuImages,
+        const VectorOfGpuMat& vecGpuImages,
         cv::cuda::GpuMat& matNanMask,
         cv::cuda::Stream& stream);
     static cv::Mat _merge4DlpHeightCore(
