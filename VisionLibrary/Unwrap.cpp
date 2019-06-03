@@ -917,6 +917,8 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
         cv::cuda::subtract(matGammaGpu, dlpCalibData.matGammaBase, matGammaGpu, cv::cuda::GpuMat(), -1, stream);
     }
 
+    matBufferGpu.setTo(0, stream);
+
     CudaAlgorithm::phaseWrapBuffer(matAlphaGpu, matBufferGpu, calc3DHeightVar.d_tmpResult, pstCmd->fPhaseShift,
         calc3DHeightVar.eventDone, stream);
 
@@ -998,8 +1000,6 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
 
     cv::cuda::compare(matBufferGpu, betaBase - 0.1, matMaskGpu, cv::CmpTypes::CMP_LT, stream);
     matBufferGpu.setTo(betaBase, matMaskGpu, stream);
-
-    //TimeLog::GetInstance()->addTimeLog("Before median filter.", stopWatch.Span());
 
     CudaAlgorithm::medianFilter(matBufferGpu, matAlphaGpu, 5, stream);
 
@@ -1207,13 +1207,6 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
     }
 
     VectorOfDirection vecProjDir;
-    for (int dlp = 0; dlp < NUM_OF_DLP; ++dlp) {
-        for (size_t i = 0; i < vecConvertedImgs[dlp].size(); ++i) {
-            cv::cuda::registerPageLocked(vecConvertedImgs[dlp][i]);
-        }
-        vecProjDir.push_back(pstCmd->arrCalcHeightCmd[dlp].enProjectDir);
-    }
-    
     cv::cuda::Stream arrStreams[NUM_OF_DLP];
     VectorOfGpuMat vecGpuHeights(NUM_OF_DLP), vecGpuNanMasks(NUM_OF_DLP);
     VectorOfMat vecHeights(NUM_OF_DLP), vecNanMasks(NUM_OF_DLP);
@@ -1221,14 +1214,11 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
     for (int dlp = 0; dlp < NUM_OF_DLP; ++dlp) {
         for (size_t i = 0; i < vecConvertedImgs[dlp].size(); ++i) {
             CudaAlgorithm::m_arrVecGpuMat[dlp][i].upload(vecConvertedImgs[dlp][i], arrStreams[dlp]);
+            vecProjDir.push_back(pstCmd->arrCalcHeightCmd[dlp].enProjectDir);
         }
     }
 
     for (int dlp = 0; dlp < NUM_OF_DLP; ++dlp) {
-        //for (size_t i = 0; i < vecConvertedImgs[dlp].size(); ++i) {
-        //    vecGpuImages[dlp][i].upload(vecConvertedImgs[dlp][i], arrStreams[dlp]);
-        //}
-
         vecGpuHeights[dlp] = _calcHeightGpuCore(
             &pstCmd->arrCalcHeightCmd[dlp],
             CudaAlgorithm::m_arrVecGpuMat[dlp],

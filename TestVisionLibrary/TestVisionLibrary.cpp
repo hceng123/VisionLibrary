@@ -798,8 +798,9 @@ int _tmain(int argc, _TCHAR* argv[])
     //ConvertBaseParamCsvToYml();
 
     //TestCalc4DLPHeight();
-    TestCalc4DLPHeightOnePass();
-    CompareHeightSame();
+    //TestCalc4DLPHeightOnePass();
+    //CompareHeightSame();
+    TestScanImage();
     //VeryHeightMergeResult();
     //ComparePatchPhaseResult();
     //CompareMask();

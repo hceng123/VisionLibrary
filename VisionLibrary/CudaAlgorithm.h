@@ -56,15 +56,18 @@ class CudaAlgorithm
     static Calc3DHeightVars m_arrCalc3DHeightVars[NUM_OF_DLP];
     static cv::Ptr<cv::cuda::Filter> m_ptrXDiffFilter;
     static cv::Ptr<cv::cuda::Filter> m_ptrYDiffFilter;
+    static bool m_bParamsInitialized;
 
 public:
     static cv::Ptr<cv::cuda::Filter> m_ptrGaussianFilter;
     static VectorOfGpuMat m_arrVecGpuMat[NUM_OF_DLP];
 
+    static int getNanCount(const cv::cuda::GpuMat& matInput);
     static DlpCalibResult& getDlpCalibData(int nDlp) { return m_dlpCalibData[nDlp]; }
     static Calc3DHeightVars& getCalc3DHeightVars(int nDLp) { return m_arrCalc3DHeightVars[nDLp]; }
     static bool initCuda();
     static VisionStatus setDlpParams(const PR_SET_DLP_PARAMS_TO_GPU_CMD* const pstCmd, PR_SET_DLP_PARAMS_TO_GPU_RPY* const pstRpy);
+    static VisionStatus clearDlpParams();
     static cv::cuda::GpuMat diff(const cv::cuda::GpuMat& matInput, int nRecersiveTime, int nDimension, cv::cuda::Stream& stream = cv::cuda::Stream::Null());
     static void diff(const cv::cuda::GpuMat& matInput,
         cv::cuda::GpuMat& matResult,

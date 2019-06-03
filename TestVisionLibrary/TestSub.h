@@ -78,6 +78,7 @@ void TestCalcFrameValue_2();
 
 void TestCalc4DLPHeight();
 void TestCalc4DLPHeightOnePass();
+void TestScanImage();
 
 void VeryHeightMergeResult();
 void ComparePatchPhaseResult();
