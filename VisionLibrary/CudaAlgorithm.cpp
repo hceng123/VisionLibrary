@@ -8,6 +8,7 @@
 #include "TimeLog.h"
 #include "CalcUtils.hpp"
 #include "Constants.h"
+#include "Log.h"
 
 namespace AOI
 {
@@ -20,6 +21,7 @@ namespace Vision
 /*static*/ cv::Ptr<cv::cuda::Filter> CudaAlgorithm::m_ptrYDiffFilter;
 /*static*/ cv::Ptr<cv::cuda::Filter> CudaAlgorithm::m_ptrGaussianFilter;
 /*static*/ VectorOfGpuMat CudaAlgorithm::m_arrVecGpuMat[NUM_OF_DLP];
+/*static*/ bool CudaAlgorithm::m_bParamsInitialized = false;
 
 static int divUp(int total, int grain)
 {
@@ -42,13 +44,23 @@ static int divUp(int total, int grain)
     cudaDeviceSetLimit(cudaLimitDevRuntimeSyncDepth, 16);
 
     cv::Mat matKernelX = (cv::Mat_<float>(1, 2) << -1, 1);
+    m_ptrXDiffFilter.release();
     m_ptrXDiffFilter = cv::cuda::createLinearFilter(CV_32FC1, CV_32FC1, matKernelX, cv::Point(-1, -1), cv::BORDER_CONSTANT);
 
     cv::Mat matKernelY = (cv::Mat_<float>(2, 1) << -1, 1);
+    m_ptrYDiffFilter.release();
     m_ptrYDiffFilter = cv::cuda::createLinearFilter(CV_32FC1, CV_32FC1, matKernelY, cv::Point(-1, -1), cv::BORDER_CONSTANT);
 
+    m_ptrGaussianFilter.release();
     m_ptrGaussianFilter = cv::cuda::createGaussianFilter(CV_32FC1, CV_32FC1, cv::Size(5, 5), 5, 5, cv::BorderTypes::BORDER_REPLICATE);
     return true;
+}
+
+/*static*/ int CudaAlgorithm::getNanCount(const cv::cuda::GpuMat& matInput) {
+    cv::cuda::GpuMat matMask;
+    cv::cuda::compare(matInput, matInput, matMask, cv::CmpTypes::CMP_EQ);
+
+    return matInput.rows * matInput.cols - cv::cuda::countNonZero(matMask);
 }
 
 /*static*/ VisionStatus CudaAlgorithm::setDlpParams(const PR_SET_DLP_PARAMS_TO_GPU_CMD* const pstCmd, PR_SET_DLP_PARAMS_TO_GPU_RPY* const pstRpy) {
@@ -148,8 +160,90 @@ static int divUp(int total, int grain)
         }
     }
     cudaFreeHost(h_buffer);
-
+    m_bParamsInitialized = true;
     return pstRpy->enStatus;
+}
+
+/*static*/ VisionStatus CudaAlgorithm::clearDlpParams() {
+    for (int dlp = 0; dlp < NUM_OF_DLP; ++dlp) {
+        cudaError_t err = cudaFree(m_dlpCalibData[dlp].pDlp3DBezierSurface);
+        if (err != cudaSuccess) {
+            WriteLog("cudaFree failed, error code " + std::to_string(err));
+            return VisionStatus::CUDA_MEMORY_ERROR;
+        }
+
+        m_dlpCalibData[dlp].matAlphaBase.release();
+        m_dlpCalibData[dlp].matBetaBase.release();
+        m_dlpCalibData[dlp].matGammaBase.release();
+
+        err = cudaFree(m_arrCalc3DHeightVars[dlp].d_p3);
+        if (err != cudaSuccess) {
+            WriteLog("cudaFree failed, error code " + std::to_string(err));
+            return VisionStatus::CUDA_MEMORY_ERROR;
+        }
+
+        err = cudaFree(m_arrCalc3DHeightVars[dlp].d_tmpResult);
+        if (err != cudaSuccess) {
+            WriteLog("cudaFree failed, error code " + std::to_string(err));
+            return VisionStatus::CUDA_MEMORY_ERROR;
+        }
+
+        err = cudaFree(m_arrCalc3DHeightVars[dlp].pBufferJumpSpan);
+        if (err != cudaSuccess) {
+            WriteLog("cudaFree failed, error code " + std::to_string(err));
+            return VisionStatus::CUDA_MEMORY_ERROR;
+        }
+
+        err = cudaFree(m_arrCalc3DHeightVars[dlp].pBufferJumpStart);
+        if (err != cudaSuccess) {
+            WriteLog("cudaFree failed, error code " + std::to_string(err));
+            return VisionStatus::CUDA_MEMORY_ERROR;
+        }
+
+        err = cudaFree(m_arrCalc3DHeightVars[dlp].pBufferJumpEnd);
+        if (err != cudaSuccess) {
+            WriteLog("cudaFree failed, error code " + std::to_string(err));
+            return VisionStatus::CUDA_MEMORY_ERROR;
+        }
+
+        err = cudaFree(m_arrCalc3DHeightVars[dlp].pBufferSortedJumpSpanIdx);
+        if (err != cudaSuccess) {
+            WriteLog("cudaFree failed, error code " + std::to_string(err));
+            return VisionStatus::CUDA_MEMORY_ERROR;
+        }
+
+        m_arrCalc3DHeightVars[dlp].matAlpha.release();
+        m_arrCalc3DHeightVars[dlp].matBeta.release();
+        m_arrCalc3DHeightVars[dlp].matGamma.release();
+        m_arrCalc3DHeightVars[dlp].matGamma1.release();
+        m_arrCalc3DHeightVars[dlp].matAvgUnderTolIndex.release();
+        m_arrCalc3DHeightVars[dlp].matBufferGpu.release();
+        m_arrCalc3DHeightVars[dlp].matBufferGpuT.release();
+        m_arrCalc3DHeightVars[dlp].matBufferGpuT_1.release();
+        m_arrCalc3DHeightVars[dlp].matMaskGpu.release();
+        m_arrCalc3DHeightVars[dlp].matMaskGpuT.release();
+        m_arrCalc3DHeightVars[dlp].matMaskGpu_1.release();
+        m_arrCalc3DHeightVars[dlp].matMaskGpuT_1.release();
+        m_arrCalc3DHeightVars[dlp].matMaskGpu_2.release();
+        m_arrCalc3DHeightVars[dlp].matMaskGpuT_2.release();
+        m_arrCalc3DHeightVars[dlp].matDiffResult.release();
+        m_arrCalc3DHeightVars[dlp].matDiffResultT.release();
+        m_arrCalc3DHeightVars[dlp].matDiffResult_1.release();
+        m_arrCalc3DHeightVars[dlp].matDiffResultT_1.release();
+        m_arrCalc3DHeightVars[dlp].matBufferSign.release();
+        m_arrCalc3DHeightVars[dlp].matBufferAmpl.release();
+
+        err = cudaEventDestroy(m_arrCalc3DHeightVars[dlp].eventDone);
+        if (err != cudaSuccess) {
+            WriteLog("cudaEventDestroy failed, error code " + std::to_string(err));
+            return VisionStatus::CUDA_MEMORY_ERROR;
+        }
+
+        m_arrVecGpuMat[dlp].clear();
+    }
+    m_bParamsInitialized = false;
+    WriteLog("Clear dlp params success");
+    return VisionStatus::OK;
 }
 
 /*static*/ void CudaAlgorithm::floor(cv::cuda::GpuMat &matInOut, cv::cuda::Stream& stream /*= cv::cuda::Stream::Null()*/) {
@@ -1119,8 +1213,8 @@ static int divUp(int total, int grain)
         cv::cuda::GpuMat& matBigDiffMask,
         cv::cuda::GpuMat& matBigDiffMaskFloat,
         cv::cuda::GpuMat& matDiffResultDiff,
-        int*           pMergeIndexBuffer,
-        float*         pCmpTargetBuffer,
+        int*              pMergeIndexBuffer,
+        float*            pCmpTargetBuffer,
         float             fDiffThreshold,
         PR_DIRECTION      enProjDir,
         cv::cuda::GpuMat& matMergeResult,
