@@ -1224,9 +1224,9 @@ void TestCalc4DLPHeightOffset()
 
 void TestCalc4DLPHeight()
 {
-    std::string strParentFolder = "C:/Data/3D_20190408/PCBFOV20190104/";
-    std::string strImageFolder = strParentFolder + "0104191933/";
-    std::string strResultFolder = strParentFolder + "Frame_1_Result/";
+    std::string strParentFolder = "C:/Data/2019_06_04_New_3D_Scan_Image/Scan_Image_Frame_And_Big_Image/Frame_Image/";
+    std::string strImageFolder = strParentFolder + "0604132502/";
+    std::string strResultFolder = strParentFolder + "Frame_4_Result/";
 
     PR_CALC_3D_HEIGHT_GPU_CMD stCalcHeightCmds[4];
     PR_CALC_3D_HEIGHT_RPY stCalcHeightRpys[4];
@@ -1284,7 +1284,7 @@ void TestCalc4DLPHeight()
         stCalcHeightCmds[nDlp].bEnableGaussianFilter = b3DDetectGaussionFilter;
         stCalcHeightCmds[nDlp].bUseThinnestPattern = b3DDetectCaliUseThinPattern;
         stCalcHeightCmds[nDlp].fMinAmplitude = 3.f;
-        stCalcHeightCmds[nDlp].fPhaseShift = 0.1f;
+        stCalcHeightCmds[nDlp].fPhaseShift = 0.0f;
         stCalcHeightCmds[nDlp].nDlpNo = nDlp;
 
         cv::Mat matBaseSurfaceParam;
@@ -1635,6 +1635,167 @@ void TestCalc4DLPHeightOnePass()
     cv::imwrite(strResultFolder + "Final_HeightGray.png", stRpy.matGray);
 
     cv::imwrite(strResultFolder + "Final_HeightGray_Grid.png", _drawHeightGrid(stCalc4DlpHeightRpy.matHeight, 10, 10));
+    std::cout << "Success to calculate 4 DLP height" << std::endl;
+}
+
+struct DlpBaseCalibResult {
+    bool           bReverseSeq;            //Change the image sequence.
+    int            nProjectDir;            //The DLP project direction. UP means from top to bottom. Left means from left to right. To keep the same definition as Chen Lining's matlab code.
+    int            nScanDir;               //The phase correction direction.
+    cv::Mat        matThickToThinK;        //The factor between thick stripe and thin stripe.
+    cv::Mat        matThickToThinnestK;    //The factor between thick stripe and thinnest stripe.
+    cv::Mat        matBaseWrappedAlpha;    //The wrapped thick stripe phase.
+    cv::Mat        matBaseWrappedBeta;     //The wrapped thin stripe phase.
+    cv::Mat        matBaseWrappedGamma;    //The wrapped thinnest stripe phase.
+};
+
+struct DlpHeightCalibResult {
+    float          fMaxPhase;
+    float          fMinPhase;
+    cv::Mat        mat3DBezierK;           // The 100 3D Bezier parameters. 5 x 5 x 4 = 100
+    cv::Mat        mat3DBezierSurface;     // The 3D bezier surface calculated from bezier parameters
+};
+
+DlpBaseCalibResult m_arrDlpBaseCalibResult[NUM_OF_DLP];
+DlpHeightCalibResult m_arrDlpHeightCalibResult[NUM_OF_DLP];
+
+static void _loadDlpCalibResult() {
+    std::string path("./data/3D/Config_machine/");
+
+    for (int dlp = 0; dlp < NUM_OF_DLP; ++dlp) {
+        {
+            std::string sz3DBaseCalibRstFile = path + "calibration3D_dlp" + std::to_string(dlp + 1) + ".yml";
+            cv::FileStorage fs(sz3DBaseCalibRstFile, cv::FileStorage::READ);
+            if (!fs.isOpened()) {
+                std::cout << "Failed to open" << sz3DBaseCalibRstFile << std::endl;
+                return;
+            }
+
+            auto& dlpBaseCalibResult = m_arrDlpBaseCalibResult[dlp];
+            cv::FileNode fileNode = fs["K1"];
+            cv::read(fileNode, dlpBaseCalibResult.matThickToThinK, cv::Mat());
+            fileNode = fs["K2"];
+            cv::read(fileNode, dlpBaseCalibResult.matThickToThinnestK, cv::Mat());
+
+            fileNode = fs["ProjectDir"];
+            cv::read(fileNode, dlpBaseCalibResult.nProjectDir, 0);
+
+            fileNode = fs["ScanDir"];
+            cv::read(fileNode, dlpBaseCalibResult.nScanDir, 0);
+
+            fileNode = fs["BaseWrappedAlpha"];
+            cv::read(fileNode, dlpBaseCalibResult.matBaseWrappedAlpha, cv::Mat());
+            fileNode = fs["BaseWrappedBeta"];
+            cv::read(fileNode, dlpBaseCalibResult.matBaseWrappedBeta, cv::Mat());
+            fileNode = fs["BaseWrappedGamma"];
+            cv::read(fileNode, dlpBaseCalibResult.matBaseWrappedGamma, cv::Mat());
+            fileNode = fs["ReverseSeq"];
+            cv::read(fileNode, dlpBaseCalibResult.bReverseSeq, 0);
+            fs.release();
+        }
+
+        {
+            std::string strDlpHeightCalibRstFile = path + "NewIntegrateCalibResult" + std::to_string(dlp + 1) + ".yml";
+            cv::FileStorage fs(strDlpHeightCalibRstFile, cv::FileStorage::READ);
+            if (!fs.isOpened()) {
+                std::cout << "Failed to open" << strDlpHeightCalibRstFile << std::endl;
+                return;
+            }
+
+            auto& dlpHeightCalibResult = m_arrDlpHeightCalibResult[dlp];
+            cv::FileNode fileNode = fs["MaxPhase"];
+            cv::read(fileNode, dlpHeightCalibResult.fMaxPhase, 0.f);
+            fileNode = fs["MinPhase"];
+            cv::read(fileNode, dlpHeightCalibResult.fMinPhase, 0.f);
+
+            fileNode = fs["BezierK"];
+            cv::read(fileNode, dlpHeightCalibResult.mat3DBezierK, cv::Mat());
+            fileNode = fs["BezierSurface"];
+            cv::read(fileNode, dlpHeightCalibResult.mat3DBezierSurface, cv::Mat());
+
+            fs.release();
+        }
+    }
+}
+
+void TestCalc4DLPHeight_SimulateMachine()
+{
+    _loadDlpCalibResult();
+
+    PR_SET_DLP_PARAMS_TO_GPU_CMD stSetDlpParamsCmd;
+    PR_SET_DLP_PARAMS_TO_GPU_RPY stSetDlpParamsRpy;
+    for (int dlp = 0; dlp < NUM_OF_DLP; ++dlp) {
+        stSetDlpParamsCmd.vecMatAlphaBase[dlp] = m_arrDlpBaseCalibResult[dlp].matBaseWrappedAlpha;
+        stSetDlpParamsCmd.vecMatBetaBase[dlp] = m_arrDlpBaseCalibResult[dlp].matBaseWrappedBeta;
+        stSetDlpParamsCmd.vecMatGammaBase[dlp] = m_arrDlpBaseCalibResult[dlp].matBaseWrappedGamma;
+        stSetDlpParamsCmd.vec3DBezierSurface[dlp] = m_arrDlpHeightCalibResult[dlp].mat3DBezierSurface;
+    }
+
+    PR_SetDlpParamsToGpu(&stSetDlpParamsCmd, &stSetDlpParamsRpy);
+
+    if (stSetDlpParamsRpy.enStatus != VisionStatus::OK) {
+        std::cout << "PR_SetDlpParamsToGpu failed" << std::endl;
+        return;
+    }
+
+    std::cout << "PR_SetDlpParamsToGpu success" << std::endl;
+
+    std::string strParentFolder = "C:/Data/2019_06_04_New_3D_Scan_Image/Scan_Image_Frame_And_Big_Image/Frame_Image/";
+    std::string strImageFolder = strParentFolder + "0604132502/";
+    std::string strResultFolder = strParentFolder + "Frame_4_Result/";
+
+    auto vecImages = ReadFrameImage(strImageFolder);
+    if (vecImages.empty())
+        return;
+
+    bool b3DDetectGaussionFilter = true;
+    bool b3DDetectCaliUseThinPattern = true;
+    float phaseShift = 0.f;
+    PR_CALC_MERGE_4_DLP_HEIGHT_CMD stCalc3DlpHeightCmd;
+    PR_CALC_MERGE_4_DLP_HEIGHT_RPY stCalc3DlpHeightRpy;
+    for (int dlp = 0; dlp < NUM_OF_DLP; ++dlp) {
+        stCalc3DlpHeightCmd.arrCalcHeightCmd[dlp].bEnableGaussianFilter = b3DDetectGaussionFilter;
+        stCalc3DlpHeightCmd.arrCalcHeightCmd[dlp].bUseThinnestPattern = b3DDetectCaliUseThinPattern;
+        stCalc3DlpHeightCmd.arrCalcHeightCmd[dlp].fMinAmplitude = 3.f;
+        stCalc3DlpHeightCmd.arrCalcHeightCmd[dlp].fPhaseShift = phaseShift;
+        stCalc3DlpHeightCmd.arrCalcHeightCmd[dlp].fBaseRangeMin = 0.03f;
+        stCalc3DlpHeightCmd.arrCalcHeightCmd[dlp].fBaseRangeMax = 1.f;
+        stCalc3DlpHeightCmd.arrCalcHeightCmd[dlp].nDlpNo = dlp;
+
+        const auto& dlpBaseCalibResult = m_arrDlpBaseCalibResult[dlp];
+        stCalc3DlpHeightCmd.arrCalcHeightCmd[dlp].matThickToThinK = dlpBaseCalibResult.matThickToThinK;
+        stCalc3DlpHeightCmd.arrCalcHeightCmd[dlp].matThickToThinnestK = dlpBaseCalibResult.matThickToThinnestK;
+        stCalc3DlpHeightCmd.arrCalcHeightCmd[dlp].enProjectDir = static_cast<PR_DIRECTION>(dlpBaseCalibResult.nProjectDir);
+        stCalc3DlpHeightCmd.arrCalcHeightCmd[dlp].enScanDir = static_cast<PR_DIRECTION>(dlpBaseCalibResult.nScanDir);
+        stCalc3DlpHeightCmd.arrCalcHeightCmd[dlp].bReverseSeq = dlpBaseCalibResult.bReverseSeq;
+
+        const auto& dlpHeightCalibResult = m_arrDlpHeightCalibResult[dlp];
+        stCalc3DlpHeightCmd.arrCalcHeightCmd[dlp].mat3DBezierK = dlpHeightCalibResult.mat3DBezierK;
+        stCalc3DlpHeightCmd.arrCalcHeightCmd[dlp].fMaxPhase = dlpHeightCalibResult.fMaxPhase;
+        stCalc3DlpHeightCmd.arrCalcHeightCmd[dlp].fMinPhase = dlpHeightCalibResult.fMinPhase;
+
+        stCalc3DlpHeightCmd.arrCalcHeightCmd[dlp].vecInputImgs = VectorOfMat(vecImages.begin() + dlp * IMAGE_COUNT, vecImages.begin() + (dlp + 1) * IMAGE_COUNT);
+    }
+
+    stCalc3DlpHeightCmd.fHeightDiffThreshold = 0.1f;
+
+    PR_CalcMerge4DlpHeight(&stCalc3DlpHeightCmd, &stCalc3DlpHeightRpy);
+    if (stCalc3DlpHeightRpy.enStatus != VisionStatus::OK)
+    {
+        std::cout << "PR_CalcMerge4DlpHeight failed, status " << ToInt32(stCalc3DlpHeightRpy.enStatus) << " at line " << __LINE__ << std::endl;
+        return;
+    }
+    std::cout << "PR_CalcMerge4DlpHeight success" << std::endl;
+
+    saveMatToCsv(stCalc3DlpHeightRpy.matHeight, strResultFolder + "Final_Height.csv");
+
+    PR_HEIGHT_TO_GRAY_CMD stCmd;
+    PR_HEIGHT_TO_GRAY_RPY stRpy;
+    stCmd.matHeight = stCalc3DlpHeightRpy.matHeight;
+    PR_HeightToGray(&stCmd, &stRpy);
+    cv::imwrite(strResultFolder + "Final_HeightGray.png", stRpy.matGray);
+
+    cv::imwrite(strResultFolder + "Final_HeightGray_Grid.png", _drawHeightGrid(stCalc3DlpHeightRpy.matHeight, 10, 10));
     std::cout << "Success to calculate 4 DLP height" << std::endl;
 }
 

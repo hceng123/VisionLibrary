@@ -799,8 +799,9 @@ int _tmain(int argc, _TCHAR* argv[])
 
     //TestCalc4DLPHeight();
     //TestCalc4DLPHeightOnePass();
+    TestCalc4DLPHeight_SimulateMachine();
     //CompareHeightSame();
-    TestScanImage();
+    //TestScanImage();
     //VeryHeightMergeResult();
     //ComparePatchPhaseResult();
     //CompareMask();

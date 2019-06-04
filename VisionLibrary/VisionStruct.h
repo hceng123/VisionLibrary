@@ -1360,6 +1360,8 @@ struct PR_CALC_3D_HEIGHT_GPU_CMD {
         bUseThinnestPattern(false),
         fMinAmplitude(3.f),
         fPhaseShift(0.f),
+        fBaseRangeMin(0.25f),
+        fBaseRangeMax(0.45f),
         nRemoveJumpSpan(7),
         nCompareRemoveJumpSpan(15) {}
     VectorOfMat             vecInputImgs;
@@ -1371,6 +1373,8 @@ struct PR_CALC_3D_HEIGHT_GPU_CMD {
     bool                    bUseThinnestPattern;     //Choose to use the thinnest stripe pattern. Otherwise just use the normal thin stripe.
     float                   fMinAmplitude;           //In a group of 4 images, if a pixel's gray scale amplitude less than this value, this pixel will be discarded.
     float                   fPhaseShift;             //Shift the phase measure range. Normal is -1~1, sometimes the H5 surface has corner over this range. So if shift is 0.1, the measure range is -0.9~1.1, so it can measure all the H5 surface.
+    float                   fBaseRangeMin;           //The average height in the base range will be used as the base height. fBaseRangeMin is the start
+    float                   fBaseRangeMax;           //The average height in the base range will be used as the base height. fBaseRangeMax is the end
     cv::Mat                 matThickToThinK;         //The factor between thick stripe and thin stripe.
     cv::Mat                 matThickToThinnestK;     //The factor between thick stripe and thinnest stripe.
     cv::Mat                 matPhaseToHeightK;       //The factor to convert phase to height. This is the single group of image calibration result.

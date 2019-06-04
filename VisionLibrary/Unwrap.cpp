@@ -931,7 +931,9 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
     //TimeLog::GetInstance()->addTimeLog("CudaAlgorithm::phaseWrapByRefer.", stopWatch.Span());
 
     const int dt = 80; // Use one data in every dt pixels
-    float betaBase = CudaAlgorithm::intervalRangeAverage(matBetaGpu, dt, 0.25f, 0.45f, calc3DHeightVar.d_tmpResult,
+    float betaBase = CudaAlgorithm::intervalRangeAverage(matBetaGpu, dt, 
+        pstCmd->fBaseRangeMin, pstCmd->fBaseRangeMax,
+        calc3DHeightVar.d_tmpResult,
         calc3DHeightVar.eventDone, stream);
 
     const float SHIFT_TO_BASE = 0.2f;
