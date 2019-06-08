@@ -956,7 +956,10 @@ private:
     const String _strKeyWettingWidth    = "WettingWidth";
 
     const String _strKeyStatus          = "Status";
+    const String _strKeyComponentHeight = "ComponentHeight";
     const String _strKeySolderHeight    = "SolderHeight";
+    const String _strKeySolderArea      = "SolderArea";
+    const String _strKeySolderRatio     = "SolderRatio";
 };
 
 class LogCaseCalc3DHeightDiff : public LogCase

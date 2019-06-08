@@ -2092,7 +2092,7 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
         TimeLog::GetInstance()->addTimeLog("Sort and trim base points take: ", stopWatch.Span());
     }
 
-    if (vecXt.empty() || vecYt.empty()) {
+    if (vecXt.size() < 3 || vecYt.size() < 3) {
         pstRpy->enStatus = VisionStatus::CALC_3D_HEIGHT_DIFF_NO_BASE_POINT;
         WriteLog("No base points to calculate 3D height difference, all base points are masked or are NAN.");
         return;
@@ -2106,7 +2106,7 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
         matXX.push_back(cv::Mat(cv::Mat::ones(1, ToInt32(vecHeightTmp.size()), CV_32FC1))); // cv::Mat::ones return MatExpr, need to convert to Mat
         cv::transpose(matXX, matXX);
         cv::Mat matYY(vecHeightTmp);
-        cv::solve(matXX, matYY, matK, cv::DecompTypes::DECOMP_QR);
+        cv::solve(matXX, matYY, matK, cv::DecompTypes::DECOMP_SVD);
     }
 
     TimeLog::GetInstance()->addTimeLog("cv::solve to calculate base surface take: ", stopWatch.Span());
@@ -4056,7 +4056,7 @@ void _saveAsGray(const cv::Mat &matHeight, const std::string &strFilePath) {
         vecHeightTmp.push_back(matHeightROI.at<float>(point));
     }
 
-    if (vecXt.empty() || vecYt.empty()) {
+    if (vecXt.size() < 3 || vecYt.size() < 3) {
         pstRpy->enStatus = VisionStatus::CALC_3D_HEIGHT_DIFF_NO_BASE_POINT;
         WriteLog("No base points to calculate 3D height difference, all base points are masked or are NAN.");
         return;
@@ -4070,7 +4070,7 @@ void _saveAsGray(const cv::Mat &matHeight, const std::string &strFilePath) {
         matXX.push_back(cv::Mat(cv::Mat::ones(1, ToInt32(vecHeightTmp.size()), CV_32FC1))); // cv::Mat::ones return MatExpr, need to convert to Mat
         cv::transpose(matXX, matXX);
         cv::Mat matYY(vecHeightTmp);
-        cv::solve(matXX, matYY, matK, cv::DecompTypes::DECOMP_QR);
+        cv::solve(matXX, matYY, matK, cv::DecompTypes::DECOMP_SVD);
     }
 
     TimeLog::GetInstance()->addTimeLog("Calculate base parameters.", stopWatch.Span());
@@ -4131,6 +4131,11 @@ void _saveAsGray(const cv::Mat &matHeight, const std::string &strFilePath) {
         bool bLeft = (ptCenter.x + rectCheckROI.x - pstCmd->rectDeviceROI.x) <  pstCmd->rectDeviceROI.width / 2;
         cv::Rect rectCalc;
         auto fSolderHeight = _calcSolderHeightTri(matCheckROIClone, matMidMask, pstCmd->nWettingWidth, bLeft, nTopY, nBtmY, rectCalc);
+        if (fabs(fSolderHeight) < 0.0001f) {
+            pstRpy->enStatus = VisionStatus::FAIL_TO_EXTRACT_3D_SOLDER;
+            WriteLog("Calculate 3D solder height problem");
+            return;
+        }
 
         PR_INSP_3D_SOLDER_RPY::RESULT result;
         result.fComponentHeight = fHeightSum / nCount;
@@ -4380,7 +4385,7 @@ void _saveAsGray(const cv::Mat &matHeight, const std::string &strFilePath) {
     if (bLeft) {
         if (nSolderEnd - 2 - nWettingWidth < 0) {
             std::stringstream ss;
-            ss << "Calculate solder height goes wrong, the left side solder end positoin " << nSolderEnd <<  " is too small.";
+            ss << "Calculate solder height goes wrong, the left side solder end position " << nSolderEnd <<  " is too small.";
             WriteLog(ss.str());
             return 0;
         }
@@ -4388,7 +4393,7 @@ void _saveAsGray(const cv::Mat &matHeight, const std::string &strFilePath) {
     }else {
         if (nSolderStart + 2 + nWettingWidth > matCheckROI.cols) {
             std::stringstream ss;
-            ss << "Calculate solder height goes wrong, the right side solder start positoin " << nSolderStart <<  " is too big.";
+            ss << "Calculate solder height goes wrong, the right side solder start position " << nSolderStart <<  " is too big.";
             WriteLog(ss.str());
             return 0;
         }
