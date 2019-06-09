@@ -11,17 +11,17 @@ namespace Vision
 
 static cv::Mat _drawHeightGrid(const cv::Mat &matHeight, int nGridRow, int nGridCol, const cv::Size &szMeasureWinSize = cv::Size(40, 40)) {
     double dMinValue = 0, dMaxValue = 0;
-    cv::Mat matMask = ( matHeight == matHeight );
-    cv::minMaxIdx ( matHeight, &dMinValue, &dMaxValue, 0, 0, matMask );
-    
+    cv::Mat matMask = (matHeight == matHeight);
+    cv::minMaxIdx(matHeight, &dMinValue, &dMaxValue, 0, 0, matMask);
+
     cv::Mat matNewPhase = matHeight - dMinValue;
 
-    float dRatio = 255.f / ToFloat( dMaxValue - dMinValue );
+    float dRatio = 255.f / ToFloat(dMaxValue - dMinValue);
     matNewPhase = matNewPhase * dRatio;
 
     cv::Mat matResultImg;
-    matNewPhase.convertTo ( matResultImg, CV_8UC1);
-    cv::cvtColor ( matResultImg, matResultImg, CV_GRAY2BGR );
+    matNewPhase.convertTo(matResultImg, CV_8UC1);
+    cv::cvtColor(matResultImg, matResultImg, CV_GRAY2BGR);
 
     int ROWS = matNewPhase.rows;
     int COLS = matNewPhase.cols;
@@ -31,35 +31,35 @@ static cv::Mat _drawHeightGrid(const cv::Mat &matHeight, int nGridRow, int nGrid
     int fontFace = cv::FONT_HERSHEY_SIMPLEX;
     double fontScale = 1;
     int thickness = 2;
-    for ( int j = 0; j < nGridRow; ++ j ) {
-        for ( int i = 0; i < nGridCol; ++ i ) {
-            cv::Rect rectROI ( i * nIntervalX + nIntervalX / 2 - szMeasureWinSize.width  / 2,
-                               j * nIntervalY + nIntervalY / 2 - szMeasureWinSize.height / 2,
-                               szMeasureWinSize.width, szMeasureWinSize.height );
-            cv::rectangle ( matResultImg, rectROI, cv::Scalar ( 0, 255, 0 ), 3 );
+    for (int j = 0; j < nGridRow; ++j) {
+        for (int i = 0; i < nGridCol; ++i) {
+            cv::Rect rectROI(i * nIntervalX + nIntervalX / 2 - szMeasureWinSize.width / 2,
+                j * nIntervalY + nIntervalY / 2 - szMeasureWinSize.height / 2,
+                szMeasureWinSize.width, szMeasureWinSize.height);
+            cv::rectangle(matResultImg, rectROI, cv::Scalar(0, 255, 0), 3);
 
-            cv::Mat matROI ( matHeight, rectROI );
+            cv::Mat matROI(matHeight, rectROI);
             cv::Mat matMask = (matROI == matROI);
-            float fAverage = ToFloat ( cv::mean ( matROI, matMask )[0] );
+            float fAverage = ToFloat(cv::mean(matROI, matMask)[0]);
 
             char strAverage[100];
-            _snprintf ( strAverage, sizeof(strAverage), "%.3f", fAverage );
+            _snprintf(strAverage, sizeof(strAverage), "%.3f", fAverage);
             std::cout << strAverage << " ";
             int baseline = 0;
-            cv::Size textSize = cv::getTextSize ( strAverage, fontFace, fontScale, thickness, &baseline );
+            cv::Size textSize = cv::getTextSize(strAverage, fontFace, fontScale, thickness, &baseline);
             //The height use '+' because text origin start from left-bottom.
-            cv::Point ptTextOrg ( rectROI.x + (rectROI.width - textSize.width) / 2, rectROI.y + (rectROI.height + textSize.height) / 2 );
-            cv::putText ( matResultImg, strAverage, ptTextOrg, fontFace, fontScale, cv::Scalar ( 255, 0, 0 ), thickness );
+            cv::Point ptTextOrg(rectROI.x + (rectROI.width - textSize.width) / 2, rectROI.y + (rectROI.height + textSize.height) / 2);
+            cv::putText(matResultImg, strAverage, ptTextOrg, fontFace, fontScale, cv::Scalar(255, 0, 0), thickness);
         }
         std::cout << std::endl;
     }
 
     int nGridLineSize = 3;
     cv::Scalar scalarCyan(255, 255, 0);
-    for ( int i = 1; i < nGridCol; ++ i )
-        cv::line ( matResultImg, cv::Point(i * nIntervalX, 0), cv::Point(i * nIntervalX, ROWS), scalarCyan, nGridLineSize );
-    for ( int i = 1; i < nGridRow; ++ i )
-        cv::line ( matResultImg, cv::Point(0, i * nIntervalY), cv::Point(COLS, i * nIntervalY), scalarCyan, nGridLineSize );
+    for (int i = 1; i < nGridCol; ++i)
+        cv::line(matResultImg, cv::Point(i * nIntervalX, 0), cv::Point(i * nIntervalX, ROWS), scalarCyan, nGridLineSize);
+    for (int i = 1; i < nGridRow; ++i)
+        cv::line(matResultImg, cv::Point(0, i * nIntervalY), cv::Point(COLS, i * nIntervalY), scalarCyan, nGridLineSize);
 
     return matResultImg;
 }
@@ -537,6 +537,66 @@ void TestMotor3DCalibNew_1() {
     }
 }
 
+static cv::Mat readMatFromYml(const std::string& filename, const std::string& key) {
+    cv::FileStorage fs(filename, cv::FileStorage::READ);
+    if (!fs.isOpened())
+        return cv::Mat();
+
+    cv::FileNode fileNode = fs[key];
+    cv::Mat matResult;
+    cv::read(fileNode, matResult, cv::Mat());
+    fs.release();
+
+    return matResult;
+}
+
+void TestMerge4DlpHeight() {
+    std::cout << std::endl << "----------------------------------------------";
+    std::cout << std::endl << "MERGE 4 DLP HEIGHT REGRESSION TEST #1 STARTING";
+    std::cout << std::endl << "----------------------------------------------";
+    std::cout << std::endl;
+
+    std::string strResultFolder = "./Data/TestMerge4DlpHeight/";
+
+    PR_CALC_3D_HEIGHT_NEW_CMD stCalcHeightCmds[4];
+    PR_CALC_3D_HEIGHT_RPY stCalcHeightRpys[4];
+
+    stCalcHeightCmds[0].enProjectDir = static_cast<PR_DIRECTION>(2);
+    stCalcHeightCmds[1].enProjectDir = static_cast<PR_DIRECTION>(1);
+    stCalcHeightCmds[2].enProjectDir = static_cast<PR_DIRECTION>(3);
+    stCalcHeightCmds[3].enProjectDir = static_cast<PR_DIRECTION>(0);
+    for (int nDlp = 0; nDlp < 4; ++nDlp) {
+        stCalcHeightRpys[nDlp].matHeight = readMatFromYml(strResultFolder + "Dlp_" + std::to_string(nDlp + 1) + "_Height.yml", "Height");
+        stCalcHeightRpys[nDlp].matNanMask = cv::imread(strResultFolder + "Dlp_" + std::to_string(nDlp + 1) + "_NanMask.png", cv::IMREAD_GRAYSCALE);
+    }
+
+    VectorOfMat vecMatHeightMerges;
+    VectorOfMat vecMatHeightNanMasks;
+
+    PR_MERGE_3D_HEIGHT_CMD stMerge3DCmd;
+    PR_MERGE_3D_HEIGHT_RPY stMerge3DRpy;
+
+    for (int i = 0; i < 4; ++i) {
+        stCalcHeightRpys[i].matHeight.setTo(NAN, stCalcHeightRpys[i].matNanMask);
+        stMerge3DCmd.vecMatHeight.push_back(stCalcHeightRpys[i].matHeight);
+        stMerge3DCmd.vecMatNanMask.push_back(stCalcHeightRpys[i].matNanMask);
+        stMerge3DCmd.vecProjDir.push_back(stCalcHeightCmds[i].enProjectDir);
+    }
+
+    stMerge3DCmd.enMethod = PR_MERGE_3D_HT_METHOD::SELECT_NEAREST_INTERSECT;
+    stMerge3DCmd.fHeightDiffThreshold = 0.1f;
+
+    PR_Merge3DHeight(&stMerge3DCmd, &stMerge3DRpy);
+    if (stMerge3DRpy.enStatus != VisionStatus::OK) {
+        std::cout << "PR_Merge3DHeight failed, status " << ToInt32(stMerge3DRpy.enStatus) << " at line " << __LINE__ << std::endl;
+        return;
+    }
+
+    std::cout << "Grid snoop phase: " << std::endl;
+    cv::Mat matPhaseResultImg = _drawHeightGrid(stMerge3DRpy.matHeight, 10, 10);
+    cv::imwrite(strResultFolder + "PR_Merge3DHeight_Result.png", matPhaseResultImg);
+}
+
 void PrintCalcFrameResult(const PR_CALC_FRAME_VALUE_CMD &stCmd, const PR_CALC_FRAME_VALUE_RPY &stRpy) {
     std::cout << "PR_CalcFrameValue status " << ToInt32(stRpy.enStatus) << std::endl;
     std::cout << std::fixed << std::setprecision(3);
@@ -854,6 +914,8 @@ void Test3D() {
     TestMotor3DCalib_1();
 
     TestMotor3DCalibNew_1();
+
+    TestMerge4DlpHeight();
 
     TestCalcFrameValue_1();
     TestCalcFrameValue_2();

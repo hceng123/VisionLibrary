@@ -28,6 +28,8 @@ enum class VisionStatus
     INVALID_RECORD_TYPE,    
     GUASSIAN_FILTER_KERNEL_INVALID,
     MEDIAN_FILTER_KERNEL_INVALID,
+    CUDA_MEMORY_ERROR,
+    CUDA_KERNEL_ERROR,
 
     //Srch object and template match
     LEARN_OBJECT_FAIL                   = 20,

@@ -20,7 +20,7 @@ protected:
 
     Config();
 
-    String           _strRecordDir              = "./Vision/Record/";
+    String          _strRecordDir               = "./Vision/Record/";
     String          _strLogCaseDir              = "./Vision/Logcase/";
     String          _strRecordPrefix            = "";
     String          _strRecordLogPrefix         = "tmplDir.";
@@ -32,6 +32,7 @@ protected:
     String          _strOcrCharList             = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-";
     Int32           _nInspBridgeMinThreshold    = 100;
     Int32           _nMinPointsToCalibCamera    = 10;
+    bool            _bEnableGpu                 = false;
 
 public:
     static Config*          GetInstance();
@@ -41,13 +42,15 @@ public:
     String                  getRecordExt() const;
     String                  getRecordLogPrefix() const;
     String                  getRecordParamFile() const;
-    PR_DEBUG_MODE           getDebugMode() const;
-    Int16                   getDeviceInspChannel() const;
+    inline PR_DEBUG_MODE    getDebugMode() const { return _enDebugMode; }
     void                    setDebugMode(PR_DEBUG_MODE enDebugMode);
+    Int16                   getDeviceInspChannel() const;
     Int32                   getRemoveCCMaxComponents();
     String                  getOcrCharList() const;
     Int32                   getInspBridgeMinThreshold() const;
     Int32                   getMinPointsToCalibCamera() const;
+    inline bool             isEnableGpu() const { return _bEnableGpu; }
+    void                    setEnableGpu(bool bEnable);
     void load();
 };
 

@@ -20,6 +20,7 @@ class VisionWidget : public QMainWindow
 public:
     VisionWidget(QWidget *parent = 0);
     ~VisionWidget();
+
 private slots:
     void on_selectImageBtn_clicked();
     void on_checkBoxByerFormat_clicked(bool checked);
@@ -48,10 +49,16 @@ private slots:
     void on_btnGridAvgGrayScale_clicked();
     void on_btnCameraMTF_clicked();
     void on_btnRead2DCode_clicked();
+    void on_btnCountNonZero_clicked();
+    void on_selectCmpImageBtn1_clicked();
+    void on_selectCmpImageBtn2_clicked();
+    void on_btnCmpImage_clicked();
 
 protected:
     bool checkDisplayImage();
     void drawTmplImage(const cv::Mat &matTmpl);
+    QString _selectImage();
+
 private:
     Ui::VisionWidgetClass               ui;
     std::string                         _sourceImagePath;

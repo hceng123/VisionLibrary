@@ -119,8 +119,8 @@ static short file_uncompress(const char *file, char *outfile)
         {
             if ((buf[0]!=0x1f) || (buf[1]!=0x8B))
             {
-                rename (file, outfile);
-				fclose (typeCheck);
+                rename(file, outfile);
+                fclose(typeCheck);
                 return 0;
             }
         }

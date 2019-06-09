@@ -30,6 +30,8 @@ void TestCalib3DHeight_01();
 void TestCalib3DHeight_02();
 void TestCalib3DHeight_03();
 void TestIntegrate3DCalib();
+void TestMotor3DCalibNew();
+void ConvertBaseParamCsvToYml();
 void TestCalc3DHeight_With_NormalCalibParam();
 void TestCalc3DHeight_With_IntegrateCalibParam();
 void TestCalibDlpOffset_1();
@@ -75,6 +77,15 @@ void TestCalcFrameValue_1();
 void TestCalcFrameValue_2();
 
 void TestCalc4DLPHeight();
+void TestCalc4DLPHeightOnePass();
+void TestCalc4DLPHeight_SimulateMachine();
+void TestScanImage();
+
+void VeryHeightMergeResult();
+void ComparePatchPhaseResult();
+
+void CompareHeightSame();
+void CompareMask();
 void TestMergeHeightMax();
 void TestQueryDlpOffset();
 
@@ -109,3 +120,5 @@ void ConvertRestoreCsvToYml();
 void TestTableMappingAndCombineImage();
 
 void TestGenerateSelectedImage();
+
+void TestSortIndexValue();

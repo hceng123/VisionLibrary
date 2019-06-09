@@ -13,6 +13,7 @@
 #include "CalcUtils.hpp"
 #include "Unwrap.h"
 #include "TableMapping.h"
+#include "CudaAlgorithm.h"
 
 #define PR_FUNCTION_ENTRY   \
 try \
@@ -41,6 +42,7 @@ VisionAPI VisionStatus PR_Init()
 {
     try {
         Unwrap::initAtan2Table();
+        CudaAlgorithm::initCuda();
         return RecordManager::getInstance()->load();
     }catch (std::exception &e) {
         WriteLog(e.what());
@@ -524,10 +526,34 @@ PR_FUNCTION_ENTRY
 PR_FUNCTION_EXIT
 }
 
+VisionAPI VisionStatus PR_SetDlpParamsToGpu(const PR_SET_DLP_PARAMS_TO_GPU_CMD* const pstCmd, PR_SET_DLP_PARAMS_TO_GPU_RPY* const pstRpy)
+{
+    return CudaAlgorithm::setDlpParams(pstCmd, pstRpy);
+}
+
+VisionAPI VisionStatus PR_ClearDlpParams()
+{
+    return CudaAlgorithm::clearDlpParams();
+}
+
+VisionAPI VisionStatus PR_Calc3DHeightGpu(const PR_CALC_3D_HEIGHT_GPU_CMD *const pstCmd, PR_CALC_3D_HEIGHT_RPY *const pstRpy)
+{
+PR_FUNCTION_ENTRY
+    return VisionAlgorithm::calc3DHeightGpu(pstCmd, pstRpy);
+PR_FUNCTION_EXIT
+}
+
 VisionAPI VisionStatus PR_Merge3DHeight(const PR_MERGE_3D_HEIGHT_CMD *const pstCmd, PR_MERGE_3D_HEIGHT_RPY *const pstRpy)
 {
 PR_FUNCTION_ENTRY
     return VisionAlgorithm::merge3DHeight(pstCmd, pstRpy);
+PR_FUNCTION_EXIT
+}
+
+VisionAPI VisionStatus PR_CalcMerge4DlpHeight(const PR_CALC_MERGE_4_DLP_HEIGHT_CMD *const pstCmd, PR_CALC_MERGE_4_DLP_HEIGHT_RPY *const pstRpy)
+{
+PR_FUNCTION_ENTRY
+    return VisionAlgorithm::calcMerge4DlpHeight(pstCmd, pstRpy);
 PR_FUNCTION_EXIT
 }
 

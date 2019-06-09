@@ -11,7 +11,10 @@
 #include "Log.h"
 #include "Config.h"
 #include "Auxiliary.hpp"
-
+#include "CudaAlgorithm.h"
+#include "opencv2/cudaarithm.hpp"
+#include "opencv2/cudafilters.hpp"
+#include "opencv2/core/cuda_stream_accessor.hpp"
 
 #define MARK_FUNCTION_START_TIME    CStopWatch      stopWatch; __int64 functionStart = stopWatch.AbsNow()
 #define MARK_FUNCTION_END_TIME      TimeLog::GetInstance()->addTimeLog( __FUNCTION__, stopWatch.AbsNow() - functionStart)
@@ -31,8 +34,6 @@ Unwrap::~Unwrap() {
 }
 
 /*static*/ const float Unwrap::GAUSSIAN_FILTER_SIGMA = ToFloat(pow(20, 0.5));
-/*static*/ const float Unwrap::ONE_HALF_CYCLE = ToFloat(1.f);
-/*static*/ const float Unwrap::ONE_CYCLE = ONE_HALF_CYCLE * 2;
 /*static*/ const float Unwrap::CALIB_HEIGHT_STEP_USEFUL_PT = 0.8f;
 /*static*/ const float Unwrap::LOW_BASE_PHASE = - ToFloat(CV_PI);
 /*static*/ VectorOfVectorOfFloat Unwrap::vecVecAtan2Table(PR_MAX_GRAY_LEVEL * 2 + 1, VectorOfFloat(PR_MAX_GRAY_LEVEL * 2 + 1, 0));
@@ -616,7 +617,7 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
 
         if (pstCmd->nRemoveGammaJumpSpanX > 0 || pstCmd->nRemoveGammaJumpSpanY > 0) {
             _phasePatch(matGamma, pstCmd->enProjectDir, matAvgUnderTolIndex);
-            phaseCorrection(matGamma, matAvgUnderTolIndex, pstCmd->nRemoveGammaJumpSpanX, pstCmd->nRemoveGammaJumpSpanY);
+            phaseCorrection(matGamma, pstCmd->nRemoveGammaJumpSpanX, pstCmd->nRemoveGammaJumpSpanY);
             //Run 2 times, first time remove small jump, second time remove big jump. 2 pass can remove big jump with small jump on its edge.
             //phaseCorrection(matGamma, matAvgUnderTolIndex, pstCmd->nRemoveGammaJumpSpanX, pstCmd->nRemoveGammaJumpSpanY);
             TimeLog::GetInstance()->addTimeLog("phaseCorrection for gamma.", stopWatch.Span());
@@ -678,15 +679,11 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
     auto ptrData2 = vecConvertedImgs[2].ptr<uchar>(0);
     auto ptrData3 = vecConvertedImgs[3].ptr<uchar>(0);
     for (int i = 0; i < total; ++ i) {
-        short x = (short)ptrData0[i] - (short)ptrData2[i];
-        short y = (short)ptrData3[i] - (short)ptrData1[i];
-        float fAmplitudeSquare = (x*x + y*y) / 4.f;
-        if (fAmplitudeSquare < fMinimumAlpitudeSquare)
-            matAvgUnderTolIndex.at<uchar>(i) = PR_MAX_GRAY_LEVEL;
+        short x = (short)ptrData0[i] - (short)ptrData2[i];  // x = 2*cos(beta)
+        short y = (short)ptrData3[i] - (short)ptrData1[i];  // y = 2*sin(beta)
+        
         matAlpha.at<float>(i) = vecVecAtan2Table[x + PR_MAX_GRAY_LEVEL][y + PR_MAX_GRAY_LEVEL];
     }
-
-    //_fitHoleInNanMask(matAvgUnderTolIndex, cv::Size(10, 10), 2);
 
     ptrData0 = vecConvertedImgs[4].ptr<uchar>(0);
     ptrData1 = vecConvertedImgs[5].ptr<uchar>(0);
@@ -695,6 +692,9 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
     for (int i = 0; i < total; ++ i) {
         short x = (short)ptrData0[i] - (short)ptrData2[i];  // x = 2*cos(beta)
         short y = (short)ptrData3[i] - (short)ptrData1[i];  // y = 2*sin(beta)
+        float fAmplitudeSquare = (x*x + y*y) / 4.f;
+        if (fAmplitudeSquare < fMinimumAlpitudeSquare)
+            matAvgUnderTolIndex.at<uchar>(i) = PR_MAX_GRAY_LEVEL;
         matBeta.at<float>(i) = vecVecAtan2Table[x + PR_MAX_GRAY_LEVEL][y + PR_MAX_GRAY_LEVEL];
     }
     TimeLog::GetInstance()->addTimeLog("2 lookup phase ", stopWatch.Span());
@@ -712,13 +712,18 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
         matGamma = matGamma - pstCmd->matBaseWrappedGamma;
     }
 
+#ifdef _DEBUG
+    auto vecVecAlpha = CalcUtils::matToVector<DATA_TYPE>(matAlpha);
+    auto vecVecBeta  = CalcUtils::matToVector<DATA_TYPE>(matBeta);
+#endif
+
     matAlpha = matAlpha - pstCmd->matBaseWrappedAlpha;
     matBeta = matBeta - pstCmd->matBaseWrappedBeta;
     TimeLog::GetInstance()->addTimeLog("2 substract take. ", stopWatch.Span());
 
 #ifdef _DEBUG
-    auto vecVecAlpha = CalcUtils::matToVector<DATA_TYPE>(matAlpha);
-    auto vecVecBeta  = CalcUtils::matToVector<DATA_TYPE>(matBeta);
+    vecVecAlpha = CalcUtils::matToVector<DATA_TYPE>(matAlpha);
+    vecVecBeta  = CalcUtils::matToVector<DATA_TYPE>(matBeta);
 #endif
 
     _phaseWrapBuffer(matAlpha, matBuffer1, pstCmd->fPhaseShift);
@@ -730,23 +735,45 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
     _phaseWrapByRefer(matBeta, matBuffer1);
     TimeLog::GetInstance()->addTimeLog("_phaseWrapByRefer.", stopWatch.Span());
 
-    if (pstCmd->nRemoveBetaJumpMinSpan > 0 || pstCmd->nRemoveBetaJumpMaxSpan > 0) {
-        _phasePatch(matBeta, pstCmd->enProjectDir, matAvgUnderTolIndex);
-        phaseCorrectionEx(matBeta, pstCmd->enProjectDir, pstCmd->enScanDir, pstCmd->nRemoveBetaJumpMinSpan, pstCmd->nRemoveBetaJumpMaxSpan);
+    const int dt = 20; // Use one data in every 20 pixels
+    cv::Mat matBetaBase = _pickPointInterval(matBeta, dt);
+    auto matBetaBaseOneRow = matBetaBase.reshape(1, 1);
+    cv::sort(matBetaBaseOneRow, matBetaBaseOneRow, cv::SortFlags::SORT_EVERY_ROW + cv::SortFlags::SORT_ASCENDING);
+    int totalItem = matBetaBaseOneRow.cols;
+    cv::Mat matRange(matBetaBaseOneRow, cv::Range::all(), cv::Range(ToInt32(totalItem * 0.25), ToInt32(totalItem * 0.45)));
+    float betaBase = ToFloat(cv::mean(matRange)[0]);
+
+    const float SHIFT_TO_BASE = 0.2f;
+    
+    cv::Mat matBeta3 = _phaseWarpNoAutoBase(matBeta, betaBase / 2 + SHIFT_TO_BASE); // 0.2 is also shift, means - 0.6~1.4
+    cv::Mat matMask;
+    cv::compare(matBeta3, matBeta, matMask, cv::CmpTypes::CMP_GT);
+    matBeta3.copyTo(matBeta, matMask);
+    matBeta.setTo(betaBase, matAvgUnderTolIndex);
+
+    if (pstCmd->nRemoveJumpSpan > 0) {
+        phaseCorrection(matBeta, pstCmd->nRemoveJumpSpan, pstCmd->nRemoveJumpSpan);
         TimeLog::GetInstance()->addTimeLog("phaseCorrection for beta.", stopWatch.Span());
     }
 
     if (pstCmd->bUseThinnestPattern) {
         auto k1 = pstCmd->matThickToThinK.at<DATA_TYPE>(0);
         auto k2 = pstCmd->matThickToThinnestK.at<DATA_TYPE>(0);
+
+        auto gammaBase = betaBase * k2 / k1;
+        // gamma1  = PhaseWrap02(gamma, base/k1*k2/2 + 0.2);
+        cv::Mat matGamma1 = _phaseWarpNoAutoBase(matGamma, gammaBase / 2 + SHIFT_TO_BASE);
         matBuffer1 = matBeta * k2 / k1;
         _phaseWrapByRefer(matGamma, matBuffer1);
 
-        if (pstCmd->nRemoveGammaJumpSpanX > 0 || pstCmd->nRemoveGammaJumpSpanY > 0) {
-            _phasePatch(matGamma, pstCmd->enProjectDir, matAvgUnderTolIndex);
-            phaseCorrection(matGamma, matAvgUnderTolIndex, pstCmd->nRemoveGammaJumpSpanX, pstCmd->nRemoveGammaJumpSpanY);
-            //Run 2 times, first time remove small jump, second time remove big jump. 2 pass can remove big jump with small jump on its edge.
-            //phaseCorrection(matGamma, matAvgUnderTolIndex, pstCmd->nRemoveGammaJumpSpanX, pstCmd->nRemoveGammaJumpSpanY);
+        matGamma.setTo(gammaBase, matAvgUnderTolIndex);
+        matGamma1.setTo(gammaBase, matAvgUnderTolIndex);
+
+        phaseCorrectionCmp(matGamma, matGamma1, pstCmd->nCompareRemoveJumpSpan);
+        TimeLog::GetInstance()->addTimeLog("phaseCorrectionCmp for gamma.", stopWatch.Span());
+
+        if (pstCmd->nRemoveJumpSpan > 0) {
+            phaseCorrection(matGamma, pstCmd->nRemoveJumpSpan, pstCmd->nRemoveJumpSpan);
             TimeLog::GetInstance()->addTimeLog("phaseCorrection for gamma.", stopWatch.Span());
         }
 
@@ -754,6 +781,9 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
     }
     else
         pstRpy->matPhase = matBeta;
+
+    cv::compare(pstRpy->matPhase, betaBase - 0.1, matMask, cv::CmpTypes::CMP_LT);
+    pstRpy->matPhase.setTo(betaBase, matMask);
 
     cv::medianBlur(pstRpy->matPhase, pstRpy->matPhase, 5);
 
@@ -774,26 +804,451 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
     pstRpy->enStatus = VisionStatus::OK;
 }
 
-/*static*/ void Unwrap::merge3DHeight(const PR_MERGE_3D_HEIGHT_CMD *const pstCmd, PR_MERGE_3D_HEIGHT_RPY *const pstRpy) {
-    cv::Mat matHeightOne = pstCmd->vecMatHeight[0], matHeightTwo = pstCmd->vecMatHeight[1];
-    if (pstCmd->enMethod == PR_MERGE_3D_HT_METHOD::SELECT_NEAREST_INTERSECT) {
-        pstRpy->matHeight = _mergeHeightIntersect(
-            matHeightOne,
-            pstCmd->vecMatNanMask[0],
-            matHeightTwo,
-            pstCmd->vecMatNanMask[1],
-            pstCmd->fHeightDiffThreshold,
-            pstCmd->enProjDir);
-    }else {
-        pstRpy->matHeight = _mergeHeightMax(
-            matHeightOne,
-            pstCmd->vecMatNanMask[0],
-            matHeightTwo,
-            pstCmd->vecMatNanMask[1],
-            pstCmd->fHeightDiffThreshold,
-            pstCmd->enProjDir);
+/*static*/ void Unwrap::calc3DHeightGpu(const PR_CALC_3D_HEIGHT_GPU_CMD *const pstCmd, PR_CALC_3D_HEIGHT_RPY *const pstRpy) {
+    CStopWatch stopWatch;
+    cv::cuda::Stream stream;
+
+    std::vector<cv::Mat> vecConvertedImgs;
+    for (auto &mat : pstCmd->vecInputImgs) {
+        cv::Mat matConvert = mat;
+        if (mat.channels() > 1)
+            cv::cvtColor(mat, matConvert, CV_BGR2GRAY);
+        vecConvertedImgs.push_back(matConvert);
     }
-    pstRpy->matNanMask = pstCmd->vecMatNanMask[0] & pstCmd->vecMatNanMask[1];
+    TimeLog::GetInstance()->addTimeLog("Convert image to float.", stopWatch.Span());
+
+    if (pstCmd->bReverseSeq) {
+        std::swap(vecConvertedImgs[1], vecConvertedImgs[3]);
+        std::swap(vecConvertedImgs[5], vecConvertedImgs[7]);
+        if (pstCmd->bUseThinnestPattern)
+            std::swap(vecConvertedImgs[9], vecConvertedImgs[11]);
+    }
+
+    TimeLog::GetInstance()->addTimeLog("After prepare data", stopWatch.Span());
+
+    std::vector<cv::cuda::GpuMat> vecGpuImages(vecConvertedImgs.size());
+    for (size_t i = 0; i < vecConvertedImgs.size(); ++ i)
+        vecGpuImages[i].upload(vecConvertedImgs[i], stream);
+    TimeLog::GetInstance()->addTimeLog("After upload images", stopWatch.Span());
+
+    cv::cuda::GpuMat matNanMaskGpu;
+    auto matHeightGpu = _calcHeightGpuCore(pstCmd, vecGpuImages, matNanMaskGpu, stream);
+
+    matHeightGpu.download(pstRpy->matHeight, stream);
+    matNanMaskGpu.download(pstRpy->matNanMask, stream);
+    pstRpy->enStatus = VisionStatus::OK;
+}
+
+/*static*/ void Unwrap::merge3DHeight(const PR_MERGE_3D_HEIGHT_CMD *const pstCmd, PR_MERGE_3D_HEIGHT_RPY *const pstRpy) {
+    if (pstCmd->vecMatHeight.size() == 2) {
+        cv::Mat matHeightOne = pstCmd->vecMatHeight[0], matHeightTwo = pstCmd->vecMatHeight[1];
+        if (pstCmd->enMethod == PR_MERGE_3D_HT_METHOD::SELECT_NEAREST_INTERSECT) {
+            pstRpy->matHeight = _mergeHeightIntersect(
+                matHeightOne,
+                pstCmd->vecMatNanMask[0],
+                matHeightTwo,
+                pstCmd->vecMatNanMask[1],
+                pstCmd->fHeightDiffThreshold,
+                pstCmd->vecProjDir[0],
+                pstRpy->matNanMask);
+        }
+        else {
+            pstRpy->matHeight = _mergeHeightMax(
+                matHeightOne,
+                pstCmd->vecMatNanMask[0],
+                matHeightTwo,
+                pstCmd->vecMatNanMask[1],
+                pstCmd->fHeightDiffThreshold,
+                pstCmd->vecProjDir[0]);
+            pstRpy->matNanMask = pstCmd->vecMatNanMask[0] & pstCmd->vecMatNanMask[1];
+        }
+    }
+    else if (pstCmd->vecMatHeight.size() == 4) {
+        pstRpy->matHeight = _merge4DlpHeightCore(pstCmd->vecMatHeight, pstCmd->vecMatNanMask, pstCmd->vecProjDir, pstCmd->fHeightDiffThreshold);
+    }
+    
+    pstRpy->enStatus = VisionStatus::OK;
+}
+
+/*static*/ cv::cuda::GpuMat Unwrap::_calcHeightGpuCore(
+    const PR_CALC_3D_HEIGHT_GPU_CMD *const pstCmd,
+    const VectorOfGpuMat& vecGpuImages,
+    cv::cuda::GpuMat& matNanMask,
+    cv::cuda::Stream& stream) {
+        float fMinimumAlpitudeSquare = pstCmd->fMinAmplitude * pstCmd->fMinAmplitude;
+
+    Calc3DHeightVars& calc3DHeightVar = CudaAlgorithm::getCalc3DHeightVars(pstCmd->nDlpNo);
+    DlpCalibResult& dlpCalibData = CudaAlgorithm::getDlpCalibData(pstCmd->nDlpNo);
+
+    cv::cuda::GpuMat& matAlphaGpu = calc3DHeightVar.matAlpha;
+    cv::cuda::GpuMat& matBetaGpu  = calc3DHeightVar.matBeta;
+    cv::cuda::GpuMat& matGammaGpu = calc3DHeightVar.matGamma;
+    cv::cuda::GpuMat& matGammaGpu1 = calc3DHeightVar.matGamma1;
+    cv::cuda::GpuMat& matAvgUnderTolIndexGpu = calc3DHeightVar.matAvgUnderTolIndex;
+
+    cv::cuda::GpuMat& matBufferGpu = calc3DHeightVar.matBufferGpu;
+    cv::cuda::GpuMat& matMaskGpu = calc3DHeightVar.matMaskGpu;
+    cv::cuda::GpuMat& matPhaseGpuT = calc3DHeightVar.matBufferGpuT;
+
+    CudaAlgorithm::calcPhase(
+        vecGpuImages[0],
+        vecGpuImages[1],
+        vecGpuImages[2],
+        vecGpuImages[3],
+        matAlphaGpu, stream);
+    cv::cuda::subtract(matAlphaGpu, dlpCalibData.matAlphaBase, matAlphaGpu, cv::cuda::GpuMat(), -1, stream);
+
+    matAvgUnderTolIndexGpu.setTo(0, stream);
+    CudaAlgorithm::calcPhaseAndMask(
+        vecGpuImages[4],
+        vecGpuImages[5],
+        vecGpuImages[6],
+        vecGpuImages[7],
+        matBetaGpu, matAvgUnderTolIndexGpu, fMinimumAlpitudeSquare, stream);
+    cv::cuda::subtract(matBetaGpu, dlpCalibData.matBetaBase, matBetaGpu, cv::cuda::GpuMat(), -1, stream);
+
+    if (pstCmd->bUseThinnestPattern) {
+        CudaAlgorithm::calcPhase(
+            vecGpuImages[8],
+            vecGpuImages[9],
+            vecGpuImages[10],
+            vecGpuImages[11],
+            matGammaGpu, stream);
+        cv::cuda::subtract(matGammaGpu, dlpCalibData.matGammaBase, matGammaGpu, cv::cuda::GpuMat(), -1, stream);
+    }
+
+    matBufferGpu.setTo(0, stream);
+
+    CudaAlgorithm::phaseWrapBuffer(matAlphaGpu, matBufferGpu, calc3DHeightVar.d_tmpResult, pstCmd->fPhaseShift,
+        calc3DHeightVar.eventDone, stream);
+
+    //TimeLog::GetInstance()->addTimeLog("CudaAlgorithm::phaseWrapBuffer", stopWatch.Span());
+
+    //matBuffer1 = matAlpha * pstCmd->matThickToThinK.at<DATA_TYPE>(0);
+    cv::cuda::multiply(matAlphaGpu, pstCmd->matThickToThinK.at<DATA_TYPE>(0), matBufferGpu, 1, -1, stream);
+
+    CudaAlgorithm::phaseWrapByRefer(matBetaGpu, matBufferGpu, stream);
+    //TimeLog::GetInstance()->addTimeLog("CudaAlgorithm::phaseWrapByRefer.", stopWatch.Span());
+
+    const int dt = 80; // Use one data in every dt pixels
+    float betaBase = CudaAlgorithm::intervalRangeAverage(matBetaGpu, dt, 
+        pstCmd->fBaseRangeMin, pstCmd->fBaseRangeMax,
+        calc3DHeightVar.d_tmpResult,
+        calc3DHeightVar.eventDone, stream);
+
+    const float SHIFT_TO_BASE = 0.2f;
+
+    //cv::Mat matBeta3 = _phaseWarpNoAutoBase(matBeta, betaBase / 2 + SHIFT_TO_BASE); // 0.2 is also shift, means - 0.6~1.4
+    CudaAlgorithm::phaseWarpNoAutoBase(matBetaGpu, matBufferGpu, betaBase / 2 + SHIFT_TO_BASE, stream);
+    cv::cuda::compare(matBufferGpu, matBetaGpu, matMaskGpu, cv::CmpTypes::CMP_GT, stream);
+    matBufferGpu.copyTo(matBetaGpu, matMaskGpu, stream);
+    matBetaGpu.setTo(betaBase, matAvgUnderTolIndexGpu, stream);
+
+    if (pstCmd->nRemoveJumpSpan > 0) {
+        CudaAlgorithm::phaseCorrection(matBetaGpu, matPhaseGpuT,
+            calc3DHeightVar.matDiffResult, calc3DHeightVar.matDiffResultT,
+            calc3DHeightVar.matBufferSign, calc3DHeightVar.matBufferAmpl,
+            calc3DHeightVar.pBufferJumpSpan,
+            calc3DHeightVar.pBufferJumpStart,
+            calc3DHeightVar.pBufferJumpEnd,
+            calc3DHeightVar.pBufferSortedJumpSpanIdx,
+            pstCmd->nRemoveJumpSpan, pstCmd->nRemoveJumpSpan, stream);
+    }
+
+    if (pstCmd->bUseThinnestPattern) {
+        auto k1 = pstCmd->matThickToThinK.at<DATA_TYPE>(0);
+        auto k2 = pstCmd->matThickToThinnestK.at<DATA_TYPE>(0);
+
+        float gammaBase = betaBase * k2 / k1;
+        //cv::Mat matGamma1 = _phaseWarpNoAutoBase(matGamma, gammaBase / 2 + SHIFT_TO_BASE);
+        CudaAlgorithm::phaseWarpNoAutoBase(matGammaGpu, matGammaGpu1, gammaBase / 2 + SHIFT_TO_BASE, stream);
+        //matBuffer1 = matBeta * k2 / k1;
+        cv::cuda::multiply(matBetaGpu, k2 / k1, matBufferGpu, 1, -1, stream);
+
+        //_phaseWrapByRefer(matGamma, matBuffer1);
+        CudaAlgorithm::phaseWrapByRefer(matGammaGpu, matBufferGpu, stream);
+
+        matGammaGpu.setTo(gammaBase, matAvgUnderTolIndexGpu, stream);
+        matGammaGpu1.setTo(gammaBase, matAvgUnderTolIndexGpu, stream);
+
+        //TimeLog::GetInstance()->addTimeLog("Parepare data for phaseCorrectionCmp for gamma.", stopWatch.Span());
+
+        CudaAlgorithm::phaseCorrectionCmp(matGammaGpu, matGammaGpu1,
+            matBufferGpu, matPhaseGpuT, calc3DHeightVar.matBufferGpuT_1,
+            calc3DHeightVar.matDiffResult, calc3DHeightVar.matDiffResultT,
+            calc3DHeightVar.matDiffResult_1, calc3DHeightVar.matDiffResultT_1,
+            calc3DHeightVar.matMaskGpu, calc3DHeightVar.matMaskGpuT, calc3DHeightVar.matMaskGpu_1,
+            calc3DHeightVar.pBufferJumpStart, calc3DHeightVar.pBufferJumpEnd, //Reuease the phase jump buffer
+            pstCmd->nCompareRemoveJumpSpan, stream);
+
+        //TimeLog::GetInstance()->addTimeLog("phaseCorrectionCmp for gamma.", stopWatch.Span());
+
+        if (pstCmd->nRemoveJumpSpan > 0) {
+            CudaAlgorithm::phaseCorrection(matGammaGpu, matPhaseGpuT,
+                calc3DHeightVar.matDiffResult, calc3DHeightVar.matDiffResultT,
+                calc3DHeightVar.matBufferSign, calc3DHeightVar.matBufferAmpl,
+                calc3DHeightVar.pBufferJumpSpan,
+                calc3DHeightVar.pBufferJumpStart,
+                calc3DHeightVar.pBufferJumpEnd,
+                calc3DHeightVar.pBufferSortedJumpSpanIdx,
+                pstCmd->nRemoveJumpSpan, pstCmd->nRemoveJumpSpan, stream);
+            //TimeLog::GetInstance()->addTimeLog("phaseCorrection for gamma.", stopWatch.Span());
+        }
+
+        cv::cuda::multiply(matGammaGpu, k1 / k2, matBufferGpu, 1, -1, stream);
+    }
+    else
+        matBufferGpu = matBetaGpu;
+
+    cv::cuda::compare(matBufferGpu, betaBase - 0.1, matMaskGpu, cv::CmpTypes::CMP_LT, stream);
+    matBufferGpu.setTo(betaBase, matMaskGpu, stream);
+
+    CudaAlgorithm::medianFilter(matBufferGpu, matAlphaGpu, 5, stream);
+
+    //TimeLog::GetInstance()->addTimeLog("After median filter.", stopWatch.Span());
+
+    if (pstCmd->bEnableGaussianFilter) 
+        CudaAlgorithm::m_ptrGaussianFilter->apply(matAlphaGpu, matBufferGpu, stream);
+
+    if (!pstCmd->mat3DBezierK.empty()) {
+        std::vector<float> vecParamMinMaxXY{ 1.f, ToFloat(matAlphaGpu.cols), 1.f, ToFloat(matAlphaGpu.rows),
+            ToFloat(pstCmd->fMinPhase), ToFloat(pstCmd->fMaxPhase) };
+        CudaAlgorithm::calculateSurfaceConvert3D(matBufferGpu, matPhaseGpuT, matBufferGpu, vecParamMinMaxXY, 4, pstCmd->nDlpNo, stream);
+    }
+
+    matBufferGpu.setTo(NAN, matAvgUnderTolIndexGpu, stream);
+    matNanMask = matAvgUnderTolIndexGpu;
+    return matBufferGpu;
+}
+
+/*static*/ cv::Mat Unwrap::_merge4DlpHeightCore(
+    const VectorOfMat&       vecMatHeight,
+    const VectorOfMat&       vecMatNanMask,
+    const VectorOfDirection& vecProjDir,
+    float                    fHeightDiffThreshold) {
+    cv::Mat matHeightOne = vecMatHeight[0], matHeightTwo = vecMatHeight[1],
+        matHeightTre = vecMatHeight[2], matHeightFor = vecMatHeight[3];
+    cv::Mat matNan1, matNan2;
+    cv::Mat matHm1 = _mergeHeightIntersect(
+        matHeightOne,
+        vecMatNanMask[0],
+        matHeightTre,
+        vecMatNanMask[2],
+        fHeightDiffThreshold,
+        vecProjDir[0], matNan1);
+    cv::Mat matHm2 = _mergeHeightIntersect(
+        matHeightTwo,
+        vecMatNanMask[1],
+        matHeightFor,
+        vecMatNanMask[3],
+        fHeightDiffThreshold,
+        vecProjDir[1], matNan2);
+    CalcUtils::saveMatToYml(matHm1,
+        "C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/Cpu_MergeResult_1.yml", "result");
+    CalcUtils::saveMatToYml(matHm2,
+        "C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/Cpu_MergeResult_2.yml", "result");
+    cv::imwrite("C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/Cpu_MergeResult_Nan_1.png", matNan1);
+    cv::imwrite("C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/Cpu_MergeResult_Nan_2.png", matNan2);
+    matHm1.setTo(NAN, matNan1);
+    matHm2.setTo(NAN, matNan2);
+
+    //cv::imwrite("C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/Nan1.png", matNan1);
+    //cv::imwrite("C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/Nan2.png", matNan2);
+
+    //PR_HEIGHT_TO_GRAY_CMD stHeightToGrayCmd;
+    //PR_HEIGHT_TO_GRAY_RPY stHeightToGrayRpy;
+    //stHeightToGrayCmd.matHeight = matHm1;
+    //Vision::VisionAlgorithm::heightToGray(&stHeightToGrayCmd, &stHeightToGrayRpy);
+    //cv::imwrite("C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/HmGray1.png", stHeightToGrayRpy.matGray);
+
+    //stHeightToGrayCmd.matHeight = matHm2;
+    //Vision::VisionAlgorithm::heightToGray(&stHeightToGrayCmd, &stHeightToGrayRpy);
+    //cv::imwrite("C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/HmGray2.png", stHeightToGrayRpy.matGray);
+
+    auto matHm3 = _mergeHeightIntersect06(matHm1, matNan1, matHm2, matNan2, fHeightDiffThreshold * 2.f, vecProjDir[0]);
+    auto matHm4 = _mergeHeightIntersect06(matHm1, matNan1, matHm2, matNan2, fHeightDiffThreshold * 2.f, vecProjDir[1]);
+    CalcUtils::saveMatToYml(matHm3,
+        "C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/Cpu_MergeResult_3.yml", "result");
+    CalcUtils::saveMatToYml(matHm4,
+        "C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/Cpu_MergeResult_4.yml", "result");
+    //stHeightToGrayCmd.matHeight = matHm3;
+    //Vision::VisionAlgorithm::heightToGray(&stHeightToGrayCmd, &stHeightToGrayRpy);
+    //cv::imwrite("C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/HmGray3.png", stHeightToGrayRpy.matGray);
+
+    //stHeightToGrayCmd.matHeight = matHm4;
+    //Vision::VisionAlgorithm::heightToGray(&stHeightToGrayCmd, &stHeightToGrayRpy);
+    //cv::imwrite("C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/HmGray4.png", stHeightToGrayRpy.matGray);
+
+    return (matHm3 + matHm4) / 2;
+}
+
+/*static*/ cv::cuda::GpuMat Unwrap::_merge4DlpHeightCore(
+    VectorOfGpuMat&          vecGpuMatHeight,
+    VectorOfGpuMat&          vecGpuMatNanMask,
+    const VectorOfDirection& vecProjDir,
+    float                    fHeightDiffThreshold,
+    cv::cuda::Stream&        stream1,
+    cv::cuda::Stream&        stream2) {
+    cv::cuda::GpuMat matMerge1, matMerge2, matResultNan1, matResultNan2;
+
+    matMerge1 = CudaAlgorithm::runMergeHeightIntersect(
+        vecGpuMatHeight[0],
+        vecGpuMatNanMask[0],
+        vecGpuMatHeight[2],
+        vecGpuMatNanMask[2],
+        CudaAlgorithm::getCalc3DHeightVars(0),
+        CudaAlgorithm::getCalc3DHeightVars(2),
+        fHeightDiffThreshold,
+        vecProjDir[0],
+        matResultNan1,
+        stream1);
+
+    //cv::Mat matTmp1, matNanMaskCpu1;
+    //matMerge1.download(matTmp1);
+    //CalcUtils::saveMatToYml(matTmp1,
+    //    "C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/Gpu_MergeResult_1.yml", "result");
+    //matResultNan1.download(matNanMaskCpu1);
+    //cv::imwrite("C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/Gpu_MergeResult_Nan_1.png", matNanMaskCpu1);
+
+    matMerge1.setTo(NAN, matResultNan1, stream1);
+
+    matMerge2 = CudaAlgorithm::runMergeHeightIntersect(
+        vecGpuMatHeight[1],
+        vecGpuMatNanMask[1],
+        vecGpuMatHeight[3],
+        vecGpuMatNanMask[3],
+        CudaAlgorithm::getCalc3DHeightVars(1),
+        CudaAlgorithm::getCalc3DHeightVars(3),
+        fHeightDiffThreshold,
+        vecProjDir[1],
+        matResultNan2,
+        stream2);
+
+    //cv::Mat matTmp2, matNanMaskCpu2;
+    //matMerge2.download(matTmp2);
+    //CalcUtils::saveMatToYml(matTmp2,
+    //    "C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/Gpu_MergeResult_2.yml", "result");
+    //matResultNan2.download(matNanMaskCpu2);
+    //cv::imwrite("C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/Gpu_MergeResult_Nan_2.png", matNanMaskCpu2);
+
+    matMerge2.setTo(NAN, matResultNan2, stream2);
+
+    cudaDeviceSynchronize();
+    //auto matHm3 = _mergeHeightIntersect06(matHm1, matNan1, matHm2, matNan2, fHeightDiffThreshold * 2.f, vecProjDir[0]);
+    //auto matHm4 = _mergeHeightIntersect06(matHm1, matNan1, matHm2, matNan2, fHeightDiffThreshold * 2.f, vecProjDir[1]);
+
+    auto& calc3DHeightVar0 = CudaAlgorithm::getCalc3DHeightVars(0);
+    cv::cuda::GpuMat& matBufferGpu1 = calc3DHeightVar0.matAlpha;
+    cv::cuda::GpuMat& matBufferGpu2 = calc3DHeightVar0.matBeta;
+
+    CudaAlgorithm::patchNanBeforeMergeHeight(
+        matMerge1,
+        matResultNan1,
+        matMerge2,
+        matResultNan2,
+        matBufferGpu1,
+        matBufferGpu2,
+        stream1);
+
+    cudaDeviceSynchronize();
+
+    auto matMerge3 = CudaAlgorithm::runMergeHeightIntersect06(
+        matBufferGpu1,
+        matBufferGpu2,
+        CudaAlgorithm::getCalc3DHeightVars(0),
+        CudaAlgorithm::getCalc3DHeightVars(2),
+        fHeightDiffThreshold * 2.f,
+        vecProjDir[0],
+        stream1);
+
+    auto matMerge4 = CudaAlgorithm::runMergeHeightIntersect06(
+        matBufferGpu1,
+        matBufferGpu2,
+        CudaAlgorithm::getCalc3DHeightVars(1),
+        CudaAlgorithm::getCalc3DHeightVars(3),
+        fHeightDiffThreshold * 2.f,
+        vecProjDir[1],
+        stream2);
+
+    cudaDeviceSynchronize();
+
+    //cv::Mat matTmp3;
+    //matMerge3.download(matTmp3);
+    //CalcUtils::saveMatToYml(matTmp3,
+    //    "C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/Gpu_MergeResult_3.yml", "result");
+
+    //cv::Mat matTmp4;
+    //matMerge4.download(matTmp4);
+    //CalcUtils::saveMatToYml(matTmp4,
+    //    "C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/Gpu_MergeResult_4.yml", "result");
+
+    cv::cuda::addWeighted(matMerge3, 0.5f, matMerge4, 0.5f, 0, matMerge1);
+
+    return matMerge1;
+}
+
+/*static*/ void Unwrap::calcMerge4DlpHeight(const PR_CALC_MERGE_4_DLP_HEIGHT_CMD *const pstCmd, PR_CALC_MERGE_4_DLP_HEIGHT_RPY *const pstRpy) {
+    CStopWatch stopWatch;
+
+    std::vector<cv::Mat> vecConvertedImgs[NUM_OF_DLP];
+    for (int dlp = 0; dlp < NUM_OF_DLP; ++dlp) {
+        const auto& stCmd = pstCmd->arrCalcHeightCmd[dlp];
+        for (auto &mat : stCmd.vecInputImgs) {
+            cv::Mat matConvert = mat;
+            if (mat.channels() > 1)
+                cv::cvtColor(mat, matConvert, CV_BGR2GRAY);
+            vecConvertedImgs[dlp].push_back(matConvert);
+        }
+
+        if (stCmd.bReverseSeq) {
+            std::swap(vecConvertedImgs[dlp][1], vecConvertedImgs[dlp][3]);
+            std::swap(vecConvertedImgs[dlp][5], vecConvertedImgs[dlp][7]);
+            if (stCmd.bUseThinnestPattern)
+                std::swap(vecConvertedImgs[dlp][9], vecConvertedImgs[dlp][11]);
+        }
+    }
+
+    VectorOfDirection vecProjDir;
+    cv::cuda::Stream arrStreams[NUM_OF_DLP];
+    VectorOfGpuMat vecGpuHeights(NUM_OF_DLP), vecGpuNanMasks(NUM_OF_DLP);
+    VectorOfMat vecHeights(NUM_OF_DLP), vecNanMasks(NUM_OF_DLP);
+
+    for (int dlp = 0; dlp < NUM_OF_DLP; ++dlp) {
+        for (size_t i = 0; i < vecConvertedImgs[dlp].size(); ++i) {
+            CudaAlgorithm::m_arrVecGpuMat[dlp][i].upload(vecConvertedImgs[dlp][i], arrStreams[dlp]);
+            vecProjDir.push_back(pstCmd->arrCalcHeightCmd[dlp].enProjectDir);
+        }
+    }
+
+    for (int dlp = 0; dlp < NUM_OF_DLP; ++dlp) {
+        vecGpuHeights[dlp] = _calcHeightGpuCore(
+            &pstCmd->arrCalcHeightCmd[dlp],
+            CudaAlgorithm::m_arrVecGpuMat[dlp],
+            vecGpuNanMasks[dlp],
+            arrStreams[dlp]);
+
+        //vecGpuHeights[dlp].download(vecHeights[dlp], arrStreams[dlp]);
+        //vecGpuNanMasks[dlp].download(vecNanMasks[dlp], arrStreams[dlp]);
+    }
+
+    cudaDeviceSynchronize();
+    TimeLog::GetInstance()->addTimeLog("After calculate 4 DLP height", stopWatch.Span());
+
+    //TimeLog::GetInstance()->addTimeLog("After download 4 DLP height and nan mask", stopWatch.Span());
+    //for (int dlp = 0; dlp < NUM_OF_DLP; ++dlp) {
+    //    PR_HEIGHT_TO_GRAY_CMD stCmd;
+    //    PR_HEIGHT_TO_GRAY_RPY stRpy;
+    //    stCmd.matHeight = vecHeights[dlp];
+    //    VisionAlgorithm::heightToGray(&stCmd, &stRpy);
+    //    std::string strResultFolder("C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/");
+    //    cv::imwrite(strResultFolder + "Dlp_" + std::to_string(dlp + 1) + "_HeightGray.png", stRpy.matGray);
+    //    cv::imwrite(strResultFolder + "Dlp_" + std::to_string(dlp + 1) + "_NanMask.png", vecNanMasks[dlp]);
+    //}
+
+    //pstRpy->matHeight = _merge4DlpHeightCore(vecHeights, vecNanMasks, vecProjDir, pstCmd->fHeightDiffThreshold);
+    auto matResultGpu = _merge4DlpHeightCore(vecGpuHeights, vecGpuNanMasks, vecProjDir, pstCmd->fHeightDiffThreshold,
+        arrStreams[0], arrStreams[1]);
+    matResultGpu.download(pstRpy->matHeight);
     pstRpy->enStatus = VisionStatus::OK;
 }
 
@@ -1637,7 +2092,7 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
         TimeLog::GetInstance()->addTimeLog("Sort and trim base points take: ", stopWatch.Span());
     }
 
-    if (vecXt.empty() || vecYt.empty()) {
+    if (vecXt.size() < 3 || vecYt.size() < 3) {
         pstRpy->enStatus = VisionStatus::CALC_3D_HEIGHT_DIFF_NO_BASE_POINT;
         WriteLog("No base points to calculate 3D height difference, all base points are masked or are NAN.");
         return;
@@ -1651,7 +2106,7 @@ static inline cv::Mat calcOrder5BezierCoeff(const cv::Mat &matU) {
         matXX.push_back(cv::Mat(cv::Mat::ones(1, ToInt32(vecHeightTmp.size()), CV_32FC1))); // cv::Mat::ones return MatExpr, need to convert to Mat
         cv::transpose(matXX, matXX);
         cv::Mat matYY(vecHeightTmp);
-        cv::solve(matXX, matYY, matK, cv::DecompTypes::DECOMP_QR);
+        cv::solve(matXX, matYY, matK, cv::DecompTypes::DECOMP_SVD);
     }
 
     TimeLog::GetInstance()->addTimeLog("cv::solve to calculate base surface take: ", stopWatch.Span());
@@ -2232,7 +2687,7 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
 }
 
 /*static*/ cv::Mat Unwrap::_calculateSurfaceConvert3D(const cv::Mat& z1, const VectorOfFloat& param, int ss, const cv::Mat& xxt1) {
-    MARK_FUNCTION_START_TIME;
+    CStopWatch stopWatch;
 
     auto zmin = param[4];
     auto zmax = param[5];
@@ -2250,6 +2705,8 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
 
     auto matPolyParass = CalcUtils::paraFromPolyNomial(ss);
 
+    TimeLog::GetInstance()->addTimeLog("_calculateSurfaceConvert3D prepare data", stopWatch.Span());
+
 #ifdef _DEBUG
     auto vecVecPolyParass = CalcUtils::matToVector<float>(matPolyParass);
 #endif
@@ -2258,6 +2715,8 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
     cv::Mat matTmpPmPow, P3;
     cv::multiply(CalcUtils::power<float>(Ps3, Ps1), CalcUtils::power<float>(Ps4, Ps2), matTmpPmPow);
     cv::multiply(matTmpPmPow, cv::repeat(matPolyParass, len, 1), P3);
+
+    TimeLog::GetInstance()->addTimeLog("_calculateSurfaceConvert3D power and multiply", stopWatch.Span());
 
     // Matlab: zp1 = sum(xxt1.*P3, 2);
     cv::multiply(xxt1, P3, P3);
@@ -2275,7 +2734,7 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
     auto vecVecFinalResult = CalcUtils::matToVector<float>(matResult);
 #endif
 
-    MARK_FUNCTION_END_TIME;
+    TimeLog::GetInstance()->addTimeLog("_calculateSurfaceConvert3D final process", stopWatch.Span());
     return matResult;
 }
 
@@ -2372,6 +2831,19 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
         vecVecResult.push_back(vecResult);
     }
     return CalcUtils::vectorToMat(vecVecResult);
+}
+
+/*static*/ cv::Mat Unwrap::_phaseWarpNoAutoBase(const cv::Mat &matPhase, float fShift) {
+    CStopWatch stopWatch;
+    cv::Mat matResult = matPhase / ONE_CYCLE + 0.5 - fShift;
+    TimeLog::GetInstance()->addTimeLog("_phaseWrap Divide and add.", stopWatch.Span());
+
+    CalcUtils::floorByRef<DATA_TYPE>(matResult);
+
+    TimeLog::GetInstance()->addTimeLog("_phaseWrap floor takes.", stopWatch.Span());
+
+    matResult = matPhase - matResult * ONE_CYCLE;
+    return matResult;
 }
 
 /*static*/ void Unwrap::calibDlpOffset(const PR_CALIB_DLP_OFFSET_CMD *const pstCmd, PR_CALIB_DLP_OFFSET_RPY *const pstRpy) {
@@ -2494,7 +2966,7 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
     pstRpy->enStatus = VisionStatus::OK;
 }
 
-/*static*/ void Unwrap::phaseCorrection(cv::Mat &matPhase, const cv::Mat &matIdxNan, int nJumpSpanX, int nJumpSpanY) {
+/*static*/ void Unwrap::phaseCorrection(cv::Mat &matPhase, int nJumpSpanX, int nJumpSpanY) {
     CStopWatch stopWatch;
     const int ROWS = matPhase.rows;
     const int COLS = matPhase.cols;
@@ -2502,46 +2974,45 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
     //X direction
     if (nJumpSpanX > 0) {
         cv::Mat matPhaseDiff = CalcUtils::diff(matPhase, 1, 2);
+        std::vector<char> vecSignOfRow(COLS, 0);
+        std::vector<char> vecAmplOfRow(COLS, 0);
 #ifdef _DEBUG
         //CalcUtils::saveMatToCsv ( matPhase, "./data/HaoYu_20171114/test1/NewLens2/BeforePhaseCorrectionX.csv");
         auto vecVecPhase = CalcUtils::matToVector<float>(matPhase);
         auto vecVecPhaseDiff = CalcUtils::matToVector<float>(matPhaseDiff);
 #endif
-        cv::Mat matDiffSign = cv::Mat::zeros(ROWS, COLS, CV_8SC1);
-        cv::Mat matDiffAmpl = cv::Mat::zeros(ROWS, COLS, CV_8SC1);
         std::vector<int> vecRowsWithJump;
         for (int row = 0; row < matPhaseDiff.rows; ++ row) {
             bool bRowWithPosJump = false, bRowWithNegJump = false;
+            std::fill(vecSignOfRow.begin(), vecSignOfRow.end(), 0);
+            std::fill(vecAmplOfRow.begin(), vecAmplOfRow.end(), 0);
+
             for (int col = 0; col < matPhaseDiff.cols; ++col) {
                 auto value = matPhaseDiff.at<DATA_TYPE>(row, col);
                 if (value > ONE_HALF_CYCLE) {
-                    matDiffSign.at<char>(row, col) = 1;
+                    vecSignOfRow[col] = 1;
                     bRowWithPosJump = true;
 
                     char nJumpAmplitude = static_cast<char> (std::ceil(std::abs(value) / 2.f) * 2);
-                    matDiffAmpl.at<char>(row, col) = nJumpAmplitude;
+                    vecAmplOfRow[col] = nJumpAmplitude;
                 }
                 else if (value < -ONE_HALF_CYCLE) {
-                    matDiffSign.at<char>(row, col) = -1;
+                    vecSignOfRow[col] = -1;
                     bRowWithNegJump = true;
 
                     char nJumpAmplitude = static_cast<char> (std::ceil(std::abs(value) / 2.f) * 2);
-                    matDiffAmpl.at<char>(row, col) = nJumpAmplitude;
+                    vecAmplOfRow[col] = nJumpAmplitude;
                 }
             }
-            if (bRowWithPosJump && bRowWithNegJump)
-                vecRowsWithJump.push_back(row);
-        }
 
-        for (auto row : vecRowsWithJump) {
-            char *ptrSignOfRow = matDiffSign.ptr<char>(row);
-            char *ptrAmplOfRow = matDiffAmpl.ptr<char>(row);
+            if (!bRowWithPosJump || !bRowWithNegJump)
+                continue;
 
             for (int kk = 0; kk < 2; ++ kk) {
                 std::vector<int> vecJumpCol, vecJumpSpan, vecJumpIdxNeedToHandle;
                 vecJumpCol.reserve(20);
                 for (int col = 0; col < COLS; ++col) {
-                    if (ptrSignOfRow[col] != 0)
+                    if (vecSignOfRow[col] != 0)
                         vecJumpCol.push_back(col);
                 }
                 if (vecJumpCol.size() < 2)
@@ -2558,22 +3029,22 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
                 for (size_t jj = 0; jj < vecJumpIdxNeedToHandle.size(); ++ jj) {
                     auto nStart = vecJumpCol[vecSortedJumpSpanIdx[jj]];
                     auto nEnd = vecJumpCol[vecSortedJumpSpanIdx[jj] + 1];
-                    char chSignFirst = ptrSignOfRow[nStart];        //The index is hard to understand. Use the sorted span index to find the original column.
-                    char chSignSecond = ptrSignOfRow[nEnd];
+                    char chSignFirst = vecSignOfRow[nStart];        //The index is hard to understand. Use the sorted span index to find the original column.
+                    char chSignSecond = vecSignOfRow[nEnd];
 
-                    char chAmplFirst = ptrAmplOfRow[nStart];
-                    char chAmplSecond = ptrAmplOfRow[nEnd];
+                    char chAmplFirst = vecAmplOfRow[nStart];
+                    char chAmplSecond = vecAmplOfRow[nEnd];
                     char chTurnAmpl = std::min(chAmplFirst, chAmplSecond) / 2;
                     if (chSignFirst * chSignSecond == -1) { //it is a pair
                         char chAmplNew = chAmplFirst - 2 * chTurnAmpl;
-                        ptrAmplOfRow[nStart] = chAmplNew;
+                        vecAmplOfRow[nStart] = chAmplNew;
                         if (chAmplNew <= 0)
-                            ptrSignOfRow[nStart] = 0;  // Remove the sign of jump flag.
+                            vecSignOfRow[nStart] = 0;  // Remove the sign of jump flag.
 
                         chAmplNew = chAmplSecond - 2 * chTurnAmpl;
-                        ptrAmplOfRow[nEnd] = chAmplNew;
+                        vecAmplOfRow[nEnd] = chAmplNew;
                         if (chAmplNew <= 0)
-                            ptrSignOfRow[nEnd] = 0;
+                            vecSignOfRow[nEnd] = 0;
 
                         auto startValue = matPhase.at<DATA_TYPE>(row, nStart);
                         for (int col = nStart + 1; col <= nEnd; ++ col) {
@@ -2626,11 +3097,10 @@ static inline cv::Mat calcOrder3Surface(const cv::Mat &matX, const cv::Mat &matY
                     matDiffAmpl.at<char>(row, col) = nJumpAmplitude;
                 }
             }
-            if (bColWithPosJump && bColWithNegJump)
-                vecColsWithJump.push_back(col);
-        }
 
-        for (auto col : vecColsWithJump) {
+            if (!bColWithPosJump && !bColWithNegJump)
+                continue;
+
             cv::Mat matSignOfCol = cv::Mat(matDiffSign, cv::Range::all(), cv::Range(col, col + 1)).clone();
             char *ptrSignOfCol = matSignOfCol.ptr<char>(0);
             cv::Mat matAmplOfCol = cv::Mat(matDiffAmpl, cv::Range::all(), cv::Range(col, col + 1)).clone();
@@ -2807,6 +3277,8 @@ void Unwrap::_turnPhase(cv::Mat &matPhase, cv::Mat &matPhaseDiff, char *ptrSignO
     }
 }
 
+// This phase correction function need to use last row's data used in next row, so not very suitable to use GPU to 
+// implement
 /*static*/ void Unwrap::phaseCorrectionEx(cv::Mat &matPhase, PR_DIRECTION enProjDir, PR_DIRECTION enScanDir, int nMinSpan, int nMaxSpan) {
     CStopWatch stopWatch;
     _phaseSwitch(matPhase, enProjDir, enScanDir);
@@ -2912,6 +3384,94 @@ void Unwrap::_turnPhase(cv::Mat &matPhase, cv::Mat &matPhaseDiff, char *ptrSignO
 
     _phaseSwitchBack(matPhase, enProjDir, enScanDir);
     TimeLog::GetInstance()->addTimeLog("_phaseSwitchBack.", stopWatch.Span());
+}
+
+/*static*/ void Unwrap::selectCmpPoint(const cv::Mat& dMap, const cv::Mat& dPhase, int span, cv::Mat& matResult) {
+    for (int row = 0; row < dMap.rows; ++row) {
+        cv::Mat matOneRow = dMap.row(row);
+        std::vector<int> vecIdx1, vecIdx2;
+        for (int i = 0; i < matOneRow.cols; ++i) {
+            const auto& value = matOneRow.at<float>(i);
+            if (value == 1)
+                vecIdx1.push_back(i);
+            else if (value == -1)
+                vecIdx2.push_back(i);
+        }
+
+        if (!vecIdx1.empty() && !vecIdx2.empty()) {
+            // If start of index1 larger than index 2, then remove beginning element of index2
+            if (vecIdx1[0] > vecIdx2[0]) {
+                vecIdx2 = std::vector<int>(vecIdx2.begin() + 1, vecIdx2.end());
+            }
+
+            if (vecIdx1.size() > vecIdx2.size()) {
+                vecIdx1 = std::vector<int>(vecIdx1.begin(), vecIdx1.end() - 1);
+            }
+        }
+
+        for (int i = 0; i < vecIdx1.size() && i < vecIdx2.size(); ++i) {
+            if (vecIdx2[i] - vecIdx1[i] < span) {
+                if (fabs(dPhase.at<float>(row, vecIdx1[i])) > 1.f && fabs(dPhase.at<float>(row, vecIdx2[i])) > 1.f) {
+                    cv::Mat matROI(matResult, cv::Range(row, row + 1), cv::Range(vecIdx1[i], vecIdx2[i] + 1));
+                    matROI.setTo(PR_MAX_GRAY_LEVEL);
+                }
+            }
+        }
+    }
+}
+
+/*static*/ void Unwrap::phaseCorrectionCmp(cv::Mat& matPhase, cv::Mat& matPhase1, int span) {
+    CStopWatch stopWatch;
+    const int ROWS = matPhase.rows;
+    const int COLS = matPhase.cols;
+
+    cv::Mat matIdx;
+    cv::compare(matPhase, matPhase1, matIdx, cv::CmpTypes::CMP_NE);
+    cv::Mat matMap = cv::Mat::zeros(ROWS, COLS, CV_32FC1);
+    matMap.setTo(1, matIdx);
+
+    auto dMap1 = CalcUtils::diff(matMap, 1, CalcUtils::DIFF_ON_X_DIR);
+    auto dxPhase = CalcUtils::diff(matPhase, 1, CalcUtils::DIFF_ON_X_DIR);
+    cv::Mat idxl1 = cv::Mat::zeros(ROWS, COLS, CV_8UC1);
+
+    TimeLog::GetInstance()->addTimeLog("prepare for phaseCorrectionCmp", stopWatch.Span());
+
+    // Select in X direction
+    selectCmpPoint(dMap1, dxPhase, span, idxl1);
+
+    static int time = 0;
+    ++ time;
+    cv::imwrite(std::string("C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/PhaseCorrectionCmpMask1_") + std::to_string(time) + ".png", idxl1);
+    int nonZeroCount1 = cv::countNonZero(idxl1);
+
+    // Select in Y direction, transpose the matrix to accelerate
+    cv::transpose(matMap, matMap);
+    cv::Mat matPhaseT;
+    cv::transpose(matPhase, matPhaseT);
+
+    auto dMap2 = CalcUtils::diff(matMap, 1, CalcUtils::DIFF_ON_X_DIR);
+    auto dyPhase = CalcUtils::diff(matPhaseT, 1, CalcUtils::DIFF_ON_X_DIR);
+    cv::Mat idxl2 = cv::Mat::zeros(COLS, ROWS, CV_8UC1);    // Note the indl2 is tranposed result, so the ROWS and COLS are changed
+
+    selectCmpPoint(dMap2, dyPhase, span, idxl2);
+
+    cv::imwrite(std::string("C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/PhaseCorrectionCmpMask2_") + std::to_string(time) + ".png", idxl2);
+    int nonZeroCount2 = cv::countNonZero(idxl2);
+
+    cv::transpose(idxl2, idxl2);
+    
+    TimeLog::GetInstance()->addTimeLog("Finish search for position need to change", stopWatch.Span());
+
+    matIdx = idxl1 & idxl2;
+
+    int nonZeroFinal = cv::countNonZero(matIdx);
+
+    std::cout << "phaseCorrectionCmp point count1 " << nonZeroCount1 << " count2 " << nonZeroCount2 << " final cout " << nonZeroFinal << std::endl;
+
+#ifdef _DEBUG
+    auto vecVecIdx = CalcUtils::matToVector<uchar>(matIdx);
+#endif
+    matPhase1.copyTo(matPhase, matIdx);
 }
 
 /*static*/ cv::Mat Unwrap::_drawAutoThresholdResult(const cv::Mat &matInput, const VectorOfFloat &vecRanges) {
@@ -3186,25 +3746,67 @@ void _saveAsGray(const cv::Mat &matHeight, const std::string &strFilePath) {
 }
 
 // Merge height based on H1, H2, (H1+H2)/2. If the difference between 2 height is big, the area choose the nearest one from three of them.
-/*static*/ cv::Mat Unwrap::_mergeHeightIntersect(cv::Mat &matHeightOne, const cv::Mat &matNanMaskOne, cv::Mat &matHeightTwo, const cv::Mat &matNanMaskTwo, float fDiffThreshold, PR_DIRECTION enProjDir) {
+/*static*/ cv::Mat Unwrap::_mergeHeightIntersect(cv::Mat&       matHeightOne,
+                                                 const cv::Mat& matNanMaskOne, 
+                                                 cv::Mat&       matHeightTwo,
+                                                 const cv::Mat& matNanMaskTwo,
+                                                 float          fDiffThreshold,
+                                                 PR_DIRECTION   enProjDir,
+                                                 cv::Mat&       matResultNan) {
     CStopWatch stopWatch;
-    matHeightTwo.copyTo(matHeightOne, matNanMaskOne);
-    matHeightOne.copyTo(matHeightTwo, matNanMaskTwo);
+
+    PR_DIRECTION enProjDir2;
+    if (ToInt32(enProjDir) >= 2)
+        enProjDir2 = static_cast<PR_DIRECTION>(5 - ToInt32(enProjDir));
+    else
+        enProjDir2 = static_cast<PR_DIRECTION>(1 - ToInt32(enProjDir));
+
+    auto matH13 = matHeightOne.clone();
+    _phasePatch(matH13, enProjDir2, matNanMaskOne);
+
+    auto matH23 = matHeightTwo.clone();
+    _phasePatch(matH23, enProjDir,  matNanMaskTwo);
+
+    // Matlab: idxh2 = find(H22(idxnan1) - H13(idxnan1) > 0.05);
+    //         idxh1 = find(H11(idxnan2) - H23(idxnan2) > 0.05);
+    cv::Mat idxh1, idxh2;
+    idxh2 = (matHeightTwo - matH13) > 0.05f; idxh2 = idxh2 & matNanMaskOne;
+    idxh1 = (matHeightOne - matH23) > 0.05f; idxh1 = idxh1 & matNanMaskTwo;
+
+#ifdef _DEBUG
+    auto sizeOfIdxh1 = cv::countNonZero(idxh1);
+    auto sizeOfIdxh2 = cv::countNonZero(idxh2);
+#endif
+
+    // idxnant1 = false(m1, n1); idxnant1(idxnan1) = 1; idxnant1(idxnan2(idxh1)) = 1;
+    // idxnant2 = false(m1, n1); idxnant2(idxnan2) = 1; idxnant2(idxnan1(idxh2)) = 1;
+    cv::Mat idxnant1 = matNanMaskOne.clone(); idxnant1.setTo(255, idxh1);
+    cv::Mat idxnant2 = matNanMaskTwo.clone(); idxnant2.setTo(255, idxh2);
+
+    matResultNan = idxnant1 & idxnant2;
+
+    //matHeightTwo.copyTo(matHeightOne, matNanMaskOne);
+    //matHeightOne.copyTo(matHeightTwo, matNanMaskTwo);
 
     if (PR_DIRECTION::UP == enProjDir || PR_DIRECTION::DOWN == enProjDir) {
         cv::transpose(matHeightOne, matHeightOne);
         cv::transpose(matHeightTwo, matHeightTwo);
+        cv::transpose(idxnant1, idxnant1);
+        cv::transpose(idxnant2, idxnant2);
 
         TimeLog::GetInstance()->addTimeLog("_mergeHeightIntersect. Transpose image.", stopWatch.Span());
     }
 
     cv::Mat matHeightTre = (matHeightOne + matHeightTwo) / 2.f; // Tre means three
+
+    matHeightTwo.copyTo(matHeightTre, idxnant1);
+    matHeightOne.copyTo(matHeightTre, idxnant2);
     
+    cv::Mat matHeightFor = matHeightTre.clone();    // For means four
+
     cv::Mat matAbsDiff, matBigDiffMask;
     cv::absdiff(matHeightOne, matHeightTwo, matAbsDiff);
     matBigDiffMask = matAbsDiff > fDiffThreshold;
-
-    cv::Mat matHeightFor = matHeightTre.clone();    // For means four
     matHeightFor.setTo(NAN, matBigDiffMask);
 
 #ifdef _DEBUG
@@ -3213,18 +3815,145 @@ void _saveAsGray(const cv::Mat &matHeight, const std::string &strFilePath) {
     auto vecVecHeightTre = CalcUtils::matToVector<DATA_TYPE>(matHeightTre);
     auto vecVecHeightFor = CalcUtils::matToVector<DATA_TYPE>(matHeightFor);
 #endif
+    static int times = 0;
+    ++ times;
+    if (1 == times) {
+        char fileName[200];
+        _snprintf(fileName, sizeof(fileName), "C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/Cpu_BeforeMergeHeightResult_%d.yml", times);
+        cv::FileStorage fs(fileName, cv::FileStorage::WRITE);
+        if (!fs.isOpened())
+            return matHeightFor;
 
-    for (int row = 0; row < matHeightFor.rows; ++ row) {
-        cv::Mat matRowOne = matHeightOne.row(row);
-        cv::Mat matRowTwo = matHeightTwo.row(row);
-        cv::Mat matRowTre = matHeightTre.row(row);
-        cv::Mat matRowFor = matHeightFor.row(row);
+        cv::write(fs, "H1", matHeightOne);
+        cv::write(fs, "H2", matHeightTwo);
+        cv::write(fs, "H3", matHeightTre);
+        cv::write(fs, "H4", matHeightFor);
+        fs.release();
+    }
+
+    _mergeHeightIntersectCore(matHeightOne, matHeightTwo, matHeightTre, matHeightFor);
+
+    TimeLog::GetInstance()->addTimeLog("_mergeHeightIntersect core.", stopWatch.Span());
+
+    if (PR_DIRECTION::UP == enProjDir || PR_DIRECTION::DOWN == enProjDir) {
+        cv::transpose(matHeightFor, matHeightFor);
+        TimeLog::GetInstance()->addTimeLog("_mergeHeightIntersect. Transpose image back.", stopWatch.Span());
+    }
+
+    return matHeightFor;
+}
+
+/*static*/ cv::Mat Unwrap::_mergeHeightIntersect06(const cv::Mat& matHeightOne,
+                                                   const cv::Mat& matNanMaskOne,
+                                                   const cv::Mat& matHeightTwo,
+                                                   const cv::Mat& matNanMaskTwo,
+                                                   float          fDiffThreshold,
+                                                   PR_DIRECTION   enProjDir) {
+    CStopWatch stopWatch;
+
+    cv::Mat matH11 = matHeightOne.clone(), matH10 = matHeightOne.clone();
+    _phasePatch(matH11, PR_DIRECTION::UP,   matNanMaskOne);
+    _phasePatch(matH10, PR_DIRECTION::DOWN, matNanMaskOne);
+
+    cv::Mat matH22 = matHeightTwo.clone(), matH20 = matHeightTwo.clone();
+    _phasePatch(matH22, PR_DIRECTION::LEFT,  matNanMaskTwo);
+    _phasePatch(matH20, PR_DIRECTION::RIGHT, matNanMaskTwo);
+
+    static int times = 0;
+    ++ times;
+    if (1 == times) {
+        char fileName[200];
+        _snprintf(fileName, sizeof(fileName), "C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/Cpu_PatchPhaseResult_%d.yml", times);
+        cv::FileStorage fs(fileName, cv::FileStorage::WRITE);
+        if (fs.isOpened()) {
+            cv::write(fs, "H11", matH11);
+            cv::write(fs, "H10", matH10);
+            cv::write(fs, "H22", matH22);
+            cv::write(fs, "H20", matH20);
+            fs.release();
+        }
+    }
+
+    AOI::Vision::VectorOfPoint vecPtLocations;
+    cv::findNonZero(matNanMaskOne, vecPtLocations);
+    for (const auto& ptPos : vecPtLocations) {
+        auto& value1 = matH11.at<float>(ptPos);
+        const auto& value2 = matH10.at<float>(ptPos);
+        const auto& value3 = matH22.at<float>(ptPos);
+        value1 = std::min({ value1, value2, value3 });
+    }
+
+    vecPtLocations.clear();
+    cv::findNonZero(matNanMaskTwo, vecPtLocations);
+    for (const auto& ptPos : vecPtLocations) {
+        auto& value1 = matH22.at<float>(ptPos);
+        const auto& value2 = matH20.at<float>(ptPos);
+        const auto& value3 = matH11.at<float>(ptPos);
+        value1 = std::min({ value1, value2, value3 });
+    }
+
+    PR_HEIGHT_TO_GRAY_CMD stHeightToGrayCmd;
+    PR_HEIGHT_TO_GRAY_RPY stHeightToGrayRpy;
+    stHeightToGrayCmd.matHeight = matH11;
+    static int runTime = 0;
+    ++ runTime;
+    Vision::VisionAlgorithm::heightToGray(&stHeightToGrayCmd, &stHeightToGrayRpy);
+    //cv::imwrite(std::string("C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/H11Gray_") + std::to_string(runTime) + ".png", stHeightToGrayRpy.matGray);
+
+    stHeightToGrayCmd.matHeight = matH22;
+    Vision::VisionAlgorithm::heightToGray(&stHeightToGrayCmd, &stHeightToGrayRpy);
+    //cv::imwrite(std::string("C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/H22Gray_") + std::to_string(runTime) + ".png", stHeightToGrayRpy.matGray);
+
+    if (PR_DIRECTION::UP == enProjDir || PR_DIRECTION::DOWN == enProjDir) {
+        cv::transpose(matH11, matH11);
+        cv::transpose(matH22, matH22);
+
+        TimeLog::GetInstance()->addTimeLog("_mergeHeightIntersect. Transpose image.", stopWatch.Span());
+    }
+
+    cv::Mat matHeightTre = (matH11 + matH22) / 2.f; // Tre means three
+
+    cv::Mat matHeightFor = matHeightTre.clone();    // For means four
+
+    cv::Mat matAbsDiff, matBigDiffMask;
+    cv::absdiff(matH11, matH22, matAbsDiff);
+    matBigDiffMask = matAbsDiff > fDiffThreshold;
+    matHeightFor.setTo(NAN, matBigDiffMask);
+
+#ifdef _DEBUG
+    auto vecVecHeightOne = CalcUtils::matToVector<DATA_TYPE>(matH11);
+    auto vecVecHeightTwo = CalcUtils::matToVector<DATA_TYPE>(matH22);
+    auto vecVecHeightTre = CalcUtils::matToVector<DATA_TYPE>(matHeightTre);
+    auto vecVecHeightFor = CalcUtils::matToVector<DATA_TYPE>(matHeightFor);
+#endif
+    _mergeHeightIntersectCore(matH11, matH22, matHeightTre, matHeightFor);
+
+    TimeLog::GetInstance()->addTimeLog("_mergeHeightIntersect core.", stopWatch.Span());
+
+    if (PR_DIRECTION::UP == enProjDir || PR_DIRECTION::DOWN == enProjDir) {
+        cv::transpose(matHeightFor, matHeightFor);
+        TimeLog::GetInstance()->addTimeLog("_mergeHeightIntersect. Transpose image back.", stopWatch.Span());
+    }
+
+    return matHeightFor;
+}
+
+/*static*/ void Unwrap::_mergeHeightIntersectCore(
+        const cv::Mat& matOne,
+        const cv::Mat& matTwo,
+        const cv::Mat& matTre,
+        cv::Mat& matFor) {
+    for (int row = 0; row < matFor.rows; ++row) {
+        cv::Mat matRowOne = matOne.row(row);
+        cv::Mat matRowTwo = matTwo.row(row);
+        cv::Mat matRowTre = matTre.row(row);
+        cv::Mat matRowFor = matFor.row(row);
 
         cv::Mat matNanMasks = CalcUtils::getNanMask(matRowFor);
         matNanMasks.convertTo(matNanMasks, CV_32FC1);
         cv::Mat matDiffAbs = cv::abs(CalcUtils::diff(matNanMasks, 1, CalcUtils::DIFF_ON_X_DIR));
         std::deque<int> dequeIndex;
-        for (int col = 0; col < matDiffAbs.cols; ++ col)
+        for (int col = 0; col < matDiffAbs.cols; ++col)
             if (matDiffAbs.at<float>(col) > 0)
                 dequeIndex.push_back(col);
         if (matNanMasks.at<DATA_TYPE>(0) > 0)
@@ -3232,23 +3961,23 @@ void _saveAsGray(const cv::Mat &matHeight, const std::string &strFilePath) {
         if (matNanMasks.at<DATA_TYPE>(matNanMasks.cols - 1) > 0)
             dequeIndex.push_back(matNanMasks.cols - 1);
 
-        for (int i = 0; i < dequeIndex.size() / 2; ++ i) {
-            int startIndex = dequeIndex[i*2];
-            int endIndex = dequeIndex[i*2+1];
+        for (int i = 0; i < dequeIndex.size() / 2; ++i) {
+            int startIndex = dequeIndex[i * 2];
+            int endIndex = dequeIndex[i * 2 + 1];
             VectorOfFloat vecTargetH;
             if (0 == startIndex && endIndex < matNanMasks.cols - 1)
-                vecTargetH = std::vector<float>(endIndex - startIndex, matRowFor.at<DATA_TYPE>(endIndex + 1));
+                vecTargetH = std::vector<float>(endIndex - startIndex + 1, matRowFor.at<DATA_TYPE>(endIndex + 1));
             else if (matNanMasks.cols - 1 == endIndex && startIndex >= 0)
-                vecTargetH = std::vector<float>(endIndex - startIndex, matRowFor.at<DATA_TYPE>(startIndex));
+                vecTargetH = std::vector<float>(endIndex - startIndex + 1, matRowFor.at<DATA_TYPE>(startIndex));
             else if (startIndex >= 0 && endIndex < matNanMasks.cols - 1) {
                 float fInterval = (matRowFor.at<DATA_TYPE>(endIndex + 1) - matRowFor.at<DATA_TYPE>(startIndex)) / (endIndex - startIndex + 1);
-                for (int j = 0; j < endIndex - startIndex; ++ j) {
+                for (int j = 0; j <= endIndex - startIndex; ++j) {
                     vecTargetH.push_back(matRowFor.at<DATA_TYPE>(startIndex) + fInterval * j);
                 }
             }
 
             float fAbsDiffSumOne = 0.f, fAbsDiffSumTwo = 0.f, fAbsDiffSumTre = 0.f;
-            for (int index = startIndex, k = 0; index < endIndex; ++ index, ++ k) {
+            for (int index = startIndex, k = 0; index <= endIndex; ++index, ++k) {
                 fAbsDiffSumOne += fabs(matRowOne.at<DATA_TYPE>(index) - vecTargetH[k]);
                 fAbsDiffSumTwo += fabs(matRowTwo.at<DATA_TYPE>(index) - vecTargetH[k]);
                 fAbsDiffSumTre += fabs(matRowTre.at<DATA_TYPE>(index) - vecTargetH[k]);
@@ -3262,20 +3991,11 @@ void _saveAsGray(const cv::Mat &matHeight, const std::string &strFilePath) {
             else
                 matChoose = matRowTre;
 
-            cv::Mat matTarget(matHeightFor, cv::Range(row, row + 1), cv::Range(startIndex, endIndex + 1));
+            cv::Mat matTarget(matFor, cv::Range(row, row + 1), cv::Range(startIndex, endIndex + 1));
             cv::Mat matSrc(matChoose, cv::Range(0, 1), cv::Range(startIndex, endIndex + 1));
             matSrc.copyTo(matTarget);
         }
     }
-
-    TimeLog::GetInstance()->addTimeLog("_mergeHeightIntersect core.", stopWatch.Span());
-
-    if (PR_DIRECTION::UP == enProjDir || PR_DIRECTION::DOWN == enProjDir) {
-        cv::transpose(matHeightFor, matHeightFor);
-        TimeLog::GetInstance()->addTimeLog("_mergeHeightIntersect. Transpose image back.", stopWatch.Span());
-    }
-
-    return matHeightFor;
 }
 
 /*static*/ cv::Mat Unwrap::_mergeHeightMax(cv::Mat &matHeightOne, const cv::Mat &matNanMaskOne, cv::Mat &matHeightTwo, const cv::Mat &matNanMaskTwo, float fDiffThreshold, PR_DIRECTION enProjDir) {
@@ -3336,7 +4056,7 @@ void _saveAsGray(const cv::Mat &matHeight, const std::string &strFilePath) {
         vecHeightTmp.push_back(matHeightROI.at<float>(point));
     }
 
-    if (vecXt.empty() || vecYt.empty()) {
+    if (vecXt.size() < 3 || vecYt.size() < 3) {
         pstRpy->enStatus = VisionStatus::CALC_3D_HEIGHT_DIFF_NO_BASE_POINT;
         WriteLog("No base points to calculate 3D height difference, all base points are masked or are NAN.");
         return;
@@ -3350,7 +4070,7 @@ void _saveAsGray(const cv::Mat &matHeight, const std::string &strFilePath) {
         matXX.push_back(cv::Mat(cv::Mat::ones(1, ToInt32(vecHeightTmp.size()), CV_32FC1))); // cv::Mat::ones return MatExpr, need to convert to Mat
         cv::transpose(matXX, matXX);
         cv::Mat matYY(vecHeightTmp);
-        cv::solve(matXX, matYY, matK, cv::DecompTypes::DECOMP_QR);
+        cv::solve(matXX, matYY, matK, cv::DecompTypes::DECOMP_SVD);
     }
 
     TimeLog::GetInstance()->addTimeLog("Calculate base parameters.", stopWatch.Span());
@@ -3411,6 +4131,11 @@ void _saveAsGray(const cv::Mat &matHeight, const std::string &strFilePath) {
         bool bLeft = (ptCenter.x + rectCheckROI.x - pstCmd->rectDeviceROI.x) <  pstCmd->rectDeviceROI.width / 2;
         cv::Rect rectCalc;
         auto fSolderHeight = _calcSolderHeightTri(matCheckROIClone, matMidMask, pstCmd->nWettingWidth, bLeft, nTopY, nBtmY, rectCalc);
+        if (fabs(fSolderHeight) < 0.0001f) {
+            pstRpy->enStatus = VisionStatus::FAIL_TO_EXTRACT_3D_SOLDER;
+            WriteLog("Calculate 3D solder height problem");
+            return;
+        }
 
         PR_INSP_3D_SOLDER_RPY::RESULT result;
         result.fComponentHeight = fHeightSum / nCount;
@@ -3660,7 +4385,7 @@ void _saveAsGray(const cv::Mat &matHeight, const std::string &strFilePath) {
     if (bLeft) {
         if (nSolderEnd - 2 - nWettingWidth < 0) {
             std::stringstream ss;
-            ss << "Calculate solder height goes wrong, the left side solder end positoin " << nSolderEnd <<  " is too small.";
+            ss << "Calculate solder height goes wrong, the left side solder end position " << nSolderEnd <<  " is too small.";
             WriteLog(ss.str());
             return 0;
         }
@@ -3668,7 +4393,7 @@ void _saveAsGray(const cv::Mat &matHeight, const std::string &strFilePath) {
     }else {
         if (nSolderStart + 2 + nWettingWidth > matCheckROI.cols) {
             std::stringstream ss;
-            ss << "Calculate solder height goes wrong, the right side solder start positoin " << nSolderStart <<  " is too big.";
+            ss << "Calculate solder height goes wrong, the right side solder start position " << nSolderStart <<  " is too big.";
             WriteLog(ss.str());
             return 0;
         }

@@ -4,6 +4,7 @@
 #include "VisionHeader.h"
 #include "CalcUtils.hpp"
 #include "TimeLog.h"
+#include "Constants.h"
 
 namespace AOI
 {
@@ -41,12 +42,16 @@ public:
     static void calibDlpOffset(const PR_CALIB_DLP_OFFSET_CMD *const pstCmd, PR_CALIB_DLP_OFFSET_RPY *const pstRpy);
     static void calc3DHeight(const PR_CALC_3D_HEIGHT_CMD *const pstCmd, PR_CALC_3D_HEIGHT_RPY *const pstRpy);
     static void calc3DHeightNew(const PR_CALC_3D_HEIGHT_NEW_CMD *const pstCmd, PR_CALC_3D_HEIGHT_RPY *const pstRpy);
+    static void calc3DHeightGpu(const PR_CALC_3D_HEIGHT_GPU_CMD *const pstCmd, PR_CALC_3D_HEIGHT_RPY *const pstRpy);
     static void merge3DHeight(const PR_MERGE_3D_HEIGHT_CMD *const pstCmd, PR_MERGE_3D_HEIGHT_RPY *const pstRpy);
+    static void calcMerge4DlpHeight(const PR_CALC_MERGE_4_DLP_HEIGHT_CMD *const pstCmd, PR_CALC_MERGE_4_DLP_HEIGHT_RPY *const pstRpy);
     static void calc3DHeightDiff(const PR_CALC_3D_HEIGHT_DIFF_CMD *const pstCmd, PR_CALC_3D_HEIGHT_DIFF_RPY *const pstRpy);
     static void calcMTF(const PR_CALC_MTF_CMD *const pstCmd, PR_CALC_MTF_RPY *const pstRpy);
     static void calcPD(const PR_CALC_PD_CMD *const pstCmd, PR_CALC_PD_RPY *const pstRpy);
-    static void phaseCorrection(cv::Mat &matPhase, const cv::Mat &matIdxNan, int nJumpSpanX, int nJumpSpanY);   //Put it to public to include it in regression test.
+    static void phaseCorrection(cv::Mat &matPhase, int nJumpSpanX, int nJumpSpanY);   //Put it to public to include it in regression test.
     static void phaseCorrectionEx(cv::Mat &matPhase, PR_DIRECTION enProjDir, PR_DIRECTION enScanDir, int nMinSpan, int nMaxSpan);
+    static void selectCmpPoint(const cv::Mat& dMap, const cv::Mat& dPhase, int span, cv::Mat& matResult);
+    static void phaseCorrectionCmp(cv::Mat& matPhase, cv::Mat& matPhase1, int span);
     static void removeJumpArea(cv::Mat &matHeight, float fAreaLimit);
     static void insp3DSolder(const PR_INSP_3D_SOLDER_CMD *pstCmd, const cv::Mat &matBaseMask, PR_INSP_3D_SOLDER_RPY *const pstRpy);
 
@@ -74,7 +79,26 @@ private:
     static void _calcReverseAndProjDir(const VectorOfMat &vecMat, bool bEnableGaussianFilter, PR_CALIB_3D_BASE_RPY *const pstRpy);
     static void _turnPhase(cv::Mat &matPhase, cv::Mat &matPhaseDiff, char *ptrSignOfRow, char *ptrAmplOfRow, int row, int nStart, int nEnd);
     static void _turnPhaseConditionOne(cv::Mat &matPhase, cv::Mat &matPhaseDiff, cv::Mat &matDiffSign, cv::Mat &matDiffAmpl, int row, int Nt1);
-    static cv::Mat _mergeHeightIntersect(cv::Mat &matHeightOne, const cv::Mat &matNanMaskOne, cv::Mat &matHeightTwo, const cv::Mat &matNanMaskTwo, float fDiffThreshold, PR_DIRECTION enProjDir);
+    static cv::Mat _mergeHeightIntersect(
+        cv::Mat &matHeightOne,
+        const cv::Mat &matNanMaskOne,
+        cv::Mat &matHeightTwo,
+        const cv::Mat &matNanMaskTwo,
+        float fDiffThreshold,
+        PR_DIRECTION enProjDir,
+        cv::Mat& matResultNan);
+    static cv::Mat _mergeHeightIntersect06(
+        const cv::Mat& matHeightOne,
+        const cv::Mat& matNanMaskOne,
+        const cv::Mat& matHeightTwo,
+        const cv::Mat& matNanMaskTwo,
+        float          fDiffThreshold,
+        PR_DIRECTION   enProjDir);
+    static void _mergeHeightIntersectCore(
+        const cv::Mat& matOne,
+        const cv::Mat& matTwo,
+        const cv::Mat& matTre,
+        cv::Mat& matFor);
     static cv::Mat _mergeHeightMax(cv::Mat &matHeightOne, const cv::Mat &matNanMaskOne, cv::Mat &matHeightTwo, const cv::Mat &matNanMaskTwo, float fDiffThreshold, PR_DIRECTION enProjDir);
     static bool _extractSolder(const cv::Mat &matHeightROI, float fCoverage, VectorOfFloat &vecThreshold, cv::Mat &matHighMask, cv::Mat &matMidMask, cv::Mat &matLowMask, int &nTopY, int &nBtmY);
     static float _calcSolderHeightXSG(const cv::Mat &matCheckROI, const cv::Mat &matMidMask);
@@ -82,20 +106,40 @@ private:
     static void _calculatePPzConvert3D(const cv::Mat& z1, const cv::Mat& matH, const VectorOfFloat& param, int ss, const cv::Mat& xxt, cv::Mat& matSum1, cv::Mat& matSum2);
     static cv::Mat _calculateSurfaceConvert3D(const cv::Mat& z1, const VectorOfFloat& param, int ss, const cv::Mat& xxt1);
     static cv::Mat _pickPointInterval(const cv::Mat& matInput, int interval);
+    static cv::cuda::GpuMat _calcHeightGpuCore(
+        const PR_CALC_3D_HEIGHT_GPU_CMD *const pstCmd,
+        const VectorOfGpuMat& vecGpuImages,
+        cv::cuda::GpuMat& matNanMask,
+        cv::cuda::Stream& stream);
+    static cv::Mat _merge4DlpHeightCore(
+        const VectorOfMat&       vecMatHeight,
+        const VectorOfMat&       vecMatNanMask,
+        const VectorOfDirection& vecProjDir,
+        float                    fHeightDiffThreshold);
+
+    static cv::cuda::GpuMat _merge4DlpHeightCore(
+        VectorOfGpuMat&          vecGpuMatHeight,
+        VectorOfGpuMat&          vecGpuMatNanMask,
+        const VectorOfDirection& vecProjDir,
+        float                    fHeightDiffThreshold,
+        cv::cuda::Stream&        stream1, 
+        cv::cuda::Stream&        stream2);
 
     static inline void _phaseWrap(cv::Mat &matPhase) {
         CStopWatch stopWatch;
         cv::Mat matNn = matPhase / ONE_CYCLE + 0.5;
-        TimeLog::GetInstance()->addTimeLog( "_phaseWrap Divide and add.", stopWatch.Span());
+        TimeLog::GetInstance()->addTimeLog("_phaseWrap Divide and add.", stopWatch.Span());
 
-        CalcUtils::floorByRef<DATA_TYPE> ( matNn ); //The floor takes about 36ms, need to optimize
+        CalcUtils::floorByRef<DATA_TYPE>(matNn); //The floor takes about 36ms, need to optimize
 
-        TimeLog::GetInstance()->addTimeLog( "_phaseWrap floor takes.", stopWatch.Span() );
+        TimeLog::GetInstance()->addTimeLog("_phaseWrap floor takes.", stopWatch.Span());
 
         matPhase = matPhase - matNn * ONE_CYCLE;
 
-        TimeLog::GetInstance()->addTimeLog( "_phaseWrap multiply and subtract takes.", stopWatch.Span());
+        TimeLog::GetInstance()->addTimeLog("_phaseWrap multiply and subtract takes.", stopWatch.Span());
     }
+
+    static cv::Mat _phaseWarpNoAutoBase(const cv::Mat &matPhase, float fShift = 0.f);
 
     static inline void _phaseWrapBuffer(cv::Mat &matPhase, cv::Mat &matBuffer, float fShift = 0.f) {
         CStopWatch stopWatch;
@@ -149,8 +193,6 @@ private:
     static const int CHECK_RS_WIN           = 50;
 
     static const float GAUSSIAN_FILTER_SIGMA;
-    static const float ONE_HALF_CYCLE;
-    static const float ONE_CYCLE;
     static const float CALIB_HEIGHT_STEP_USEFUL_PT;
     static const float LOW_BASE_PHASE;
     static VectorOfVectorOfFloat vecVecAtan2Table;

@@ -6,7 +6,11 @@
 #include "Fitting.hpp"
 #include "Unwrap.h"
 #include "Auxiliary.hpp"
-
+#include "CudaAlgorithm.h"
+#include "cuda_runtime.h"
+#include "opencv2/highgui.hpp"
+#include "opencv2/cudaarithm.hpp"
+#include "CudaFunc.h"
 
 namespace AOI
 {
@@ -227,6 +231,75 @@ static void TestCalcUtilsDiff() {
     }
 }
 
+static void TestCalcUtilsDiffGpu() {
+    {
+        std::cout << std::endl << "------------------------------------------";
+        std::cout << std::endl << "CALCUTILS DIFF GPU TEST #1 STARTING";
+        std::cout << std::endl << "------------------------------------------";
+        std::cout << std::endl;
+        std::vector<float> vecInput{
+            1, 3, 5,
+            7, 11, 13,
+            17, 19, 23
+        };
+        cv::Mat matInput(vecInput), matResult;
+        matInput = matInput.reshape(1, 3);
+        std::cout << "INPUT: " << std::endl;
+        printfMat<float>(matInput);
+
+        cv::cuda::GpuMat matGpuInput(matInput), matGpuOutput;
+
+        matGpuOutput = CudaAlgorithm::diff(matGpuInput, 1, 1);
+        matGpuOutput.download(matResult);
+        std::cout << "Diff recursive time 1, dim 1 result: " << std::endl;
+        printfMat<float>(matResult);
+
+        matGpuOutput = CudaAlgorithm::diff(matGpuInput, 1, 2);
+        matGpuOutput.download(matResult);
+        std::cout << "Diff recursive time 1, dim 2 result: " << std::endl;
+        printfMat<float>(matResult);
+    }
+
+    {
+        std::cout << std::endl << "------------------------------------------";
+        std::cout << std::endl << "CALCUTILS DIFF TEST #2 STARTING";
+        std::cout << std::endl << "------------------------------------------";
+        std::cout << std::endl;
+        std::vector<float> vecInput{
+            1, 3, 5, -6,
+            7, 11, 13, 16,
+            17, 19, 23, -1,
+            -5, -7, 9, -21,
+        };
+        cv::Mat matInput(vecInput), matResult;
+        matInput = matInput.reshape(1, 4);
+        std::cout << "INPUT: " << std::endl;
+        printfMat<float>(matInput);
+
+        cv::cuda::GpuMat matGpuInput(matInput), matGpuOutput;
+
+        matGpuOutput = CudaAlgorithm::diff(matGpuInput, 1, 1);
+        matGpuOutput.download(matResult);
+        std::cout << "Diff recursive time 1, dim 1 result: " << std::endl;
+        printfMat<float>(matResult);
+
+        matGpuOutput = CudaAlgorithm::diff(matGpuInput, 1, 2);
+        matGpuOutput.download(matResult);
+        std::cout << "Diff recursive time 1, dim 2 result: " << std::endl;
+        printfMat<float>(matResult);
+
+        matGpuOutput = CudaAlgorithm::diff(matGpuInput, 2, 1);
+        matGpuOutput.download(matResult);
+        std::cout << "Diff recursive time 2, dim 1 result: " << std::endl;
+        printfMat<float>(matResult);
+
+        matGpuOutput = CudaAlgorithm::diff(matGpuInput, 2, 2);
+        matGpuOutput.download(matResult);
+        std::cout << "Diff recursive time 2, dim 2 result: " << std::endl;
+        printfMat<float>(matResult);
+    }
+}
+
 static void TestCalcUtilsPower() {
     {
         std::cout << std::endl << "------------------------------------------";
@@ -404,7 +477,7 @@ static void TestPhaseCorrection() {
     cv::Mat matPhase = CalcUtils::vectorToMat<float>(vecVecPhase);
     std::cout << "Phase Correction input: " << std::endl;
     printfMat<float>(matPhase);
-    Unwrap::phaseCorrection(matPhase, cv::Mat(), 5, 5);
+    Unwrap::phaseCorrection(matPhase, 5, 5);
     std::cout << "Phase Correction result: " << std::endl;
     printfMat<float>(matPhase);
 }
@@ -497,12 +570,325 @@ static void TestBilinearInterpolation() {
     }
 }
 
+static void TestGpuMatFloor() {
+    std::cout << std::endl << "------------------------------------------------";
+    std::cout << std::endl << "CUDA GPU FLOOR TEST #1 STARTING";
+    std::cout << std::endl << "------------------------------------------------";
+    std::cout << std::endl;
+
+    cv::Mat matDataCpu(2048, 2040, CV_32FC1);
+    matDataCpu = 1.7f;
+
+    cv::cuda::GpuMat matDataGpu;
+    matDataGpu.upload(matDataCpu);
+
+    CudaAlgorithm::floor(matDataGpu);
+    matDataGpu.download(matDataCpu);
+
+    cv::Mat matDiff = matDataCpu != 1.f;
+    int notCorrectCount = cv::countNonZero(matDiff);
+    if (notCorrectCount == 0) {
+        std::cout << "Test passed" << std::endl;
+    }else {
+        std::cout << "Test failed, failed count " << notCorrectCount << std::endl;
+    }
+}
+
+static void TestIntervalAverage() {
+    std::cout << std::endl << "------------------------------------------------";
+    std::cout << std::endl << "CUDA GPU AVERAGE INTERVAL TEST #1 STARTING";
+    std::cout << std::endl << "------------------------------------------------";
+    std::cout << std::endl;
+
+    cv::Mat matDataCpu(2048, 2040, CV_32FC1);
+    matDataCpu = 1.7f;
+
+    cv::cuda::GpuMat matDataGpu;
+    matDataGpu.upload(matDataCpu);
+
+    float* d_result;
+    cudaMalloc(reinterpret_cast<void **>(&d_result), sizeof(float));
+    cudaEvent_t eventDone;
+    cudaEventCreate(&eventDone);
+    float result = CudaAlgorithm::intervalAverage(matDataGpu, 20, d_result, eventDone);
+    cudaFree(d_result);
+
+    std::cout << "Average result " << result << std::endl;
+}
+
+static void TestRangeIntervalAverage() {
+    std::cout << std::endl << "------------------------------------------------";
+    std::cout << std::endl << "CUDA GPU AVERAGE RANGE INTERVAL TEST #1 STARTING";
+    std::cout << std::endl << "------------------------------------------------";
+    std::cout << std::endl;
+
+    cv::Mat matDataCpu(2048, 2040, CV_32FC1);
+    matDataCpu = 1.5f;
+    cv::Mat matHalf(matDataCpu, cv::Range::all(), cv::Range(1020, 2040));
+    matHalf = 2.5f;
+
+    cv::cuda::GpuMat matDataGpu;
+    matDataGpu.upload(matDataCpu);
+
+    float* d_result;
+    cudaMalloc(reinterpret_cast<void **>(&d_result), sizeof(float));
+    cudaEvent_t eventDone;
+    cudaEventCreate(&eventDone);
+    float result = CudaAlgorithm::intervalRangeAverage(matDataGpu, 10, 0.4f, 0.6f, d_result, eventDone);
+    cudaFree(d_result);
+
+    std::cout << "Average result " << result << std::endl;
+}
+
+static void TestCudaPhaseToHeight3D() {
+    std::cout << std::endl << "----------------------------------------------------------";
+    std::cout << std::endl << "CUDA PHASE TO HEIGHT 3D INTERVAL TEST #1 STARTING";
+    std::cout << std::endl << "----------------------------------------------------------";
+    std::cout << std::endl;
+
+    const int ROWS = 2040;
+    const int COLS = 2048;
+    const int TOTAL = ROWS * COLS;
+    const int ss = 4;
+
+    cv::cuda::GpuMat zInLine(1, TOTAL, CV_32FC1);
+    zInLine.setTo(0.5f);
+    auto matPolyParass = CalcUtils::paraFromPolyNomial(ss);
+    std::cout << "matPolyParass " << ss << std::endl;
+    printfMat<float>(matPolyParass, 2);
+
+    cv::cuda::GpuMat matPolyParassGpu(matPolyParass);
+
+    //cv::cuda::GpuMat xxt(TOTAL, ss, CV_32FC1);
+    //xxt.setTo(3);
+    const int MEM_SIZE = TOTAL * ss * sizeof(float);
+    float* h_xxt = (float *)malloc(MEM_SIZE);
+    for (int i = 0; i < TOTAL * ss; ++i)
+        h_xxt[i] = 3.f;
+
+    float* d_xxt;
+    cudaMalloc(reinterpret_cast<void **>(&d_xxt), MEM_SIZE);
+    cudaMemcpy(d_xxt, h_xxt, MEM_SIZE, cudaMemcpyHostToDevice);
+    
+    float* d_P3;
+    cudaMalloc(reinterpret_cast<void **>(&d_P3), MEM_SIZE);
+
+    std::cout << "xxt step " << ss << std::endl;
+
+    CudaAlgorithm::phaseToHeight3D(
+        zInLine,
+        matPolyParassGpu,
+        d_xxt,
+        ss,
+        TOTAL, ss,
+        d_P3);
+
+    cudaDeviceSynchronize();
+
+    float* h_data = (float *)malloc(MEM_SIZE);
+    cudaMemcpy(h_data, d_P3, MEM_SIZE, cudaMemcpyDeviceToHost);
+
+    std::cout << "Check result data " << std::endl;
+    for (int i = 0; i < TOTAL; i += 100000) {
+        float* pRow = h_data + i * ss;
+        for (int col = 0; col < ss; ++ col) {
+            std::cout << pRow[col] << " ";
+        }
+        std::cout << std::endl;
+    }
+
+    free(h_data);
+    free(h_xxt);
+    cudaFree(d_P3);
+    cudaFree(d_xxt);
+}
+
+static void TestCalcSumAndConvertMatrix() {
+    std::cout << std::endl << "----------------------------------------------------------";
+    std::cout << std::endl << "CUDA CALC SUM AND CONVERT MATRIX INTERVAL TEST #1 STARTING";
+    std::cout << std::endl << "----------------------------------------------------------";
+    std::cout << std::endl;
+    const int ROWS = 2040;
+    const int COLS = 2048;
+    const int TOTAL = ROWS * COLS;
+    const int ss = 4;
+    const int MEM_SIZE = TOTAL * ss * sizeof(float);
+    float* h_data = (float *)malloc(MEM_SIZE);
+    for (int row = 0; row < TOTAL; ++ row) {
+        float* pResultRow = h_data + row * ss;
+        for (int col = 0; col < ss; ++ col) {
+            pResultRow[col] = 50.f;
+        }
+    }
+
+    float* d_data;
+    cudaMalloc(reinterpret_cast<void **>(&d_data), MEM_SIZE);
+    cudaMemcpy(d_data, h_data, MEM_SIZE, cudaMemcpyHostToDevice);
+
+    cv::cuda::GpuMat matResultGpu(ROWS, COLS, CV_32FC1);
+    CudaAlgorithm::calcSumAndConvertMatrix(d_data, ss, matResultGpu);
+    cudaDeviceSynchronize();
+
+    cv::Mat matResult;
+    matResultGpu.download(matResult);
+    std::cout << "Mean of result " << cv::mean(matResult)[0] << std::endl;
+    matResult.convertTo(matResult, CV_8UC1);
+
+    free(h_data);
+    cudaFree(d_data);
+}
+
+static void TestCudaPhasePatch() {
+    std::cout << std::endl << "----------------------------------------------------------";
+    std::cout << std::endl << "CUDA PHASE PATCH INTERVAL TEST #1 STARTING";
+    std::cout << std::endl << "----------------------------------------------------------";
+    std::cout << std::endl;
+    const int ROWS = 2048;
+    const int COLS = 2040;
+    const int TOTAL = ROWS * COLS;
+
+    cv::Mat matNanMask = cv::Mat::zeros(ROWS, COLS, CV_8UC1);
+    cv::Mat matHeight = cv::Mat::ones(ROWS, COLS, CV_32FC1);
+    for (int i = 0; i < 200000; ++ i) {
+        int row = std::rand () % ROWS;
+        int col = std::rand () % COLS;
+        matNanMask.at<uchar>(row, col) = PR_MAX_GRAY_LEVEL;
+    }
+    matHeight.setTo(NAN, matNanMask);
+
+    auto nanCountBeforePatch = cv::countNonZero(matNanMask);
+
+    cv::cuda::GpuMat matHeightGpu(matHeight);
+    cv::cuda::GpuMat matNanMaskGpu(matNanMask);
+
+    for (int dir = 0; dir < 4; ++ dir) {
+        auto matHeightGpuClone = matHeightGpu.clone();
+        CudaAlgorithm::phasePatch(matHeightGpuClone, matNanMaskGpu, static_cast<PR_DIRECTION>(dir));
+        matHeightGpuClone.download(matHeight);
+
+        cv::Mat matNanAfterPatch = CalcUtils::getNanMask(matHeight);
+        auto nanCountAfterPatch = cv::countNonZero(matNanAfterPatch);
+        std::cout << "nanCountBeforePatch " << nanCountBeforePatch << ", nanCountAfterPatch " << nanCountAfterPatch << " in direction " << dir << std::endl;
+    }
+}
+
+static void TestCudaGetNanMask() {
+    std::cout << std::endl << "----------------------------------------------------------";
+    std::cout << std::endl << "CUDA GET NAN MASK INTERVAL TEST #1 STARTING";
+    std::cout << std::endl << "----------------------------------------------------------";
+    std::cout << std::endl;
+    const int ROWS = 2048;
+    const int COLS = 2040;
+    const int TOTAL = ROWS * COLS;
+
+    cv::Mat matNanMask = cv::Mat::zeros(ROWS, COLS, CV_8UC1);
+    cv::Mat matHeight = cv::Mat::ones(ROWS, COLS, CV_32FC1);
+    for (int i = 0; i < 200000; ++ i) {
+        int row = std::rand () % ROWS;
+        int col = std::rand () % COLS;
+        matNanMask.at<uchar>(row, col) = PR_MAX_GRAY_LEVEL;
+    }
+    matHeight.setTo(NAN, matNanMask);
+
+    cv::cuda::GpuMat matHeightGpu(matHeight);
+    cv::cuda::GpuMat matNanMaskGpu(matNanMask);
+    cv::cuda::GpuMat matNanMaskResultGpu;
+    CudaAlgorithm::getNanMask(matHeightGpu, matNanMaskResultGpu);
+
+    cv::cuda::compare(matNanMaskGpu, matNanMaskResultGpu, matNanMaskResultGpu, cv::CmpTypes::CMP_NE);
+    int diffResult = cv::cuda::countNonZero(matNanMaskResultGpu);
+    std::cout << "Expected mask and result mask diff point " << diffResult << std::endl;
+}
+
+static void TestChooseMinValueForMask() {
+    std::cout << std::endl << "----------------------------------------------------------";
+    std::cout << std::endl << "CUDA CHOOST MIN VALUE INTERVAL TEST #1 STARTING";
+    std::cout << std::endl << "----------------------------------------------------------";
+    std::cout << std::endl;
+    const int ROWS = 2048;
+    const int COLS = 2040;
+    const int TOTAL = ROWS * COLS;
+
+    cv::Mat matH1 = cv::Mat::ones(ROWS, COLS, CV_32FC1) * 3;
+    cv::Mat matH2 = cv::Mat::ones(ROWS, COLS, CV_32FC1) * 3;
+    cv::Mat matH3 = cv::Mat::ones(ROWS, COLS, CV_32FC1) * 3;
+
+    cv::Mat matROI1(matH1, cv::Range(0, 500), cv::Range::all());     matROI1.setTo(1.f);
+    cv::Mat matROI2(matH2, cv::Range(500, 1500), cv::Range::all());  matROI2.setTo(1.f);
+    cv::Mat matROI3(matH3, cv::Range(1500, ROWS), cv::Range::all()); matROI3.setTo(1.f);
+
+    cv::cuda::GpuMat matHGpu1(matH1);
+    cv::cuda::GpuMat matHGpu2(matH2);
+    cv::cuda::GpuMat matHGpu3(matH3);
+    cv::Mat matMask = cv::Mat::ones(ROWS, COLS, CV_8UC1) * PR_MAX_GRAY_LEVEL;
+    cv::cuda::GpuMat matMaskGpu(matMask);
+    cv::cuda::GpuMat matMaskGpu1;
+
+    cv::cuda::compare(matHGpu1, 1, matMaskGpu1, cv::CmpTypes::CMP_NE);
+    int diffResult = cv::cuda::countNonZero(matMaskGpu1);
+    std::cout << "Original diff point " << diffResult << std::endl;
+
+    CudaAlgorithm::chooseMinValueForMask(matHGpu1, matHGpu2, matHGpu3, matMaskGpu);
+    cv::cuda::compare(matHGpu1, 1, matMaskGpu, cv::CmpTypes::CMP_NE);
+    diffResult = cv::cuda::countNonZero(matMaskGpu);
+    std::cout << "Expected result diff point " << diffResult << std::endl;
+}
+
+static void TestMergeHeightIntersect() {
+    std::string fileName("C:/Data/3D_20190408/PCBFOV20190104/Frame_1_Result/Gpu_BeforeMergeHeightResult_2.yml");
+    cv::FileStorage fs(fileName, cv::FileStorage::READ);
+    if (!fs.isOpened()) {
+        std::cout << "Failed to open file " << fileName << std::endl;
+        return;
+    }
+    cv::Mat matCpuH1, matCpuH2, matCpuH3, matCpuH4, matCpuMask, matCpuMaskDiffResult;
+    cv::FileNode fileNode = fs["H1"];
+    cv::read(fileNode, matCpuH1, cv::Mat());
+    fileNode = fs["H2"];
+    cv::read(fileNode, matCpuH2, cv::Mat());
+    fileNode = fs["H3"];
+    cv::read(fileNode, matCpuH3, cv::Mat());
+    fileNode = fs["H4"];
+    cv::read(fileNode, matCpuH4, cv::Mat());
+    fileNode = fs["Mask"];
+    cv::read(fileNode, matCpuMask, cv::Mat());
+    fileNode = fs["MaskDiff"];
+    cv::read(fileNode, matCpuMaskDiffResult, cv::Mat());
+    fs.release();
+
+    cv::cuda::GpuMat matGpuH1, matGpuH2, matGpuH3, matGpuH4, matGpuMask, matGpuMaskDiffResult;
+    matGpuH1.upload(matCpuH1);
+    matGpuH2.upload(matCpuH2);
+    matGpuH3.upload(matCpuH3);
+    matGpuH4.upload(matCpuH4);
+    matGpuMask.upload(matCpuMask);
+    matGpuMaskDiffResult.upload(matCpuMaskDiffResult);
+    
+    //CudaAlgorithm::mergeHeightIntersectGpu(matGpuH1, matGpuH2, matGpuH3, matGpuH4, matGpuMask, matGpuMaskDiffResult, 0.1f);
+    //cv::cuda::transpose(matGpuH4, matGpuH4);
+    //run_kernel_merge_height_intersect(1, 1, NULL,
+    //    reinterpret_cast<float*>(matCpuH1.data),
+    //    reinterpret_cast<float*>(matCpuH2.data),
+    //    reinterpret_cast<float*>(matCpuH3.data),
+    //    reinterpret_cast<float*>(matCpuH4.data),
+    //    matCpuMask.data,
+    //    reinterpret_cast<float*>(matCpuMaskDiffResult.data),
+    //    matCpuH1.rows,
+    //    matCpuH1.cols,
+    //    matCpuH1.step1(),
+    //    0.1f);
+    
+    //matGpuH4.download(matCpuH4);
+}
+
 void InternalTest() {
+    TestMergeHeightIntersect();
     TestBilinearInterpolation();
     TestCalcUtilsCumSum();
     TestCalcUtilsIntervals();
     TestCalcUtilsMeshGrid();
     TestCalcUtilsDiff();
+    TestCalcUtilsDiffGpu();
     TestCalcUtilsPower();
     TestCountOfNan();
     TestFindLargestKItems();
@@ -512,6 +898,14 @@ void InternalTest() {
     TestCalcUtilsScaleRect();
     TestPhaseCorrection();
     TestFitCircle();
+    TestGpuMatFloor();
+    TestIntervalAverage();
+    TestRangeIntervalAverage();
+    TestCudaPhaseToHeight3D();
+    TestCalcSumAndConvertMatrix();
+    TestCudaPhasePatch();
+    TestCudaGetNanMask();
+    TestChooseMinValueForMask();
 }
 
 }

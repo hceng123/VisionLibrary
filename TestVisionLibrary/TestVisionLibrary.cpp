@@ -734,23 +734,6 @@ int _tmain(int argc, _TCHAR* argv[])
 
     //TestSrchDie();
 
-    //TestCalib3dBase();
-    //TestCalib3dBase_1();
-  
-    //TestCalib3DHeight_01();
-    //TestCalib3DHeight_02();
-    //TestCalib3DHeight_03();
-    //TestCalc3DHeight();
-    //for (int i = 0; i < 10; ++ i)
-    //    TestFastCalc3DHeight();
-    //TestFastCalc3DHeight_1();
-    
-    //TestIntegrate3DCalib();
-    //TestCalc3DHeight_With_NormalCalibParam();
-
-    //TestCalc3DHeight_With_IntegrateCalibParam();
-    //TestMerge3DHeight();
-    //TestCalibDlpOffset_1();
     //DynamicCalculateDistortion();
     //TestCalcRestoreIdx();
     //ConvertRestoreCsvToYml();
@@ -782,7 +765,7 @@ int _tmain(int argc, _TCHAR* argv[])
     //TestCrossSectionArea();
 
     //TestFindCircle();
-    TestFindCircle_1();
+    //TestFindCircle_1();
 
     //TestCombineImage();
     //TestCombineImage_1();
@@ -791,10 +774,39 @@ int _tmain(int argc, _TCHAR* argv[])
 
     //ChangeColor();
 
+    //TestCalib3dBase();
+    //TestCalib3dBase_1();
+
+    //TestCalib3DHeight_01();
+    //TestCalib3DHeight_02();
+    //TestCalib3DHeight_03();
+    //TestCalc3DHeight();
+    //for (int i = 0; i < 10; ++ i)
+    //    TestFastCalc3DHeight();
+    //TestFastCalc3DHeight_1();
+
+    //TestIntegrate3DCalib();
+    //TestCalc3DHeight_With_NormalCalibParam();
+    //TestMotor3DCalibNew();
+
+    //TestCalc3DHeight_With_IntegrateCalibParam();
+    //TestMerge3DHeight();
+    //TestCalibDlpOffset_1();
+
     //TestMotor3DCalib();
 
+    //ConvertBaseParamCsvToYml();
+
     //TestCalc4DLPHeight();
+    //TestCalc4DLPHeightOnePass();
+    TestCalc4DLPHeight_SimulateMachine();
+    //CompareHeightSame();
+    //TestScanImage();
+    //VeryHeightMergeResult();
+    //ComparePatchPhaseResult();
+    //CompareMask();
     //TestMergeHeightMax();
+    //TestSortIndexValue();
 
     //TestInsp3DSolder();
     //TestInsp3DSolder_1();
@@ -841,9 +853,6 @@ int _tmain(int argc, _TCHAR* argv[])
     //TestGenerateSelectedImage();
 
     PR_DumpTimeLog("./Vision/Time.log");
-    std::cout << "Press any key to exit." << std::endl;
-    getchar();
-
     return 0;
 }
 

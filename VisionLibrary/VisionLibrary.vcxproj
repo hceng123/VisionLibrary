@@ -93,14 +93,15 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_WINDLL;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(BuildLevel)\ExtLibs\opencv\include;$(BuildLevel)\ExtLibs\boost_1_59_0;$(BuildLevel)\JoinSplit;$(BuildLevel)\libzxing\core\src;$(BuildLevel)\libzxing\opencv\src</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(BuildLevel)\ExtLibs\opencv\include;$(BuildLevel)\ExtLibs\boost_1_59_0;$(BuildLevel)\JoinSplit;$(BuildLevel)\libzxing\core\src;$(BuildLevel)\libzxing\opencv\src;$(BuildLevel)\CudaLibrary;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.0\include</AdditionalIncludeDirectories>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>opencv_calib3d300d.lib;opencv_core300d.lib;opencv_features2d300d.lib;opencv_flann300d.lib;opencv_highgui300d.lib;opencv_imgproc300d.lib;opencv_ml300d.lib;opencv_objdetect300d.lib;opencv_photo300d.lib;opencv_stitching300d.lib;opencv_superres300d.lib;opencv_ts300d.lib;opencv_video300d.lib;opencv_videostab300d.lib;opencv_imgcodecs300d.lib;opencv_xfeatures2d300d.lib;opencv_text300d.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>cudadevrt.lib;cudart.lib;opencv_calib3d300d.lib;opencv_core300d.lib;opencv_features2d300d.lib;opencv_flann300d.lib;opencv_highgui300d.lib;opencv_imgproc300d.lib;opencv_ml300d.lib;opencv_objdetect300d.lib;opencv_photo300d.lib;opencv_stitching300d.lib;opencv_superres300d.lib;opencv_ts300d.lib;opencv_video300d.lib;opencv_videostab300d.lib;opencv_imgcodecs300d.lib;opencv_xfeatures2d300d.lib;opencv_text300d.lib;opencv_cudafilters300d.lib;opencv_cudaarithm300d.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <StackReserveSize>
       </StackReserveSize>
+      <AdditionalLibraryDirectories>$(OutDir);$(BuildLevel)\Extlibs\OpenCV\$(Platform)\$(Configuration);$(CUDA_PATH)\lib\$(Platform)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -129,7 +130,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_WINDLL;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(BuildLevel)\ExtLibs\opencv\include;$(BuildLevel)\ExtLibs\boost_1_59_0;$(BuildLevel)\JoinSplit;$(BuildLevel)\JoinSplit;$(BuildLevel)\libzxing\core\src;$(BuildLevel)\libzxing\opencv\src</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(BuildLevel)\ExtLibs\opencv\include;$(BuildLevel)\ExtLibs\boost_1_59_0;$(BuildLevel)\JoinSplit;$(BuildLevel)\libzxing\core\src;$(BuildLevel)\libzxing\opencv\src;$(BuildLevel)\CudaLibrary;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.0\include</AdditionalIncludeDirectories>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
     </ClCompile>
     <Link>
@@ -137,7 +138,8 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <SubSystem>Windows</SubSystem>
-      <AdditionalDependencies>opencv_calib3d300.lib;opencv_core300.lib;opencv_features2d300.lib;opencv_flann300.lib;opencv_highgui300.lib;opencv_imgproc300.lib;opencv_ml300.lib;opencv_objdetect300.lib;opencv_photo300.lib;opencv_stitching300.lib;opencv_superres300.lib;opencv_ts300.lib;opencv_video300.lib;opencv_videoio300.lib;opencv_videostab300.lib;opencv_imgcodecs300.lib;opencv_xfeatures2d300.lib;opencv_text300.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>cudadevrt.lib;cudart.lib;cudart_static.lib;opencv_calib3d300.lib;opencv_core300.lib;opencv_features2d300.lib;opencv_flann300.lib;opencv_highgui300.lib;opencv_imgproc300.lib;opencv_ml300.lib;opencv_objdetect300.lib;opencv_photo300.lib;opencv_stitching300.lib;opencv_superres300.lib;opencv_ts300.lib;opencv_video300.lib;opencv_videoio300.lib;opencv_videostab300.lib;opencv_imgcodecs300.lib;opencv_xfeatures2d300.lib;opencv_text300.lib;opencv_cudafilters300.lib;opencv_cudaarithm300.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(OutDir);$(BuildLevel)\Extlibs\OpenCV\$(Platform)\$(Configuration);$(CUDA_PATH)\lib\$(Platform)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -146,6 +148,8 @@
     <ClInclude Include="BaseType.h" />
     <ClInclude Include="CalcUtils.hpp" />
     <ClInclude Include="Config.h" />
+    <ClInclude Include="Constants.h" />
+    <ClInclude Include="CudaAlgorithm.h" />
     <ClInclude Include="DataMatrix.h" />
     <ClInclude Include="Exception.h" />
     <ClInclude Include="FileUtils.h" />
@@ -173,6 +177,7 @@
   <ItemGroup>
     <ClCompile Include="CalcUtils.cpp" />
     <ClCompile Include="Config.cpp" />
+    <ClCompile Include="CudaAlgorithm.cpp" />
     <ClCompile Include="DataMatrix.cpp" />
     <ClCompile Include="ErrorMessage.cpp" />
     <ClCompile Include="Exception.cpp" />
@@ -192,6 +197,9 @@
     <ClCompile Include="VisionAPI.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\CudaLibrary\CudaLibrary.vcxproj">
+      <Project>{145864dd-b400-4dd5-a049-bf24b31a6b8a}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\ExtLibs\zlib\zlib.vcxproj">
       <Project>{cbd9195c-24a9-4367-a837-3eac4db9262e}</Project>
     </ProjectReference>

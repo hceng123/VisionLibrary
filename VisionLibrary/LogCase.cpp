@@ -2827,6 +2827,18 @@ VisionStatus LogCaseInsp3DSolder::WriteRpy(const PR_INSP_3D_SOLDER_CMD *const ps
     auto cmdRpyFilePath = _strLogCasePath + _CMD_RPY_FILE_NAME;
     ini.LoadFile(cmdRpyFilePath.c_str());
     ini.SetLongValue(_RPY_SECTION.c_str(), _strKeyStatus.c_str(), ToInt32(pstRpy->enStatus));
+    int index = 0;
+    for (const auto& stResult : pstRpy->vecResults) {
+        String strKeyComponentHeight = _strKeyComponentHeight + "_" + std::to_string(index);
+        String strKeySolderHeight = _strKeySolderHeight + "_" + std::to_string(index);
+        String strKeySolderArea = _strKeySolderArea + "_" + std::to_string(index);
+        String strKeySolderRatio = _strKeySolderRatio + "_" + std::to_string(index);
+        ini.SetDoubleValue(_RPY_SECTION.c_str(), strKeyComponentHeight.c_str(), stResult.fComponentHeight);
+        ini.SetDoubleValue(_RPY_SECTION.c_str(), strKeySolderHeight.c_str(), stResult.fSolderHeight);
+        ini.SetDoubleValue(_RPY_SECTION.c_str(), strKeySolderArea.c_str(), stResult.fSolderArea);
+        ini.SetDoubleValue(_RPY_SECTION.c_str(), strKeySolderRatio.c_str(), stResult.fSolderRatio);
+        ++index;
+    }
     ini.SaveFile(cmdRpyFilePath.c_str());
     if (!pstRpy->matResultImg.empty()) {
         cv::Mat matResultROI(pstRpy->matResultImg, pstCmd->rectDeviceROI);
