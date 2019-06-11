@@ -295,6 +295,13 @@ PR_FUNCTION_ENTRY
 PR_FUNCTION_EXIT
 }
 
+VisionAPI VisionStatus PR_MeasureDist(const PR_MEASURE_DIST_CMD* const pstCmd, PR_MEASURE_DIST_RPY* const pstRpy)
+{
+PR_FUNCTION_ENTRY
+    return VisionAlgorithm::measureDist(pstCmd, pstRpy);
+PR_FUNCTION_EXIT
+}
+
 VisionAPI VisionStatus PR_CrossSectionArea(const PR_CROSS_SECTION_AREA_CMD *const pstCmd, PR_CROSS_SECTION_AREA_RPY *const pstRpy)
 {
 PR_FUNCTION_ENTRY

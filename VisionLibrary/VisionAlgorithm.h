@@ -105,6 +105,7 @@ public:
     static VisionStatus calcPD(const PR_CALC_PD_CMD *const pstCmd, PR_CALC_PD_RPY *const pstRpy, bool bReplay = false);
     static std::vector<Int16> autoMultiLevelThreshold(const cv::Mat &matInputImg, const cv::Mat &matMask, int N);
     static VisionStatus parallelLineDist(const PR_PARALLEL_LINE_DIST_CMD *const pstCmd, PR_PARALLEL_LINE_DIST_RPY *const pstRpy);
+    static VisionStatus measureDist(const PR_MEASURE_DIST_CMD* const pstCmd, PR_MEASURE_DIST_RPY* const pstRpy);
     static VisionStatus crossSectionArea(const PR_CROSS_SECTION_AREA_CMD *const pstCmd, PR_CROSS_SECTION_AREA_RPY *const pstRpy);
     static VisionStatus combineImg(const PR_COMBINE_IMG_CMD *const pstCmd, PR_COMBINE_IMG_RPY *const pstRpy, bool bReplay = false);
     static VisionStatus combineImgNew(const PR_COMBINE_IMG_NEW_CMD *const pstCmd, PR_COMBINE_IMG_NEW_RPY *const pstRpy, bool bReplay = false);

@@ -452,7 +452,8 @@ public:
     static void setToExcept(cv::Mat &matInOut, int value, const cv::Rect &rectROI);
     static bool isVerticalROI(const VectorOfRect& vecRectROIs);
     static cv::Mat paraFromPolyNomial(int n);
-    static cv::Mat CalcUtils::generateBezier(const cv::Mat& matX, const cv::Mat& matY, const VectorOfFloat& vecXyMinMax, const int mm, const int nn);
+    static cv::Mat generateBezier(const cv::Mat& matX, const cv::Mat& matY, const VectorOfFloat& vecXyMinMax, const int mm, const int nn);
+    static cv::Point2f calcDistPoint(const cv::Point2f& ptStart, const cv::Point2f& ptEnd, float fSlope);
 };
 
 }

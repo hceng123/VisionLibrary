@@ -603,6 +603,24 @@ struct PR_PARALLEL_LINE_DIST_RPY {
     float                   fDistance;
 };
 
+struct PR_MEASURE_DIST_CMD {
+    enum class MODE {
+        DIRECT_LINE,
+        X_DIRECTION,
+        Y_DIRECTION,
+    };
+    cv::Point2f             ptStart;
+    cv::Point2f             ptEnd;
+    MODE                    enMeasureMode;
+    float                   fFiducialSlope;
+};
+
+struct PR_MEASURE_DIST_RPY {
+    VisionStatus            enStatus;
+    float                   fDistance;
+    cv::Point2f             ptCross;
+};
+
 //Introduction of cross section: https://en.wikipedia.org/wiki/Cross_section_(geometry)
 struct PR_CROSS_SECTION_AREA_CMD {
     PR_CROSS_SECTION_AREA_CMD() : bClosed(false) {}

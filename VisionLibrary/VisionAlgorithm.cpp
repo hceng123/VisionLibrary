@@ -7819,6 +7819,38 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     return pstRpy->enStatus;
 }
 
+/*static*/ VisionStatus VisionAlgorithm::measureDist(const PR_MEASURE_DIST_CMD* const pstCmd, PR_MEASURE_DIST_RPY* const pstRpy) {
+    switch (pstCmd->enMeasureMode)
+    {
+    case PR_MEASURE_DIST_CMD::MODE::DIRECT_LINE:
+        pstRpy->fDistance = CalcUtils::distanceOf2Point(pstCmd->ptStart, pstCmd->ptEnd);
+        break;
+    case PR_MEASURE_DIST_CMD::MODE::X_DIRECTION:
+        if (pstCmd->fFiducialSlope < 0.001f) {
+            pstRpy->fDistance = fabs(pstCmd->ptStart.x - pstCmd->ptEnd.x);
+            pstRpy->ptCross = cv::Point2f(pstCmd->ptStart.x, pstCmd->ptEnd.y);
+        }else {
+            pstRpy->ptCross = CalcUtils::calcDistPoint(pstCmd->ptStart, pstCmd->ptEnd, pstCmd->fFiducialSlope);
+            pstRpy->fDistance = CalcUtils::distanceOf2Point(pstRpy->ptCross, pstCmd->ptStart);
+        }
+        break;
+    case PR_MEASURE_DIST_CMD::MODE::Y_DIRECTION:
+        if (pstCmd->fFiducialSlope < 0.001f) {
+            pstRpy->fDistance = fabs(pstCmd->ptStart.y - pstCmd->ptEnd.y);
+            pstRpy->ptCross = cv::Point2f(pstCmd->ptStart.x, pstCmd->ptEnd.y);
+        }
+        else {
+            pstRpy->ptCross = CalcUtils::calcDistPoint(pstCmd->ptStart, pstCmd->ptEnd, pstCmd->fFiducialSlope);
+            pstRpy->fDistance = CalcUtils::distanceOf2Point(pstRpy->ptCross, pstCmd->ptEnd);
+        }
+        break;
+    default:
+        break;
+    }
+    pstRpy->enStatus = VisionStatus::OK;
+    return pstRpy->enStatus;
+}
+
 /*static*/ VisionStatus VisionAlgorithm::crossSectionArea(const PR_CROSS_SECTION_AREA_CMD *const pstCmd, PR_CROSS_SECTION_AREA_RPY *const pstRpy) {
     auto contour = pstCmd->vecContourPoints;
     if (! pstCmd->bClosed) {

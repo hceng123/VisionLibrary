@@ -496,5 +496,18 @@ float CalcUtils::calcPointToContourDist(const cv::Point &ptInput, const VectorOf
     return matXX;
 }
 
+/*static*/ cv::Point2f CalcUtils::calcDistPoint(const cv::Point2f& ptStart, const cv::Point2f& ptEnd, float fSlope) {
+    // y = ax + b, so b = y - ax
+    float a1 = fSlope, a2 = -1.f / a1; // Two perpendicular lines slope have relationship of a1 * a2 = -1
+    float b1 = ptStart.y - a1 * ptStart.x;
+    float b2 = ptEnd.y   - a2 * ptEnd.x;
+
+    cv::Point2f ptResult;
+    ptResult.x = (b2 - b1) / (a1- a2);
+    ptResult.y = a1 * ptResult.x + b1;
+    return ptResult;
+
+}
+
 }
 }
