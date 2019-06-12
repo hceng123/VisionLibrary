@@ -2114,24 +2114,24 @@ The difference between original data and after function run data: 0.0000
 INSP 3D SOLDER REGRESSION TEST #1 STARTING
 --------------------------------------------
 PR_Insp3DSolder status 0
-Component height 0.518 Solder height 0.322, area 1264.000, ratio 0.144
-Component height 0.508 Solder height 0.238, area 1037.000, ratio 0.112
+Component height 0.524 Solder height 0.328, area 1279.000, ratio 0.146
+Component height 0.517 Solder height 0.248, area 1023.000, ratio 0.110
 The difference between original data and after function run data: 0.000
 
 --------------------------------------------
 INSP 3D SOLDER REGRESSION TEST #2 STARTING
 --------------------------------------------
 PR_Insp3DSolder status 0
-Component height 0.493 Solder height 0.306, area 287.000, ratio 0.136
-Component height 0.488 Solder height 0.357, area 202.000, ratio 0.123
+Component height 0.497 Solder height 0.311, area 286.000, ratio 0.135
+Component height 0.490 Solder height 0.359, area 202.000, ratio 0.123
 The difference between original data and after function run data: 0.000
 
 --------------------------------------------
 INSP 3D SOLDER REGRESSION TEST #3 STARTING
 --------------------------------------------
 PR_Insp3DSolder status 0
-Component height 0.552 Solder height 0.160, area 1493.000, ratio 0.089
-Component height 0.538 Solder height 0.286, area 1061.000, ratio 0.063
+Component height 0.553 Solder height 0.161, area 1503.000, ratio 0.089
+Component height 0.540 Solder height 0.287, area 1078.000, ratio 0.064
 The difference between original data and after function run data: 0.000
 
 ---------------------------------------------

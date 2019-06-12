@@ -7389,6 +7389,28 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     UInt32 nBasePointCount = 0;
     auto matBaseMask = _pickColor(vecValue, matColorROI, pstCmd->nBaseColorDiff, pstCmd->nBaseGrayDiff, nBasePointCount);
 
+    // Remove the areas in between the two check ROIs to avoid the device is same color as backgroud
+    if (pstCmd->vecRectCheckROIs.size() >= 2) {
+        cv::Point topLft = pstCmd->vecRectCheckROIs[0].tl();
+        cv::Point btmRgt = pstCmd->vecRectCheckROIs[1].br();
+
+        // If the first ROI is on right or bottom
+        if (topLft.x < btmRgt.x) {
+            topLft = pstCmd->vecRectCheckROIs[1].tl();
+            btmRgt = pstCmd->vecRectCheckROIs[0].br();
+        }
+
+        topLft.x -= pstCmd->rectDeviceROI.x;
+        topLft.y -= pstCmd->rectDeviceROI.y;
+
+        btmRgt.x -= pstCmd->rectDeviceROI.x;
+        btmRgt.y -= pstCmd->rectDeviceROI.y;
+
+        cv::Rect rectMidle(topLft, btmRgt);
+        cv::Mat matOnDeviceROI(matBaseMask, rectMidle);
+        matOnDeviceROI.setTo(0);
+    }
+
     TimeLog::GetInstance()->addTimeLog("Pick color.", stopWatch.Span());
 
     if (!isAutoMode()) {

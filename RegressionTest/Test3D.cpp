@@ -783,7 +783,7 @@ void TestCalc3DHeightDiff_1() {
 }
 
 static void PrintInsp3DSolderResult(const PR_INSP_3D_SOLDER_RPY &stRpy) {
-    std::cout << std::fixed << std::setprecision(3);
+    std::cout << std::fixed << std::setprecision(2);
     std::cout << "PR_Insp3DSolder status " << ToInt32(stRpy.enStatus) << std::endl;
     if (VisionStatus::OK == stRpy.enStatus) {
         for (const auto &result : stRpy.vecResults) {
@@ -900,6 +900,42 @@ void TestInsp3DSolder_3() {
     CheckOriginalDataChanged(matOriginal, stCmd.matHeight);
 }
 
+void TestInsp3DSolder_4() {
+    std::cout << std::endl << "--------------------------------------------";
+    std::cout << std::endl << "INSP 3D SOLDER REGRESSION TEST #4 STARTING";
+    std::cout << std::endl << "--------------------------------------------";
+    std::cout << std::endl;
+
+    const std::string strParentFolder = "./data/TestInsp3DSolder_3/";
+    PR_INSP_3D_SOLDER_CMD stCmd;
+    PR_INSP_3D_SOLDER_RPY stRpy;
+
+    cv::FileStorage fs(strParentFolder + "Height.yml", cv::FileStorage::READ);
+    cv::FileNode fileNode = fs["Height"];
+    cv::read(fileNode, stCmd.matHeight, cv::Mat());
+    fs.release();
+
+    auto matOriginal = stCmd.matHeight.clone();
+
+    stCmd.matColorImg = cv::imread(strParentFolder + "image.png", cv::IMREAD_COLOR);
+
+    stCmd.rectDeviceROI = cv::Rect(0, 0, 191, 350);
+    stCmd.vecRectCheckROIs.push_back(cv::Rect(26, 223, 138, 122));
+    stCmd.vecRectCheckROIs.push_back(cv::Rect(26, 29, 138, 122));
+
+    stCmd.nBaseColorDiff = 20;
+    stCmd.nBaseGrayDiff = 20;
+    stCmd.scalarBaseColor = cv::Scalar(42, 25, 7);
+
+    stCmd.fHeightVariationCoverage = 0.75f;
+
+    PR_Insp3DSolder(&stCmd, &stRpy);
+    PrintInsp3DSolderResult(stRpy);
+    if (!stRpy.matResultImg.empty())
+        cv::imwrite(strParentFolder + "result_swap_roi.png", stRpy.matResultImg);
+    CheckOriginalDataChanged(matOriginal, stCmd.matHeight);
+}
+
 void Test3D() {
     TestCalib3dBase_1();
     TestCalib3DHeight_1();
@@ -927,6 +963,7 @@ void Test3D() {
     TestInsp3DSolder_1();
     TestInsp3DSolder_2();
     TestInsp3DSolder_3();
+    TestInsp3DSolder_4();
 }
 
 }
