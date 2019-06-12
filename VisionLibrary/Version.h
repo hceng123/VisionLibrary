@@ -14,8 +14,11 @@
  * Copyright (c) 2016-2018, Xiao Shengguang.  All rights reserved.
  ****************************************************************************/
 
+//2019-06-11 (XSG) Add PR_MeasureDist function.
+#define AOI_VISION_VERSION          "1.00.69"
+
 //2019-05-27 (XSG) Add PR_CalcMerge4DlpHeight function.
-#define AOI_VISION_VERSION          "1.00.68"
+//#define AOI_VISION_VERSION          "1.00.68"
 
 //2019-04-28 (XSG) Add fHeightVariationCoverage to PR_INSP_3D_SOLDER_CMD so user can change the value.
 //#define AOI_VISION_VERSION          "1.00.67"

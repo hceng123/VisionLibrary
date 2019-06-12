@@ -369,3 +369,42 @@ void TestSortIndexValue() {
     }
     std::cout << std::endl;
 }
+
+void TestMeasureDist() {
+    PR_MEASURE_DIST_CMD stCmd;
+    PR_MEASURE_DIST_RPY stRpy;
+
+    {
+        stCmd.ptStart = cv::Point2f(100, 100);
+        stCmd.ptEnd = cv::Point2f(200, 200);
+        stCmd.fFiducialSlope = 0.1f;
+        stCmd.enMeasureMode = PR_MEASURE_DIST_CMD::MODE::X_DIRECTION;
+
+        PR_MeasureDist(&stCmd, &stRpy);
+        std::cout << "PR_MeasureDist status " << ToInt32(stRpy.enStatus) << std::endl;
+        std::cout << "Cross point " << stRpy.ptCross << std::endl;
+        std::cout << "Distance " << stRpy.fDistance << std::endl;
+
+        cv::Mat matResult = cv::Mat::ones(500, 500, CV_8UC3) * PR_MAX_GRAY_LEVEL;
+        cv::line(matResult, stCmd.ptStart, stRpy.ptCross, cv::Scalar(0, 255, 0), 1);
+        cv::line(matResult, stCmd.ptEnd, stRpy.ptCross, cv::Scalar(0, 255, 0), 1);
+        cv::imwrite("./data/MeasureDistResult_1.png", matResult);
+    }
+
+    {
+        stCmd.ptStart = cv::Point2f(100, 100);
+        stCmd.ptEnd = cv::Point2f(200, 200);
+        stCmd.fFiducialSlope = -0.1f;
+        stCmd.enMeasureMode = PR_MEASURE_DIST_CMD::MODE::X_DIRECTION;
+
+        PR_MeasureDist(&stCmd, &stRpy);
+        std::cout << "PR_MeasureDist status " << ToInt32(stRpy.enStatus) << std::endl;
+        std::cout << "Cross point " << stRpy.ptCross << std::endl;
+        std::cout << "Distance " << stRpy.fDistance << std::endl;
+
+        cv::Mat matResult = cv::Mat::ones(500, 500, CV_8UC3) * PR_MAX_GRAY_LEVEL;
+        cv::line(matResult, stCmd.ptStart, stRpy.ptCross, cv::Scalar(0, 255, 0), 1);
+        cv::line(matResult, stCmd.ptEnd, stRpy.ptCross, cv::Scalar(0, 255, 0), 1);
+        cv::imwrite("./data/MeasureDistResult_2.png", matResult);
+    }
+}

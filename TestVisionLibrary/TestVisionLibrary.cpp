@@ -799,7 +799,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
     //TestCalc4DLPHeight();
     //TestCalc4DLPHeightOnePass();
-    TestCalc4DLPHeight_SimulateMachine();
+    //TestCalc4DLPHeight_SimulateMachine();
     //CompareHeightSame();
     //TestScanImage();
     //VeryHeightMergeResult();
@@ -851,6 +851,8 @@ int _tmain(int argc, _TCHAR* argv[])
     //FindFramePositionFromBigImage();
 
     //TestGenerateSelectedImage();
+
+    TestMeasureDist();
 
     PR_DumpTimeLog("./Vision/Time.log");
     return 0;

@@ -122,3 +122,4 @@ void TestTableMappingAndCombineImage();
 void TestGenerateSelectedImage();
 
 void TestSortIndexValue();
+void TestMeasureDist();
