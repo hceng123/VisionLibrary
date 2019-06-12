@@ -7831,7 +7831,25 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
             pstRpy->ptCross = cv::Point2f(pstCmd->ptStart.x, pstCmd->ptEnd.y);
         }else {
             pstRpy->ptCross = CalcUtils::calcDistPoint(pstCmd->ptStart, pstCmd->ptEnd, pstCmd->fFiducialSlope);
-            pstRpy->fDistance = CalcUtils::distanceOf2Point(pstRpy->ptCross, pstCmd->ptStart);
+            float tanWithStart = 0.f, tanWithEnd = 0.f;
+            if (fabs(pstCmd->ptStart.x - pstRpy->ptCross.x) < 0.0001f)
+                tanWithStart = 100000.f;
+            else
+                tanWithStart = (pstCmd->ptStart.y - pstRpy->ptCross.y) / (pstCmd->ptStart.x - pstRpy->ptCross.x);
+
+            if (fabs(pstCmd->ptEnd.x - pstRpy->ptCross.x) < 0.0001f)
+                tanWithEnd = 100000.f;
+            else
+                tanWithEnd = (pstCmd->ptEnd.y - pstRpy->ptCross.y) / (pstCmd->ptEnd.x - pstRpy->ptCross.x);
+
+            // Measure with the one follow the slope direction
+            if (fabs(fabs(tanWithStart) - fabs(pstCmd->fFiducialSlope)) <= fabs(fabs(tanWithEnd) - fabs(pstCmd->fFiducialSlope))) {
+                pstRpy->fDistance = CalcUtils::distanceOf2Point(pstRpy->ptCross, pstCmd->ptStart);
+                pstRpy->bMeasureWithStart = true;
+            }else {
+                pstRpy->fDistance = CalcUtils::distanceOf2Point(pstRpy->ptCross, pstCmd->ptEnd);
+                pstRpy->bMeasureWithStart = false;
+            }
         }
         break;
     case PR_MEASURE_DIST_CMD::MODE::Y_DIRECTION:
@@ -7841,6 +7859,27 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
         }
         else {
             pstRpy->ptCross = CalcUtils::calcDistPoint(pstCmd->ptStart, pstCmd->ptEnd, pstCmd->fFiducialSlope);
+            float tanWithStart = 0.f, tanWithEnd = 0.f;
+            if (fabs(pstCmd->ptStart.x - pstRpy->ptCross.x) < 0.0001f)
+                tanWithStart = 100000.f;
+            else
+                tanWithStart = (pstCmd->ptStart.y - pstRpy->ptCross.y) / (pstCmd->ptStart.x - pstRpy->ptCross.x);
+
+            if (fabs(pstCmd->ptEnd.x - pstRpy->ptCross.x) < 0.0001f)
+                tanWithEnd = 100000.f;
+            else
+                tanWithEnd = (pstCmd->ptEnd.y - pstRpy->ptCross.y) / (pstCmd->ptEnd.x - pstRpy->ptCross.x);
+
+            // Measure with the perpendicular to the slope direction
+            float fPerpendicularSlope = -1.f / pstCmd->fFiducialSlope;
+            if (fabs(fabs(tanWithStart) - fabs(fPerpendicularSlope)) <= fabs(fabs(tanWithEnd) - fabs(fPerpendicularSlope))) {
+                pstRpy->fDistance = CalcUtils::distanceOf2Point(pstRpy->ptCross, pstCmd->ptStart);
+                pstRpy->bMeasureWithStart = true;
+            }else {
+                pstRpy->fDistance = CalcUtils::distanceOf2Point(pstRpy->ptCross, pstCmd->ptEnd);
+                pstRpy->bMeasureWithStart = false;
+            }
+
             pstRpy->fDistance = CalcUtils::distanceOf2Point(pstRpy->ptCross, pstCmd->ptEnd);
         }
         break;

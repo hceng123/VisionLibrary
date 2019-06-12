@@ -619,6 +619,7 @@ struct PR_MEASURE_DIST_RPY {
     VisionStatus            enStatus;
     float                   fDistance;
     cv::Point2f             ptCross;
+    bool                    bMeasureWithStart;
 };
 
 //Introduction of cross section: https://en.wikipedia.org/wiki/Cross_section_(geometry)
