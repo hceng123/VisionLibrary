@@ -65,6 +65,10 @@ static int divUp(int total, int grain)
 
 /*static*/ VisionStatus CudaAlgorithm::setDlpParams(const PR_SET_DLP_PARAMS_TO_GPU_CMD* const pstCmd, PR_SET_DLP_PARAMS_TO_GPU_RPY* const pstRpy) {
     pstRpy->enStatus = VisionStatus::OK;
+    if (m_bParamsInitialized) {
+        WriteLog("Dlp params already set, no need set again");
+        return pstRpy->enStatus;
+    }
 
     const size_t MEM_SIZE = pstCmd->vec3DBezierSurface[0].total() * sizeof(float);
     float* h_buffer;
@@ -161,10 +165,16 @@ static int divUp(int total, int grain)
     }
     cudaFreeHost(h_buffer);
     m_bParamsInitialized = true;
+    WriteLog("Set dlp params success");
     return pstRpy->enStatus;
 }
 
 /*static*/ VisionStatus CudaAlgorithm::clearDlpParams() {
+    if (m_bParamsInitialized) {
+        WriteLog("Dlp params already cleared, no need clear again");
+        return VisionStatus::OK;
+    }
+
     for (int dlp = 0; dlp < NUM_OF_DLP; ++dlp) {
         cudaError_t err = cudaFree(m_dlpCalibData[dlp].pDlp3DBezierSurface);
         if (err != cudaSuccess) {
