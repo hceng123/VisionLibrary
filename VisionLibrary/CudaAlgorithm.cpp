@@ -77,6 +77,30 @@ static int divUp(int total, int grain)
     const int COLS = pstCmd->vec3DBezierSurface[0].cols;
 
     for (int dlp = 0; dlp < NUM_OF_DLP; ++dlp) {
+        if (pstCmd->vec3DBezierSurface[dlp].empty()) {
+            pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+            WriteLog("3D bezier surface is empty");
+            return pstRpy->enStatus;
+        }
+
+        if (pstCmd->vecMatAlphaBase[dlp].empty()) {
+            pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+            WriteLog("3D alpha base is empty");
+            return pstRpy->enStatus;
+        }
+
+        if (pstCmd->vecMatBetaBase[dlp].empty()) {
+            pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+            WriteLog("3D beta base is empty");
+            return pstRpy->enStatus;
+        }
+
+        if (pstCmd->vecMatGammaBase[dlp].empty()) {
+            pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+            WriteLog("3D gamma base is empty");
+            return pstRpy->enStatus;
+        }
+
         cudaError_t err = cudaMalloc(reinterpret_cast<void **>(&m_dlpCalibData[dlp].pDlp3DBezierSurface), MEM_SIZE);
         if (err != cudaSuccess) {
             pstRpy->enStatus = VisionStatus::CUDA_MEMORY_ERROR;
@@ -107,7 +131,7 @@ static int divUp(int total, int grain)
             return pstRpy->enStatus;
         }
 
-        const int PhaseCorrectionBufferSize = 2048 * 512 * sizeof(int);
+        const int PhaseCorrectionBufferSize = 2048 * 1024 * sizeof(int);
         err = cudaMalloc(reinterpret_cast<void **>(&m_arrCalc3DHeightVars[dlp].pBufferJumpSpan), PhaseCorrectionBufferSize);
         if (err != cudaSuccess) {
             pstRpy->enStatus = VisionStatus::CUDA_MEMORY_ERROR;
@@ -170,7 +194,7 @@ static int divUp(int total, int grain)
 }
 
 /*static*/ VisionStatus CudaAlgorithm::clearDlpParams() {
-    if (m_bParamsInitialized) {
+    if (!m_bParamsInitialized) {
         WriteLog("Dlp params already cleared, no need clear again");
         return VisionStatus::OK;
     }
@@ -261,7 +285,7 @@ static int divUp(int total, int grain)
     dim3 grid(divUp(matInOut.cols, threads.x), divUp(matInOut.rows, threads.y));
     run_kernel_floor(grid, threads, cv::cuda::StreamAccessor::getStream(stream),
         reinterpret_cast<float *>(matInOut.data),
-        matInOut.step1(),
+        ToInt32(matInOut.step1()),
         matInOut.rows,
         matInOut.cols);
 }
@@ -283,7 +307,7 @@ static int divUp(int total, int grain)
         reinterpret_cast<float *>(matPhase.data),
         matInput0.rows,
         matInput0.cols,
-        matInput0.step1());
+        ToInt32(matInput0.step1()));
 }
 
 /*static*/ void CudaAlgorithm::calcPhaseAndMask(
@@ -307,7 +331,7 @@ static int divUp(int total, int grain)
         fMinimumAlpitudeSquare,
         matInput0.rows,
         matInput0.cols,
-        matInput0.step1());
+        ToInt32(matInput0.step1()));
 }
 
 /*static*/ cv::cuda::GpuMat CudaAlgorithm::diff(const cv::cuda::GpuMat& matInput, int nRecersiveTime, int nDimension,
@@ -349,7 +373,7 @@ static int divUp(int total, int grain)
         eventDone,
         cv::cuda::StreamAccessor::getStream(stream),
         reinterpret_cast<float *>(matInput.data),
-        matInput.step1(),
+        ToInt32(matInput.step1()),
         matInput.rows,
         matInput.cols,
         interval,
@@ -366,7 +390,7 @@ static int divUp(int total, int grain)
         eventDone,
         cv::cuda::StreamAccessor::getStream(stream),
         reinterpret_cast<float *>(matInput.data),
-        matInput.step1(),
+        ToInt32(matInput.step1()),
         matInput.rows,
         matInput.cols,
         interval,
@@ -461,7 +485,7 @@ static int divUp(int total, int grain)
         reinterpret_cast<float *>(matDiffMapX.data),
         reinterpret_cast<float *>(matDiffPhaseX.data),
         matMaskGpu.data,
-        matDiffMapX.step1(),
+        ToInt32(matDiffMapX.step1()),
         ROWS, COLS,
         pBufferArrayIdx1,
         pBufferArrayIdx2,
@@ -480,7 +504,7 @@ static int divUp(int total, int grain)
         reinterpret_cast<float *>(matDiffMapY.data),
         reinterpret_cast<float *>(matDiffPhaseY.data),
         matMaskGpuT.data,
-        matDiffMapY.step1(),
+        ToInt32(matDiffMapY.step1()),
         COLS, ROWS,
         pBufferArrayIdx1, pBufferArrayIdx2, span);
 
@@ -524,7 +548,7 @@ static int divUp(int total, int grain)
             pBufferJumpStart,
             pBufferJumpEnd,
             pBufferSortedJumpSpanIdx,
-            matDiffResult.step1(),
+            ToInt32(matDiffResult.step1()),
             ROWS, COLS, nJumpSpanX);
         //TimeLog::GetInstance()->addTimeLog("run_kernel_phase_correction for X", stopWatch.Span());
     }
@@ -547,7 +571,7 @@ static int divUp(int total, int grain)
             pBufferJumpStart,
             pBufferJumpEnd,
             pBufferSortedJumpSpanIdx,
-            matDiffResultT.step1(),
+            ToInt32(matDiffResultT.step1()),
             COLS, ROWS, nJumpSpanY);
         //TimeLog::GetInstance()->addTimeLog("run_kernel_phase_correction for Y", stopWatch.Span());
 
@@ -894,7 +918,7 @@ static int divUp(int total, int grain)
         d_pInputData,
         ss,
         reinterpret_cast<float*>(matResult.data),
-        matResult.step1(),
+        ToInt32(matResult.step1()),
         matResult.rows,
         matResult.cols);
 }
@@ -911,7 +935,7 @@ static int divUp(int total, int grain)
         reinterpret_cast<float*>(matOutput.data),
         matInput.rows,
         matInput.cols,
-        matInput.step1(),
+        ToInt32(matInput.step1()),
         windowSize);
 }
 
@@ -927,7 +951,7 @@ static int divUp(int total, int grain)
         matNanMask.data,
         matInOut.rows,
         matInOut.cols,
-        matInOut.step1(),
+        ToInt32(matInOut.step1()),
         enProjDir);
 }
 
@@ -961,7 +985,7 @@ static int divUp(int total, int grain)
         reinterpret_cast<float*>(matNanMaskDiff.data),
         matHGpu1.rows,
         matHGpu1.cols,
-        matHGpu1.step1(),
+        ToInt32(matHGpu1.step1()),
         pMergeIndexBuffer,
         pCmpTargetBuffer,
         fDiffThreshold);
@@ -1189,7 +1213,7 @@ static int divUp(int total, int grain)
         matMask.data,
         matH1.rows,
         matH1.cols,
-        matH1.step1());
+        ToInt32(matH1.step1()));
 }
 
 /*static*/ void CudaAlgorithm::patchNanBeforeMergeHeight(

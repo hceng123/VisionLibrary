@@ -8174,10 +8174,15 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
     double dMinValue = 0, dMaxValue = 0;
     cv::Mat matMask = (pstCmd->matHeight == pstCmd->matHeight);
     cv::minMaxIdx(pstCmd->matHeight, &dMinValue, &dMaxValue, 0, 0, matMask);
+    if (dMaxValue - dMinValue < 0.0001f) {
+        WriteLog("The input image is all zero.");
+        pstRpy->enStatus = VisionStatus::INVALID_PARAM;
+        return pstRpy->enStatus;
+    }
     
     cv::Mat matNewHeight = pstCmd->matHeight - dMinValue;
 
-    float dRatio = 255.f / ToFloat( dMaxValue - dMinValue );
+    float dRatio = 255.f / ToFloat(dMaxValue - dMinValue);
     matNewHeight = matNewHeight * dRatio;
 
     matNewHeight.convertTo(pstRpy->matGray, CV_8UC1);

@@ -220,8 +220,8 @@ void kernel_select_cmp_point(
 
     for (int row = start; row < ROWS; row += stride) {
         int rowDataOffset = row * step;
-        int* arrayIdx1 = pBufferArrayIdx1 + row * 512;
-        int* arrayIdx2 = pBufferArrayIdx2 + row * 512;
+        int* arrayIdx1 = pBufferArrayIdx1 + row * 1024;
+        int* arrayIdx2 = pBufferArrayIdx2 + row * 1024;
 
         float* dMapRow = dMap + rowDataOffset;
         float* dPhaseRow = dPhase + rowDataOffset;
@@ -407,7 +407,7 @@ void kernel_phase_correction(
     if (c > 0)
         return;
 
-    int offsetOfBuffer = r * 512;
+    int offsetOfBuffer = r * 1024;
     int* vecJumpSpan = pBufferJumpSpan + offsetOfBuffer;
     int* vecJumpStart = pBufferJumpStart + offsetOfBuffer;
     int* vecJumpEnd = pBufferJumpEnd + offsetOfBuffer;
