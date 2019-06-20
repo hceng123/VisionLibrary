@@ -384,10 +384,11 @@ void TestMeasureDist() {
         std::cout << "PR_MeasureDist status " << ToInt32(stRpy.enStatus) << std::endl;
         std::cout << "Cross point " << stRpy.ptCross << std::endl;
         std::cout << "Distance " << stRpy.fDistance << std::endl;
+        std::cout << "Measure with start " << stRpy.bMeasureWithStart << std::endl;
 
         cv::Mat matResult = cv::Mat::ones(500, 500, CV_8UC3) * PR_MAX_GRAY_LEVEL;
-        cv::line(matResult, stCmd.ptStart, stRpy.ptCross, cv::Scalar(0, 255, 0), 1);
-        cv::line(matResult, stCmd.ptEnd, stRpy.ptCross, cv::Scalar(0, 255, 0), 1);
+        cv::line(matResult, stCmd.ptStart, stRpy.ptCross, cv::Scalar(0, 255, 0), stRpy.bMeasureWithStart ? 2 : 1);
+        cv::line(matResult, stCmd.ptEnd, stRpy.ptCross, cv::Scalar(0, 255, 0), stRpy.bMeasureWithStart ? 1 : 2);
         cv::imwrite("./data/MeasureDistResult_1.png", matResult);
     }
 
@@ -401,10 +402,37 @@ void TestMeasureDist() {
         std::cout << "PR_MeasureDist status " << ToInt32(stRpy.enStatus) << std::endl;
         std::cout << "Cross point " << stRpy.ptCross << std::endl;
         std::cout << "Distance " << stRpy.fDistance << std::endl;
+        std::cout << "Measure with start " << stRpy.bMeasureWithStart << std::endl;
 
         cv::Mat matResult = cv::Mat::ones(500, 500, CV_8UC3) * PR_MAX_GRAY_LEVEL;
-        cv::line(matResult, stCmd.ptStart, stRpy.ptCross, cv::Scalar(0, 255, 0), 1);
-        cv::line(matResult, stCmd.ptEnd, stRpy.ptCross, cv::Scalar(0, 255, 0), 1);
+        cv::line(matResult, stCmd.ptStart, stRpy.ptCross, cv::Scalar(0, 255, 0), stRpy.bMeasureWithStart ? 2 : 1);
+        cv::line(matResult, stCmd.ptEnd, stRpy.ptCross, cv::Scalar(0, 255, 0), stRpy.bMeasureWithStart ? 1 : 2);
         cv::imwrite("./data/MeasureDistResult_2.png", matResult);
+    }
+
+    {
+        stCmd.ptStart = cv::Point2f(1330, 3811.5);
+        stCmd.ptEnd = cv::Point2f(11280, 13261.5);
+        stCmd.fFiducialSlope = 0.000166291298f;
+        stCmd.enMeasureMode = PR_MEASURE_DIST_CMD::MODE::X_DIRECTION;
+
+        PR_MeasureDist(&stCmd, &stRpy);
+        std::cout << "PR_MeasureDist status " << ToInt32(stRpy.enStatus) << std::endl;
+        std::cout << "Cross point " << stRpy.ptCross << std::endl;
+        std::cout << "Distance " << stRpy.fDistance << std::endl;
+        std::cout << "Measure with start " << stRpy.bMeasureWithStart << std::endl;
+    }
+
+    {
+        stCmd.ptStart = cv::Point2f(1272, 3869);
+        stCmd.ptEnd = cv::Point2f(11224.50, 13190);
+        stCmd.fFiducialSlope = 0.000166291298f;
+        stCmd.enMeasureMode = PR_MEASURE_DIST_CMD::MODE::Y_DIRECTION;
+
+        PR_MeasureDist(&stCmd, &stRpy);
+        std::cout << "PR_MeasureDist status " << ToInt32(stRpy.enStatus) << std::endl;
+        std::cout << "Cross point " << stRpy.ptCross << std::endl;
+        std::cout << "Distance " << stRpy.fDistance << std::endl;
+        std::cout << "Measure with start " << stRpy.bMeasureWithStart << std::endl;
     }
 }

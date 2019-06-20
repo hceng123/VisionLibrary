@@ -7848,9 +7848,10 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
         pstRpy->fDistance = CalcUtils::distanceOf2Point(pstCmd->ptStart, pstCmd->ptEnd);
         break;
     case PR_MEASURE_DIST_CMD::MODE::X_DIRECTION:
-        if (fabs(pstCmd->fFiducialSlope) < 0.001f) {
+        if (fabs(pstCmd->fFiducialSlope) < 0.0001f) {
             pstRpy->fDistance = fabs(pstCmd->ptStart.x - pstCmd->ptEnd.x);
             pstRpy->ptCross = cv::Point2f(pstCmd->ptStart.x, pstCmd->ptEnd.y);
+            pstRpy->bMeasureWithStart = false;
         }else {
             pstRpy->ptCross = CalcUtils::calcDistPoint(pstCmd->ptStart, pstCmd->ptEnd, pstCmd->fFiducialSlope);
             float tanWithStart = 0.f, tanWithEnd = 0.f;
@@ -7875,9 +7876,10 @@ VisionStatus VisionAlgorithm::_findLineByCaliper(const cv::Mat &matInputImg, con
         }
         break;
     case PR_MEASURE_DIST_CMD::MODE::Y_DIRECTION:
-        if (fabs(pstCmd->fFiducialSlope) < 0.001f) {
+        if (fabs(pstCmd->fFiducialSlope) < 0.0001f) {
             pstRpy->fDistance = fabs(pstCmd->ptStart.y - pstCmd->ptEnd.y);
             pstRpy->ptCross = cv::Point2f(pstCmd->ptStart.x, pstCmd->ptEnd.y);
+            pstRpy->bMeasureWithStart = true;
         }
         else {
             pstRpy->ptCross = CalcUtils::calcDistPoint(pstCmd->ptStart, pstCmd->ptEnd, pstCmd->fFiducialSlope);

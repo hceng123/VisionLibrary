@@ -506,7 +506,6 @@ float CalcUtils::calcPointToContourDist(const cv::Point &ptInput, const VectorOf
     ptResult.x = (b2 - b1) / (a1- a2);
     ptResult.y = a1 * ptResult.x + b1;
     return ptResult;
-
 }
 
 }
